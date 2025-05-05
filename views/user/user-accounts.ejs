@@ -1,0 +1,21 @@
+<div class="row mt-5">
+  <div class="col-md-3 m-auto">
+    <div class="card card-body mtop-100" style="height: calc(100vh - 100px)">
+      <h1 class="text-center mb-3 mt-50">
+        <i class="far fa-building"></i> Choose account
+      </h1>
+      <ul class="p-0 mt-50">
+        <% for (i in accounts) {%>
+        <li class="card-style-01 p-10 m-10">
+          <a
+            style="color: rgb(116, 116, 116); font-weight: 600"
+            href="/account/<%= accounts[i].account_number %>/dashboard"
+            ><%= accounts[i].name %> - <%= accounts[i].account_number %>
+            <i class="fas fa-long-arrow-alt-right"></i
+          ></a>
+        </li>
+        <% }%>
+      </ul>
+    </div>
+  </div>
+</div>

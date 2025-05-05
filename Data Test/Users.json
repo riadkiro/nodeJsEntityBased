@@ -1,0 +1,29 @@
+[{
+  "_id": {
+    "$oid": "63bac3471c7dbff2fcc4e710"
+  },
+  "email": "2boukirou6@hotmail.com",
+  "password": "$2a$10$Mt3GxWqiZDrvQ4NYa6rFuut1wAcVBzM88zYUlKd4JYdGy6PtcftF2"
+},
+{
+  "_id": {
+    "$oid": "643c0b36fbde1ceb1bdc97bb"
+  },
+  "email": "boukirou6@hotmail.com",
+  "password": "$2b$10$Nb1soTU3b9z7CSthFmWHBOnudDrkfBivEK.Gn4jSO8KKIVelS45di",
+  "created_on": {
+    "$date": "2023-04-16T14:50:30.479Z"
+  },
+  "__v": 0,
+  "accounts": [
+    {
+      "account_number": 2501,
+      "name": "Soins de santé mobile"
+    },
+    {
+      "account_number": 2502,
+      "name": "App Test"
+    }
+  ],
+  "apiKey": "123456789"
+}]

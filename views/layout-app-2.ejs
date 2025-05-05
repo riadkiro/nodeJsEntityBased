@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/app/main.css" />
+    <link rel="stylesheet" href="/css/app/builder.css" />
+    <link rel="stylesheet" href="/css/app/resize-div.css" />
+    <link rel="stylesheet" href="/css/app/theme-default.css" />
+    <link rel="stylesheet" href="/css/css.css" />
+    <script
+      src="https://kit.fontawesome.com/12f3602709.js"
+      crossorigin="anonymous"
+    ></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+    </style>
+    <title>App</title>
+  </head>
+  <body>
+    <div class="modal hide" id="modal">
+      <div class="modal-content w700h500">
+        <div class="close-modal" onclick="closeModal()">X</div>
+      </div>
+    </div>
+    <div class="app-body flex">
+      <div class="left-bar">
+        <div class="flex column flex-center mt-50">
+          <div class="bar-element active">
+            <a href="/account/<%= account_number %>/dashboard"
+              ><i class="fa-solid fa-rocket"></i
+            ></a>
+          </div>
+          <div class="bar-element">
+            <a href="/account/<%= account_number %>/billing"
+              ><i class="fas fa-file-invoice-dollar"></i>
+            </a>
+          </div>
+          <div class="bar-element">
+            <a href="/account/<%= account_number %>/crm"
+              ><i class="fa-solid fa-address-book"></i
+            ></a>
+          </div>
+          <div class="bar-element">
+            <a href="/account/<%= account_number %>/documents"
+              ><i class="fa-solid fa-file"></i
+            ></a>
+          </div>
+          <div class="bar-element">
+            <a href="/account/<%= account_number %>/mail"
+              ><i class="fa-solid fa-envelope"></i
+            ></a>
+          </div>
+          <div class="bar-element">
+            <a href="/account/<%= account_number %>/chart"
+              ><i class="fa-solid fa-chart-column"></i
+            ></a>
+          </div>
+          <div class="bar-element">
+            <a href="/account/<%= account_number %>/ai"
+              ><i class="fa-solid fa-robot"></i
+            ></a>
+          </div>
+          <div class="bar-element">
+            <a href="/account/<%= account_number %>/settings"
+              ><i class="fa-solid fa-sliders"></i
+            ></a>
+          </div>
+        </div>
+      </div>
+      <div class="app-main full-w">
+        <div class="top-bar">
+          <div class="flex full-h space-between flex-center p-x-20">
+            <div class="left">
+              <div class="branding">
+                <i class="fa-solid fa-circle-notch logo-icon"></i>
+                <span>Cyberbox</span>
+              </div>
+            </div>
+            <div class="right flex flex-center">
+              <div class="top-bar-element">
+                <i class="fa-regular fa-moon"></i>
+              </div>
+              <div class="top-bar-element">
+                <i class="fa-regular fa-bell"></i>
+              </div>
+              <div class="top-bar-element">
+                <i class="fa-solid fa-grip"></i>
+              </div>
+              <div class="top-bar-element profile-icon">
+                <i class="fa-solid fa-user"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="app-content flex"><%- body %></div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -422,320 +422,194 @@
             x-collapse
             class="sub-menu text-gray-500 mx-4 mb-2"
           >
-            <li x-data="{subActive:null}">
+            <li x-data="{ subActive: null, hovered: false }">
               <div
                 class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900"
+                @mouseenter="hovered = true"
+                @mouseleave="hovered = false"
               >
+                <!-- Icône dossier -->
                 <iconify-icon
-                  icon="solar:folder-2-line-duotone"
+                  :icon="(subActive === 'error' || hovered) ? 'solar:folder-2-broken' : 'solar:folder-2-line-duotone'"
                   class="ml-2"
                   width="16"
                   height="16"
                 ></iconify-icon>
+
                 <button
                   type="button"
-                  class=""
                   @click="subActive === 'error' ? subActive = null : subActive = 'error'"
+                  class="flex items-center w-full"
                 >
-                  Base de données
+                  Contacts
+
                   <div
                     class="ltr:ml-auto rtl:mr-auto rtl:rotate-180"
-                    :class="{'!rotate-90' : subActive === 'error'}"
+                    style="height: 20px"
                   >
-                    <svg
+                    <iconify-icon
+                      icon="solar:menu-dots-bold-duotone"
                       width="16"
                       height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        opacity="0.5"
-                        d="M6.25 19C6.25 19.3139 6.44543 19.5946 6.73979 19.7035C7.03415 19.8123 7.36519 19.7264 7.56944 19.4881L13.5694 12.4881C13.8102 12.2073 13.8102 11.7928 13.5694 11.5119L7.56944 4.51194C7.36519 4.27364 7.03415 4.18773 6.73979 4.29662C6.44543 4.40551 6.25 4.68618 6.25 5.00004L6.25 19Z"
-                        fill="currentColor"
-                      />
-                      <path
-                        fill-rule="evenodd"
-                        clip-rule="evenodd"
-                        d="M10.5119 19.5695C10.1974 19.2999 10.161 18.8264 10.4306 18.5119L16.0122 12L10.4306 5.48811C10.161 5.17361 10.1974 4.70014 10.5119 4.43057C10.8264 4.161 11.2999 4.19743 11.5695 4.51192L17.5695 11.5119C17.8102 11.7928 17.8102 12.2072 17.5695 12.4881L11.5695 19.4881C11.2999 19.8026 10.8264 19.839 10.5119 19.5695Z"
-                        fill="currentColor"
-                      />
-                    </svg>
+                      style="margin-top: 2px"
+                      x-show="hovered"
+                      :class="{ 'rotate-90': hovered }"
+                    ></iconify-icon>
                   </div>
                 </button>
               </div>
+
               <ul
                 class="sub-menu text-gray-500 ltr:ml-2 rtl:mr-2"
                 x-show="subActive === 'error'"
                 x-collapse
               >
-                <li class="flex items-center">
+                <li
+                  x-data="{ hovered: false }"
+                  @mouseenter="hovered = true"
+                  @mouseleave="hovered = false"
+                  class="flex items-center w-full justify-between hover:bg-gray-100"
+                >
+                  <div class="flex items-center">
+                    <iconify-icon
+                      icon="solar:hamburger-menu-line-duotone"
+                      class="ml-2"
+                      width="16"
+                      height="16"
+                    ></iconify-icon>
+                    <a href="pages-error404.html" target="_blank" class="ml-2"
+                      >Entreprises</a
+                    >
+                  </div>
+
+                  <!-- Icône menu-dots à droite, visible uniquement au hover -->
                   <iconify-icon
-                    icon="solar:user-rounded-broken"
-                    class="ml-2"
+                    icon="solar:menu-dots-bold-duotone"
                     width="16"
                     height="16"
+                    x-show="hovered"
+                    :class="{ 'rotate-90': hovered }"
                   ></iconify-icon>
-                  <a href="pages-error404.html" target="_blank">Contacts</a>
                 </li>
-                <li class="flex items-center">
+                <li
+                  x-data="{ hovered: false }"
+                  @mouseenter="hovered = true"
+                  @mouseleave="hovered = false"
+                  class="flex items-center w-full justify-between hover:bg-gray-100"
+                >
+                  <div class="flex items-center">
+                    <iconify-icon
+                      icon="solar:hamburger-menu-line-duotone"
+                      class="ml-2"
+                      width="16"
+                      height="16"
+                    ></iconify-icon>
+                    <a href="pages-error404.html" target="_blank" class="ml-2"
+                      >Personnes</a
+                    >
+                  </div>
+
+                  <!-- Icône menu-dots à droite, visible uniquement au hover -->
                   <iconify-icon
-                    icon="solar:buildings-3-broken"
-                    class="ml-2"
+                    icon="solar:menu-dots-bold-duotone"
                     width="16"
                     height="16"
+                    x-show="hovered"
+                    :class="{ 'rotate-90': hovered }"
                   ></iconify-icon>
-                  <a href="pages-error500.html" target="_blank">Entreprises</a>
-                </li>
-                <li class="flex items-center">
-                  <iconify-icon
-                    icon="solar:target-broken"
-                    class="ml-2"
-                    width="16"
-                    height="16"
-                  ></iconify-icon>
-                  <a href="pages-error500.html" target="_blank">Target list</a>
                 </li>
               </ul>
             </li>
-            <li x-data="{subActive:null}">
+            <li x-data="{ subActive: null, hovered: false }">
               <div
                 class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900"
+                @mouseenter="hovered = true"
+                @mouseleave="hovered = false"
               >
+                <!-- Icône dossier -->
                 <iconify-icon
-                  icon="solar:folder-2-line-duotone"
+                  :icon="(subActive === 'error' || hovered) ? 'solar:folder-2-broken' : 'solar:folder-2-line-duotone'"
                   class="ml-2"
                   width="16"
                   height="16"
                 ></iconify-icon>
+
                 <button
                   type="button"
-                  class=""
                   @click="subActive === 'error' ? subActive = null : subActive = 'error'"
+                  class="flex items-center w-full"
                 >
                   Prospection
+
                   <div
                     class="ltr:ml-auto rtl:mr-auto rtl:rotate-180"
-                    :class="{'!rotate-90' : subActive === 'error'}"
+                    style="height: 20px"
                   >
-                    <svg
+                    <iconify-icon
+                      icon="solar:menu-dots-bold-duotone"
                       width="16"
                       height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        opacity="0.5"
-                        d="M6.25 19C6.25 19.3139 6.44543 19.5946 6.73979 19.7035C7.03415 19.8123 7.36519 19.7264 7.56944 19.4881L13.5694 12.4881C13.8102 12.2073 13.8102 11.7928 13.5694 11.5119L7.56944 4.51194C7.36519 4.27364 7.03415 4.18773 6.73979 4.29662C6.44543 4.40551 6.25 4.68618 6.25 5.00004L6.25 19Z"
-                        fill="currentColor"
-                      />
-                      <path
-                        fill-rule="evenodd"
-                        clip-rule="evenodd"
-                        d="M10.5119 19.5695C10.1974 19.2999 10.161 18.8264 10.4306 18.5119L16.0122 12L10.4306 5.48811C10.161 5.17361 10.1974 4.70014 10.5119 4.43057C10.8264 4.161 11.2999 4.19743 11.5695 4.51192L17.5695 11.5119C17.8102 11.7928 17.8102 12.2072 17.5695 12.4881L11.5695 19.4881C11.2999 19.8026 10.8264 19.839 10.5119 19.5695Z"
-                        fill="currentColor"
-                      />
-                    </svg>
+                      style="margin-top: 2px"
+                      x-show="hovered"
+                      :class="{ 'rotate-90': hovered }"
+                    ></iconify-icon>
                   </div>
                 </button>
               </div>
+
               <ul
                 class="sub-menu text-gray-500 ltr:ml-2 rtl:mr-2"
                 x-show="subActive === 'error'"
                 x-collapse
               >
-                <li class="">
-                  <ul
-                    x-cloak
-                    x-show="activeDropdown === 'CRM'"
-                    x-collapse
-                    class="sub-menu text-gray-500"
-                  >
-                    <li x-data="{subActive:null}">
-                      <div
-                        class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900"
-                      >
-                        <iconify-icon
-                          icon="solar:folder-with-files-line-duotone"
-                          class="ml-2"
-                          width="16"
-                          height="16"
-                        ></iconify-icon>
-                        <button
-                          type="button"
-                          class=""
-                          @click="subActive === 'error' ? subActive = null : subActive = 'error'"
-                        >
-                          Hôtels
-                          <div
-                            class="ltr:ml-auto rtl:mr-auto rtl:rotate-180"
-                            :class="{'!rotate-90' : subActive === 'error'}"
-                          >
-                            <svg
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                opacity="0.5"
-                                d="M6.25 19C6.25 19.3139 6.44543 19.5946 6.73979 19.7035C7.03415 19.8123 7.36519 19.7264 7.56944 19.4881L13.5694 12.4881C13.8102 12.2073 13.8102 11.7928 13.5694 11.5119L7.56944 4.51194C7.36519 4.27364 7.03415 4.18773 6.73979 4.29662C6.44543 4.40551 6.25 4.68618 6.25 5.00004L6.25 19Z"
-                                fill="currentColor"
-                              />
-                              <path
-                                fill-rule="evenodd"
-                                clip-rule="evenodd"
-                                d="M10.5119 19.5695C10.1974 19.2999 10.161 18.8264 10.4306 18.5119L16.0122 12L10.4306 5.48811C10.161 5.17361 10.1974 4.70014 10.5119 4.43057C10.8264 4.161 11.2999 4.19743 11.5695 4.51192L17.5695 11.5119C17.8102 11.7928 17.8102 12.2072 17.5695 12.4881L11.5695 19.4881C11.2999 19.8026 10.8264 19.839 10.5119 19.5695Z"
-                                fill="currentColor"
-                              />
-                            </svg>
-                          </div>
-                        </button>
-                      </div>
-                      <ul
-                        class="sub-menu text-gray-500 ltr:ml-2 rtl:mr-2"
-                        x-show="subActive === 'error'"
-                        x-collapse
-                      >
-                        <li class="flex items-center">
-                          <iconify-icon
-                            icon="solar:folder-2-line-duotone"
-                            class="ml-2"
-                            width="16"
-                            height="16"
-                          ></iconify-icon>
-                          <a href="pages-error404.html" target="_blank"
-                            >Base de données</a
-                          >
-                        </li>
-                      </ul>
-                    </li>
-                  </ul>
-                </li>
-                <li class="">
-                  <ul
-                    x-cloak
-                    x-show="activeDropdown === 'CRM'"
-                    x-collapse
-                    class="sub-menu text-gray-500"
-                  >
-                    <li x-data="{subActive:null}">
-                      <div
-                        class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900"
-                      >
-                        <iconify-icon
-                          icon="solar:folder-with-files-line-duotone"
-                          class="ml-2"
-                          width="16"
-                          height="16"
-                        ></iconify-icon>
-                        <button
-                          type="button"
-                          class="flex items-center justify-between w-full truncate text-left"
-                          @click="subActive === 'error' ? subActive = null : subActive = 'error'"
-                        >
-                          Marchés publiques
-                          <div
-                            class="ltr:ml-auto rtl:mr-auto rtl:rotate-180"
-                            :class="{'!rotate-90' : subActive === 'error'}"
-                          >
-                            <svg
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                opacity="0.5"
-                                d="M6.25 19C6.25 19.3139 6.44543 19.5946 6.73979 19.7035C7.03415 19.8123 7.36519 19.7264 7.56944 19.4881L13.5694 12.4881C13.8102 12.2073 13.8102 11.7928 13.5694 11.5119L7.56944 4.51194C7.36519 4.27364 7.03415 4.18773 6.73979 4.29662C6.44543 4.40551 6.25 4.68618 6.25 5.00004L6.25 19Z"
-                                fill="currentColor"
-                              />
-                              <path
-                                fill-rule="evenodd"
-                                clip-rule="evenodd"
-                                d="M10.5119 19.5695C10.1974 19.2999 10.161 18.8264 10.4306 18.5119L16.0122 12L10.4306 5.48811C10.161 5.17361 10.1974 4.70014 10.5119 4.43057C10.8264 4.161 11.2999 4.19743 11.5695 4.51192L17.5695 11.5119C17.8102 11.7928 17.8102 12.2072 17.5695 12.4881L11.5695 19.4881C11.2999 19.8026 10.8264 19.839 10.5119 19.5695Z"
-                                fill="currentColor"
-                              />
-                            </svg>
-                          </div>
-                        </button>
-                      </div>
-                      <ul
-                        class="sub-menu text-gray-500 ltr:ml-2 rtl:mr-2"
-                        x-show="subActive === 'error'"
-                        x-collapse
-                      >
-                        <li class="flex items-center">
-                          <iconify-icon
-                            icon="solar:folder-2-line-duotone"
-                            class="ml-2"
-                            width="16"
-                            height="16"
-                          ></iconify-icon>
-                          <a href="pages-error404.html" target="_blank">BOSA</a>
-                        </li>
-                        <li class="flex items-center">
-                          <iconify-icon
-                            icon="solar:folder-2-line-duotone"
-                            class="ml-2"
-                            width="16"
-                            height="16"
-                          ></iconify-icon>
-                          <a href="pages-error500.html" target="_blank"
-                            >Opportunités</a
-                          >
-                        </li>
-                      </ul>
-                    </li>
-                  </ul>
+                <li class="flex items-center">
+                  <iconify-icon
+                    icon="solar:hamburger-menu-line-duotone"
+                    class="ml-2"
+                    width="16"
+                    height="16"
+                  ></iconify-icon>
+                  <a href="pages-error404.html" target="_blank">Liste</a>
                 </li>
               </ul>
             </li>
-            <li x-data="{subActive:null}">
+            <li x-data="{ subActive: null, hovered: false }">
               <div
                 class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900"
+                @mouseenter="hovered = true"
+                @mouseleave="hovered = false"
               >
+                <!-- Icône dossier -->
                 <iconify-icon
-                  icon="solar:folder-2-line-duotone"
+                  :icon="(subActive === 'error' || hovered) ? 'solar:folder-2-broken' : 'solar:folder-2-line-duotone'"
                   class="ml-2"
                   width="16"
                   height="16"
                 ></iconify-icon>
+
                 <button
                   type="button"
-                  class=""
                   @click="subActive === 'error' ? subActive = null : subActive = 'error'"
+                  class="flex items-center w-full"
                 >
                   Opportunités
+
                   <div
                     class="ltr:ml-auto rtl:mr-auto rtl:rotate-180"
-                    :class="{'!rotate-90' : subActive === 'error'}"
+                    style="height: 20px"
                   >
-                    <svg
+                    <iconify-icon
+                      icon="solar:menu-dots-bold-duotone"
                       width="16"
                       height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        opacity="0.5"
-                        d="M6.25 19C6.25 19.3139 6.44543 19.5946 6.73979 19.7035C7.03415 19.8123 7.36519 19.7264 7.56944 19.4881L13.5694 12.4881C13.8102 12.2073 13.8102 11.7928 13.5694 11.5119L7.56944 4.51194C7.36519 4.27364 7.03415 4.18773 6.73979 4.29662C6.44543 4.40551 6.25 4.68618 6.25 5.00004L6.25 19Z"
-                        fill="currentColor"
-                      />
-                      <path
-                        fill-rule="evenodd"
-                        clip-rule="evenodd"
-                        d="M10.5119 19.5695C10.1974 19.2999 10.161 18.8264 10.4306 18.5119L16.0122 12L10.4306 5.48811C10.161 5.17361 10.1974 4.70014 10.5119 4.43057C10.8264 4.161 11.2999 4.19743 11.5695 4.51192L17.5695 11.5119C17.8102 11.7928 17.8102 12.2072 17.5695 12.4881L11.5695 19.4881C11.2999 19.8026 10.8264 19.839 10.5119 19.5695Z"
-                        fill="currentColor"
-                      />
-                    </svg>
+                      style="margin-top: 2px"
+                      x-show="hovered"
+                      :class="{ 'rotate-90': hovered }"
+                    ></iconify-icon>
                   </div>
                 </button>
               </div>
+
               <ul
                 class="sub-menu text-gray-500 ltr:ml-2 rtl:mr-2"
                 x-show="subActive === 'error'"
@@ -743,75 +617,52 @@
               >
                 <li class="flex items-center">
                   <iconify-icon
-                    icon="solar:user-rounded-broken"
+                    icon="solar:hamburger-menu-line-duotone"
                     class="ml-2"
                     width="16"
                     height="16"
                   ></iconify-icon>
-                  <a href="pages-error404.html" target="_blank">Contacts</a>
-                </li>
-                <li class="flex items-center">
-                  <iconify-icon
-                    icon="solar:buildings-3-broken"
-                    class="ml-2"
-                    width="16"
-                    height="16"
-                  ></iconify-icon>
-                  <a href="pages-error500.html" target="_blank">Entreprises</a>
-                </li>
-                <li class="flex items-center">
-                  <iconify-icon
-                    icon="solar:target-broken"
-                    class="ml-2"
-                    width="16"
-                    height="16"
-                  ></iconify-icon>
-                  <a href="pages-error500.html" target="_blank">Target list</a>
+                  <a href="pages-error404.html" target="_blank">Liste</a>
                 </li>
               </ul>
             </li>
-            <li x-data="{subActive:null}">
+            <li x-data="{ subActive: null, hovered: false }">
               <div
                 class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900"
+                @mouseenter="hovered = true"
+                @mouseleave="hovered = false"
               >
+                <!-- Icône dossier -->
                 <iconify-icon
-                  icon="solar:folder-2-line-duotone"
+                  :icon="(subActive === 'error' || hovered) ? 'solar:folder-2-broken' : 'solar:folder-2-line-duotone'"
                   class="ml-2"
                   width="16"
                   height="16"
                 ></iconify-icon>
+
                 <button
                   type="button"
-                  class=""
                   @click="subActive === 'error' ? subActive = null : subActive = 'error'"
+                  class="flex items-center w-full"
                 >
                   Clients
+
                   <div
                     class="ltr:ml-auto rtl:mr-auto rtl:rotate-180"
-                    :class="{'!rotate-90' : subActive === 'error'}"
+                    style="height: 20px"
                   >
-                    <svg
+                    <iconify-icon
+                      icon="solar:menu-dots-bold-duotone"
                       width="16"
                       height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        opacity="0.5"
-                        d="M6.25 19C6.25 19.3139 6.44543 19.5946 6.73979 19.7035C7.03415 19.8123 7.36519 19.7264 7.56944 19.4881L13.5694 12.4881C13.8102 12.2073 13.8102 11.7928 13.5694 11.5119L7.56944 4.51194C7.36519 4.27364 7.03415 4.18773 6.73979 4.29662C6.44543 4.40551 6.25 4.68618 6.25 5.00004L6.25 19Z"
-                        fill="currentColor"
-                      />
-                      <path
-                        fill-rule="evenodd"
-                        clip-rule="evenodd"
-                        d="M10.5119 19.5695C10.1974 19.2999 10.161 18.8264 10.4306 18.5119L16.0122 12L10.4306 5.48811C10.161 5.17361 10.1974 4.70014 10.5119 4.43057C10.8264 4.161 11.2999 4.19743 11.5695 4.51192L17.5695 11.5119C17.8102 11.7928 17.8102 12.2072 17.5695 12.4881L11.5695 19.4881C11.2999 19.8026 10.8264 19.839 10.5119 19.5695Z"
-                        fill="currentColor"
-                      />
-                    </svg>
+                      style="margin-top: 2px"
+                      x-show="hovered"
+                      :class="{ 'rotate-90': hovered }"
+                    ></iconify-icon>
                   </div>
                 </button>
               </div>
+
               <ul
                 class="sub-menu text-gray-500 ltr:ml-2 rtl:mr-2"
                 x-show="subActive === 'error'"
@@ -819,30 +670,12 @@
               >
                 <li class="flex items-center">
                   <iconify-icon
-                    icon="solar:user-rounded-broken"
+                    icon="solar:hamburger-menu-line-duotone"
                     class="ml-2"
                     width="16"
                     height="16"
                   ></iconify-icon>
-                  <a href="pages-error404.html" target="_blank">Contacts</a>
-                </li>
-                <li class="flex items-center">
-                  <iconify-icon
-                    icon="solar:buildings-3-broken"
-                    class="ml-2"
-                    width="16"
-                    height="16"
-                  ></iconify-icon>
-                  <a href="pages-error500.html" target="_blank">Entreprises</a>
-                </li>
-                <li class="flex items-center">
-                  <iconify-icon
-                    icon="solar:target-broken"
-                    class="ml-2"
-                    width="16"
-                    height="16"
-                  ></iconify-icon>
-                  <a href="pages-error500.html" target="_blank">Target list</a>
+                  <a href="pages-error404.html" target="_blank">Liste</a>
                 </li>
               </ul>
             </li>

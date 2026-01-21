@@ -78,6 +78,7 @@
         resizeData: null,
 
         init() {
+          window.customFieldsApp = this; // Set immediately for reliability
           this.rebuildCanvas();
           window.addEventListener('mousemove', (e) => this.handleResizing(e));
           window.addEventListener('mouseup', () => this.stopResizing());
@@ -101,14 +102,9 @@
             handle: '.group-handle-drag',
             draggable: '.field-item',
             onEnd: (evt) => {
-              // On récupère le nouvel ordre depuis le DOM
               const ids = Array.from(builder.querySelectorAll('.field-item')).map(el => el.dataset.id);
               const newLayout = ids.map(id => this.layout.find(i => String(i.id) === String(id))).filter(Boolean);
-
-              // On met à jour sans reconstruire pour éviter le flash visuel pendant le drag
               this.layout = newLayout;
-
-              // On reconstruit après un court délai pour stabiliser les index de reconstruction
               setTimeout(() => this.rebuildCanvas(), 50);
             }
           });
@@ -118,16 +114,12 @@
           const canvas = document.getElementById('fields-builder-canvas');
           if (!canvas) return;
 
-          // Détruire l'ancien sortable
           if (canvas._sortable) {
             canvas._sortable.destroy();
             canvas._sortable = null;
           }
 
-          // Générer le HTML
           canvas.innerHTML = this.renderAllFields();
-
-          // Ré-attacher Sortable
           this.$nextTick(() => this.initSortables());
         },
 
@@ -140,22 +132,18 @@
                  style="width: ${widthPct}%" 
                  data-id="${item.id}" 
                  data-field-id="${item.fieldId}">
-              <div class="relative bg-white border border-transparent hover:border-gray-200 hover:shadow-lg rounded-xl p-1.5 transition-all duration-200 h-fit">
+              <div class="relative bg-white border border-transparent hover:border-gray-200 hover:shadow-sm rounded-lg p-1.5 transition-all duration-200 h-fit">
                 
-                <!-- Toolbar (Delete) -->
-                <div class="absolute -top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-[110]">
+                <!-- Minimal Actions -->
+                <div class="absolute top-1 right-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-[110] bg-white/80 backdrop-blur-sm rounded px-1">
+                  <div class="group-handle-drag p-1 text-gray-400 hover:text-primary cursor-grab active:cursor-grabbing">
+                    <iconify-icon icon="tabler:grip-vertical" width="14"></iconify-icon>
+                  </div>
                   <button onclick="window.customFieldsApp.removeField('${item.id}')"
-                    class="w-7 h-7 flex items-center justify-center bg-white rounded-full shadow-lg border border-red-50 text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                    class="p-1 text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
                     title="Supprimer">
                     <iconify-icon icon="tabler:trash" width="14"></iconify-icon>
                   </button>
-                </div>
-
-                <!-- Drag Handle -->
-                <div class="group-handle-drag absolute -top-3 -left-3 opacity-0 group-hover:opacity-100 transition-opacity z-[110] cursor-grab active:cursor-grabbing">
-                  <div class="w-7 h-7 flex items-center justify-center bg-white rounded-full shadow-lg border border-gray-100 text-gray-400 hover:text-primary transition-colors">
-                    <iconify-icon icon="tabler:grip-horizontal" width="14"></iconify-icon>
-                  </div>
                 </div>
 
                 <!-- Preview Content -->
@@ -163,10 +151,8 @@
 
                 <!-- Resize Handle -->
                 <div onmousedown="window.customFieldsApp.startResizingManual(event, '${item.id}')"
-                  class="absolute top-0 right-0 w-4 h-full hover:bg-primary/10 transition-all z-[100] rounded-r-xl group/resizer flex flex-col items-center justify-center gap-1"
+                  class="absolute top-0 right-0 w-2 h-full hover:bg-primary/5 transition-all z-[100] rounded-r-lg group/resizer"
                   style="cursor: col-resize !important;" title="Redimensionner">
-                  <div class="w-1 h-8 bg-primary/40 rounded-full opacity-0 group-hover/resizer:opacity-100 transition-opacity"></div>
-                  <iconify-icon icon="tabler:resize" width="12" class="opacity-0 group-hover/resizer:opacity-100 transition-opacity text-primary"></iconify-icon>
                 </div>
               </div>
             </div>

@@ -14,6 +14,18 @@
     <button @click="submitCustomFields" class="btn btn-success mt-6">
       💾 Enregistrer
     </button>
+    <!-- single file -->
+    <div class="custom-file-container" data-upload-id="myFirstImage"></div>
+
+    <!-- script -->
+    <script>
+      new FileUploadWithPreview.FileUploadWithPreview('myFirstImage', {
+        images: {
+          baseImage: 'assets/images/file-preview.png',
+          backgroundImage: '',
+        },
+      });
+    </script>
 
     <%- include('components/entity-modal') %>
   </div>
@@ -120,7 +132,26 @@
           }
 
           canvas.innerHTML = this.renderAllFields();
-          this.$nextTick(() => this.initSortables());
+          this.$nextTick(() => {
+            this.initSortables();
+            this.executeScripts();
+          });
+        },
+
+        executeScripts() {
+          const processed = new Set();
+          this.layout.forEach(item => {
+            const field = this.fieldsById[item.fieldId];
+            if (field && field.jsTemplate && !processed.has(field._id)) {
+              try {
+                const scriptFunc = new Function('context', field.jsTemplate);
+                scriptFunc({ field: field, elementId: `field-${item.id}` });
+                processed.add(field._id);
+              } catch (e) {
+                console.error(`Erreur JS pour le champ ${field.name}:`, e);
+              }
+            }
+          });
         },
 
         renderFieldItemHTML(item, index) {
@@ -129,6 +160,7 @@
 
           return `
             <div class="field-item group relative px-2 py-0.5 h-fit" 
+                 id="field-${item.id}"
                  style="width: ${widthPct}%" 
                  data-id="${item.id}" 
                  data-field-id="${item.fieldId}">
@@ -147,7 +179,7 @@
                 </div>
 
                 <!-- Preview Content -->
-                <div class="builder-preview pointer-events-none select-none">${fieldHtml}</div>
+                <div class="builder-preview">${fieldHtml}</div>
 
                 <!-- Resize Handle -->
                 <div onmousedown="window.customFieldsApp.startResizingManual(event, '${item.id}')"

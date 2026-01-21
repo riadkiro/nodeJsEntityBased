@@ -35,6 +35,13 @@
                   x-model="formData.htmlTemplate" placeholder="ex: <label>{{ label }}</label>..."></textarea>
               </div>
 
+              <!-- Javascript Template -->
+              <div>
+                <label for="jsTemplate">Javascript Template (code brut)</label>
+                <textarea id="jsTemplate" name="jsTemplate" class="form-input font-mono text-sm" rows="6"
+                  x-model="formData.jsTemplate" placeholder="ex: alert('hello!');"></textarea>
+              </div>
+
               <!-- Description -->
               <div>
                 <label for="description">Description</label>
@@ -215,7 +222,8 @@
           placeholder: '',
           width: 'full',
           icon: '',
-          htmlTemplate: ''
+          htmlTemplate: '',
+          jsTemplate: ''
         },
 
         init() {
@@ -301,7 +309,8 @@
             placeholder: field.ui?.placeholder || "",
             width: field.ui?.width || "full",
             icon: field.ui?.icon || "",
-            htmlTemplate: field.htmlTemplate || ""
+            htmlTemplate: field.htmlTemplate || "",
+            jsTemplate: field.jsTemplate || ""
           };
           this.showFieldModal = true;
         },
@@ -318,7 +327,8 @@
             placeholder: '',
             width: 'full',
             icon: '',
-            htmlTemplate: ''
+            htmlTemplate: '',
+            jsTemplate: ''
           };
         },
 

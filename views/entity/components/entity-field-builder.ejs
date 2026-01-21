@@ -38,7 +38,7 @@
   }
 
   .field-item .form-input,
-  .field-item input,
+  .field-item input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
   .field-item select,
   .field-item textarea {
     font-size: 13px !important;
@@ -48,13 +48,40 @@
     border-radius: 8px !important;
     color: #111827 !important;
     width: 100% !important;
-    pointer-events: none !important;
     height: 38px !important;
     margin: 0 !important;
   }
 
+  /* Reset for file inputs */
+  .field-item input[type="file"] {
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 38px !important;
+    cursor: pointer !important;
+  }
+
+  /* Force button height to match inputs without changing colors */
+  .field-item .builder-preview button {
+    height: 38px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+  }
+
+  /* Reset for checkboxes and radios */
+  .field-item input[type="checkbox"],
+  .field-item input[type="radio"] {
+    width: auto !important;
+    height: auto !important;
+    min-height: 16px !important;
+    min-width: 16px !important;
+    cursor: pointer !important;
+    margin-right: 8px !important;
+  }
+
   /* Force tightening on ANY template injected tags */
-  .builder-preview * {
+  .builder-preview *:not(input[type="file"]):not(label):not(button) {
     margin-top: 0 !important;
     margin-bottom: 0 !important;
     padding-top: 0 !important;

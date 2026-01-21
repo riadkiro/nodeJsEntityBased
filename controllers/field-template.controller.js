@@ -83,7 +83,7 @@ module.exports = {
 
     try {
       // 1. Récupération des champs simples + imbriqués
-      const { name, label, description, type, subtype, htmlTemplate } =
+      const { name, label, description, type, subtype, htmlTemplate, jsTemplate } =
         req.body;
 
       const type_config = {};
@@ -110,6 +110,7 @@ module.exports = {
         type,
         subtype,
         htmlTemplate,
+        jsTemplate,
         type_config,
         ui,
       };

@@ -80,6 +80,7 @@ const FieldTemplateSchema = new mongoose.Schema({
     }
   },
   htmlTemplate: { type: String }, // pour affichage personnalisé
+  jsTemplate: { type: String }, // pour script personnalisé
 
   // 🔗 Lien logique
   entities: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Entity' }],

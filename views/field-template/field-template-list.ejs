@@ -1,0 +1,353 @@
+<div x-data="miscellaneous">
+  <div class="space-y-6">
+    <!-- Bouton Ajouter (ouvre le modal) -->
+    <button type="button" class="btn btn-primary mt-6" @click="openAddModal()">
+      Ajouter un Field
+    </button>
+
+    <!-- MODAL FieldTemplate -->
+    <div x-show="showFieldModal" x-transition style="margin-top: 0" class="fixed inset-0 z-50 bg-black/50 px-4 py-10">
+      <div class="mx-auto w-full max-w-3xl">
+        <div @click.outside="showFieldModal = false" class="bg-white dark:bg-[#1e293b] rounded-lg shadow-lg p-6">
+          <h2 class="text-xl font-semibold mb-4"
+            x-text="editField ? 'Modifier Field Template' : 'Ajouter un Field Template'"></h2>
+          <div style="max-height: calc(100vh - 8rem); overflow-y: auto; scrollbar-width: none;">
+            <form method="POST" @submit.prevent="submitFieldTemplate" class="space-y-4" style="margin-bottom: 20px">
+              <input type="hidden" name="id" x-model="formData.id" />
+
+              <!-- Label -->
+              <div>
+                <label for="label">Label (affichage humain)</label>
+                <input id="label" name="label" type="text" placeholder="ex: Téléphone" class="form-input" required
+                  x-model="formData.label" />
+              </div>
+              <!-- Nom -->
+              <div>
+                <label for="name">Nom (clé technique)</label>
+                <input id="name" name="name" type="text" placeholder="ex: telephone" class="form-input" required
+                  x-model="formData.name" />
+              </div>
+
+              <!-- HTML Template -->
+              <div>
+                <label for="htmlTemplate">HTML Template (code brut)</label>
+                <textarea id="htmlTemplate" name="htmlTemplate" class="form-input font-mono text-sm" rows="6"
+                  x-model="formData.htmlTemplate" placeholder="ex: <label>{{ label }}</label>..."></textarea>
+              </div>
+
+              <!-- Description -->
+              <div>
+                <label for="description">Description</label>
+                <textarea id="description" name="description" class="form-input" rows="2"
+                  placeholder="ex: Champ pour numéro de téléphone" x-model="formData.description"></textarea>
+              </div>
+
+              <!-- Type -->
+              <div>
+                <label for="type">Type</label>
+                <select id="type" name="type" class="form-input" required x-model="formData.type">
+                  <option value="">-- Choisir --</option>
+                  <option value="string">String</option>
+                  <option value="text">Text</option>
+                  <option value="number">Number</option>
+                  <option value="boolean">Boolean</option>
+                  <option value="date">Date</option>
+                  <option value="select">Select</option>
+                  <option value="relation">Relation</option>
+                  <option value="file">Fichier</option>
+                  <option value="image">Image</option>
+                  <option value="map">Carte</option>
+                </select>
+              </div>
+
+              <!-- Subtype -->
+              <div>
+                <label for="subtype">Sous-type</label>
+                <input id="subtype" name="subtype" type="text" placeholder="ex: tel, email, url..." class="form-input"
+                  x-model="formData.subtype" />
+              </div>
+
+              <!-- Regex -->
+              <div>
+                <label for="regex">Validation Regex</label>
+                <input id="regex" name="type_config.regex" type="text" placeholder="ex: ^\\+?[0-9]{7,15}$"
+                  class="form-input" x-model="formData.regex" />
+              </div>
+
+              <!-- Placeholder -->
+              <div>
+                <label for="placeholder">Placeholder</label>
+                <input id="placeholder" name="ui.placeholder" type="text" placeholder="ex: +212612345678"
+                  class="form-input" x-model="formData.placeholder" />
+              </div>
+
+              <!-- Width -->
+              <div>
+                <label for="width">Largeur</label>
+                <select id="width" name="ui.width" class="form-input" x-model="formData.width">
+                  <option value="full">Pleine largeur</option>
+                  <option value="half">Demi largeur</option>
+                  <option value="third">1/3</option>
+                  <option value="quarter">1/4</option>
+                </select>
+              </div>
+
+              <!-- Icon -->
+              <div>
+                <label for="icon">Icône</label>
+                <input id="icon" name="ui.icon" type="text" placeholder="ex: solar:phone-bold-duotone"
+                  class="form-input" x-model="formData.icon" />
+              </div>
+
+              <div class="flex justify-end gap-3 pt-4">
+                <button type="button" class="btn btn-outline-secondary" @click="showFieldModal = false">
+                  Annuler
+                </button>
+                <button type="submit" class="btn btn-primary">
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h5 class="mb-5 text-lg font-semibold dark:text-white-light md:absolute md:top-[25px] md:mb-0">
+        Champs personnalisés
+      </h5>
+
+      <div class="relative">
+        <div class="mb-5 sm:absolute sm:top-0 sm:mb-0 sm:ltr:right-56 sm:rtl:left-56">
+          <div class="flex items-center">
+            <div class="theme-dropdown relative" x-data="{ columnDropdown: false }"
+              @click.outside="columnDropdown = false">
+              <a href="javascript:;"
+                class="flex items-center rounded-md border border-[#e0e6ed] px-4 py-2 text-sm font-semibold dark:border-[#253b5c] dark:bg-[#1b2e4b] dark:text-white-dark"
+                @click="columnDropdown = ! columnDropdown">
+                <span class="ltr:mr-1 rtl:ml-1">Colonnes</span>
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 9L12 15L5 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                    stroke-linejoin="round"></path>
+                </svg>
+              </a>
+              <div
+                class="absolute top-11 z-[10] hidden w-[100px] min-w-[150px] rounded bg-white py-2 text-dark shadow ltr:left-0 rtl:right-0 dark:bg-[#1b2e4b] dark:text-white-light"
+                :class="columnDropdown && '!block'">
+                <ul class="space-y-2 px-4 font-semibold">
+                  <template x-for="(col,i) in columns" :key="i">
+                    <li>
+                      <label class="cursor-pointer">
+                        <input type="checkbox" class="form-checkbox" :id="`chk-${i}`" :value="i"
+                          @change="col.hidden = $event.target.checked; showHideColumns(i, $event.target.checked)"
+                          :checked="col.hidden" />
+                        <span:for="`chk-${i}`" class="ltr:ml-2 rtl:mr-2" x-text="col.name"></span>
+                      </label>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <table id="myTable1" class="whitespace-nowrap w-full"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% const rows=fields.map((f, i)=> [
+  i + 1,
+  f.name,
+  f.label,
+  f.type,
+  f.subtype || '',
+  f.ui?.width || 'full',
+  f.ui?.icon || '',
+  f.ui?.couleur || '#ffffff',
+  f.required ? 'Oui' : 'Non',
+  f.createdAt,
+  include('../components/btn-field-template-actions', {
+  id: f._id,
+  account_number,
+  f,
+  }),
+  ]); %>
+
+  <!-- Pattern de transmission sécurisé : Script JSON asynchrone -->
+  <script id="field-rows-data" type="application/json">
+  <%- JSON.stringify(rows) %>
+</script>
+
+  <script>
+    document.addEventListener("alpine:init", () => {
+      Alpine.data("miscellaneous", () => ({
+        columns: [
+          { name: "Select", hidden: false },
+          { name: "Clé (name)", hidden: false },
+          { name: "Libellé", hidden: false },
+          { name: "Type", hidden: false },
+          { name: "Sous-type", hidden: true },
+          { name: "Largeur", hidden: true },
+          { name: "Icône", hidden: true },
+          { name: "Couleur", hidden: true },
+          { name: "Requis", hidden: true },
+          { name: "Date de création", hidden: true },
+          { name: "Actions", hidden: false },
+        ],
+        hideCols: [0],
+        showCols: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        datatable1: null,
+
+        showFieldModal: false,
+        editField: null,
+        account_number: "<%= account_number %>",
+        formData: {
+          id: '',
+          label: '',
+          name: '',
+          description: '',
+          type: '',
+          subtype: '',
+          regex: '',
+          placeholder: '',
+          width: 'full',
+          icon: '',
+          htmlTemplate: ''
+        },
+
+        init() {
+          // Lecture sécurisée du JSON sans pollution HTML
+          const jsonContent = document.getElementById('field-rows-data').textContent;
+          const rows = JSON.parse(jsonContent);
+
+          this.datatable1 = new simpleDatatables.DataTable("#myTable1", {
+            data: {
+              headings: this.columns.map((c) => c.name),
+              data: rows,
+            },
+            perPage: 30,
+            perPageSelect: [10, 20, 30, 50, 100],
+            columns: [
+              {
+                select: 0,
+                sort: "asc",
+                render: (data) => `<input type="checkbox" class="form-checkbox" value="${data}" />`,
+              },
+              {
+                select: 7,
+                render: (data) => `<div class="w-6 h-6 rounded-full border" style="background-color:${data};"></div>`,
+              },
+              {
+                select: 9,
+                render: (data) => {
+                  const dt = new Date(data);
+                  const month = dt.getMonth() + 1 < 10 ? "0" + (dt.getMonth() + 1) : dt.getMonth() + 1;
+                  const day = dt.getDate() < 10 ? "0" + dt.getDate() : dt.getDate();
+                  return day + "/" + month + "/" + dt.getFullYear();
+                },
+              },
+              {
+                select: 10,
+                render: (html) => html,
+              },
+            ],
+            firstLast: true,
+            layout: {
+              top: "{search}",
+              bottom: "{info}{select}{pager}",
+            },
+          });
+
+          this.datatable1.columns().hide(this.hideCols);
+          this.datatable1.columns().show(this.showCols);
+
+          window.addEventListener('open-field-edit-modal', (e) => {
+            this.openEditModal(e.detail);
+          });
+        },
+
+        showHideColumns(col, value) {
+          if (value) {
+            this.showCols.push(col);
+            this.hideCols = this.hideCols.filter((d) => d != col);
+          } else {
+            this.hideCols.push(col);
+            this.showCols = this.showCols.filter((d) => d != col);
+          }
+          let headers = this.datatable1.columns();
+          headers.hide(this.hideCols);
+          headers.show(this.showCols);
+        },
+
+        openAddModal() {
+          this.editField = null;
+          this.resetForm();
+          this.showFieldModal = true;
+        },
+
+        openEditModal(field) {
+          this.editField = field;
+          this.formData = {
+            id: field._id || field.id,
+            label: field.label || "",
+            name: field.name || "",
+            description: field.description || "",
+            type: field.type || "",
+            subtype: field.subtype || "",
+            regex: field.type_config?.regex || "",
+            placeholder: field.ui?.placeholder || "",
+            width: field.ui?.width || "full",
+            icon: field.ui?.icon || "",
+            htmlTemplate: field.htmlTemplate || ""
+          };
+          this.showFieldModal = true;
+        },
+
+        resetForm() {
+          this.formData = {
+            id: '',
+            label: '',
+            name: '',
+            description: '',
+            type: '',
+            subtype: '',
+            regex: '',
+            placeholder: '',
+            width: 'full',
+            icon: '',
+            htmlTemplate: ''
+          };
+        },
+
+        submitFieldTemplate(event) {
+          const form = new FormData(event.target);
+          fetch(`/account/${this.account_number}/field-template/add`, {
+            method: "POST",
+            body: form,
+          })
+            .then((res) => {
+              if (res.redirected) {
+                window.location.href = res.url;
+              } else {
+                return res.text().then((html) => {
+                  document.body.innerHTML = html;
+                });
+              }
+            })
+            .catch((err) => {
+              console.error("Erreur AJAX :", err);
+              alert("Erreur lors de l’enregistrement.");
+            });
+        },
+      }));
+    });
+
+    window.openEditModal = (field) => {
+      window.dispatchEvent(new CustomEvent('open-field-edit-modal', { detail: field }));
+    };
+  </script>
+
+  <script src="/themes/default/assets/js/simple-datatables.js"></script>

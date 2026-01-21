@@ -1,0 +1,83 @@
+<div id="fields-builder" class="space-y-4">
+
+  <!-- Header Minimaliste -->
+  <div class="flex justify-between items-center pb-2 border-b border-gray-100">
+    <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Formulaire WYSIWYG</h3>
+    <button @click="openAddField()"
+      class="text-[11px] font-bold text-primary hover:bg-primary/5 px-4 py-1.5 rounded-full transition-all flex items-center gap-1.5">
+      <iconify-icon icon="tabler:circle-plus" width="16"></iconify-icon>
+      <span>AJOUTER UN CHAMP</span>
+    </button>
+  </div>
+
+  <!-- Grille Plate WYSIWYG (Manual Redraw for Stability) -->
+  <div id="fields-builder-canvas"
+    class="flex flex-wrap -mx-2 min-h-[50px] p-2 bg-gray-50/20 rounded-xl items-start content-start"
+    x-html="renderAllFields()">
+  </div>
+
+  <!-- Bouton Sauvegarder Fixe/Flottant bas -->
+  <div class="flex justify-center pt-2">
+    <button @click="submitCustomFields()" class="btn btn-primary">
+      <iconify-icon icon="tabler:device-floppy" width="18"></iconify-icon>
+      <span>Enregistrer le Design</span>
+    </button>
+  </div>
+</div>
+
+<style>
+  /* Minimalist WYSIWYG inputs */
+  .field-item label {
+    display: block !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    color: #4b5563 !important;
+    margin-bottom: 2px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  .field-item .form-input,
+  .field-item input,
+  .field-item select,
+  .field-item textarea {
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+    background-color: #f9fafb !important;
+    border: 1px solid #f3f4f6 !important;
+    border-radius: 8px !important;
+    color: #111827 !important;
+    width: 100% !important;
+    pointer-events: none !important;
+    height: 38px !important;
+    margin: 0 !important;
+  }
+
+  /* Force tightening on ANY template injected tags */
+  .builder-preview * {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Hover States */
+  .field-item:hover {
+    z-index: 50;
+  }
+
+  /* Sortable Styles */
+  .sortable-ghost {
+    opacity: 0.05;
+    background: #6366f1 !important;
+    border-radius: 12px;
+  }
+
+  .sortable-drag {
+    background: white !important;
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25) !important;
+    transform: rotate(1deg) scale(1.02);
+    cursor: grabbing !important;
+    z-index: 999;
+  }
+</style>

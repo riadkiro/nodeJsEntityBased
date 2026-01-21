@@ -1,0 +1,286 @@
+<div class="flex gap-6">
+  <div class="w-[70%]" x-data="customFields()" style="min-width: 80%">
+    <!-- Titre -->
+    <div class="panel mb-4">
+      <div class="title text-2xl font-bold">
+        <%= entity.name %>
+      </div>
+    </div>
+    <!-- Form Builder Canvas -->
+    <div class="panel">
+      <%- include('components/entity-field-builder') %>
+    </div>
+
+    <button @click="submitCustomFields" class="btn btn-success mt-6">
+      💾 Enregistrer
+    </button>
+
+    <%- include('components/entity-modal') %>
+  </div>
+
+  <!-- Panneau de droite (30%) -->
+  <div class="w-[30%] panel"><%- include('components/entity-sidebar') %></div>
+</div>
+<!-- Scripts JSON en toute sécurité -->
+<script type="application/json" id="all-templates">
+  <%- JSON.stringify(allFieldTemplates || []).replace(/</g, '\\u003C') %>
+</script>
+
+<script type="application/json" id="initial-fields">
+  <%- JSON.stringify(fields || []).replace(/</g, '\\u003C') %>
+</script>
+
+<script>
+  document.addEventListener("alpine:init", function () {
+    // Fonction de rendu de template {{ }} -> valeur
+    function renderTemplate(templateHtml, data) {
+      if (!templateHtml || typeof templateHtml !== "string") return "";
+      return templateHtml.replace(/{{\s*(\w+)\s*}}/g, (_, key) => {
+        return data?.[key] ?? "";
+      });
+    }
+    Alpine.data("customFields", function () {
+      const initialLayout = JSON.parse('<%- JSON.stringify(formLayout || []) %>');
+      const allTemplates = JSON.parse(document.getElementById("all-templates").textContent);
+      const rawFields = JSON.parse(document.getElementById("initial-fields").textContent);
+
+      const fieldsMap = {};
+      rawFields.forEach(f => { fieldsMap[f._id] = f; });
+      allTemplates.forEach(t => { if (!fieldsMap[t._id]) fieldsMap[t._id] = t; });
+
+      // Migration vers un layout plat [ { fieldId, width, id } ]
+      let flatLayout = [];
+      const genId = () => `f_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+
+      if (initialLayout.length > 0) {
+        if (initialLayout[0].items) {
+          initialLayout.forEach(row => {
+            row.items.forEach(item => flatLayout.push({ ...item, id: item.id || genId() }));
+          });
+        } else if (initialLayout[0].columns) {
+          initialLayout.forEach(row => {
+            const width = Math.floor(12 / row.columns.length);
+            row.columns.forEach(col => {
+              col.fields.forEach(fid => flatLayout.push({ fieldId: fid, width, id: genId() }));
+            });
+          });
+        } else {
+          flatLayout = initialLayout.map(i => ({ ...i, id: String(i.id || genId()) }));
+        }
+      }
+
+      return {
+        layout: flatLayout,
+        fieldsById: fieldsMap,
+        allTemplates: allTemplates,
+        openModal: false,
+        isResizing: false,
+        resizeData: null,
+
+        init() {
+          this.rebuildCanvas();
+          window.addEventListener('mousemove', (e) => this.handleResizing(e));
+          window.addEventListener('mouseup', () => this.stopResizing());
+        },
+
+        renderAllFields() {
+          return this.layout.map((item, index) => this.renderFieldItemHTML(item, index)).join('');
+        },
+
+        openAddField() {
+          this.openModal = true;
+        },
+
+        initSortables() {
+          const builder = document.getElementById('fields-builder-canvas');
+          if (!builder || builder._sortable) return;
+
+          builder._sortable = new Sortable(builder, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            handle: '.group-handle-drag',
+            draggable: '.field-item',
+            onEnd: (evt) => {
+              // On récupère le nouvel ordre depuis le DOM
+              const ids = Array.from(builder.querySelectorAll('.field-item')).map(el => el.dataset.id);
+              const newLayout = ids.map(id => this.layout.find(i => String(i.id) === String(id))).filter(Boolean);
+
+              // On met à jour sans reconstruire pour éviter le flash visuel pendant le drag
+              this.layout = newLayout;
+
+              // On reconstruit après un court délai pour stabiliser les index de reconstruction
+              setTimeout(() => this.rebuildCanvas(), 50);
+            }
+          });
+        },
+
+        rebuildCanvas() {
+          const canvas = document.getElementById('fields-builder-canvas');
+          if (!canvas) return;
+
+          // Détruire l'ancien sortable
+          if (canvas._sortable) {
+            canvas._sortable.destroy();
+            canvas._sortable = null;
+          }
+
+          // Générer le HTML
+          canvas.innerHTML = this.renderAllFields();
+
+          // Ré-attacher Sortable
+          this.$nextTick(() => this.initSortables());
+        },
+
+        renderFieldItemHTML(item, index) {
+          const fieldHtml = this.renderField(item.fieldId);
+          const widthPct = item.width * 8.333;
+
+          return `
+            <div class="field-item group relative px-2 py-0.5 h-fit" 
+                 style="width: ${widthPct}%" 
+                 data-id="${item.id}" 
+                 data-field-id="${item.fieldId}">
+              <div class="relative bg-white border border-transparent hover:border-gray-200 hover:shadow-lg rounded-xl p-1.5 transition-all duration-200 h-fit">
+                
+                <!-- Toolbar (Delete) -->
+                <div class="absolute -top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-[110]">
+                  <button onclick="window.customFieldsApp.removeField('${item.id}')"
+                    class="w-7 h-7 flex items-center justify-center bg-white rounded-full shadow-lg border border-red-50 text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                    title="Supprimer">
+                    <iconify-icon icon="tabler:trash" width="14"></iconify-icon>
+                  </button>
+                </div>
+
+                <!-- Drag Handle -->
+                <div class="group-handle-drag absolute -top-3 -left-3 opacity-0 group-hover:opacity-100 transition-opacity z-[110] cursor-grab active:cursor-grabbing">
+                  <div class="w-7 h-7 flex items-center justify-center bg-white rounded-full shadow-lg border border-gray-100 text-gray-400 hover:text-primary transition-colors">
+                    <iconify-icon icon="tabler:grip-horizontal" width="14"></iconify-icon>
+                  </div>
+                </div>
+
+                <!-- Preview Content -->
+                <div class="builder-preview pointer-events-none select-none">${fieldHtml}</div>
+
+                <!-- Resize Handle -->
+                <div onmousedown="window.customFieldsApp.startResizingManual(event, '${item.id}')"
+                  class="absolute top-0 right-0 w-4 h-full hover:bg-primary/10 transition-all z-[100] rounded-r-xl group/resizer flex flex-col items-center justify-center gap-1"
+                  style="cursor: col-resize !important;" title="Redimensionner">
+                  <div class="w-1 h-8 bg-primary/40 rounded-full opacity-0 group-hover/resizer:opacity-100 transition-opacity"></div>
+                  <iconify-icon icon="tabler:resize" width="12" class="opacity-0 group-hover/resizer:opacity-100 transition-opacity text-primary"></iconify-icon>
+                </div>
+              </div>
+            </div>
+          `;
+        },
+
+        addTemplateToSlot(template) {
+          const uniqueId = `f_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+          this.layout.push({ fieldId: template._id, width: 12, id: uniqueId });
+          this.openModal = false;
+          this.rebuildCanvas();
+        },
+
+        removeField(id) {
+          this.layout = this.layout.filter(i => String(i.id) !== String(id));
+          this.rebuildCanvas();
+        },
+
+        startResizingManual(e, id) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.isResizing = true;
+          document.body.style.userSelect = 'none';
+          document.body.style.cursor = 'col-resize';
+
+          const index = this.layout.findIndex(i => String(i.id) === String(id));
+          const el = e.target.closest('.field-item');
+
+          this.resizeData = {
+            id,
+            index,
+            initialWidth: this.layout[index].width,
+            startX: e.clientX,
+            containerWidth: el.parentElement.offsetWidth
+          };
+        },
+
+        handleResizing(e) {
+          if (!this.isResizing || !this.resizeData) return;
+          const deltaX = e.clientX - this.resizeData.startX;
+          const colWidth = this.resizeData.containerWidth / 12;
+          const deltaCols = Math.round(deltaX / colWidth);
+          let newWidth = this.resizeData.initialWidth + deltaCols;
+          newWidth = Math.max(2, Math.min(12, newWidth));
+
+          const item = this.layout.find(i => String(i.id) === String(this.resizeData.id));
+          if (item && item.width !== newWidth) {
+            item.width = newWidth;
+            // On met à jour seulement le style de l'élément en cours pour la fluidité
+            const el = document.querySelector(`[data-id="${this.resizeData.id}"]`);
+            if (el) el.style.width = (newWidth * 8.333) + '%';
+          }
+        },
+
+        stopResizing() {
+          if (this.isResizing) {
+            this.isResizing = false;
+            this.rebuildCanvas(); // Re-render propre à la fin
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+            this.resizeData = null;
+          }
+        },
+
+        renderTemplate(templateHtml, data) {
+          if (!templateHtml || typeof templateHtml !== "string") return "";
+          return templateHtml.replace(/{{\s*(\w+)\s*}}/g, (_, key) => {
+            return data?.[key] ?? "";
+          });
+        },
+
+        renderField(fieldId) {
+          const field = this.fieldsById[fieldId];
+          if (!field) return "";
+          return this.renderTemplate(field.htmlTemplate, {
+            label: field.label,
+            name: field.name,
+            placeholder: (field.ui && field.ui.placeholder) || "",
+            required: field.required ? "required" : "",
+          });
+        },
+
+        submitCustomFields() {
+          const payload = {
+            fields: [...new Set(this.layout.map(i => i.fieldId))].map(id => ({ _id: id })),
+            layout: this.layout
+          };
+
+          fetch(`/account/<%= account_number %>/entity/updatecf/<%= entity._id %>`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(() => Swal.fire({ icon: 'success', title: 'Design sauvegardé', showConfirmButton: false, timer: 1000 }))
+            .catch(() => alert("Erreur lors de l'enregistrement."));
+        }
+      };
+    });
+
+    // Rendre l'instance accessible pour les handlers onclick/onmousedown
+    window.addEventListener('load', () => {
+      const el = document.querySelector('[x-data="customFields()"]');
+      if (el) window.customFieldsApp = Alpine.$data(el);
+    });
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const list = document.getElementById("fields-list");
+    if (list) {
+      new Sortable(list, {
+        animation: 200,
+        ghostClass: "bg-yellow-100",
+      });
+    }
+  });
+</script>

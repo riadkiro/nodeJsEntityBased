@@ -1,0 +1,75 @@
+<div class="panel">
+    <!-- form controls -->
+    <form class="space-y-5" method="POST" enctype="multipart/form-data" action="/account/<%= account_number %>/entity/add">
+        <!-- Nom -->
+        <div>
+            <label for="name">Nom</label>
+            <input id="name" name="name" type="text" placeholder="Nom de l'entité" class="form-input" required />
+        </div>
+
+        <!-- Slug -->
+        <div>
+            <label for="slug">Slug</label>
+            <input id="slug" name="slug" type="text" placeholder="ex: mon-entity" class="form-input" required />
+        </div>
+
+        <!-- Description -->
+        <div>
+            <label for="description">Description</label>
+            <textarea id="description" name="description" class="form-input" rows="4" placeholder="Description..."></textarea>
+        </div>
+
+        <!-- Image -->
+        <div>
+            <label for="image">Image</label>
+            <input id="image" name="image" type="file"
+                class="form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
+            />
+        </div>
+
+        <!-- Icon -->
+        <div>
+            <label for="icon">Icône</label>
+            <input id="icon" name="icon" type="text" placeholder="ex: fa-solid fa-users" class="form-input" />
+        </div>
+
+        <!-- Color -->
+        <div>
+            <label for="color">Couleur (hex)</label>
+            <input id="color" name="color" type="color" class="form-input w-20 h-10 p-1" />
+        </div>
+
+        <!-- Enabled Standard Fields -->
+        <div>
+            <label>Champs standards activés</label>
+            <label class="inline-flex items-center gap-x-2">
+                <input type="checkbox" name="enabledStandardFields[]" value="title" class="form-checkbox text-success" />
+                <span>Titre</span>
+            </label>
+            <label class="inline-flex items-center gap-x-2">
+                <input type="checkbox" name="enabledStandardFields[]" value="slug" class="form-checkbox text-success" />
+                <span>Slug</span>
+            </label>
+            <label class="inline-flex items-center gap-x-2">
+                <input type="checkbox" name="enabledStandardFields[]" value="date" class="form-checkbox text-success" />
+                <span>Date</span>
+            </label>
+        </div>
+
+        <!-- Active toggle (optionnel pour future booléen si tu veux un champ "isActive" par ex) -->
+        
+        <div>
+            <label for="active">Active</label>
+        </div>
+        <label class="w-12 h-6 relative">
+            <input type="checkbox" class="custom_switch absolute w-full h-full opacity-0 z-10 cursor-pointer peer"
+                id="active" name="active" />
+            <span
+                class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-4 before:h-4 before:rounded-full peer-checked:before:left-7 peer-checked:bg-primary before:transition-all before:duration-300"></span>
+        </label>
+        
+
+        <!-- Bouton submit -->
+        <button type="submit" class="btn btn-primary !mt-6">Publier</button>
+    </form>
+</div>

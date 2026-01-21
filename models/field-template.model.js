@@ -9,8 +9,6 @@ const FieldTemplateSchema = new mongoose.Schema({
   // 🎨 Type
   type: {
     type: String,
-    enum: ['string', 'text', 'number', 'boolean', 'date', 'select', 'relation', 'file', 'image'],
-    required: true
   },
   subtype: { type: String }, // email, tel, url (si string)
 
@@ -81,6 +79,7 @@ const FieldTemplateSchema = new mongoose.Schema({
       }
     }
   },
+  htmlTemplate: { type: String }, // pour affichage personnalisé
 
   // 🔗 Lien logique
   entities: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Entity' }],

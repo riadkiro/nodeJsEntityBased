@@ -1,0 +1,159 @@
+<form
+  class="space-y-5"
+  method="POST"
+  enctype="multipart/form-data"
+  action="/account/<%= account_number %>/entity/edit/<%= entity._id %>"
+>
+  <!-- Nom -->
+  <div>
+    <label for="name">Nom</label>
+    <input
+      id="name"
+      name="name"
+      type="text"
+      placeholder="Nom de l'entité"
+      value="<%= entity.name %>"
+      class="form-input"
+      required
+    />
+  </div>
+
+  <!-- Slug -->
+  <div>
+    <label for="slug">Slug</label>
+    <input
+      id="slug"
+      name="slug"
+      type="text"
+      placeholder="ex: mon-entity"
+      value="<%= entity.slug %>"
+      class="form-input"
+      required
+    />
+  </div>
+
+  <!-- Description -->
+  <div>
+    <label for="description">Description</label>
+    <textarea
+      id="description"
+      name="description"
+      class="form-input"
+      rows="4"
+      placeholder="Description..."
+    >
+<%= entity.description || '' %></textarea
+    >
+  </div>
+
+  <!-- Image -->
+  <div x-data="{ showUpload: false }">
+    <label for="image">Image</label>
+
+    <% if (entity && entity.image) { %>
+    <template x-if="!showUpload">
+      <div class="mt-2 space-y-2">
+        <img
+          src="<%= entity.image %>"
+          class="max-w-full rounded shadow"
+          alt="Aperçu image"
+        />
+        <button
+          type="button"
+          class="btn btn-secondary text-sm"
+          @click="showUpload = true"
+        >
+          Remplacer l'image
+        </button>
+      </div>
+    </template>
+    <% } %>
+
+    <template x-if="<%= entity && entity.image ? 'showUpload' : 'true' %>">
+      <input
+        id="image"
+        name="image"
+        type="file"
+        accept="image/png"
+        class="form-input mt-2 file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
+      />
+    </template>
+  </div>
+
+  <!-- Icon -->
+  <div>
+    <label for="icon">Icône</label>
+    <input
+      id="icon"
+      name="icon"
+      type="text"
+      placeholder="ex: fa-solid fa-users"
+      value="<%= entity.icon || '' %>"
+      class="form-input"
+    />
+  </div>
+
+  <!-- Color -->
+  <div>
+    <label for="color">Couleur (hex)</label>
+    <input
+      id="color"
+      name="color"
+      type="color"
+      value="<%= entity.color || '#000000' %>"
+      class="form-input w-20 h-10 p-1"
+    />
+  </div>
+
+  <!-- Champs standards activés -->
+  <div>
+    <label>Champs standards activés</label>
+    <% const enabledFields = entity.enabledStandardFields || []; %>
+    <label class="inline-flex items-center gap-x-2">
+      <input type="checkbox" name="enabledStandardFields[]" value="title"
+      class="form-checkbox text-success" <%= enabledFields.includes('title') ?
+      'checked' : '' %> />
+      <span>Titre</span>
+    </label>
+    <label class="inline-flex items-center gap-x-2">
+      <input type="checkbox" name="enabledStandardFields[]" value="slug"
+      class="form-checkbox text-success" <%= enabledFields.includes('slug') ?
+      'checked' : '' %> />
+      <span>Slug</span>
+    </label>
+    <label class="inline-flex items-center gap-x-2">
+      <input type="checkbox" name="enabledStandardFields[]" value="date"
+      class="form-checkbox text-success" <%= enabledFields.includes('date') ?
+      'checked' : '' %> />
+      <span>Date</span>
+    </label>
+  </div>
+
+  <!-- Active -->
+  <div>
+    <label for="active">Active</label>
+  </div>
+  <label class="w-12 h-6 relative">
+    <input type="checkbox" class="custom_switch absolute w-full h-full opacity-0
+    z-10 cursor-pointer peer" id="active" name="active" <%= entity.active ===
+    'on' || entity.active === true ? 'checked' : '' %> />
+    <span
+      class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-4 before:h-4 before:rounded-full peer-checked:before:left-7 peer-checked:bg-primary before:transition-all before:duration-300"
+    ></span>
+  </label>
+
+  <!-- Boutons -->
+  <div class="flex items-center gap-4 mt-6">
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <button
+      type="button"
+      class="btn btn-danger"
+      onclick="deleteItem({
+            url: '/account/<%= account_number %>/entity/<%= entity._id %>',
+            redirectTo: '/account/<%= account_number %>/entity/list'
+          })"
+    >
+      Supprimer
+    </button>
+  </div>
+</form>

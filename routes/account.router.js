@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 //Load Product model
 
-const accountController = require("../controllers/Account");
+const accountController = require("../controllers/account.controller.js");
 
 //Auto generated routers
 router.get("/listpopulate", accountController.listPopulate);

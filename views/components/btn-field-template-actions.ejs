@@ -1,0 +1,9 @@
+<% const safeJson = JSON.stringify(f).replace(/"/g, '&quot;'); %>
+<div class="flex items-center gap-2">
+  <a href="/account/<%= account_number %>/field-template/<%= id %>" class="text-primary hover:underline">Voir</a> |
+  <a href="javascript:;" class="text-primary" onclick="window.openEditModal(<%- safeJson %>)">Modifier</a> |
+  <a href="#" class="text-danger hover:underline" onclick="deleteItem({
+    url: '/account/<%= account_number %>/field-template/<%= id %>',
+    redirectTo: '/account/<%= account_number %>/field-template/list'
+  })">Supprimer</a>
+</div>

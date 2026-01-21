@@ -1,5 +1,5 @@
-const Account = require("../models/Account");
-const User = require("../models/User");
+const Account = require("../models/account.model.js");
+const User = require("../models/user.model");
 const tenantCollection = require("../middleware/tenant").tenantCollection;
 
 module.exports = {

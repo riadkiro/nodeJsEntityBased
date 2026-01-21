@@ -1,0 +1,68 @@
+<div class="panel">
+  <h2 class="text-xl font-semibold mb-6">Ajouter un champ "Carte (Map)"</h2>
+
+  <form method="POST" action="/account/<%= account_number %>/field-template/add" class="space-y-5">
+    <!-- Identification -->
+    <input type="hidden" name="type" value="map" />
+    <input type="hidden" name="ui.icon" value="solar:map-bold-duotone" />
+    <input type="hidden" name="ui.width" value="full" />
+
+    <div>
+      <label for="name">Clé technique (name)</label>
+      <input id="name" name="name" type="text" placeholder="ex: location" class="form-input" required />
+    </div>
+
+    <div>
+      <label for="label">Libellé (affiché dans l’interface)</label>
+      <input id="label" name="label" type="text" placeholder="ex: Localisation sur la carte" class="form-input" required />
+    </div>
+
+    <div>
+      <label for="description">Description</label>
+      <textarea id="description" name="description" class="form-input" rows="3" placeholder="ex: Sélectionnez une adresse sur la carte..."></textarea>
+    </div>
+
+    <!-- UI -->
+    <div>
+      <label for="ui.placeholder">Texte d’aide (placeholder)</label>
+      <input id="ui.placeholder" name="ui.placeholder" type="text" class="form-input" placeholder="ex: Cliquez sur la carte pour placer un marqueur..." />
+    </div>
+
+    <!-- Validation -->
+    <div class="flex items-center gap-4">
+      <label class="flex items-center gap-2">
+        <input type="checkbox" name="required" class="form-checkbox text-success" />
+        <span>Champ obligatoire</span>
+      </label>
+      <label class="flex items-center gap-2">
+        <input type="checkbox" name="unique" class="form-checkbox text-success" />
+        <span>Valeur unique</span>
+      </label>
+    </div>
+
+    <!-- Liaison logique -->
+    <div>
+      <label for="entities">Associer à une entité</label>
+      <select name="entities" id="entities" class="form-input">
+        <% if (entities && entities.length > 0) { %>
+          <% entities.forEach(function(entity) { %>
+            <option value="<%= entity._id %>"><%= entity.name %></option>
+          <% }) %>
+        <% } else { %>
+          <option disabled selected>Aucune entité disponible</option>
+        <% } %>
+      </select>
+    </div>
+
+    <!-- Apparence -->
+    <div class="flex items-center gap-4">
+      <div>
+        <label for="ui.couleur">Couleur</label>
+        <input id="ui.couleur" name="ui.couleur" type="color" class="form-input w-20 h-10 p-1" />
+      </div>
+    </div>
+
+    <!-- Bouton -->
+    <button type="submit" class="btn btn-primary !mt-6">Créer le champ</button>
+  </form>
+</div>

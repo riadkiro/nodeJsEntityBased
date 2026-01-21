@@ -1,0 +1,32 @@
+<!-- views/partials/form-fields.ejs -->
+<form class="space-y-5">
+  <% fields.forEach(field => { %>
+    <% if (field.type === 'string' && field.subtype === 'email') { %>
+      <input
+        type="email"
+        name="<%= field.name %>"
+        placeholder="<%= field.ui?.placeholder || '' %>"
+        class="form-input"
+        <%= field.required ? 'required' : '' %>
+      />
+    <% } else if (field.type === 'string' && field.subtype === 'password') { %>
+      <input
+        type="password"
+        name="<%= field.name %>"
+        placeholder="<%= field.ui?.placeholder || '' %>"
+        class="form-input"
+        <%= field.required ? 'required' : '' %>
+      />
+    <% } else if (field.type === 'select') { %>
+      <label><%= field.label %></label>
+      <select name="<%= field.name %>" class="form-select">
+        <% field.type_config.options.forEach(opt => { %>
+          <option value="<%= opt %>"><%= opt %></option>
+        <% }) %>
+      </select>
+    <% } else if (field.type === 'file') { %>
+      <label><%= field.label %></label>
+      <input type="file" name="<%= field.name %>" class="form-input" />
+    <% } %>
+  <% }) %>
+</form>

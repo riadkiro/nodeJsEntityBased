@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 //Load Product model
 
-const userController = require("../controllers/User");
+const userController = require("../controllers/user.controller");
 
 //Auto generated routers
 //Auto generated routers end

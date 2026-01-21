@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 //Load Product model
 
-const userController = require('../controllers/User')
+const accountController = require('../../controllers/account.controller')
 
 //Do not delete the comments
 //Auto generated routers 
@@ -10,13 +10,13 @@ const userController = require('../controllers/User')
 
 //Generated from template
 //list
-router.get('/list', userController.list_Api);
+router.get('/list', accountController.list_Api);
 //On post create new product
-router.post('/add', userController.save_Api);
+router.post('/add', accountController.save_Api);
 //Single page
-router.get('/:id', userController.singlePage_Api)
+router.get('/:id', accountController.singlePage_Api)
 //Delete
-router.delete('/:id', userController.delete_Api);
+router.delete('/:id', accountController.delete_Api);
 
 //Generated from template
 

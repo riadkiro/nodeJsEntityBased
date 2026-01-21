@@ -1,0 +1,87 @@
+<div class="space-y-6">
+    <!-- Header with Icon and Name -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <% if (entity.icon) { %>
+                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <iconify-icon icon="<%= entity.icon %>" width="24" height="24"></iconify-icon>
+                </div>
+                <% } else { %>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-lg"
+                        style="background-color: <%= entity.color || '#f3f4f6' %>; color: #ffffff;">
+                        <span class="text-xl font-bold">
+                            <%= entity.name.charAt(0).toUpperCase() %>
+                        </span>
+                    </div>
+                    <% } %>
+                        <div>
+                            <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                                <%= entity.name %>
+                            </h1>
+                            <p class="text-sm text-gray-500">
+                                <%= entity.slug %>
+                            </p>
+                        </div>
+        </div>
+        <div class="flex gap-2">
+            <a href="/account/<%= account_number %>/entity/edit/<%= entity._id %>" class="btn btn-outline-primary">
+                Edit Entity
+            </a>
+            <a href="/account/<%= account_number %>/entity/list" class="btn btn-outline-secondary">
+                Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Description -->
+    <% if (entity.description) { %>
+        <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Description</h2>
+            <p class="text-gray-600 dark:text-gray-400">
+                <%= entity.description %>
+            </p>
+        </div>
+        <% } %>
+
+            <!-- Custom Fields Configuration -->
+            <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Configured Fields</h2>
+
+                <% if (entity.customFields && entity.customFields.length> 0) { %>
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <% entity.customFields.forEach(field=> { %>
+                            <div
+                                class="relative flex items-start space-x-3 rounded-md border border-gray-200 p-4 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                            <%= field.label %>
+                                        </p>
+                                        <span
+                                            class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-900/30 dark:text-blue-400 dark:ring-blue-400/30">
+                                            <%= field.type %>
+                                        </span>
+                                    </div>
+                                    <p class="mt-1 truncate text-xs text-gray-500">
+                                        Key: <code class="font-mono text-xs"><%= field.name %></code>
+                                    </p>
+                                    <% if (field.description) { %>
+                                        <p class="mt-2 text-xs text-gray-500">
+                                            <%= field.description %>
+                                        </p>
+                                        <% } %>
+                                </div>
+                            </div>
+                            <% }); %>
+                    </div>
+                    <% } else { %>
+                        <div class="text-center py-6">
+                            <p class="text-gray-500">No custom fields configured for this entity.</p>
+                            <a href="/account/<%= account_number %>/entity/edit/<%= entity._id %>"
+                                class="mt-2 inline-block text-sm font-medium text-primary hover:underline">
+                                Add fields in Edit mode
+                            </a>
+                        </div>
+                        <% } %>
+            </div>
+</div>

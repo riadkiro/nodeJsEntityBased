@@ -1,0 +1,49 @@
+<div class="panel">
+    <!-- form controls -->
+    <form class="space-y-5">
+        <!-- basic -->
+        <div>
+            <label for="ctnEmail">Titre</label>
+            <input id="ctnEmail" type="text" placeholder="" class="form-input" required />
+        </div>
+        <div>
+            <label for="ctnFile">Image</label>
+            <input id="ctnFile" type="file"
+                class="form-input file:py-2 file:px-4 file:border-0 file:font-semibold p-0 file:bg-primary/90 ltr:file:mr-5 rtl:file:ml-5 file:text-white file:hover:bg-primary"
+                required />
+        </div>
+        <div>
+            <label for="ctnFile">Lien</label>
+            <input type="url" placeholder="https://www.mamda-mcma.ma/" class="form-input" />
+        </div>
+
+        <div>
+            <label for="">Cible</label>
+        </div>
+        <div>
+            <label class="inline-flex">
+                <input type="checkbox" class="form-checkbox text-success" />
+                <span>MAMDA </span>
+            </label>
+            <br />
+            <label class="inline-flex">
+                <input type="checkbox" class="form-checkbox text-success" />
+                <span>MCMA </span>
+            </label>
+        </div>
+
+        <!-- rounded -->
+        <div>
+            <label for="">Active</label>
+        </div>
+        <label class="w-12 h-6 relative">
+            <input type="checkbox" checked
+                class="custom_switch absolute w-full h-full opacity-0 z-10 cursor-pointer peer"
+                id="custom_switch_checkbox4" />
+            <span for="custom_switch_checkbox4"
+                class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-4 before:h-4 before:rounded-full peer-checked:before:left-7 peer-checked:bg-primary before:transition-all before:duration-300"></span>
+        </label>
+
+        <button type="submit" class="btn btn-primary !mt-6">Publier</button>
+    </form>
+</div>

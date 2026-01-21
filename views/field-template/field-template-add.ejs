@@ -1,0 +1,60 @@
+<div class="panel">
+  <h2 class="text-xl font-semibold mb-4">Choisissez un type de champ</h2>
+
+  <!-- Section 1: Types de champs -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-8">
+    <% const fieldTypes = [
+      { type: 'string', label: 'Texte court', icon: 'solar:pen-2-bold-duotone' },
+      { type: 'text', label: 'Texte long', icon: 'solar:document-text-bold-duotone' },
+      { type: 'number', label: 'Nombre', icon: 'solar:hashtag-bold-duotone' },
+      { type: 'boolean', label: 'Case à cocher', icon: 'solar:checklist-bold-duotone' },
+      { type: 'date', label: 'Date', icon: 'solar:calendar-bold-duotone' },
+      { type: 'select', label: 'Choix unique', icon: 'solar:list-check-bold-duotone' },
+      { type: 'relation', label: 'Relation', icon: 'solar:share-bold-duotone' },
+      { type: 'file', label: 'Fichier', icon: 'solar:folder-with-files-bold-duotone' },
+      { type: 'image', label: 'Image', icon: 'solar:gallery-bold-duotone' },
+      { type: 'string', subtype: 'color', label: 'Couleur (hex)', icon: 'solar:dropper-bold-duotone' },
+      { type: 'string', subtype: 'email', label: 'Email', icon: 'solar:mail-bold-duotone' },
+      { type: 'string', subtype: 'tel', label: 'Téléphone', icon: 'solar:phone-bold-duotone' },
+    ]; %>
+
+    <% fieldTypes.forEach(ft => { %>
+      <form method="GET" action="/account/<%= account_number %>/field-template/add">
+        <input type="hidden" name="fieldtype" value="<%= ft.type %>">
+        <% if (ft.subtype) { %><input type="hidden" name="subtype" value="<%= ft.subtype %>"><% } %>
+        <button type="submit"
+          class="w-full text-left flex flex-col items-start gap-2 border rounded-lg p-4 hover:bg-primary/10 transition group">
+          <div class="text-primary text-3xl">
+            <i class="<%= ft.icon %>"></i>
+          </div>
+          <div class="font-medium group-hover:text-primary"><%= ft.label %></div>
+        </button>
+      </form>
+    <% }) %>
+  </div>
+
+  <!-- Section 2: Champs réutilisables personnalisés -->
+  <h2 class="text-lg font-semibold mb-3">Champs réutilisables</h2>
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+    <% const reusableFields = [
+      { type: 'map', label: 'Carte (Map)', icon: 'solar:map-bold-duotone', custom: true },
+      { type: 'monetary', label: 'Montant (€/$)', icon: 'solar:dollar-bold-duotone', custom: true },
+      { type: 'address', label: 'Adresse complète', icon: 'solar:location-bold-duotone', custom: true },
+      { type: 'country', label: 'Pays', icon: 'solar:flag-bold-duotone', custom: true },
+    ]; %>
+
+    <% reusableFields.forEach(f => { %>
+      <form method="GET" action="/account/<%= account_number %>/field-template/add">
+        <input type="hidden" name="fieldtype" value="<%= f.type %>">
+        <input type="hidden" name="customType" value="true">
+        <button type="submit"
+          class="w-full text-left flex flex-col items-start gap-2 border rounded-lg p-4 hover:bg-success/10 transition group">
+          <div class="text-success text-3xl">
+            <i class="<%= f.icon %>"></i>
+          </div>
+          <div class="font-medium group-hover:text-success"><%= f.label %></div>
+        </button>
+      </form>
+    <% }) %>
+  </div>
+</div>

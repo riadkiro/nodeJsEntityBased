@@ -1,0 +1,153 @@
+<div x-data="miscellaneous">
+  <div class="space-y-6">
+
+    <div>
+      <a href="/account/<%= account_number %>/entity/add" class="inline-block">
+        <button type="button" class="btn btn-primary mt-6">
+          Ajouter
+        </button>
+      </a></span>
+
+    <div class="panel">
+      <h5 class="mb-5 text-lg font-semibold dark:text-white-light md:absolute md:top-[25px] md:mb-0">
+        Entities
+      </h5>
+      <div class="relative">
+        <div class="mb-5 sm:absolute sm:top-0 sm:mb-0 sm:ltr:right-56 sm:rtl:left-56">
+          <div class="flex items-center">
+            <div class="theme-dropdown relative" x-data="{ columnDropdown: false }"
+                @click.outside="columnDropdown = false">
+            <a href="javascript:;"
+              class="flex items-center rounded-md border border-[#e0e6ed] px-4 py-2 text-sm font-semibold dark:border-[#253b5c] dark:bg-[#1b2e4b] dark:text-white-dark"
+                  @click="columnDropdown = ! columnDropdown">
+            <span class="ltr:mr-1 rtl:ml-1">Columns</span>
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 9L12 15L5 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round"></path>
+            </svg>
+          </a>
+          <div
+            class="absolute top-11 z-[10] hidden w-[100px] min-w-[150px] rounded bg-white py-2 text-dark shadow ltr:left-0 rtl:right-0 dark:bg-[#1b2e4b] dark:text-white-light"
+                  :class="columnDropdown && '!block'">
+          <ul class="space-y-2 px-4 font-semibold">
+            <template x-for="(col,i) in columns" :key="i">
+            <li>
+              <div>
+                <label class="cursor-pointer">
+                  <input type="checkbox" class="form-checkbox" :id="`chk-${i}`" :value="(i)"
+                  @change="col.hidden=  $event.target.checked,showHideColumns(i,$event.target.checked)"
+                              :checked="col.hidden" />
+                  <span:for="`chk-${i}`" class="ltr:ml-2 rtl:mr-2" x-text="col.name"></span>
+              </label>
+            </div>
+          </li>
+        </template>
+      </ul>
+    </div>
+  </div>
+</div>
+          </div >
+  <table id="myTable1" class="whitespace-nowrap"></table>
+        </div >
+      </div >
+    </div >
+  </div >
+
+  <% const rows = entities.map((e, i) => [
+    i + 1,
+    e.name,
+    e.slug,
+    e.description || "",
+    e.color || "#ffffff",
+    e.icon || "",
+    (e.enabledStandardFields || []).join(', '),
+    e.createdAt,
+    include("../components/btn-entity-actions", { id: e._id, account_number }), // ✅ boutons générés serveur
+  ]);
+    %>
+
+    <script>
+      document.addEventListener("alpine:init", () => {
+        Alpine.data("miscellaneous", () => ({
+          columns: [
+            { name: "Select", hidden: false },
+            { name: "Nom", hidden: false },
+            { name: "Slug", hidden: false },
+            { name: "Description", hidden: true },
+            { name: "Couleur", hidden: true },
+            { name: "Icône", hidden: true },
+            { name: "Champs standards", hidden: true },
+            { name: "Date de création", hidden: true },
+            { name: "Actions", hidden: false },
+          ],
+          hideCols: [0],
+          showCols: [1, 2, 3, 4, 5, 6, 7, 8],
+          datatable1: null,
+
+          showHideColumns(col, value) {
+            if (value) {
+              this.showCols.push(col);
+              this.hideCols = this.hideCols.filter((d) => d != col);
+            } else {
+              this.hideCols.push(col);
+              this.showCols = this.showCols.filter((d) => d != col);
+            }
+            let headers = this.datatable1.columns();
+            headers.hide(this.hideCols);
+            headers.show(this.showCols);
+          },
+
+          init() {
+            const rows = <%- JSON.stringify(rows) %>;
+
+            this.datatable1 = new simpleDatatables.DataTable("#myTable1", {
+              data: {
+                headings: this.columns.map((c) => c.name),
+                data: rows,
+              },
+              perPage: 10,
+              perPageSelect: [10, 20, 30, 50, 100],
+              columns: [
+                {
+                  select: 0,
+                  sort: "asc",
+                  render: (data) =>
+                    `<input type="checkbox" class="form-checkbox" value="${data}" />`,
+                },
+                {
+                  select: 4,
+                  render: (data) =>
+                    `<div class="w-6 h-6 rounded-full border" style="background-color:${data};"></div>`,
+                },
+                {
+                  select: 7,
+                  render: (data) => {
+                    const dt = new Date(data);
+                    const month = dt.getMonth() + 1 < 10 ? "0" + (dt.getMonth() + 1) : dt.getMonth() + 1;
+                    const day = dt.getDate() < 10 ? "0" + dt.getDate() : dt.getDate();
+                    return day + "/" + month + "/" + dt.getFullYear();
+                  },
+                },
+                {
+                  select: 8,
+                  render: (html) => html, // ✅ HTML rendu par EJS
+                },
+              ],
+              firstLast: true,
+              layout: {
+                top: "{search}",
+                bottom: "{info}{select}{pager}",
+              },
+            });
+
+            this.datatable1.columns().hide(this.hideCols);
+            this.datatable1.columns().show(this.showCols);
+          },
+        }));
+      });
+    </script>
+
+
+
+
+    <script src="/themes/default/assets/js/simple-datatables.js"></script>

@@ -1,14 +1,15 @@
-const User = require("../models/User");
+const Record = require("../models/record.model");
+const tenantCollection = require("../middleware/tenant").tenantCollection;
 
 module.exports = {
   addForm: async (req, res) => {
-    res.render("user/user-add");
+    res.render("record/record-add");
   },
 
   delete: async (req, res) => {
     let query = { _id: req.params.id };
-    User.findById(req.params.id, function (err, user) {
-      User.remove(query, function (err) {
+    Record.findById(req.params.id, function (err, record) {
+      Record.remove(query, function (err) {
         if (err) {
           console.log(err);
         }
@@ -19,8 +20,8 @@ module.exports = {
 
   delete_Api: async (req, res) => {
     let query = { _id: req.params.id };
-    User.findById(req.params.id, function (err, user) {
-      User.remove(query, function (err) {
+    Record.findById(req.params.id, function (err, record) {
+      Record.remove(query, function (err) {
         if (err) {
           console.log(err);
         }
@@ -30,80 +31,80 @@ module.exports = {
   },
 
   editForm: async (req, res) => {
-    User.findById(req.params.id, function (err, user) {
-      res.render("user/user-edit", {
-        user,
+    Record.findById(req.params.id, function (err, record) {
+      res.render("record/record-edit", {
+        record,
       });
     });
   },
 
   list: async (req, res) => {
-    User.find({}, function (err, userAll) {
+    Record.find({}, function (err, recordAll) {
       if (err) {
         console.log(err);
       } else {
         res.send({
-          userAll,
+          recordAll,
         });
       }
     });
   },
   list_Api: async (req, res) => {
-    User.find({}, function (err, userAll) {
+    Record.find({}, function (err, recordAll) {
       if (err) {
         console.log(err);
       } else {
         res.send({
-          userAll,
+          recordAll,
         });
       }
     });
   },
 
   save: async (req, res) => {
-    const user = req.body;
+    const record = req.body;
     let errors = [];
     if (errors.length > 0) {
-      res.render("user/user-add", {
+      res.render("record/record-add", {
         errors,
       });
     } else {
-      const newUser = new User(user);
-      newUser.save().then((user) => {
-        res.redirect("/user/list");
+      const newRecord = new Record(record);
+      newRecord.save().then((record) => {
+        res.redirect("/record/list");
       });
     }
   },
 
   save_Api: async (req, res) => {
-    const user = req.body;
+    const record = req.body;
     let errors = [];
     if (errors.length > 0) {
       res.send({ errors });
     } else {
-      const newUser = new User(user);
-      newUser.save().then((user) => {
-        res.send(`${user} saved in databse`);
+      const newRecord = new Record(record);
+      newRecord.save().then((record) => {
+        res.send(`${record} saved in databse`);
       });
     }
   },
 
   singlePage: async (req, res) => {
-    User.findById(req.params.id, function (err, user) {
+    Record.findById(req.params.id, function (err, record) {
       if (err) {
         console.log(err);
       } else {
-        res.send("User single Page");
+        res.send("Record single Page");
       }
     });
   },
 
   singlePage_Api: async (req, res) => {
-    User.findById(req.params.id, function (err, user) {
+    Record.findById(req.params.id, function (err, record) {
       if (err) {
         console.log(err);
       } else {
-        res.send(user);
+        res.send(record);
       }
     });
   },
@@ -116,14 +117,5 @@ module.exports = {
     res.send("Edit function here");
   },
 
-  userAccounts: async (req, res) => {
-    if (req.user) {
-      res.render("user/user-accounts", {
-        accounts: req.user.accounts,
-        layout: "layout-auth",
-      });
-    } else {
-      res.send("You are not logged in !");
-    }
-  },
+
 };

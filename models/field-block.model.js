@@ -9,6 +9,7 @@ const FieldBlockSchema = new mongoose.Schema({
   // 🎨 Apparence visuelle
   icon: { type: String },   // ex: "mdi:map-marker"
   color: { type: String },  // ex: "#3498db"
+  position: { type: String },  // ex: 2
 
   // 🔗 Champs liés au bloc (avec UI layout local)
   fields: [{

@@ -33,7 +33,7 @@ const connectToTenantDb = async (req, res, next) => {
         )
       ) {
         const tenantId = req.account_number;
-        const dbUrl = `${dbConfig.uri}saas_app_${tenantId}`;
+        const dbUrl = `${dbConfig.uri}saas_app_rb_${tenantId}`;
         console.log("Data from tenant DB");
         const connection = await mongoose.createConnection(dbUrl, {
           useNewUrlParser: true,

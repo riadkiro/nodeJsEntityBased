@@ -12,7 +12,23 @@ async function setAccountNumber(req, res, next) {
 
 const tenantCollection = async (req, collection) => {
   const { tenantDbConnection, tenantDbReady } = req;
-  const collectionSchema = model(collection).schema;
+
+  // Ensure the model is registered globally
+  let collectionSchema;
+  try {
+    collectionSchema = model(collection).schema;
+  } catch (e) {
+    // If not registered, try to require it
+    try {
+      const modelPath = require('path').join(__dirname, '..', 'models', collection.toLowerCase().replace(/([a-z])([A-Z])/g, '$1-$2') + '.model.js');
+      require(modelPath);
+      collectionSchema = model(collection).schema;
+    } catch (err) {
+      console.error(`Could not load schema for ${collection}:`, err);
+      return false;
+    }
+  }
+
   if (tenantDbReady) {
     return tenantDbConnection.model(collection, collectionSchema);
   } else {

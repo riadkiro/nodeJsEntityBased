@@ -57,6 +57,7 @@ module.exports = {
           // Fallback si type inconnu
           return res.status(400).render("errors/404", {
             message: "Type de champ inconnu.",
+            account_number: accountNumber,
             layout: "layout-app",
           });
       }
@@ -150,6 +151,7 @@ module.exports = {
       if (err || !template) {
         return res.status(404).render("errors/404", {
           message: "Modèle introuvable.",
+          account_number: req.account_number,
           layout: "layout-app",
         });
       }
@@ -270,11 +272,13 @@ module.exports = {
       if (err || !template) {
         return res.status(404).render("errors/404", {
           message: "Modèle introuvable.",
+          account_number: req.account_number,
           layout: "layout-app",
         });
       }
       res.render("field-template/field-template-single", {
         fieldTemplate: template,
+        account_number: req.account_number,
         layout: "layout-app",
       });
     });

@@ -1,1 +1,96 @@
-Data
+<div class="panel">
+    <div class="flex items-center justify-between mb-5">
+        <h5 class="font-semibold text-lg dark:text-white-light">Modifier <%= entity.name %>
+        </h5>
+    </div>
+    <form action="/account/<%= account_number %>/record/<%= entity.slug %>/update/<%= record._id %>" method="POST"
+        class="space-y-5">
+
+        <!-- Standard Fields -->
+        <% if (entity.enabledStandardFields && entity.enabledStandardFields.includes('title')) { %>
+            <div>
+                <label for="title">Titre</label>
+                <input name="standard[title]" type="text" value="<%= record.title %>" class="form-input"
+                    placeholder="Entrez le titre" required />
+            </div>
+            <% } %>
+
+                <% if (entity.enabledStandardFields && entity.enabledStandardFields.includes('description')) { %>
+                    <div>
+                        <label for="description">Description</label>
+                        <textarea name="standard[description]" class="form-textarea" rows="3"
+                            placeholder="Entrez la description"><%= record.description %></textarea>
+                    </div>
+                    <% } %>
+
+                        <% if (entity.enabledStandardFields && entity.enabledStandardFields.includes('content')) { %>
+                            <div>
+                                <label for="content">Contenu</label>
+                                <textarea name="standard[content]" class="form-textarea" rows="5"
+                                    placeholder="Entrez le contenu"><%= record.content %></textarea>
+                            </div>
+                            <% } %>
+
+                                <!-- Custom Fields -->
+                                <% entity.customFields.forEach(field=> { %>
+                                    <% const customFieldValue=record.customFields.find(cf=> cf.field_id.toString() ===
+                                        field._id.toString())?.value;
+                                        %>
+                                        <div>
+                                            <label for="custom_<%= field._id %>">
+                                                <%= field.label %>
+                                            </label>
+                                            <% if (field.type==='string' || field.type==='text' ) { %>
+                                                <input name="custom[<%= field._id %>]" type="text"
+                                                    value="<%= customFieldValue || '' %>" class="form-input"
+                                                    placeholder="<%= field.ui?.placeholder || '' %>" />
+                                                <% } else if (field.type==='number' ) { %>
+                                                    <input name="custom[<%= field._id %>]" type="number"
+                                                        value="<%= customFieldValue || '' %>" class="form-input"
+                                                        placeholder="<%= field.ui?.placeholder || '' %>" />
+                                                    <% } else if (field.type==='date' ) { %>
+                                                        <input name="custom[<%= field._id %>]" type="date"
+                                                            value="<%= customFieldValue ? new Date(customFieldValue).toISOString().split('T')[0] : '' %>"
+                                                            class="form-input" />
+                                                        <% } else if (field.type==='boolean' ) { %>
+                                                            <div class="mt-2">
+                                                                <label class="w-12 h-6 relative">
+                                                                    <input name="custom[<%= field._id %>]"
+                                                                        type="checkbox" value="true" <%=customFieldValue
+                                                                        ? 'checked' : '' %> class="custom_switch
+                                                                    absolute w-full h-full opacity-0 z-10 cursor-pointer
+                                                                    peer" />
+                                                                    <span
+                                                                        class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-4 before:h-4 before:rounded-full peer-checked:before:left-7 peer-checked:bg-primary before:transition-all before:duration-300"></span>
+                                                                </label>
+                                                            </div>
+                                                            <% } else if (field.type==='select' ) { %>
+                                                                <select name="custom[<%= field._id %>]"
+                                                                    class="form-select text-white-dark text-sm">
+                                                                    <% if (field.type_config &&
+                                                                        field.type_config.options) { %>
+                                                                        <% field.type_config.options.forEach(option=> {
+                                                                            %>
+                                                                            <option value="<%= option %>"
+                                                                                <%=customFieldValue===option
+                                                                                ? 'selected' : '' %>><%= option %>
+                                                                            </option>
+                                                                            <% }) %>
+                                                                                <% } %>
+                                                                </select>
+                                                                <% } else { %>
+                                                                    <input name="custom[<%= field._id %>]" type="text"
+                                                                        value="<%= customFieldValue || '' %>"
+                                                                        class="form-input"
+                                                                        placeholder="<%= field.ui?.placeholder || '' %>" />
+                                                                    <% } %>
+                                        </div>
+                                        <% }) %>
+
+                                            <div class="flex items-center gap-4 !mt-8">
+                                                <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                                                <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
+                                                    class="btn btn-outline-danger">Annuler</a>
+                                            </div>
+    </form>
+</div>

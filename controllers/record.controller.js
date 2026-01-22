@@ -1,121 +1,174 @@
+const Entity = require("../models/entity.model");
 const Record = require("../models/record.model");
+const FieldTemplate = require("../models/field-template.model");
 const tenantCollection = require("../middleware/tenant").tenantCollection;
 
 module.exports = {
-  addForm: async (req, res) => {
-    res.render("record/record-add");
-  },
-
-  delete: async (req, res) => {
-    let query = { _id: req.params.id };
-    Record.findById(req.params.id, function (err, record) {
-      Record.remove(query, function (err) {
-        if (err) {
-          console.log(err);
-        }
-        res.send("Deleted");
-      });
-    });
-  },
-
-  delete_Api: async (req, res) => {
-    let query = { _id: req.params.id };
-    Record.findById(req.params.id, function (err, record) {
-      Record.remove(query, function (err) {
-        if (err) {
-          console.log(err);
-        }
-        res.send("Deleted");
-      });
-    });
-  },
-
-  editForm: async (req, res) => {
-    Record.findById(req.params.id, function (err, record) {
-      res.render("record/record-edit", {
-        record,
-      });
-    });
-  },
-
   list: async (req, res) => {
-    Record.find({}, function (err, recordAll) {
-      if (err) {
-        console.log(err);
-      } else {
-        res.send({
-          recordAll,
-        });
-      }
-    });
+    try {
+      // Pre-register models needed for populate
+      await tenantCollection(req, "FieldTemplate");
+      const EntityModel = await tenantCollection(req, "Entity");
+      const RecordModel = await tenantCollection(req, "Record");
+
+      const entity = await EntityModel.findOne({ slug: req.params.entityName }).populate('customFields');
+      if (!entity) return res.status(404).render("errors/404", {
+        message: "Entity not found",
+        account_number: req.account_number,
+        layout: "layout-app"
+      });
+
+      const records = await RecordModel.find({ entityId: entity._id }).populate('customFields.field_id');
+
+      res.render("record/record-list", {
+        entity,
+        records,
+        account_number: req.account_number,
+        layout: "layout-app"
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Server Error");
+    }
   },
-  list_Api: async (req, res) => {
-    Record.find({}, function (err, recordAll) {
-      if (err) {
-        console.log(err);
-      } else {
-        res.send({
-          recordAll,
-        });
-      }
-    });
+
+  addForm: async (req, res) => {
+    try {
+      await tenantCollection(req, "FieldTemplate");
+      const EntityModel = await tenantCollection(req, "Entity");
+
+      const entity = await EntityModel.findOne({ slug: req.params.entityName }).populate('customFields');
+      if (!entity) return res.status(404).render("errors/404", {
+        message: "Entity not found",
+        account_number: req.account_number,
+        layout: "layout-app"
+      });
+
+      res.render("record/record-add", {
+        entity,
+        account_number: req.account_number,
+        layout: "layout-app"
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Server Error");
+    }
   },
 
   save: async (req, res) => {
-    const record = req.body;
-    let errors = [];
-    if (errors.length > 0) {
-      res.render("record/record-add", {
-        errors,
+    try {
+      const EntityModel = await tenantCollection(req, "Entity");
+      const RecordModel = await tenantCollection(req, "Record");
+      const entity = await EntityModel.findOne({ slug: req.params.entityName });
+      if (!entity) return res.status(404).render("errors/404", {
+        message: "Entity not found",
+        account_number: req.account_number,
+        layout: "layout-app"
       });
-    } else {
-      const newRecord = new Record(record);
-      newRecord.save().then((record) => {
-        res.redirect("/record/list");
+
+      const { standard, custom } = req.body;
+
+      const customFieldsArray = [];
+      if (custom) {
+        for (const [fieldId, value] of Object.entries(custom)) {
+          customFieldsArray.push({
+            field_id: fieldId,
+            value: value
+          });
+        }
+      }
+
+      const newRecord = new RecordModel({
+        entityId: entity._id,
+        ...standard,
+        customFields: customFieldsArray,
+        createdBy: req.user._id
       });
+
+      await newRecord.save();
+      res.redirect(`/account/${req.account_number}/record/${entity.slug}/list`);
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Server Error");
     }
   },
 
-  save_Api: async (req, res) => {
-    const record = req.body;
-    let errors = [];
-    if (errors.length > 0) {
-      res.send({ errors });
-    } else {
-      const newRecord = new Record(record);
-      newRecord.save().then((record) => {
-        res.send(`${record} saved in databse`);
+  editForm: async (req, res) => {
+    try {
+      await tenantCollection(req, "FieldTemplate");
+      const EntityModel = await tenantCollection(req, "Entity");
+      const RecordModel = await tenantCollection(req, "Record");
+
+      const entity = await EntityModel.findOne({ slug: req.params.entityName }).populate('customFields');
+      if (!entity) return res.status(404).render("errors/404", {
+        message: "Entity not found",
+        account_number: req.account_number,
+        layout: "layout-app"
       });
+
+      const record = await RecordModel.findById(req.params.id);
+      if (!record) return res.status(404).render("errors/404", {
+        message: "Record not found",
+        account_number: req.account_number,
+        layout: "layout-app"
+      });
+
+      res.render("record/record-edit", {
+        entity,
+        record,
+        account_number: req.account_number,
+        layout: "layout-app"
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Server Error");
     }
-  },
-
-  singlePage: async (req, res) => {
-    Record.findById(req.params.id, function (err, record) {
-      if (err) {
-        console.log(err);
-      } else {
-        res.send("Record single Page");
-      }
-    });
-  },
-
-  singlePage_Api: async (req, res) => {
-    Record.findById(req.params.id, function (err, record) {
-      if (err) {
-        console.log(err);
-      } else {
-        res.send(record);
-      }
-    });
   },
 
   update: async (req, res) => {
-    res.send("Edit function here");
+    try {
+      const EntityModel = await tenantCollection(req, "Entity");
+      const RecordModel = await tenantCollection(req, "Record");
+      const entity = await EntityModel.findOne({ slug: req.params.entityName });
+      if (!entity) return res.status(404).render("errors/404", {
+        message: "Entity not found",
+        account_number: req.account_number,
+        layout: "layout-app"
+      });
+
+      const { standard, custom } = req.body;
+
+      const customFieldsArray = [];
+      if (custom) {
+        for (const [fieldId, value] of Object.entries(custom)) {
+          customFieldsArray.push({
+            field_id: fieldId,
+            value: value
+          });
+        }
+      }
+
+      await RecordModel.findByIdAndUpdate(req.params.id, {
+        ...standard,
+        customFields: customFieldsArray,
+        updatedBy: req.user._id
+      });
+
+      res.redirect(`/account/${req.account_number}/record/${entity.slug}/list`);
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Server Error");
+    }
   },
 
-  update_Api: async (req, res) => {
-    res.send("Edit function here");
-  },
-
-
+  delete: async (req, res) => {
+    try {
+      const RecordModel = await tenantCollection(req, "Record");
+      await RecordModel.findByIdAndRemove(req.params.id);
+      res.redirect(`/account/${req.account_number}/record/${req.params.entityName}/list`);
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Server Error");
+    }
+  }
 };

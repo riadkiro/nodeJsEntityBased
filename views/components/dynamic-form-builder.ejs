@@ -1,0 +1,253 @@
+<div x-data="dynamicForm({ 
+        mode: '<%= typeof mode !== 'undefined' ? mode : 'render' %>',
+        initialLayout: <%= JSON.stringify(entity.layout || []) %>,
+        recordData: <%= typeof record !== 'undefined' ? JSON.stringify(record.customFields.reduce((acc, curr) => {
+            acc[curr.field_id.toString()] = curr.value;
+            return acc;
+        }, {})) : '{}' %>,
+        allTemplates: <%= JSON.stringify(allFieldTemplates || []) %>,
+        entityId: '<%= entity._id %>',
+        accountNumber: '<%= account_number %>'
+    })" class="space-y-4">
+
+    <!-- Designer Toolbar (Visible only in design mode) -->
+    <template x-if="mode === 'design'">
+        <div class="flex justify-between items-center pb-2 border-b border-gray-100">
+            <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Live Form Designer</h3>
+            <button @click="openAddField()"
+                class="text-[11px] font-bold text-primary hover:bg-primary/5 px-4 py-1.5 rounded-full transition-all flex items-center gap-1.5">
+                <iconify-icon icon="tabler:circle-plus" width="16"></iconify-icon>
+                <span>AJOUTER UN CHAMP</span>
+            </button>
+        </div>
+    </template>
+
+    <!-- Form Canvas -->
+    <div id="dynamic-form-canvas" class="flex flex-wrap -mx-2 items-start content-start transition-all"
+        :class="mode === 'design' ? 'bg-gray-50/50 p-2 rounded-xl border-2 border-dashed border-gray-200' : ''"
+        x-html="renderAllFields()">
+    </div>
+
+    <!-- Designer Save Button (Visible only in design mode) -->
+    <template x-if="mode === 'design'">
+        <div class="flex justify-center pt-4">
+            <button @click="submitDesign()" class="btn btn-primary btn-sm">
+                <iconify-icon icon="tabler:device-floppy" width="16"></iconify-icon>
+                <span>Sauvegarder la Mise en Page</span>
+            </button>
+        </div>
+    </template>
+
+    <!-- Modal for adding fields (Design mode only) -->
+    <template x-if="mode === 'design'">
+        <%- include('field-select-modal') %>
+    </template>
+</div>
+
+<script>
+    document.addEventListener("alpine:init", function () {
+        Alpine.data("dynamicForm", (options) => ({
+            mode: options.mode,
+            layout: options.initialLayout,
+            recordData: options.recordData,
+            allTemplates: options.allTemplates,
+            entityId: options.entityId,
+            accountNumber: options.accountNumber,
+            openModal: false,
+            isResizing: false,
+            resizeData: null,
+
+            fieldsById: {},
+
+            init() {
+                // Pre-map templates
+                this.allTemplates.forEach(t => { this.fieldsById[t._id] = t; });
+
+                this.rebuildCanvas();
+
+                if (this.mode === 'design') {
+                    window.addEventListener('mousemove', (e) => this.handleResizing(e));
+                    window.addEventListener('mouseup', () => this.stopResizing());
+                }
+
+                // Global event listener to toggle design mode
+                window.addEventListener('toggle-design-mode', () => {
+                    this.mode = this.mode === 'design' ? 'render' : 'design';
+                    this.rebuildCanvas();
+                });
+            },
+
+            rebuildCanvas() {
+                this.$nextTick(() => {
+                    this.initSortables();
+                    this.executeScripts();
+                });
+            },
+
+            initSortables() {
+                const canvas = document.getElementById('dynamic-form-canvas');
+                if (!canvas) return;
+
+                if (canvas._sortable) {
+                    canvas._sortable.destroy();
+                    canvas._sortable = null;
+                }
+
+                if (this.mode === 'design') {
+                    canvas._sortable = new Sortable(canvas, {
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        handle: '.group-handle-drag',
+                        draggable: '.field-item',
+                        onEnd: (evt) => {
+                            const ids = Array.from(canvas.querySelectorAll('.field-item')).map(el => el.dataset.id);
+                            const newLayout = ids.map(id => this.layout.find(i => String(i.id) === String(id))).filter(Boolean);
+                            this.layout = newLayout;
+                            this.rebuildCanvas();
+                        }
+                    });
+                }
+            },
+
+            renderAllFields() {
+                return this.layout.map((item, index) => this.renderFieldItemHTML(item, index)).join('');
+            },
+
+            renderFieldItemHTML(item, index) {
+                const field = this.fieldsById[item.fieldId];
+                if (!field) return '';
+
+                const widthPct = item.width * 8.333;
+                const value = this.recordData[field._id] || '';
+
+                // Render the template with actual record data
+                const renderedHtml = this.renderFieldTemplate(field.htmlTemplate, {
+                    label: field.label,
+                    name: `custom[${field._id}]`,
+                    placeholder: field.ui?.placeholder || '',
+                    required: field.required ? 'required' : '',
+                    value: value
+                });
+
+                const isDesign = this.mode === 'design';
+
+                return `
+                    <div class="field-item group relative px-2 py-2 h-fit" 
+                         id="field-${item.id}"
+                         style="width: ${widthPct}%" 
+                         data-id="${item.id}">
+                        
+                        <div class="relative ${isDesign ? 'bg-white border border-dashed border-gray-300 rounded-lg p-2' : ''}">
+                            ${isDesign ? `
+                                <!-- Resize & Drag Controls -->
+                                <div class="absolute top-1 right-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-[110] bg-white/80 rounded px-1">
+                                    <div class="group-handle-drag p-1 text-gray-400 hover:text-primary cursor-grab">
+                                        <iconify-icon icon="tabler:grip-vertical" width="14"></iconify-icon>
+                                    </div>
+                                    <button @click.prevent="removeField('${item.id}')" class="p-1 text-gray-400 hover:text-red-500">
+                                        <iconify-icon icon="tabler:trash" width="14"></iconify-icon>
+                                    </button>
+                                </div>
+                                <div @mousedown.prevent="startResizingManual($event, '${item.id}')"
+                                     class="absolute top-0 right-0 w-2 h-full hover:bg-primary/10 cursor-col-resize z-[100]">
+                                </div>
+                            ` : ''}
+                            
+                            <div class="field-preview">${renderedHtml}</div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderFieldTemplate(template, data) {
+                if (!template) return '';
+                // Handle {{ value }} special case for record editing
+                return template.replace(/{{\s*(\w+)\s*}}/g, (_, key) => {
+                    return data[key] !== undefined ? data[key] : '';
+                });
+            },
+
+            executeScripts() {
+                this.layout.forEach(item => {
+                    const field = this.fieldsById[item.fieldId];
+                    if (field?.jsTemplate) {
+                        try {
+                            const scriptFunc = new Function('context', field.jsTemplate);
+                            scriptFunc({ field, elementId: `field-${item.id}` });
+                        } catch (e) {
+                            console.error(`JS Error for ${field.name}:`, e);
+                        }
+                    }
+                });
+            },
+
+            removeField(id) {
+                this.layout = this.layout.filter(i => String(i.id) !== String(id));
+                this.rebuildCanvas();
+            },
+
+            openAddField() {
+                this.openModal = true;
+            },
+
+            addTemplateToSlot(template) {
+                const uniqueId = `f_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                this.layout.push({ fieldId: template._id, width: 12, id: uniqueId });
+                this.openModal = false;
+                this.rebuildCanvas();
+            },
+
+            startResizingManual(e, id) {
+                this.isResizing = true;
+                const el = e.target.closest('.field-item');
+                this.resizeData = {
+                    id,
+                    initialWidth: this.layout.find(i => i.id === id).width,
+                    startX: e.clientX,
+                    containerWidth: el.parentElement.offsetWidth
+                };
+            },
+
+            handleResizing(e) {
+                if (!this.isResizing || !this.resizeData) return;
+                const deltaX = e.clientX - this.resizeData.startX;
+                const colWidth = this.resizeData.containerWidth / 12;
+                const deltaCols = Math.round(deltaX / colWidth);
+                let newWidth = Math.max(2, Math.min(12, this.resizeData.initialWidth + deltaCols));
+
+                const item = this.layout.find(i => i.id === this.resizeData.id);
+                if (item && item.width !== newWidth) {
+                    item.width = newWidth;
+                    const el = document.querySelector(`[data-id="${this.resizeData.id}"]`);
+                    if (el) el.style.width = (newWidth * 8.333) + '%';
+                }
+            },
+
+            stopResizing() {
+                if (this.isResizing) {
+                    this.isResizing = false;
+                    this.resizeData = null;
+                    this.rebuildCanvas();
+                }
+            },
+
+            submitDesign() {
+                const payload = {
+                    fields: [...new Set(this.layout.map(i => i.fieldId))].map(id => ({ _id: id })),
+                    layout: this.layout
+                };
+
+                fetch(`/account/${this.accountNumber}/entity/updatecf/${this.entityId}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                })
+                    .then(res => res.ok ? res.json() : Promise.reject())
+                    .then(() => {
+                        Swal.fire({ icon: 'success', title: 'Layout Updated', showConfirmButton: false, timer: 1000 });
+                    })
+                    .catch(() => alert("Error saving layout."));
+            }
+        }));
+    });
+</script>

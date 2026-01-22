@@ -183,8 +183,10 @@
 
                 <!-- Resize Handle -->
                 <div onmousedown="window.customFieldsApp.startResizingManual(event, '${item.id}')"
-                  class="absolute top-0 right-0 w-2 h-full hover:bg-primary/5 transition-all z-[100] rounded-r-lg group/resizer"
-                  style="cursor: col-resize !important;" title="Redimensionner">
+                  class="absolute bottom-0 right-0 w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity z-[110] text-gray-300 hover:text-primary flex items-center justify-center"
+                  style="cursor: nwse-resize !important;"
+                  title="Redimensionner">
+                  <iconify-icon icon="tabler:resize" width="12" class="pointer-events-none" rotate="45"></iconify-icon>
                 </div>
               </div>
             </div>

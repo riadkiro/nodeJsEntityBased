@@ -1,83 +1,439 @@
-<div class="panel">
-    <div class="flex items-center justify-between mb-5">
-        <h5 class="font-semibold text-lg dark:text-white-light">Ajouter <%= entity.name %>
-        </h5>
-    </div>
-    <form action="/account/<%= account_number %>/record/<%= entity.slug %>/save" method="POST" class="space-y-5">
-
-        <!-- Standard Fields -->
-        <% if (entity.enabledStandardFields && entity.enabledStandardFields.includes('title')) { %>
-            <div>
-                <label for="title">Titre</label>
-                <input name="standard[title]" type="text" class="form-input" placeholder="Entrez le titre" required />
+<div x-data="recordForm()" class="space-y-6">
+    <!-- Big Title Panel -->
+    <div class="panel mb-4">
+        <div class="flex items-center justify-between">
+            <h2 class="text-2xl font-bold text-gray-800">
+                <%= entity.name %>
+                    <span class="text-sm font-normal text-gray-400 ml-2">/ Ajouter un record</span>
+            </h2>
+            <div class="flex items-center gap-2">
+                <button type="button" @click="designMode = !designMode"
+                    :class="designMode ? 'text-primary bg-primary/10' : 'text-gray-400 hover:text-primary'"
+                    class="p-2 rounded-lg transition-all" title="Mode Layout">
+                    <iconify-icon icon="tabler:layout-dashboard" width="22"></iconify-icon>
+                </button>
             </div>
-            <% } %>
+        </div>
+    </div>
 
-                <% if (entity.enabledStandardFields && entity.enabledStandardFields.includes('description')) { %>
-                    <div>
-                        <label for="description">Description</label>
-                        <textarea name="standard[description]" class="form-textarea" rows="3"
-                            placeholder="Entrez la description"></textarea>
-                    </div>
-                    <% } %>
+    <div class="panel">
+        <form action="/account/<%= account_number %>/record/<%= entity.slug %>/save" method="POST" id="main-record-form"
+            class="space-y-8">
 
-                        <% if (entity.enabledStandardFields && entity.enabledStandardFields.includes('content')) { %>
-                            <div>
-                                <label for="content">Contenu</label>
-                                <textarea name="standard[content]" class="form-textarea" rows="5"
-                                    placeholder="Entrez le contenu"></textarea>
-                            </div>
-                            <% } %>
+            <!-- Standard Fields Section -->
+            <div>
+                <div class="flex justify-between items-center pb-2 mb-4 border-b border-gray-100">
+                    <h6 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Informations Générales
+                    </h6>
+                </div>
 
-                                <!-- Custom Fields -->
-                                <% entity.customFields.forEach(field=> { %>
-                                    <div>
-                                        <label for="custom_<%= field._id %>">
-                                            <%= field.label %>
-                                        </label>
-                                        <% if (field.type==='string' || field.type==='text' ) { %>
-                                            <input name="custom[<%= field._id %>]" type="text" class="form-input"
-                                                placeholder="<%= field.ui?.placeholder || '' %>" />
-                                            <% } else if (field.type==='number' ) { %>
-                                                <input name="custom[<%= field._id %>]" type="number" class="form-input"
-                                                    placeholder="<%= field.ui?.placeholder || '' %>" />
-                                                <% } else if (field.type==='date' ) { %>
-                                                    <input name="custom[<%= field._id %>]" type="date"
-                                                        class="form-input" />
-                                                    <% } else if (field.type==='boolean' ) { %>
-                                                        <div class="mt-2">
-                                                            <label class="w-12 h-6 relative">
-                                                                <input name="custom[<%= field._id %>]" type="checkbox"
-                                                                    value="true"
-                                                                    class="custom_switch absolute w-full h-full opacity-0 z-10 cursor-pointer peer" />
-                                                                <span
-                                                                    class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-4 before:h-4 before:rounded-full peer-checked:before:left-7 peer-checked:bg-primary before:transition-all before:duration-300"></span>
-                                                            </label>
-                                                        </div>
-                                                        <% } else if (field.type==='select' ) { %>
-                                                            <select name="custom[<%= field._id %>]"
-                                                                class="form-select text-white-dark text-sm">
-                                                                <% if (field.type_config && field.type_config.options) {
-                                                                    %>
-                                                                    <% field.type_config.options.forEach(option=> { %>
-                                                                        <option value="<%= option %>">
-                                                                            <%= option %>
-                                                                        </option>
-                                                                        <% }) %>
-                                                                            <% } %>
-                                                            </select>
-                                                            <% } else { %>
-                                                                <input name="custom[<%= field._id %>]" type="text"
-                                                                    class="form-input"
-                                                                    placeholder="<%= field.ui?.placeholder || '' %>" />
-                                                                <% } %>
-                                    </div>
-                                    <% }) %>
+                <div class="flex flex-wrap -mx-2">
+                    <% if (entity.enabledStandardFields && entity.enabledStandardFields.includes('title')) { %>
+                        <div class="w-full px-2 mb-4">
+                            <label for="title">Titre</label>
+                            <input name="standard[title]" type="text" class="form-input" placeholder="Entrez le titre"
+                                required />
+                        </div>
+                        <% } %>
 
-                                        <div class="flex items-center gap-4 !mt-8">
-                                            <button type="submit" class="btn btn-primary">Enregistrer</button>
-                                            <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
-                                                class="btn btn-outline-danger">Annuler</a>
-                                        </div>
-    </form>
+                            <% if (entity.enabledStandardFields && entity.enabledStandardFields.includes('description'))
+                                { %>
+                                <div class="w-full px-2 mb-4">
+                                    <label for="description">Description</label>
+                                    <textarea name="standard[description]" class="form-textarea" rows="2"
+                                        placeholder="Entrez la description"></textarea>
+                                </div>
+                                <% } %>
+                </div>
+            </div>
+
+            <!-- Custom Fields Section -->
+            <div>
+                <div class="flex justify-between items-center pb-2 mb-4 border-b border-gray-100">
+                    <h6 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Champs personnalisés</h6>
+                    <button x-show="designMode" @click="openModal = true" type="button"
+                        class="text-[11px] font-bold text-primary hover:bg-primary/5 px-4 py-1.5 rounded-full transition-all flex items-center gap-1.5">
+                        <iconify-icon icon="tabler:circle-plus" width="16"></iconify-icon>
+                        <span>AJOUTER UN CHAMP</span>
+                    </button>
+                </div>
+
+                <div id="fields-builder-canvas" class="flex flex-wrap -mx-2 min-h-[50px] p-2 rounded-xl transition-all"
+                    :class="designMode ? 'bg-gray-50/20 border-2 border-dashed border-gray-200' : ''"
+                    x-html="renderAllFields()">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 !mt-12 pt-6 border-t border-gray-100">
+                <button type="submit" class="btn btn-primary px-10 py-2.5">
+                    <iconify-icon icon="tabler:device-floppy" width="18" class="mr-2"></iconify-icon>
+                    Enregistrer le record
+                </button>
+                <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
+                    class="btn btn-outline-danger px-10 py-2.5">Annuler</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal for adding fields -->
+    <template x-if="designMode">
+        <%- include('../entity/components/entity-modal') %>
+    </template>
 </div>
+
+<!-- DATA PIPELINE -->
+<script type="application/json" id="all-templates">
+    <%- JSON.stringify(locals.allFieldTemplates || []).replace(/</g, '\\u003C') %>
+</script>
+<script type="application/json" id="initial-fields">
+    <%- JSON.stringify(locals.fields || []).replace(/</g, '\\u003C') %>
+</script>
+
+<script>
+    document.addEventListener("alpine:init", () => {
+        Alpine.data("recordForm", () => {
+            const initialLayout = JSON.parse('<%- JSON.stringify(locals.formLayout || []) %>');
+            const allTemplates = JSON.parse(document.getElementById("all-templates").textContent);
+            const rawFields = JSON.parse(document.getElementById("initial-fields").textContent);
+
+            const fieldsMap = {};
+            rawFields.forEach(f => { fieldsMap[f._id] = f; });
+            allTemplates.forEach(t => { if (!fieldsMap[t._id]) fieldsMap[t._id] = t; });
+
+            return {
+                designMode: false,
+                layout: initialLayout.map(i => ({ ...i, id: String(i.id || `f_${Math.random()}`) })),
+                fieldsById: fieldsMap,
+                valuesMap: {},
+                allTemplates: allTemplates,
+                openModal: false,
+                isResizing: false,
+                resizeData: null,
+
+                init() {
+                    this.rebuildCanvas();
+                    window.addEventListener('mousemove', (e) => this.handleResizing(e));
+                    window.addEventListener('mouseup', () => this.stopResizing());
+
+                    this.$watch('designMode', () => {
+                        this.rebuildCanvas();
+                    });
+                },
+
+                renderAllFields() {
+                    return this.layout.map((item, index) => this.renderFieldItemHTML(item, index)).join('');
+                },
+
+                rebuildCanvas() {
+                    const canvas = document.getElementById('fields-builder-canvas');
+                    if (!canvas) return;
+
+                    if (canvas._sortable) {
+                        canvas._sortable.destroy();
+                        canvas._sortable = null;
+                    }
+
+                    canvas.innerHTML = this.renderAllFields();
+
+                    if (this.designMode) {
+                        this.$nextTick(() => {
+                            this.initSortables();
+                        });
+                    }
+
+                    this.executeScripts();
+                },
+
+                initSortables() {
+                    const builder = document.getElementById('fields-builder-canvas');
+                    if (!builder || !this.designMode) return;
+
+                    builder._sortable = new Sortable(builder, {
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        handle: '.group-handle-drag',
+                        draggable: '.field-item',
+                        onEnd: (evt) => {
+                            const ids = Array.from(builder.querySelectorAll('.field-item')).map(el => el.dataset.id);
+                            this.layout = ids.map(id => this.layout.find(i => String(i.id) === String(id))).filter(Boolean);
+                            this.saveLayout();
+                        }
+                    });
+                },
+
+                renderFieldItemHTML(item, index) {
+                    const field = this.fieldsById[item.fieldId];
+                    if (!field) return '';
+
+                    const isDesign = this.designMode;
+                    const widthPct = item.width * 8.333;
+
+                    let inputHtml = this.renderField(field, item.id);
+
+                    return `
+                    <div class="field-item group relative px-2 py-0.5 h-fit" 
+                         style="width: ${widthPct}%" 
+                         data-id="${item.id}">
+                        
+                        <div class="relative ${isDesign ? 'bg-white border border-transparent hover:border-gray-200 hover:shadow-sm rounded-lg p-1.5' : ''} transition-all duration-200 h-fit">
+                            
+                            ${isDesign ? `
+                                <div class="absolute top-1 right-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-[110] bg-white/80 backdrop-blur-sm rounded px-1">
+                                    <div class="group-handle-drag p-1 text-gray-400 hover:text-primary cursor-grab active:cursor-grabbing">
+                                        <iconify-icon icon="tabler:grip-vertical" width="14"></iconify-icon>
+                                    </div>
+                                    <button type="button" onclick="window.recordFormApp.removeField('${item.id}')"
+                                            class="p-1 text-gray-400 hover:text-red-500 cursor-pointer">
+                                        <iconify-icon icon="tabler:trash" width="14"></iconify-icon>
+                                    </button>
+                                </div>
+                                <div onmousedown="window.recordFormApp.startResizingManual(event, '${item.id}')"
+                                     class="absolute bottom-0 right-0 w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity z-[110] text-gray-300 hover:text-primary flex items-center justify-center"
+                                     style="cursor: nwse-resize !important;"
+                                     title="Redimensionner">
+                                    <iconify-icon icon="tabler:resize" width="12" class="pointer-events-none" rotate="45"></iconify-icon>
+                                </div>
+                            ` : ''}
+
+                            <div class="${isDesign ? 'pointer-events-none select-none' : ''} builder-preview">
+                                ${inputHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                },
+
+                renderField(field, itemId) {
+                    const template = field.htmlTemplate || '';
+                    const val = this.valuesMap[field._id] || '';
+                    const valJson = JSON.stringify(val).replace(/"/g, '&quot;');
+                    const isTruthy = val === true || val === 'on' || val === 'true' || val === 1 || val === '1';
+
+                    let html = template.replace(/{{\s*([\w\.]+)\s*}}/g, (_, key) => {
+                        if (key === 'label') return `<label>${field.label}</label>`;
+                        if (key === 'name') return `custom[${field._id}]`;
+                        if (key === 'value') return val;
+                        if (key === 'value_json') return valJson;
+                        if (key === 'checked') return isTruthy ? 'checked' : '';
+                        if (key === '_id') return field._id;
+
+                        // Support for nested keys like ui.placeholder
+                        const parts = key.split('.');
+                        let current = field;
+                        for (const part of parts) {
+                            current = current ? current[part] : undefined;
+                        }
+                        return current !== undefined ? current : '';
+                    });
+
+                    // Auto-inject name if missing to ensure data is sent to server
+                    if (!this.designMode && !html.includes(`name="custom[${field._id}]"`)) {
+                        html = html.replace(/<(input|textarea|select)(?![^>]*\bname\b)/g, `<$1 name="custom[${field._id}]"`);
+                    }
+
+                    // Auto-inject value/checked for common patterns if not handled by placeholders
+                    if (!this.designMode) {
+                        // For checkboxes/radios: inject checked if truthy
+                        if (isTruthy) {
+                            html = html.replace(/<(input[^>]*type="(checkbox|radio)"[^>]*)(?![^>]*\bchecked\b)/g, `<$1 checked`);
+                        }
+
+                        // For standard inputs (text, number, range, etc.): inject value
+                        html = html.replace(/<(input(?![^>]*type="(checkbox|radio|file)"))(?![^>]*\bvalue\b)/g, `<$1 value="${val}"`)
+                            .replace(/<textarea([^>]*)><\/textarea>/g, `<textarea$1>${val}</textarea>`);
+                    }
+
+                    return html;
+                },
+
+                removeField(id) {
+                    this.layout = this.layout.filter(i => String(i.id) !== String(id));
+                    this.rebuildCanvas();
+                    this.saveLayout();
+                },
+
+                addTemplateToSlot(template) {
+                    const uniqueId = `f_${Date.now()}`;
+                    this.layout.push({ fieldId: template._id, width: 12, id: uniqueId });
+                    this.openModal = false;
+                    this.rebuildCanvas();
+                    this.saveLayout();
+                },
+
+                startResizingManual(e, id) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.isResizing = true;
+                    document.body.style.userSelect = 'none';
+                    document.body.style.cursor = 'col-resize';
+
+                    const el = e.target.closest('.field-item');
+                    this.resizeData = {
+                        id,
+                        initialWidth: this.layout.find(i => String(i.id) === String(id)).width,
+                        startX: e.clientX,
+                        containerWidth: el.parentElement.offsetWidth
+                    };
+                },
+
+                handleResizing(e) {
+                    if (!this.isResizing || !this.resizeData) return;
+                    const d = this.resizeData;
+                    const deltaX = e.clientX - d.startX;
+                    const colW = d.containerWidth / 12;
+                    const deltaCols = Math.round(deltaX / colW);
+                    let newW = Math.max(2, Math.min(12, d.initialWidth + deltaCols));
+
+                    const item = this.layout.find(i => String(i.id) === String(d.id));
+                    if (item && item.width !== newW) {
+                        item.width = newW;
+                        const el = document.querySelector(`[data-id="${d.id}"]`);
+                        if (el) el.style.width = (newW * 8.333) + '%';
+                    }
+                },
+
+                stopResizing() {
+                    if (this.isResizing) {
+                        this.isResizing = false;
+                        document.body.style.userSelect = '';
+                        document.body.style.cursor = '';
+                        this.saveLayout();
+                        this.rebuildCanvas();
+                    }
+                },
+
+                saveLayout() {
+                    const payload = {
+                        fields: [...new Set(this.layout.map(i => i.fieldId))].map(id => ({ _id: id })),
+                        layout: this.layout
+                    };
+                    fetch(`/account/<%= account_number %>/entity/updatecf/<%= entity._id %>`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    });
+                },
+
+                executeScripts() {
+                    this.layout.forEach(item => {
+                        const field = this.fieldsById[item.fieldId];
+                        if (field && field.jsTemplate) {
+                            try {
+                                const scriptFunc = new Function('context', field.jsTemplate);
+                                scriptFunc({ field: field, elementId: `field-${item.id}` });
+                            } catch (e) { console.error(e); }
+                        }
+                    });
+                }
+            };
+        });
+
+        window.addEventListener('load', () => {
+            const el = document.querySelector('[x-data^="recordForm()"]');
+            if (el) window.recordFormApp = Alpine.$data(el);
+        });
+    });
+</script>
+
+<style>
+    /* Exact Entity Builder Design System */
+    .field-item label,
+    form label,
+    .builder-preview label {
+        display: block !important;
+        font-size: 10px !important;
+        font-weight: 800 !important;
+        color: #4b5563 !important;
+        margin-bottom: 4px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+    }
+
+    .form-input,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    select,
+    .form-select {
+        font-size: 13px !important;
+        padding: 8px 12px !important;
+        background-color: #f9fafb !important;
+        border: 1px solid #f3f4f6 !important;
+        border-radius: 8px !important;
+        color: #111827 !important;
+        width: 100% !important;
+        height: 38px !important;
+        margin: 0 !important;
+        transition: all 0.2s;
+    }
+
+    .form-input:focus,
+    select:focus {
+        border-color: #4361ee !important;
+        background-color: #fff !important;
+        box-shadow: 0 0 0 1px rgba(67, 97, 238, 0.1) !important;
+    }
+
+    textarea,
+    .form-textarea {
+        font-size: 13px !important;
+        padding: 8px 12px !important;
+        background-color: #f9fafb !important;
+        border: 1px solid #f3f4f6 !important;
+        border-radius: 8px !important;
+        color: #111827 !important;
+        width: 100% !important;
+        min-height: 100px !important;
+        margin: 0 !important;
+        resize: vertical !important;
+    }
+
+    /* Reset for file inputs - Match Entity Builder */
+    input[type="file"] {
+        padding: 0 !important;
+        height: auto !important;
+        min-height: 38px !important;
+        cursor: pointer !important;
+    }
+
+    /* Reset for checkboxes and radios - Match Entity Builder */
+    input[type="checkbox"],
+    input[type="radio"] {
+        width: auto !important;
+        height: auto !important;
+        min-height: 16px !important;
+        min-width: 16px !important;
+        cursor: pointer !important;
+        margin-right: 8px !important;
+    }
+
+    /* Force button height and center label - Fixed Shift */
+    .builder-preview button {
+        height: 38px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 !important;
+        padding: 0 20px !important;
+        line-height: 1 !important;
+        text-transform: none !important;
+    }
+
+    .builder-preview button * {
+        margin: 0 !important;
+        padding: 0 !important;
+        pointer-events: none !important;
+    }
+
+    /* Force tightening on ANY template injected tags */
+    .builder-preview *:not(input[type="file"]):not(label):not(button) {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    .sortable-ghost {
+        opacity: 0.05;
+        background: #4361ee !important;
+        border-radius: 12px;
+    }
+</style>

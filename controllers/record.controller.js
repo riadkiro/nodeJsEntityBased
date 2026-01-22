@@ -44,8 +44,13 @@ module.exports = {
         layout: "layout-app"
       });
 
+      const allFieldTemplates = await tenantCollection(req, "FieldTemplate").then(m => m.find({}));
+
       res.render("record/record-add", {
         entity,
+        fields: entity.customFields,
+        formLayout: entity.layout || [],
+        allFieldTemplates,
         account_number: req.account_number,
         layout: "layout-app"
       });
@@ -113,9 +118,14 @@ module.exports = {
         layout: "layout-app"
       });
 
+      const allFieldTemplates = await tenantCollection(req, "FieldTemplate").then(m => m.find({}));
+
       res.render("record/record-edit", {
         entity,
         record,
+        fields: entity.customFields,
+        formLayout: entity.layout || [],
+        allFieldTemplates,
         account_number: req.account_number,
         layout: "layout-app"
       });

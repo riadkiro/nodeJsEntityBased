@@ -1,0 +1,41 @@
+<% // This component expects 'field' (FieldTemplate object) and 'value' (current value if editing, else null) const
+    fieldId=field._id; const fieldType=field.type; const fieldLabel=field.label; const placeholder=field.ui?.placeholder
+    || '' ; const nameAttr=`custom[${fieldId}]`; %>
+
+    <div>
+        <label for="custom_<%= fieldId %>">
+            <%= fieldLabel %>
+        </label>
+        <% if (fieldType==='string' || fieldType==='text' ) { %>
+            <input name="<%= nameAttr %>" type="text" value="<%= value || '' %>" class="form-input"
+                placeholder="<%= placeholder %>" />
+            <% } else if (fieldType==='number' ) { %>
+                <input name="<%= nameAttr %>" type="number" value="<%= value || '' %>" class="form-input"
+                    placeholder="<%= placeholder %>" />
+                <% } else if (fieldType==='date' ) { %>
+                    <input name="<%= nameAttr %>" type="date"
+                        value="<%= value ? new Date(value).toISOString().split('T')[0] : '' %>" class="form-input" />
+                    <% } else if (fieldType==='boolean' ) { %>
+                        <div class="mt-2">
+                            <label class="w-12 h-6 relative">
+                                <input name="<%= nameAttr %>" type="checkbox" value="true" <%=value ? 'checked' : '' %>
+                                class="custom_switch absolute w-full h-full opacity-0 z-10 cursor-pointer peer" />
+                                <span
+                                    class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-4 before:h-4 before:rounded-full peer-checked:before:left-7 peer-checked:bg-primary before:transition-all before:duration-300"></span>
+                            </label>
+                        </div>
+                        <% } else if (fieldType==='select' ) { %>
+                            <select name="<%= nameAttr %>" class="form-select text-white-dark text-sm">
+                                <% if (field.type_config && field.type_config.options) { %>
+                                    <% field.type_config.options.forEach(option=> { %>
+                                        <option value="<%= option %>" <%=value===option ? 'selected' : '' %>><%= option
+                                                %>
+                                        </option>
+                                        <% }) %>
+                                            <% } %>
+                            </select>
+                            <% } else { %>
+                                <input name="<%= nameAttr %>" type="text" value="<%= value || '' %>" class="form-input"
+                                    placeholder="<%= placeholder %>" />
+                                <% } %>
+    </div>

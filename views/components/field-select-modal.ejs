@@ -1,0 +1,30 @@
+<!-- Shared Modal for Dynamic Form Designer -->
+<div x-cloak x-show="openModal"
+    class="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" style="display: none">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 w-[90%] max-w-4xl max-h-[80vh] overflow-y-auto"
+        @click.outside="openModal = false">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-gray-800">Ajouter un champ existant</h3>
+            <button @click="openModal = false" class="text-gray-400 hover:text-gray-600">
+                <iconify-icon icon="tabler:x" width="24"></iconify-icon>
+            </button>
+        </div>
+
+        <!-- Liste des templates disponibles -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <template x-for="template in allTemplates" :key="template._id">
+                <div class="p-4 border border-gray-100 rounded-xl hover:bg-primary/5 hover:border-primary/20 cursor-pointer transition-all group"
+                    @click="addTemplateToSlot(template)">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="font-bold text-gray-800 group-hover:text-primary transition-colors"
+                            x-text="template.label"></div>
+                        <iconify-icon icon="tabler:plus" class="text-gray-300 group-hover:text-primary"></iconify-icon>
+                    </div>
+                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider" x-text="template.type">
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1 line-clamp-1" x-text="template.description"></div>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>

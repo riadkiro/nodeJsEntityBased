@@ -334,7 +334,12 @@
 
         submitFieldTemplate(event) {
           const form = new FormData(event.target);
-          fetch(`/account/${this.account_number}/field-template/add`, {
+          const id = this.formData.id;
+          const url = id
+            ? `/account/${this.account_number}/field-template/edit/${id}`
+            : `/account/${this.account_number}/field-template/add`;
+
+          fetch(url, {
             method: "POST",
             body: form,
           })

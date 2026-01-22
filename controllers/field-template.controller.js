@@ -163,10 +163,39 @@ module.exports = {
 
   update: async (req, res) => {
     const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
-    const fieldTemplateData = req.body;
     const id = req.params.id;
 
     try {
+      const { name, label, description, type, subtype, htmlTemplate, jsTemplate } = req.body;
+
+      const type_config = {};
+      if (req.body["type_config.regex"]) {
+        type_config.regex = req.body["type_config.regex"];
+      }
+
+      const ui = {};
+      if (req.body["ui.placeholder"]) {
+        ui.placeholder = req.body["ui.placeholder"];
+      }
+      if (req.body["ui.width"]) {
+        ui.width = req.body["ui.width"];
+      }
+      if (req.body["ui.icon"]) {
+        ui.icon = req.body["ui.icon"];
+      }
+
+      const fieldTemplateData = {
+        name,
+        label,
+        description,
+        type,
+        subtype,
+        htmlTemplate,
+        jsTemplate,
+        type_config,
+        ui,
+      };
+
       const updated = await FieldTemplateModel.findByIdAndUpdate(
         id,
         fieldTemplateData,
@@ -181,9 +210,9 @@ module.exports = {
       res.redirect(`/account/${req.account_number}/field-template/list`);
     } catch (err) {
       console.error("Erreur update :", err);
-      res.status(500).render("field-template/field-template-edit", {
+      // Pour le fallback en cas d'erreur, on a besoin de l'objet complet pour le rendu
+      res.status(500).render("field-template/field-template-list", {
         errors: [{ msg: "Une erreur est survenue lors de la mise à jour." }],
-        fieldTemplate: fieldTemplateData,
         account_number: req.account_number,
         layout: "layout-app",
       });

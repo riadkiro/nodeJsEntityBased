@@ -222,18 +222,6 @@
 })" class="relative">
     {{label}}
     
-    <!-- Selected Items -->
-    <div class="flex flex-wrap gap-1 mb-1">
-        <template x-for="item in selectedItems" :key="item.id">
-            <span class="inline-flex items-center gap-1 px-1.5 py-0 bg-primary/10 text-primary rounded text-[11px] border border-primary/20 font-medium">
-                <span x-text="item.label" class="leading-relaxed"></span>
-                <button type="button" @click="removeItem(item.id)" class="hover:text-danger flex items-center">
-                    <iconify-icon icon="tabler:x" width="10"></iconify-icon>
-                </button>
-            </span>
-        </template>
-    </div>
-
     <!-- Search Input -->
     <div class="relative group" @click.away="showResults = false">
         <input 
@@ -252,7 +240,7 @@
         <!-- Results Dropdown -->
         <div x-show="showResults" 
              style="display: none;"
-             class="absolute z-50 w-full mt-1 bg-card border border-border rounded-md shadow-xl max-h-60 overflow-y-auto overflow-x-hidden">
+             class="absolute z-50 w-full mt-1 bg-white border border-border rounded-md shadow-xl max-h-60 overflow-y-auto overflow-x-hidden">
              
             <template x-if="loading && page === 1">
                 <div class="px-4 py-2 text-sm text-secondary">Loading...</div>
@@ -277,6 +265,18 @@
                 </button>
             </template>
         </div>
+    </div>
+
+    <!-- Selected Items (Below Input) -->
+    <div class="flex flex-wrap gap-1 mt-2">
+        <template x-for="item in selectedItems" :key="item.id">
+            <span class="inline-flex items-center gap-1 px-1.5 h-6 bg-primary/10 text-primary rounded text-xs border border-primary/20">
+                <span x-text="item.label"></span>
+                <button type="button" @click="removeItem(item.id)" class="hover:text-danger flex items-center transition-colors">
+                    <iconify-icon icon="tabler:x" width="11"></iconify-icon>
+                </button>
+            </span>
+        </template>
     </div>
 
     <!-- Hidden inputs for persistence -->
@@ -604,9 +604,10 @@
         align-items: center !important;
         justify-content: center !important;
         margin: 0 !important;
-        padding: 0 20px !important;
+        /* padding: 0 20px !important; */
         line-height: 1 !important;
         text-transform: none !important;
+        width: 12px;
     }
 
     .builder-preview button * {

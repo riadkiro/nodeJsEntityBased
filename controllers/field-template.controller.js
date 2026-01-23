@@ -91,6 +91,12 @@ module.exports = {
       if (req.body["type_config.regex"]) {
         type_config.regex = req.body["type_config.regex"];
       }
+      if (req.body["type_config.refEntity"]) {
+        type_config.refEntity = req.body["type_config.refEntity"];
+      }
+      if (req.body["type_config.multiple"]) {
+        type_config.multiple = req.body["type_config.multiple"] === 'on' || req.body["type_config.multiple"] === true || req.body["type_config.multiple"] === 'true';
+      }
 
       const ui = {};
       if (req.body["ui.placeholder"]) {
@@ -131,18 +137,23 @@ module.exports = {
     }
   },
   list: async (req, res) => {
-    const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
-    FieldTemplateModel.find({}, (err, templates) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).send("Erreur serveur");
-      }
+    try {
+      const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
+      const EntityModel = await tenantCollection(req, "Entity");
+
+      const templates = await FieldTemplateModel.find({});
+      const entities = await EntityModel.find({});
+
       res.render("field-template/field-template-list", {
         account_number: req.account_number,
         layout: "layout-app",
         fields: templates,
+        entities: entities
       });
-    });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Erreur serveur");
+    }
   },
 
   editForm: async (req, res) => {
@@ -173,6 +184,12 @@ module.exports = {
       const type_config = {};
       if (req.body["type_config.regex"]) {
         type_config.regex = req.body["type_config.regex"];
+      }
+      if (req.body["type_config.refEntity"]) {
+        type_config.refEntity = req.body["type_config.refEntity"];
+      }
+      if (req.body["type_config.multiple"]) {
+        type_config.multiple = req.body["type_config.multiple"] === 'on' || req.body["type_config.multiple"] === true || req.body["type_config.multiple"] === 'true';
       }
 
       const ui = {};
@@ -212,12 +229,22 @@ module.exports = {
       res.redirect(`/account/${req.account_number}/field-template/list`);
     } catch (err) {
       console.error("Erreur update :", err);
-      // Pour le fallback en cas d'erreur, on a besoin de l'objet complet pour le rendu
-      res.status(500).render("field-template/field-template-list", {
-        errors: [{ msg: "Une erreur est survenue lors de la mise à jour." }],
-        account_number: req.account_number,
-        layout: "layout-app",
-      });
+      try {
+        const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
+        const EntityModel = await tenantCollection(req, "Entity");
+        const templates = await FieldTemplateModel.find({});
+        const entities = await EntityModel.find({});
+
+        res.status(500).render("field-template/field-template-list", {
+          errors: [{ msg: "Une erreur est survenue lors de la mise à jour : " + err.message }],
+          account_number: req.account_number,
+          layout: "layout-app",
+          fields: templates,
+          entities: entities
+        });
+      } catch (e) {
+        res.status(500).send("Erreur fatale lors de la redirection après erreur d'update");
+      }
     }
   },
 

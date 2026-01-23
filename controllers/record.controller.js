@@ -180,5 +180,53 @@ module.exports = {
       console.error(error);
       res.status(500).send("Server Error");
     }
+  },
+
+  searchAjax: async (req, res) => {
+    try {
+      const { entityId, q } = req.query;
+      const RecordModel = await tenantCollection(req, "Record");
+
+      let query = { entityId: entityId };
+      if (q) {
+        query.$or = [
+          { title: { $regex: q, $options: 'i' } },
+          { slug: { $regex: q, $options: 'i' } }
+        ];
+      } else if (req.query.ids) {
+        const ids = req.query.ids.split(',');
+        query._id = { $in: ids };
+      }
+
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 5;
+      const skip = (page - 1) * limit;
+
+      const records = await RecordModel.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select('title slug _id');
+
+      const total = await RecordModel.countDocuments(query);
+
+      const formatted = records.map(r => ({
+        id: r._id,
+        label: r.title || r.slug || r._id.toString()
+      }));
+
+      res.json({
+        data: formatted,
+        meta: {
+          page,
+          limit,
+          total,
+          hasMore: total > (page * limit)
+        }
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Search failed" });
+    }
   }
 };

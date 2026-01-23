@@ -99,6 +99,30 @@
                 </select>
               </div>
 
+              <!-- Relation Config -->
+              <template x-if="formData.type === 'relation'">
+                <div class="space-y-4 border-l-2 border-primary/20 pl-4">
+                  <div>
+                    <label for="refEntity">Entité Cible</label>
+                    <select id="refEntity" name="type_config.refEntity" class="form-input" x-model="formData.refEntity">
+                      <option value="">-- Choisir une entité --</option>
+                      <% if (locals.entities) { %>
+                        <% entities.forEach(e=> { %>
+                          <option value="<%= e._id %>">
+                            <%= e.name %>
+                          </option>
+                          <% }) %>
+                            <% } %>
+                    </select>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <input id="multiple" name="type_config.multiple" type="checkbox" class="form-checkbox"
+                      x-model="formData.multiple" />
+                    <label for="multiple" class="mb-0">Sélection Multiple</label>
+                  </div>
+                </div>
+              </template>
+
               <!-- Icon -->
               <div>
                 <label for="icon">Icône</label>
@@ -165,7 +189,7 @@
   </div>
 </div>
 
-<% const rows=fields.map((f, i)=> [
+<% const rows=(locals.fields || []).map((f, i)=> [
   i + 1,
   f.name,
   f.label,
@@ -223,7 +247,9 @@
           width: 'full',
           icon: '',
           htmlTemplate: '',
-          jsTemplate: ''
+          jsTemplate: '',
+          refEntity: '',
+          multiple: false
         },
 
         init() {
@@ -310,7 +336,9 @@
             width: field.ui?.width || "full",
             icon: field.ui?.icon || "",
             htmlTemplate: field.htmlTemplate || "",
-            jsTemplate: field.jsTemplate || ""
+            jsTemplate: field.jsTemplate || "",
+            refEntity: field.type_config?.refEntity || "",
+            multiple: field.type_config?.multiple || false
           };
           this.showFieldModal = true;
         },
@@ -328,7 +356,9 @@
             width: 'full',
             icon: '',
             htmlTemplate: '',
-            jsTemplate: ''
+            jsTemplate: '',
+            refEntity: '',
+            multiple: false
           };
         },
 

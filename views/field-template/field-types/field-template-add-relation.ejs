@@ -1,0 +1,82 @@
+<div class="panel">
+    <h2 class="text-xl font-semibold mb-6">Ajouter un champ "Relation"</h2>
+
+    <form method="POST" action="/account/<%= account_number %>/field-template/add" class="space-y-5">
+        <!-- Identification -->
+        <input type="hidden" name="type" value="relation" />
+        <input type="hidden" name="ui.icon" value="solar:share-bold-duotone" />
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+                <label for="name">Clé technique (name)</label>
+                <input id="name" name="name" type="text" placeholder="ex: societe_liee" class="form-input" required />
+            </div>
+
+            <div>
+                <label for="label">Libellé (affiché dans l’interface)</label>
+                <input id="label" name="label" type="text" placeholder="ex: Société liée" class="form-input" required />
+            </div>
+        </div>
+
+        <div>
+            <label for="description">Description</label>
+            <textarea id="description" name="description" class="form-input" rows="2"
+                placeholder="ex: Sélectionnez la société associée..."></textarea>
+        </div>
+
+        <!-- Configuration Spécifique Relation -->
+        <div class="p-4 bg-primary/5 border border-primary/20 rounded-md space-y-4">
+            <h3 class="font-semibold text-primary">Configuration de la Relation</h3>
+
+            <div>
+                <label for="refEntity">Entité Cible <span class="text-danger">*</span></label>
+                <select id="refEntity" name="type_config.refEntity" class="form-input" required>
+                    <option value="">-- Choisir une entité vers laquelle pointer --</option>
+                    <% if (locals.entities && entities.length> 0) { %>
+                        <% entities.forEach(function(e) { %>
+                            <option value="<%= e._id %>">
+                                <%= e.name %>
+                            </option>
+                            <% }) %>
+                                <% } else { %>
+                                    <option disabled>Aucune entité disponible</option>
+                                    <% } %>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Les records de ce champ proviendront de cette entité.</p>
+            </div>
+
+            <label class="flex items-center gap-2">
+                <input type="checkbox" name="type_config.multiple" class="form-checkbox text-primary" />
+                <span>Autoriser la sélection multiple (plusieurs records)</span>
+            </label>
+        </div>
+
+        <!-- UI -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+                <label for="ui.placeholder">Texte d’aide (placeholder)</label>
+                <input id="ui.placeholder" name="ui.placeholder" type="text" class="form-input"
+                    placeholder="ex: Rechercher..." />
+            </div>
+            <div>
+                <label for="ui.width">Largeur</label>
+                <select id="ui.width" name="ui.width" class="form-input">
+                    <option value="full">Pleine largeur (100%)</option>
+                    <option value="half">Demi largeur (50%)</option>
+                    <option value="third">Tiers (33%)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Validation -->
+        <div class="flex items-center gap-4">
+            <label class="flex items-center gap-2">
+                <input type="checkbox" name="required" class="form-checkbox text-success" />
+                <span>Champ obligatoire</span>
+            </label>
+        </div>
+
+        <!-- Bouton -->
+        <button type="submit" class="btn btn-primary !mt-6">Créer le champ Relation</button>
+    </form>
+</div>

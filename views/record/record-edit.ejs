@@ -211,7 +211,87 @@
                 },
 
                 renderField(field, itemId) {
-                    const template = field.htmlTemplate || '';
+                    let template = field.htmlTemplate || '';
+                    if (!template && field.type === 'relation') {
+                        template = `
+<div x-data="relationField({ 
+    fieldId: '{{_id}}', 
+    refEntity: '{{type_config.refEntity}}', 
+    multiple: {{type_config.multiple}}, 
+    initialValue: {{value_json}} 
+})" class="relative">
+    {{label}}
+    
+    <!-- Selected Items -->
+    <div class="flex flex-wrap gap-1 mb-1">
+        <template x-for="item in selectedItems" :key="item.id">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0 bg-primary/10 text-primary rounded text-[11px] border border-primary/20 font-medium">
+                <span x-text="item.label" class="leading-relaxed"></span>
+                <button type="button" @click="removeItem(item.id)" class="hover:text-danger flex items-center">
+                    <iconify-icon icon="tabler:x" width="10"></iconify-icon>
+                </button>
+            </span>
+        </template>
+    </div>
+
+    <!-- Search Input -->
+    <div class="relative group" @click.away="showResults = false">
+        <input 
+            x-ref="searchInput"
+            type="text" 
+            class="form-input pr-10" 
+            placeholder="{{ui.placeholder}}" 
+            x-model="searchQuery"
+            @input.debounce.300ms="search"
+            @focus="openDropdown"
+        />
+        <div @click="$refs.searchInput.focus(); openDropdown()" class="text-gray-400 cursor-pointer flex items-center" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 10;">
+             <iconify-icon icon="tabler:chevron-down" width="16"></iconify-icon>
+        </div>
+        
+        <!-- Results Dropdown -->
+        <div x-show="showResults" 
+             style="display: none;"
+             class="absolute z-50 w-full mt-1 bg-card border border-border rounded-md shadow-xl max-h-60 overflow-y-auto overflow-x-hidden">
+             
+            <template x-if="loading && page === 1">
+                <div class="px-4 py-2 text-sm text-secondary">Loading...</div>
+            </template>
+
+            <template x-for="result in results" :key="result.id">
+                <div @click="selectItem(result)" 
+                     class="px-4 py-2 hover:bg-primary/5 cursor-pointer flex justify-between items-center border-b border-border last:border-0">
+                    <span x-text="result.label" class="truncate"></span>
+                    <iconify-icon icon="tabler:plus" class="text-primary/50" width="16"></iconify-icon>
+                </div>
+            </template>
+            
+            <template x-if="!loading && results.length === 0">
+                 <div class="px-4 py-2 text-sm text-secondary">No results found</div>
+            </template>
+
+            <template x-if="hasMore">
+                <button type="button" @click.stop="loadMore" class="w-full px-4 py-2 text-sm text-primary hover:bg-primary/5 text-center disabled:opacity-50" :disabled="loading">
+                    <span x-show="!loading">Load More...</span>
+                    <span x-show="loading">Loading...</span>
+                </button>
+            </template>
+        </div>
+    </div>
+
+    <!-- Hidden inputs for persistence -->
+    <template x-if="multiple">
+        <div>
+          <template x-for="item in selectedItems" :key="item.id">
+              <input type="hidden" :name="'custom[' + fieldId + '][]'" :value="item.id">
+          </template>
+        </div>
+    </template>
+    <template x-if="!multiple">
+        <input type="hidden" :name="'custom[' + fieldId + ']'" :value="selectedItems[0]?.id || ''">
+    </template>
+</div>`;
+                    }
                     const val = this.valuesMap[field._id] || '';
                     const valJson = JSON.stringify(val).replace(/"/g, '&quot;');
                     const isTruthy = val === true || val === 'on' || val === 'true' || val === 1 || val === '1';
@@ -335,6 +415,110 @@
                 }
             };
         });
+
+        Alpine.data('relationField', (config) => ({
+            fieldId: config.fieldId,
+            refEntity: config.refEntity,
+            multiple: config.multiple,
+            searchQuery: '',
+            results: [],
+            selectedItems: [],
+            showResults: false,
+            page: 1,
+            hasMore: false,
+            loading: false,
+
+            async init() {
+                if (config.initialValue) {
+                    const idsRaw = config.initialValue;
+                    let ids = [];
+                    if (Array.isArray(idsRaw)) {
+                        ids = idsRaw.filter(i => i && i !== '');
+                    } else if (idsRaw) {
+                        ids = [idsRaw];
+                    }
+
+                    if (ids.length > 0) {
+                        try {
+                            const acc = '<%= account_number %>';
+                            const response = await fetch(`/account/${acc}/record/api/search?entityId=${this.refEntity}&ids=${ids.join(',')}`);
+                            const res = await response.json();
+                            if (res.data) {
+                                this.selectedItems = res.data;
+                            }
+                        } catch (e) {
+                            console.error("Error loading relation values:", e);
+                        }
+                    }
+                }
+            },
+
+            async fetchSuggestions(reset = true) {
+                if (reset) {
+                    this.page = 1;
+                    this.results = [];
+                }
+
+                this.loading = true;
+                try {
+                    const acc = '<%= account_number %>';
+                    let url = `/account/${acc}/record/api/search?entityId=${this.refEntity}&page=${this.page}&limit=5`;
+                    if (this.searchQuery) {
+                        url += `&q=${this.searchQuery}`;
+                    }
+
+                    const response = await fetch(url);
+                    const res = await response.json();
+
+                    if (res.data) {
+                        if (reset) {
+                            this.results = res.data;
+                        } else {
+                            this.results = [...this.results, ...res.data];
+                        }
+                        this.hasMore = res.meta?.hasMore || false;
+                    }
+                } catch (e) {
+                    console.error("Search failed:", e);
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async search() {
+                await this.fetchSuggestions(true);
+            },
+
+            async loadMore() {
+                if (!this.hasMore || this.loading) return;
+                this.page++;
+                await this.fetchSuggestions(false);
+            },
+
+            openDropdown() {
+                this.showResults = true;
+                if (this.results.length === 0) {
+                    this.fetchSuggestions(true);
+                }
+            },
+
+            selectItem(result) {
+                if (this.multiple) {
+                    if (!this.selectedItems.find(i => i.id === result.id)) {
+                        this.selectedItems.push(result);
+                    }
+                } else {
+                    this.selectedItems = [result];
+                }
+
+                this.searchQuery = '';
+                this.showResults = false;
+            },
+
+            removeItem(id) {
+                this.selectedItems = this.selectedItems.filter(i => i.id !== id);
+            }
+        }));
 
         window.addEventListener('load', () => {
             const el = document.querySelector('[x-data^="recordForm()"]');

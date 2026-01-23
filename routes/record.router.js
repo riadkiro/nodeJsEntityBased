@@ -10,4 +10,7 @@ router.get("/:entityName/edit/:id", recordController.editForm);
 router.post("/:entityName/update/:id", recordController.update);
 router.get("/:entityName/delete/:id", recordController.delete);
 
+// API for relations
+router.get("/api/search", recordController.searchAjax);
+
 module.exports = router;

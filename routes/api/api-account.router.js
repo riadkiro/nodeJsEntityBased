@@ -3,6 +3,8 @@ const router = express.Router();
 //Load Product model
 
 const accountController = require('../../controllers/account.controller')
+// Hierarchy
+const hierarchyController = require('../../controllers/hierarchy.controller');
 
 //Do not delete the comments
 //Auto generated routers 
@@ -18,6 +20,14 @@ router.get('/:id', accountController.singlePage_Api)
 //Delete
 router.delete('/:id', accountController.delete_Api);
 
-//Generated from template
+router.get('/hierarchy/list', hierarchyController.getHierarchy);
+router.post('/hierarchy/move', hierarchyController.move);
+router.post('/hierarchy/space', hierarchyController.createSpace);
+router.post('/hierarchy/folder', hierarchyController.createFolder);
+router.post('/hierarchy/entity', hierarchyController.createEntity);
+router.post('/hierarchy/rename', hierarchyController.renameItem);
+router.post('/hierarchy/delete', hierarchyController.deleteItem);
+router.get('/hierarchy/all-entities', hierarchyController.listAllEntities);
+router.post('/hierarchy/link-entity', hierarchyController.linkEntity);
 
 module.exports = router;

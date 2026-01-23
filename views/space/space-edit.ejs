@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+
+<head>
+    <%- include('../layout/head', { title: 'Edit Space' }) %>
+</head>
+
+<body class="main-body overflow-hidden">
+    <div
+        class="screen_loader animate__animated fixed inset-0 z-[60] grid place-content-center bg-[#fafafa] dark:bg-[#060818]">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+            class="animate-spin inline-block h-12 w-12 text-primary">
+            <path opacity="0.2" fill-rule="evenodd" clip-rule="evenodd"
+                d="M12 19C15.866 19 19 15.866 19 12C19 8.13401 15.866 5 12 5C8.13401 5 5 8.13401 5 12C5 15.866 8.13401 19 12 19ZM12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                fill="currentColor" />
+            <path d="M2 12C2 6.47715 6.47715 2 12 2V5C8.13401 5 5 8.13401 5 12H2Z" fill="currentColor" />
+        </svg>
+    </div>
+
+    <div class="main-container text-black dark:text-white-dark min-h-screen" x-data="main">
+        <%- include('../layout/sidebar') %>
+            <div class="main-content flex min-h-screen flex-col">
+                <%- include('../layout/header') %>
+
+                    <div class="animate__animated p-6" :class="[$store.app.animation]">
+                        <!-- Breadcrumb -->
+                        <ul class="flex space-x-2 rtl:space-x-reverse">
+                            <li><a href="javascript:;" class="text-primary hover:underline">Spaces</a></li>
+                            <li class="before:content-['/'] ltr:before:mr-1 rtl:before:ml-1"><span>Edit</span></li>
+                        </ul>
+
+                        <div class="panel mt-6">
+                            <form action="/account/<%= account_number %>/space/edit/<%= space._id %>" method="POST"
+                                enctype="multipart/form-data">
+                                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label for="name">Name</label>
+                                        <input type="text" name="name" id="name" class="form-input"
+                                            value="<%= space.name %>" required />
+                                    </div>
+                                    <div>
+                                        <label for="color">Color</label>
+                                        <input type="color" name="color" id="color" class="form-input h-10 w-full p-0"
+                                            value="<%= space.color %>" />
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label for="description">Description</label>
+                                        <textarea name="description" id="description" class="form-textarea"
+                                            rows="3"><%= space.description %></textarea>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label for="image">Icon/Image</label>
+                                        <input type="file" name="image" id="image" class="form-input"
+                                            accept="image/*" />
+                                        <% if (space.icon) { %>
+                                            <div class="mt-2">
+                                                <img src="<%= space.icon %>" alt="Current Icon"
+                                                    class="h-10 w-10 object-cover rounded" />
+                                            </div>
+                                            <% } %>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4 mt-6">
+                                    <button type="submit" class="btn btn-primary">Update Space</button>
+                                    <button type="button" class="btn btn-danger"
+                                        @click="confirmDelete('<%= space._id %>')">Delete</button>
+                                </div>
+                            </form>
+
+                            <form id="delete-form-<%= space._id %>"
+                                action="/account/<%= account_number %>/space/<%= space._id %>?_method=DELETE"
+                                method="POST" class="hidden">
+                            </form>
+                        </div>
+                    </div>
+
+                    <%- include('../layout/footer') %>
+            </div>
+    </div>
+
+    <script>
+        function confirmDelete(id) {
+            if (confirm('Are you sure you want to delete this space? This action cannot be undone.')) {
+                // Creating a form to submit delete request
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/account/<%= account_number %>/space/${id}?_method=DELETE`;
+
+                // Since standard HTML forms don't support DELETE method natively without method-override, 
+                // and we might not have that middleware set up for query params or it expects a hidden input field.
+                // Let's assume common _method override or use a fetch. 
+                // But for simplicity with EJS/Controllers usually we used `router.delete('/:id', ...)`
+                // We need to fetch or use a hidden input for method override if the backend supports it (method-override package).
+
+                // Checking routes: router.delete("/:id", spaceController.delete);
+                // So we need to send a DELETE request.
+
+                fetch(`/account/<%= account_number %>/space/${id}`, {
+                    method: 'DELETE'
+                }).then(res => {
+                    if (res.ok || res.redirected) window.location.href = '/account/<%= account_number %>/space/list';
+                    else alert('Failed to delete');
+                });
+            }
+        }
+    </script>
+    <%- include('../layout/scripts') %>
+</body>
+
+</html>

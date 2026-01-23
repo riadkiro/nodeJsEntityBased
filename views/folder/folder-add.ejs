@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+
+<head>
+    <%- include('../layout/head', { title: 'Create Folder' }) %>
+</head>
+
+<body class="main-body overflow-hidden">
+    <div
+        class="screen_loader animate__animated fixed inset-0 z-[60] grid place-content-center bg-[#fafafa] dark:bg-[#060818]">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+            class="animate-spin inline-block h-12 w-12 text-primary">
+            <path opacity="0.2" fill-rule="evenodd" clip-rule="evenodd"
+                d="M12 19C15.866 19 19 15.866 19 12C19 8.13401 15.866 5 12 5C8.13401 5 5 8.13401 5 12C5 15.866 8.13401 19 12 19ZM12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                fill="currentColor" />
+            <path d="M2 12C2 6.47715 6.47715 2 12 2V5C8.13401 5 5 8.13401 5 12H2Z" fill="currentColor" />
+        </svg>
+    </div>
+
+    <div class="main-container text-black dark:text-white-dark min-h-screen" x-data="main">
+        <%- include('../layout/sidebar') %>
+            <div class="main-content flex min-h-screen flex-col">
+                <%- include('../layout/header') %>
+
+                    <div class="animate__animated p-6" :class="[$store.app.animation]">
+                        <!-- Breadcrumb -->
+                        <ul class="flex space-x-2 rtl:space-x-reverse">
+                            <li><a href="javascript:;" class="text-primary hover:underline">Folders</a></li>
+                            <li class="before:content-['/'] ltr:before:mr-1 rtl:before:ml-1"><span>Create</span></li>
+                        </ul>
+
+                        <div class="panel mt-6">
+                            <form action="/account/<%= account_number %>/folder/add" method="POST"
+                                enctype="multipart/form-data">
+                                <!-- Hidden Inputs for Hierarchy -->
+                                <% if (spaceId) { %>
+                                    <input type="hidden" name="spaceId" value="<%= spaceId %>" />
+                                    <% } %>
+                                        <% if (parentFolderId) { %>
+                                            <input type="hidden" name="parentFolderId" value="<%= parentFolderId %>" />
+                                            <% } %>
+
+                                                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                                    <div>
+                                                        <label for="name">Name</label>
+                                                        <input type="text" name="name" id="name" class="form-input"
+                                                            required placeholder="Folder Name" />
+                                                    </div>
+                                                    <div>
+                                                        <label for="color">Color</label>
+                                                        <input type="color" name="color" id="color"
+                                                            class="form-input h-10 w-full p-0" />
+                                                    </div>
+                                                    <div class="col-span-2">
+                                                        <label for="description">Description</label>
+                                                        <textarea name="description" id="description"
+                                                            class="form-textarea" rows="3"
+                                                            placeholder="Optional description"></textarea>
+                                                    </div>
+                                                    <div class="col-span-2">
+                                                        <label for="image">Icon/Image</label>
+                                                        <input type="file" name="image" id="image" class="form-input"
+                                                            accept="image/*" />
+                                                    </div>
+                                                </div>
+                                                <button type="submit" class="btn btn-primary mt-6">Create
+                                                    Folder</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <%- include('../layout/footer') %>
+            </div>
+    </div>
+    <%- include('../layout/scripts') %>
+</body>
+
+</html>

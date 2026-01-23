@@ -7,7 +7,6 @@ const bodyParser = require("body-parser");
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(bodyParser.raw());
 
 //Dont remove this comments
 //Auto generated passport
@@ -36,22 +35,25 @@ app.use(express.static(__dirname + "/public"));
 app.use(expressLayouts);
 app.set("view engine", "ejs");
 
-//Saas multi-tenant middleware START
-const connectToTenantDb = require("./middleware/tenant").connectToTenantDb;
-const setAccountNumber = require("./middleware/tenant").setAccountNumber;
-
-//Cette fonction ajoute req.account_number = 123456 si l'url est myapp/account/123456
-app.use(setAccountNumber);
-
-//Si l'utilisateur est connecté et req.account_number est définie
-//Cette fonction permet de se connecter à la base de donné du compte via req.tenantDbConnection
-app.use(connectToTenantDb);
-
 //Saas multi-tenant middleware END
 
 const { ensureAuthenticated } = require("./auth/auth");
 // Routes
 const Routes = require("./routes/routes-inc.js");
 const RoutesAccount = require("./routes/routes-inc-account.js");
+const { connectToTenantDb } = require("./middleware/tenant");
+
 app.use("/", Routes);
-app.use("/account/:account_id", ensureAuthenticated, RoutesAccount);
+
+// Routes with Tenant DB
+app.use(
+  "/account/:account_id",
+  ensureAuthenticated,
+  (req, res, next) => {
+    req.account_number = req.params.account_id;
+    res.locals.account_number = req.account_number;
+    next();
+  },
+  connectToTenantDb,
+  RoutesAccount
+);

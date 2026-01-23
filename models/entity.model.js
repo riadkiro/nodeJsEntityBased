@@ -19,6 +19,10 @@ const EntitySchema = new mongoose.Schema(
     // Champs standards activés
     enabledStandardFields: [String], // ex: ['title', 'slug', 'date']
 
+    // Hierarchy
+    spaces: [{ type: mongoose.Schema.Types.ObjectId, ref: "Space" }],
+    folders: [{ type: mongoose.Schema.Types.ObjectId, ref: "Folder" }],
+
     // Champs personnalisés
     customFields: [
       {

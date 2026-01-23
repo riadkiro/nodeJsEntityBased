@@ -5,75 +5,212 @@
         <h5 class="text-lg font-semibold dark:text-white-light">
           <%= entity.name %> - Liste des records
         </h5>
-        <a href="/account/<%= account_number %>/record/<%= entity.slug %>/add" class="btn btn-primary">Ajouter un
-          record</a>
+        
+        <div class="flex items-center gap-3">
+            <!-- Column Selection Dropdown -->
+            <div class="relative" x-data="{ columnDropdown: false }" @click.outside="columnDropdown = false">
+                <a href="javascript:;"
+                  class="flex items-center rounded-md border border-[#e0e6ed] px-4 py-2 text-sm font-semibold dark:border-[#253b5c] dark:bg-[#1b2e4b] dark:text-white-dark"
+                  @click="columnDropdown = ! columnDropdown">
+                  <span class="ltr:mr-1 rtl:ml-1">Colonnes</span>
+                  <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 9L12 15L5 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                      stroke-linejoin="round"></path>
+                  </svg>
+                </a>
+                <div
+                  class="absolute top-11 z-[10] hidden w-[200px] rounded bg-white py-2 text-dark shadow ltr:left-0 rtl:right-0 dark:bg-[#1b2e4b] dark:text-white-light"
+                  :class="columnDropdown && '!block'">
+                  <ul class="space-y-2 px-4 font-semibold max-h-60 overflow-y-auto">
+                    <template x-for="(col, i) in columns" :key="i">
+                      <!-- Don't show toggle for Actions column (last one) -->
+                      <li x-show="col.name !== 'Actions'">
+                        <label class="cursor-pointer flex items-center">
+                          <input type="checkbox" class="form-checkbox" 
+                            @change="toggleColumn(i)"
+                            :checked="!col.hidden" />
+                          <span class="ltr:ml-2 rtl:mr-2" x-text="col.name"></span>
+                        </label>
+                      </li>
+                    </template>
+                  </ul>
+                </div>
+            </div>
+
+            <a href="/account/<%= account_number %>/record/<%= entity.slug %>/add" class="btn btn-primary">Ajouter un record</a>
+        </div>
       </div>
+      
       <div class="relative">
-        <table id="recordTable" class="whitespace-nowrap"></table>
+        <table id="recordTable" class="whitespace-nowrap w-full"></table>
       </div>
     </div>
   </div>
 </div>
 
+<% 
+// 1. Prepare Columns
+const columns = [];
+if (entity.enabledStandardFields && entity.enabledStandardFields.includes('title')) {
+    columns.push("Titre");
+}
+entity.customFields.forEach(field => {
+    columns.push(field.label);
+});
+columns.push("Créé le");
+columns.push("Actions");
+
+// 2. Prepare Rows
+const rows = records.map(record => {
+    const row = [];
+    
+    // Title
+    if (entity.enabledStandardFields && entity.enabledStandardFields.includes('title')) {
+        row.push(record.title || '');
+    }
+    
+    // Custom Fields
+    entity.customFields.forEach(field => {
+        const customField = record.customFields.find(cf => 
+             cf.field_id && (cf.field_id._id || cf.field_id).toString() === field._id.toString()
+        );
+        let val = customField ? customField.value : '';
+        // If it's a JSON string (like relation items), we can try to make it readable or just keep it as is.
+        // For simple display, stick to raw value or simple parsing if needed.
+        // For this iteration, we keep the original logic: just the value.
+        row.push(val);
+    });
+    
+    // Created At
+    row.push(new Date(record.createdAt).toLocaleDateString());
+    
+    // Actions HTML
+    const actions = `<div class="flex items-center gap-2">
+        <a href="/account/${account_number}/record/${entity.slug}/edit/${record._id}" class="btn btn-sm btn-outline-info">Modifier</a>
+        <a href="/account/${account_number}/record/${entity.slug}/delete/${record._id}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Confirmer la suppression ?')">Supprimer</a>
+    </div>`;
+    row.push(actions);
+    
+    return row;
+});
+%>
+
+<!-- Secure Data Transmission -->
+<script id="record-columns" type="application/json">
+    <%- JSON.stringify(columns) %>
+</script>
+<script id="record-rows" type="application/json">
+    <%- JSON.stringify(rows) %>
+</script>
+
 <script>
   document.addEventListener("alpine:init", () => {
     Alpine.data("recordList", () => ({
       datatable: null,
+      columns: [],
+      preferenceKey: 'record_list_cols_<%= entity._id %>',
+      serverPreferences: <%- JSON.stringify(preferences || {}) %>,
 
       init() {
-        const headers = [
-          <% if (entity.enabledStandardFields && entity.enabledStandardFields.includes('title')) { %>
-          "Titre",
-          <% } %>
-          <% entity.customFields.forEach(field => { %>
-            "<%= field.label %>",
-          <% }) %>
-          "Créé le",
-          "Actions"
-        ];
+        // Load data from JSON blocks
+        const colNames = JSON.parse(document.getElementById('record-columns').textContent);
+        const dataRows = JSON.parse(document.getElementById('record-rows').textContent);
 
-        const dataRows = [
-          <% records.forEach(record => { %>
-          [
-              <% if (entity.enabledStandardFields && entity.enabledStandardFields.includes('title')) { %>
-            `<%= record.title || '' %>`,
-              <% } %>
-              <% entity.customFields.forEach(field => { %>
-                <% 
-                   // Access field._id directly as we are within the forEach loop in an EJS script block
-                   const customField = record.customFields.find(cf => 
-                     cf.field_id && (cf.field_id._id || cf.field_id).toString() === field._id.toString()
-                   );
-                   const val = customField ? customField.value : '';
-                %>
-                `<%= val %>`,
-              <% }) %>
-            `<%= new Date(record.createdAt).toLocaleDateString() %>`,
-            `<div class="flex items-center gap-2">
-                <a href="/account/<%= account_number %>/record/<%= entity.slug %>/edit/<%= record._id %>" class="btn btn-sm btn-outline-info">Modifier</a>
-                <a href="/account/<%= account_number %>/record/<%= entity.slug %>/delete/<%= record._id %>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Confirmer la suppression ?')">Supprimer</a>
-              </div>`
-            ],
-          <% }) %>
-        ];
+        // 1. Initialize columns structure
+        // Map the simple string headings to objects based on saved preferences
+        const savedCols = this.serverPreferences[this.preferenceKey];
+        
+        this.columns = colNames.map((colName, index) => {
+            let hidden = false;
+            if (savedCols && Array.isArray(savedCols)) {
+                // Determine if this column was hidden in the saved state
+                // savedCols is expected to be array of objects: { name: '...', hidden: true/false }
+                const found = savedCols.find(c => c.name === colName);
+                if (found && found.hidden) {
+                    hidden = true;
+                }
+            }
+            return { name: colName, hidden: hidden };
+        });
 
-    this.datatable = new simpleDatatables.DataTable("#recordTable", {
-      data: {
-        headings: headers,
-        data: dataRows,
+        // 2. Setup Simple Datatables
+        this.datatable = new simpleDatatables.DataTable("#recordTable", {
+          data: {
+            headings: colNames,
+            data: dataRows,
+          },
+          perPage: 10,
+          perPageSelect: [10, 20, 30, 50, 100],
+          labels: {
+            placeholder: "Rechercher...",
+            perPage: "{select} entrées par page",
+            noRows: "Aucune entrée trouvée",
+            info: "Affichage de {start} à {end} sur {rows} entrées",
+          },
+          layout: {
+             top: "{search}",
+             bottom: "{info}{select}{pager}",
+           },
+        });
+        
+        // 3. Apply initial visibility
+        // We wait a tick to ensure datatable is ready, though usually synchronous init works
+        this.applyVisibility();
       },
-      perPage: 10,
-      perPageSelect: [10, 20, 30, 50, 100],
-      firstLast: true,
-      labels: {
-        perPage: "{select}",
+
+      toggleColumn(index) {
+        this.columns[index].hidden = !this.columns[index].hidden;
+        this.applyVisibility();
+        this.savePreferences();
       },
-      layout: {
-        top: "{search}",
-        bottom: "{info}{select}{pager}",
+
+      applyVisibility() {
+        if (!this.datatable) return;
+
+        // Collect indices to hide/show
+        const hiddenIndices = [];
+        const visibleIndices = [];
+
+        this.columns.forEach((col, idx) => {
+            if (col.hidden) {
+                hiddenIndices.push(idx);
+            } else {
+                visibleIndices.push(idx);
+            }
+        });
+
+        if (hiddenIndices.length > 0) this.datatable.columns().hide(hiddenIndices);
+        if (visibleIndices.length > 0) this.datatable.columns().show(visibleIndices);
       },
-    });
-  },
+
+      savePreferences() {
+        const payload = {
+            key: this.preferenceKey,
+            value: this.columns
+        };
+
+        // Use relative path or construct manually with account number
+        // server.js mounts routes-inc-account at /account/:account_id
+        // routes-inc-account mounts api-user at /api/user
+        // so full path is /account/123456/api/user/preferences
+        // We can use a relative path if we are on a page like /account/123456/record/slug/list
+        // But safer to build it if we have account number.
+        const accountNum = '<%= account_number %>'; 
+        const url = `/account/${accountNum}/api/user/preferences`;
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(!data.success) console.warn('Failed to save preferences');
+        })
+        .catch(err => console.error('Error saving preferences:', err));
+      }
     }));
   });
 </script>

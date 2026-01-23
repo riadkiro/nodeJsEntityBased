@@ -19,6 +19,10 @@ const UserSchema = new mongoose.Schema({
       name: { type: String },
     },
   ],
+  preferences: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
+  },
 
   created_on: {
     type: Date,

@@ -18,6 +18,9 @@ router.get('/:id', userController.singlePage_Api)
 //Delete
 router.delete('/:id', userController.delete_Api);
 
+// Save Preferences
+router.post('/preferences', userController.savePreferences);
+
 //Generated from template
 
 module.exports = router;

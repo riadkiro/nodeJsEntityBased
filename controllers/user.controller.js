@@ -126,4 +126,27 @@ module.exports = {
       res.send("You are not logged in !");
     }
   },
+
+  savePreferences: async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { key, value } = req.body;
+      if (!key) {
+        return res.status(400).json({ error: "Key is required" });
+      }
+
+      const update = {};
+      update[`preferences.${key}`] = value;
+
+      await User.findByIdAndUpdate(req.user._id, { $set: update });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Server Error" });
+    }
+  },
 };

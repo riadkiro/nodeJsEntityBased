@@ -12,5 +12,6 @@ router.delete("/delete/:id", classificationController.delete);
 // API
 router.get("/api/list", classificationController.list_Api);
 router.post("/api/fast-add", classificationController.fastAdd);
+router.post("/api/reorder", classificationController.reorderOptions);
 
 module.exports = router;

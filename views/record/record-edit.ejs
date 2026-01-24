@@ -16,66 +16,71 @@
         </div>
     </div>
 
-    <div class="flex flex-col lg:flex-row gap-6">
-        <!-- Main Form Content -->
-        <div class="flex-1 space-y-6">
-            <div class="panel">
-                <form action="/account/<%= account_number %>/record/<%= entity.slug %>/update/<%= record._id %>"
-                    method="POST" enctype="multipart/form-data" id="main-record-form" class="space-y-8">
+    <form action="/account/<%= account_number %>/record/<%= entity.slug %>/update/<%= record._id %>" method="POST"
+        enctype="multipart/form-data" id="main-record-form">
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- Main Form Content -->
+            <div class="flex-1 space-y-6">
+                <div class="panel">
+                    <div class="space-y-8">
 
-                    <!-- Standard Fields Section -->
-                    <div>
-                        <div class="flex justify-between items-center pb-2 mb-4 border-b border-gray-100">
-                            <h6 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Champs Principaux
-                            </h6>
+                        <!-- Standard Fields Section -->
+                        <div>
+                            <div class="flex justify-between items-center pb-2 mb-4 border-b border-gray-100">
+                                <h6 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Champs
+                                    Principaux
+                                </h6>
+                            </div>
+
+                            <div class="flex flex-wrap -mx-2">
+                                <% if (entity.enabledStandardFields && entity.enabledStandardFields.includes('title')) {
+                                    %>
+                                    <div class="w-full px-2 mb-4">
+                                        <label for="title">Titre</label>
+                                        <input name="standard[title]" type="text" value="<%= record.title %>"
+                                            class="form-input text-lg font-bold" placeholder="Entrez le titre"
+                                            required />
+                                    </div>
+                                    <% } %>
+
+                                        <% if (entity.enabledStandardFields &&
+                                            entity.enabledStandardFields.includes('description')) { %>
+                                            <div class="w-full px-2 mb-4">
+                                                <label for="description">Description</label>
+                                                <textarea name="standard[description]" class="form-textarea" rows="4"
+                                                    placeholder="Entrez la description"><%= record.description %></textarea>
+                                            </div>
+                                            <% } %>
+                            </div>
                         </div>
 
-                        <div class="flex flex-wrap -mx-2">
-                            <% if (entity.enabledStandardFields && entity.enabledStandardFields.includes('title')) { %>
-                                <div class="w-full px-2 mb-4">
-                                    <label for="title">Titre</label>
-                                    <input name="standard[title]" type="text" value="<%= record.title %>"
-                                        class="form-input text-lg font-bold" placeholder="Entrez le titre" required />
-                                </div>
-                                <% } %>
+                        <!-- Custom Fields Section -->
+                        <div>
+                            <div class="flex justify-between items-center pb-2 mb-4 border-b border-gray-100">
+                                <h6 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Champs
+                                    personnalisés</h6>
+                                <button x-show="designMode" @click="openModal = true" type="button"
+                                    class="text-[11px] font-bold text-primary hover:bg-primary/5 px-4 py-1.5 rounded-full transition-all flex items-center gap-1.5">
+                                    <iconify-icon icon="tabler:circle-plus" width="16"></iconify-icon>
+                                    <span>AJOUTER UN CHAMP</span>
+                                </button>
+                            </div>
 
-                                    <% if (entity.enabledStandardFields &&
-                                        entity.enabledStandardFields.includes('description')) { %>
-                                        <div class="w-full px-2 mb-4">
-                                            <label for="description">Description</label>
-                                            <textarea name="standard[description]" class="form-textarea" rows="4"
-                                                placeholder="Entrez la description"><%= record.description %></textarea>
-                                        </div>
-                                        <% } %>
+                            <div id="fields-builder-canvas"
+                                class="flex flex-wrap -mx-2 min-h-[50px] p-2 rounded-xl transition-all"
+                                :class="designMode ? 'bg-gray-50/20 border-2 border-dashed border-gray-200' : ''"
+                                x-html="renderAllFields()">
+                            </div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Custom Fields Section -->
-                    <div>
-                        <div class="flex justify-between items-center pb-2 mb-4 border-b border-gray-100">
-                            <h6 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Champs
-                                personnalisés</h6>
-                            <button x-show="designMode" @click="openModal = true" type="button"
-                                class="text-[11px] font-bold text-primary hover:bg-primary/5 px-4 py-1.5 rounded-full transition-all flex items-center gap-1.5">
-                                <iconify-icon icon="tabler:circle-plus" width="16"></iconify-icon>
-                                <span>AJOUTER UN CHAMP</span>
-                            </button>
-                        </div>
-
-                        <div id="fields-builder-canvas"
-                            class="flex flex-wrap -mx-2 min-h-[50px] p-2 rounded-xl transition-all"
-                            :class="designMode ? 'bg-gray-50/20 border-2 border-dashed border-gray-200' : ''"
-                            x-html="renderAllFields()">
-                        </div>
-                    </div>
+            <!-- Sidebar Content -->
+            <div class="w-[298px] flex-none space-y-4">
+                <%- include('partials/record-sidebar') %>
             </div>
         </div>
-
-        <!-- Sidebar Content -->
-        <div class="lg:w-[280px] space-y-4">
-            <%- include('partials/record-sidebar') %>
-        </div>
-    </div>
     </form>
 
     <!-- Modal for adding fields -->
@@ -533,7 +538,6 @@
 <style>
     /* Exact Entity Builder Design System */
     .field-item label,
-    form label,
     .builder-preview label {
         display: block !important;
         font-size: 10px !important;

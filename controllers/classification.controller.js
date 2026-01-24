@@ -127,5 +127,28 @@ module.exports = {
             console.error(err);
             res.status(500).json({ error: err.message });
         }
+    },
+
+    reorderOptions: async (req, res) => {
+        try {
+            const { classificationId, options } = req.body;
+            const Classification = await tenantCollection(req, "Classification");
+            const classification = await Classification.findById(classificationId);
+            if (!classification) return res.status(404).json({ error: "Classification non trouvée" });
+
+            options.forEach(o => {
+                const opt = classification.options.id(o.id);
+                if (opt) {
+                    opt.parentId = (o.parentId && o.parentId !== 'null' && o.parentId !== '') ? o.parentId : null;
+                    opt.order = o.order;
+                }
+            });
+
+            await classification.save();
+            res.json({ success: true });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: err.message });
+        }
     }
 };

@@ -1,0 +1,116 @@
+<div x-data="iconPicker(<%= locals.onSelect || 'null' %>, '<%= locals.initialIcon || '' %>')"
+    class="relative inline-block">
+
+    <!-- Trigger Button -->
+    <button type="button" @click.stop="toggle()"
+        class="flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 hover:border-primary hover:bg-primary/5 transition-all text-gray-500 hover:text-primary active:scale-95 bg-white"
+        :title="selectedIcon || 'Choisir une icône'">
+        <iconify-icon :icon="selectedIcon || 'tabler:apps'" width="18"></iconify-icon>
+    </button>
+
+    <!-- Modal Picker -->
+    <template x-teleport="body">
+        <div x-show="isOpen" class="fixed inset-0 z-[10000] overflow-y-auto" x-cloak>
+            <!-- Backdrop -->
+            <div x-show="isOpen" x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0" @click="isOpen = false"
+                class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+            <!-- Modal Content -->
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div x-show="isOpen" x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                    x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                    x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+                    class="relative w-full max-w-lg transform overflow-hidden rounded-2xl bg-white p-6 shadow-2xl transition-all border border-gray-100">
+
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">Choisir une icône</h3>
+                            <p class="text-xs text-gray-500 mt-0.5">Sélectionnez une icône pour personnaliser votre
+                                onglet</p>
+                        </div>
+                        <button @click="isOpen = false"
+                            class="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+                            <iconify-icon icon="tabler:x" width="20"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="relative mb-6">
+                        <iconify-icon icon="tabler:search"
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" width="20"></iconify-icon>
+                        <input type="text" x-model="search"
+                            placeholder="Rechercher une icône (ex: home, user, settings...)"
+                            class="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+                    </div>
+
+                    <!-- Icons Grid -->
+                    <div class="grid grid-cols-6 sm:grid-cols-8 gap-3 max-h-[400px] overflow-y-auto custom-scrollbar-lg p-1 w-full"
+                        style="display: grid !important; grid-template-columns: repeat(6, minmax(0, 1fr)) !important;">
+                        <template x-for="icon in icons" :key="icon">
+                            <button x-show="!search || icon.toLowerCase().includes(search.toLowerCase())" type="button"
+                                @click="select(icon)"
+                                class="aspect-square w-full flex flex-col items-center justify-center rounded-xl hover:bg-primary/5 hover:text-primary transition-all text-gray-400 group relative border border-transparent hover:border-primary/10"
+                                :class="selectedIcon === icon ? 'bg-primary/10 text-primary border-primary/20' : ''"
+                                :title="icon">
+                                <iconify-icon :icon="icon" width="24"></iconify-icon>
+                                <span
+                                    class="hidden group-hover:block absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] py-1 px-2 rounded whitespace-nowrap z-10"
+                                    x-text="icon.replace('tabler:', '')"></span>
+                            </button>
+                        </template>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="mt-8 flex items-center justify-between pt-6 border-t border-gray-50">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-gray-50 rounded-lg">
+                                <iconify-icon :icon="selectedIcon || 'tabler:apps'" class="text-primary"
+                                    width="24"></iconify-icon>
+                            </div>
+                            <div>
+                                <span
+                                    class="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Sélectionnée</span>
+                                <span class="text-sm font-medium text-gray-700" x-text="selectedIcon"></span>
+                            </div>
+                        </div>
+                        <button @click="isOpen = false"
+                            class="px-6 py-2 bg-primary text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary-dark transition-all active:scale-95">
+                            Confirmer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+</div>
+
+<style>
+    [x-cloak] {
+        display: none !important;
+    }
+
+    .custom-scrollbar-lg::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-scrollbar-lg::-webkit-scrollbar-track {
+        background: #f9fafb;
+        border-radius: 10px;
+    }
+
+    .custom-scrollbar-lg::-webkit-scrollbar-thumb {
+        background: #e5e7eb;
+        border-radius: 10px;
+    }
+
+    .custom-scrollbar-lg::-webkit-scrollbar-thumb:hover {
+        background: #d1d5db;
+    }
+</style>

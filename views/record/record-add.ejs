@@ -48,38 +48,49 @@
                 <div class="panel">
                     <div class="space-y-8">
                         <!-- Tabbed Attributes Section -->
+                        <!-- Tabbed Attributes Section -->
                         <div>
-                            <div class="flex justify-between items-end pb-2 mb-4 border-b border-gray-100">
+                            <div class="flex justify-between items-end pb-4 border-b border-gray-100">
                                 <div class="flex items-center gap-4">
                                     <template x-for="tab in tabs" :key="tab.id">
                                         <div class="relative group/tab flex items-center gap-1.5">
                                             <div @click="setActiveTab(tab.id)"
-                                                class="cursor-pointer pb-2 px-1 text-[10px] font-bold uppercase tracking-[0.2em] transition-all border-b-2"
-                                                :class="activeTab === tab.id ? 'text-primary border-primary' : 'text-gray-400 border-transparent hover:text-gray-600'">
+                                                class="cursor-pointer pb-2.5 px-2 flex items-center gap-2 relative transition-all duration-300 before:transition-all before:duration-500 before:absolute hover:text-primary before:bottom-0 before:w-0 before:left-0 before:right-0 before:m-auto before:h-[2px] before:bg-primary"
+                                                :class="activeTab === tab.id ? 'before:w-full text-primary font-semibold' : 'text-gray-500 font-medium'">
+
+                                                <iconify-icon :icon="tab.icon || 'tabler:apps'" width="16"
+                                                    :class="activeTab === tab.id ? 'text-primary' : 'text-gray-400'"></iconify-icon>
 
                                                 <template x-if="editingTabId !== tab.id">
-                                                    <span x-text="tab.title" @dblclick="startEditingTab(tab)"></span>
+                                                    <span class="text-sm tracking-tight" x-text="tab.title"
+                                                        @dblclick="startEditingTab(tab)"></span>
                                                 </template>
                                                 <template x-if="editingTabId === tab.id">
-                                                    <input type="text" x-model="tempTabTitle"
-                                                        @keyup.enter="saveTabTitle()" @blur="saveTabTitle()"
-                                                        x-init="$nextTick(() => $el.focus())"
-                                                        class="!p-0 !h-auto !bg-transparent !border-none !text-[10px] !font-bold !uppercase !tracking-[0.2em] !text-primary focus:ring-0 min-w-[50px]">
+                                                    <div
+                                                        class="flex items-center gap-2 bg-white px-2 py-0.5 rounded shadow-sm ring-1 ring-gray-200">
+                                                        <%- include('../components/icon-picker', {
+                                                            onSelect: '(icon) => { tempTabIcon = icon }' ,
+                                                            initialIcon: 'tempTabIcon' }) %>
+                                                            <input type="text" x-model="tempTabTitle"
+                                                                @keyup.enter="saveTabTitle()" @blur="saveTabTitle()"
+                                                                x-init="$nextTick(() => $el.focus())"
+                                                                class="!p-0 !h-auto !bg-transparent !border-none !text-sm !font-semibold !text-primary focus:ring-0 min-w-[70px]">
+                                                    </div>
                                                 </template>
                                             </div>
 
                                             <!-- Tab Actions (Design Mode) -->
                                             <div x-show="designMode && activeTab === tab.id"
-                                                class="flex items-center gap-1 pb-2">
+                                                class="flex items-center gap-1 pb-2.5">
                                                 <button type="button" @click="startEditingTab(tab)"
                                                     class="text-gray-400 hover:text-primary transition-colors">
-                                                    <iconify-icon icon="solar:pen-2-linear" width="12"></iconify-icon>
+                                                    <iconify-icon icon="solar:pen-2-linear" width="14"></iconify-icon>
                                                 </button>
                                                 <button type="button" x-show="tabs.length > 1"
                                                     @click="removeTab(tab.id)"
                                                     class="text-gray-400 hover:text-red-500 transition-colors">
                                                     <iconify-icon icon="solar:trash-bin-trash-linear"
-                                                        width="12"></iconify-icon>
+                                                        width="14"></iconify-icon>
                                                 </button>
                                             </div>
                                         </div>
@@ -87,23 +98,24 @@
 
                                     <!-- Add Tab Button -->
                                     <button x-show="designMode" @click="addTab()" type="button"
-                                        class="pb-2 text-gray-400 hover:text-primary transition-colors"
+                                        class="pb-2.5 text-gray-400 hover:text-primary transition-colors"
                                         title="Ajouter un onglet">
-                                        <iconify-icon icon="tabler:plus" width="16"></iconify-icon>
+                                        <iconify-icon icon="tabler:plus" width="18"></iconify-icon>
                                     </button>
                                 </div>
 
-                                <div class="flex items-center gap-4 pb-2">
+                                <div class="flex items-center gap-3 pb-2.5">
                                     <button x-show="designMode" @click="openModal = true" type="button"
-                                        class="text-[10px] font-bold text-primary hover:bg-primary/10 px-3 py-1.5 rounded-full transition-all flex items-center gap-1.5 border border-primary/20 bg-primary/5">
-                                        <iconify-icon icon="tabler:circle-plus" width="14"></iconify-icon>
+                                        class="text-[11px] font-bold text-primary hover:bg-primary/5 px-4 py-1.5 rounded-lg transition-all flex items-center gap-2 border border-primary/20">
+                                        <iconify-icon icon="tabler:circle-plus" width="16"></iconify-icon>
                                         <span>AJOUTER UN ATTRIBUT</span>
                                     </button>
 
                                     <button type="button" @click="designMode = !designMode"
-                                        :class="designMode ? 'text-primary bg-primary/10' : 'text-gray-400 hover:text-primary'"
-                                        class="transition-all p-1.5 rounded-lg" title="Mode Layout">
-                                        <iconify-icon icon="tabler:layout-dashboard" width="18"></iconify-icon>
+                                        class="p-2 rounded-lg transition-all"
+                                        :class="designMode ? 'bg-primary text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
+                                        title="Mode Layout">
+                                        <iconify-icon icon="tabler:layout-dashboard" width="20"></iconify-icon>
                                     </button>
                                 </div>
                             </div>
@@ -125,7 +137,7 @@
                         <div class="mt-4">
 
                             <div id="fields-builder-canvas"
-                                class="flex flex-wrap -mx-2 min-h-[50px] p-2 rounded-xl transition-all"
+                                class="flex flex-wrap -mx-2 min-h-[80px] p-2 rounded-xl transition-all"
                                 :class="designMode ? 'bg-gray-50/20 border-2 border-dashed border-gray-200' : ''"
                                 x-html="renderAllFields()">
                             </div>
@@ -168,7 +180,10 @@
 
             return {
                 designMode: false,
-                tabs: initialLayout.tabs || [{ id: 'default', title: 'Attributs' }],
+                tabs: (initialLayout.tabs || [{ id: 'default', title: 'Attributs' }]).map(t => ({
+                    ...t,
+                    icon: t.icon || 'tabler:apps'
+                })),
                 activeTab: (initialLayout.tabs && initialLayout.tabs.length > 0) ? initialLayout.tabs[0].id : 'default',
                 layout: (Array.isArray(initialLayout) ? initialLayout : (initialLayout.fields || [])).map(i => ({
                     ...i,
@@ -183,6 +198,7 @@
                 resizeData: null,
                 editingTabId: null,
                 tempTabTitle: '',
+                tempTabIcon: 'tabler:apps',
 
                 init() {
                     this.rebuildCanvas();
@@ -198,9 +214,19 @@
                 },
 
                 renderAllFields() {
-                    return this.layout
-                        .filter(item => item.tabId === this.activeTab)
-                        .map((item, index) => this.renderFieldItemHTML(item, index)).join('');
+                    const currentTabFields = this.layout.filter(item => item.tabId === this.activeTab);
+                    if (currentTabFields.length === 0 && this.designMode) {
+                        return `
+                            <div class="w-full flex flex-col items-center justify-center py-12 gap-3 cursor-pointer group/add-box" 
+                                 onclick="window.recordFormApp.openModal = true">
+                                <div class="w-12 h-12 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 group-hover/add-box:border-primary group-hover/add-box:text-primary transition-all">
+                                    <iconify-icon icon="tabler:plus" width="28"></iconify-icon>
+                                </div>
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest group-hover/add-box:text-primary transition-colors">Ajouter un attribut</span>
+                            </div>
+                        `;
+                    }
+                    return currentTabFields.map((item, index) => this.renderFieldItemHTML(item, index)).join('');
                 },
 
                 rebuildCanvas() {
@@ -427,7 +453,7 @@
                 // Tab Management Methods
                 addTab() {
                     const id = `t_${Date.now()}`;
-                    this.tabs.push({ id, title: 'Nouvel Onglet' });
+                    this.tabs.push({ id, title: 'Nouvel Onglet', icon: 'tabler:apps' });
                     this.activeTab = id;
                     this.saveLayout();
                 },
@@ -449,6 +475,7 @@
                     if (!this.designMode) return;
                     this.editingTabId = tab.id;
                     this.tempTabTitle = tab.title;
+                    this.tempTabIcon = tab.icon || 'tabler:apps';
                 },
 
                 setActiveTab(id) {
@@ -458,8 +485,9 @@
                 saveTabTitle() {
                     if (this.editingTabId) {
                         const tab = this.tabs.find(t => t.id === this.editingTabId);
-                        if (tab && this.tempTabTitle.trim()) {
-                            tab.title = this.tempTabTitle.trim();
+                        if (tab) {
+                            if (this.tempTabTitle.trim()) tab.title = this.tempTabTitle.trim();
+                            tab.icon = this.tempTabIcon;
                         }
                         this.editingTabId = null;
                         this.saveLayout();

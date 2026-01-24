@@ -24,8 +24,7 @@ router.get("/edit/:id", userController.editForm);
 //Update form
 router.post("/edit/:id", userController.update);
 //Delete
-router.delete("/:id", userController.delete);
-
-//Generated from template
+// Preferences
+router.post("/preferences", userController.savePreferences);
 
 module.exports = router;

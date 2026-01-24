@@ -97,77 +97,101 @@
             };
             %>
 
-            <% allEntityClassifications.forEach((cls, clsIdx)=> { %>
-                <div class="panel !p-4"
-                    x-data="classificationBox('<%= cls.data._id %>', '<%= cls.nameAttr %>', <%= cls.data.allowMultiple %>)">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center gap-2 <%= cls.colorClass %>">
-                            <iconify-icon icon="<%= cls.icon %>" width="16"></iconify-icon>
-                            <h6
-                                class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light">
-                                <%= cls.label %>
-                            </h6>
-                            <% if (cls.data.type==='hierarchical' ) { %>
-                                <span
-                                    class="text-[8px] bg-gray-100 px-1 rounded text-gray-500 font-bold uppercase">Tree</span>
-                                <% } %>
-                        </div>
-                        <button type="button" @click="toggleEdit"
-                            class="<%= cls.colorClass %> hover:scale-110 transition-transform">
-                            <iconify-icon :icon="editing ? 'solar:close-circle-bold' : 'solar:add-circle-bold'"
-                                width="16"></iconify-icon>
-                        </button>
-                    </div>
+            <% if (allEntityClassifications.length> 0) { %>
+                <div class="panel !p-0 overflow-hidden">
+                    <% allEntityClassifications.forEach((cls, clsIdx)=> { %>
+                        <div class="p-4 <%= clsIdx > 0 ? 'border-t border-gray-100' : '' %>"
+                            x-data="classificationBox('<%= cls.data._id %>', '<%= cls.nameAttr %>', <%= cls.data.allowMultiple %>)">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2 <%= cls.colorClass %>">
+                                    <iconify-icon icon="<%= cls.icon %>" width="16"></iconify-icon>
+                                    <h6
+                                        class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light">
+                                        <%= cls.label %>
+                                    </h6>
+                                    <% if (cls.data.type==='hierarchical' ) { %>
+                                        <span
+                                            class="text-[8px] bg-gray-100 px-1 rounded text-gray-500 font-bold uppercase">Tree</span>
+                                        <% } %>
+                                </div>
+                                <button type="button" @click="toggleEdit"
+                                    class="<%= cls.colorClass %> hover:scale-110 transition-transform">
+                                    <iconify-icon :icon="editing ? 'solar:close-circle-bold' : 'solar:add-circle-bold'"
+                                        width="16"></iconify-icon>
+                                </button>
+                            </div>
 
-                    <div class="mt-2">
-                        <% if (!cls.data.allowMultiple && cls.data.type !=='hierarchical' ) { %>
-                            <!-- SELECT UNIQUE (ORIGINAL DESIGN) -->
-                            <select name="<%= cls.nameAttr %>" class="form-select text-xs !h-9 !py-1">
-                                <option value="">-- Choisir --</option>
-                                <% const valObj=(locals.record && record.classificationValues) ?
-                                    record.classificationValues.find(cv=> cv.classificationId.toString() ===
-                                    cls.data._id.toString()) : null;
-                                    const currentValue = valObj ? (valObj.optionId ? valObj.optionId.toString() : '') :
-                                    '';
+                            <div class="mt-2">
+                                <% if (!cls.data.allowMultiple && cls.data.type !=='hierarchical' ) { %>
+                                    <!-- SELECT UNIQUE (ORIGINAL DESIGN) -->
+                                    <select name="<%= cls.nameAttr %>" class="form-select text-xs !h-9 !py-1">
+                                        <option value="">-- Choisir --</option>
+                                        <% const valObj=(locals.record && record.classificationValues) ?
+                                            record.classificationValues.find(cv=> cv.classificationId.toString() ===
+                                            cls.data._id.toString()) : null;
+                                            const currentValue = valObj ? (valObj.optionId ? valObj.optionId.toString()
+                                            : '') :
+                                            '';
 
-                                    cls.data.options.forEach(opt => { %>
-                                    <option value="<%= opt._id %>" <%=(opt._id && currentValue===opt._id.toString())
-                                        ? 'selected' : '' %>>
-                                        <%= opt.label %>
-                                    </option>
-                                    <% }) %>
-                            </select>
-                            <% } else { %>
-                                <!-- TREE VIEW (With Drag & Drop) -->
-                                <div class="space-y-1.5 max-h-48 overflow-y-auto border border-gray-100 rounded p-2 bg-gray-50/30"
-                                    id="tree-<%= cls.data._id %>">
-                                    <% let selectedIds=[]; let currentValue='' ; if (cls.data.allowMultiple) { const
-                                        values=(locals.record && record.classificationValues) ?
-                                        record.classificationValues.filter(cv=> cv.classificationId.toString() ===
-                                        cls.data._id.toString()) : [];
-                                        selectedIds = values.map(v => v.optionId.toString());
-                                        } else {
-                                        const valObj = (locals.record && record.classificationValues) ?
-                                        record.classificationValues.find(cv => cv.classificationId.toString() ===
-                                        cls.data._id.toString()) : null;
-                                        currentValue = valObj ? (valObj.optionId ? valObj.optionId.toString() : '') :
-                                        '';
-                                        }
-                                        %>
-                                        <%- renderTree(cls.data.options, null, cls, selectedIds, currentValue) %>
+                                            cls.data.options.forEach(opt => { %>
+                                            <option value="<%= opt._id %>" <%=(opt._id &&
+                                                currentValue===opt._id.toString()) ? 'selected' : '' %>>
+                                                <%= opt.label %>
+                                            </option>
+                                            <% }) %>
+                                    </select>
+                                    <% } else { %>
+                                        <!-- TREE VIEW (With Drag & Drop) -->
+                                        <div class="space-y-1.5 max-h-48 overflow-y-auto border border-gray-100 rounded p-2 bg-gray-50/30"
+                                            id="tree-<%= cls.data._id %>">
+                                            <% let selectedIds=[]; let currentValue='' ; if (cls.data.allowMultiple) {
+                                                const values=(locals.record && record.classificationValues) ?
+                                                record.classificationValues.filter(cv=> cv.classificationId.toString()
+                                                ===
+                                                cls.data._id.toString()) : [];
+                                                selectedIds = values.map(v => v.optionId.toString());
+                                                } else {
+                                                const valObj = (locals.record && record.classificationValues) ?
+                                                record.classificationValues.find(cv => cv.classificationId.toString()
+                                                ===
+                                                cls.data._id.toString()) : null;
+                                                currentValue = valObj ? (valObj.optionId ? valObj.optionId.toString() :
+                                                '') :
+                                                '';
+                                                }
+                                                %>
+                                                <%- renderTree(cls.data.options, null, cls, selectedIds, currentValue)
+                                                    %>
 
-                                            <% if (cls.data.options.length===0 && !editing) { %>
-                                                <p
-                                                    class="no-options-msg text-[10px] text-gray-400 italic text-center py-2">
-                                                    Aucune option</p>
-                                                <% } %>
-                                </div> <!-- Close tree div -->
+                                                    <% if (cls.data.options.length===0 && !editing) { %>
+                                                        <p
+                                                            class="no-options-msg text-[10px] text-gray-400 italic text-center py-2">
+                                                            Aucune option</p>
+                                                        <% } %>
+                                        </div> <!-- Close tree div -->
 
-                                <!-- QUICK ADD FOR TREE/MULTIPLE (Harmonized) -->
+                                        <!-- QUICK ADD FOR TREE/MULTIPLE (Harmonized) -->
+                                        <div x-show="editing" class="mt-2" x-transition>
+                                            <div class="relative">
+                                                <input type="text" x-model="newLabel" x-ref="input" @keyup.enter="save"
+                                                    class="form-input text-xs !h-8 pr-12" placeholder="Nouveau...">
+                                                <button type="button" @click="save" :disabled="!newLabel || loading"
+                                                    class="absolute right-1 top-1 bottom-1 p-1 text-primary">
+                                                    <iconify-icon
+                                                        :icon="loading ? 'line-md:loading-twotone-loop' : 'solar:check-read-linear'"
+                                                        width="16"></iconify-icon>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <% } %>
+                            </div>
+
+                            <!-- QUICK ADD FOR SIMPLE SELECT -->
+                            <% if (!cls.data.allowMultiple && cls.data.type !=='hierarchical' ) { %>
                                 <div x-show="editing" class="mt-2" x-transition>
                                     <div class="relative">
                                         <input type="text" x-model="newLabel" x-ref="input" @keyup.enter="save"
-                                            class="form-input text-xs !h-8 pr-12" placeholder="Nouveau...">
+                                            class="form-input text-xs !h-8 pr-12" placeholder="Nouvelle...">
                                         <button type="button" @click="save" :disabled="!newLabel || loading"
                                             class="absolute right-1 top-1 bottom-1 p-1 text-primary">
                                             <iconify-icon
@@ -177,146 +201,124 @@
                                     </div>
                                 </div>
                                 <% } %>
-                    </div>
-
-                    <!-- QUICK ADD FOR SIMPLE SELECT -->
-                    <% if (!cls.data.allowMultiple && cls.data.type !=='hierarchical' ) { %>
-                        <div x-show="editing" class="mt-2" x-transition>
-                            <div class="relative">
-                                <input type="text" x-model="newLabel" x-ref="input" @keyup.enter="save"
-                                    class="form-input text-xs !h-8 pr-12" placeholder="Nouvelle...">
-                                <button type="button" @click="save" :disabled="!newLabel || loading"
-                                    class="absolute right-1 top-1 bottom-1 p-1 text-primary">
-                                    <iconify-icon
-                                        :icon="loading ? 'line-md:loading-twotone-loop' : 'solar:check-read-linear'"
-                                        width="16"></iconify-icon>
-                                </button>
-                            </div>
                         </div>
-                        <% } %>
+                        <% }) %>
                 </div>
-                <% }) %>
+                <% } else { %>
+                    <div class="panel !p-4 border-dashed border-gray-200 text-center py-4">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold">Aucune classification liée</p>
+                        <a href="/account/<%= account_number %>/entity/edit/<%= entity._id %>"
+                            class="btn btn-xs btn-outline-primary mt-2">Configurer l'entité</a>
+                    </div>
+                    <% } %>
 
-                    <% if (allEntityClassifications.length===0) { %>
-                        <div class="panel !p-4 border-dashed border-gray-200 text-center py-4">
-                            <p class="text-[10px] text-gray-400 uppercase font-bold">Aucune classification liée</p>
-                            <a href="/account/<%= account_number %>/entity/edit/<%= entity._id %>"
-                                class="btn btn-xs btn-outline-primary mt-2">Configurer l'entité</a>
+                        <!-- Publication & Visibilité -->
+                        <div class="panel !p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2 text-info">
+                                    <iconify-icon icon="solar:eye-bold" width="16"></iconify-icon>
+                                    <h6
+                                        class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light">
+                                        Public</h6>
+                                </div>
+                                <label class="w-12 h-6 relative mb-0">
+                                    <input type="checkbox"
+                                        class="custom_switch absolute w-full h-full opacity-0 z-10 cursor-pointer peer"
+                                        id="published" name="standard[published]" <%=(locals.record &&
+                                        (record.published===true || record.published==='on' )) ? 'checked' : '' %>
+                                    />
+                                    <span
+                                        class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-4 before:h-4 before:rounded-full peer-checked:before:left-7 peer-checked:bg-primary before:transition-all before:duration-300"></span>
+                                </label>
+                            </div>
                         </div>
-                        <% } %>
 
-                            <!-- Publication & Visibilité -->
-                            <div class="panel !p-4">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-2 text-info">
-                                        <iconify-icon icon="solar:eye-bold" width="16"></iconify-icon>
-                                        <h6
-                                            class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light">
-                                            Public</h6>
-                                    </div>
-                                    <label class="w-12 h-6 relative mb-0">
-                                        <input type="checkbox"
-                                            class="custom_switch absolute w-full h-full opacity-0 z-10 cursor-pointer peer"
-                                            id="published" name="standard[published]" <%=(locals.record &&
-                                            (record.published===true || record.published==='on' )) ? 'checked' : '' %>
-                                        />
-                                        <span
-                                            class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-4 before:h-4 before:rounded-full peer-checked:before:left-7 peer-checked:bg-primary before:transition-all before:duration-300"></span>
-                                    </label>
+                        <!-- Style & Visuel -->
+                        <div class="panel !p-4" x-data="{ openStyle: false }">
+                            <div class="flex items-center justify-between cursor-pointer mb-0"
+                                @click="openStyle = !openStyle">
+                                <div class="flex items-center gap-2 text-warning">
+                                    <iconify-icon icon="solar:palette-bold" width="16"></iconify-icon>
+                                    <h6
+                                        class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light">
+                                        Visuel</h6>
                                 </div>
+                                <iconify-icon icon="solar:alt-arrow-down-linear" width="14"
+                                    :class="openStyle ? '' : '-rotate-90'" class="transition-transform"></iconify-icon>
                             </div>
 
-                            <!-- Style & Visuel -->
-                            <div class="panel !p-4" x-data="{ openStyle: false }">
-                                <div class="flex items-center justify-between cursor-pointer mb-0"
-                                    @click="openStyle = !openStyle">
-                                    <div class="flex items-center gap-2 text-warning">
-                                        <iconify-icon icon="solar:palette-bold" width="16"></iconify-icon>
-                                        <h6
-                                            class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light">
-                                            Visuel</h6>
-                                    </div>
-                                    <iconify-icon icon="solar:alt-arrow-down-linear" width="14"
-                                        :class="openStyle ? '' : '-rotate-90'"
-                                        class="transition-transform"></iconify-icon>
-                                </div>
-
-                                <div class="space-y-4 mt-4" x-show="openStyle" x-collapse>
-                                    <div
-                                        x-data="{ showUpload: <%= (locals.record && record.image) ? 'false' : 'true' %> }">
-                                        <label
-                                            class="!text-[9px] !mb-1 uppercase font-bold text-gray-400">Couverture</label>
-                                        <% if (locals.record && record.image) { %>
-                                            <template x-if="!showUpload">
-                                                <div class="mb-2 relative group">
-                                                    <img src="<%= record.image %>"
-                                                        class="w-full h-24 object-cover rounded shadow-sm border border-gray-100" />
-                                                    <div
-                                                        class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded">
-                                                        <button type="button" @click="showUpload = true"
-                                                            class="text-white text-[10px] bg-white/20 px-2 py-1 rounded backdrop-blur-sm">Changer</button>
-                                                    </div>
+                            <div class="space-y-4 mt-4" x-show="openStyle" x-collapse>
+                                <div x-data="{ showUpload: <%= (locals.record && record.image) ? 'false' : 'true' %> }">
+                                    <label
+                                        class="!text-[9px] !mb-1 uppercase font-bold text-gray-400">Couverture</label>
+                                    <% if (locals.record && record.image) { %>
+                                        <template x-if="!showUpload">
+                                            <div class="mb-2 relative group">
+                                                <img src="<%= record.image %>"
+                                                    class="w-full h-24 object-cover rounded shadow-sm border border-gray-100" />
+                                                <div
+                                                    class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded">
+                                                    <button type="button" @click="showUpload = true"
+                                                        class="text-white text-[10px] bg-white/20 px-2 py-1 rounded backdrop-blur-sm">Changer</button>
                                                 </div>
+                                            </div>
+                                        </template>
+                                        <% } %>
+                                            <template x-if="showUpload">
+                                                <input type="file" name="image" class="form-input text-[10px] !p-1 !h-8"
+                                                    accept="image/*" />
                                             </template>
-                                            <% } %>
-                                                <template x-if="showUpload">
-                                                    <input type="file" name="image"
-                                                        class="form-input text-[10px] !p-1 !h-8" accept="image/*" />
-                                                </template>
-                                                <input type="hidden" name="standard[image]"
-                                                    value="<%= (locals.record && record.image) ? record.image : '' %>">
-                                    </div>
+                                            <input type="hidden" name="standard[image]"
+                                                value="<%= (locals.record && record.image) ? record.image : '' %>">
+                                </div>
 
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label
-                                                class="!text-[9px] !mb-1 uppercase font-bold text-gray-400">Icône</label>
-                                            <input name="standard[icon]" type="text"
-                                                value="<%= (locals.record && record.icon) ? record.icon : '' %>"
-                                                class="form-input text-[10px] !h-8 !px-2"
-                                                placeholder="solar:star-bold" />
-                                        </div>
-                                        <div>
-                                            <label
-                                                class="!text-[9px] !mb-1 uppercase font-bold text-gray-400">Couleur</label>
-                                            <input name="standard[color]" type="color"
-                                                value="<%= (locals.record && record.color) ? record.color : '#4361ee' %>"
-                                                class="form-input h-8 w-full p-1 cursor-pointer" />
-                                        </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="!text-[9px] !mb-1 uppercase font-bold text-gray-400">Icône</label>
+                                        <input name="standard[icon]" type="text"
+                                            value="<%= (locals.record && record.icon) ? record.icon : '' %>"
+                                            class="form-input text-[10px] !h-8 !px-2" placeholder="solar:star-bold" />
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="!text-[9px] !mb-1 uppercase font-bold text-gray-400">Couleur</label>
+                                        <input name="standard[color]" type="color"
+                                            value="<%= (locals.record && record.color) ? record.color : '#4361ee' %>"
+                                            class="form-input h-8 w-full p-1 cursor-pointer" />
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Dates -->
-                            <div class="panel !p-4" x-data="{ openDates: false }">
-                                <div class="flex items-center justify-between cursor-pointer"
-                                    @click="openDates = !openDates">
-                                    <div class="flex items-center gap-2 text-danger">
-                                        <iconify-icon icon="solar:calendar-bold" width="16"></iconify-icon>
-                                        <h6
-                                            class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light">
-                                            Dates</h6>
-                                    </div>
-                                    <iconify-icon icon="solar:alt-arrow-down-linear" width="14"
-                                        :class="openDates ? '' : '-rotate-90'"
-                                        class="transition-transform"></iconify-icon>
+                        <!-- Dates -->
+                        <div class="panel !p-4" x-data="{ openDates: false }">
+                            <div class="flex items-center justify-between cursor-pointer"
+                                @click="openDates = !openDates">
+                                <div class="flex items-center gap-2 text-danger">
+                                    <iconify-icon icon="solar:calendar-bold" width="16"></iconify-icon>
+                                    <h6
+                                        class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light">
+                                        Dates</h6>
                                 </div>
+                                <iconify-icon icon="solar:alt-arrow-down-linear" width="14"
+                                    :class="openDates ? '' : '-rotate-90'" class="transition-transform"></iconify-icon>
+                            </div>
 
-                                <div class="space-y-3 mt-4" x-show="openDates" x-collapse>
-                                    <div>
-                                        <label class="!text-[9px] !mb-1">Début</label>
-                                        <input name="standard[date]" type="date"
-                                            value="<%= (locals.record && record.date) ? new Date(record.date).toISOString().split('T')[0] : '' %>"
-                                            class="form-input text-[10px] !h-8" />
-                                    </div>
-                                    <div>
-                                        <label class="!text-[9px] !mb-1">Fin</label>
-                                        <input name="standard[end_date]" type="date"
-                                            value="<%= (locals.record && record.end_date) ? new Date(record.end_date).toISOString().split('T')[0] : '' %>"
-                                            class="form-input text-[10px] !h-8" />
-                                    </div>
+                            <div class="space-y-3 mt-4" x-show="openDates" x-collapse>
+                                <div>
+                                    <label class="!text-[9px] !mb-1">Début</label>
+                                    <input name="standard[date]" type="date"
+                                        value="<%= (locals.record && record.date) ? new Date(record.date).toISOString().split('T')[0] : '' %>"
+                                        class="form-input text-[10px] !h-8" />
+                                </div>
+                                <div>
+                                    <label class="!text-[9px] !mb-1">Fin</label>
+                                    <input name="standard[end_date]" type="date"
+                                        value="<%= (locals.record && record.end_date) ? new Date(record.end_date).toISOString().split('T')[0] : '' %>"
+                                        class="form-input text-[10px] !h-8" />
                                 </div>
                             </div>
+                        </div>
 </div>
 
 <style>

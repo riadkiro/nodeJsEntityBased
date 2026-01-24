@@ -145,7 +145,7 @@ module.exports = {
             });
 
             await newRecord.save();
-            res.redirect(`/account/${req.account_number}/record/${entity.slug}/list`);
+            res.redirect(`/account/${req.account_number}/record/${entity.slug}/edit/${newRecord._id}?success=true`);
         } catch (error) {
             console.error(error);
             res.status(500).send("Server Error");
@@ -267,7 +267,7 @@ module.exports = {
                 updatedBy: req.user._id
             });
 
-            res.redirect(`/account/${req.account_number}/record/${entity.slug}/list`);
+            res.redirect(`/account/${req.account_number}/record/${entity.slug}/edit/${req.params.id}?success=true`);
         } catch (error) {
             console.error(error);
             res.status(500).send("Server Error");

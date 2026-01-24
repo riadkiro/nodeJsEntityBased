@@ -637,3 +637,31 @@
         border-radius: 12px;
     }
 </style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('success') === 'true') {
+            const toast = window.Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                showCloseButton: true,
+                customClass: {
+                    popup: 'color-success'
+                },
+                target: document.getElementById('main-record-form')
+            });
+            toast.fire({
+                title: 'Enregistrement effectué',
+                icon: 'success',
+                padding: '10px 20px'
+            });
+            // Clean URL
+            const url = new URL(window.location);
+            url.searchParams.delete('success');
+            window.history.replaceState({}, '', url);
+        }
+    });
+</script>

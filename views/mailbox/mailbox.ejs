@@ -1,0 +1,512 @@
+<link rel="stylesheet" type="text/css" media="screen" href="/themes/default/assets/css/quill.snow.css" />
+
+<div x-data="mailbox">
+    <div class="relative flex h-full gap-5 sm:h-[calc(100vh_-_150px)]">
+        <div class="overlay absolute z-[5] hidden h-full w-full rounded-md bg-black/60"
+            :class="{'!block xl:!hidden' : isShowMailMenu}" @click="isShowMailMenu = !isShowMailMenu"></div>
+        <div class="panel dark:gray-50 absolute z-10 hidden h-full w-[250px] max-w-full flex-none space-y-3 overflow-hidden p-4 ltr:rounded-r-none rtl:rounded-l-none xl:relative xl:block xl:h-auto ltr:xl:rounded-r-md rtl:xl:rounded-l-md"
+            :class="{'!block' : isShowMailMenu}">
+            <div class="flex h-full flex-col pb-16">
+                <div class="pb-5">
+                    <button class="btn btn-primary w-full" type="button" @click="openMail('add')">New Message</button>
+                    <a href="/account/<%= account_number %>/mailbox/sync"
+                        class="btn btn-outline-primary w-full mt-2">Sync (IMAP)</a>
+                </div>
+                <div class="perfect-scrollbar relative -mr-3.5 h-full grow pr-3.5">
+                    <div class="space-y-1">
+                        <button type="button"
+                            class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-primary dark:hover:bg-[#181F32] dark:hover:text-primary"
+                            :class="{ 'bg-gray-100 dark:text-primary text-primary dark:bg-[#181F32]': !isEdit && selectedTab === 'inbox' }"
+                            @click="tabChanged('inbox')">
+                            <div class="flex items-center">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
+                                    <path opacity="0.5"
+                                        d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12C22 15.7712 22 17.6569 20.8284 18.8284C19.6569 20 17.7712 20 14 20H10C6.22876 20 4.34315 20 3.17157 18.8284C2 17.6569 2 15.7712 2 12Z"
+                                        stroke="currentColor" stroke-width="1.5" />
+                                    <path
+                                        d="M6 8L8.1589 9.79908C9.99553 11.3296 10.9139 12.0949 12 12.0949C13.0861 12.0949 14.0045 11.3296 15.8411 9.79908L18 8"
+                                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                                </svg>
+                                <div class="ltr:ml-3 rtl:mr-3">Inbox</div>
+                            </div>
+                            <div class="whitespace-nowrap rounded-md bg-primary-light py-0.5 px-2 font-semibold dark:bg-[#060818]"
+                                x-text="mailList && mailList.filter((d) => d.type == 'inbox').length"></div>
+                        </button>
+                        <button type="button"
+                            class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-primary dark:hover:bg-[#181F32] dark:hover:text-primary"
+                            :class="{ 'bg-gray-100 dark:text-primary text-primary dark:bg-[#181F32]': !isEdit && selectedTab === 'star' }"
+                            @click="tabChanged('star')">
+                            <div class="flex items-center">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
+                                    <path
+                                        d="M9.15316 5.40838C10.4198 3.13613 11.0531 2 12 2C12.9469 2 13.5802 3.13612 14.8468 5.40837L15.1745 5.99623C15.5345 6.64193 15.7144 6.96479 15.9951 7.17781C16.2757 7.39083 16.6251 7.4699 17.3241 7.62805L17.9605 7.77203C20.4201 8.32856 21.65 8.60682 21.9426 9.54773C22.2352 10.4886 21.3968 11.4691 19.7199 13.4299L19.2861 13.9372C18.8096 14.4944 18.5713 14.773 18.4641 15.1177C18.357 15.4624 18.393 15.8341 18.465 16.5776L18.5306 17.2544C18.7841 19.8706 18.9109 21.1787 18.1449 21.7602C17.3788 22.3417 16.2273 21.8115 13.9243 20.7512L13.3285 20.4768C12.6741 20.1755 12.3469 20.0248 12 20.0248C11.6531 20.0248 11.3259 20.1755 10.6715 20.4768L10.0757 20.7512C7.77268 21.8115 6.62118 22.3417 5.85515 21.7602C5.08912 21.1787 5.21588 19.8706 5.4694 17.2544L5.53498 16.5776C5.60703 15.8341 5.64305 15.4624 5.53586 15.1177C5.42868 14.773 5.19043 14.4944 4.71392 13.9372L4.2801 13.4299C2.60325 11.4691 1.76482 10.4886 2.05742 9.54773C2.35002 8.60682 3.57986 8.32856 6.03954 7.77203L6.67589 7.62805C7.37485 7.4699 7.72433 7.39083 8.00494 7.17781C8.28555 6.96479 8.46553 6.64194 8.82547 5.99623L9.15316 5.40838Z"
+                                        stroke="currentColor" stroke-width="1.5" />
+                                </svg>
+                                <div class="ltr:ml-3 rtl:mr-3">Marked</div>
+                            </div>
+                        </button>
+                        <button type="button"
+                            class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-primary dark:hover:bg-[#181F32] dark:hover:text-primary"
+                            :class="{ 'bg-gray-100 dark:text-primary text-primary dark:bg-[#181F32]': !isEdit && selectedTab === 'sent_mail' }"
+                            @click="tabChanged('sent_mail')">
+                            <div class="flex items-center">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
+                                    <path
+                                        d="M17.4975 18.4851L20.6281 9.09373C21.8764 5.34874 22.5006 3.47624 21.5122 2.48782C20.5237 1.49939 18.6511 2.12356 14.906 3.37189L5.57477 6.48218C3.49295 7.1761 2.45203 7.52305 2.13608 8.28637C2.06182 8.46577 2.01692 8.65596 2.00311 8.84963C1.94433 9.67365 2.72018 10.4495 4.27188 12.0011L4.55451 12.2837C4.80921 12.5384 4.93655 12.6658 5.03282 12.8075C5.22269 13.0871 5.33046 13.4143 5.34393 13.7519C5.35076 13.9232 5.32403 14.1013 5.27057 14.4574C5.07488 15.7612 4.97703 16.4131 5.0923 16.9147C5.32205 17.9146 6.09599 18.6995 7.09257 18.9433C7.59255 19.0656 8.24576 18.977 9.5522 18.7997L9.62363 18.79C9.99191 18.74 10.1761 18.715 10.3529 18.7257C10.6738 18.745 10.9838 18.8496 11.251 19.0285C11.3981 19.1271 11.5295 19.2585 11.7923 19.5213L12.0436 19.7725C13.5539 21.2828 14.309 22.0379 15.1101 21.9985C15.3309 21.9877 15.5479 21.9365 15.7503 21.8474C16.4844 21.5244 16.8221 20.5113 17.4975 18.4851Z"
+                                        stroke="currentColor" stroke-width="1.5" />
+                                </svg>
+                                <div class="ltr:ml-3 rtl:mr-3">Sent</div>
+                            </div>
+                        </button>
+                        <button type="button"
+                            class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-primary dark:hover:bg-[#181F32] dark:hover:text-primary"
+                            :class="{ 'bg-gray-100 dark:text-primary text-primary dark:bg-[#181F32]': !isEdit && selectedTab === 'spam' }"
+                            @click="tabChanged('spam')">
+                            <div class="flex items-center">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" />
+                                    <path d="M12 7V13" stroke="currentColor" stroke-width="1.5"
+                                        stroke-linecap="round" />
+                                    <circle cx="12" cy="16" r="1" fill="currentColor" />
+                                </svg>
+                                <div class="ltr:ml-3 rtl:mr-3">Spam</div>
+                            </div>
+                        </button>
+                        <button type="button"
+                            class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-primary dark:hover:bg-[#181F32] dark:hover:text-primary"
+                            :class="{ 'bg-gray-100 dark:text-primary text-primary dark:bg-[#181F32]': !isEdit && selectedTab === 'important' }"
+                            @click="tabChanged('important')">
+                            <div class="flex items-center">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
+                                    <path
+                                        d="M21 16.0909V11.0975C21 6.80891 21 4.6646 19.682 3.3323C18.364 2 16.2426 2 12 2C7.75736 2 5.63604 2 4.31802 3.3323C3 4.6646 3 6.80891 3 11.0975V16.0909C3 19.1875 3 20.7358 3.73411 21.4123C4.08421 21.735 4.52615 21.9377 4.99692 21.9915C5.98402 22.1045 7.13673 21.0849 9.44216 19.0458C10.4612 18.1445 10.9708 17.6938 11.5603 17.5751C11.8506 17.5166 12.1494 17.5166 12.4397 17.5751C13.0292 17.6938 13.5388 18.1445 14.5578 19.0458C16.8633 21.0849 18.016 22.1045 19.0031 21.9915C19.4739 21.9377 19.9158 21.735 20.2659 21.4123C21 20.7358 21 19.1875 21 16.0909Z"
+                                        stroke="currentColor" stroke-width="1.5" />
+                                </svg>
+                                <div class="ltr:ml-3 rtl:mr-3">Important</div>
+                            </div>
+                        </button>
+                        <button type="button"
+                            class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-primary dark:hover:bg-[#181F32] dark:hover:text-primary"
+                            :class="{ 'bg-gray-100 dark:text-primary text-primary dark:bg-[#181F32]': !isEdit && selectedTab === 'trash' }"
+                            @click="tabChanged('trash')">
+                            <div class="flex items-center">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
+                                    <path opacity="0.5"
+                                        d="M9.17065 4C9.58249 2.83481 10.6937 2 11.9999 2C13.3062 2 14.4174 2.83481 14.8292 4"
+                                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                                    <path d="M20.5001 6H3.5" stroke="currentColor" stroke-width="1.5"
+                                        stroke-linecap="round" />
+                                    <path
+                                        d="M18.8334 8.5L18.3735 15.3991C18.1965 18.054 18.108 19.3815 17.243 20.1907C16.378 21 15.0476 21 12.3868 21H11.6134C8.9526 21 7.6222 21 6.75719 20.1907C5.89218 19.3815 5.80368 18.054 5.62669 15.3991L5.16675 8.5"
+                                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                                    <path opacity="0.5" d="M9.5 11L10 16" stroke="currentColor" stroke-width="1.5"
+                                        stroke-linecap="round" />
+                                    <path opacity="0.5" d="M14.5 11L14 16" stroke="currentColor" stroke-width="1.5"
+                                        stroke-linecap="round" />
+                                </svg>
+                                <div class="ltr:ml-3 rtl:mr-3">Trash</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel h-full flex-1 overflow-auto p-0">
+            <div x-show="!selectedMail && !isEdit" class="flex h-full flex-col">
+                <div class="flex flex-wrap-reverse items-center justify-between gap-4 p-4">
+                    <div class="flex w-full items-center sm:w-auto">
+                        <div class="ltr:mr-4 rtl:ml-4">
+                            <input type="checkbox" class="form-checkbox" :checked="isAllChecked()"
+                                :value="isAllChecked()" @change="checkAll($event.target.checked)" />
+                        </div>
+                        <div class="ltr:mr-4 rtl:ml-4">
+                            <button type="button" class="flex items-center hover:text-primary" @click="refreshMails()">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
+                                    <path
+                                        d="M12.0789 3V2.25V3ZM3.67981 11.3333H2.92981H3.67981ZM3.67981 13L3.15157 13.5324C3.44398 13.8225 3.91565 13.8225 4.20805 13.5324L3.67981 13ZM5.88787 11.8657C6.18191 11.574 6.18377 11.0991 5.89203 10.8051C5.60029 10.511 5.12542 10.5092 4.83138 10.8009L5.88787 11.8657ZM2.52824 10.8009C2.2342 10.5092 1.75933 10.511 1.46759 10.8051C1.17585 11.0991 1.17772 11.574 1.47176 11.8657L2.52824 10.8009ZM18.6156 7.39279C18.8325 7.74565 19.2944 7.85585 19.6473 7.63892C20.0001 7.42199 20.1103 6.96007 19.8934 6.60721L18.6156 7.39279ZM12.0789 2.25C7.03155 2.25 2.92981 6.3112 2.92981 11.3333H4.42981C4.42981 7.15072 7.84884 3.75 12.0789 3.75V2.25ZM2.92981 11.3333L2.92981 13H4.42981L4.42981 11.3333H2.92981ZM4.20805 13.5324L5.88787 11.8657L4.83138 10.8009L3.15157 12.4676L4.20805 13.5324ZM4.20805 12.4676L2.52824 10.8009L1.47176 11.8657L3.15157 13.5324L4.20805 12.4676ZM19.8934 6.60721C18.287 3.99427 15.3873 2.25 12.0789 2.25V3.75C14.8484 3.75 17.2727 5.20845 18.6156 7.39279L19.8934 6.60721Z"
+                                        fill="currentColor" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- ... Mail List Content ... -->
+                <template x-if="pagedMails.length">
+                    <div class="table-responsive min-h-[300px] grow overflow-y-auto">
+                        <table>
+                            <tbody>
+                                <template x-for="mail in pagedMails" :key="mail.id + '' + index">
+                                    <tr class="cursor-pointer" @click="selectMail(mail)">
+                                        <td>
+                                            <div class="flex items-center whitespace-nowrap">
+                                                <div class="ltr:mr-3 rtl:ml-3">
+                                                    <input type="checkbox" :id="`chk-${mail.id}`" x-model.number="ids"
+                                                        :value="mail.id" @click="$event.stopPropagation()"
+                                                        class="form-checkbox" />
+                                                </div>
+                                                <div class="ltr:mr-3 rtl:ml-3">
+                                                    <button type="button"
+                                                        class="flex items-center enabled:hover:text-warning disabled:opacity-60"
+                                                        :class="{ 'text-warning': mail.isStar }"
+                                                        @click.stop="setStar(mail.id)"
+                                                        :disabled="selectedTab === 'trash'">
+                                                        <!-- star svg -->
+                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                            xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                                                            :class="{ 'fill-warning': mail.isStar }">
+                                                            <path
+                                                                d="M9.15316 5.40838C10.4198 3.13613 11.0531 2 12 2C12.9469 2 13.5802 3.13612 14.8468 5.40837L15.1745 5.99623C15.5345 6.64193 15.7144 6.96479 15.9951 7.17781C16.2757 7.39083 16.6251 7.4699 17.3241 7.62805L17.9605 7.77203C20.4201 8.32856 21.65 8.60682 21.9426 9.54773C22.2352 10.4886 21.3968 11.4691 19.7199 13.4299L19.2861 13.9372C18.8096 14.4944 18.5713 14.773 18.4641 15.1177C18.357 15.4624 18.393 15.8341 18.465 16.5776L18.5306 17.2544C18.7841 19.8706 18.9109 21.1787 18.1449 21.7602C17.3788 22.3417 16.2273 21.8115 13.9243 20.7512L13.3285 20.4768C12.6741 20.1755 12.3469 20.0248 12 20.0248C11.6531 20.0248 11.3259 20.1755 10.6715 20.4768L10.0757 20.7512C7.77268 21.8115 6.62118 22.3417 5.85515 21.7602C5.08912 21.1787 5.21588 19.8706 5.4694 17.2544L5.53498 16.5776C5.60703 15.8341 5.64305 15.4624 5.53586 15.1177C5.42868 14.773 5.19043 14.4944 4.71392 13.9372L4.2801 13.4299C2.60325 11.4691 1.76482 10.4886 2.05742 9.54773C2.35002 8.60682 3.57986 8.32856 6.03954 7.77203L6.67589 7.62805C7.37485 7.4699 7.72433 7.39083 8.00494 7.17781C8.28555 6.96479 8.46553 6.64194 8.82547 5.99623L9.15316 5.40838Z"
+                                                                stroke="currentColor" stroke-width="1.5" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                <div class="ltr:mr-3 rtl:ml-3">
+                                                    <button type="button"
+                                                        class="flex items-center enabled:hover:text-primary disabled:opacity-60"
+                                                        :class="{ 'text-primary': mail.isImportant }"
+                                                        @click.stop="setImportant(mail.id)"
+                                                        :disabled="selectedTab === 'trash'">
+                                                        <!-- important svg -->
+                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                            xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5"
+                                                            :class="{ 'fill-primary': mail.isImportant }">
+                                                            <path
+                                                                d="M21 16.0909V11.0975C21 6.80891 21 4.6646 19.682 3.3323C18.364 2 16.2426 2 12 2C7.75736 2 5.63604 2 4.31802 3.3323C3 4.6646 3 6.80891 3 11.0975V16.0909C3 19.1875 3 20.7358 3.73411 21.4123C4.08421 21.735 4.52615 21.9377 4.99692 21.9915C5.98402 22.1045 7.13673 21.0849 9.44216 19.0458C10.4612 18.1445 10.9708 17.6938 11.5603 17.5751C11.8506 17.5166 12.1494 17.5166 12.4397 17.5751C13.0292 17.6938 13.5388 18.1445 14.5578 19.0458C16.8633 21.0849 18.016 22.1045 19.0031 21.9915C19.4739 21.9377 19.9158 21.735 20.2659 21.4123C21 20.7358 21 19.1875 21 16.0909Z"
+                                                                stroke="currentColor" stroke-width="1.5" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                <div class="whitespace-nowrap font-semibold dark:text-gray-300"
+                                                    :class="{ 'text-gray-500 dark:text-gray-500 font-normal': !mail.isUnread }"
+                                                    x-text="mail.firstName ? mail.firstName + ' ' + mail.lastName : mail.email">
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div
+                                                class="min-w-[300px] overflow-hidden font-medium text-white-dark line-clamp-1">
+                                                <span
+                                                    :class="{ 'text-gray-800 dark:text-gray-300 font-semibold': mail.isUnread }">
+                                                    <span x-text="mail.title"></span> &minus; <span
+                                                        x-text="mail.displayDescription"></span>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="flex items-center">
+                                                <div class="h-2 w-2 rounded-full"
+                                                    :class="{ 'bg-primary': mail.group === 'personal', 'bg-warning': mail.group === 'work', 'bg-success': mail.group === 'social', 'bg-danger': mail.group === 'private' }">
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="whitespace-nowrap font-medium ltr:text-right rtl:text-left"
+                                            x-text="showTime(mail)"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+            </div>
+
+            <template x-if="selectedMail && !isEdit">
+                <div>
+                    <!-- Selected Mail Content ... -->
+                    <button type="button" class="hover:text-primary ltr:mr-2 rtl:ml-2"
+                        @click="selectedMail = null">Back</button>
+                    <h4 class="text-base font-medium" x-text="selectedMail.title"></h4>
+                    <div class="prose mt-8 max-w-full" x-html="selectedMail.description"></div>
+                </div>
+            </template>
+
+            <template x-if="isEdit">
+                <!-- Edit/New Mail Form ... -->
+                <div class="relative">
+                    <form class="grid gap-6 p-6">
+                        <input type="text" class="form-input" placeholder="Enter To" x-model="params.to" />
+                        <input type="text" class="form-input" placeholder="Enter Subject" x-model="params.title" />
+                        <div class="h-fit">
+                            <div id="editor" x-model="params.description"></div>
+                        </div>
+                        <div class="mt-8 flex items-center ltr:ml-auto rtl:mr-auto">
+                            <button type="button" class="btn btn-outline-danger ltr:mr-3 rtl:ml-3"
+                                @click="closeMsgPopUp">Close</button>
+                            <button type="button" class="btn btn-primary"
+                                @click="saveMail('send',params.id)">Send</button>
+                        </div>
+                    </form>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+
+<script src="/themes/default/assets/js/quill.js"></script>
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('mailbox', () => ({
+            defaultData: {
+                id: null,
+                from: 'vristo@mail.com',
+                to: '',
+                cc: '',
+                title: '',
+                file: null,
+                description: '',
+            },
+            quillEditor: null,
+            isShowMailMenu: false,
+            isEdit: false,
+            selectedTab: 'inbox',
+            filteredMailList: [],
+            ids: [],
+            searchText: '',
+            selectedMail: null,
+            params: {
+                id: null,
+                from: 'vristo@mail.com',
+                to: '',
+                cc: '',
+                title: '',
+                file: null,
+                description: '',
+            },
+            mailList: <%- JSON.stringify(initialMails) %>,
+            pager: {
+                currentPage: 1,
+                totalPages: 0,
+                pageSize: 50,
+                startIndex: 0,
+                endIndex: 0,
+            },
+            pagedMails: [],
+
+            init() {
+                this.searchMails();
+            },
+
+            searchMails(isResetPage = true) {
+                if (isResetPage) {
+                    this.pager.currentPage = 1;
+                }
+
+                let res;
+                if (this.selectedTab === 'important') {
+                    res = this.mailList.filter((d) => d.isImportant);
+                } else if (this.selectedTab === 'star') {
+                    res = this.mailList.filter((d) => d.isStar);
+                } else if (
+                    this.selectedTab === 'personal' ||
+                    this.selectedTab === 'work' ||
+                    this.selectedTab === 'social' ||
+                    this.selectedTab === 'private'
+                ) {
+                    res = this.mailList.filter((d) => d.group === this.selectedTab);
+                } else {
+                    res = this.mailList.filter((d) => d.type === this.selectedTab);
+                }
+                this.filteredMailList = res.filter(
+                    (d) =>
+                        (d.title && d.title.toLowerCase().includes(this.searchText)) ||
+                        (d.firstName && d.firstName.toLowerCase().includes(this.searchText)) ||
+                        (d.lastName && d.lastName.toLowerCase().includes(this.searchText)) ||
+                        (d.displayDescription && d.displayDescription.toLowerCase().includes(this.searchText))
+                );
+                if (this.filteredMailList.length) {
+                    this.pager.totalPages = this.pager.pageSize < 1 ? 1 : Math.ceil(this.filteredMailList.length / this.pager.pageSize);
+                    if (this.pager.currentPage > this.pager.totalPages) {
+                        this.pager.currentPage = 1;
+                    }
+                    this.pager.startIndex = (this.pager.currentPage - 1) * this.pager.pageSize;
+                    this.pager.endIndex = Math.min(this.pager.startIndex + this.pager.pageSize - 1, this.filteredMailList.length - 1);
+                    this.pagedMails = this.filteredMailList.slice(this.pager.startIndex, this.pager.endIndex + 1);
+                } else {
+                    this.pagedMails = [];
+                    this.pager.startIndex = -1;
+                    this.pager.endIndex = -1;
+                }
+
+                this.clearSelection();
+            },
+
+            clearSelection() {
+                this.ids = [];
+            },
+
+            tabChanged(tabType) {
+                this.isEdit = false;
+                this.selectedTab = tabType;
+                this.isShowMailMenu = false;
+                this.selectedMail = null;
+                this.searchMails();
+            },
+
+            setImportant(mailId) {
+                if (mailId) {
+                    let item = this.filteredMailList.find((d) => d.id === mailId);
+                    item.isImportant = !item.isImportant;
+                    setTimeout(() => {
+                        this.searchMails(false);
+                    });
+                }
+            },
+
+            setStar(mailId) {
+                if (mailId) {
+                    let item = this.filteredMailList.find((d) => d.id === mailId);
+                    item.isStar = !item.isStar;
+                    setTimeout(() => {
+                        this.searchMails(false);
+                    });
+                }
+            },
+
+            refreshMails() {
+                this.searchText = '';
+                this.searchMails(false);
+            },
+
+            isAllChecked() {
+                if (this.filteredMailList.length && this.ids.length === this.filteredMailList.length) {
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+
+            checkAll(isChecked) {
+                if (isChecked) {
+                    this.ids = this.filteredMailList.map((d) => {
+                        return d.id;
+                    });
+                } else {
+                    this.clearSelection();
+                }
+            },
+
+            showTime(item) {
+                const displayDt = new Date(item.date);
+                const cDt = new Date();
+                if (displayDt.toDateString() === cDt.toDateString()) {
+                    return item.time;
+                } else {
+                    if (displayDt.getFullYear() === cDt.getFullYear()) {
+                        var monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                        return monthNames[displayDt.getMonth()] + ' ' + String(displayDt.getDate()).padStart(2, '0');
+                    } else {
+                        return (
+                            String(displayDt.getMonth() + 1).padStart(2, '0') +
+                            '/' +
+                            String(displayDt.getDate()).padStart(2, '0') +
+                            '/' +
+                            displayDt.getFullYear()
+                        );
+                    }
+                }
+            },
+
+            selectMail(item) {
+                if (item) {
+                    if (item.type != 'draft') {
+                        if (item && item.isUnread) {
+                            item.isUnread = false;
+                        }
+                        this.selectedMail = item;
+                    } else {
+                        this.openMail('draft', item);
+                    }
+                } else {
+                    this.selectedMail = '';
+                }
+            },
+
+            openMail(type, item) {
+                if (!this.isEdit) {
+                    setTimeout(() => {
+                        this.quillEditor = new Quill('#editor', {
+                            theme: 'snow',
+                        });
+                    });
+                }
+                if (type === 'add') {
+                    this.isShowMailMenu = false;
+                    if (this.quillEditor) {
+                        this.quillEditor.setText('');
+                    }
+                    this.params = JSON.parse(JSON.stringify(this.defaultData));
+                } else if (type === 'draft') {
+                    let data = JSON.parse(JSON.stringify(item));
+                    this.params = data;
+                    this.params.from = this.defaultData.from;
+                    this.params.to = data.email;
+                    this.params.displayDescription = data.email;
+                } else if (type === 'reply') {
+                    let data = JSON.parse(JSON.stringify(item));
+                    this.params = data;
+                    this.params.from = this.defaultData.from;
+                    this.params.to = data.email;
+                    this.params.title = 'Re: ' + this.params.title;
+                    this.params.displayDescription = 'Re: ' + this.params.title;
+                } else if (type === 'forward') {
+                    let data = JSON.parse(JSON.stringify(item));
+                    this.params = data;
+                    this.params.from = this.defaultData.from;
+                    this.params.to = data.email;
+                    this.params.title = 'Fwd: ' + this.params.title;
+                    this.params.displayDescription = 'Fwd: ' + this.params.title;
+                }
+                this.isEdit = true;
+            },
+
+            closeMsgPopUp() {
+                this.isEdit = false;
+                this.selectedTab = 'inbox';
+                this.searchMails();
+            },
+
+            saveMail(type, id) {
+                // Simplified save logic
+                if (type === 'save') {
+                    let obj = JSON.parse(JSON.stringify(this.params));
+                    obj.id = new Date().getTime();
+                    obj.type = 'draft';
+                    this.mailList.unshift(obj);
+                    this.showMessage('Mail has been saved successfully to draft.');
+                } else if (type === 'send') {
+                    let obj = JSON.parse(JSON.stringify(this.params));
+                    obj.id = new Date().getTime();
+                    obj.type = 'sent_mail';
+                    obj.date = new Date(); // now
+                    obj.time = new Date().toLocaleTimeString();
+                    this.mailList.unshift(obj);
+                    this.showMessage('Mail has been sent successfully.');
+                }
+                this.isEdit = false;
+                this.selectedMail = null;
+                this.searchMails();
+            },
+
+            showMessage(msg = '', type = 'success') {
+                const toast = window.Swal.mixin({
+                    toast: true,
+                    position: 'top',
+                    showConfirmButton: false,
+                    timer: 3000,
+                });
+                toast.fire({
+                    icon: type,
+                    title: msg,
+                    padding: '10px 20px',
+                });
+            },
+        }));
+    });
+</script>

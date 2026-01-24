@@ -3,9 +3,9 @@
     <!-- project list -->
     <div class="relative pt-5">
         <div class="perfect-scrollbar -mx-2 h-full">
-            <div class="flex flex-nowrap items-start gap-5 overflow-x-auto px-2 pb-2">
+            <div class="flex flex-nowrap items-start gap-5 overflow-x-auto px-2 pb-16">
                 <template x-for="column in columns" :key="column.id">
-                    <div class="panel w-80 flex-none bg-gray-50 dark:bg-black/20 border dark:border-gray-800"
+                    <div class="panel w-72 flex-none bg-gray-50 dark:bg-black/20 border dark:border-gray-800"
                         :style="column.color ? `border-top: 4px solid ${column.color}` : ''">
                         <div class="mb-5 flex justify-between items-center">
                             <div class="flex items-center gap-2">
@@ -51,9 +51,10 @@
                         <div class="sortable-list min-h-[150px] space-y-4" :data-id="column.id">
                             <template x-for="task in column.tasks" :key="task.id">
                                 <div :data-id="task.id"
-                                    class="cursor-move space-y-3 rounded-lg bg-gray-100 p-4 shadow-sm border border-transparent hover:border-primary transition-all dark:bg-[#121c2c] group">
+                                    class="cursor-move space-y-3 rounded-lg bg-gray-100 p-4 shadow-sm border border-transparent hover:border-primary transition-all dark:bg-[#121c2c] group max-w-[197px] w-full mx-auto"
+                                    style="max-width: 197px">
                                     <div class="flex justify-between items-start mb-2">
-                                        <div class="text-sm font-bold text-gray-800 dark:text-white-light"
+                                        <div class="text-xs font-bold text-gray-800 dark:text-white-light leading-4 h-12 overflow-hidden w-full line-clamp-3 break-words"
                                             x-text="task.title"></div>
                                     </div>
 
@@ -148,6 +149,7 @@
                     isDown = true;
                     slider.classList.add('cursor-grabbing');
                     slider.classList.remove('cursor-grab');
+                    slider.style.userSelect = 'none'; // Prevent text selection
                     startX = e.pageX - slider.offsetLeft;
                     scrollLeft = slider.scrollLeft;
                 });
@@ -155,12 +157,14 @@
                 slider.addEventListener('mouseleave', () => {
                     isDown = false;
                     slider.classList.remove('cursor-grabbing');
+                    slider.style.removeProperty('user-select');
                 });
 
                 slider.addEventListener('mouseup', () => {
                     isDown = false;
                     slider.classList.remove('cursor-grabbing');
                     slider.classList.add('cursor-grab');
+                    slider.style.removeProperty('user-select');
                 });
 
                 slider.addEventListener('mousemove', (e) => {

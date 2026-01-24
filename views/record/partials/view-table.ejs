@@ -1,0 +1,144 @@
+<!-- views/record/partials/view-table.ejs -->
+<div x-data="recordTable">
+    <div class="panel">
+        <div class="flex items-center justify-between mb-5">
+            <h5 class="text-base font-bold dark:text-white-light">Vue Table de données</h5>
+
+            <div class="relative" x-data="{ columnDropdown: false }" @click.outside="columnDropdown = false">
+                <button type="button"
+                    class="flex items-center rounded-md border border-[#e0e6ed] px-4 py-2 text-xs font-bold dark:border-[#253b5c] dark:bg-[#1b2e4b] dark:text-white-dark uppercase"
+                    @click="columnDropdown = ! columnDropdown">
+                    <iconify-icon icon="solar:list-bold" class="ltr:mr-2 rtl:ml-2"></iconify-icon>
+                    Colonnes
+                    <iconify-icon icon="solar:alt-arrow-down-linear" class="ltr:ml-2 rtl:mr-2"></iconify-icon>
+                </button>
+                <div class="absolute top-11 z-[10] hidden w-[200px] rounded bg-white py-2 text-dark shadow-xl ltr:left-0 rtl:right-0 dark:bg-[#1b2e4b] dark:text-white-light border dark:border-gray-800"
+                    :class="columnDropdown && '!block'">
+                    <ul class="space-y-2 px-4 font-semibold max-h-60 overflow-y-auto">
+                        <template x-for="(col, i) in columns" :key="i">
+                            <li x-show="col.name !== 'Actions'">
+                                <label
+                                    class="cursor-pointer flex items-center gap-2 py-1 hover:text-primary transition-colors">
+                                    <input type="checkbox" class="form-checkbox" @change="toggleColumn(i)"
+                                        :checked="!col.hidden" />
+                                    <span class="text-sm font-medium" x-text="col.name"></span>
+                                </label>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="relative datatable-minimal">
+            <table id="recordTableMain" class="whitespace-nowrap w-full"></table>
+        </div>
+    </div>
+</div>
+
+<% const columnNames=[]; if (entity.enabledStandardFields && entity.enabledStandardFields.includes('title')) {
+    columnNames.push("Titre"); } entity.customFields.forEach(field=> {
+    columnNames.push(field.label);
+    });
+    columnNames.push("Créé le");
+    columnNames.push("Actions");
+
+    const dataRows = records.map(record => {
+    const row = [];
+    if (entity.enabledStandardFields && entity.enabledStandardFields.includes('title')) {
+    row.push(record.title || '');
+    }
+    entity.customFields.forEach(field => {
+    const customField = record.customFields.find(cf =>
+    cf.field_id && (cf.field_id._id || cf.field_id).toString() === field._id.toString()
+    );
+    row.push(customField ? customField.value : '');
+    });
+    row.push(new Date(record.createdAt).toLocaleDateString());
+    const actionsHtml = `<div class="flex items-center gap-2">
+        <a href="/account/${account_number}/record/${entity.slug}/edit/${record._id}"
+            class="btn btn-sm btn-outline-info">Modifier</a>
+        <a href="/account/${account_number}/record/${entity.slug}/delete/${record._id}"
+            class="btn btn-sm btn-outline-danger" onclick="return confirm('Confirmer la suppression ?')">Supprimer</a>
+    </div>`;
+    row.push(actionsHtml);
+    return row;
+    });
+    %>
+
+    <script id="table-columns-data" type="application/json"><%- JSON.stringify(columnNames) %></script>
+    <script id="table-rows-data" type="application/json"><%- JSON.stringify(dataRows) %></script>
+    <script id="table-preferences-data" type="application/json"><%- JSON.stringify(preferences || {}) %></script>
+
+    <script>
+        document.addEventListener("alpine:init", () => {
+            Alpine.data("recordTable", () => ({
+                datatable: null,
+                columns: [],
+                preferenceKey: 'record_table_cols_<%= entity._id %>',
+
+                init() {
+                    try {
+                        const colNames = JSON.parse(document.getElementById('table-columns-data').textContent);
+                        const dataRows = JSON.parse(document.getElementById('table-rows-data').textContent);
+                        const serverPreferences = JSON.parse(document.getElementById('table-preferences-data').textContent);
+                        const savedCols = serverPreferences[this.preferenceKey];
+
+                        this.columns = (colNames || []).map((colName, index) => {
+                            let hidden = false;
+                            if (savedCols && Array.isArray(savedCols)) {
+                                const found = savedCols.find(c => c.name === colName);
+                                if (found && found.hidden) hidden = true;
+                            }
+                            return { name: colName, hidden: hidden };
+                        });
+
+                        this.datatable = new simpleDatatables.DataTable("#recordTableMain", {
+                            data: { headings: colNames, data: dataRows },
+                            perPage: 10,
+                            perPageSelect: [10, 20, 30, 50, 100],
+                            labels: {
+                                placeholder: "Rechercher...",
+                                perPage: "{select}",
+                                noRows: "Aucune entrée trouvée",
+                                info: "Affichage de {start} à {end} sur {rows}",
+                            },
+                            layout: { top: "{search}", bottom: "{info}{select}{pager}" },
+                        });
+
+                        this.applyVisibility();
+                    } catch (e) {
+                        console.error("[Table View] Initialization Error:", e);
+                    }
+                },
+
+                toggleColumn(index) {
+                    this.columns[index].hidden = !this.columns[index].hidden;
+                    this.applyVisibility();
+                    this.savePreferences();
+                },
+
+                applyVisibility() {
+                    if (!this.datatable) return;
+                    const hiddenIndices = [];
+                    const visibleIndices = [];
+                    this.columns.forEach((col, idx) => {
+                        if (col.hidden) hiddenIndices.push(idx);
+                        else visibleIndices.push(idx);
+                    });
+                    if (hiddenIndices.length > 0) this.datatable.columns().hide(hiddenIndices);
+                    if (visibleIndices.length > 0) this.datatable.columns().show(visibleIndices);
+                },
+
+                savePreferences() {
+                    const payload = { key: this.preferenceKey, value: this.columns };
+                    fetch(`/account/<%= account_number %>/api/user/preferences`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
+            }));
+        });
+    </script>
+    <script src="/themes/default/assets/js/simple-datatables.js"></script>

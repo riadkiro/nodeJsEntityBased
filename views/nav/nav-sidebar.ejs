@@ -164,48 +164,12 @@
       <ul
         class="perfect-scrollbar relative h-[calc(100vh-80px)] space-y-0.5 overflow-y-auto overflow-x-hidden p-4 py-0 font-semibold"
         x-data="{ activeDropdown: '' }">
-        <li class="menu nav-item">
-          <button type="button" class="nav-link group px-0" :class="{'active' : activeDropdown === 'dashboard'}"
-            @click="activeDropdown === 'dashboard' ? activeDropdown = null : activeDropdown = 'dashboard'">
-            <div class="flex items-center">
-              <svg class="group-hover:!text-primary" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                xmlns="http://www.w3.org/2000/svg">
-                <path opacity="0.5"
-                  d="M2 12.2039C2 9.91549 2 8.77128 2.5192 7.82274C3.0384 6.87421 3.98695 6.28551 5.88403 5.10813L7.88403 3.86687C9.88939 2.62229 10.8921 2 12 2C13.1079 2 14.1106 2.62229 16.116 3.86687L18.116 5.10812C20.0131 6.28551 20.9616 6.87421 21.4808 7.82274C22 8.77128 22 9.91549 22 12.2039V13.725C22 17.6258 22 19.5763 20.8284 20.7881C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.7881C2 19.5763 2 17.6258 2 13.725V12.2039Z"
-                  fill="currentColor" />
-                <path
-                  d="M9 17.25C8.58579 17.25 8.25 17.5858 8.25 18C8.25 18.4142 8.58579 18.75 9 18.75H15C15.4142 18.75 15.75 18.4142 15.75 18C15.75 17.5858 15.4142 17.25 15 17.25H9Z"
-                  fill="currentColor" />
-              </svg>
 
-              <span class="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Tableau de
-                bord</span>
-            </div>
-            <div class="rtl:rotate-180" :class="{'!rotate-90' : activeDropdown === 'dashboard'}">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 5L15 12L9 19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-                  stroke-linejoin="round" />
-              </svg>
-            </div>
-          </button>
-          <ul x-cloak x-show="activeDropdown === 'dashboard'" x-collapse class="sub-menu text-gray-500">
-            <li>
-              <a href="/account/<%= account_number %>/space/list">Spaces</a>
-            </li>
-            <li>
-              <a href="/account/<%= account_number %>/folder/list">Folders</a>
-            </li>
-            <li>
-              <a href="/account/<%= account_number %>/entity/list">Entities</a>
-            </li>
-
-          </ul>
-        </li>
 
         <h2
           class="-mx-4 mb-1 flex items-center bg-white-light/30 py-3 px-2 font-extrabold uppercase dark:bg-dark dark:bg-opacity-[0.08]">
           <div class="flex items-center gap-2">
-            <iconify-icon icon="solar:share-circle-bold-duotone" class="ml-2" width="18" height="18"></iconify-icon>
+            <iconify-icon icon="solar:share-circle-bold-duotone" width="18" height="18"></iconify-icon>
             <span>Config</span>
           </div>
         </h2>
@@ -213,7 +177,7 @@
           <button type="button" class="nav-link group" :class="{'active' : activeDropdown === 'admin'}"
             @click="activeDropdown === 'admin' ? activeDropdown = null : activeDropdown = 'admin'">
             <div class="flex items-center mx-2">
-              <iconify-icon icon="solar:target-bold-duotone" class="ml-2" width="18" height="18"></iconify-icon>
+              <iconify-icon icon="solar:target-bold-duotone" width="18" height="18"></iconify-icon>
               <span
                 class="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">Admin</span>
             </div>
@@ -225,102 +189,6 @@
             </div>
           </button>
           <ul x-cloak x-show="activeDropdown === 'admin'" x-collapse class="sub-menu text-gray-500 mx-4 mb-2">
-            <li x-data="{ subActive: null, hovered: false }">
-              <div class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900"
-                @mouseenter="hovered = true" @mouseleave="hovered = false">
-                <!-- Icône dossier -->
-                <iconify-icon
-                  :icon="(subActive === 'error' || hovered) ? 'solar:folder-2-broken' : 'solar:folder-2-line-duotone'"
-                  class="ml-2" width="16" height="16"></iconify-icon>
-
-                <button type="button" @click="subActive === 'error' ? subActive = null : subActive = 'error'"
-                  class="flex items-center w-full">
-                  Spaces
-
-                  <div class="ltr:ml-auto rtl:mr-auto" style="height: 20px">
-                    <iconify-icon icon="solar:menu-dots-bold-duotone" width="16" height="16" style="margin-top: 2px"
-                      x-show="hovered"></iconify-icon>
-                    <iconify-icon icon="solar:add-square-linear" width="16" height="16" style="margin-top: 2px"
-                      x-show="hovered"></iconify-icon>
-                  </div>
-                </button>
-              </div>
-
-              <ul class="sub-menu text-gray-500 ltr:ml-2 rtl:mr-2" x-show="subActive === 'error'" x-collapse>
-                <li x-data="{ hovered: false }" @mouseenter="hovered = true" @mouseleave="hovered = false"
-                  class="flex items-center w-full justify-between hover:bg-gray-100">
-                  <div class="flex items-center">
-                    <iconify-icon icon="solar:hamburger-menu-line-duotone" class="ml-2" width="16"
-                      height="16"></iconify-icon>
-                    <a href="pages-error404.html" target="_blank" class="ml-2">Folders</a>
-                  </div>
-
-                  <!-- Icône menu-dots à droite, visible uniquement au hover -->
-                  <iconify-icon icon="solar:menu-dots-bold-duotone" width="16" class="mr-1" height="16" x-show="hovered"
-                    :class="{ 'rotate-90': hovered }"></iconify-icon>
-                </li>
-                <li x-data="{ hovered: false }" @mouseenter="hovered = true" @mouseleave="hovered = false"
-                  class="flex items-center w-full justify-between hover:bg-gray-100">
-                  <div class="flex items-center">
-                    <iconify-icon icon="solar:hamburger-menu-line-duotone" class="ml-2" width="16"
-                      height="16"></iconify-icon>
-                    <a href="pages-error404.html" target="_blank" class="ml-2">Personnes</a>
-                  </div>
-
-                  <!-- Icône menu-dots à droite, visible uniquement au hover -->
-                  <iconify-icon icon="solar:menu-dots-bold-duotone" width="16" height="16" class="mr-1" x-show="hovered"
-                    :class="{ 'rotate-90': hovered }"></iconify-icon>
-                </li>
-              </ul>
-            </li>
-            <li x-data="{ subActive: null, hovered: false}">
-              <div class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900"
-                @mouseenter="hovered = true" @mouseleave="hovered = false">
-                <!-- Icône dossier -->
-                <iconify-icon
-                  :icon="(subActive === 'error' || hovered) ? 'solar:folder-2-broken' : 'solar:folder-2-line-duotone'"
-                  class="ml-2" width="16" height="16"></iconify-icon>
-
-                <button type="button" @click="subActive === 'error' ? subActive = null : subActive = 'error'"
-                  class="flex items-center w-full">
-                  Folders
-
-                  <div class="ltr:ml-auto rtl:mr-auto" style="height: 20px">
-                    <iconify-icon icon="solar:menu-dots-bold-duotone" width="16" height="16" style="margin-top: 2px"
-                      x-show="hovered" @click.stop="showEditMenu = !showEditMenu, showMenu = false"></iconify-icon>
-                    <iconify-icon icon="solar:add-square-linear" width="16" height="16" style="margin-top: 2px"
-                      x-show="hovered" @click.stop="showMenu = !showMenu , showEditMenu = false"></iconify-icon>
-                  </div>
-                </button>
-              </div>
-
-              <ul class="sub-menu text-gray-500 ltr:ml-2 rtl:mr-2" x-show="subActive === 'error'" x-collapse>
-                <li x-data="{ hovered: false }" @mouseenter="hovered = true" @mouseleave="hovered = false"
-                  class="flex items-center w-full justify-between hover:bg-gray-100">
-                  <div class="flex items-center">
-                    <iconify-icon icon="solar:hamburger-menu-line-duotone" class="ml-2" width="16"
-                      height="16"></iconify-icon>
-                    <a href="pages-error404.html" target="_blank" class="ml-2">Hôtels</a>
-                  </div>
-
-                  <!-- Icône menu-dots à droite, visible uniquement au hover -->
-                  <iconify-icon icon="solar:menu-dots-bold-duotone" width="16" class="mr-1" height="16" x-show="hovered"
-                    :class="{ 'rotate-90': hovered }"></iconify-icon>
-                </li>
-                <li x-data="{ hovered: false }" @mouseenter="hovered = true" @mouseleave="hovered = false"
-                  class="flex items-center w-full justify-between hover:bg-gray-100">
-                  <div class="flex items-center">
-                    <iconify-icon icon="solar:hamburger-menu-line-duotone" class="ml-2" width="16"
-                      height="16"></iconify-icon>
-                    <a href="pages-error404.html" target="_blank" class="ml-2">Marchés publiques</a>
-                  </div>
-
-                  <!-- Icône menu-dots à droite, visible uniquement au hover -->
-                  <iconify-icon icon="solar:menu-dots-bold-duotone" width="16" height="16" class="mr-1" x-show="hovered"
-                    :class="{ 'rotate-90': hovered }"></iconify-icon>
-                </li>
-              </ul>
-            </li>
             <li x-data="{ subActive: null, hovered: false}">
               <div class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900"
                 @mouseenter="hovered = true" @mouseleave="hovered = false">
@@ -425,7 +293,7 @@
           <h2
             class="-mx-4 mb-1 flex items-center justify-between bg-white-light/30 py-3 px-2 font-extrabold uppercase dark:bg-dark dark:bg-opacity-[0.08]">
             <div class="flex items-center gap-2">
-              <iconify-icon icon="solar:share-circle-bold-duotone" class="ml-2" width="18" height="18"></iconify-icon>
+              <iconify-icon icon="solar:share-circle-bold-duotone" width="18" height="18"></iconify-icon>
               <span x-text="'Spaces (' + realSpacesCount + ')'">Spaces</span>
             </div>
             <div class="flex items-center gap-1 pr-2">
@@ -478,7 +346,7 @@
                     <li x-data="{ hovered: false }" class="relative" @mouseenter="hovered = true"
                       @mouseleave="hovered = false">
                       <div
-                        class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900 py-1 rounded transition-colors group/sub">
+                        class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900 rounded transition-colors group/sub">
                         <iconify-icon :icon="getIcon(child.type)" class="ml-2" width="16" height="16"></iconify-icon>
 
                         <div class="flex-1 min-w-0">
@@ -523,7 +391,7 @@
                         class="sub-menu text-gray-500 ltr:ml-4 rtl:mr-4 border-l dark:border-gray-800 ml-4">
                         <template x-for="subChild in child.children" :key="subChild.id">
                           <li x-data="{ hovered: false }"
-                            class="flex items-center hover:bg-gray-100 py-1 rounded transition-colors group/sub2"
+                            class="flex items-center hover:bg-gray-100 rounded transition-colors group/sub2"
                             @mouseenter="hovered = true" @mouseleave="hovered = false">
                             <iconify-icon :icon="getIcon(subChild.type)" class="ml-2" width="16"
                               height="16"></iconify-icon>
@@ -569,6 +437,12 @@
                 menuMode: 'main', // 'main' or 'data'
                 allEntities: [],
                 entitySearch: '',
+                pendingViewType: 'list',
+                showViewConfigModal: false,
+                configView: null,
+                configEntity: null,
+                tempFilters: [],
+                tempViewType: 'list',
 
                 async fetchHierarchy() {
                   // Initialize Sidebar Store
@@ -645,6 +519,7 @@
                 async openCreateMenu(event, item) {
                   this.menuMode = 'main';
                   this.entitySearch = '';
+                  this.pendingViewType = 'list';
                   Alpine.store('sidebar').contextItem = item;
                   Alpine.store('sidebar').showMenu = true;
                   Alpine.store('sidebar').showEditMenu = false;
@@ -672,6 +547,7 @@
                 },
 
                 async linkExistingEntity(entity) {
+                  const viewType = this.pendingViewType;
                   const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
                   const parent = Alpine.store('sidebar').contextItem;
                   try {
@@ -681,7 +557,8 @@
                       body: JSON.stringify({
                         entityId: entity.id,
                         parentId: parent.id,
-                        parentType: parent.type
+                        parentType: parent.type,
+                        viewType: viewType
                       })
                     });
                     if (res.ok) {
@@ -723,9 +600,10 @@
                 },
 
                 async createItem(type) {
+                  const viewType = this.pendingViewType;
                   const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
                   const parent = Alpine.store('sidebar').contextItem;
-                  console.log(`[Sidebar] Creating ${type} for parent:`, parent);
+                  console.log(`[Sidebar] Creating ${type}:${viewType} for parent:`, parent);
                   const name = prompt(`Nom de l'élément (${type}) :`);
                   if (!name) return;
 
@@ -737,7 +615,8 @@
                       body: JSON.stringify({
                         name,
                         parentId: parent.id,
-                        parentType: parent.type
+                        parentType: parent.type,
+                        viewType: viewType
                       })
                     });
                     if (!res.ok) {
@@ -795,6 +674,60 @@
                     await new Promise(r => setTimeout(r, 100));
                     await this.fetchHierarchy();
                   } catch (e) { alert("Erreur: " + e.message); }
+                },
+
+                async openViewConfig() {
+                  const item = Alpine.store('sidebar').contextItem;
+                  const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+
+                  try {
+                    // 1. Get View Details
+                    const resView = await fetch(`/account/${accountNum}/api/hierarchy/list?id=${item.id}`); // This is just to get data, maybe we need a specific endpoint
+                    // Actually, let's just use the item data we have if possible, but we need fields.
+                    // Better approach: fetch entity details
+                    const resEntity = await fetch(`/account/${accountNum}/api/entity/${item.entityId}`);
+                    if (!resEntity.ok) throw new Error("Erreur chargement entité");
+                    this.configEntity = await resEntity.json();
+
+                    // Mock view data for now if we don't have a fetch-by-id
+                    this.configView = item;
+                    this.tempViewType = item.viewType || 'list';
+                    this.tempFilters = item.filters || [];
+
+                    this.showViewConfigModal = true;
+                    Alpine.store('sidebar').showEditMenu = false;
+                  } catch (e) {
+                    alert("Erreur: " + e.message);
+                  }
+                },
+
+                addFilter() {
+                  this.tempFilters.push({ field: '', operator: 'equals', value: '' });
+                },
+
+                removeFilter(index) {
+                  this.tempFilters.splice(index, 1);
+                },
+
+                async saveViewConfig() {
+                  const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                  try {
+                    const res = await fetch(`/account/${accountNum}/api/view/config`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        viewId: this.configView.id,
+                        viewType: this.tempViewType,
+                        filters: this.tempFilters
+                      })
+                    });
+                    if (res.ok) {
+                      this.showViewConfigModal = false;
+                      await this.fetchHierarchy();
+                    }
+                  } catch (e) {
+                    alert("Erreur: " + e.message);
+                  }
                 }
               }));
             });
@@ -830,30 +763,43 @@
                     <div class="flex items-center justify-between w-full">
                       <div class="flex items-center gap-2">
                         <iconify-icon icon="solar:database-bold" class="ml-2" width="18" height="18"></iconify-icon>
-                        <span>Données</span>
+                        <span>View</span>
                       </div>
                       <iconify-icon icon="solar:alt-arrow-right-linear" width="16"></iconify-icon>
                     </div>
                   </li>
 
-                  <li class="hover:bg-primary/10 hover:text-primary px-1 py-2 rounded cursor-pointer transition-colors">
-                    <div class="flex items-center gap-2">
-                      <iconify-icon icon="solar:filter-bold-duotone" class="ml-2" width="18" height="18"></iconify-icon>
-                      <span>Kanban</span>
+                  <li class="hover:bg-primary/10 hover:text-primary px-1 py-2 rounded cursor-pointer transition-colors"
+                    @click="menuMode = 'data'; pendingViewType = 'list'">
+                    <div class="flex items-center justify-between w-full">
+                      <div class="flex items-center gap-2">
+                        <iconify-icon icon="solar:list-bold" class="ml-2" width="18" height="18"></iconify-icon>
+                        <span>Liste</span>
+                      </div>
+                      <iconify-icon icon="solar:alt-arrow-right-linear" width="16"></iconify-icon>
                     </div>
                   </li>
-                  <li class="hover:bg-primary/10 hover:text-primary px-1 py-2 rounded cursor-pointer transition-colors">
-                    <div class="flex items-center gap-2">
-                      <iconify-icon icon="solar:posts-carousel-vertical-outline" class="ml-2" width="18"
-                        height="18"></iconify-icon>
-                      <span>Timeline</span>
+
+                  <li class="hover:bg-primary/10 hover:text-primary px-1 py-2 rounded cursor-pointer transition-colors"
+                    @click="menuMode = 'data'; pendingViewType = 'kanban'">
+                    <div class="flex items-center justify-between w-full">
+                      <div class="flex items-center gap-2">
+                        <iconify-icon icon="solar:filter-bold-duotone" class="ml-2" width="18"
+                          height="18"></iconify-icon>
+                        <span>Kanban</span>
+                      </div>
+                      <iconify-icon icon="solar:alt-arrow-right-linear" width="16"></iconify-icon>
                     </div>
                   </li>
-                  <li class="hover:bg-primary/10 hover:text-primary px-1 py-2 rounded cursor-pointer transition-colors">
-                    <div class="flex items-center gap-2">
-                      <iconify-icon icon="solar:calendar-line-duotone" class="ml-2" width="18"
-                        height="18"></iconify-icon>
-                      <span>Calendrier</span>
+
+                  <li class="hover:bg-primary/10 hover:text-primary px-1 py-2 rounded cursor-pointer transition-colors"
+                    @click="menuMode = 'data'; pendingViewType = 'checklist'">
+                    <div class="flex items-center justify-between w-full">
+                      <div class="flex items-center gap-2">
+                        <iconify-icon icon="solar:checklist-bold" class="ml-2" width="18" height="18"></iconify-icon>
+                        <span>Checklist</span>
+                      </div>
+                      <iconify-icon icon="solar:alt-arrow-right-linear" width="16"></iconify-icon>
                     </div>
                   </li>
 
@@ -956,6 +902,15 @@
                 </div>
               </li>
 
+              <li x-show="$store.sidebar.contextItem?.type === 'entity'"
+                class="hover:bg-primary/10 hover:text-primary px-1 py-2 rounded cursor-pointer transition-colors"
+                @click="openViewConfig()">
+                <div class="flex items-center gap-2">
+                  <iconify-icon icon="solar:settings-bold-duotone" class="ml-2" width="18" height="18"></iconify-icon>
+                  <span>Configuration</span>
+                </div>
+              </li>
+
               <li class="hover:bg-red-500/10 text-red-500 px-1 py-2 rounded cursor-pointer transition-colors"
                 @click="deleteItem()">
                 <div class="flex items-center gap-2">
@@ -965,6 +920,90 @@
                 </div>
               </li>
             </ul>
+          </div>
+
+          <!-- CONFIG MODAL (Fixed at center) -->
+          <div x-show="showViewConfigModal"
+            class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-4" x-cloak>
+            <div class="bg-white dark:bg-[#1b2e4b] w-full max-w-xl rounded-xl shadow-2xl overflow-hidden"
+              @click.outside="showViewConfigModal = false">
+              <div class="p-6 border-b dark:border-gray-800 flex justify-between items-center">
+                <h3 class="text-xl font-bold dark:text-white"
+                  x-text="'Configurer la vue : ' + (configView ? configView.name : '')"></h3>
+                <button @click="showViewConfigModal = false" class="text-gray-400 hover:text-white transition-colors">
+                  <iconify-icon icon="solar:close-circle-bold" width="24"></iconify-icon>
+                </button>
+              </div>
+
+              <div class="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <!-- View Type Selector -->
+                <div class="space-y-2">
+                  <label class="block text-sm font-semibold dark:text-gray-300">Type d'affichage</label>
+                  <div class="grid grid-cols-4 gap-3">
+                    <template x-for="type in ['list', 'kanban', 'checklist', 'table']">
+                      <button class="p-3 rounded-lg border-2 flex flex-col items-center gap-2 transition-all"
+                        :class="tempViewType === type ? 'border-primary bg-primary/5 text-primary' : 'border-gray-100 dark:border-gray-800 text-gray-500 grayscale hover:grayscale-0 hover:border-primary/50'"
+                        @click="tempViewType = type">
+                        <iconify-icon :icon="getIcon(type === 'list' || type === 'table' ? 'entity' : type)"
+                          width="24"></iconify-icon>
+                        <span class="text-[10px] font-bold uppercase" x-text="type"></span>
+                      </button>
+                    </template>
+                  </div>
+                </div>
+
+                <!-- Filters Section -->
+                <div class="space-y-4 pt-4 border-t dark:border-gray-800">
+                  <div class="flex items-center justify-between">
+                    <label class="text-sm font-semibold dark:text-gray-300">Filtres dynamiques</label>
+                    <button class="btn btn-sm btn-outline-primary" @click="addFilter()">
+                      <iconify-icon icon="solar:add-circle-bold" class="mr-1"></iconify-icon> Ajouter un filtre
+                    </button>
+                  </div>
+
+                  <div class="space-y-3">
+                    <template x-for="(filter, index) in tempFilters" :key="index">
+                      <div
+                        class="flex items-center gap-2 bg-gray-50 dark:bg-black/20 p-3 rounded-lg border dark:border-gray-800">
+                        <select x-model="filter.field" class="form-select flex-1 text-xs">
+                          <option value="">Choisir un champ...</option>
+                          <optgroup label="Standard">
+                            <option value="title">Titre</option>
+                            <option value="status">Statut</option>
+                            <option value="createdAt">Date de création</option>
+                          </optgroup>
+                          <optgroup label="Personnalisé" x-show="configEntity">
+                            <template x-for="f in (configEntity ? configEntity.customFields : [])" :key="f._id">
+                              <option :value="f._id" x-text="f.label"></option>
+                            </template>
+                          </optgroup>
+                        </select>
+                        <select x-model="filter.operator" class="form-select w-28 text-xs">
+                          <option value="equals">=</option>
+                          <option value="not_equals">!=</option>
+                          <option value="contains">contient</option>
+                          <option value="greater_than">&gt;</option>
+                          <option value="less_than">&lt;</option>
+                        </select>
+                        <input type="text" x-model="filter.value" class="form-input flex-1 text-xs"
+                          placeholder="Valeur...">
+                        <button class="text-red-500 p-1 hover:bg-red-50/10 rounded" @click="removeFilter(index)">
+                          <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="18"></iconify-icon>
+                        </button>
+                      </div>
+                    </template>
+                    <div x-show="tempFilters.length === 0" class="text-center py-4 text-gray-400 italic text-xs">
+                      Aucun filtre actif (affiche tout)
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-6 border-t dark:border-gray-800 bg-gray-50 dark:bg-black/10 flex justify-end gap-3">
+                <button class="btn btn-outline-danger" @click="showViewConfigModal = false">Annuler</button>
+                <button class="btn btn-primary" @click="saveViewConfig()">Enregistrer les modifications</button>
+              </div>
+            </div>
           </div>
         </div>
     </div>

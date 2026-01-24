@@ -1,0 +1,86 @@
+<!-- views/record/partials/modal-configure-view.ejs -->
+<div class="fixed inset-0 z-[999] hidden overflow-y-auto bg-[black]/60 px-4" :class="showConfig && '!block'">
+    <div class="flex min-h-screen items-center justify-center">
+        <div x-show="showConfig" x-transition x-transition.duration.300 @click.outside="showConfig = false"
+            class="panel my-8 w-[90%] max-w-2xl overflow-hidden rounded-lg border-0 p-0 md:w-full">
+
+            <div class="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
+                <h5 class="text-lg font-bold">Configurer la vue : <%= view.name %>
+                </h5>
+                <button type="button" class="text-white-dark hover:text-dark" @click="showConfig = false">
+                    <iconify-icon icon="solar:close-circle-bold" width="24"></iconify-icon>
+                </button>
+            </div>
+
+            <div class="p-5" x-data="viewConfig">
+                <div class="mb-5">
+                    <label class="font-bold mb-3 block text-sm uppercase text-gray-500">Type d'affichage</label>
+                    <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                        <template x-for="type in viewTypes" :key="type.id">
+                            <button type="button" @click="selectedType = type.id"
+                                class="flex flex-col items-center justify-center gap-2 rounded-lg border-2 p-4 transition-all"
+                                :class="selectedType === type.id ? 'border-primary bg-primary/5 text-primary' : 'border-gray-100 hover:border-gray-200 dark:border-gray-800'">
+                                <iconify-icon :icon="type.icon" width="24"></iconify-icon>
+                                <span class="text-xs font-bold uppercase" x-text="type.label"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="mb-5 border-t dark:border-gray-800 pt-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="font-bold block text-sm uppercase text-gray-500">Filtres dynamiques</label>
+                        <button type="button" class="btn btn-outline-primary btn-sm flex items-center gap-2">
+                            <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
+                            Ajouter un filtre
+                        </button>
+                    </div>
+
+                    <div class="flex flex-col items-center justify-center py-8 text-gray-400">
+                        <p class="italic text-sm">Aucun filtre actif (affiche tout)</p>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex items-center justify-end gap-3 border-t dark:border-gray-800 pt-5">
+                    <button type="button" class="btn btn-outline-danger" @click="showConfig = false">Annuler</button>
+                    <button type="button" class="btn btn-primary" @click="saveViewConfig">Enregistrer les
+                        modifications</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("alpine:init", () => {
+        Alpine.data("viewConfig", () => ({
+            selectedType: '<%= view.viewType || "list" %>',
+            viewTypes: [
+                { id: 'list', label: 'List', icon: 'solar:database-bold' },
+                { id: 'kanban', label: 'Kanban', icon: 'solar:notes-bold' },
+                { id: 'checklist', label: 'Checklist', icon: 'solar:checklist-bold' },
+                { id: 'table', label: 'Table', icon: 'solar:table-bold' }
+            ],
+            async saveViewConfig() {
+                try {
+                    const response = await fetch('/account/<%= account_number %>/api/view/config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            viewId: '<%= view._id %>',
+                            viewType: this.selectedType
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert('Erreur lors de la sauvegarde');
+                    }
+                } catch (error) {
+                    console.error('Error saving view config:', error);
+                }
+            }
+        }));
+    });
+</script>

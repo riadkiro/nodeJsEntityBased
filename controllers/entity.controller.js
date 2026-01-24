@@ -317,4 +317,15 @@ module.exports = {
   update_Api: async (req, res) => {
     res.send("Edit function here");
   },
+
+  getDetails_Api: async (req, res) => {
+    try {
+      const EntityModel = await tenantCollection(req, "Entity");
+      const entity = await EntityModel.findById(req.params.id).populate('customFields');
+      if (!entity) return res.status(404).json({ error: "Entity not found" });
+      res.json(entity);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  }
 };

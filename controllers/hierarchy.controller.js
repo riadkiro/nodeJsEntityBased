@@ -68,8 +68,10 @@ module.exports = {
                             id: v.id,
                             name: v.name,
                             icon: v.icon || (entity ? entity.icon : 'solar:database-bold'),
-                            link: entity ? `/account/${req.account_number}/record/${entity.slug}/list` : '#',
-                            entityId: v.entity
+                            link: `/account/${req.account_number}/view/${v.id}`,
+                            entityId: v.entity,
+                            viewType: v.viewType || 'list',
+                            filters: v.filters || []
                         });
                     }
                 });
@@ -190,7 +192,7 @@ module.exports = {
     createEntity: async (req, res) => {
         const EntityModel = await tenantCollection(req, "Entity");
         const ViewModel = await tenantCollection(req, "View");
-        const { name, parentId, parentType } = req.body;
+        const { name, parentId, parentType, viewType } = req.body;
         const slug = name.toLowerCase().replace(/ /g, '-') + '-' + Date.now();
 
         const newEntity = new EntityModel({ name, slug, createdBy: req.user._id });
@@ -200,6 +202,7 @@ module.exports = {
             name,
             slug,
             entity: newEntity._id,
+            viewType: viewType || 'list',
             createdBy: req.user._id,
             spaces: parentType === 'space' ? [parentId] : [],
             folders: parentType === 'folder' ? [parentId] : []
@@ -245,12 +248,13 @@ module.exports = {
     linkEntity: async (req, res) => {
         const EntityModel = await tenantCollection(req, "Entity");
         const ViewModel = await tenantCollection(req, "View");
-        const { entityId, parentId, parentType } = req.body;
+        const { entityId, parentId, parentType, viewType } = req.body;
         const entity = await EntityModel.findById(entityId);
         const newView = new ViewModel({
             name: entity.name,
             slug: entity.name.toLowerCase().replace(/ /g, '-') + '-' + Date.now(),
             entity: entity._id,
+            viewType: viewType || 'list',
             createdBy: req.user._id,
             spaces: parentType === 'space' ? [parentId] : [],
             folders: parentType === 'folder' ? [parentId] : []

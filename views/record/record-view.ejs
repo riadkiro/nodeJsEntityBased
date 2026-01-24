@@ -1,0 +1,106 @@
+<!-- views/record/record-view.ejs -->
+<div x-data="recordView">
+    <!-- View Header -->
+    <div class="panel mb-5">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-2">
+                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <iconify-icon icon="<%= 
+                        view.viewType === 'kanban' ? 'solar:notes-bold' : 
+                        view.viewType === 'checklist' ? 'solar:checklist-bold' : 
+                        view.viewType === 'table' ? 'solar:table-bold' : 
+                        'solar:database-bold' 
+                    %>" width="24"></iconify-icon>
+                </div>
+                <div>
+                    <h5 class="text-lg font-bold dark:text-white-light">
+                        <%= entity.name %>
+                    </h5>
+                    <p class="text-xs text-white-dark">
+                        <%= view.name %>
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
+                    <button type="button" @click="changeViewType('list')" class="p-1.5 rounded-md transition-all"
+                        :class="viewType === 'list' ? 'bg-white shadow-sm text-primary dark:bg-gray-700' : 'text-gray-500 hover:text-gray-700'">
+                        <iconify-icon icon="solar:list-bold" width="18"></iconify-icon>
+                    </button>
+                    <button type="button" @click="changeViewType('kanban')" class="p-1.5 rounded-md transition-all"
+                        :class="viewType === 'kanban' ? 'bg-white shadow-sm text-primary dark:bg-gray-700' : 'text-gray-500 hover:text-gray-700'">
+                        <iconify-icon icon="solar:notes-bold" width="18"></iconify-icon>
+                    </button>
+                    <button type="button" @click="changeViewType('table')" class="p-1.5 rounded-md transition-all"
+                        :class="viewType === 'table' ? 'bg-white shadow-sm text-primary dark:bg-gray-700' : 'text-gray-500 hover:text-gray-700'">
+                        <iconify-icon icon="solar:hamburger-menu-linear" width="18"></iconify-icon>
+                        <!-- <span class="iconify" data-icon="solar:hamburger-menu-linear" data-inline="false"></span> -->
+                    </button>
+                </div>
+
+                <div class="h-6 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+                <button type="button" @click="showConfig = true"
+                    class="btn btn-outline-primary flex items-center gap-2">
+                    <iconify-icon icon="solar:settings-bold" width="18"></iconify-icon>
+                    <span class="hidden sm:inline">Configurer</span>
+                </button>
+
+                <a href="/account/<%= account_number %>/record/<%= entity.slug %>/add"
+                    class="btn btn-primary flex items-center gap-2">
+                    <iconify-icon icon="solar:add-circle-bold" width="18"></iconify-icon>
+                    <span>Ajouter</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="view-content">
+        <% if (view.viewType==='kanban' ) { %>
+            <%- include('partials/view-kanban') %>
+                <% } else if (view.viewType==='table' ) { %>
+                    <%- include('partials/view-table') %>
+                        <% } else if (view.viewType==='checklist' ) { %>
+                            <div class="panel">
+                                <p class="text-center py-10 text-white-dark italic">Vue Checklist en cours de
+                                    développement...</p>
+                            </div>
+                            <% } else { %>
+                                <%- include('partials/view-list') %>
+                                    <% } %>
+    </div>
+
+    <!-- Configuration Modal -->
+    <%- include('partials/modal-configure-view') %>
+</div>
+
+<script>
+    document.addEventListener("alpine:init", () => {
+        Alpine.data("recordView", () => ({
+            showConfig: false,
+            viewType: '<%= view.viewType || "list" %>',
+
+            async changeViewType(type) {
+                if (this.viewType === type) return;
+
+                try {
+                    const response = await fetch('/account/<%= account_number %>/api/view/config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            viewId: '<%= view._id %>',
+                            viewType: type
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        window.location.reload();
+                    }
+                } catch (error) {
+                    console.error('Error changing view type:', error);
+                }
+            }
+        }));
+    });
+</script>

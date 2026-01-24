@@ -1,0 +1,91 @@
+<div x-data="checklistView">
+    <div class="space-y-6">
+        <div class="panel">
+            <div class="flex items-center justify-between mb-5">
+                <h5 class="text-lg font-semibold dark:text-white-light">
+                    <%= view.name %> (Checklist) - <%= entity.name %>
+                </h5>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-500"
+                        x-text="completedCount + ' / ' + records.length + ' accomplis'"></span>
+                    <div class="w-32 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div class="h-full bg-success transition-all duration-500" :style="'width: ' + progress + '%'">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <template x-for="record in records" :key="record.id">
+                    <div class="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-white/5 transition-all group"
+                        :class="record.completed ? 'opacity-60' : ''">
+                        <input type="checkbox" class="form-checkbox h-5 w-5 text-success rounded-full cursor-pointer"
+                            x-model="record.completed" @change="toggleComplete(record)">
+
+                        <div class="flex-1 min-w-0">
+                            <h6 class="font-medium text-sm transition-all"
+                                :class="record.completed ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'"
+                                x-text="record.title"></h6>
+                            <div class="flex gap-2 mt-1">
+                                <template x-for="field in record.previewFields" :key="field.label">
+                                    <span
+                                        class="text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-gray-500"
+                                        x-text="field.label + ': ' + field.value"></span>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="opacity-0 group-hover:opacity-100 flex gap-2">
+                            <a :href="'/account/<%= account_number %>/record/<%= entity.slug %>/edit/' + record.id"
+                                class="p-1 hover:text-primary transition-colors">
+                                <iconify-icon icon="solar:pen-bold" width="18"></iconify-icon>
+                            </a>
+                        </div>
+                    </div>
+                </template>
+
+                <div x-show="records.length === 0" class="text-center py-10 text-gray-500 italic">
+                    Aucun élément dans cette liste
+                </div>
+
+                <div class="pt-4 mt-4 border-t border-gray-100 dark:border-gray-800">
+                    <a href="/account/<%= account_number %>/record/<%= entity.slug %>/add"
+                        class="flex items-center gap-2 text-primary hover:text-primary-dark font-medium text-sm">
+                        <iconify-icon icon="solar:add-circle-bold" width="20"></iconify-icon>
+                        Ajouter une tâche
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("alpine:init", () => {
+        Alpine.data("checklistView", () => ({
+            records: <% - JSON.stringify(records.map(r => ({
+                id: r._id,
+                title: r.title || r.slug,
+                completed: r.status === 'Terminé',
+                previewFields: r.customFields.slice(0, 1).map(cf => ({
+                    label: cf.field_id ? cf.field_id.label : '?',
+                    value: cf.value
+                }))
+            }))) %>,
+
+            get completedCount() {
+                return this.records.filter(r => r.completed).length;
+            },
+
+            get progress() {
+                if (this.records.length === 0) return 0;
+                return (this.completedCount / this.records.length) * 100;
+            },
+
+            toggleComplete(record) {
+                // Sync with server logic here
+                console.log(`Record ${record.id} status changed to ${record.completed ? 'Terminé' : 'À faire'}`);
+            }
+        }));
+    });
+</script>

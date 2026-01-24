@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Entity = require("../models/entity.model");
 const Record = require("../models/record.model");
 const FieldTemplate = require("../models/field-template.model");
@@ -111,6 +112,9 @@ module.exports = {
                 layout: "layout-app"
             });
 
+            if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+                return res.status(400).send("Invalid Record ID");
+            }
             const record = await RecordModel.findById(req.params.id);
             if (!record) return res.status(404).render("errors/404", {
                 message: "Record not found",
@@ -158,6 +162,9 @@ module.exports = {
                 }
             }
 
+            if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+                return res.status(400).send("Invalid Record ID");
+            }
             await RecordModel.findByIdAndUpdate(req.params.id, {
                 ...standard,
                 customFields: customFieldsArray,
@@ -173,6 +180,9 @@ module.exports = {
 
     delete: async (req, res) => {
         try {
+            if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+                return res.status(400).send("Invalid Record ID");
+            }
             const RecordModel = await tenantCollection(req, "Record");
             await RecordModel.findByIdAndRemove(req.params.id);
             res.redirect(`/account/${req.account_number}/record/${req.params.entityName}/list`);
@@ -227,6 +237,19 @@ module.exports = {
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: "Search failed" });
+        }
+    },
+
+    updateStatus: async (req, res) => {
+        try {
+            const RecordModel = await tenantCollection(req, "Record");
+            const { recordId, status } = req.body;
+
+            const updatedRecord = await RecordModel.findByIdAndUpdate(recordId, { status }, { new: true });
+            res.json({ success: true, record: updatedRecord });
+        } catch (error) {
+            console.error("[Record Controller] Update Status Error:", error);
+            res.status(500).json({ error: error.message });
         }
     }
 };

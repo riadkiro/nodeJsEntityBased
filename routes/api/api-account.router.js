@@ -5,6 +5,9 @@ const router = express.Router();
 const accountController = require('../../controllers/account.controller')
 // Hierarchy
 const hierarchyController = require('../../controllers/hierarchy.controller');
+const viewController = require('../../controllers/view.controller');
+const entityController = require('../../controllers/entity.controller');
+const recordController = require('../../controllers/record.controller');
 
 //Do not delete the comments
 //Auto generated routers 
@@ -29,5 +32,9 @@ router.post('/hierarchy/rename', hierarchyController.renameItem);
 router.post('/hierarchy/delete', hierarchyController.deleteItem);
 router.get('/hierarchy/all-entities', hierarchyController.listAllEntities);
 router.post('/hierarchy/link-entity', hierarchyController.linkEntity);
+
+router.get('/entity/:id', entityController.getDetails_Api);
+router.post('/view/config', viewController.saveConfig);
+router.post('/record/update-status', recordController.updateStatus);
 
 module.exports = router;

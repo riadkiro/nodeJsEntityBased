@@ -1,0 +1,110 @@
+<!-- views/record/partials/view-list.ejs -->
+<div x-data="recordListView">
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <template x-for="record in records" :key="record.id">
+            <div
+                class="panel border border-gray-100 hover:border-primary transition-all dark:border-gray-800 group relative">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
+                            <span x-text="record.title ? record.title[0].toUpperCase() : '?'"></span>
+                        </div>
+                        <div>
+                            <h6 class="text-base font-bold dark:text-white-light" x-text="record.title || 'Sans titre'">
+                            </h6>
+                            <p class="text-[10px] text-white-dark" x-text="record.date"></p>
+                        </div>
+                    </div>
+                    <div class="dropdown" x-data="dropdown" @click.outside="open = false">
+                        <button type="button" @click="toggle"
+                            class="text-white-dark group-hover:text-primary transition-colors">
+                            <iconify-icon icon="solar:menu-dots-bold" width="18"></iconify-icon>
+                        </button>
+                        <ul x-cloak x-show="open" x-transition x-transition.duration.300ms
+                            class="ltr:right-0 rtl:left-0 z-[10]">
+                            <li><a href="javascript:;"
+                                    @click="window.location.href = '/account/<%= account_number %>/record/<%= entity.slug %>/edit/' + record.id">Modifier</a>
+                            </li>
+                            <li><a href="javascript:;"
+                                    @click="if(confirm('Supprimer ?')) window.location.href = '/account/<%= account_number %>/record/<%= entity.slug %>/delete/' + record.id"
+                                    class="text-danger">Supprimer</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="space-y-2 mb-4">
+                    <template x-for="field in record.customFields" :key="field.label">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-white-dark font-medium" x-text="field.label + ' :'"></span>
+                            <span class="dark:text-white-light font-bold" x-text="field.value || '-'"></span>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="flex items-center justify-between pt-3 border-t dark:border-gray-800">
+                    <span
+                        class="badge bg-primary/10 text-primary rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
+                        x-text="record.status"></span>
+                    <a :href="'/account/<%= account_number %>/record/<%= entity.slug %>/edit/' + record.id"
+                        class="text-xs font-bold text-primary hover:underline">
+                        Détails
+                    </a>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <template x-if="records.length === 0">
+        <div class="panel py-20 text-center">
+            <div class="mb-5 flex justify-center text-primary">
+                <iconify-icon icon="solar:folder-error-bold" width="64"></iconify-icon>
+            </div>
+            <h5 class="text-lg font-bold">Aucun enregistrement trouvé</h5>
+            <p class="text-white-dark">Commencez par ajouter un nouveau record.</p>
+            <a href="/account/<%= account_number %>/record/<%= entity.slug %>/add" class="btn btn-primary mt-5">Ajouter
+                un record</a>
+        </div>
+    </template>
+</div>
+
+<script id="list-records-data" type="application/json"><%- JSON.stringify(records || []) %></script>
+<script id="list-entity-data" type="application/json"><%- JSON.stringify(entity || {}) %></script>
+
+<script>
+    document.addEventListener("alpine:init", () => {
+        Alpine.data("recordListView", () => ({
+            records: [],
+            init() {
+                try {
+                    const rawRecords = JSON.parse(document.getElementById('list-records-data').textContent);
+                    const entity = JSON.parse(document.getElementById('list-entity-data').textContent);
+
+                    if (!rawRecords || !Array.isArray(rawRecords)) return;
+
+                    this.records = rawRecords.map(r => {
+                        const customFields = (entity.customFields || []).map(f => {
+                            const val = (r.customFields || []).find(cf =>
+                                cf.field_id && (cf.field_id._id || cf.field_id).toString() === f._id.toString()
+                            );
+                            return {
+                                label: f.label,
+                                value: val ? val.value : ''
+                            };
+                        });
+
+                        return {
+                            id: r._id,
+                            title: r.title || 'Sans titre',
+                            date: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'N/A',
+                            status: r.status || 'draft',
+                            customFields: customFields
+                        };
+                    });
+                } catch (e) {
+                    console.error("[List View] Initialization Error:", e);
+                }
+            }
+        }));
+    });
+</script>

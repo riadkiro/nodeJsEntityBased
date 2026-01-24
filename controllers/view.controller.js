@@ -1,0 +1,102 @@
+const tenantCollection = require("../middleware/tenant").tenantCollection;
+const mongoose = require("mongoose");
+
+module.exports = {
+    renderView: async (req, res) => {
+        try {
+            const ViewModel = await tenantCollection(req, "View");
+            const EntityModel = await tenantCollection(req, "Entity");
+            const RecordModel = await tenantCollection(req, "Record");
+            await tenantCollection(req, "FieldTemplate");
+            const UserModel = await tenantCollection(req, "User"); // ✅
+
+            const viewId = req.params.viewId;
+            if (!mongoose.Types.ObjectId.isValid(viewId)) {
+                return res.status(400).send("Invalid View ID");
+            }
+
+            const view = await ViewModel.findById(viewId);
+            if (!view) return res.status(404).send("View not found");
+
+            const entity = await EntityModel.findById(view.entity).populate('customFields');
+            if (!entity) return res.status(404).send("Entity not found");
+
+            // ✅ récup prefs
+            let preferences = {};
+            if (req.user?._id) {
+                const user = await UserModel.findById(req.user._id).select("preferences");
+                preferences = user?.preferences || {};
+            }
+
+            // Build dynamic query
+            let query = { entityId: entity._id };
+
+            if (view.filters && view.filters.length > 0) {
+                const filterQueries = view.filters.map(f => {
+                    const isStandard = ['title', 'slug', 'status', 'createdAt'].includes(f.field);
+
+                    let operatorValue;
+                    switch (f.operator) {
+                        case 'equals': operatorValue = f.value; break;
+                        case 'not_equals': operatorValue = { $ne: f.value }; break;
+                        case 'contains': operatorValue = { $regex: f.value, $options: 'i' }; break;
+                        case 'greater_than': operatorValue = { $gt: f.value }; break;
+                        case 'less_than': operatorValue = { $lt: f.value }; break;
+                        case 'in': operatorValue = { $in: Array.isArray(f.value) ? f.value : [f.value] }; break;
+                        default: operatorValue = f.value;
+                    }
+
+                    if (isStandard) {
+                        return { [f.field]: operatorValue };
+                    } else {
+                        // Custom field filtering
+                        return { customFields: { $elemMatch: { field_id: f.field, value: operatorValue } } };
+                    }
+                });
+
+                if (filterQueries.length > 0) {
+                    query.$and = filterQueries;
+                }
+            }
+
+            // Sorting
+            let sort = { createdAt: -1 };
+            if (view.settings && view.settings.sortBy) {
+                sort = { [view.settings.sortBy.field]: view.settings.sortBy.direction === 'asc' ? 1 : -1 };
+            }
+
+            const records = await RecordModel.find(query).sort(sort).populate('customFields.field_id');
+
+            res.render("record/record-view", {
+                view,
+                entity,
+                records,
+                account_number: req.account_number,
+                preferences,                 // ✅ IMPORTANT
+                layout: "layout-app"
+            });
+
+        } catch (error) {
+            console.error("[View Controller] Error:", error);
+            res.status(500).send("Server Error");
+        }
+    },
+
+    saveConfig: async (req, res) => {
+        try {
+            const ViewModel = await tenantCollection(req, "View");
+            const { viewId, viewType, filters, settings } = req.body;
+
+            const updatedView = await ViewModel.findByIdAndUpdate(viewId, {
+                viewType,
+                filters,
+                settings
+            }, { new: true });
+
+            res.json({ success: true, view: updatedView });
+        } catch (error) {
+            console.error("[View Controller] Save Config Error:", error);
+            res.status(500).json({ error: error.message });
+        }
+    }
+};

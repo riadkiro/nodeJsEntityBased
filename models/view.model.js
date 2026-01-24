@@ -11,6 +11,13 @@ const ViewSchema = new mongoose.Schema({
         required: true
     },
 
+    // Type of display
+    viewType: {
+        type: String,
+        enum: ['list', 'kanban', 'checklist', 'calendar', 'table'],
+        default: 'list'
+    },
+
     // Hierarchy position
     spaces: [{
         type: mongoose.Schema.Types.ObjectId,
@@ -21,14 +28,22 @@ const ViewSchema = new mongoose.Schema({
         ref: 'Folder'
     }],
 
-    // Future filter/config
-    filters: {
-        type: mongoose.Schema.Types.Mixed,
-        default: {}
-    },
+    // Filter configuration
+    // Example: [{ field: 'status', operator: 'equals', value: 'Active' }]
+    filters: [{
+        field: { type: String }, // Can be standard field or custom field ID
+        operator: { type: String, enum: ['equals', 'not_equals', 'contains', 'greater_than', 'less_than', 'in'] },
+        value: { type: mongoose.Schema.Types.Mixed }
+    }],
+
+    // Visual settings (columns for kanban, hidden fields, etc.)
     settings: {
-        type: mongoose.Schema.Types.Mixed,
-        default: {}
+        kanbanField: { type: String }, // For kanban, which field defines columns
+        hiddenFields: [String],
+        sortBy: {
+            field: String,
+            direction: { type: String, enum: ['asc', 'desc'], default: 'asc' }
+        }
     },
 
     createdBy: {

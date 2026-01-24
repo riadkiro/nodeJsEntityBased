@@ -4,15 +4,17 @@
     <div class="panel !p-4">
         <div class="flex items-center gap-2">
             <button type="submit" form="main-record-form"
-                class="btn btn-primary flex-1 py-2 flex items-center justify-center gap-2 text-xs">
+                class="btn btn-primary flex-1 py-2 flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-wider transition-all hover:shadow-lg hover:shadow-primary/20">
                 <iconify-icon icon="solar:diskette-bold" width="16"></iconify-icon>
                 <span>
-                    <%= locals.record ? 'Mettre à jour' : 'Enregistrer' %>
+                    <%= locals.record ? 'Enregistrer' : 'Créer' %>
                 </span>
             </button>
             <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
-                class="btn btn-outline-danger px-3 py-2 flex items-center justify-center text-xs" title="Annuler">
+                class="btn btn-outline-danger flex-1 py-2 flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-wider"
+                title="Annuler">
                 <iconify-icon icon="solar:close-circle-bold" width="16"></iconify-icon>
+                <span>ANNULER</span>
             </a>
         </div>
         <div

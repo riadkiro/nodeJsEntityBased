@@ -1,70 +1,130 @@
 <div x-data="recordForm()" class="space-y-6">
-    <!-- Big Title Panel -->
-    <div class="panel mb-4">
-        <div class="flex items-center justify-between">
-            <h2 class="text-2xl font-bold text-gray-800">
-                <%= entity.name %>
-                    <span class="text-sm font-normal text-gray-400 ml-2">/ Modifier record</span>
-            </h2>
-            <div class="flex items-center gap-2">
-                <button type="button" @click="designMode = !designMode"
-                    :class="designMode ? 'text-primary bg-primary/10' : 'text-gray-400 hover:text-primary'"
-                    class="p-2 rounded-lg transition-all" title="Mode Layout">
-                    <iconify-icon icon="tabler:layout-dashboard" width="22"></iconify-icon>
-                </button>
-            </div>
-        </div>
-    </div>
-
     <form action="/account/<%= account_number %>/record/<%= entity.slug %>/update/<%= record._id %>" method="POST"
         enctype="multipart/form-data" id="main-record-form">
+        <!-- Big Title Panel -->
+        <div class="panel mb-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                        <span class="text-gray-400 font-normal">
+                            <%= entity.name %>
+                        </span>
+                        <span class="text-gray-300">/</span>
+                        <div class="flex items-center gap-2 group"
+                            x-data="{ editing: false, title: '<%= record.title %>' }">
+                            <template x-if="!editing">
+                                <span
+                                    class="cursor-pointer hover:text-primary transition-colors flex items-center gap-2"
+                                    @click="editing = true">
+                                    <span x-text="title" class="text-primary"></span>
+                                    <iconify-icon icon="solar:pen-2-linear" width="16"
+                                        class="text-gray-400 opacity-40 group-hover:opacity-100 transition-opacity"></iconify-icon>
+                                </span>
+                            </template>
+                            <template x-if="editing">
+                                <input name="standard[title]" type="text" x-model="title" @keyup.enter="editing = false"
+                                    @blur="editing = false"
+                                    class="form-input !h-9 !text-lg !font-bold !py-0 !border-primary border-2 focus:ring-0 w-auto min-w-[300px]"
+                                    x-init="$nextTick(() => $el.focus())">
+                            </template>
+                            <!-- Hidden input for form submission if not editing -->
+                            <template x-if="!editing">
+                                <input type="hidden" name="standard[title]" :value="title">
+                            </template>
+                        </div>
+                    </h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="designMode = !designMode"
+                        :class="designMode ? 'text-primary bg-primary/10' : 'text-gray-400 hover:text-primary'"
+                        class="p-2 rounded-lg transition-all" title="Mode Layout">
+                        <iconify-icon icon="tabler:layout-dashboard" width="22"></iconify-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
         <div class="flex flex-col lg:flex-row gap-6">
             <!-- Main Form Content -->
             <div class="flex-1 space-y-6">
                 <div class="panel">
                     <div class="space-y-8">
 
-                        <!-- Standard Fields Section -->
+                        <!-- Tabbed Attributes Section -->
                         <div>
-                            <div class="flex justify-between items-center pb-2 mb-4 border-b border-gray-100">
-                                <h6 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Champs
-                                    Principaux
-                                </h6>
+                            <div class="flex justify-between items-end pb-2 mb-4 border-b border-gray-100">
+                                <div class="flex items-center gap-4">
+                                    <template x-for="tab in tabs" :key="tab.id">
+                                        <div class="relative group/tab flex items-center gap-1.5">
+                                            <div @click="setActiveTab(tab.id)"
+                                                class="cursor-pointer pb-2 px-1 text-[10px] font-bold uppercase tracking-[0.2em] transition-all border-b-2"
+                                                :class="activeTab === tab.id ? 'text-primary border-primary' : 'text-gray-400 border-transparent hover:text-gray-600'">
+
+                                                <template x-if="editingTabId !== tab.id">
+                                                    <span x-text="tab.title" @dblclick="startEditingTab(tab)"></span>
+                                                </template>
+                                                <template x-if="editingTabId === tab.id">
+                                                    <input type="text" x-model="tempTabTitle"
+                                                        @keyup.enter="saveTabTitle()" @blur="saveTabTitle()"
+                                                        x-init="$nextTick(() => $el.focus())"
+                                                        class="!p-0 !h-auto !bg-transparent !border-none !text-[10px] !font-bold !uppercase !tracking-[0.2em] !text-primary focus:ring-0 min-w-[50px]">
+                                                </template>
+                                            </div>
+
+                                            <!-- Tab Actions (Design Mode) -->
+                                            <div x-show="designMode && activeTab === tab.id"
+                                                class="flex items-center gap-1 pb-2">
+                                                <button type="button" @click="startEditingTab(tab)"
+                                                    class="text-gray-400 hover:text-primary transition-colors">
+                                                    <iconify-icon icon="solar:pen-2-linear" width="12"></iconify-icon>
+                                                </button>
+                                                <button type="button" x-show="tabs.length > 1"
+                                                    @click="removeTab(tab.id)"
+                                                    class="text-gray-400 hover:text-red-500 transition-colors">
+                                                    <iconify-icon icon="solar:trash-bin-trash-linear"
+                                                        width="12"></iconify-icon>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Add Tab Button -->
+                                    <button x-show="designMode" @click="addTab()" type="button"
+                                        class="pb-2 text-gray-400 hover:text-primary transition-colors"
+                                        title="Ajouter un onglet">
+                                        <iconify-icon icon="tabler:plus" width="16"></iconify-icon>
+                                    </button>
+                                </div>
+
+                                <div class="flex items-center gap-4 pb-2">
+                                    <button x-show="designMode" @click="openModal = true" type="button"
+                                        class="text-[10px] font-bold text-primary hover:bg-primary/10 px-3 py-1.5 rounded-full transition-all flex items-center gap-1.5 border border-primary/20 bg-primary/5">
+                                        <iconify-icon icon="tabler:circle-plus" width="14"></iconify-icon>
+                                        <span>AJOUTER UN ATTRIBUT</span>
+                                    </button>
+
+                                    <button type="button" @click="designMode = !designMode"
+                                        :class="designMode ? 'text-primary bg-primary/10' : 'text-gray-400 hover:text-primary'"
+                                        class="transition-all p-1.5 rounded-lg" title="Mode Layout">
+                                        <iconify-icon icon="tabler:layout-dashboard" width="18"></iconify-icon>
+                                    </button>
+                                </div>
                             </div>
 
-                            <div class="flex flex-wrap -mx-2">
-                                <% if (entity.enabledStandardFields && entity.enabledStandardFields.includes('title')) {
-                                    %>
+                            <!-- Standard Fields (Only on first tab for now) -->
+                            <div class="flex flex-wrap -mx-2" x-show="activeTab === tabs[0]?.id">
+                                <% if (entity.enabledStandardFields &&
+                                    entity.enabledStandardFields.includes('description')) { %>
                                     <div class="w-full px-2 mb-4">
-                                        <label for="title">Titre</label>
-                                        <input name="standard[title]" type="text" value="<%= record.title %>"
-                                            class="form-input text-lg font-bold" placeholder="Entrez le titre"
-                                            required />
+                                        <label for="description">Description</label>
+                                        <textarea name="standard[description]" class="form-textarea" rows="4"
+                                            placeholder="Entrez la description"><%= record.description %></textarea>
                                     </div>
                                     <% } %>
-
-                                        <% if (entity.enabledStandardFields &&
-                                            entity.enabledStandardFields.includes('description')) { %>
-                                            <div class="w-full px-2 mb-4">
-                                                <label for="description">Description</label>
-                                                <textarea name="standard[description]" class="form-textarea" rows="4"
-                                                    placeholder="Entrez la description"><%= record.description %></textarea>
-                                            </div>
-                                            <% } %>
                             </div>
                         </div>
 
                         <!-- Custom Fields Section -->
-                        <div>
-                            <div class="flex justify-between items-center pb-2 mb-4 border-b border-gray-100">
-                                <h6 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Champs
-                                    personnalisés</h6>
-                                <button x-show="designMode" @click="openModal = true" type="button"
-                                    class="text-[11px] font-bold text-primary hover:bg-primary/5 px-4 py-1.5 rounded-full transition-all flex items-center gap-1.5">
-                                    <iconify-icon icon="tabler:circle-plus" width="16"></iconify-icon>
-                                    <span>AJOUTER UN CHAMP</span>
-                                </button>
-                            </div>
+                        <div class="mt-4">
 
                             <div id="fields-builder-canvas"
                                 class="flex flex-wrap -mx-2 min-h-[50px] p-2 rounded-xl transition-all"
@@ -117,13 +177,21 @@
 
             return {
                 designMode: false,
-                layout: initialLayout.map(i => ({ ...i, id: String(i.id || `f_${Math.random()}`) })),
+                tabs: initialLayout.tabs || [{ id: 'default', title: 'Attributs' }],
+                activeTab: (initialLayout.tabs && initialLayout.tabs.length > 0) ? initialLayout.tabs[0].id : 'default',
+                layout: (Array.isArray(initialLayout) ? initialLayout : (initialLayout.fields || [])).map(i => ({
+                    ...i,
+                    id: String(i.id || `f_${Math.random()}`),
+                    tabId: i.tabId || 'default'
+                })),
                 fieldsById: fieldsMap,
                 valuesMap: valuesMap,
                 allTemplates: allTemplates,
                 openModal: false,
                 isResizing: false,
                 resizeData: null,
+                editingTabId: null,
+                tempTabTitle: '',
 
                 init() {
                     this.rebuildCanvas();
@@ -133,10 +201,15 @@
                     this.$watch('designMode', () => {
                         this.rebuildCanvas();
                     });
+                    this.$watch('activeTab', () => {
+                        this.rebuildCanvas();
+                    });
                 },
 
                 renderAllFields() {
-                    return this.layout.map((item, index) => this.renderFieldItemHTML(item, index)).join('');
+                    return this.layout
+                        .filter(item => item.tabId === this.activeTab)
+                        .map((item, index) => this.renderFieldItemHTML(item, index)).join('');
                 },
 
                 rebuildCanvas() {
@@ -169,8 +242,13 @@
                         handle: '.group-handle-drag',
                         draggable: '.field-item',
                         onEnd: (evt) => {
-                            const ids = Array.from(builder.querySelectorAll('.field-item')).map(el => el.dataset.id);
-                            this.layout = ids.map(id => this.layout.find(i => String(i.id) === String(id))).filter(Boolean);
+                            const containerIds = Array.from(builder.querySelectorAll('.field-item')).map(el => el.dataset.id);
+
+                            // Reconstruct the full layout by keeping items from other tabs and updating items in current tab
+                            const otherTabItems = this.layout.filter(i => i.tabId !== this.activeTab);
+                            const currentTabItemsOrdered = containerIds.map(id => this.layout.find(i => String(i.id) === String(id))).filter(Boolean);
+
+                            this.layout = [...otherTabItems, ...currentTabItemsOrdered];
                             this.saveLayout();
                         }
                     });
@@ -350,10 +428,52 @@
 
                 addTemplateToSlot(template) {
                     const uniqueId = `f_${Date.now()}`;
-                    this.layout.push({ fieldId: template._id, width: 12, id: uniqueId });
+                    this.layout.push({ fieldId: template._id, width: 12, id: uniqueId, tabId: this.activeTab });
                     this.openModal = false;
                     this.rebuildCanvas();
                     this.saveLayout();
+                },
+
+                // Tab Management Methods
+                addTab() {
+                    const id = `t_${Date.now()}`;
+                    this.tabs.push({ id, title: 'Nouvel Onglet' });
+                    this.activeTab = id;
+                    this.saveLayout();
+                },
+
+                removeTab(id) {
+                    if (this.tabs.length <= 1) return;
+                    if (confirm('Supprimer cet onglet et tous ses attributs ?')) {
+                        this.tabs = this.tabs.filter(t => t.id !== id);
+                        this.layout = this.layout.filter(i => i.tabId !== id);
+                        if (this.activeTab === id) {
+                            this.activeTab = this.tabs[0].id;
+                        }
+                        this.saveLayout();
+                        this.rebuildCanvas();
+                    }
+                },
+
+                startEditingTab(tab) {
+                    if (!this.designMode) return;
+                    this.editingTabId = tab.id;
+                    this.tempTabTitle = tab.title;
+                },
+
+                setActiveTab(id) {
+                    this.activeTab = id;
+                },
+
+                saveTabTitle() {
+                    if (this.editingTabId) {
+                        const tab = this.tabs.find(t => t.id === this.editingTabId);
+                        if (tab && this.tempTabTitle.trim()) {
+                            tab.title = this.tempTabTitle.trim();
+                        }
+                        this.editingTabId = null;
+                        this.saveLayout();
+                    }
                 },
 
                 startResizingManual(e, id) {
@@ -401,7 +521,10 @@
                 saveLayout() {
                     const payload = {
                         fields: [...new Set(this.layout.map(i => i.fieldId))].map(id => ({ _id: id })),
-                        layout: this.layout
+                        layout: {
+                            tabs: this.tabs,
+                            fields: this.layout
+                        }
                     };
                     fetch(`/account/<%= account_number %>/entity/updatecf/<%= entity._id %>`, {
                         method: "POST",

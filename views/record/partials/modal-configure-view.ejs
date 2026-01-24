@@ -27,6 +27,24 @@
                     </div>
                 </div>
 
+                <!-- Kanban Specific Config -->
+                <div x-show="selectedType === 'kanban'" class="mb-5 border-t dark:border-gray-800 pt-5" x-transition>
+                    <label class="font-bold block text-sm uppercase text-gray-500 mb-2">Flux / Colonnes</label>
+                    <select x-model="kanbanField" class="form-select text-sm">
+                        <option value="status">Statut (Standard)</option>
+                        <% if (entity.classifications && entity.classifications.length> 0) { %>
+                            <optgroup label="Classifications">
+                                <% entity.classifications.forEach(c=> { %>
+                                    <option value="<%= c._id %>">
+                                        <%= c.name %>
+                                    </option>
+                                    <% }); %>
+                            </optgroup>
+                            <% } %>
+                    </select>
+                    <p class="text-xs text-gray-400 mt-1">Choisissez quel champ définit les colonnes du tableau.</p>
+                </div>
+
                 <div class="mb-5 border-t dark:border-gray-800 pt-5">
                     <div class="flex items-center justify-between mb-4">
                         <label class="font-bold block text-sm uppercase text-gray-500">Filtres dynamiques</label>
@@ -61,6 +79,8 @@
                 { id: 'checklist', label: 'Checklist', icon: 'solar:checklist-bold' },
                 { id: 'table', label: 'Table', icon: 'solar:table-bold' }
             ],
+            kanbanField: '<%= (view.settings && view.settings.kanbanField) ? view.settings.kanbanField : "status" %>',
+
             async saveViewConfig() {
                 try {
                     const response = await fetch('/account/<%= account_number %>/api/view/config', {
@@ -68,7 +88,10 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             viewId: '<%= view._id %>',
-                            viewType: this.selectedType
+                            viewType: this.selectedType,
+                            settings: {
+                                kanbanField: this.kanbanField
+                            }
                         })
                     });
                     const data = await response.json();

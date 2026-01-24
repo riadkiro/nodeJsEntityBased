@@ -36,5 +36,6 @@ router.post('/hierarchy/link-entity', hierarchyController.linkEntity);
 router.get('/entity/:id', entityController.getDetails_Api);
 router.post('/view/config', viewController.saveConfig);
 router.post('/record/update-status', recordController.updateStatus);
+router.post('/record/update-classification', recordController.updateClassification);
 
 module.exports = router;

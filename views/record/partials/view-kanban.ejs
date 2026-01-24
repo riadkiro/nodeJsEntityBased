@@ -126,33 +126,93 @@
     document.addEventListener("alpine:init", () => {
         Alpine.data("recordKanban", () => ({
             columns: [],
+            kanbanField: '<%= (view.settings && view.settings.kanbanField) ? view.settings.kanbanField : "status" %>',
+
             init() {
                 this.prepareData();
                 this.initializeSortable();
+                this.initDragScroll();
             },
+
+            initDragScroll() {
+                const slider = document.querySelector('.overflow-x-auto');
+                if (!slider) return;
+                let isDown = false;
+                let startX;
+                let scrollLeft;
+
+                slider.addEventListener('mousedown', (e) => {
+                    // Don't drag if clicking on a button or card, only background or empty space
+                    if (e.target.closest('.cursor-move') || e.target.closest('button') || e.target.closest('.dropdown') || e.target.closest('a') || e.target.closest('input')) return;
+
+                    isDown = true;
+                    slider.classList.add('cursor-grabbing');
+                    slider.classList.remove('cursor-grab');
+                    startX = e.pageX - slider.offsetLeft;
+                    scrollLeft = slider.scrollLeft;
+                });
+
+                slider.addEventListener('mouseleave', () => {
+                    isDown = false;
+                    slider.classList.remove('cursor-grabbing');
+                });
+
+                slider.addEventListener('mouseup', () => {
+                    isDown = false;
+                    slider.classList.remove('cursor-grabbing');
+                    slider.classList.add('cursor-grab');
+                });
+
+                slider.addEventListener('mousemove', (e) => {
+                    if (!isDown) return;
+                    e.preventDefault();
+                    const x = e.pageX - slider.offsetLeft;
+                    const walk = (x - startX) * 2; // scroll-fast
+                    slider.scrollLeft = scrollLeft - walk;
+                });
+
+                // Add cursor-grab style initially
+                slider.classList.add('cursor-grab');
+            },
+
             prepareData() {
                 try {
                     const rawRecords = JSON.parse(document.getElementById('kanban-records-data').textContent);
                     const entity = JSON.parse(document.getElementById('kanban-entity-data').textContent);
 
                     let cols = [];
+                    const field = this.kanbanField;
 
-                    if (entity.statusClassification && entity.statusClassification.options) {
-                        cols = entity.statusClassification.options.map(opt => ({
-                            id: opt._id,
-                            title: opt.label,
-                            color: opt.color,
-                            icon: opt.icon,
-                            tasks: []
-                        }));
-                        // Add an "Unclassified" column if needed
-                        cols.push({ id: 'none', title: 'Sans Statut', tasks: [] });
+                    if (field === 'status') {
+                        if (entity.statusClassification && entity.statusClassification.options) {
+                            cols = entity.statusClassification.options.map(opt => ({
+                                id: opt._id,
+                                title: opt.label,
+                                color: opt.color,
+                                icon: opt.icon,
+                                tasks: []
+                            }));
+                            cols.push({ id: 'none', title: 'Sans Statut', tasks: [] });
+                        } else {
+                            cols = [
+                                { id: 'draft', title: 'Brouillon', tasks: [] },
+                                { id: 'published', title: 'Publié', tasks: [] },
+                                { id: 'archived', title: 'Archivé', tasks: [] }
+                            ];
+                        }
                     } else {
-                        cols = [
-                            { id: 'draft', title: 'Brouillon', tasks: [] },
-                            { id: 'published', title: 'Publié', tasks: [] },
-                            { id: 'archived', title: 'Archivé', tasks: [] }
-                        ];
+                        // Classification based columns
+                        const cls = entity.classifications ? entity.classifications.find(c => c._id === field) : null;
+                        if (cls && cls.options) {
+                            cols = cls.options.map(opt => ({
+                                id: opt._id,
+                                title: opt.label,
+                                color: opt.color, // Assuming options have color/icon
+                                icon: opt.icon,
+                                tasks: []
+                            }));
+                            cols.push({ id: 'none', title: 'Non classé', tasks: [] });
+                        }
                     }
 
                     (rawRecords || []).forEach(r => {
@@ -162,14 +222,29 @@
                             description: r.description || '',
                             date: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'N/A',
                             status: r.status,
-                            tags: r.tags || []
+                            classificationValues: r.classificationValues || [], // Ensure it exists
+                            tags: r.tags || [],
+                            customFields: r.customFields || []
                         };
-                        const col = cols.find(c => c.id === task.status);
+
+                        let colId = 'none';
+
+                        if (field === 'status') {
+                            colId = task.status || 'none';
+                        } else {
+                            if (task.classificationValues) {
+                                const val = task.classificationValues.find(cv => cv.classificationId === field);
+                                if (val) colId = val.optionId;
+                            }
+                        }
+
+                        // Find column
+                        const col = cols.find(c => c.id === colId);
                         if (col) col.tasks.push(task);
                         else {
-                            // If status not found, put in first column or "none"
+                            // Fallback to 'none' or first
                             const fallback = cols.find(c => c.id === 'none') || cols[0];
-                            fallback.tasks.push(task);
+                            if (fallback) fallback.tasks.push(task);
                         }
                     });
 
@@ -178,39 +253,73 @@
                     console.error("[Kanban View] Initialization Error:", e);
                 }
             },
+
             initializeSortable() {
                 setTimeout(() => {
                     const sortable = document.querySelectorAll('.sortable-list');
+                    const scrollEl = document.querySelector('.overflow-x-auto'); // Identify the scroll container
+                    const self = this; // Capture 'this' for onEnd
+
                     for (let i = 0; i < sortable.length; i++) {
                         Sortable.create(sortable[i], {
                             animation: 200,
                             group: 'status',
                             ghostClass: 'sortable-ghost',
                             dragClass: 'sortable-drag',
+                            scroll: scrollEl, // Explicitly set scroll element for auto-scrolling
+                            bubbleScroll: true, // Allow nested scrolling
+                            scrollSensitivity: 30, // Distance from edge (px) to trigger scroll
+                            scrollSpeed: 10, // Speed of scroll
                             async onEnd(evt) {
                                 const recordId = evt.item.getAttribute('data-id');
-                                const newStatus = evt.to.getAttribute('data-id');
+                                const newColId = evt.to.getAttribute('data-id');
 
-                                if (!recordId || !newStatus) return;
+                                if (!recordId || !newColId) return;
+
+                                // Prevent unnecessary API calls if dropped in same list
+                                if (evt.from === evt.to) return;
 
                                 try {
-                                    const res = await fetch(`/account/<%= account_number %>/api/record/update-status`, {
+                                    let url, body;
+
+                                    if (self.kanbanField === 'status') {
+                                        url = `/account/<%= account_number %>/api/record/update-status`;
+                                        body = { recordId, status: newColId };
+                                    } else {
+                                        url = `/account/<%= account_number %>/api/record/update-classification`;
+                                        body = {
+                                            recordId,
+                                            classificationId: self.kanbanField,
+                                            optionId: newColId
+                                        };
+                                    }
+
+                                    const res = await fetch(url, {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ recordId, status: newStatus })
+                                        body: JSON.stringify(body)
                                     });
                                     const data = await res.json();
-                                    if (!data.success) console.warn('Status update failed');
+                                    if (!data.success) {
+                                        console.warn('Update failed, reverting (UI sync needed)');
+                                        // Ideally revert UI change here if failed
+                                    }
                                 } catch (error) {
-                                    console.error('Error updating status:', error);
+                                    console.error('Error updating record:', error);
                                 }
                             }
                         });
                     }
                 }, 100);
             },
-            addRecord(status) {
-                window.location.href = `/account/<%= account_number %>/record/<%= entity.slug %>/add?status=${status}`;
+            addRecord(columnId) {
+                let url = `/account/<%= account_number %>/record/<%= entity.slug %>/add`;
+                if (this.kanbanField === 'status' && columnId !== 'none') {
+                    url += `?status=${columnId}`;
+                }
+                // Pre-filling classification is harder without updating the ADD form controller/view
+                // ignoring for now unless requested
+                window.location.href = url;
             },
             editRecord(id) {
                 window.location.href = `/account/<%= account_number %>/record/<%= entity.slug %>/edit/${id}`;

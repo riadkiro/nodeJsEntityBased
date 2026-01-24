@@ -347,5 +347,31 @@ module.exports = {
             console.error("[Record Controller] Update Status Error:", error);
             res.status(500).json({ error: error.message });
         }
+    },
+
+    updateClassification: async (req, res) => {
+        try {
+            const RecordModel = await tenantCollection(req, "Record");
+            const { recordId, classificationId, optionId } = req.body;
+
+            const record = await RecordModel.findById(recordId);
+            if (!record) return res.status(404).json({ error: "Record not found" });
+
+            // Remove existing values for this classification (Single Select Flow Behavior)
+            record.classificationValues = record.classificationValues.filter(
+                cv => cv.classificationId.toString() !== classificationId
+            );
+
+            // Add new value if it's not the "none" / "unclassified" column
+            if (optionId && optionId !== 'none') {
+                record.classificationValues.push({ classificationId, optionId });
+            }
+
+            await record.save();
+            res.json({ success: true });
+        } catch (error) {
+            console.error("[Record Controller] Update Classification Error:", error);
+            res.status(500).json({ error: error.message });
+        }
     }
 };

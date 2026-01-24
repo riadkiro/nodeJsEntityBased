@@ -21,7 +21,8 @@ module.exports = {
 
             const entity = await EntityModel.findById(view.entity)
                 .populate('customFields')
-                .populate('statusClassification');
+                .populate('statusClassification')
+                .populate('classifications');
             if (!entity) return res.status(404).send("Entity not found");
 
             // ✅ récup prefs

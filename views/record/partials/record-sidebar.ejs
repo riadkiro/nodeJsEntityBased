@@ -99,6 +99,9 @@
 
             <% if (allEntityClassifications.length> 0) { %>
                 <div class="panel !p-0 overflow-hidden">
+                    <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/30">
+                        <h6 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Classification</h6>
+                    </div>
                     <% allEntityClassifications.forEach((cls, clsIdx)=> { %>
                         <div class="p-4 <%= clsIdx > 0 ? 'border-t border-gray-100' : '' %>"
                             x-data="classificationBox('<%= cls.data._id %>', '<%= cls.nameAttr %>', <%= cls.data.allowMultiple %>)">
@@ -114,93 +117,161 @@
                                             class="text-[8px] bg-gray-100 px-1 rounded text-gray-500 font-bold uppercase">Tree</span>
                                         <% } %>
                                 </div>
-                                <button type="button" @click="toggleEdit"
+                                <button type="button"
+                                    @click="toggleEdit(); $dispatch('toggle-tags-' + '<%= cls.data._id %>')"
                                     class="<%= cls.colorClass %> hover:scale-110 transition-transform">
                                     <iconify-icon :icon="editing ? 'solar:close-circle-bold' : 'solar:add-circle-bold'"
                                         width="16"></iconify-icon>
                                 </button>
                             </div>
 
-                            <div class="mt-2">
-                                <% if (!cls.data.allowMultiple && cls.data.type !=='hierarchical' ) { %>
-                                    <!-- SELECT UNIQUE (ORIGINAL DESIGN) -->
-                                    <select name="<%= cls.nameAttr %>" class="form-select text-xs !h-9 !py-1">
-                                        <option value="">-- Choisir --</option>
-                                        <% const valObj=(locals.record && record.classificationValues) ?
-                                            record.classificationValues.find(cv=> cv.classificationId.toString() ===
+                            <div class="mt-2 text-xs">
+                                <% if (cls.data.type==='hierarchical' ) { %>
+                                    <!-- TREE VIEW (Hierarchical Only) -->
+                                    <div class="space-y-1.5 max-h-48 overflow-y-auto border border-gray-100 rounded p-2 bg-gray-50/30"
+                                        id="tree-<%= cls.data._id %>">
+                                        <% let selectedIds=[]; let currentValue='' ; if (cls.data.allowMultiple) { const
+                                            values=(locals.record && record.classificationValues) ?
+                                            record.classificationValues.filter(cv=> cv.classificationId.toString()
+                                            ===
+                                            cls.data._id.toString()) : [];
+                                            selectedIds = values.map(v => v.optionId.toString());
+                                            } else {
+                                            const valObj = (locals.record && record.classificationValues) ?
+                                            record.classificationValues.find(cv => cv.classificationId.toString()
+                                            ===
                                             cls.data._id.toString()) : null;
-                                            const currentValue = valObj ? (valObj.optionId ? valObj.optionId.toString()
-                                            : '') :
+                                            currentValue = valObj ? (valObj.optionId ? valObj.optionId.toString() :
+                                            '') :
                                             '';
+                                            }
+                                            %>
+                                            <%- renderTree(cls.data.options, null, cls, selectedIds, currentValue) %>
 
-                                            cls.data.options.forEach(opt => { %>
-                                            <option value="<%= opt._id %>" <%=(opt._id &&
-                                                currentValue===opt._id.toString()) ? 'selected' : '' %>>
-                                                <%= opt.label %>
-                                            </option>
-                                            <% }) %>
-                                    </select>
-                                    <% } else { %>
-                                        <!-- TREE VIEW (With Drag & Drop) -->
-                                        <div class="space-y-1.5 max-h-48 overflow-y-auto border border-gray-100 rounded p-2 bg-gray-50/30"
-                                            id="tree-<%= cls.data._id %>">
-                                            <% let selectedIds=[]; let currentValue='' ; if (cls.data.allowMultiple) {
-                                                const values=(locals.record && record.classificationValues) ?
-                                                record.classificationValues.filter(cv=> cv.classificationId.toString()
-                                                ===
-                                                cls.data._id.toString()) : [];
-                                                selectedIds = values.map(v => v.optionId.toString());
-                                                } else {
-                                                const valObj = (locals.record && record.classificationValues) ?
-                                                record.classificationValues.find(cv => cv.classificationId.toString()
-                                                ===
-                                                cls.data._id.toString()) : null;
-                                                currentValue = valObj ? (valObj.optionId ? valObj.optionId.toString() :
-                                                '') :
-                                                '';
-                                                }
-                                                %>
-                                                <%- renderTree(cls.data.options, null, cls, selectedIds, currentValue)
-                                                    %>
+                                                <% if (cls.data.options.length===0 && !editing) { %>
+                                                    <p
+                                                        class="no-options-msg text-[10px] text-gray-400 italic text-center py-2">
+                                                        Aucune option</p>
+                                                    <% } %>
+                                    </div>
+                                    <!-- QUICK ADD FOR TREE -->
+                                    <div x-show="editing" class="mt-2" x-transition>
+                                        <div class="relative">
+                                            <input type="text" x-model="newLabel" x-ref="input" @keyup.enter="save"
+                                                class="form-input text-xs !h-8 pr-12" placeholder="Nouveau...">
+                                            <button type="button" @click="save" :disabled="!newLabel || loading"
+                                                class="absolute right-1 top-1 bottom-1 p-1 text-primary">
+                                                <iconify-icon
+                                                    :icon="loading ? 'line-md:loading-twotone-loop' : 'solar:check-read-linear'"
+                                                    width="16"></iconify-icon>
+                                            </button>
+                                        </div>
+                                    </div>
 
-                                                    <% if (cls.data.options.length===0 && !editing) { %>
-                                                        <p
-                                                            class="no-options-msg text-[10px] text-gray-400 italic text-center py-2">
-                                                            Aucune option</p>
-                                                        <% } %>
-                                        </div> <!-- Close tree div -->
+                                    <% } else if (cls.data.allowMultiple) { %>
+                                        <!-- TAGS SYSTEM (Simple Multiple) -->
+                                        <div x-data="classificationTags('<%= cls.data._id %>', '<%= cls.nameAttr %>', <%= JSON.stringify(cls.data.options) %>, <%= JSON.stringify((locals.record && record.classificationValues) ? record.classificationValues.filter(cv => cv.classificationId.toString() === cls.data._id.toString()).map(cv => cv.optionId.toString()) : []) %>)"
+                                            @tag-added.window="if($event.detail.clsId === '<%= cls.data._id %>') { options.push($event.detail.option); add($event.detail.option._id); }"
+                                            @toggle-tags-<%=cls.data._id %>.window="showAdd = !showAdd; if(showAdd)
+                                            $nextTick(() => $refs.tagInput.focus())"
+                                            class="relative">
+                                            <!-- Selected Tags -->
+                                            <div class="flex flex-wrap gap-1 mb-2">
+                                                <template x-for="optId in selectedIds" :key="optId">
+                                                    <div
+                                                        class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 group">
+                                                        <span x-text="getLabel(optId)"></span>
+                                                        <button type="button" @click="remove(optId)"
+                                                            class="hover:text-danger">
+                                                            <iconify-icon icon="solar:close-circle-bold"
+                                                                width="12"></iconify-icon>
+                                                        </button>
+                                                        <input type="hidden" :name="nameAttr + '[]'" :value="optId">
+                                                    </div>
+                                                </template>
+                                            </div>
 
-                                        <!-- QUICK ADD FOR TREE/MULTIPLE (Harmonized) -->
-                                        <div x-show="editing" class="mt-2" x-transition>
+                                            <!-- Search / Autocomplete -->
                                             <div class="relative">
-                                                <input type="text" x-model="newLabel" x-ref="input" @keyup.enter="save"
-                                                    class="form-input text-xs !h-8 pr-12" placeholder="Nouveau...">
-                                                <button type="button" @click="save" :disabled="!newLabel || loading"
-                                                    class="absolute right-1 top-1 bottom-1 p-1 text-primary">
-                                                    <iconify-icon
-                                                        :icon="loading ? 'line-md:loading-twotone-loop' : 'solar:check-read-linear'"
-                                                        width="16"></iconify-icon>
-                                                </button>
+                                                <input type="text" x-model="search" @focus="open = true"
+                                                    @click.away="open = false" class="form-input text-xs !h-8"
+                                                    placeholder="Chercher ou ajouter...">
+
+                                                <!-- Dropdown -->
+                                                <div x-show="open && filteredOptions.length > 0"
+                                                    class="absolute z-[100] w-full mt-1 bg-white border border-gray-100 shadow-lg rounded-lg max-h-40 overflow-y-auto"
+                                                    x-transition>
+                                                    <template x-for="opt in filteredOptions" :key="opt._id">
+                                                        <button type="button" @click="add(opt._id)"
+                                                            class="w-full text-left px-3 py-1.5 text-[11px] hover:bg-gray-50 flex items-center justify-between group">
+                                                            <span x-text="opt.label"></span>
+                                                            <iconify-icon icon="solar:add-circle-bold" width="14"
+                                                                class="opacity-0 group-hover:opacity-100 text-primary"></iconify-icon>
+                                                        </button>
+                                                    </template>
+                                                    <!-- Quick Add Option if search doesn't match exactly -->
+                                                    <template x-if="search && !exactMatch">
+                                                        <button type="button" @click="fastAdd"
+                                                            class="w-full text-left px-3 py-1.5 text-[11px] bg-primary/5 text-primary italic font-medium hover:bg-primary/10">
+                                                            + Ajouter "<span x-text="search"></span>"
+                                                        </button>
+                                                    </template>
+                                                </div>
+                                            </div>
+
+                                            <!-- QUICK ADD FOR TAGS (Local state showAdd) -->
+                                            <div x-show="showAdd" class="mt-2" x-transition>
+                                                <div class="relative">
+                                                    <input type="text" x-model="localNewLabel" x-ref="tagInput"
+                                                        @keyup.enter="localSave()" class="form-input text-xs !h-8 pr-12"
+                                                        placeholder="Nouveau...">
+                                                    <button type="button" @click="localSave()"
+                                                        :disabled="!localNewLabel || localLoading"
+                                                        class="absolute right-1 top-1 bottom-1 p-1 text-primary">
+                                                        <iconify-icon
+                                                            :icon="localLoading ? 'line-md:loading-twotone-loop' : 'solar:check-read-linear'"
+                                                            width="16"></iconify-icon>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                        <% } %>
-                            </div>
 
-                            <!-- QUICK ADD FOR SIMPLE SELECT -->
-                            <% if (!cls.data.allowMultiple && cls.data.type !=='hierarchical' ) { %>
-                                <div x-show="editing" class="mt-2" x-transition>
-                                    <div class="relative">
-                                        <input type="text" x-model="newLabel" x-ref="input" @keyup.enter="save"
-                                            class="form-input text-xs !h-8 pr-12" placeholder="Nouvelle...">
-                                        <button type="button" @click="save" :disabled="!newLabel || loading"
-                                            class="absolute right-1 top-1 bottom-1 p-1 text-primary">
-                                            <iconify-icon
-                                                :icon="loading ? 'line-md:loading-twotone-loop' : 'solar:check-read-linear'"
-                                                width="16"></iconify-icon>
-                                        </button>
-                                    </div>
-                                </div>
-                                <% } %>
+                                        <% } else { %>
+                                            <!-- SELECT UNIQUE (ORIGINAL DESIGN) -->
+                                            <select name="<%= cls.nameAttr %>" class="form-select text-xs !h-9 !py-1">
+                                                <option value="">-- Choisir --</option>
+                                                <% const valObj=(locals.record && record.classificationValues) ?
+                                                    record.classificationValues.find(cv=> cv.classificationId.toString()
+                                                    ===
+                                                    cls.data._id.toString()) : null;
+                                                    const currentValue = valObj ? (valObj.optionId ?
+                                                    valObj.optionId.toString()
+                                                    : '') :
+                                                    '';
+
+                                                    cls.data.options.forEach(opt => { %>
+                                                    <option value="<%= opt._id %>" <%=(opt._id &&
+                                                        currentValue===opt._id.toString()) ? 'selected' : '' %>>
+                                                        <%= opt.label %>
+                                                    </option>
+                                                    <% }) %>
+                                            </select>
+                                            <!-- QUICK ADD FOR SIMPLE SELECT -->
+                                            <div x-show="editing" class="mt-2" x-transition>
+                                                <div class="relative">
+                                                    <input type="text" x-model="newLabel" x-ref="input"
+                                                        @keyup.enter="save" class="form-input text-xs !h-8 pr-12"
+                                                        placeholder="Nouvelle...">
+                                                    <button type="button" @click="save" :disabled="!newLabel || loading"
+                                                        class="absolute right-1 top-1 bottom-1 p-1 text-primary">
+                                                        <iconify-icon
+                                                            :icon="loading ? 'line-md:loading-twotone-loop' : 'solar:check-read-linear'"
+                                                            width="16"></iconify-icon>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <% } %>
+                            </div>
                         </div>
                         <% }) %>
                 </div>
@@ -365,133 +436,10 @@
         }));
 
         Alpine.data("classificationBox", (clsId, nameAttr, allowMultiple) => ({
+            // ... (keep existing code for tree view if needed, but primarily used for simple select now)
             editing: false,
             newLabel: '',
             loading: false,
-            currentDragX: 0,
-            draggedItem: null,
-            initialIndentLevel: 0,
-            currentIndentLevel: 0,
-
-            init() {
-                this.$nextTick(() => this.initSortable());
-            },
-
-            initSortable() {
-                const containers = document.querySelectorAll(`#tree-${clsId} ul`);
-                const self = this;
-
-                containers.forEach(el => {
-                    // Prevent duplicate initialization
-                    if (el.dataset.sortable) return;
-                    el.dataset.sortable = "true";
-
-                    new Sortable(el, {
-                        group: `nested-${clsId}`,
-                        animation: 150,
-                        handle: '.handle',
-                        ghostClass: 'sortable-ghost',
-                        dragClass: 'sortable-drag',
-                        fallbackOnBody: true,
-                        swapThreshold: 0.5,
-                        invertSwap: true,
-
-                        onStart: (evt) => {
-                            document.body.classList.add('is-dragging');
-                            self.draggedItem = evt.item;
-                            const currentMarginLeft = parseInt(window.getComputedStyle(self.draggedItem).marginLeft, 10);
-                            self.initialIndentLevel = currentMarginLeft / 20; // Assuming 20px per indent level
-                            self.currentIndentLevel = self.initialIndentLevel;
-                        },
-
-                        onEnd: (evt) => {
-                            document.body.classList.remove('is-dragging');
-                            self.saveReorder();
-                            self.draggedItem = null;
-                            self.initialIndentLevel = 0;
-                            self.currentIndentLevel = 0;
-                        },
-
-                        // WordPress style: move to parent if dragged left
-                        onMove: (evt) => {
-                            const draggedEl = evt.dragged;
-                            const targetEl = evt.to; // The UL where the item is being moved
-                            const relatedEl = evt.related; // The LI element the dragged item is hovering over
-                            const originalEvent = evt.originalEvent;
-                            const mouseX = originalEvent.clientX;
-
-                            if (!self.draggedItem) return true;
-
-                            const draggedRect = self.draggedItem.getBoundingClientRect();
-                            const targetRect = targetEl.getBoundingClientRect();
-
-                            // Calculate potential indent level based on mouse position relative to the target list
-                            // This is a simplified approach. A more robust solution might involve checking
-                            // the position relative to the *parent* of the target list.
-                            const indentThreshold = 30; // Pixels to the right to indent
-                            const outdentThreshold = 10; // Pixels to the left to outdent
-
-                            let newIndentLevel = self.initialIndentLevel;
-
-                            // Check for indent (move right)
-                            if (relatedEl && relatedEl.classList.contains('sort-item')) {
-                                const relatedRect = relatedEl.getBoundingClientRect();
-                                if (mouseX > relatedRect.left + indentThreshold) {
-                                    // If dragging right over another item, try to indent
-                                    newIndentLevel = self.initialIndentLevel + 1;
-                                }
-                            }
-
-                            // Check for outdent (move left)
-                            // This is more complex as it involves changing the parent.
-                            // SortableJS handles changing parent lists naturally if the drop target is a different UL.
-                            // The visual feedback for indent/outdent is primarily handled by CSS margin-left.
-                            // For actual structural changes (moving to grandparent), SortableJS's group functionality
-                            // and the structure of the ULs are key.
-
-                            // For now, we'll just allow the move and let the onEnd handle the final structure.
-                            // The visual indent/outdent during drag is hard to achieve purely with onMove
-                            // without modifying the DOM directly, which SortableJS usually manages.
-                            // The `margin-left` transition on `.sort-item` will give a visual cue.
-
-                            // The actual structural change (indent/outdent) is determined by which `<ul>` the item lands in.
-                            // If it lands in a child `<ul>`, it's indented. If it lands in a parent `<ul>`, it's outdented.
-                            // The `onEnd` `saveReorder` function will correctly parse the new DOM structure.
-
-                            return true; // Always allow the move, structure will be determined by drop target
-                        }
-                    });
-                });
-            },
-
-            async saveReorder() {
-                const options = [];
-                const tree = document.getElementById(`tree-${clsId}`);
-                if (!tree) return;
-
-                const traverse = (container, parentId = null) => {
-                    // Filter for direct children that are LIs and have a data-id
-                    const items = Array.from(container.children).filter(li => li.tagName === 'LI' && li.dataset.id);
-                    items.forEach((li, idx) => {
-                        options.push({ id: li.dataset.id, parentId: parentId, order: idx });
-                        // Find the immediate child UL of this LI
-                        const sub = li.querySelector(':scope > ul');
-                        if (sub) traverse(sub, li.dataset.id);
-                    });
-                };
-
-                // Start traversal from the root UL within the tree container
-                const root = tree.querySelector(':scope > ul');
-                if (root) traverse(root);
-
-                try {
-                    await fetch(`/account/<%= account_number %>/classification/api/reorder`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ classificationId: clsId, options })
-                    });
-                } catch (e) { console.error("Reorder failed", e); }
-            },
 
             toggleEdit() {
                 this.editing = !this.editing;
@@ -508,12 +456,8 @@
                         body: JSON.stringify({ classificationId: clsId, label: this.newLabel })
                     });
                     const data = await res.json();
-
                     if (data.success) {
-                        // Hide "No options" message if it exists
-                        const noOptionsMsg = this.$el.querySelector('.no-options-msg');
-                        if (noOptionsMsg) noOptionsMsg.style.display = 'none';
-
+                        // For tree view (hierarchical)
                         const tree = document.querySelector(`#tree-${clsId}`);
                         if (tree) {
                             const rootUl = tree.querySelector(':scope > ul');
@@ -544,6 +488,7 @@
                                 this.initSortable();
                             }
                         } else {
+                            // For simple select
                             const select = document.querySelector(`select[name="${nameAttr}"]`);
                             if (select) {
                                 const opt = document.createElement('option');
@@ -551,14 +496,138 @@
                                 opt.textContent = data.option.label;
                                 opt.selected = true;
                                 select.appendChild(opt);
-                                // Trigger change event for Alpine if needed
                                 select.dispatchEvent(new Event('change'));
                             }
                         }
                         this.newLabel = '';
                         this.editing = false;
+                        // Dispatch event for tags component
+                        window.dispatchEvent(new CustomEvent('tag-added', { detail: { clsId: clsId, option: data.option } }));
                     }
                 } catch (e) { console.error(e); } finally { this.loading = false; }
+            },
+
+            // Tree View Reordering
+            init() { this.$nextTick(() => this.initSortable()); },
+            initSortable() {
+                const containers = document.querySelectorAll(`#tree-${clsId} ul`);
+                const self = this;
+                containers.forEach(el => {
+                    if (el.dataset.sortable) return;
+                    el.dataset.sortable = "true";
+                    new Sortable(el, {
+                        group: `nested-${clsId}`,
+                        animation: 150,
+                        handle: '.handle',
+                        ghostClass: 'sortable-ghost',
+                        onStart: () => document.body.classList.add('is-dragging'),
+                        onEnd: () => {
+                            document.body.classList.remove('is-dragging');
+                            self.saveReorder();
+                        }
+                    });
+                });
+            },
+            async saveReorder() {
+                const options = [];
+                const tree = document.getElementById(`tree-${clsId}`);
+                if (!tree) return;
+                const traverse = (container, parentId = null) => {
+                    const items = Array.from(container.children).filter(li => li.tagName === 'LI' && li.dataset.id);
+                    items.forEach((li, idx) => {
+                        options.push({ id: li.dataset.id, parentId: parentId, order: idx });
+                        const sub = li.querySelector(':scope > ul');
+                        if (sub) traverse(sub, li.dataset.id);
+                    });
+                };
+                const root = tree.querySelector(':scope > ul');
+                if (root) traverse(root);
+                try {
+                    await fetch(`/account/<%= account_number %>/classification/api/reorder`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ classificationId: clsId, options })
+                    });
+                } catch (e) { console.error("Reorder failed", e); }
+            }
+        }));
+
+        Alpine.data("classificationTags", (clsId, nameAttr, allOptions, initialSelected) => ({
+            nameAttr: nameAttr,
+            options: allOptions,
+            selectedIds: initialSelected,
+            search: '',
+            open: false,
+            showAdd: false,
+            localNewLabel: '',
+            localLoading: false,
+
+            get filteredOptions() {
+                if (!this.search) {
+                    return this.options.filter(o => !this.selectedIds.includes(o._id.toString()));
+                }
+                const s = this.search.toLowerCase();
+                return this.options.filter(o =>
+                    !this.selectedIds.includes(o._id.toString()) &&
+                    o.label.toLowerCase().includes(s)
+                );
+            },
+
+            get exactMatch() {
+                const s = this.search.toLowerCase();
+                return this.options.some(o => o.label.toLowerCase() === s);
+            },
+
+            getLabel(id) {
+                const opt = this.options.find(o => o._id.toString() === id.toString());
+                return opt ? opt.label : id;
+            },
+
+            add(id) {
+                if (!this.selectedIds.includes(id.toString())) {
+                    this.selectedIds.push(id.toString());
+                }
+                this.search = '';
+                this.open = false;
+            },
+
+            remove(id) {
+                this.selectedIds = this.selectedIds.filter(i => i !== id.toString());
+            },
+
+            async fastAdd() {
+                if (!this.search) return;
+                try {
+                    const res = await fetch(`/account/<%= account_number %>/classification/api/fast-add`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ classificationId: clsId, label: this.search })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.options.push(data.option);
+                        this.add(data.option._id);
+                    }
+                } catch (e) { console.error(e); }
+            },
+
+            async localSave() {
+                if (!this.localNewLabel) return;
+                this.localLoading = true;
+                try {
+                    const res = await fetch(`/account/<%= account_number %>/classification/api/fast-add`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ classificationId: clsId, label: this.localNewLabel })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.options.push(data.option);
+                        this.add(data.option._id);
+                        this.localNewLabel = '';
+                        this.showAdd = false;
+                    }
+                } catch (e) { console.error(e); } finally { this.localLoading = false; }
             }
         }));
     });

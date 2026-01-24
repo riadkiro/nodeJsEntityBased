@@ -104,6 +104,9 @@ module.exports = {
 
             const { standard, custom, classifications } = data;
 
+            // Fix boolean for published - use the already parsed 'standard.published'
+            standard.published = (standard.published === 'on' || standard.published === true);
+
             // 🛡️ Final Safety for Status (Avoid CastError Array)
             if (standard.status && Array.isArray(standard.status)) {
                 standard.status = standard.status.find(v => v !== '') || standard.status[standard.status.length - 1];
@@ -227,10 +230,8 @@ module.exports = {
 
             const { standard, custom, classifications } = data;
 
-            // 🛡️ Final Safety for Status (Avoid CastError Array)
-            if (standard.status && Array.isArray(standard.status)) {
-                standard.status = standard.status.find(v => v !== '') || standard.status[standard.status.length - 1];
-            }
+            // Fix boolean for published - use the already parsed 'standard.published'
+            standard.published = (standard.published === 'on' || standard.published === true);
 
             if (req.file) {
                 standard.image = `/uploads/${req.account_number}/${req.file.filename}`;

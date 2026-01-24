@@ -30,6 +30,18 @@ const EntitySchema = new mongoose.Schema(
         ref: "FieldTemplate",
       },
     ],
+    // Classification principale (utilisée pour le Kanban / Statuts)
+    statusClassification: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Classification",
+    },
+    // Autres classifications activées pour cette entité
+    classifications: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Classification",
+      },
+    ],
     // Configuration visuelle des champs (lignes/colonnes)
     layout: {
       type: mongoose.Schema.Types.Mixed,

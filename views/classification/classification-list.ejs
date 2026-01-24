@@ -1,0 +1,95 @@
+<div class="panel">
+    <div class="flex items-center justify-between mb-5">
+        <h5 class="text-lg font-semibold dark:text-white-light">Gestion des Classifications</h5>
+        <a href="/account/<%= account_number %>/classification/add" class="btn btn-primary">
+            <iconify-icon icon="solar:add-circle-bold" class="mr-2"></iconify-icon>
+            Nouvelle Classification
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table-hover">
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Clé</th>
+                    <th>Options</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% classifications.forEach(c=> { %>
+                    <tr>
+                        <td>
+                            <div class="font-semibold">
+                                <%= c.name %>
+                            </div>
+                            <div class="text-xs text-white-dark">
+                                <%= c.description %>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-outline-primary">
+                                <%= c.key %>
+                            </span></td>
+                        <td>
+                            <div class="flex -space-x-2 overflow-hidden">
+                                <% c.options.slice(0, 5).forEach(opt=> { %>
+                                    <div class="h-6 w-6 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center text-[10px] text-white"
+                                        style="background-color: <%= opt.color %>" title="<%= opt.label %>">
+                                        <iconify-icon icon="<%= opt.icon %>"></iconify-icon>
+                                    </div>
+                                    <% }) %>
+                                        <% if (c.options.length> 5) { %>
+                                            <div
+                                                class="h-6 w-6 rounded-full border-2 border-white dark:border-gray-800 bg-gray-200 flex items-center justify-center text-[8px] font-bold">
+                                                +<%= c.options.length - 5 %>
+                                            </div>
+                                            <% } %>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="/account/<%= account_number %>/classification/edit/<%= c._id %>"
+                                    class="btn btn-sm btn-outline-info">Modifier</a>
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                    onclick="deleteWithSwal('/account/<%= account_number %>/classification/delete/<%= c._id %>')">Supprimer</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <% }) %>
+                        <% if (classifications.length===0) { %>
+                            <tr>
+                                <td colspan="4" class="text-center py-10 text-white-dark italic">
+                                    Aucune classification créée pour le moment.
+                                </td>
+                            </tr>
+                            <% } %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    async function deleteWithSwal(url) {
+        const result = await Swal.fire({
+            title: 'Êtes-vous sûr ?',
+            text: "Cette classification sera définitivement supprimée.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Oui, supprimer',
+            cancelButtonText: 'Annuler'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const res = await fetch(url, { method: 'DELETE' });
+                if (res.ok) {
+                    Swal.fire('Supprimé !', 'La classification a été supprimée.', 'success');
+                    window.location.reload();
+                }
+            } catch (e) {
+                Swal.fire('Erreur', e.message, 'error');
+            }
+        }
+    }
+</script>

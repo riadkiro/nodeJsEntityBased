@@ -25,13 +25,16 @@ const RecordSchema = new mongoose.Schema({
   end_date: Date,
   status: {
     type: String,
-    enum: ['draft', 'published', 'archived'],
     default: 'draft'
   },
   published: { type: Boolean, default: false },
   order: { type: Number, default: 0 },
 
   // 🏷️ Tags & catégories (optionnelles, relation vers d'autres records)
+  classificationValues: [{
+    classificationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Classification' },
+    optionId: mongoose.Schema.Types.ObjectId
+  }],
   tags: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Record' }],
   category: { type: mongoose.Schema.Types.ObjectId, ref: 'Record' },
 

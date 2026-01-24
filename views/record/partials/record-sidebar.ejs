@@ -1,0 +1,332 @@
+<!-- views/record/partials/record-sidebar.ejs -->
+<div class="space-y-4 sticky top-20" x-data="recordSidebar">
+    <!-- Action Buttons (WordPress Style) -->
+    <div class="panel !p-4">
+        <div class="flex items-center gap-2">
+            <button type="submit" form="main-record-form"
+                class="btn btn-primary flex-1 py-2 flex items-center justify-center gap-2 text-xs">
+                <iconify-icon icon="solar:diskette-bold" width="16"></iconify-icon>
+                <span>
+                    <%= locals.record ? 'Mettre à jour' : 'Enregistrer' %>
+                </span>
+            </button>
+            <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
+                class="btn btn-outline-danger px-3 py-2 flex items-center justify-center text-xs" title="Annuler">
+                <iconify-icon icon="solar:close-circle-bold" width="16"></iconify-icon>
+            </a>
+        </div>
+        <div
+            class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between text-[9px] text-white-dark uppercase font-bold tracking-tighter">
+            <span>Dernière modif :</span>
+            <span class="text-gray-500 font-extrabold">
+                <%= locals.record ? new Date(record.updatedAt).toLocaleDateString() : 'Nouveau' %>
+            </span>
+        </div>
+    </div>
+
+    <!-- Dynamic Classifications (Shared Data) -->
+    <% const allEntityClassifications=[]; if (entity.classifications && entity.classifications.length> 0) {
+        entity.classifications.forEach(c => {
+        allEntityClassifications.push({
+        data: c,
+        isStatus: false,
+        label: c.name,
+        icon: 'solar:tag-bold',
+        colorClass: 'text-info',
+        nameAttr: `classifications[${c._id}]`
+        });
+        });
+        }
+
+        // Helper for recursive hierarchical display in SELECT (flat with indentation)
+        const renderOptionsFlat = (options, parentId = null, depth = 0) => {
+        let results = [];
+        const filtered = options.filter(o => {
+        const pid = o.parentId ? o.parentId.toString() : '';
+        const targetId = parentId ? parentId.toString() : '';
+        return pid === targetId;
+        });
+
+        filtered.forEach(o => {
+        const item = o.toObject ? o.toObject() : { ...o };
+        results.push({ ...item, depth });
+        results = results.concat(renderOptionsFlat(options, item._id, depth + 1));
+        });
+        return results;
+        };
+        %>
+
+        <% allEntityClassifications.forEach((cls, clsIdx)=> { %>
+            <div class="panel !p-4" x-data="{ editing: false, newOptionLabel: '', loading: false, parentId: '' }">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2 <%= cls.colorClass %>">
+                        <iconify-icon icon="<%= cls.icon %>" width="16"></iconify-icon>
+                        <h6
+                            class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light">
+                            <%= cls.label %>
+                        </h6>
+                        <% if (cls.data.type==='hierarchical' ) { %>
+                            <span class="text-[8px] bg-gray-100 px-1 rounded text-gray-500">HIÉ</span>
+                            <% } %>
+                    </div>
+                    <button type="button" @click="editing = !editing"
+                        class="<%= cls.colorClass %> hover:scale-110 transition-transform">
+                        <iconify-icon :icon="editing ? 'solar:close-circle-bold' : 'solar:add-circle-bold'"
+                            width="16"></iconify-icon>
+                    </button>
+                </div>
+
+                <div x-show="!editing">
+                    <% if (!cls.data.allowMultiple) { %>
+                        <!-- SELECT UNIQUE -->
+                        <select name="<%= cls.nameAttr %>" class="form-select text-xs !h-9 !py-1">
+                            <option value="">-- Choisir --</option>
+                            <% let currentValue='' ; if (cls.isStatus) { currentValue=(locals.record && record.status) ?
+                                record.status.toString() : '' ; } else { const valObj=(locals.record &&
+                                record.classificationValues) ? record.classificationValues.find(cv=>
+                                cv.classificationId.toString() === cls.data._id.toString()) : null;
+                                currentValue = valObj ? (valObj.optionId ? valObj.optionId.toString() : '') : '';
+                                }
+
+                                const flatOptions = renderOptionsFlat(cls.data.options);
+                                flatOptions.forEach(opt => {
+                                %>
+                                <option value="<%= opt._id %>" <%=(opt._id && currentValue===opt._id.toString())
+                                    ? 'selected' : '' %>>
+                                    <%= "  " .repeat(opt.depth) %>
+                                        <%= opt.depth> 0 ? '└ ' : '' %><%= opt.label %>
+                                </option>
+                                <% }) %>
+                        </select>
+                        <% } else { %>
+                            <!-- MULTISELECT (Checkboxes) -->
+                            <div
+                                class="space-y-1.5 max-h-40 overflow-y-auto border border-gray-100 rounded p-2 bg-gray-50/30">
+                                <% let selectedIds=[]; if (!cls.isStatus) { const values=(locals.record &&
+                                    record.classificationValues) ? record.classificationValues.filter(cv=>
+                                    cv.classificationId.toString() === cls.data._id.toString()) : [];
+                                    selectedIds = values.map(v => v.optionId.toString());
+                                    }
+
+                                    const flatOptions = renderOptionsFlat(cls.data.options);
+                                    flatOptions.forEach(opt => {
+                                    %>
+                                    <label class="flex items-center gap-2 cursor-pointer group mb-0">
+                                        <span style="width: <%= opt.depth * 12 %>px" class="flex-shrink-0"></span>
+                                        <input type="checkbox" name="<%= cls.nameAttr %>[]" value="<%= opt._id %>"
+                                            class="form-checkbox w-3.5 h-3.5" <%=(opt._id &&
+                                            selectedIds.includes(opt._id.toString())) ? 'checked' : '' %>>
+                                        <span
+                                            class="text-[11px] group-hover:text-primary transition-colors <%= opt.depth > 0 ? 'text-gray-500' : 'font-semibold' %>">
+                                            <%= opt.depth> 0 ? '└ ' : '' %><%= opt.label %>
+                                        </span>
+                                    </label>
+                                    <% }) %>
+                                        <% if (cls.data.options.length===0) { %>
+                                            <p class="text-[10px] text-gray-400 italic text-center py-2">Aucune option
+                                            </p>
+                                            <% } %>
+                            </div>
+                            <% } %>
+                </div>
+
+                <!-- Inline Add Option (Quick Add) -->
+                <div x-show="editing" class="mt-3 pt-3 border-t border-gray-100" x-transition>
+                    <div class="flex flex-col gap-2">
+                        <% if (cls.data.type==='hierarchical' ) { %>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[9px] uppercase font-extrabold text-gray-400">Parent :</span>
+                                <select x-model="parentId" class="form-select text-[10px] !h-6 !py-0 !px-2 flex-1">
+                                    <option value="">Aucun (Racine)</option>
+                                    <% cls.data.options.forEach(opt=> { %>
+                                        <option value="<%= opt._id %>">
+                                            <%= opt.label %>
+                                        </option>
+                                        <% }) %>
+                                </select>
+                            </div>
+                            <% } %>
+                                <div class="relative">
+                                    <input type="text" x-model="newOptionLabel" x-ref="newOptionInput"
+                                        @keyup.enter="addFastOption('<%= cls.data._id %>', parentId)"
+                                        class="form-input text-xs !h-8 pr-16" placeholder="Nom de l'option...">
+                                    <div class="absolute right-1 top-1 bottom-1 flex items-center">
+                                        <button type="button" @click="addFastOption('<%= cls.data._id %>', parentId)"
+                                            :disabled="!newOptionLabel || loading"
+                                            class="btn btn-primary !h-6 !px-2 !py-0 text-[10px] flex items-center gap-1">
+                                            <span x-show="!loading">OK</span>
+                                            <iconify-icon x-show="loading"
+                                                icon="line-md:loading-twotone-loop"></iconify-icon>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="text-[9px] text-gray-400 italic px-1">Pressez Entrée pour valider</p>
+                    </div>
+                </div>
+            </div>
+            <% }) %>
+
+                <% if (allEntityClassifications.length===0) { %>
+                    <div class="panel !p-4 border-dashed border-gray-200 text-center py-4">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold">Aucune classification liée</p>
+                        <a href="/account/<%= account_number %>/entity/edit/<%= entity._id %>"
+                            class="btn btn-xs btn-outline-primary mt-2">Configurer l'entité</a>
+                    </div>
+                    <% } %>
+
+                        <!-- Publication & Visibilité -->
+                        <div class="panel !p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2 text-info">
+                                    <iconify-icon icon="solar:eye-bold" width="16"></iconify-icon>
+                                    <h6
+                                        class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light">
+                                        Public</h6>
+                                </div>
+                                <label class="w-10 h-5 relative mb-0">
+                                    <input type="checkbox"
+                                        class="custom_switch absolute w-full h-full opacity-0 z-10 cursor-pointer peer"
+                                        id="published" name="standard[published]" <%=(locals.record && record.published)
+                                        ? 'checked' : '' %> />
+                                    <span
+                                        class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-3 before:h-3 before:rounded-full peer-checked:before:left-6 peer-checked:bg-primary before:transition-all before:duration-300"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Style & Visuel -->
+                        <div class="panel !p-4" x-data="{ openStyle: false }">
+                            <div class="flex items-center justify-between cursor-pointer mb-0"
+                                @click="openStyle = !openStyle">
+                                <div class="flex items-center gap-2 text-warning">
+                                    <iconify-icon icon="solar:palette-bold" width="16"></iconify-icon>
+                                    <h6
+                                        class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light">
+                                        Visuel</h6>
+                                </div>
+                                <iconify-icon icon="solar:alt-arrow-down-linear" width="14"
+                                    :class="openStyle ? '' : '-rotate-90'" class="transition-transform"></iconify-icon>
+                            </div>
+
+                            <div class="space-y-4 mt-4" x-show="openStyle" x-collapse>
+                                <div x-data="{ showUpload: <%= (locals.record && record.image) ? 'false' : 'true' %> }">
+                                    <label
+                                        class="!text-[9px] !mb-1 uppercase font-bold text-gray-400">Couverture</label>
+                                    <% if (locals.record && record.image) { %>
+                                        <template x-if="!showUpload">
+                                            <div class="mb-2 relative group">
+                                                <img src="<%= record.image %>"
+                                                    class="w-full h-24 object-cover rounded shadow-sm border border-gray-100" />
+                                                <div
+                                                    class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded">
+                                                    <button type="button" @click="showUpload = true"
+                                                        class="text-white text-[10px] bg-white/20 px-2 py-1 rounded backdrop-blur-sm">Changer</button>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <% } %>
+                                            <template x-if="showUpload">
+                                                <input type="file" name="image" class="form-input text-[10px] !p-1 !h-8"
+                                                    accept="image/*" />
+                                            </template>
+                                            <input type="hidden" name="standard[image]"
+                                                value="<%= (locals.record && record.image) ? record.image : '' %>">
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="!text-[9px] !mb-1 uppercase font-bold text-gray-400">Icône</label>
+                                        <input name="standard[icon]" type="text"
+                                            value="<%= (locals.record && record.icon) ? record.icon : '' %>"
+                                            class="form-input text-[10px] !h-8 !px-2" placeholder="solar:star-bold" />
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="!text-[9px] !mb-1 uppercase font-bold text-gray-400">Couleur</label>
+                                        <input name="standard[color]" type="color"
+                                            value="<%= (locals.record && record.color) ? record.color : '#4361ee' %>"
+                                            class="form-input h-8 w-full p-1 cursor-pointer" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dates -->
+                        <div class="panel !p-4" x-data="{ openDates: false }">
+                            <div class="flex items-center justify-between cursor-pointer"
+                                @click="openDates = !openDates">
+                                <div class="flex items-center gap-2 text-danger">
+                                    <iconify-icon icon="solar:calendar-bold" width="16"></iconify-icon>
+                                    <h6
+                                        class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light">
+                                        Dates</h6>
+                                </div>
+                                <iconify-icon icon="solar:alt-arrow-down-linear" width="14"
+                                    :class="openDates ? '' : '-rotate-90'" class="transition-transform"></iconify-icon>
+                            </div>
+
+                            <div class="space-y-3 mt-4" x-show="openDates" x-collapse>
+                                <div>
+                                    <label class="!text-[9px] !mb-1">Début</label>
+                                    <input name="standard[date]" type="date"
+                                        value="<%= (locals.record && record.date) ? new Date(record.date).toISOString().split('T')[0] : '' %>"
+                                        class="form-input text-[10px] !h-8" />
+                                </div>
+                                <div>
+                                    <label class="!text-[9px] !mb-1">Fin</label>
+                                    <input name="standard[end_date]" type="date"
+                                        value="<%= (locals.record && record.end_date) ? new Date(record.end_date).toISOString().split('T')[0] : '' %>"
+                                        class="form-input text-[10px] !h-8" />
+                                </div>
+                            </div>
+                        </div>
+</div>
+
+<script>
+    document.addEventListener("alpine:init", () => {
+        Alpine.data("recordSidebar", () => ({
+            editing: false,
+            newOptionLabel: '',
+            loading: false,
+            parentId: '',
+
+            init() {
+                this.$watch('editing', value => {
+                    if (value) {
+                        this.$nextTick(() => {
+                            if (this.$refs.newOptionInput) this.$refs.newOptionInput.focus();
+                        });
+                    }
+                });
+            },
+
+            async addFastOption(classificationId, parentId = null) {
+                if (!this.newOptionLabel) return;
+                this.loading = true;
+
+                try {
+                    const res = await fetch(`/account/<%= account_number %>/classification/api/fast-add`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            classificationId,
+                            label: this.newOptionLabel,
+                            parentId: parentId || null
+                        })
+                    });
+
+                    if (res.ok) {
+                        window.location.reload();
+                    } else {
+                        alert("Erreur lors de l'ajout");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert("Erreur réseau");
+                } finally {
+                    this.loading = false;
+                }
+            }
+        }));
+    });
+</script>

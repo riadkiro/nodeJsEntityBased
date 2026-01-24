@@ -5,9 +5,15 @@
         <div class="perfect-scrollbar -mx-2 h-full">
             <div class="flex flex-nowrap items-start gap-5 overflow-x-auto px-2 pb-2">
                 <template x-for="column in columns" :key="column.id">
-                    <div class="panel w-80 flex-none bg-gray-50 dark:bg-black/20 border dark:border-gray-800">
+                    <div class="panel w-80 flex-none bg-gray-50 dark:bg-black/20 border dark:border-gray-800"
+                        :style="column.color ? `border-top: 4px solid ${column.color}` : ''">
                         <div class="mb-5 flex justify-between items-center">
-                            <h4 x-text="column.title" class="text-base font-bold uppercase tracking-wider"></h4>
+                            <div class="flex items-center gap-2">
+                                <template x-if="column.icon">
+                                    <iconify-icon :icon="column.icon" :style="`color: ${column.color}`"></iconify-icon>
+                                </template>
+                                <h4 x-text="column.title" class="text-base font-bold uppercase tracking-wider"></h4>
+                            </div>
 
                             <div class="flex items-center">
                                 <button type="button" class="hover:text-primary ltr:mr-2 rtl:ml-2"
@@ -113,6 +119,7 @@
 </div>
 
 <script id="kanban-records-data" type="application/json"><%- JSON.stringify(records || []) %></script>
+<script id="kanban-entity-data" type="application/json"><%- JSON.stringify(entity || {}) %></script>
 
 <script src="/themes/default/assets/js/Sortable.min.js"></script>
 <script>
@@ -126,12 +133,27 @@
             prepareData() {
                 try {
                     const rawRecords = JSON.parse(document.getElementById('kanban-records-data').textContent);
+                    const entity = JSON.parse(document.getElementById('kanban-entity-data').textContent);
 
-                    const cols = [
-                        { id: 'draft', title: 'Brouillon', tasks: [] },
-                        { id: 'published', title: 'Publié', tasks: [] },
-                        { id: 'archived', title: 'Archivé', tasks: [] }
-                    ];
+                    let cols = [];
+
+                    if (entity.statusClassification && entity.statusClassification.options) {
+                        cols = entity.statusClassification.options.map(opt => ({
+                            id: opt._id,
+                            title: opt.label,
+                            color: opt.color,
+                            icon: opt.icon,
+                            tasks: []
+                        }));
+                        // Add an "Unclassified" column if needed
+                        cols.push({ id: 'none', title: 'Sans Statut', tasks: [] });
+                    } else {
+                        cols = [
+                            { id: 'draft', title: 'Brouillon', tasks: [] },
+                            { id: 'published', title: 'Publié', tasks: [] },
+                            { id: 'archived', title: 'Archivé', tasks: [] }
+                        ];
+                    }
 
                     (rawRecords || []).forEach(r => {
                         const task = {
@@ -139,12 +161,16 @@
                             title: r.title || 'Sans titre',
                             description: r.description || '',
                             date: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'N/A',
-                            status: r.status || 'draft',
-                            tags: r.tags || [] // Adapt if tags logic exists
+                            status: r.status,
+                            tags: r.tags || []
                         };
                         const col = cols.find(c => c.id === task.status);
                         if (col) col.tasks.push(task);
-                        else cols[0].tasks.push(task);
+                        else {
+                            // If status not found, put in first column or "none"
+                            const fallback = cols.find(c => c.id === 'none') || cols[0];
+                            fallback.tasks.push(task);
+                        }
                     });
 
                     this.columns = cols;

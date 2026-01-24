@@ -71,7 +71,7 @@
 <script>
     document.addEventListener("alpine:init", () => {
         Alpine.data("kanbanBoard", () => ({
-            records: <% - JSON.stringify(records.map(r => ({
+            records: <%- JSON.stringify(records.map(r => ({
                 id: r._id,
                 title: r.title || r.slug,
                 status: r.status || 'À faire', // Mock status if not present

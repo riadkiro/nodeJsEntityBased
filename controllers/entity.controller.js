@@ -49,8 +49,10 @@ module.exports = {
 
       const Entity = await tenantCollection(req, "Entity");
       const FieldTemplate = await tenantCollection(req, "FieldTemplate");
+      const Classification = await tenantCollection(req, "Classification");
 
       const entity = await Entity.findById(req.params.id);
+      const allClassifications = await Classification.find();
       if (!entity) {
         return res.status(404).render("errors/404", {
           message: "Entité introuvable.",
@@ -85,6 +87,7 @@ module.exports = {
         entity,
         fields: selectedFields,
         allFieldTemplates,
+        allClassifications,
         formLayout: entity.layout || [],
         account_number: req.account_number,
         layout: "layout-app",
@@ -273,6 +276,14 @@ module.exports = {
     // Gérer le champ image si un fichier est uploadé
     if (req.file) {
       entityData.image = `/uploads/${req.account_number}/${req.file.filename}`;
+    }
+
+    if (!entityData.statusClassification) {
+      entityData.statusClassification = null;
+    }
+
+    if (!entityData.classifications) {
+      entityData.classifications = [];
     }
 
     console.log(entityData);

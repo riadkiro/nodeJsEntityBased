@@ -8,6 +8,7 @@ module.exports = {
             const EntityModel = await tenantCollection(req, "Entity");
             const RecordModel = await tenantCollection(req, "Record");
             await tenantCollection(req, "FieldTemplate");
+            await tenantCollection(req, "Classification");
             const UserModel = await tenantCollection(req, "User"); // ✅
 
             const viewId = req.params.viewId;
@@ -18,7 +19,9 @@ module.exports = {
             const view = await ViewModel.findById(viewId);
             if (!view) return res.status(404).send("View not found");
 
-            const entity = await EntityModel.findById(view.entity).populate('customFields');
+            const entity = await EntityModel.findById(view.entity)
+                .populate('customFields')
+                .populate('statusClassification');
             if (!entity) return res.status(404).send("Entity not found");
 
             // ✅ récup prefs

@@ -8,10 +8,14 @@ module.exports = {
     list: async (req, res) => {
         try {
             await tenantCollection(req, "FieldTemplate");
+            await tenantCollection(req, "Classification");
             const EntityModel = await tenantCollection(req, "Entity");
             const RecordModel = await tenantCollection(req, "Record");
 
-            const entity = await EntityModel.findOne({ slug: req.params.entityName }).populate('customFields');
+            const entity = await EntityModel.findOne({ slug: req.params.entityName })
+                .populate('customFields')
+                .populate('statusClassification')
+                .populate('classifications');
             if (!entity) return res.status(404).render("errors/404", {
                 message: "Entity not found",
                 account_number: req.account_number,
@@ -36,9 +40,13 @@ module.exports = {
     addForm: async (req, res) => {
         try {
             await tenantCollection(req, "FieldTemplate");
+            await tenantCollection(req, "Classification");
             const EntityModel = await tenantCollection(req, "Entity");
 
-            const entity = await EntityModel.findOne({ slug: req.params.entityName }).populate('customFields');
+            const entity = await EntityModel.findOne({ slug: req.params.entityName })
+                .populate('customFields')
+                .populate('statusClassification')
+                .populate('classifications');
             if (!entity) return res.status(404).render("errors/404", {
                 message: "Entity not found",
                 account_number: req.account_number,
@@ -72,15 +80,56 @@ module.exports = {
                 layout: "layout-app"
             });
 
-            const { standard, custom } = req.body;
+            // 🛠️ Robust Body Parsing for Multipart/Form-Data (Multer doesn't nest objects)
+            const data = { standard: {}, custom: {}, classifications: {} };
+
+            Object.keys(req.body).forEach(key => {
+                const match = key.match(/^(\w+)\[([^\]]+)\]/);
+                if (match) {
+                    const [_, group, field] = match;
+                    if (data[group]) {
+                        let val = req.body[key];
+                        // Flatten array if it's a standard string field (standard browser/multer behavior)
+                        if (Array.isArray(val) && group === 'standard' && field !== 'gallery') {
+                            val = val.find(v => v !== '') || val[val.length - 1];
+                        }
+                        data[group][field] = val;
+                    }
+                } else if (key === 'standard' || key === 'custom' || key === 'classifications') {
+                    if (typeof req.body[key] === 'object') {
+                        data[key] = { ...data[key], ...req.body[key] };
+                    }
+                }
+            });
+
+            const { standard, custom, classifications } = data;
+
+            // 🛡️ Final Safety for Status (Avoid CastError Array)
+            if (standard.status && Array.isArray(standard.status)) {
+                standard.status = standard.status.find(v => v !== '') || standard.status[standard.status.length - 1];
+            }
+
+            if (req.file) {
+                standard.image = `/uploads/${req.account_number}/${req.file.filename}`;
+            }
 
             const customFieldsArray = [];
             if (custom) {
                 for (const [fieldId, value] of Object.entries(custom)) {
-                    customFieldsArray.push({
-                        field_id: fieldId,
-                        value: value
-                    });
+                    customFieldsArray.push({ field_id: fieldId, value });
+                }
+            }
+
+            const classificationValuesArray = [];
+            if (classifications) {
+                for (const [classificationId, value] of Object.entries(classifications)) {
+                    if (Array.isArray(value)) {
+                        value.filter(v => v).forEach(optId => {
+                            classificationValuesArray.push({ classificationId, optionId: optId });
+                        });
+                    } else if (value && value !== "") {
+                        classificationValuesArray.push({ classificationId, optionId: value });
+                    }
                 }
             }
 
@@ -88,6 +137,7 @@ module.exports = {
                 entityId: entity._id,
                 ...standard,
                 customFields: customFieldsArray,
+                classificationValues: classificationValuesArray,
                 createdBy: req.user._id
             });
 
@@ -102,10 +152,14 @@ module.exports = {
     editForm: async (req, res) => {
         try {
             await tenantCollection(req, "FieldTemplate");
+            await tenantCollection(req, "Classification");
             const EntityModel = await tenantCollection(req, "Entity");
             const RecordModel = await tenantCollection(req, "Record");
 
-            const entity = await EntityModel.findOne({ slug: req.params.entityName }).populate('customFields');
+            const entity = await EntityModel.findOne({ slug: req.params.entityName })
+                .populate('customFields')
+                .populate('statusClassification')
+                .populate('classifications');
             if (!entity) return res.status(404).render("errors/404", {
                 message: "Entity not found",
                 account_number: req.account_number,
@@ -150,15 +204,55 @@ module.exports = {
                 layout: "layout-app"
             });
 
-            const { standard, custom } = req.body;
+            // 🛠️ Robust Body Parsing
+            const data = { standard: {}, custom: {}, classifications: {} };
+
+            Object.keys(req.body).forEach(key => {
+                const match = key.match(/^(\w+)\[([^\]]+)\]/);
+                if (match) {
+                    const [_, group, field] = match;
+                    if (data[group]) {
+                        let val = req.body[key];
+                        if (Array.isArray(val) && group === 'standard' && field !== 'gallery') {
+                            val = val.find(v => v !== '') || val[val.length - 1];
+                        }
+                        data[group][field] = val;
+                    }
+                } else if (key === 'standard' || key === 'custom' || key === 'classifications') {
+                    if (typeof req.body[key] === 'object') {
+                        data[key] = { ...data[key], ...req.body[key] };
+                    }
+                }
+            });
+
+            const { standard, custom, classifications } = data;
+
+            // 🛡️ Final Safety for Status (Avoid CastError Array)
+            if (standard.status && Array.isArray(standard.status)) {
+                standard.status = standard.status.find(v => v !== '') || standard.status[standard.status.length - 1];
+            }
+
+            if (req.file) {
+                standard.image = `/uploads/${req.account_number}/${req.file.filename}`;
+            }
 
             const customFieldsArray = [];
             if (custom) {
                 for (const [fieldId, value] of Object.entries(custom)) {
-                    customFieldsArray.push({
-                        field_id: fieldId,
-                        value: value
-                    });
+                    customFieldsArray.push({ field_id: fieldId, value });
+                }
+            }
+
+            const classificationValuesArray = [];
+            if (classifications) {
+                for (const [classificationId, value] of Object.entries(classifications)) {
+                    if (Array.isArray(value)) {
+                        value.filter(v => v).forEach(optId => {
+                            classificationValuesArray.push({ classificationId, optionId: optId });
+                        });
+                    } else if (value && value !== "") {
+                        classificationValuesArray.push({ classificationId, optionId: value });
+                    }
                 }
             }
 
@@ -168,6 +262,7 @@ module.exports = {
             await RecordModel.findByIdAndUpdate(req.params.id, {
                 ...standard,
                 customFields: customFieldsArray,
+                classificationValues: classificationValuesArray,
                 updatedBy: req.user._id
             });
 

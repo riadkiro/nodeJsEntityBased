@@ -1,0 +1,271 @@
+<div x-data="classificationEditor">
+    <div class="flex items-center justify-between mb-5">
+        <h5 class="text-lg font-semibold dark:text-white-light"
+            x-text="isEdit ? 'Modifier la Classification' : 'Nouvelle Classification'"></h5>
+    </div>
+
+    <form @submit.prevent="saveClassification">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Basic Info -->
+            <div class="lg:col-span-1 space-y-5">
+                <div class="panel">
+                    <h6 class="text-base font-bold mb-4">Informations Générales</h6>
+                    <div class="space-y-4">
+                        <div>
+                            <label>Nom</label>
+                            <input type="text" x-model="name" class="form-input" placeholder="ex: Secteurs d'activité"
+                                required>
+                        </div>
+                        <div>
+                            <label>Clé unique (Slug)</label>
+                            <input type="text" x-model="key" class="form-input" placeholder="ex: sectors" required
+                                :disabled="isEdit">
+                        </div>
+
+                        <!-- Configuration de Type -->
+                        <div class="pt-4 border-t border-gray-100 dark:border-gray-700">
+                            <label class="font-bold flex items-center gap-2 mb-3">
+                                <iconify-icon icon="solar:settings-bold" class="text-primary"></iconify-icon>
+                                Configuration logique
+                            </label>
+
+                            <div
+                                class="space-y-3 bg-gray-50 dark:bg-black/10 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
+                                <!-- Structure -->
+                                <div>
+                                    <label class="text-[10px] uppercase font-bold text-gray-400 mb-2">Structure</label>
+                                    <div class="flex gap-2">
+                                        <button type="button" @click="type = 'simple'"
+                                            :class="type === 'simple' ? 'btn-primary' : 'btn-outline-primary'"
+                                            class="btn btn-sm flex-1">Plate (Simple)</button>
+                                        <button type="button" @click="type = 'hierarchical'"
+                                            :class="type === 'hierarchical' ? 'btn-primary' : 'btn-outline-primary'"
+                                            class="btn btn-sm flex-1">Hiérarchique</button>
+                                    </div>
+                                </div>
+
+                                <!-- Sélection -->
+                                <div class="pt-2">
+                                    <label class="text-[10px] uppercase font-bold text-gray-400 mb-2">Sélection</label>
+                                    <div class="flex items-center gap-2">
+                                        <label class="w-10 h-5 relative mb-0">
+                                            <input type="checkbox" x-model="allowMultiple"
+                                                class="custom_switch absolute w-full h-full opacity-0 z-10 cursor-pointer peer" />
+                                            <span
+                                                class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-3 before:h-3 before:rounded-full peer-checked:before:left-6 peer-checked:bg-primary before:transition-all before:duration-300"></span>
+                                        </label>
+                                        <span class="text-xs font-semibold"
+                                            x-text="allowMultiple ? 'Sélection multiple autorisée' : 'Sélection unique'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label>Description</label>
+                            <textarea x-model="description" class="form-input" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Options Editor -->
+            <div class="lg:col-span-2 space-y-5">
+                <div class="panel">
+                    <div class="flex items-center justify-between mb-4">
+                        <h6 class="text-base font-bold">Options de Classification</h6>
+                        <button type="button" @click="addOption" class="btn btn-sm btn-outline-primary">
+                            <iconify-icon icon="solar:add-circle-bold" class="mr-1"></iconify-icon>
+                            Ajouter une Option
+                        </button>
+                    </div>
+
+                    <div class="space-y-3" id="options-list">
+                        <template x-for="(opt, index) in options" :key="opt.tempId || opt._id">
+                            <div class="p-3 bg-gray-50 dark:bg-black/20 rounded-lg border dark:border-gray-800 group">
+                                <!-- First Line: Main Data -->
+                                <div class="flex items-center gap-3">
+                                    <div class="cursor-move text-white-dark group-hover:text-primary handle">
+                                        <iconify-icon icon="solar:reorder-bold"></iconify-icon>
+                                    </div>
+
+                                    <div class="flex-1">
+                                        <input type="text" x-model="opt.label" class="form-input font-bold"
+                                            placeholder="Label de l'option">
+                                    </div>
+
+                                    <div class="w-16">
+                                        <input type="color" x-model="opt.color"
+                                            class="form-input h-9 p-1 cursor-pointer">
+                                    </div>
+
+                                    <div class="w-24">
+                                        <input type="text" x-model="opt.icon" class="form-input text-xs"
+                                            placeholder="Icon ID">
+                                    </div>
+
+                                    <button type="button" @click="removeOption(index)"
+                                        class="text-danger p-1 hover:bg-danger/10 rounded">
+                                        <iconify-icon icon="solar:trash-bin-minimalistic-bold"
+                                            width="18"></iconify-icon>
+                                    </button>
+                                </div>
+
+                                <!-- Second Line: Hierarchy & Logic (Visible based on type) -->
+                                <div x-show="type === 'hierarchical' || opt.type !== 'normal'"
+                                    class="flex items-center gap-4 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+
+                                    <template x-if="type === 'hierarchical'">
+                                        <div class="flex-1 flex items-center gap-2">
+                                            <label
+                                                class="text-[10px] uppercase font-bold text-white-dark mb-0 whitespace-nowrap">Parent
+                                                :</label>
+                                            <select x-model="opt.parentId"
+                                                class="form-select form-select-sm text-xs py-1">
+                                                <option value="">Aucun parent</option>
+                                                <template x-for="parentOpt in options"
+                                                    :key="parentOpt.tempId || parentOpt._id">
+                                                    <template
+                                                        x-if="(parentOpt.tempId || parentOpt._id) !== (opt.tempId || opt._id)">
+                                                        <option :value="parentOpt._id || parentOpt.tempId"
+                                                            x-text="parentOpt.label || 'Sans nom'"></option>
+                                                    </template>
+                                                </template>
+                                            </select>
+                                        </div>
+                                    </template>
+
+                                    <div class="flex items-center gap-2">
+                                        <label
+                                            class="text-[10px] uppercase font-bold text-white-dark mb-0 whitespace-nowrap">Logique
+                                            Statut :</label>
+                                        <select x-model="opt.type" class="form-select form-select-sm text-xs py-1 w-32">
+                                            <option value="normal">Normal</option>
+                                            <option value="start">Début</option>
+                                            <option value="active">En cours</option>
+                                            <option value="completed">Terminé</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Indentation visual help -->
+                                    <template x-if="type === 'hierarchical' && opt.parentId">
+                                        <div class="flex items-center text-primary text-[10px] font-bold">
+                                            <iconify-icon icon="solar:round-alt-arrow-right-bold"
+                                                class="mr-1"></iconify-icon>
+                                            Sous-option
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+
+                        <div x-show="options.length === 0" class="text-center py-10 text-white-dark italic">
+                            Aucune option définie. Cliquez sur le bouton pour en ajouter.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-5">
+                    <a href="/account/<%= account_number %>/classification/list"
+                        class="btn btn-outline-danger">Annuler</a>
+                    <button type="submit" class="btn btn-primary">Enregistrer la Classification</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script id="classification-data"
+    type="application/json"><%- classification ? JSON.stringify(classification) : "null" %></script>
+
+<script>
+    document.addEventListener("alpine:init", () => {
+        Alpine.data("classificationEditor", () => {
+            const initialData = JSON.parse(document.getElementById('classification-data').textContent);
+
+            return {
+                isEdit: !!initialData,
+                id: initialData ? initialData._id : "",
+                name: initialData ? initialData.name : "",
+                key: initialData ? initialData.key : "",
+                description: initialData ? initialData.description : "",
+                type: initialData ? (initialData.type || 'simple') : 'simple',
+                allowMultiple: initialData ? !!initialData.allowMultiple : false,
+                options: (initialData && initialData.options) ? initialData.options.map(o => ({ ...o, tempId: null })) : [],
+
+                init() {
+                    // Sortable initialization
+                    this.$nextTick(() => {
+                        const el = document.getElementById('options-list');
+                        if (el) {
+                            Sortable.create(el, {
+                                animation: 150,
+                                handle: '.handle',
+                                onEnd: (evt) => {
+                                    const movedItem = this.options.splice(evt.oldIndex, 1)[0];
+                                    this.options.splice(evt.newIndex, 0, movedItem);
+                                }
+                            });
+                        }
+                    });
+                },
+
+                addOption() {
+                    this.options.push({
+                        label: '',
+                        color: '#3b82f6',
+                        icon: 'solar:info-circle-bold',
+                        type: 'normal',
+                        parentId: '',
+                        tempId: 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                        order: this.options.length
+                    });
+                },
+
+                removeOption(index) {
+                    const idToRemove = this.options[index]._id || this.options[index].tempId;
+                    this.options.splice(index, 1);
+                    // Cleanup children
+                    this.options.forEach(opt => {
+                        if (opt.parentId === idToRemove) opt.parentId = '';
+                    });
+                },
+
+                async saveClassification() {
+                    const url = this.isEdit
+                        ? `/account/<%= account_number %>/classification/update/${this.id}`
+                        : `/account/<%= account_number %>/classification/save`;
+
+                    try {
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: this.name,
+                                key: this.key,
+                                description: this.description,
+                                type: this.type,
+                                allowMultiple: this.allowMultiple,
+                                options: this.options.map((opt, idx) => ({
+                                    ...opt,
+                                    order: idx,
+                                    parentId: (opt.parentId && !opt.parentId.startsWith('temp_')) ? opt.parentId : null
+                                }))
+                            })
+                        });
+
+                        if (res.ok) {
+                            window.location.href = `/account/<%= account_number %>/classification/list`;
+                        } else {
+                            const err = await res.json();
+                            alert("Erreur: " + (err.error || "Une erreur est survenue"));
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        alert("Erreur réseau");
+                    }
+                }
+            };
+        });
+    });
+</script>

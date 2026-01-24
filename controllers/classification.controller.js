@@ -66,7 +66,24 @@ module.exports = {
     update: async (req, res) => {
         try {
             const Classification = await tenantCollection(req, "Classification");
+            const RecordModel = await tenantCollection(req, "Record");
             const { name, key, description, options, type, allowMultiple } = req.body;
+
+            // 1. Get old version to handle cascade delete
+            const oldCls = await Classification.findById(req.params.id);
+            if (oldCls && options) {
+                const oldIds = oldCls.options.map(o => o._id.toString());
+                const newIds = options.filter(o => o._id).map(o => o._id.toString());
+                const deletedIds = oldIds.filter(id => !newIds.includes(id));
+
+                if (deletedIds.length > 0) {
+                    // 2. Cascade delete: remove these options from all records
+                    await RecordModel.updateMany(
+                        { "classificationValues.optionId": { $in: deletedIds.map(id => new mongoose.Types.ObjectId(id)) } },
+                        { $pull: { classificationValues: { optionId: { $in: deletedIds.map(id => new mongoose.Types.ObjectId(id)) } } } }
+                    );
+                }
+            }
 
             await Classification.findByIdAndUpdate(req.params.id, {
                 name,
@@ -87,6 +104,14 @@ module.exports = {
     delete: async (req, res) => {
         try {
             const Classification = await tenantCollection(req, "Classification");
+            const RecordModel = await tenantCollection(req, "Record");
+
+            // Cascade delete: remove this classification from all records
+            await RecordModel.updateMany(
+                { "classificationValues.classificationId": req.params.id },
+                { $pull: { classificationValues: { classificationId: req.params.id } } }
+            );
+
             await Classification.findByIdAndDelete(req.params.id);
             res.json({ success: true });
         } catch (err) {

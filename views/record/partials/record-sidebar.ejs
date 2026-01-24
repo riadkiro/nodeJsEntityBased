@@ -107,13 +107,14 @@
                     </div>
                     <div x-show="classificationsOpen" x-collapse>
                         <% allEntityClassifications.forEach((cls, clsIdx)=> { %>
-                            <div class="p-4 <%= clsIdx > 0 ? 'border-t border-gray-100' : '' %>"
+                            <div class="px-4 py-2 <%= clsIdx > 0 ? 'border-t border-gray-100' : '' %>"
                                 x-data="classificationBox('<%= cls.data._id %>', '<%= cls.nameAttr %>', <%= cls.data.allowMultiple %>)">
-                                <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center justify-between mb-3 group cursor-pointer select-none"
+                                    @click="isOpen = !isOpen">
                                     <div class="flex items-center gap-2 <%= cls.colorClass %>">
                                         <iconify-icon icon="<%= cls.icon %>" width="16"></iconify-icon>
                                         <h6
-                                            class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light">
+                                            class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light group-hover:text-primary transition-colors">
                                             <%= cls.label %>
                                         </h6>
                                         <% if (cls.data.type==='hierarchical' ) { %>
@@ -121,16 +122,36 @@
                                                 class="text-[8px] bg-gray-100 px-1 rounded text-gray-500 font-bold uppercase">Tree</span>
                                             <% } %>
                                     </div>
-                                    <button type="button"
-                                        @click="toggleEdit(); $dispatch('toggle-tags-' + '<%= cls.data._id %>')"
-                                        class="<%= cls.colorClass %> hover:scale-110 transition-transform">
-                                        <iconify-icon
-                                            :icon="editing ? 'solar:close-circle-bold' : 'solar:add-circle-bold'"
-                                            width="16"></iconify-icon>
-                                    </button>
+                                    <div
+                                        class="flex items-center gap-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                        <!-- Toggle Button (Left) -->
+                                        <button type="button" @click.stop="isOpen = !isOpen"
+                                            class="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-100 transition-all text-gray-400"
+                                            :class="!isOpen ? '-rotate-90' : ''">
+                                            <iconify-icon icon="solar:alt-arrow-down-linear" width="14"></iconify-icon>
+                                        </button>
+
+                                        <!-- Options Button (Middle) -->
+                                        <button type="button" @click.stop=""
+                                            class="w-4 h-6 flex items-center justify-center rounded-md hover:bg-gray-100 transition-all text-gray-400 hover:text-gray-600"
+                                            title="Options">
+                                            <iconify-icon icon="solar:menu-dots-bold" width="14"
+                                                class="rotate-90"></iconify-icon>
+                                        </button>
+
+                                        <!-- Add Option Button (Right) -->
+                                        <button type="button"
+                                            @click.stop="isOpen = true; toggleEdit(); $dispatch('toggle-tags-' + '<%= cls.data._id %>')"
+                                            class="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-100 transition-all text-gray-400 hover:text-primary"
+                                            title="Ajouter">
+                                            <iconify-icon
+                                                :icon="editing? 'solar:close-circle-linear' : 'solar:add-circle-linear'"
+                                                width="16"></iconify-icon>
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div class="mt-2 text-xs">
+                                <div class="mt-2 text-xs" x-show="isOpen" x-collapse>
                                     <% if (cls.data.type==='hierarchical' ) { %>
                                         <!-- TREE VIEW (Hierarchical Only) -->
                                         <div class="space-y-1.5 overflow-y-auto border border-gray-100 rounded p-2 bg-gray-50/30 custom-scrollbar"
@@ -472,10 +493,10 @@
         }));
 
         Alpine.data("classificationBox", (clsId, nameAttr, allowMultiple) => ({
-            // ... (keep existing code for tree view if needed, but primarily used for simple select now)
             editing: false,
             newLabel: '',
             loading: false,
+            isOpen: true,
 
             toggleEdit() {
                 this.editing = !this.editing;
@@ -548,7 +569,10 @@
             },
 
             // Tree View Reordering
-            init() { this.$nextTick(() => this.initSortable()); },
+            init() {
+                this.$nextTick(() => this.initSortable());
+                window.addEventListener('close-edit-' + clsId, () => { this.editing = false; });
+            },
             initSortable() {
                 const containers = document.querySelectorAll(`#tree-${clsId} ul`);
                 const self = this;
@@ -673,6 +697,7 @@
                         this.add(data.option._id);
                         this.localNewLabel = '';
                         this.showAdd = false;
+                        window.dispatchEvent(new CustomEvent('close-edit-' + clsId));
                     }
                 } catch (e) { console.error(e); } finally { this.localLoading = false; }
             }

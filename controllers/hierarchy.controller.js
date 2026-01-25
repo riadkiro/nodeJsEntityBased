@@ -41,15 +41,16 @@ module.exports = {
                 folders.forEach(f => {
                     let isChild = false;
                     if (parentType === 'space' && f.spaces.includes(parentId) && f.parentFolders.length === 0) isChild = true;
-                    else if (parentType === 'folder' && f.parentFolders.includes(parentId)) isChild = true;
+                    else if ((parentType === 'folder' || parentType === 'environment') && f.parentFolders.includes(parentId)) isChild = true;
 
                     if (isChild) {
+                        const itemType = f.type || 'folder';
                         results.push({
-                            type: 'folder',
+                            type: itemType,
                             id: f.id,
                             name: f.name,
-                            icon: f.icon || 'solar:folder-2-line-duotone',
-                            children: buildTree(f.id, 'folder'),
+                            icon: f.icon || (itemType === 'environment' ? 'solar:layers-minimalistic-line-duotone' : 'solar:folder-2-line-duotone'),
+                            children: buildTree(f.id, itemType),
                             link: '#'
                         });
                     }
@@ -59,7 +60,7 @@ module.exports = {
                 views.forEach(v => {
                     let isChild = false;
                     if (parentType === 'space' && v.spaces.includes(parentId) && v.folders.length === 0) isChild = true;
-                    else if (parentType === 'folder' && v.folders.includes(parentId)) isChild = true;
+                    else if ((parentType === 'folder' || parentType === 'environment') && v.folders.includes(parentId)) isChild = true;
 
                     if (isChild) {
                         const entity = entities.find(e => e.id === v.entity.toString());
@@ -84,13 +85,13 @@ module.exports = {
                     const eFolders = (e.folders || []).map(id => id.toString());
 
                     if (parentType === 'space' && eSpaces.includes(parentId) && eFolders.length === 0) isChild = true;
-                    else if (parentType === 'folder' && eFolders.includes(parentId)) isChild = true;
+                    else if ((parentType === 'folder' || parentType === 'environment') && eFolders.includes(parentId)) isChild = true;
 
                     if (isChild) {
                         // Check if a View already represents this entity at this location to avoid duplicates
                         const hasView = views.find(v => v.entity.toString() === eId &&
                             ((parentType === 'space' && v.spaces.includes(parentId)) ||
-                                (parentType === 'folder' && v.folders.includes(parentId))));
+                                ((parentType === 'folder' || parentType === 'environment') && v.folders.includes(parentId))));
 
                         if (!hasView) {
                             results.push({
@@ -155,12 +156,12 @@ module.exports = {
                     const update = newParentType === 'folder' ? { $addToSet: { folders: newParentId } } : { $addToSet: { spaces: newParentId } };
                     await targetModel.updateOne({ _id: itemId }, update);
                 }
-            } else if (itemType === 'folder') {
+            } else if (itemType === 'folder' || itemType === 'environment') {
                 if (oldParentId) {
                     await FolderModel.updateOne({ _id: itemId }, { $pull: { parentFolders: oldParentId, spaces: oldParentId } });
                 }
                 if (newParentId) {
-                    const update = newParentType === 'folder' ? { $addToSet: { parentFolders: newParentId } } : { $addToSet: { spaces: newParentId } };
+                    const update = (newParentType === 'folder' || newParentType === 'environment') ? { $addToSet: { parentFolders: newParentId } } : { $addToSet: { spaces: newParentId } };
                     await FolderModel.updateOne({ _id: itemId }, update);
                 }
             }
@@ -180,10 +181,11 @@ module.exports = {
 
     createFolder: async (req, res) => {
         const FolderModel = await tenantCollection(req, "Folder");
-        const { name, parentId, parentType } = req.body;
+        const { name, parentId, parentType, type } = req.body;
         const folderData = { name, slug: name.toLowerCase().replace(/ /g, '-') + '-' + Date.now(), createdBy: req.user._id };
+        if (type) folderData.type = type;
         if (parentType === 'space') folderData.spaces = [parentId];
-        if (parentType === 'folder') folderData.parentFolders = [parentId];
+        if (parentType === 'folder' || parentType === 'environment') folderData.parentFolders = [parentId];
         const newFolder = new FolderModel(folderData);
         await newFolder.save();
         res.json(newFolder);
@@ -215,13 +217,13 @@ module.exports = {
         const { id, type, newName } = req.body;
         let Model;
         if (type === 'space') Model = await tenantCollection(req, "Space");
-        if (type === 'folder') Model = await tenantCollection(req, "Folder");
+        if (type === 'folder' || type === 'environment' || type === 'workstation') Model = await tenantCollection(req, "Folder");
         if (type === 'entity') {
             const ViewModel = await tenantCollection(req, "View");
             const view = await ViewModel.findById(id);
             Model = view ? ViewModel : await tenantCollection(req, "Entity");
         }
-        await Model.findByIdAndUpdate(id, { name: newName });
+        if (Model) await Model.findByIdAndUpdate(id, { name: newName });
         res.json({ success: true });
     },
 
@@ -229,12 +231,13 @@ module.exports = {
         const { id, type } = req.body;
         let Model;
         if (type === 'space') Model = await tenantCollection(req, "Space");
-        if (type === 'folder') Model = await tenantCollection(req, "Folder");
+        if (type === 'folder' || type === 'environment' || type === 'workstation') Model = await tenantCollection(req, "Folder");
         if (type === 'entity') {
             const ViewModel = await tenantCollection(req, "View");
             const view = await ViewModel.findById(id);
             Model = view ? ViewModel : await tenantCollection(req, "Entity");
         }
+        if (!Model) return res.status(400).json({ error: "Invalid type or model not found" });
         await Model.findByIdAndDelete(id);
         res.json({ success: true });
     },

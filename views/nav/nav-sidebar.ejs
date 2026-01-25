@@ -372,7 +372,7 @@
                           <template x-if="editingId !== child.id">
                             <a :href="child.link || '#'" class="block ml-2 truncate transition-colors"
                               :class="isItemActive(child.link) ? '!text-primary font-bold' : ''"
-                              @click="if(child.type === 'folder') { $event.preventDefault(); subActive = (subActive === child.id ? null : child.id); }">
+                              @click="if(['folder', 'environment'].includes(child.type)) { $event.preventDefault(); subActive = (subActive === child.id ? null : child.id); }">
                               <span x-text="child.name"></span>
                             </a>
                           </template>
@@ -395,8 +395,7 @@
                             class="cursor-pointer hover:text-primary"
                             @click.stop="openEditMenu($event, child.type, child, item)"></iconify-icon>
                         </div>
-
-                        <div x-show="child.type === 'folder' && child.children && child.children.length > 0"
+                        <div x-show="['folder', 'environment'].includes(child.type) && child.children && child.children.length > 0"
                           class="rtl:rotate-180 mr-2 transition-transform"
                           :class="{'!rotate-90' : subActive === child.id}">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -405,38 +404,85 @@
                         </div>
                       </div>
 
-                      <!-- Nested children for Folders -->
-                      <ul x-show="child.type === 'folder' && subActive === child.id" x-collapse
+                      <!-- Nested children for Folders/Environments -->
+                      <ul x-show="['folder', 'environment'].includes(child.type) && subActive === child.id" x-collapse
                         class="sub-menu text-gray-500 ltr:ml-4 rtl:mr-4 border-l dark:border-gray-800 ml-4">
                         <template x-for="subChild in child.children" :key="subChild.id">
-                          <li x-data="{ hovered: false }"
-                            class="flex items-center hover:bg-gray-100 rounded transition-colors group/sub2"
+                          <li x-data="{ hovered: false, expanded: false }"
+                            x-init="if (subChild.children && subChild.children.some(c => isItemActive(c.link))) expanded = true"
+                            class="relative block"
                             @mouseenter="hovered = true" @mouseleave="hovered = false">
-                            <iconify-icon :icon="getIcon(subChild.type)" class="ml-2" width="16"
-                              height="16"></iconify-icon>
-                            <div class="flex-1 truncate">
-                              <template x-if="editingId !== subChild.id">
-                                <a :href="subChild.link || '#'" class="ml-2 text-sm transition-colors"
-                                  :class="isItemActive(subChild.link) ? '!text-primary font-bold' : ''"
-                                  @click="if(subChild.type === 'folder') { $event.preventDefault(); /* handle deeper nesting if needed */ }"
-                                  x-text="subChild.name"></a>
-                              </template>
-                              <template x-if="editingId === subChild.id">
-                                <input x-ref="editInput" type="text"
-                                  class="form-input py-0 px-2 h-6 text-sm ml-2 bg-transparent border-primary w-full"
-                                  x-model="editingName" @keyup.enter="saveRename(subChild)" @blur="saveRename(subChild)"
-                                  x-init="$nextTick(() => $el.focus())">
-                              </template>
+                            <div class="flex items-center hover:bg-gray-100 rounded transition-colors group/sub2"
+                              :class="{'bg-gray-100': expanded}">
+                              <iconify-icon :icon="getIcon(subChild.type)" class="ml-2" width="16"
+                                height="16"></iconify-icon>
+                              <div class="flex-1 truncate min-w-0">
+                                <template x-if="editingId !== subChild.id">
+                                  <a :href="subChild.link || '#'" class="ml-2 text-sm transition-colors block py-1"
+                                    :class="isItemActive(subChild.link) ? '!text-primary font-bold' : ''"
+                                    @click="if(['folder', 'environment'].includes(subChild.type)) { $event.preventDefault(); expanded = !expanded; }"
+                                    x-text="subChild.name"></a>
+                                </template>
+                                <template x-if="editingId === subChild.id">
+                                  <input x-ref="editInput" type="text"
+                                    class="form-input py-0 px-2 h-6 text-sm ml-2 bg-transparent border-primary w-full"
+                                    x-model="editingName" @keyup.enter="saveRename(subChild)" @blur="saveRename(subChild)"
+                                    x-init="$nextTick(() => $el.focus())">
+                                </template>
+                              </div>
+                              <div class="flex items-center gap-1 pr-4 transition-opacity"
+                                :class="hovered ? 'opacity-100' : 'opacity-0'">
+                                <template x-if="['folder', 'environment'].includes(subChild.type)">
+                                  <iconify-icon icon="solar:add-square-linear" width="14" height="14"
+                                    class="cursor-pointer hover:text-primary"
+                                    @click.stop="openCreateMenu($event, subChild)"></iconify-icon>
+                                </template>
+                                <iconify-icon icon="solar:menu-dots-bold-duotone" width="14" height="14"
+                                  class="cursor-pointer hover:text-primary"
+                                  @click.stop="openEditMenu($event, subChild.type, subChild, child)"></iconify-icon>
+                              </div>
+                              <div x-show="['folder', 'environment'].includes(subChild.type) && subChild.children && subChild.children.length > 0"
+                                class="rtl:rotate-180 mr-2 transition-transform" :class="{'!rotate-90' : expanded}">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                  <path d="M9 5L15 12L9 19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                              </div>
                             </div>
-                            <div class="flex items-center gap-1 pr-4 transition-opacity"
-                              :class="hovered ? 'opacity-100' : 'opacity-0'">
-                              <iconify-icon icon="solar:menu-dots-bold-duotone" width="14" height="14"
-                                class="cursor-pointer hover:text-primary"
-                                @click.stop="openEditMenu($event, subChild.type, subChild, child)"></iconify-icon>
-                            </div>
+
+                            <ul x-show="['folder', 'environment'].includes(subChild.type) && expanded" x-collapse
+                              class="sub-menu text-gray-500 ltr:ml-4 rtl:mr-4 border-l dark:border-gray-800 ml-4">
+                              <template x-for="subSubChild in subChild.children" :key="subSubChild.id">
+                                <li x-data="{ hovered: false }"
+                                  class="flex items-center hover:bg-gray-100 rounded transition-colors group/sub3"
+                                  @mouseenter="hovered = true" @mouseleave="hovered = false">
+                                  <iconify-icon :icon="getIcon(subSubChild.type)" class="ml-2" width="16"
+                                    height="16"></iconify-icon>
+                                  <div class="flex-1 truncate">
+                                    <template x-if="editingId !== subSubChild.id">
+                                      <a :href="subSubChild.link || '#'" class="ml-2 text-sm transition-colors block py-1"
+                                        :class="isItemActive(subSubChild.link) ? '!text-primary font-bold' : ''"
+                                        x-text="subSubChild.name"></a>
+                                    </template>
+                                    <template x-if="editingId === subSubChild.id">
+                                      <input x-ref="editInput" type="text"
+                                        class="form-input py-0 px-2 h-6 text-sm ml-2 bg-transparent border-primary w-full"
+                                        x-model="editingName" @keyup.enter="saveRename(subSubChild)"
+                                        @blur="saveRename(subSubChild)" x-init="$nextTick(() => $el.focus())">
+                                    </template>
+                                  </div>
+                                  <div class="flex items-center gap-1 pr-4 transition-opacity"
+                                    :class="hovered ? 'opacity-100' : 'opacity-0'">
+                                    <iconify-icon icon="solar:menu-dots-bold-duotone" width="14" height="14"
+                                      class="cursor-pointer hover:text-primary"
+                                      @click.stop="openEditMenu($event, subSubChild.type, subSubChild, subChild)"></iconify-icon>
+                                  </div>
+                                </li>
+                              </template>
+                            </ul>
                           </li>
                         </template>
                       </ul>
+
                     </li>
                   </template>
                 </ul>
@@ -511,13 +557,23 @@
                         this.subActive = null;
                         return;
                       }
-                      // Check if it's a folder with sub-children
-                      if (child.type === 'folder' && child.children) {
+                      // Check if it's a folder/environment with sub-children
+                      if (['folder', 'environment'].includes(child.type) && child.children) {
                         for (const sub of child.children) {
                           if (sub.link && decodeURIComponent(sub.link) === currentPath) {
                             this.activeDropdown = space.id;
                             this.subActive = child.id;
                             return;
+                          }
+                          // Check sub-sub-children
+                          if (['folder', 'environment'].includes(sub.type) && sub.children) {
+                            for (const subSub of sub.children) {
+                              if (subSub.link && decodeURIComponent(subSub.link) === currentPath) {
+                                this.activeDropdown = space.id;
+                                this.subActive = child.id;
+                                return;
+                              }
+                            }
                           }
                         }
                       }
@@ -531,6 +587,7 @@
 
                 getIcon(type) {
                   if (type === 'folder') return 'solar:folder-2-line-duotone';
+                  if (type === 'environment') return 'solar:layers-minimalistic-line-duotone';
                   if (type === 'entity') return 'solar:database-bold';
                   return 'solar:file-text-line-duotone';
                 },
@@ -623,16 +680,18 @@
                   const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
                   const parent = Alpine.store('sidebar').contextItem;
                   console.log(`[Sidebar] Creating ${type}:${viewType} for parent:`, parent);
-                  const name = prompt(`Nom de l'élément (${type}) :`);
+                  const labels = { folder: 'Dossier', environment: 'Environnement', entity: 'Collection' };
+                  const name = prompt(`Nom de l'élément (${labels[type] || type}) :`);
                   if (!name) return;
 
-                  const url = type === 'folder' ? 'folder' : 'entity';
+                  const url = ['folder', 'environment'].includes(type) ? 'folder' : 'entity';
                   try {
                     const res = await fetch(`/account/${accountNum}/api/hierarchy/${url}`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
                         name,
+                        type,
                         parentId: parent.id,
                         parentType: parent.type,
                         viewType: viewType
@@ -776,13 +835,21 @@
                       <span>Dossier</span>
                     </div>
                   </li>
+                  <li class="hover:bg-primary/10 hover:text-primary px-1 py-2 rounded cursor-pointer transition-colors"
+                    @click="createItem('environment')">
+                    <div class="flex items-center gap-2">
+                      <iconify-icon icon="solar:layers-minimalistic-line-duotone" class="ml-2" width="18"
+                        height="18"></iconify-icon>
+                      <span>Environnement</span>
+                    </div>
+                  </li>
 
                   <li class="hover:bg-primary/10 hover:text-primary px-1 py-2 rounded cursor-pointer transition-colors"
                     @click="menuMode = 'data'">
                     <div class="flex items-center justify-between w-full">
                       <div class="flex items-center gap-2">
                         <iconify-icon icon="solar:database-bold" class="ml-2" width="18" height="18"></iconify-icon>
-                        <span>View</span>
+                        <span>Collection</span>
                       </div>
                       <iconify-icon icon="solar:alt-arrow-right-linear" width="16"></iconify-icon>
                     </div>

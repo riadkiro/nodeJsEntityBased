@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const FolderSchema = new mongoose.Schema({
   name: { type: String, required: true },
   slug: { type: String, required: true },
+  type: { type: String, default: 'folder' }, // 'folder' | 'workstation'
   description: String,
 
   // Multi-space

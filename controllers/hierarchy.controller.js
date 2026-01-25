@@ -113,6 +113,7 @@ module.exports = {
                 type: 'space',
                 id: s.id,
                 name: s.name,
+                icon: s.icon,
                 children: buildTree(s.id, 'space'),
                 link: '#'
             }));
@@ -181,9 +182,10 @@ module.exports = {
 
     createFolder: async (req, res) => {
         const FolderModel = await tenantCollection(req, "Folder");
-        const { name, parentId, parentType, type } = req.body;
+        const { name, parentId, parentType, type, icon } = req.body;
         const folderData = { name, slug: name.toLowerCase().replace(/ /g, '-') + '-' + Date.now(), createdBy: req.user._id };
         if (type) folderData.type = type;
+        if (icon) folderData.icon = icon;
         if (parentType === 'space') folderData.spaces = [parentId];
         if (parentType === 'folder' || parentType === 'environment') folderData.parentFolders = [parentId];
         const newFolder = new FolderModel(folderData);
@@ -194,7 +196,7 @@ module.exports = {
     createEntity: async (req, res) => {
         const EntityModel = await tenantCollection(req, "Entity");
         const ViewModel = await tenantCollection(req, "View");
-        const { name, parentId, parentType, viewType } = req.body;
+        const { name, parentId, parentType, viewType, icon } = req.body;
         const slug = name.toLowerCase().replace(/ /g, '-') + '-' + Date.now();
 
         const newEntity = new EntityModel({ name, slug, createdBy: req.user._id });
@@ -204,6 +206,7 @@ module.exports = {
             name,
             slug,
             entity: newEntity._id,
+            icon,
             viewType: viewType || 'list',
             createdBy: req.user._id,
             spaces: parentType === 'space' ? [parentId] : [],
@@ -224,6 +227,20 @@ module.exports = {
             Model = view ? ViewModel : await tenantCollection(req, "Entity");
         }
         if (Model) await Model.findByIdAndUpdate(id, { name: newName });
+        res.json({ success: true });
+    },
+
+    updateIcon: async (req, res) => {
+        const { id, type, icon } = req.body;
+        let Model;
+        if (type === 'space') Model = await tenantCollection(req, "Space");
+        if (type === 'folder' || type === 'environment' || type === 'workstation') Model = await tenantCollection(req, "Folder");
+        if (type === 'entity') {
+            const ViewModel = await tenantCollection(req, "View");
+            const view = await ViewModel.findById(id);
+            Model = view ? ViewModel : await tenantCollection(req, "Entity");
+        }
+        if (Model) await Model.findByIdAndUpdate(id, { icon });
         res.json({ success: true });
     },
 

@@ -11,6 +11,7 @@ const SpaceSchema = new mongoose.Schema({
     unique: true
   },
   description: String,
+  icon: String,
 
   // Propriétaire de l’espace
   owner: {

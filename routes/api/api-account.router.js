@@ -29,6 +29,7 @@ router.post('/hierarchy/space', hierarchyController.createSpace);
 router.post('/hierarchy/folder', hierarchyController.createFolder);
 router.post('/hierarchy/entity', hierarchyController.createEntity);
 router.post('/hierarchy/rename', hierarchyController.renameItem);
+router.post('/hierarchy/icon', hierarchyController.updateIcon);
 router.post('/hierarchy/delete', hierarchyController.deleteItem);
 router.get('/hierarchy/all-entities', hierarchyController.listAllEntities);
 router.post('/hierarchy/link-entity', hierarchyController.linkEntity);

@@ -11,6 +11,8 @@ const ViewSchema = new mongoose.Schema({
         required: true
     },
 
+    icon: String,
+
     // Type of display
     viewType: {
         type: String,

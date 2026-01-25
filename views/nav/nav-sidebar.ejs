@@ -324,7 +324,7 @@
 
           <ul class="sortable-root" data-parent-type="root">
             <template x-for="item in hierarchy" :key="item.id">
-              <li class="menu nav-item -mx-4 mb-2" :data-id="item.id" data-type="space">
+              <li class="menu nav-item mb-2" :data-id="item.id" data-type="space">
                 <div class="nav-link group flex items-center justify-between"
                   :class="{'active' : activeDropdown === item.id}">
                   <div x-data="{ hovered: false }" 
@@ -333,16 +333,16 @@
                     @click="toggle(item.id)"
                     @contextmenu.prevent="openEditMenu($event, 'space', item)">
                     <iconify-icon :icon="getIcon(item, item.children && item.children.length > 0, activeDropdown === item.id, hovered)" 
-                      class="ml-2" width="18" height="18" :style="item.color ? 'color: ' + item.color : ''"></iconify-icon>
+                      class="ml-1" width="18" height="18" :style="item.color ? 'color: ' + item.color : ''"></iconify-icon>
 
                     <template x-if="editingId !== item.id">
                       <span
-                        class="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark transition-all"
+                        class="text-black ltr:pl-2 rtl:pr-2 dark:text-[#506690] dark:group-hover:text-white-dark transition-all"
                         x-text="item.name"></span>
                     </template>
                     <template x-if="editingId === item.id">
                       <input x-ref="editInput" type="text"
-                        class="form-input py-0 px-2 h-6 text-sm ml-2 bg-transparent border-primary w-full"
+                        class="form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
                         x-model="editingName" @keyup.enter="saveRename(item)" @blur="saveRename(item)"
                         x-init="$nextTick(() => $el.focus())">
                     </template>
@@ -367,7 +367,7 @@
 
                 <ul x-cloak x-show="activeDropdown === item.id" x-collapse class="sub-menu text-gray-500 mx-4 mb-2">
                   <template x-for="child in item.children" :key="child.id">
-                    <li x-data="{ hovered: false }" class="relative">
+                    <li x-data="{ hovered: false }" class="relative" :data-id="child.id" :data-type="child.type">
                       <div
                         class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900 rounded transition-colors group/sub"
                         @mouseenter="hovered = true" @mouseleave="hovered = false"
@@ -379,7 +379,7 @@
 
                         <div class="flex-1 min-w-0">
                           <template x-if="editingId !== child.id">
-                            <a :href="child.link || '#'" class="block ml-2 truncate transition-colors"
+                            <a :href="child.link || '#'" class="block ml-1 truncate transition-colors"
                               :class="isItemActive(child.link) ? '!text-primary font-bold' : ''"
                               @click="if(['folder', 'environment'].includes(child.type)) { $event.preventDefault(); subActive = (subActive === child.id ? null : child.id); }">
                               <span x-text="child.name"></span>
@@ -387,7 +387,7 @@
                           </template>
                           <template x-if="editingId === child.id">
                             <input x-ref="editInput" type="text"
-                              class="form-input py-0 px-2 h-6 text-sm ml-2 bg-transparent border-primary w-full"
+                              class="form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
                               x-model="editingName" @keyup.enter="saveRename(child)" @blur="saveRename(child)"
                               x-init="$nextTick(() => $el.focus())">
                           </template>
@@ -413,7 +413,7 @@
                         <template x-for="subChild in child.children" :key="subChild.id">
                           <li x-data="{ hovered: false }"
                             x-init="if (subChild.children && subChild.children.some(c => isItemActive(c.link))) toggleExpand(subChild.id, true)"
-                            class="relative block">
+                            class="relative block" :data-id="subChild.id" :data-type="subChild.type">
                             <div class="flex items-center hover:bg-gray-100 rounded transition-colors group/sub2"
                               :class="{'bg-gray-100': isExpanded(subChild.id)}"
                               @mouseenter="hovered = true" @mouseleave="hovered = false"
@@ -424,14 +424,14 @@
                                 @click.stop="if(['folder', 'environment'].includes(subChild.type)) { toggleExpand(subChild.id); }"></iconify-icon>
                               <div class="flex-1 truncate min-w-0">
                                 <template x-if="editingId !== subChild.id">
-                                  <a :href="subChild.link || '#'" class="ml-2 text-sm transition-colors block py-1"
+                                  <a :href="subChild.link || '#'" class="ml-1 text-sm transition-colors block py-1"
                                     :class="isItemActive(subChild.link) ? '!text-primary font-bold' : ''"
                                     @click="if(['folder', 'environment'].includes(subChild.type)) { $event.preventDefault(); toggleExpand(subChild.id); }"
                                     x-text="subChild.name"></a>
                                 </template>
                                 <template x-if="editingId === subChild.id">
                                   <input x-ref="editInput" type="text"
-                                    class="form-input py-0 px-2 h-6 text-sm ml-2 bg-transparent border-primary w-full"
+                                    class="form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
                                     x-model="editingName" @keyup.enter="saveRename(subChild)" @blur="saveRename(subChild)"
                                     x-init="$nextTick(() => $el.focus())">
                                 </template>
@@ -457,18 +457,19 @@
                                 <li x-data="{ hovered: false }"
                                   class="flex items-center hover:bg-gray-100 rounded transition-colors group/sub3"
                                   @mouseenter="hovered = true" @mouseleave="hovered = false"
-                                  @contextmenu.prevent="openEditMenu($event, subSubChild.type, subSubChild, subChild)">
+                                  @contextmenu.prevent="openEditMenu($event, subSubChild.type, subSubChild, subChild)"
+                                  :data-id="subSubChild.id" :data-type="subSubChild.type">
                                   <iconify-icon :icon="getIcon(subSubChild)" class="ml-2" width="16"
                                     height="16" :style="subSubChild.color ? 'color: ' + subSubChild.color : ''"></iconify-icon>
                                   <div class="flex-1 truncate">
                                     <template x-if="editingId !== subSubChild.id">
-                                      <a :href="subSubChild.link || '#'" class="ml-2 text-sm transition-colors block py-1"
+                                      <a :href="subSubChild.link || '#'" class="ml-1 text-sm transition-colors block py-1"
                                         :class="isItemActive(subSubChild.link) ? '!text-primary font-bold' : ''"
                                         x-text="subSubChild.name"></a>
                                     </template>
                                     <template x-if="editingId === subSubChild.id">
                                       <input x-ref="editInput" type="text"
-                                        class="form-input py-0 px-2 h-6 text-sm ml-2 bg-transparent border-primary w-full"
+                                        class="form-input py-0 px-2 h-6 text-sm ml-1 bg-transparent border-primary w-full"
                                         x-model="editingName" @keyup.enter="saveRename(subSubChild)"
                                         @blur="saveRename(subSubChild)" x-init="$nextTick(() => $el.focus())">
                                     </template>

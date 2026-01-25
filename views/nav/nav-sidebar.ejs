@@ -362,11 +362,11 @@
 
                 <ul x-cloak x-show="activeDropdown === item.id" x-collapse class="sub-menu text-gray-500 mx-4 mb-2">
                   <template x-for="child in item.children" :key="child.id">
-                    <li x-data="{ hovered: false }" class="relative" @mouseenter="hovered = true"
-                      @mouseleave="hovered = false">
+                    <li x-data="{ hovered: false }" class="relative">
                       <div
-                        class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900 rounded transition-colors group/sub">
-                        <iconify-icon :icon="getIcon(child.type)" class="ml-2" width="16" height="16"></iconify-icon>
+                        class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900 rounded transition-colors group/sub"
+                        @mouseenter="hovered = true" @mouseleave="hovered = false">
+                        <iconify-icon :icon="getIcon(child.type, child.children && child.children.length > 0, subActive === child.id, hovered)" class="ml-2" width="16" height="16"></iconify-icon>
 
                         <div class="flex-1 min-w-0">
                           <template x-if="editingId !== child.id">
@@ -395,13 +395,7 @@
                             class="cursor-pointer hover:text-primary"
                             @click.stop="openEditMenu($event, child.type, child, item)"></iconify-icon>
                         </div>
-                        <div x-show="['folder', 'environment'].includes(child.type) && child.children && child.children.length > 0"
-                          class="rtl:rotate-180 mr-2 transition-transform"
-                          :class="{'!rotate-90' : subActive === child.id}">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M9 5L15 12L9 19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                          </svg>
-                        </div>
+
                       </div>
 
                       <!-- Nested children for Folders/Environments -->
@@ -410,11 +404,11 @@
                         <template x-for="subChild in child.children" :key="subChild.id">
                           <li x-data="{ hovered: false }"
                             x-init="if (subChild.children && subChild.children.some(c => isItemActive(c.link))) toggleExpand(subChild.id, true)"
-                            class="relative block"
-                            @mouseenter="hovered = true" @mouseleave="hovered = false">
+                            class="relative block">
                             <div class="flex items-center hover:bg-gray-100 rounded transition-colors group/sub2"
-                              :class="{'bg-gray-100': isExpanded(subChild.id)}">
-                              <iconify-icon :icon="getIcon(subChild.type)" class="ml-2" width="16"
+                              :class="{'bg-gray-100': isExpanded(subChild.id)}"
+                              @mouseenter="hovered = true" @mouseleave="hovered = false">
+                              <iconify-icon :icon="getIcon(subChild.type, subChild.children && subChild.children.length > 0, isExpanded(subChild.id), hovered)" class="ml-2" width="16"
                                 height="16"></iconify-icon>
                               <div class="flex-1 truncate min-w-0">
                                 <template x-if="editingId !== subChild.id">
@@ -441,12 +435,8 @@
                                   class="cursor-pointer hover:text-primary"
                                   @click.stop="openEditMenu($event, subChild.type, subChild, child)"></iconify-icon>
                               </div>
-                              <div x-show="['folder', 'environment'].includes(subChild.type) && subChild.children && subChild.children.length > 0"
-                                class="rtl:rotate-180 mr-2 transition-transform" :class="{'!rotate-90' : isExpanded(subChild.id)}">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                  <path d="M9 5L15 12L9 19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
-                              </div>
+
+
                             </div>
 
                             <ul x-show="['folder', 'environment'].includes(subChild.type) && isExpanded(subChild.id)" x-collapse
@@ -602,7 +592,10 @@
                     return this.expandedIds.includes(id);
                 },
 
-                getIcon(type) {
+                getIcon(type, hasChildren = false, expanded = false, hovered = false) {
+                  if (hasChildren && hovered) {
+                      return expanded ? 'solar:alt-arrow-down-bold' : 'solar:alt-arrow-right-bold';
+                  }
                   if (type === 'folder') return 'solar:folder-2-line-duotone';
                   if (type === 'environment') return 'solar:layers-minimalistic-line-duotone';
                   if (type === 'entity') return 'solar:database-bold';

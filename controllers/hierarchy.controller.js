@@ -1,6 +1,88 @@
 const tenantCollection = require("../middleware/tenant").tenantCollection;
+const fs = require('fs');
+const path = require('path');
+
+// Cache for loaded icon libraries
+const iconLibrariesCache = {};
 
 module.exports = {
+    getIconLibraries: async (req, res) => {
+        try {
+            const dataDir = path.join(__dirname, '../public/data');
+            if (!fs.existsSync(dataDir)) return res.json({ libraries: [] });
+
+            const files = fs.readdirSync(dataDir);
+            const libraries = files
+                .filter(file => file.endsWith('-icons.json'))
+                .map(file => {
+                    const name = file.replace('-icons.json', '');
+                    // Capitalize first letter for display
+                    return {
+                        id: name,
+                        name: name.charAt(0).toUpperCase() + name.slice(1)
+                    };
+                });
+
+            res.json({ success: true, libraries });
+        } catch (e) {
+            console.error("[Hierarchy] getIconLibraries Error:", e);
+            res.status(500).json({ error: "Failed to list libraries" });
+        }
+    },
+
+    getIcons: async (req, res) => {
+        try {
+            const { search, page = 1, limit = 60, library = 'solar' } = req.query;
+            const pageNum = parseInt(page);
+            const limitNum = parseInt(limit);
+
+            // Security check for library name (prevent directory traversal)
+            const sanitizedLibrary = library.replace(/[^a-zA-Z0-9-]/g, '');
+
+            // Check cache
+            if (!iconLibrariesCache[sanitizedLibrary]) {
+                const filePath = path.join(__dirname, `../public/data/${sanitizedLibrary}-icons.json`);
+                if (fs.existsSync(filePath)) {
+                    try {
+                        const content = fs.readFileSync(filePath, 'utf8');
+                        iconLibrariesCache[sanitizedLibrary] = JSON.parse(content);
+                        console.log(`[Hierarchy] Loaded ${sanitizedLibrary} icons into memory cache.`);
+                    } catch (e) {
+                        console.error(`[Hierarchy] Failed to load ${sanitizedLibrary} icons:`, e);
+                        return res.status(404).json({ error: "Library not found or invalid" });
+                    }
+                } else {
+                    return res.status(404).json({ error: "Library not found" });
+                }
+            }
+
+            const allIcons = iconLibrariesCache[sanitizedLibrary] || [];
+
+            // Filter
+            let filteredIcons = allIcons;
+            if (search) {
+                const searchLower = search.toLowerCase();
+                filteredIcons = allIcons.filter(icon => icon.toLowerCase().includes(searchLower));
+            }
+
+            // Pagination
+            const startIndex = (pageNum - 1) * limitNum;
+            const endIndex = startIndex + limitNum;
+            const paginatedIcons = filteredIcons.slice(startIndex, endIndex);
+
+            res.json({
+                success: true,
+                icons: paginatedIcons,
+                total: filteredIcons.length,
+                page: pageNum,
+                hasMore: endIndex < filteredIcons.length
+            });
+
+        } catch (e) {
+            console.error("[Hierarchy] getIcons Error:", e);
+            res.status(500).json({ error: "Internal Error" });
+        }
+    },
     getHierarchy: async (req, res) => {
         try {
             const SpaceModel = await tenantCollection(req, "Space");
@@ -13,10 +95,10 @@ module.exports = {
             }
 
             const [rawSpaces, rawFolders, rawEntities, rawViews] = await Promise.all([
-                SpaceModel.find({}).lean(),
-                FolderModel.find({}).lean(),
-                EntityModel.find({}).lean(),
-                ViewModel.find({}).lean()
+                SpaceModel.find({}).sort({ order: 1 }).lean(),
+                FolderModel.find({}).sort({ order: 1 }).lean(),
+                EntityModel.find({}).sort({ order: 1 }).lean(),
+                ViewModel.find({}).sort({ order: 1 }).lean()
             ]);
 
             const spaces = rawSpaces.map(s => ({ ...s, id: s._id.toString() }));
@@ -51,6 +133,7 @@ module.exports = {
                             name: f.name,
                             icon: f.icon || (itemType === 'environment' ? 'solar:layers-minimalistic-line-duotone' : 'solar:folder-2-line-duotone'),
                             color: f.color,
+                            order: f.order,
                             children: buildTree(f.id, itemType),
                             link: '#'
                         });
@@ -71,6 +154,7 @@ module.exports = {
                             name: v.name,
                             icon: v.icon || (entity ? entity.icon : 'solar:database-bold'),
                             color: v.color,
+                            order: v.order,
                             link: `/account/${req.account_number}/view/${v.id}`,
                             entityId: v.entity,
                             viewType: v.viewType || 'list',
@@ -79,36 +163,8 @@ module.exports = {
                     }
                 });
 
-                // Legacy Entities (Directly on hierarchy) - Keep for compatibility
-                rawEntities.forEach(e => {
-                    const eId = e._id.toString();
-                    let isChild = false;
-                    const eSpaces = (e.spaces || []).map(id => id.toString());
-                    const eFolders = (e.folders || []).map(id => id.toString());
-
-                    if (parentType === 'space' && eSpaces.includes(parentId) && eFolders.length === 0) isChild = true;
-                    else if ((parentType === 'folder' || parentType === 'environment') && eFolders.includes(parentId)) isChild = true;
-
-                    if (isChild) {
-                        // Check if a View already represents this entity at this location to avoid duplicates
-                        const hasView = views.find(v => v.entity.toString() === eId &&
-                            ((parentType === 'space' && v.spaces.includes(parentId)) ||
-                                ((parentType === 'folder' || parentType === 'environment') && v.folders.includes(parentId))));
-
-                        if (!hasView) {
-                            results.push({
-                                type: 'entity',
-                                id: eId,
-                                name: e.name,
-                                icon: e.icon || 'solar:database-bold',
-                                link: `/account/${req.account_number}/record/${e.slug}/list`,
-                                isLegacy: true
-                            });
-                        }
-                    }
-                });
-
-                return results;
+                // Sort children by order
+                return results.sort((a, b) => (a.order || 0) - (b.order || 0));
             };
 
             const hierarchy = spaces.map(s => ({
@@ -117,9 +173,10 @@ module.exports = {
                 name: s.name,
                 icon: s.icon,
                 color: s.color,
+                order: s.order,
                 children: buildTree(s.id, 'space'),
                 link: '#'
-            }));
+            })).sort((a, b) => (a.order || 0) - (b.order || 0));
 
             res.json({
                 success: true,
@@ -132,6 +189,35 @@ module.exports = {
         } catch (error) {
             console.error("[Hierarchy] Build Error:", error);
             res.status(500).json({ error: "Internal error" });
+        }
+    },
+
+    reorder: async (req, res) => {
+        try {
+            const { items } = req.body; // Expects [{ id, type, order }]
+            if (!Array.isArray(items)) return res.status(400).json({ error: "Invalid format" });
+
+            const SpaceModel = await tenantCollection(req, "Space");
+            const FolderModel = await tenantCollection(req, "Folder");
+            const ViewModel = await tenantCollection(req, "View");
+            const EntityModel = await tenantCollection(req, "Entity");
+
+            const ops = items.map(async (item) => {
+                let Model;
+                if (item.type === 'space') Model = SpaceModel;
+                else if (['folder', 'environment'].includes(item.type)) Model = FolderModel;
+                else if (item.type === 'entity') Model = ViewModel;
+
+                if (Model) {
+                    await Model.findByIdAndUpdate(item.id, { order: item.order });
+                }
+            });
+
+            await Promise.all(ops);
+            res.json({ success: true });
+        } catch (error) {
+            console.error("[Hierarchy] Reorder Error:", error);
+            res.status(500).json({ error: "Reorder failed" });
         }
     },
 
@@ -178,7 +264,16 @@ module.exports = {
     createSpace: async (req, res) => {
         const SpaceModel = await tenantCollection(req, "Space");
         const { name, color, icon } = req.body;
-        const newSpace = new SpaceModel({ name, slug: name.toLowerCase().replace(/ /g, '-') + '-' + Date.now(), owner: req.user._id, color, icon });
+        // Default order to end
+        const count = await SpaceModel.countDocuments();
+        const newSpace = new SpaceModel({
+            name,
+            slug: name.toLowerCase().replace(/ /g, '-') + '-' + Date.now(),
+            owner: req.user._id,
+            color,
+            icon,
+            order: count
+        });
         await newSpace.save();
         res.json(newSpace);
     },
@@ -186,7 +281,8 @@ module.exports = {
     createFolder: async (req, res) => {
         const FolderModel = await tenantCollection(req, "Folder");
         const { name, parentId, parentType, type, icon, color } = req.body;
-        const folderData = { name, slug: name.toLowerCase().replace(/ /g, '-') + '-' + Date.now(), createdBy: req.user._id };
+        // Basic order strategy: 0 (or count if scoped query, but 0 is fine for now as user can drag)
+        const folderData = { name, slug: name.toLowerCase().replace(/ /g, '-') + '-' + Date.now(), createdBy: req.user._id, order: 0 };
         if (type) folderData.type = type;
         if (icon) folderData.icon = icon;
         if (color) folderData.color = color;
@@ -214,6 +310,7 @@ module.exports = {
             color,
             viewType: viewType || 'list',
             createdBy: req.user._id,
+            order: 0,
             spaces: parentType === 'space' ? [parentId] : [],
             folders: (parentType === 'folder' || parentType === 'environment' || parentType === 'workstation') ? [parentId] : []
         });
@@ -286,6 +383,7 @@ module.exports = {
             entity: entity._id,
             viewType: viewType || 'list',
             createdBy: req.user._id,
+            order: 0,
             spaces: parentType === 'space' ? [parentId] : [],
             folders: (parentType === 'folder' || parentType === 'environment' || parentType === 'workstation') ? [parentId] : []
         });

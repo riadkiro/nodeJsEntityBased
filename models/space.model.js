@@ -13,6 +13,7 @@ const SpaceSchema = new mongoose.Schema({
   description: String,
   icon: String,
   color: String,
+  order: { type: Number, default: 0 },
 
   // Propriétaire de l’espace
   owner: {

@@ -15,6 +15,7 @@ const EntitySchema = new mongoose.Schema(
     image: String,
     icon: String,
     color: String,
+    order: { type: Number, default: 0 },
 
     // Champs standards activés
     enabledStandardFields: [String], // ex: ['title', 'slug', 'date']

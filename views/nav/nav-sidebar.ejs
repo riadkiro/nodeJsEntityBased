@@ -327,10 +327,13 @@
               <li class="menu nav-item -mx-4 mb-2" :data-id="item.id" data-type="space">
                 <div class="nav-link group flex items-center justify-between"
                   :class="{'active' : activeDropdown === item.id}">
-                  <div class="flex items-center mx-2 cursor-pointer flex-1"
+                  <div x-data="{ hovered: false }" 
+                    class="flex items-center mx-2 cursor-pointer flex-1"
+                    @mouseenter="hovered = true" @mouseleave="hovered = false"
                     @click="toggle(item.id)"
                     @contextmenu.prevent="openEditMenu($event, 'space', item)">
-                    <iconify-icon :icon="item.icon || 'solar:planet-3-bold-duotone'" class="ml-2" width="18" height="18" :style="item.color ? 'color: ' + item.color : ''"></iconify-icon>
+                    <iconify-icon :icon="getIcon(item, item.children && item.children.length > 0, activeDropdown === item.id, hovered)" 
+                      class="ml-2" width="18" height="18" :style="item.color ? 'color: ' + item.color : ''"></iconify-icon>
 
                     <template x-if="editingId !== item.id">
                       <span
@@ -513,16 +516,24 @@
                               <div class="relative mb-4">
                                   <label class="mb-2 block text-sm font-bold">Choisir une icône</label>
                                   
-                                  <!-- Search -->
-                                  <div class="relative mb-2">
-                                    <input type="text" x-model="iconSearch" placeholder="Rechercher une icône..." 
-                                        class="form-input w-full text-xs pl-8 py-1.5 border-gray-300 dark:border-gray-600" />
-                                    <iconify-icon icon="solar:magnifer-linear" class="absolute left-2.5 top-2 text-gray-400" width="14"></iconify-icon>
+                                  <!-- Search & Library -->
+                                  <div class="relative mb-2 flex gap-2">
+                                    <select x-model="selectedLibrary" class="form-select w-1/3 text-xs py-1.5 border-gray-300 dark:border-gray-600 focus:border-primary">
+                                        <template x-for="lib in libraries" :key="lib.id">
+                                            <option :value="lib.id" x-text="lib.name"></option>
+                                        </template>
+                                    </select>
+                                    <div class="relative w-2/3">
+                                        <input type="text" x-model="iconSearch" placeholder="Rechercher..." 
+                                            class="form-input w-full text-xs pl-8 py-1.5 border-gray-300 dark:border-gray-600" />
+                                        <iconify-icon icon="solar:magnifer-linear" class="absolute left-2.5 top-2 text-gray-400" width="14"></iconify-icon>
+                                    </div>
                                   </div>
 
                                   <!-- Grid -->
-                                  <div class="flex flex-wrap gap-1 mb-2 max-h-60 overflow-y-auto custom-scrollbar p-1 border rounded dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 content-start">
-                                      <template x-for="icon in filteredIcons.slice(0, iconLimit)" :key="icon">
+                                  <div class="flex flex-wrap gap-1 mb-2 max-h-60 overflow-y-auto custom-scrollbar p-1 border rounded dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 content-start"
+                                      @scroll.debounce="if($el.scrollTop + $el.clientHeight >= $el.scrollHeight - 20) loadMoreIcons()">
+                                      <template x-for="icon in icons" :key="icon">
                                           <div class="w-8 h-8 rounded cursor-pointer border border-transparent hover:border-primary/50 hover:bg-white dark:hover:bg-gray-700 transition-all flex items-center justify-center shrink-0"
                                               :class="editingIcon === icon ? '!bg-primary/10 !border-primary text-primary shadow-sm' : 'text-gray-500 dark:text-gray-400'"
                                               @click="editingIcon = icon"
@@ -530,19 +541,26 @@
                                               <iconify-icon :icon="icon" width="20" height="20"></iconify-icon>
                                           </div>
                                       </template>
-                                      <template x-if="filteredIcons.length === 0">
+                                      <template x-if="icons.length === 0 && !isLoadingIcons">
                                         <div class="w-full text-center py-4 text-xs text-gray-400">Aucune icône trouvée</div>
                                       </template>
                                       
-                                      <!-- Load More Button -->
-                                      <div class="w-full text-center pt-2 pb-1" x-show="iconLimit < filteredIcons.length">
+                                      <template x-if="isLoadingIcons">
+                                         <div class="w-full text-center py-2">
+                                             <span class="animate-spin border-2 border-primary border-l-transparent rounded-full w-4 h-4 inline-block"></span>
+                                         </div>
+                                      </template>
+                                      
+                                      <div class="w-full text-center pt-2 pb-1" x-show="hasMore && !isLoadingIcons">
                                         <button type="button" @click="loadMoreIcons()" class="text-xs text-primary hover:underline hover:text-primary-focus">
                                             Charger plus...
                                         </button>
                                       </div>
                                   </div>
                                   
-                                  <div class="text-xs text-gray-400 mb-2 text-center" x-show="!iconSearch">Plus de 200 icônes disponibles</div>
+                                  <div class="text-xs text-gray-400 mb-2 text-center" x-show="!iconSearch">
+                                    <span x-text="icons.length"></span> icônes affichées
+                                  </div>
                                   <input type="text" x-model="editingIcon" class="form-input w-full text-xs" placeholder="Nom d'icône personnalisé..." />
                               </div>
                               
@@ -603,16 +621,44 @@
                               </div>
                               <div class="relative mb-4">
                                   <label class="mb-2 block text-sm font-bold">Icône</label>
-                                  <div class="flex gap-2 flex-wrap mb-2">
-                                      <template x-for="icon in availableIcons" :key="icon">
+                                  
+                                  <!-- Reuse Picker Logic -->
+                                  <div class="relative mb-2 flex gap-2">
+                                    <select x-model="selectedLibrary" class="form-select w-1/3 text-xs py-1.5 border-gray-300 dark:border-gray-600 focus:border-primary">
+                                        <template x-for="lib in libraries" :key="lib.id">
+                                            <option :value="lib.id" x-text="lib.name"></option>
+                                        </template>
+                                    </select>
+                                    <div class="relative w-2/3">
+                                        <input type="text" x-model="iconSearch" placeholder="Rechercher..." 
+                                            class="form-input w-full text-xs pl-8 py-1.5 border-gray-300 dark:border-gray-600" />
+                                        <iconify-icon icon="solar:magnifer-linear" class="absolute left-2.5 top-2 text-gray-400" width="14"></iconify-icon>
+                                    </div>
+                                  </div>
+
+                                  <div class="flex gap-2 flex-wrap mb-2 max-h-40 overflow-y-auto custom-scrollbar p-1 border rounded"
+                                      @scroll.debounce="if($el.scrollTop + $el.clientHeight >= $el.scrollHeight - 20) loadMoreIcons()">
+                                      <template x-for="icon in icons" :key="icon">
                                           <div class="p-2 rounded cursor-pointer border hover:border-primary transition-colors"
                                               :class="creationIcon === icon ? 'bg-primary/10 border-primary text-primary' : 'border-transparent bg-gray-50 dark:bg-gray-700'"
                                               @click="creationIcon = icon">
                                               <iconify-icon :icon="icon" width="20" height="20"></iconify-icon>
                                           </div>
                                       </template>
+                                      
+                                      <template x-if="isLoadingIcons">
+                                          <div class="w-full text-center py-2">
+                                              <span class="animate-spin border-dark border-l-transparent rounded-full w-4 h-4 inline-block"></span>
+                                          </div>
+                                      </template>
+
+                                      <div class="w-full text-center pt-2 pb-1" x-show="hasMore && !isLoadingIcons">
+                                         <button type="button" @click="loadMoreIcons()" class="text-xs text-primary hover:underline">
+                                             Charger plus...
+                                         </button>
+                                       </div>
                                   </div>
-                                  <input type="text" x-model="creationIcon" class="form-input w-full text-xs" placeholder="ou tapez un nom d'icône Solar..." />
+                                  <input type="text" x-model="creationIcon" class="form-input w-full text-xs" placeholder="ou tapez un nom d'icône..." />
                                   
                                   <!-- Color Picker Creation -->
                                   <div class="mt-4">
@@ -664,80 +710,92 @@
                 showIconEditModal: false,
                 editingIcon: '',
                 editingColor: '',
+                
+                // Icon Picker State
+                icons: [],
+                libraries: [],
+                selectedLibrary: 'solar',
                 iconSearch: '',
-                iconLimit: 60,
+                page: 1,
+                hasMore: true,
+                isLoadingIcons: false,
+                searchTimeout: null,
+
                 availableColors: [
                   '#4361ee', '#805dca', '#00ab55', '#e7515a', '#e2a03f', 
                   '#2196f3', '#3b3f5c', '#818181', '#673ab7', '#ff4081'
                 ],
-                availableIcons: [
-                    // Essentials
-                    'solar:home-smile-bold-duotone', 'solar:user-bold-duotone', 'solar:users-group-rounded-bold-duotone', 
-                    'solar:settings-bold-duotone', 'solar:bell-bold-duotone', 'solar:menu-dots-bold-duotone', 
-                    'solar:star-bold-duotone', 'solar:heart-bold-duotone', 'solar:bookmark-bold-duotone', 
-                    'solar:share-bold-duotone', 'solar:link-bold-duotone', 'solar:trash-bin-trash-bold-duotone',
-                    // Files & Folders
-                    'solar:folder-2-bold-duotone', 'solar:folder-open-bold-duotone', 'solar:folder-with-files-bold-duotone',
-                    'solar:file-text-bold-duotone', 'solar:document-bold-duotone', 'solar:archive-bold-duotone',
-                    'solar:box-bold-duotone', 'solar:clipboard-list-bold-duotone', 'solar:notes-bold-duotone',
-                    // Development / IT
-                    'solar:database-bold-duotone', 'solar:server-bold-duotone', 'solar:cloud-bold-duotone',
-                    'solar:code-bold-duotone', 'solar:code-circle-bold-duotone', 'solar:terminal-bold-duotone',
-                    'solar:bug-bold-duotone', 'solar:cpu-bold-duotone', 'solar:monitor-bold-duotone',
-                    'solar:laptop-bold-duotone', 'solar:smartphone-bold-duotone', 'solar:server-square-bold-duotone',
-                    'solar:sitemap-bold-duotone', 'solar:link-circle-bold-duotone', 'solar:shield-check-bold',
-                    'solar:lock-bold-duotone', 'solar:key-bold-duotone', 'solar:eye-bold-duotone',
-                    // Business & Finance
-                    'solar:chart-square-bold-duotone', 'solar:graph-up-bold-duotone', 'solar:pie-chart-2-bold-duotone',
-                    'solar:card-bold-duotone', 'solar:wallet-bold-duotone', 'solar:bill-list-bold-duotone',
-                    'solar:bag-bold-duotone', 'solar:cart-large-minimalistic-bold-duotone', 'solar:tag-bold-duotone',
-                    'solar:target-bold-duotone', 'solar:medal-star-bold-duotone', 'solar:crown-bold-duotone',
-                    'solar:presentation-graph-bold-duotone', 'solar:briefcase-bold-duotone',
-                    // Communication
-                    'solar:chat-round-dots-bold-duotone', 'solar:mailbox-bold-duotone', 'solar:letter-bold-duotone',
-                    'solar:phone-bold-duotone', 'solar:headset-bold-duotone', 'solar:camera-bold-duotone', 
-                    'solar:videocamera-bold-duotone', 'solar:microphone-bold-duotone',
-                    // Time
-                    'solar:calendar-bold-duotone', 'solar:clock-circle-bold-duotone', 'solar:alarm-bold-duotone',
-                    'solar:stopwatch-bold-duotone', 'solar:history-bold-duotone',
-                    // Design & Tools
-                    'solar:pallete-2-bold-duotone', 'solar:layers-minimalistic-bold-duotone', 'solar:pen-new-square-bold-duotone',
-                    'solar:ruler-pen-bold-duotone', 'solar:magic-stick-3-bold-duotone', 'solar:magnet-bold-duotone',
-                    'solar:crop-minimalistic-bold-duotone', 'solar:filters-bold-duotone', 'solar:tuning-bold-duotone',
-                    'solar:printer-bold-duotone', 'solar:calculator-minimalistic-bold-duotone',
-                    // Misc
-                    'solar:planet-3-bold-duotone', 'solar:earth-bold-duotone', 'solar:globus-bold-duotone',
-                    'solar:sun-bold-duotone', 'solar:moon-bold-duotone', 'solar:bolt-bold-duotone',
-                    'solar:fire-bold-duotone', 'solar:water-drops-bold-duotone', 'solar:snowflake-bold-duotone',
-                    'solar:leaf-bold-duotone', 'solar:atom-bold-duotone', 'solar:ghost-bold-duotone',
-                    'solar:gamepad-bold-duotone', 'solar:music-note-bold-duotone', 'solar:video-frame-bold-duotone',
-                    'solar:sticker-smile-circle-2-bold-duotone', 'solar:dialog-2-bold-duotone', 'solar:question-circle-bold-duotone',
-                    'solar:info-circle-bold-duotone', 'solar:danger-circle-bold-duotone', 'solar:forbidden-circle-bold-duotone',
-                    'solar:check-circle-bold-duotone', 'solar:close-circle-bold-duotone', 'solar:add-circle-bold-duotone',
-                    'solar:minus-circle-bold-duotone', 'solar:arrow-right-circle-bold-duotone', 'solar:arrow-left-circle-bold-duotone',
-                    'solar:arrow-up-circle-bold-duotone', 'solar:arrow-down-circle-bold-duotone', 'solar:login-3-bold-duotone',
-                    'solar:logout-3-bold-duotone', 'solar:restart-bold-duotone', 'solar:power-bold-duotone',
-                    'solar:battery-charge-bold-duotone', 'solar:bluetooth-bold-duotone', 'solar:wi-fi-bold-duotone',
-                    'solar:airplane-bold-duotone', 'solar:car-bold-duotone', 'solar:bus-bold-duotone',
-                    'solar:train-bold-duotone', 'solar:rocket-bold-duotone', 'solar:ufo-bold-duotone'
-                ],
-                get filteredIcons() {
-                    let icons = this.availableIcons;
-                    if (this.iconSearch) {
-                         icons = this.availableIcons.filter(i => i.toLowerCase().includes(this.iconSearch.toLowerCase()));
+                
+                init() {
+                    this.loadLibraries();
+                    this.$watch('iconSearch', () => {
+                         if (this.searchTimeout) clearTimeout(this.searchTimeout);
+                         this.searchTimeout = setTimeout(() => {
+                             this.loadIcons(true);
+                         }, 300);
+                    });
+                    this.$watch('selectedLibrary', () => {
+                         this.loadIcons(true);
+                    });
+                },
+
+                async loadLibraries() {
+                    const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                    try {
+                        const res = await fetch(`/account/${accountNum}/api/hierarchy/icon-libraries`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.libraries = data.libraries || [];
+                            if (this.libraries.length > 0 && !this.libraries.find(l => l.id === this.selectedLibrary)) {
+                                this.selectedLibrary = this.libraries[0].id;
+                            }
+                        }
+                    } catch(e) { console.error("Failed to load libraries", e); }
+                },
+
+                async loadIcons(reset = false) {
+                    if (reset) {
+                        this.page = 1;
+                        this.icons = [];
+                        this.hasMore = true;
                     }
-                    return icons;
+                    
+                    if (!this.hasMore && !reset) return;
+
+                    this.isLoadingIcons = true;
+                    const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                    
+                    try {
+                        const params = new URLSearchParams({
+                            library: this.selectedLibrary,
+                            search: this.iconSearch,
+                            page: this.page,
+                            limit: 60
+                        });
+                        const res = await fetch(`/account/${accountNum}/api/hierarchy/icons?${params.toString()}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (reset) {
+                                this.icons = data.icons;
+                            } else {
+                                this.icons = [...this.icons, ...data.icons];
+                            }
+                            this.hasMore = data.hasMore;
+                            if (data.hasMore) this.page++;
+                        }
+                    } catch (e) {
+                        console.error("Failed to load icons", e);
+                        // Fallback
+                         if (reset && this.icons.length === 0) {
+                             this.icons = ['solar:planet-3-bold-duotone', 'solar:folder-2-line-duotone', 'solar:database-bold'];
+                         }
+                    } finally {
+                        this.isLoadingIcons = false;
+                    }
                 },
                 
                 loadMoreIcons() {
-                    this.iconLimit += 60;
-                },
-
-                // Reset limit when search changes
-                init() {
-                    this.$watch('iconSearch', () => {
-                        this.iconLimit = 60;
-                    });
+                    this.loadIcons(false);
                 },
                 
                 isSubmitting: false,
@@ -782,9 +840,129 @@
                     if (data.dbName) console.log(`[Sidebar] Connected to Tenant DB: ${data.dbName}`);
 
                     this.detectActiveItem();
+                    
+                    // Initialize D&D after render
+                    this.$nextTick(() => {
+                        this.initDragAndDrop();
+                    });
+
                   } catch (e) {
                     console.error("[Sidebar] Failed to load hierarchy", e);
                   }
+                },
+                
+                initDragAndDrop() {
+                    if (typeof Sortable === 'undefined') return;
+
+                    // Root list (Spaces)
+                    const rootEl = document.querySelector('.sortable-root');
+                    if (rootEl) {
+                        new Sortable(rootEl, {
+                            group: 'spaces',
+                            animation: 150,
+                            handle: '.nav-link', // Drag handle
+                            onEnd: (evt) => this.handleDrop(evt, 'space')
+                        });
+                    }
+
+                    // Nested lists (Folders/Entities) inside spaces and folders
+                    const nestedEls = document.querySelectorAll('.sub-menu');
+                    nestedEls.forEach(el => {
+                        new Sortable(el, {
+                            group: 'nested',
+                            animation: 150,
+                            fallbackOnBody: true,
+                            swapThreshold: 0.65,
+                            onEnd: (evt) => this.handleDrop(evt, 'nested')
+                        });
+                    });
+                },
+
+                async handleDrop(evt, group) {
+                    const itemEl = evt.item;
+                    const newIndex = evt.newIndex;
+                    const oldIndex = evt.oldIndex;
+                    const parentEl = evt.to;
+                    const oldParentEl = evt.from;
+                    
+                    // Optimization: If index didn't change and parent didn't change, do nothing
+                    if (newIndex === oldIndex && parentEl === oldParentEl) return;
+
+                    const id = itemEl.getAttribute('data-id');
+                    const type = itemEl.getAttribute('data-type');
+                    
+                    // Reorder Logic: Get all siblings in the new parent and send their new order
+                    const siblings = Array.from(parentEl.children).filter(el => el.style.display !== 'none'); // Filter out alpine templates or hidden elements if any
+                    const items = siblings.map((el, index) => ({
+                        id: el.getAttribute('data-id'),
+                        type: el.getAttribute('data-type'),
+                        order: index
+                    })).filter(x => x.id); // Valid items only
+
+                    const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+
+                    // 1. If moved to a new parent, we need to call 'move' first (change parentId)
+                    if (parentEl !== oldParentEl) {
+                         // Find new parent ID/Type
+                         // The parent <ul> is usually inside a <li> representing the folder/space
+                         // Structure: <ul> (root) -> <li> (Space) -> <ul> (sub-menu)
+                         // OR <ul> (sub-menu) -> <li> (Folder) -> <ul> (sub-menu)
+                         
+                         // We need to traverse up to find the parent item
+                         const newParentContainer = parentEl.closest('li.nav-item') || parentEl.closest('li.relative'); 
+                         // Note: Spaces are li.nav-item, Folders are li.relative
+                         
+                         let newParentId = null;
+                         let newParentType = null;
+                         let oldParentId_Val = null; // We might need to deduce this, or backend handles "remove from old" automatically if we just set new. 
+                         // Check API move: needs oldParentId to pull from.
+                         
+                         if (newParentContainer) {
+                             newParentId = newParentContainer.getAttribute('data-id');
+                             newParentType = newParentContainer.getAttribute('data-type');
+                         } else {
+                             // If dropped in root? But group 'nested' shouldn't allow drop in root 'spaces'.
+                             // If group 'spaces' (root), parent is null (top level).
+                             if (group === 'spaces') {
+                                 // Staying in root, handled by reorder.
+                             }
+                         }
+                         
+                         const oldParentContainer = oldParentEl.closest('li.nav-item') || oldParentEl.closest('li.relative');
+                         if (oldParentContainer) {
+                             oldParentId_Val = oldParentContainer.getAttribute('data-id');
+                         }
+
+                         if (newParentId && group === 'nested') {
+                             try {
+                                 await fetch(`/account/${accountNum}/api/hierarchy/move`, {
+                                     method: 'POST',
+                                     headers: { 'Content-Type': 'application/json' },
+                                     body: JSON.stringify({
+                                         itemId: id,
+                                         itemType: type,
+                                         newParentId: newParentId,
+                                         newParentType: newParentType,
+                                         oldParentId: oldParentId_Val
+                                     })
+                                 });
+                             } catch(e) { console.error("Move failed", e); }
+                         }
+                    }
+
+                    // 2. Persist new Order
+                    try {
+                        await fetch(`/account/${accountNum}/api/hierarchy/reorder`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ items })
+                        });
+                        console.log("[Sidebar] Reorder saved");
+                    } catch (e) {
+                         console.error("Reorder failed", e);
+                         alert("Erreur lors de la réorganisation");
+                         this.fetchHierarchy(); // Revert
+                    }
                 },
 
                 isItemActive(link) {
@@ -854,13 +1032,14 @@
                       customIcon = item.icon;
                   }
 
-                  const effectivelyHasChildren = hasChildren || ['folder', 'environment'].includes(type);
-                  if (effectivelyHasChildren && hovered) {
+                  const effectivelyHasChildren = hasChildren || ['space', 'folder', 'environment'].includes(type);
+                  if (effectivelyHasChildren && hovered && ['space', 'folder', 'environment'].includes(type)) {
                       return expanded ? 'solar:alt-arrow-down-bold' : 'solar:alt-arrow-right-bold';
                   }
 
                   if (customIcon) return customIcon;
-
+                  
+                  if (type === 'space') return 'solar:planet-3-bold-duotone';
                   if (type === 'folder') return 'solar:folder-2-line-duotone';
                   if (type === 'environment') return 'solar:layers-minimalistic-line-duotone';
                   if (type === 'entity') return 'solar:database-bold';
@@ -950,13 +1129,24 @@
                   } catch (e) { alert("Erreur: " + e.message); }
                 },
 
-                createItem(type) {
+                async createItem(type) {
                   this.creationType = type;
                   this.creationName = '';
                   this.creationIcon = this.getIcon(type); // Default icon
                   this.creationColor = '';
+                  
+                  // Initialize picker state
+                  this.iconSearch = '';
+                  this.selectedLibrary = this.creationIcon.split(':')[0] || 'solar';
+                  if (this.libraries.length > 0 && !this.libraries.find(l => l.id === this.selectedLibrary)) {
+                        this.selectedLibrary = this.libraries[0].id;
+                  }
+                  
                   this.showCreateModal = true;
                   Alpine.store('sidebar').showMenu = false;
+                  
+                  await this.loadIcons(true); // Load initial icons
+                  
                   this.$nextTick(() => {
                     if (this.$refs.createInput) this.$refs.createInput.focus();
                   });
@@ -1004,13 +1194,21 @@
                   Alpine.store('sidebar').showEditMenu = false;
                 },
 
-                openIconEditor(item) {
+                async openIconEditor(item) {
                     this.editingIcon = item.icon || this.getIcon(item.type);
                     this.editingColor = item.color || '';
-                    this.iconLimit = 60; // Reset pagination
-                    this.iconSearch = ''; // Reset search
+                    
+                    // Initialize picker state
+                    this.iconSearch = '';
+                    this.selectedLibrary = this.editingIcon.split(':')[0] || 'solar';
+                     if (this.libraries.length > 0 && !this.libraries.find(l => l.id === this.selectedLibrary)) {
+                         this.selectedLibrary = this.libraries[0].id;
+                     }
+
                     this.showIconEditModal = true;
                     Alpine.store('sidebar').showEditMenu = false;
+                    
+                    await this.loadIcons(true);
                 },
 
                 async submitEditIcon() {

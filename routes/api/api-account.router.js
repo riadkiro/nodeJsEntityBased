@@ -25,6 +25,7 @@ router.delete('/:id', accountController.delete_Api);
 
 router.get('/hierarchy/list', hierarchyController.getHierarchy);
 router.post('/hierarchy/move', hierarchyController.move);
+router.post('/hierarchy/reorder', hierarchyController.reorder);
 router.post('/hierarchy/space', hierarchyController.createSpace);
 router.post('/hierarchy/folder', hierarchyController.createFolder);
 router.post('/hierarchy/entity', hierarchyController.createEntity);
@@ -32,7 +33,11 @@ router.post('/hierarchy/rename', hierarchyController.renameItem);
 router.post('/hierarchy/icon', hierarchyController.updateIcon);
 router.post('/hierarchy/delete', hierarchyController.deleteItem);
 router.get('/hierarchy/all-entities', hierarchyController.listAllEntities);
+router.get('/hierarchy/all-entities', hierarchyController.listAllEntities);
 router.post('/hierarchy/link-entity', hierarchyController.linkEntity);
+
+router.get('/hierarchy/icon-libraries', hierarchyController.getIconLibraries);
+router.get('/hierarchy/icons', hierarchyController.getIcons);
 
 router.get('/entity/:id', entityController.getDetails_Api);
 router.post('/view/config', viewController.saveConfig);

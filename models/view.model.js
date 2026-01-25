@@ -13,6 +13,7 @@ const ViewSchema = new mongoose.Schema({
 
     icon: String,
     color: String,
+    order: { type: Number, default: 0 },
 
     // Type of display
     viewType: {

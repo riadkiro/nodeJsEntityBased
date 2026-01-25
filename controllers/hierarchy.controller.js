@@ -50,6 +50,7 @@ module.exports = {
                             id: f.id,
                             name: f.name,
                             icon: f.icon || (itemType === 'environment' ? 'solar:layers-minimalistic-line-duotone' : 'solar:folder-2-line-duotone'),
+                            color: f.color,
                             children: buildTree(f.id, itemType),
                             link: '#'
                         });
@@ -69,6 +70,7 @@ module.exports = {
                             id: v.id,
                             name: v.name,
                             icon: v.icon || (entity ? entity.icon : 'solar:database-bold'),
+                            color: v.color,
                             link: `/account/${req.account_number}/view/${v.id}`,
                             entityId: v.entity,
                             viewType: v.viewType || 'list',
@@ -114,6 +116,7 @@ module.exports = {
                 id: s.id,
                 name: s.name,
                 icon: s.icon,
+                color: s.color,
                 children: buildTree(s.id, 'space'),
                 link: '#'
             }));
@@ -174,18 +177,19 @@ module.exports = {
 
     createSpace: async (req, res) => {
         const SpaceModel = await tenantCollection(req, "Space");
-        const { name } = req.body;
-        const newSpace = new SpaceModel({ name, slug: name.toLowerCase().replace(/ /g, '-') + '-' + Date.now(), owner: req.user._id });
+        const { name, color, icon } = req.body;
+        const newSpace = new SpaceModel({ name, slug: name.toLowerCase().replace(/ /g, '-') + '-' + Date.now(), owner: req.user._id, color, icon });
         await newSpace.save();
         res.json(newSpace);
     },
 
     createFolder: async (req, res) => {
         const FolderModel = await tenantCollection(req, "Folder");
-        const { name, parentId, parentType, type, icon } = req.body;
+        const { name, parentId, parentType, type, icon, color } = req.body;
         const folderData = { name, slug: name.toLowerCase().replace(/ /g, '-') + '-' + Date.now(), createdBy: req.user._id };
         if (type) folderData.type = type;
         if (icon) folderData.icon = icon;
+        if (color) folderData.color = color;
         if (parentType === 'space') folderData.spaces = [parentId];
         if (parentType === 'folder' || parentType === 'environment') folderData.parentFolders = [parentId];
         const newFolder = new FolderModel(folderData);
@@ -196,7 +200,7 @@ module.exports = {
     createEntity: async (req, res) => {
         const EntityModel = await tenantCollection(req, "Entity");
         const ViewModel = await tenantCollection(req, "View");
-        const { name, parentId, parentType, viewType, icon } = req.body;
+        const { name, parentId, parentType, viewType, icon, color } = req.body;
         const slug = name.toLowerCase().replace(/ /g, '-') + '-' + Date.now();
 
         const newEntity = new EntityModel({ name, slug, createdBy: req.user._id });
@@ -207,6 +211,7 @@ module.exports = {
             slug,
             entity: newEntity._id,
             icon,
+            color,
             viewType: viewType || 'list',
             createdBy: req.user._id,
             spaces: parentType === 'space' ? [parentId] : [],
@@ -231,7 +236,7 @@ module.exports = {
     },
 
     updateIcon: async (req, res) => {
-        const { id, type, icon } = req.body;
+        const { id, type, icon, color } = req.body;
         let Model;
         if (type === 'space') Model = await tenantCollection(req, "Space");
         if (type === 'folder' || type === 'environment' || type === 'workstation') Model = await tenantCollection(req, "Folder");
@@ -240,7 +245,12 @@ module.exports = {
             const view = await ViewModel.findById(id);
             Model = view ? ViewModel : await tenantCollection(req, "Entity");
         }
-        if (Model) await Model.findByIdAndUpdate(id, { icon });
+
+        const update = {};
+        if (icon !== undefined) update.icon = icon;
+        if (color !== undefined) update.color = color;
+
+        if (Model) await Model.findByIdAndUpdate(id, update);
         res.json({ success: true });
     },
 

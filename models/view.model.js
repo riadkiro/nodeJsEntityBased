@@ -12,6 +12,7 @@ const ViewSchema = new mongoose.Schema({
     },
 
     icon: String,
+    color: String,
 
     // Type of display
     viewType: {

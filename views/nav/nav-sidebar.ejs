@@ -330,7 +330,7 @@
                   <div class="flex items-center mx-2 cursor-pointer flex-1"
                     @click="toggle(item.id)"
                     @contextmenu.prevent="openEditMenu($event, 'space', item)">
-                    <iconify-icon :icon="item.icon || 'solar:planet-3-bold-duotone'" class="ml-2" width="18" height="18"></iconify-icon>
+                    <iconify-icon :icon="item.icon || 'solar:planet-3-bold-duotone'" class="ml-2" width="18" height="18" :style="item.color ? 'color: ' + item.color : ''"></iconify-icon>
 
                     <template x-if="editingId !== item.id">
                       <span
@@ -371,6 +371,7 @@
                         @contextmenu.prevent="openEditMenu($event, child.type, child, item)">
                         <iconify-icon :icon="getIcon(child, child.children && child.children.length > 0, subActive === child.id, hovered)"
                           class="ml-2 cursor-pointer" width="16" height="16"
+                          :style="child.color ? 'color: ' + child.color : ''"
                           @click.stop="if(['folder', 'environment'].includes(child.type)) { subActive = (subActive === child.id ? null : child.id); }"></iconify-icon>
 
                         <div class="flex-1 min-w-0">
@@ -416,6 +417,7 @@
                               @contextmenu.prevent="openEditMenu($event, subChild.type, subChild, child)">
                               <iconify-icon :icon="getIcon(subChild, subChild.children && subChild.children.length > 0, isExpanded(subChild.id), hovered)"
                                 class="ml-2 cursor-pointer" width="16" height="16"
+                                :style="subChild.color ? 'color: ' + subChild.color : ''"
                                 @click.stop="if(['folder', 'environment'].includes(subChild.type)) { toggleExpand(subChild.id); }"></iconify-icon>
                               <div class="flex-1 truncate min-w-0">
                                 <template x-if="editingId !== subChild.id">
@@ -454,7 +456,7 @@
                                   @mouseenter="hovered = true" @mouseleave="hovered = false"
                                   @contextmenu.prevent="openEditMenu($event, subSubChild.type, subSubChild, subChild)">
                                   <iconify-icon :icon="getIcon(subSubChild)" class="ml-2" width="16"
-                                    height="16"></iconify-icon>
+                                    height="16" :style="subSubChild.color ? 'color: ' + subSubChild.color : ''"></iconify-icon>
                                   <div class="flex-1 truncate">
                                     <template x-if="editingId !== subSubChild.id">
                                       <a :href="subSubChild.link || '#'" class="ml-2 text-sm transition-colors block py-1"
@@ -520,7 +522,7 @@
 
                                   <!-- Grid -->
                                   <div class="flex flex-wrap gap-1 mb-2 max-h-60 overflow-y-auto custom-scrollbar p-1 border rounded dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 content-start">
-                                      <template x-for="icon in filteredIcons" :key="icon">
+                                      <template x-for="icon in filteredIcons.slice(0, iconLimit)" :key="icon">
                                           <div class="w-8 h-8 rounded cursor-pointer border border-transparent hover:border-primary/50 hover:bg-white dark:hover:bg-gray-700 transition-all flex items-center justify-center shrink-0"
                                               :class="editingIcon === icon ? '!bg-primary/10 !border-primary text-primary shadow-sm' : 'text-gray-500 dark:text-gray-400'"
                                               @click="editingIcon = icon"
@@ -529,13 +531,50 @@
                                           </div>
                                       </template>
                                       <template x-if="filteredIcons.length === 0">
-                                        <div class="col-span-6 text-center py-4 text-xs text-gray-400">Aucune icône trouvée</div>
+                                        <div class="w-full text-center py-4 text-xs text-gray-400">Aucune icône trouvée</div>
                                       </template>
+                                      
+                                      <!-- Load More Button -->
+                                      <div class="w-full text-center pt-2 pb-1" x-show="iconLimit < filteredIcons.length">
+                                        <button type="button" @click="loadMoreIcons()" class="text-xs text-primary hover:underline hover:text-primary-focus">
+                                            Charger plus...
+                                        </button>
+                                      </div>
                                   </div>
                                   
                                   <div class="text-xs text-gray-400 mb-2 text-center" x-show="!iconSearch">Plus de 200 icônes disponibles</div>
                                   <input type="text" x-model="editingIcon" class="form-input w-full text-xs" placeholder="Nom d'icône personnalisé..." />
                               </div>
+                              
+                              <!-- Color Picker -->
+                              <div class="mb-4">
+                                <label class="mb-2 block text-sm font-bold">Couleur</label>
+                                <div class="flex flex-wrap gap-2">
+                                  <template x-for="color in availableColors" :key="color">
+                                    <div class="w-6 h-6 rounded-full cursor-pointer flex items-center justify-center border transition-transform hover:scale-110"
+                                      :style="'background-color: ' + color + '; border-color: ' + (editingColor === color ? 'black' : 'transparent')"
+                                      @click="editingColor = color">
+                                      <iconify-icon icon="solar:check-circle-bold" class="text-white" width="14" x-show="editingColor === color"></iconify-icon>
+                                    </div>
+                                  </template>
+                                  
+                                  <!-- Custom Picker -->
+                                  <div class="relative w-6 h-6 rounded-full cursor-pointer border border-gray-300 flex items-center justify-center overflow-hidden hover:border-gray-400"
+                                       :style="editingColor && !availableColors.includes(editingColor) ? 'background-color: ' + editingColor + '; border-color: ' + editingColor : ''">
+                                      <iconify-icon icon="solar:pen-new-square-linear" width="14" class="pointer-events-none"
+                                        :class="editingColor && !availableColors.includes(editingColor) ? 'text-white mix-blend-difference' : 'text-gray-500'"></iconify-icon>
+                                      <input type="color" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full p-0 border-0" 
+                                          x-model="editingColor" title="Couleur personnalisée" />
+                                  </div>
+                                  <span x-show="editingColor && !availableColors.includes(editingColor)" x-text="editingColor" class="text-[10px] self-center font-mono text-gray-500 uppercase"></span>
+
+                                  <div class="w-6 h-6 rounded-full cursor-pointer flex items-center justify-center border hover:border-gray-400 bg-transparent text-gray-400"
+                                     title="Réinitialiser" @click="editingColor = ''" :class="!editingColor && 'border-black'">
+                                      <iconify-icon icon="solar:close-circle-linear" width="16"></iconify-icon>
+                                  </div>
+                                </div>
+                              </div>
+
                               <button type="submit" class="btn btn-primary w-full" :disabled="isSubmitting">
                                   <span x-show="isSubmitting" class="animate-spin border-2 border-white border-l-transparent rounded-full w-5 h-5 ltr:mr-2 rtl:ml-2 inline-block align-middle"></span>
                                   Enregistrer
@@ -574,6 +613,31 @@
                                       </template>
                                   </div>
                                   <input type="text" x-model="creationIcon" class="form-input w-full text-xs" placeholder="ou tapez un nom d'icône Solar..." />
+                                  
+                                  <!-- Color Picker Creation -->
+                                  <div class="mt-4">
+                                    <label class="mb-2 block text-sm font-bold">Couleur</label>
+                                    <div class="flex flex-wrap gap-2">
+                                      <template x-for="color in availableColors" :key="color">
+                                        <div class="w-6 h-6 rounded-full cursor-pointer flex items-center justify-center border transition-transform hover:scale-110"
+                                          :style="'background-color: ' + color + '; border-color: ' + (creationColor === color ? 'black' : 'transparent')"
+                                          @click="creationColor = color">
+                                          <iconify-icon icon="solar:check-circle-bold" class="text-white" width="14" x-show="creationColor === color"></iconify-icon>
+                                        </div>
+                                        </div>
+                                      </template>
+                                      
+                                      <!-- Custom Picker -->
+                                      <div class="relative w-6 h-6 rounded-full cursor-pointer border border-gray-300 flex items-center justify-center overflow-hidden hover:border-gray-400"
+                                           :style="creationColor && !availableColors.includes(creationColor) ? 'background-color: ' + creationColor + '; border-color: ' + creationColor : ''">
+                                          <iconify-icon icon="solar:pen-new-square-linear" width="14" class="pointer-events-none"
+                                            :class="creationColor && !availableColors.includes(creationColor) ? 'text-white mix-blend-difference' : 'text-gray-500'"></iconify-icon>
+                                          <input type="color" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full p-0 border-0" 
+                                              x-model="creationColor" title="Couleur personnalisée" />
+                                      </div>
+                                      <span x-show="creationColor && !availableColors.includes(creationColor)" x-text="creationColor" class="text-[10px] self-center font-mono text-gray-500 uppercase"></span>
+                                    </div>
+                                  </div>
                               </div>
                               <button type="submit" class="btn btn-primary w-full" :disabled="isSubmitting">
                                   <span x-show="isSubmitting" class="animate-spin border-2 border-white border-l-transparent rounded-full w-5 h-5 ltr:mr-2 rtl:ml-2 inline-block align-middle"></span>
@@ -596,9 +660,16 @@
                 creationName: '',
                 creationType: 'folder',
                 creationIcon: '',
+                creationColor: '',
                 showIconEditModal: false,
                 editingIcon: '',
+                editingColor: '',
                 iconSearch: '',
+                iconLimit: 60,
+                availableColors: [
+                  '#4361ee', '#805dca', '#00ab55', '#e7515a', '#e2a03f', 
+                  '#2196f3', '#3b3f5c', '#818181', '#673ab7', '#ff4081'
+                ],
                 availableIcons: [
                     // Essentials
                     'solar:home-smile-bold-duotone', 'solar:user-bold-duotone', 'solar:users-group-rounded-bold-duotone', 
@@ -651,9 +722,24 @@
                     'solar:train-bold-duotone', 'solar:rocket-bold-duotone', 'solar:ufo-bold-duotone'
                 ],
                 get filteredIcons() {
-                    if (!this.iconSearch) return this.availableIcons;
-                    return this.availableIcons.filter(i => i.toLowerCase().includes(this.iconSearch.toLowerCase()));
+                    let icons = this.availableIcons;
+                    if (this.iconSearch) {
+                         icons = this.availableIcons.filter(i => i.toLowerCase().includes(this.iconSearch.toLowerCase()));
+                    }
+                    return icons;
                 },
+                
+                loadMoreIcons() {
+                    this.iconLimit += 60;
+                },
+
+                // Reset limit when search changes
+                init() {
+                    this.$watch('iconSearch', () => {
+                        this.iconLimit = 60;
+                    });
+                },
+                
                 isSubmitting: false,
                 editingId: null,
                 editingName: '',
@@ -868,6 +954,7 @@
                   this.creationType = type;
                   this.creationName = '';
                   this.creationIcon = this.getIcon(type); // Default icon
+                  this.creationColor = '';
                   this.showCreateModal = true;
                   Alpine.store('sidebar').showMenu = false;
                   this.$nextTick(() => {
@@ -881,6 +968,7 @@
                   const type = this.creationType;
                   const name = this.creationName;
                   const icon = this.creationIcon;
+                  const color = this.creationColor;
                   const viewType = this.pendingViewType;
                   const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
                   const parent = Alpine.store('sidebar').contextItem;
@@ -894,6 +982,7 @@
                         name,
                         type,
                         icon,
+                        color,
                         parentId: parent.id,
                         parentType: parent.type,
                         viewType: viewType
@@ -916,15 +1005,16 @@
                 },
 
                 openIconEditor(item) {
-                    this.editingId = item.id;
                     this.editingIcon = item.icon || this.getIcon(item.type);
-                    // Pass item type to creationType temporarily just to handle context if needed, but we rely on editingId and store.contextItem
+                    this.editingColor = item.color || '';
+                    this.iconLimit = 60; // Reset pagination
+                    this.iconSearch = ''; // Reset search
                     this.showIconEditModal = true;
                     Alpine.store('sidebar').showEditMenu = false;
                 },
 
                 async submitEditIcon() {
-                    if (!this.editingIcon) return;
+                    // if (!this.editingIcon) return; // Allow empty icon to reset to default via logic? No, just keep required.
                     this.isSubmitting = true;
                     const item = Alpine.store('sidebar').contextItem;
                     const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
@@ -933,10 +1023,11 @@
                         const res = await fetch(`/account/${accountNum}/api/hierarchy/icon`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ id: item.id, type: item.type, icon: this.editingIcon })
+                            body: JSON.stringify({ id: item.id, type: item.type, icon: this.editingIcon, color: this.editingColor })
                         });
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
                         item.icon = this.editingIcon;
+                        item.color = this.editingColor;
                         this.showIconEditModal = false;
                         await this.fetchHierarchy();
                     } catch (e) { alert("Erreur: " + e.message); }

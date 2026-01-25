@@ -2,7 +2,7 @@ const passport = require("passport");
 
 module.exports = {
   loginForm: async (req, res) => {
-    res.render("auth/auth-login");
+    res.render("auth/auth-login", { layout: false });
   },
   logout: async (req, res) => {
     req.logout((err) => {

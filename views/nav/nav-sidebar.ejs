@@ -408,19 +408,19 @@
                       <ul x-show="['folder', 'environment'].includes(child.type) && subActive === child.id" x-collapse
                         class="sub-menu text-gray-500 ltr:ml-4 rtl:mr-4 border-l dark:border-gray-800 ml-4">
                         <template x-for="subChild in child.children" :key="subChild.id">
-                          <li x-data="{ hovered: false, expanded: false }"
-                            x-init="if (subChild.children && subChild.children.some(c => isItemActive(c.link))) expanded = true"
+                          <li x-data="{ hovered: false }"
+                            x-init="if (subChild.children && subChild.children.some(c => isItemActive(c.link))) toggleExpand(subChild.id, true)"
                             class="relative block"
                             @mouseenter="hovered = true" @mouseleave="hovered = false">
                             <div class="flex items-center hover:bg-gray-100 rounded transition-colors group/sub2"
-                              :class="{'bg-gray-100': expanded}">
+                              :class="{'bg-gray-100': isExpanded(subChild.id)}">
                               <iconify-icon :icon="getIcon(subChild.type)" class="ml-2" width="16"
                                 height="16"></iconify-icon>
                               <div class="flex-1 truncate min-w-0">
                                 <template x-if="editingId !== subChild.id">
                                   <a :href="subChild.link || '#'" class="ml-2 text-sm transition-colors block py-1"
                                     :class="isItemActive(subChild.link) ? '!text-primary font-bold' : ''"
-                                    @click="if(['folder', 'environment'].includes(subChild.type)) { $event.preventDefault(); expanded = !expanded; }"
+                                    @click="if(['folder', 'environment'].includes(subChild.type)) { $event.preventDefault(); toggleExpand(subChild.id); }"
                                     x-text="subChild.name"></a>
                                 </template>
                                 <template x-if="editingId === subChild.id">
@@ -442,14 +442,14 @@
                                   @click.stop="openEditMenu($event, subChild.type, subChild, child)"></iconify-icon>
                               </div>
                               <div x-show="['folder', 'environment'].includes(subChild.type) && subChild.children && subChild.children.length > 0"
-                                class="rtl:rotate-180 mr-2 transition-transform" :class="{'!rotate-90' : expanded}">
+                                class="rtl:rotate-180 mr-2 transition-transform" :class="{'!rotate-90' : isExpanded(subChild.id)}">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                   <path d="M9 5L15 12L9 19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                                 </svg>
                               </div>
                             </div>
 
-                            <ul x-show="['folder', 'environment'].includes(subChild.type) && expanded" x-collapse
+                            <ul x-show="['folder', 'environment'].includes(subChild.type) && isExpanded(subChild.id)" x-collapse
                               class="sub-menu text-gray-500 ltr:ml-4 rtl:mr-4 border-l dark:border-gray-800 ml-4">
                               <template x-for="subSubChild in subChild.children" :key="subSubChild.id">
                                 <li x-data="{ hovered: false }"
@@ -496,6 +496,7 @@
                 hierarchy: [],
                 activeDropdown: null,
                 subActive: null,
+                expandedIds: [],
                 editingId: null,
                 editingName: '',
                 realSpacesCount: 0,
@@ -583,6 +584,22 @@
 
                 toggle(id) {
                   this.activeDropdown = this.activeDropdown === id ? null : id;
+                },
+
+                toggleExpand(id, forceOpen = false) {
+                    if (forceOpen) {
+                        if (!this.expandedIds.includes(id)) this.expandedIds.push(id);
+                    } else {
+                        if (this.expandedIds.includes(id)) {
+                            this.expandedIds = this.expandedIds.filter(x => x !== id);
+                        } else {
+                            this.expandedIds.push(id);
+                        }
+                    }
+                },
+
+                isExpanded(id) {
+                    return this.expandedIds.includes(id);
                 },
 
                 getIcon(type) {

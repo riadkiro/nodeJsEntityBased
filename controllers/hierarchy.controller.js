@@ -207,7 +207,7 @@ module.exports = {
             viewType: viewType || 'list',
             createdBy: req.user._id,
             spaces: parentType === 'space' ? [parentId] : [],
-            folders: parentType === 'folder' ? [parentId] : []
+            folders: (parentType === 'folder' || parentType === 'environment' || parentType === 'workstation') ? [parentId] : []
         });
         await newView.save();
         res.json(newView);
@@ -260,7 +260,7 @@ module.exports = {
             viewType: viewType || 'list',
             createdBy: req.user._id,
             spaces: parentType === 'space' ? [parentId] : [],
-            folders: parentType === 'folder' ? [parentId] : []
+            folders: (parentType === 'folder' || parentType === 'environment' || parentType === 'workstation') ? [parentId] : []
         });
         await newView.save();
         res.json({ success: true, view: newView });

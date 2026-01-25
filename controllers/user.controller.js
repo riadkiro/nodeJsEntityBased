@@ -120,7 +120,7 @@ module.exports = {
     if (req.user) {
       res.render("user/user-accounts", {
         accounts: req.user.accounts,
-        layout: "layout-auth",
+        layout: false,
       });
     } else {
       res.send("You are not logged in !");

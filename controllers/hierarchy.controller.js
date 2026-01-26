@@ -389,5 +389,35 @@ module.exports = {
         });
         await newView.save();
         res.json({ success: true, view: newView });
+    },
+
+    getSidebarPrefs: async (req, res) => {
+        try {
+            const User = require('../models/user.model');
+            const user = await User.findById(req.user._id).select('sidebarPreferences');
+            const expandedIds = user?.sidebarPreferences?.expandedIds || [];
+            res.json({ success: true, expandedIds });
+        } catch (error) {
+            console.error("[Hierarchy] getSidebarPrefs Error:", error);
+            res.status(500).json({ error: "Failed to get sidebar preferences" });
+        }
+    },
+
+    saveSidebarPrefs: async (req, res) => {
+        try {
+            const { expandedIds } = req.body;
+            const User = require('../models/user.model');
+
+            await User.findByIdAndUpdate(
+                req.user._id,
+                { 'sidebarPreferences.expandedIds': expandedIds || [] },
+                { new: true }
+            );
+
+            res.json({ success: true });
+        } catch (error) {
+            console.error("[Hierarchy] saveSidebarPrefs Error:", error);
+            res.status(500).json({ error: "Failed to save sidebar preferences" });
+        }
     }
 };

@@ -703,6 +703,7 @@
                 activeDropdown: [],
                 subActive: [],
                 expandedIds: [],
+                savePrefsTimeout: null,
                 showCreateModal: false,
                 creationName: '',
                 creationType: 'folder',
@@ -841,6 +842,9 @@
                     if (data.dbName) console.log(`[Sidebar] Connected to Tenant DB: ${data.dbName}`);
 
                     this.detectActiveItem();
+                    
+                    // Load sidebar preferences
+                    await this.loadSidebarPrefs();
                     
                     // Initialize D&D after render
                     this.$nextTick(() => {
@@ -1026,6 +1030,7 @@
                     } else {
                         this.activeDropdown.push(id);
                     }
+                    this.saveSidebarPrefs();
                 },
 
                 toggleSub(id) {
@@ -1034,6 +1039,7 @@
                     } else {
                         this.subActive.push(id);
                     }
+                    this.saveSidebarPrefs();
                 },
 
                 toggleExpand(id, forceOpen = false) {
@@ -1046,10 +1052,67 @@
                             this.expandedIds.push(id);
                         }
                     }
+                    this.saveSidebarPrefs();
                 },
 
                 isExpanded(id) {
                     return this.expandedIds.includes(id);
+                },
+
+                async loadSidebarPrefs() {
+                    const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                    try {
+                        const res = await fetch(`/account/${accountNum}/api/user/sidebar-prefs`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            const savedIds = data.expandedIds || [];
+                            // Helper to find nested item by ID
+                            const findInHierarchy = (list, id) => {
+                                for (const item of list) {
+                                    if (item.id === id) return item;
+                                    if (item.children) {
+                                        const found = findInHierarchy(item.children, id);
+                                        if (found) return found;
+                                    }
+                                }
+                                return null;
+                            };
+                            // Restore all state arrays
+                            this.activeDropdown = savedIds.filter(id => this.hierarchy.some(item => item.id === id));
+                            this.subActive = savedIds.filter(id => {
+                                // First-level children of spaces
+                                return this.hierarchy.some(space => space.children && space.children.some(child => child.id === id));
+                            });
+                            this.expandedIds = savedIds.filter(id => {
+                                // Everything else (deeper nested)
+                                const isSpace = this.hierarchy.some(item => item.id === id);
+                                const isFirstLevel = this.hierarchy.some(space => space.children && space.children.some(child => child.id === id));
+                                return !isSpace && !isFirstLevel && findInHierarchy(this.hierarchy, id);
+                            });
+                            console.log('[Sidebar] Loaded preferences', { activeDropdown: this.activeDropdown, subActive: this.subActive, expandedIds: this.expandedIds });
+                        }
+                    } catch (e) {
+                        console.error('[Sidebar] Failed to load preferences', e);
+                    }
+                },
+
+                saveSidebarPrefs() {
+                    // Debounce: save 1 second after last change
+                    if (this.savePrefsTimeout) clearTimeout(this.savePrefsTimeout);
+                    this.savePrefsTimeout = setTimeout(async () => {
+                        const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                        const allExpandedIds = [...this.activeDropdown, ...this.subActive, ...this.expandedIds];
+                        try {
+                            await fetch(`/account/${accountNum}/api/user/sidebar-prefs`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ expandedIds: allExpandedIds })
+                            });
+                            console.log('[Sidebar] Saved preferences', allExpandedIds);
+                        } catch (e) {
+                            console.error('[Sidebar] Failed to save preferences', e);
+                        }
+                    }, 1000);
                 },
 
                 getIcon(item, hasChildren = false, expanded = false, hovered = false) {

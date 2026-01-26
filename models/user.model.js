@@ -2,14 +2,9 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
 const UserSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
+  email: { type: String, unique: true, required: true },
+  password: { type: String, required: true },
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
   status: {
     type: String,
   },
@@ -22,6 +17,9 @@ const UserSchema = new mongoose.Schema({
   preferences: {
     type: mongoose.Schema.Types.Mixed,
     default: {},
+  },
+  sidebarPreferences: {
+    expandedIds: { type: [String], default: [] }
   },
 
   created_on: {

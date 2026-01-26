@@ -39,6 +39,10 @@ router.post('/hierarchy/link-entity', hierarchyController.linkEntity);
 router.get('/hierarchy/icon-libraries', hierarchyController.getIconLibraries);
 router.get('/hierarchy/icons', hierarchyController.getIcons);
 
+// Sidebar Preferences
+router.get('/user/sidebar-prefs', hierarchyController.getSidebarPrefs);
+router.post('/user/sidebar-prefs', hierarchyController.saveSidebarPrefs);
+
 router.get('/entity/:id', entityController.getDetails_Api);
 router.post('/view/config', viewController.saveConfig);
 router.post('/record/update-status', recordController.updateStatus);

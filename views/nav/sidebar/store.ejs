@@ -1,0 +1,689 @@
+           <script>
+            document.addEventListener("alpine:init", () => {
+              Alpine.data('sidebarHierarchy', () => ({
+                hierarchy: [],
+                expandedIds: [],
+                showCreateModal: false,
+                creationName: '',
+                creationType: 'folder',
+                creationIcon: '',
+                creationColor: '',
+                showIconEditModal: false,
+                editingIcon: '',
+                editingColor: '',
+                
+                // Icon Picker State
+                icons: [],
+                libraries: [],
+                selectedLibrary: 'solar',
+                iconSearch: '',
+                page: 1,
+                hasMore: true,
+                isLoadingIcons: false,
+                searchTimeout: null,
+
+                availableColors: [
+                  '#4361ee', '#805dca', '#00ab55', '#e7515a', '#e2a03f', 
+                  '#2196f3', '#3b3f5c', '#818181', '#673ab7', '#ff4081'
+                ],
+                
+                init() {
+                    this.$watch('expandedIds', () => {
+                        this.savePreferences();
+                    });
+
+                    this.loadLibraries();
+                    this.$watch('iconSearch', () => {
+                         if (this.searchTimeout) clearTimeout(this.searchTimeout);
+                         this.searchTimeout = setTimeout(() => {
+                             this.loadIcons(true);
+                         }, 300);
+                    });
+                    this.$watch('selectedLibrary', () => {
+                         this.loadIcons(true);
+                    });
+                },
+
+                // Debounced save
+                savePreferences() {
+                     if (this.saveTimeout) clearTimeout(this.saveTimeout);
+                     this.saveTimeout = setTimeout(async () => {
+                         const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                         try {
+                             await fetch(`/account/${accountNum}/api/hierarchy/preferences`, {
+                                 method: 'POST',
+                                 headers: { 'Content-Type': 'application/json' },
+                                 body: JSON.stringify({ sidebarExpanded: this.expandedIds })
+                             });
+                         } catch(e) { console.error("Failed to save prefs", e); }
+                     }, 1000);
+                },
+
+                saveTimeout: null,
+
+                async loadLibraries() {
+                    const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                    try {
+                        const res = await fetch(`/account/${accountNum}/api/hierarchy/icon-libraries`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.libraries = data.libraries || [];
+                            if (this.libraries.length > 0 && !this.libraries.find(l => l.id === this.selectedLibrary)) {
+                                this.selectedLibrary = this.libraries[0].id;
+                            }
+                        }
+                    } catch(e) { console.error("Failed to load libraries", e); }
+                },
+
+                async loadIcons(reset = false) {
+                    if (reset) {
+                        this.page = 1;
+                        this.icons = [];
+                        this.hasMore = true;
+                    }
+                    
+                    if (!this.hasMore && !reset) return;
+
+                    this.isLoadingIcons = true;
+                    const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                    
+                    try {
+                        const params = new URLSearchParams({
+                            library: this.selectedLibrary,
+                            search: this.iconSearch,
+                            page: this.page,
+                            limit: 60
+                        });
+                        const res = await fetch(`/account/${accountNum}/api/hierarchy/icons?${params.toString()}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (reset) {
+                                this.icons = data.icons;
+                            } else {
+                                this.icons = [...this.icons, ...data.icons];
+                            }
+                            this.hasMore = data.hasMore;
+                            if (data.hasMore) this.page++;
+                        }
+                    } catch (e) {
+                        console.error("Failed to load icons", e);
+                        // Fallback
+                         if (reset && this.icons.length === 0) {
+                             this.icons = ['solar:planet-3-bold-duotone', 'solar:folder-2-line-duotone', 'solar:database-bold'];
+                         }
+                    } finally {
+                        this.isLoadingIcons = false;
+                    }
+                },
+                
+                loadMoreIcons() {
+                    this.loadIcons(false);
+                },
+                
+                isSubmitting: false,
+                editingId: null,
+                editingName: '',
+                realSpacesCount: 0,
+                menuMode: 'main', // 'main' or 'data'
+                allEntities: [],
+                entitySearch: '',
+                pendingViewType: 'list',
+                showViewConfigModal: false,
+                configView: null,
+                configEntity: null,
+                tempFilters: [],
+                tempViewType: 'list',
+
+                async fetchHierarchy() {
+                  // Initialize Sidebar Store
+                  if (!Alpine.store('sidebar')) {
+                    Alpine.store('sidebar', {
+                      showMenu: false,
+                      showEditMenu: false,
+                      contextItem: null
+                    });
+                  }
+
+                  const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                  console.log(`[Sidebar] Fetching hierarchy for account: ${accountNum}`);
+                  try {
+                    const res = await fetch(`/account/${accountNum}/api/hierarchy/list?t=${Date.now()}`, {
+                      cache: 'no-store'
+                    });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const data = await res.json();
+
+                    // Clear hierarchy first to force DOM redraw
+                    this.hierarchy = [];
+                    await new Promise(r => setTimeout(r, 0));
+
+                    this.hierarchy = data.hierarchy || [];
+                    this.realSpacesCount = data.realSpacesCount || 0;
+                    
+                    // Load preferences
+                    if (data.userPreferences && data.userPreferences.sidebarExpanded) {
+                        this.expandedIds = data.userPreferences.sidebarExpanded;
+                    }
+                    
+                    if (data.dbName) console.log(`[Sidebar] Connected to Tenant DB: ${data.dbName}`);
+
+                    this.detectActiveItem();
+                    
+                    // Initialize D&D after render
+                    this.$nextTick(() => {
+                        this.initDragAndDrop();
+                    });
+
+                  } catch (e) {
+                    console.error("[Sidebar] Failed to load hierarchy", e);
+                  }
+                },
+                
+                initDragAndDrop() {
+                    if (typeof Sortable === 'undefined') return;
+
+                    // Root list (Spaces)
+                    const rootEl = document.querySelector('.sortable-root');
+                    if (rootEl) {
+                        new Sortable(rootEl, {
+                            group: 'spaces',
+                            animation: 150,
+                            handle: '.nav-link', // Drag handle
+                            onEnd: (evt) => this.handleDrop(evt, 'space')
+                        });
+                    }
+
+                    // Nested lists (Folders/Entities) inside spaces and folders
+                    const nestedEls = document.querySelectorAll('.sub-menu');
+                    nestedEls.forEach(el => {
+                        new Sortable(el, {
+                            group: 'nested',
+                            animation: 150,
+                            fallbackOnBody: true,
+                            swapThreshold: 0.65,
+                            onEnd: (evt) => this.handleDrop(evt, 'nested')
+                        });
+                    });
+                },
+
+                async handleDrop(evt, group) {
+                    const itemEl = evt.item;
+                    const newIndex = evt.newIndex;
+                    const oldIndex = evt.oldIndex;
+                    const parentEl = evt.to;
+                    const oldParentEl = evt.from;
+                    
+                    // Optimization: If index didn't change and parent didn't change, do nothing
+                    if (newIndex === oldIndex && parentEl === oldParentEl) return;
+
+                    const id = itemEl.getAttribute('data-id');
+                    const type = itemEl.getAttribute('data-type');
+                    
+                    // Declare variables here to avoid ReferenceError
+                    let newParentId = null;
+                    let newParentType = null;
+                    let oldParentId_Val = null;
+
+                    // Reorder Logic: Get all siblings in the new parent and send their new order
+                    const siblings = Array.from(parentEl.children).filter(el => el.style.display !== 'none'); // Filter out alpine templates or hidden elements if any
+                    const items = siblings.map((el, index) => ({
+                        id: el.getAttribute('data-id'),
+                        type: el.getAttribute('data-type'),
+                        order: index
+                    })).filter(x => x.id); // Valid items only
+
+                    const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+
+                    // 1. If moved to a new parent, we need to call 'move' first (change parentId)
+                    if (parentEl !== oldParentEl) {
+                         const newParentContainer = parentEl.closest('li.nav-item') || parentEl.closest('li.relative'); 
+                         if (newParentContainer) {
+                             newParentId = newParentContainer.getAttribute('data-id');
+                             newParentType = newParentContainer.getAttribute('data-type');
+                         }
+                         
+                         const oldParentContainer = oldParentEl.closest('li.nav-item') || oldParentEl.closest('li.relative');
+                         if (oldParentContainer) {
+                             oldParentId_Val = oldParentContainer.getAttribute('data-id');
+                         }
+
+                         if (newParentId && group === 'nested') {
+                             try {
+                                 await fetch(`/account/${accountNum}/api/hierarchy/move`, {
+                                     method: 'POST',
+                                     headers: { 'Content-Type': 'application/json' },
+                                     body: JSON.stringify({
+                                         itemId: id,
+                                         itemType: type,
+                                         newParentId: newParentId,
+                                         newParentType: newParentType,
+                                         oldParentId: oldParentId_Val
+                                     })
+                                 });
+                             } catch(e) { console.error("Move failed", e); }
+                         }
+                    }
+
+                    // 2. Persist new Order
+                    try {
+                        const res = await fetch(`/account/${accountNum}/api/hierarchy/reorder`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ items })
+                        });
+                        
+                        if (!res.ok) throw new Error("Server rejected reorder");
+                        console.log("[Sidebar] Reorder saved");
+                        
+                        // Client-side update for immediate UI feedback (fixes 'Add' button state)
+                        if (parentEl !== oldParentEl) {
+                             // Remove from old location
+                             const movedItem = this.findItemAndRemove(this.hierarchy, id);
+                             
+                             // Add to new location
+                             if (movedItem && newParentId) {
+                                 this.insertItemIntoParent(this.hierarchy, newParentId, movedItem, newIndex);
+                                 
+                                 // Expand new parent
+                                 if (!this.expandedIds.includes(newParentId)) {
+                                     this.expandedIds.push(newParentId);
+                                 }
+                             }
+                        }
+
+                    } catch (e) {
+                         console.error("Reorder failed", e);
+                         if (e.message !== "Server rejected reorder") {
+                             console.warn("Client sync error likely", e);
+                         } else {
+                             alert("Erreur lors de la réorganisation");
+                         }
+                         this.fetchHierarchy(); 
+                    }
+                },
+
+                findItemAndRemove(list, itemId) {
+                    for (let i = 0; i < list.length; i++) {
+                        if (list[i].id === itemId) return list.splice(i, 1)[0];
+                        if (list[i].children && list[i].children.length > 0) {
+                            const found = this.findItemAndRemove(list[i].children, itemId);
+                            if (found) return found;
+                        }
+                    }
+                    return null;
+                },
+
+                insertItemIntoParent(list, pId, item, idx) {
+                    for (let obj of list) {
+                        if (obj.id === pId) {
+                            if (!obj.children) obj.children = [];
+                            const safeIdx = Math.min(idx, obj.children.length);
+                            obj.children.splice(safeIdx, 0, item);
+                            return true;
+                        }
+                        if (obj.children) {
+                            if (this.insertItemIntoParent(obj.children, pId, item, idx)) return true;
+                        }
+                    }
+                    return false;
+                },
+
+                isItemActive(link) {
+                  if (!link || link === '#') return false;
+                  return decodeURIComponent(window.location.pathname) === decodeURIComponent(link);
+                },
+
+                detectActiveItem() {
+                  const currentPath = decodeURIComponent(window.location.pathname);
+                  
+                  const expandParents = (items, parentId = null) => {
+                      for (const item of items) {
+                          if (item.link && decodeURIComponent(item.link) === currentPath) {
+                              if (parentId) this.toggleExpand(parentId, true);
+                              return true;
+                          }
+                          if (item.children && item.children.length > 0) {
+                              if (expandParents(item.children, item.id)) {
+                                  if (parentId) this.toggleExpand(parentId, true);
+                                  this.toggleExpand(item.id, true);
+                                  return true;
+                              }
+                          }
+                      }
+                      return false;
+                  };
+                  
+                  // Run for all spaces
+                  for(const space of this.hierarchy) {
+                      if (expandParents(space.children, space.id)) {
+                          this.toggleExpand(space.id, true);
+                      }
+                  }
+                },
+
+                toggle(id) {
+                    this.toggleExpand(id);
+                },
+
+                toggleExpand(id, forceOpen = false) {
+                    if (forceOpen) {
+                        if (!this.expandedIds.includes(id)) this.expandedIds.push(id);
+                    } else {
+                        if (this.expandedIds.includes(id)) {
+                            this.expandedIds = this.expandedIds.filter(x => x !== id);
+                        } else {
+                            this.expandedIds.push(id);
+                        }
+                    }
+                },
+
+                isExpanded(id) {
+                    return this.expandedIds.includes(id);
+                },
+
+                getIcon(item, hasChildren = false, expanded = false, hovered = false) {
+                  let type = item;
+                  let customIcon = null;
+                  if (typeof item === 'object' && item !== null) {
+                      type = item.type;
+                      customIcon = item.icon;
+                  }
+
+                  const effectivelyHasChildren = hasChildren || ['space', 'folder', 'environment'].includes(type);
+                  if (effectivelyHasChildren && hovered && ['space', 'folder', 'environment'].includes(type)) {
+                      return expanded ? 'solar:alt-arrow-down-bold' : 'solar:alt-arrow-right-bold';
+                  }
+
+                  if (customIcon) return customIcon;
+                  
+                  if (type === 'space') return 'solar:planet-3-bold-duotone';
+                  if (type === 'folder') return 'solar:folder-2-line-duotone';
+                  if (type === 'environment') return 'solar:layers-minimalistic-line-duotone';
+                  if (type === 'entity') return 'solar:database-bold';
+                  return 'solar:file-text-line-duotone';
+                },
+
+                async openCreateMenu(event, item) {
+                  this.menuMode = 'main';
+                  this.entitySearch = '';
+                  this.pendingViewType = 'list';
+                  Alpine.store('sidebar').contextItem = item;
+                  Alpine.store('sidebar').showMenu = true;
+                  Alpine.store('sidebar').showEditMenu = false;
+                  await this.loadAllEntities();
+                },
+
+                async loadAllEntities() {
+                  const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                  try {
+                    const res = await fetch(`/account/${accountNum}/api/hierarchy/all-entities`);
+                    if (res.ok) {
+                      const data = await res.json();
+                      this.allEntities = data.entities || [];
+                    }
+                  } catch (e) {
+                    console.error("Failed to load entities", e);
+                  }
+                },
+
+                filteredEntities() {
+                  if (!this.entitySearch) return this.allEntities;
+                  return this.allEntities.filter(e =>
+                    e.name.toLowerCase().includes(this.entitySearch.toLowerCase())
+                  );
+                },
+
+                async linkExistingEntity(entity) {
+                  const viewType = this.pendingViewType;
+                  const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                  const parent = Alpine.store('sidebar').contextItem;
+                  try {
+                    const res = await fetch(`/account/${accountNum}/api/hierarchy/link-entity`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        entityId: entity.id,
+                        parentId: parent.id,
+                        parentType: parent.type,
+                        viewType: viewType
+                      })
+                    });
+                    if (res.ok) {
+                      Alpine.store('sidebar').showMenu = false;
+                      await this.fetchHierarchy();
+                    }
+                  } catch (e) { alert("Erreur: " + e.message); }
+                },
+
+                openEditMenu(event, type, item, parent = null) {
+                  Alpine.store('sidebar').contextItem = { ...item, type, parent };
+                  Alpine.store('sidebar').showEditMenu = true;
+                  Alpine.store('sidebar').showMenu = false;
+                },
+
+                async createSpace() {
+                  const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                  const name = prompt("Nom de l'Espace :");
+                  if (!name) return;
+                  try {
+                    const res = await fetch(`/account/${accountNum}/api/hierarchy/space`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ name })
+                    });
+                    if (!res.ok) {
+                      const err = await res.json();
+                      throw new Error(err.error || `HTTP ${res.status}`);
+                    }
+                    const newSpace = await res.json();
+                    this.hierarchy.push({
+                      id: newSpace._id,
+                      name: newSpace.name,
+                      type: 'space',
+                      children: []
+                    });
+                    this.startRename({ id: newSpace._id, name: newSpace.name });
+                  } catch (e) { alert("Erreur: " + e.message); }
+                },
+
+                async createItem(type) {
+                  this.creationType = type;
+                  this.creationName = '';
+                  this.creationIcon = this.getIcon(type); // Default icon
+                  this.creationColor = '';
+                  
+                  // Initialize picker state
+                  this.iconSearch = '';
+                  this.selectedLibrary = this.creationIcon.split(':')[0] || 'solar';
+                  if (this.libraries.length > 0 && !this.libraries.find(l => l.id === this.selectedLibrary)) {
+                        this.selectedLibrary = this.libraries[0].id;
+                  }
+                  
+                  this.showCreateModal = true;
+                  Alpine.store('sidebar').showMenu = false;
+                  
+                  await this.loadIcons(true); // Load initial icons
+                  
+                  this.$nextTick(() => {
+                    if (this.$refs.createInput) this.$refs.createInput.focus();
+                  });
+                },
+
+                async submitCreateItem() {
+                  if (!this.creationName) return;
+                  this.isSubmitting = true;
+                  const type = this.creationType;
+                  const name = this.creationName;
+                  const icon = this.creationIcon;
+                  const color = this.creationColor;
+                  const viewType = this.pendingViewType;
+                  const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                  const parent = Alpine.store('sidebar').contextItem;
+
+                  const url = ['folder', 'environment'].includes(type) ? 'folder' : 'entity';
+                  try {
+                    const res = await fetch(`/account/${accountNum}/api/hierarchy/${url}`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        name,
+                        type,
+                        icon,
+                        color,
+                        parentId: parent.id,
+                        parentType: parent.type,
+                        viewType: viewType
+                      })
+                    });
+                    if (!res.ok) {
+                      const err = await res.json();
+                      throw new Error(err.error || `HTTP ${res.status}`);
+                    }
+                    this.showCreateModal = false;
+                    await this.fetchHierarchy();
+                  } catch (e) { alert("Erreur: " + e.message); }
+                  finally { this.isSubmitting = false; }
+                },
+
+                startRename(item) {
+                  this.editingId = item.id;
+                  this.editingName = item.name;
+                  Alpine.store('sidebar').showEditMenu = false;
+                },
+
+                async openIconEditor(item) {
+                    this.editingIcon = item.icon || this.getIcon(item.type);
+                    this.editingColor = item.color || '';
+                    
+                    // Initialize picker state
+                    this.iconSearch = '';
+                    this.selectedLibrary = this.editingIcon.split(':')[0] || 'solar';
+                     if (this.libraries.length > 0 && !this.libraries.find(l => l.id === this.selectedLibrary)) {
+                         this.selectedLibrary = this.libraries[0].id;
+                     }
+
+                    this.showIconEditModal = true;
+                    Alpine.store('sidebar').showEditMenu = false;
+                    
+                    await this.loadIcons(true);
+                },
+
+                async submitEditIcon() {
+                    // if (!this.editingIcon) return; // Allow empty icon to reset to default via logic? No, just keep required.
+                    this.isSubmitting = true;
+                    const item = Alpine.store('sidebar').contextItem;
+                    const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                    
+                    try {
+                        const res = await fetch(`/account/${accountNum}/api/hierarchy/icon`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: item.id, type: item.type, icon: this.editingIcon, color: this.editingColor })
+                        });
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        item.icon = this.editingIcon;
+                        item.color = this.editingColor;
+                        this.showIconEditModal = false;
+                        await this.fetchHierarchy();
+                    } catch (e) { alert("Erreur: " + e.message); }
+                    finally { this.isSubmitting = false; }
+                },
+
+                async saveRename(item) {
+                  if (this.editingId !== item.id) return;
+                  const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                  const newName = this.editingName;
+                  this.editingId = null;
+
+                  if (!newName || newName === item.name) return;
+
+                  try {
+                    await fetch(`/account/${accountNum}/api/hierarchy/rename`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ id: item.id, type: item.type, newName })
+                    });
+                    item.name = newName;
+                  } catch (e) { console.error(e); }
+                },
+
+                async deleteItem() {
+                  const item = Alpine.store('sidebar').contextItem;
+                  if (!item || !confirm(`Êtes-vous sûr de vouloir supprimer ${item.type} ?`)) return;
+                  const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                  try {
+                    const body = { id: item.id, type: item.type };
+                    if (item.type === 'entity' && item.parent) {
+                      body.parentId = item.parent.id;
+                      body.parentType = item.parent.type;
+                    }
+                    await fetch(`/account/${accountNum}/api/hierarchy/delete`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(body)
+                    });
+                    console.log(`[Sidebar] Item ${item.id} unlinked/deleted, waiting for refresh...`);
+                    Alpine.store('sidebar').showEditMenu = false;
+
+                    // Small delay to ensure DB propagation
+                    await new Promise(r => setTimeout(r, 100));
+                    await this.fetchHierarchy();
+                  } catch (e) { alert("Erreur: " + e.message); }
+                },
+
+                async openViewConfig() {
+                  const item = Alpine.store('sidebar').contextItem;
+                  const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+
+                  try {
+                    // 1. Get View Details
+                    const resView = await fetch(`/account/${accountNum}/api/hierarchy/list?id=${item.id}`); // This is just to get data, maybe we need a specific endpoint
+                    // Actually, let's just use the item data we have if possible, but we need fields.
+                    // Better approach: fetch entity details
+                    const resEntity = await fetch(`/account/${accountNum}/api/entity/${item.entityId}`);
+                    if (!resEntity.ok) throw new Error("Erreur chargement entité");
+                    this.configEntity = await resEntity.json();
+
+                    // Mock view data for now if we don't have a fetch-by-id
+                    this.configView = item;
+                    this.tempViewType = item.viewType || 'list';
+                    this.tempFilters = item.filters || [];
+
+                    this.showViewConfigModal = true;
+                    Alpine.store('sidebar').showEditMenu = false;
+                  } catch (e) {
+                    alert("Erreur: " + e.message);
+                  }
+                },
+
+                addFilter() {
+                  this.tempFilters.push({ field: '', operator: 'equals', value: '' });
+                },
+
+                removeFilter(index) {
+                  this.tempFilters.splice(index, 1);
+                },
+
+                async saveViewConfig() {
+                  const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                  try {
+                    const res = await fetch(`/account/${accountNum}/api/view/config`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        viewId: this.configView.id,
+                        viewType: this.tempViewType,
+                        filters: this.tempFilters
+                      })
+                    });
+                    if (res.ok) {
+                      this.showViewConfigModal = false;
+                      await this.fetchHierarchy();
+                    }
+                  } catch (e) {
+                    alert("Erreur: " + e.message);
+                  }
+                }
+              }));
+            });
+          </script>

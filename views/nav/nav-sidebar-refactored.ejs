@@ -322,7 +322,7 @@
             </div>
           </h2>
 
-          <ul class="sortable-root" data-parent-type="root">
+          <ul class="sortable-root" data-parent-type="root" x-init="initSortable($el, 'spaces')">
             <template x-for="item in hierarchy" :key="item.id">
               <li class="menu nav-item mb-2" :data-id="item.id" data-type="space">
                 <div class="nav-link group flex items-center justify-between"
@@ -365,7 +365,8 @@
                   </div>
                 </div>
 
-                <ul x-cloak x-show="activeDropdown === item.id" x-collapse class="sub-menu text-gray-500 mx-4 mb-2">
+                <ul x-cloak x-show="activeDropdown === item.id" x-collapse class="sub-menu text-gray-500 mx-4 mb-2"
+                  :data-parent-id="item.id" :data-parent-type="item.type" x-init="initSortable($el, 'nested')">
                   <template x-for="child in item.children" :key="child.id">
                     <li x-data="{ hovered: false }" class="relative" :data-id="child.id" :data-type="child.type">
                       <div
@@ -409,7 +410,8 @@
 
                       <!-- Nested children for Folders/Environments -->
                       <ul x-show="['folder', 'environment'].includes(child.type) && subActive === child.id" x-collapse
-                        class="sub-menu text-gray-500 ltr:ml-4 rtl:mr-4 border-l dark:border-gray-800 ml-4">
+                        class="sub-menu text-gray-500 ltr:ml-4 rtl:mr-4 border-l dark:border-gray-800 ml-4"
+                        :data-parent-id="child.id" :data-parent-type="child.type" x-init="initSortable($el, 'nested')">
                         <template x-for="subChild in child.children" :key="subChild.id">
                           <li x-data="{ hovered: false }"
                             x-init="if (subChild.children && subChild.children.some(c => isItemActive(c.link))) toggleExpand(subChild.id, true)"
@@ -452,7 +454,8 @@
                             </div>
 
                             <ul x-show="['folder', 'environment'].includes(subChild.type) && isExpanded(subChild.id)" x-collapse
-                              class="sub-menu text-gray-500 ltr:ml-4 rtl:mr-4 border-l dark:border-gray-800 ml-4">
+                              class="sub-menu text-gray-500 ltr:ml-4 rtl:mr-4 border-l dark:border-gray-800 ml-4"
+                              :data-parent-id="subChild.id" :data-parent-type="subChild.type" x-init="initSortable($el, 'nested')">
                               <template x-for="subSubChild in subChild.children" :key="subSubChild.id">
                                 <li x-data="{ hovered: false }"
                                   class="flex items-center hover:bg-gray-100 rounded transition-colors group/sub3"
@@ -892,67 +895,66 @@
                     const id = itemEl.getAttribute('data-id');
                     const type = itemEl.getAttribute('data-type');
                     
-                    const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
-
-                    // --- 1. Identify New Parent ---
-                    let newParentId = null;
-                    let newParentType = null;
-                    
-                    // We look for the closest parent LI that has data-id.
-                    const newParentContainer = parentEl.closest('[data-id]'); 
-                    if (newParentContainer) {
-                        newParentId = newParentContainer.getAttribute('data-id');
-                        newParentType = newParentContainer.getAttribute('data-type');
-                        // Edge case: if the container is the item itself (shouldn't happen with correct markup, but let's be safe)
-                        if (newParentId === id) {
-                             // This implies complex DOM nesting issues, but standard sortable should give us the UL/Group as 'to'
-                        }
-                    }
-                    
-                    // --- 2. Identify Old Parent ---
-                    let oldParentId_Val = null;
-                    const oldParentContainer = oldParentEl.closest('[data-id]');
-                    if (oldParentContainer) {
-                        oldParentId_Val = oldParentContainer.getAttribute('data-id');
-                    }
-
-                    console.log(`[Sidebar] Drop: ${type}#${id} | From Parent: ${oldParentId_Val} -> To Parent: ${newParentId} | Index: ${oldIndex} -> ${newIndex}`);
-
-                    // --- 3. Handle Move (Change of Parent) ---
-                    // If the parent ID changed (including null <-> ID). Only skip if both null or equal.
-                    if (newParentId !== oldParentId_Val) {
-                         try {
-                             await fetch(`/account/${accountNum}/api/hierarchy/move`, {
-                                 method: 'POST',
-                                 headers: { 'Content-Type': 'application/json' },
-                                 body: JSON.stringify({
-                                     itemId: id,
-                                     itemType: type,
-                                     newParentId: newParentId,
-                                     newParentType: newParentType,
-                                     oldParentId: oldParentId_Val
-                                 })
-                             });
-                             console.log("[Sidebar] Move success");
-                         } catch(e) { 
-                             console.error("Move failed", e); 
-                             alert("Erreur lors du déplacement");
-                             this.fetchHierarchy(); // Revert UI
-                             return; // Stop processing to avoid messing up with reorder if move failed
-                         }
-                    }
-
-                    // --- 4. Handle Reorder (Update Order in New Parent) ---
-                    // Get all siblings in the new parent to persist the new order
-                    // We filter for elements that valid hierarchy items (have data-id)
-                    const siblings = Array.from(parentEl.children).filter(el => el.hasAttribute('data-id') && el.style.display !== 'none');
-                    
+                    // Reorder Logic: Get all siblings in the new parent and send their new order
+                    const siblings = Array.from(parentEl.children).filter(el => el.style.display !== 'none'); // Filter out alpine templates or hidden elements if any
                     const items = siblings.map((el, index) => ({
                         id: el.getAttribute('data-id'),
                         type: el.getAttribute('data-type'),
                         order: index
-                    }));
+                    })).filter(x => x.id); // Valid items only
 
+                    const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+
+                    // 1. If moved to a new parent, we need to call 'move' first (change parentId)
+                    if (parentEl !== oldParentEl) {
+                         // Find new parent ID/Type
+                         // The parent <ul> is usually inside a <li> representing the folder/space
+                         // Structure: <ul> (root) -> <li> (Space) -> <ul> (sub-menu)
+                         // OR <ul> (sub-menu) -> <li> (Folder) -> <ul> (sub-menu)
+                         
+                         // We need to traverse up to find the parent item
+                         const newParentContainer = parentEl.closest('li.nav-item') || parentEl.closest('li.relative'); 
+                         // Note: Spaces are li.nav-item, Folders are li.relative
+                         
+                         let newParentId = null;
+                         let newParentType = null;
+                         let oldParentId_Val = null; // We might need to deduce this, or backend handles "remove from old" automatically if we just set new. 
+                         // Check API move: needs oldParentId to pull from.
+                         
+                         if (newParentContainer) {
+                             newParentId = newParentContainer.getAttribute('data-id');
+                             newParentType = newParentContainer.getAttribute('data-type');
+                         } else {
+                             // If dropped in root? But group 'nested' shouldn't allow drop in root 'spaces'.
+                             // If group 'spaces' (root), parent is null (top level).
+                             if (group === 'spaces') {
+                                 // Staying in root, handled by reorder.
+                             }
+                         }
+                         
+                         const oldParentContainer = oldParentEl.closest('li.nav-item') || oldParentEl.closest('li.relative');
+                         if (oldParentContainer) {
+                             oldParentId_Val = oldParentContainer.getAttribute('data-id');
+                         }
+
+                         if (newParentId && group === 'nested') {
+                             try {
+                                 await fetch(`/account/${accountNum}/api/hierarchy/move`, {
+                                     method: 'POST',
+                                     headers: { 'Content-Type': 'application/json' },
+                                     body: JSON.stringify({
+                                         itemId: id,
+                                         itemType: type,
+                                         newParentId: newParentId,
+                                         newParentType: newParentType,
+                                         oldParentId: oldParentId_Val
+                                     })
+                                 });
+                             } catch(e) { console.error("Move failed", e); }
+                         }
+                    }
+
+                    // 2. Persist new Order
                     try {
                         await fetch(`/account/${accountNum}/api/hierarchy/reorder`, {
                             method: 'POST',
@@ -960,10 +962,6 @@
                             body: JSON.stringify({ items })
                         });
                         console.log("[Sidebar] Reorder saved");
-                        
-                        // Force refresh to ensure UI state matches DB
-                        await new Promise(resolve => setTimeout(resolve, 500)); 
-                        await this.fetchHierarchy();
                     } catch (e) {
                          console.error("Reorder failed", e);
                          alert("Erreur lors de la réorganisation");

@@ -162,8 +162,8 @@
         </a>
       </div>
       <ul
-        class="perfect-scrollbar relative h-[calc(100vh-80px)] space-y-0.5 overflow-y-auto overflow-x-hidden p-4 py-0 font-semibold"
-        x-data="{ activeDropdown: '' }">
+        class="perfect-scrollbar relative h-[calc(100vh-80px)] space-y-0.5 overflow-y-auto overflow-x-hidden p-4 py-0 font-semibold sortable-root"
+        x-data="sidebarHierarchy()" x-init="await fetchHierarchy()">
 
 
         <h2
@@ -853,17 +853,22 @@
                 },
                 
                 initDragAndDrop() {
-                    if (typeof Sortable === 'undefined') return;
+                    if (typeof Sortable === 'undefined') {
+                        console.warn('[Sidebar] Sortable.js not loaded');
+                        return;
+                    }
 
-                    // Root list (Spaces)
-                    const rootEl = document.querySelector('.sortable-root');
+                    // Root list (Spaces) - use data attribute to avoid wrong container
+                    const rootEl = document.querySelector('ul[data-parent-type="root"]');
                     if (rootEl) {
+                        console.log('[Sidebar] Initializing Sortable for spaces');
                         new Sortable(rootEl, {
                             group: 'spaces',
                             animation: 150,
-                            handle: '.nav-link', // Drag handle
                             onEnd: (evt) => this.handleDrop(evt, 'space')
                         });
+                    } else {
+                        console.warn('[Sidebar] Root spaces container not found');
                     }
 
                     // Nested lists (Folders/Entities) inside spaces and folders
@@ -896,81 +901,41 @@
                     // --- 1. Identify New Parent ---
                     let newParentId = null;
                     let newParentType = null;
-                    const newParentContainer = parentEl.closest('[data-id]'); 
-                    if (newParentContainer) {
-                        newParentId = newParentContainer.getAttribute('data-id');
-                        newParentType = newParentContainer.getAttribute('data-type');
+                    
+                    // For root spaces, parentEl will be the .sortable-root UL
+                    if (parentEl.classList.contains('sortable-root')) {
+                        // Root level - no parent
+                        newParentId = null;
+                        newParentType = null;
+                    } else {
+                        // Nested item - find the parent container
+                        const newParentContainer = parentEl.closest('[data-id]'); 
+                        if (newParentContainer) {
+                            newParentId = newParentContainer.getAttribute('data-id');
+                            newParentType = newParentContainer.getAttribute('data-type');
+                        }
                     }
 
                     // --- 2. Identify Old Parent ---
                     let oldParentId_Val = null;
-                    const oldParentContainer = oldParentEl.closest('[data-id]');
-                    if (oldParentContainer) {
-                        oldParentId_Val = oldParentContainer.getAttribute('data-id');
-                    }
-
-                    console.log(`[Sidebar] Drop: ${type}#${id} | From: ${oldParentId_Val} -> To: ${newParentId} | Idx: ${oldIndex} -> ${newIndex}`);
-
-                    // --- Helper: Recursive Find & Remove ---
-                    const findAndRemove = (list, itemId) => {
-                        for (let i = 0; i < list.length; i++) {
-                            if (list[i].id === itemId) {
-                                return list.splice(i, 1)[0];
-                            }
-                            if (list[i].children) {
-                                const found = findAndRemove(list[i].children, itemId);
-                                if (found) return found;
-                            }
-                        }
-                        return null;
-                    };
-
-                    // --- Helper: Recursive Find & Insert ---
-                    const findAndInsert = (list, parentId, item, index) => {
-                        if (!parentId) { // Insert into root
-                             list.splice(index, 0, item);
-                             return true;
-                        }
-                        for (let child of list) {
-                            if (child.id === parentId) {
-                                if (!child.children) child.children = [];
-                                child.children.splice(index, 0, item);
-                                return true;
-                            }
-                            if (child.children) {
-                                if (findAndInsert(child.children, parentId, item, index)) return true;
-                            }
-                        }
-                        return false;
-                    };
-
-                    // --- 3. Optimistic Local Update ---
-                    // Remove from old location
-                    // We need to operate on a copy or directly? Alpine proxy allows direct mutation.
-                    // But to be safe and trigger reactivity, we might need to be careful.
-                    // Direct mutation of arrays (splice) works in Alpine.
-                    
-                    const movedItem = findAndRemove(this.hierarchy, id);
-                    
-                    if (movedItem) {
-                         // Insert into new location
-                         findAndInsert(this.hierarchy, newParentId, movedItem, newIndex);
-                         
-                         // Force update arrays to ensure "Add" button visibility toggles 
-                         // (Alpine sometimes misses deep nested array length changes if not reassigned, but splice usually works)
-                         this.hierarchy = [...this.hierarchy]; 
+                    if (oldParentEl.classList.contains('sortable-root')) {
+                        oldParentId_Val = null;
                     } else {
-                        console.error("Could not find moved item locally!");
-                        // Fallback to fetch if local update fails
-                        this.fetchHierarchy();
-                        return;
+                        const oldParentContainer = oldParentEl.closest('[data-id]');
+                        if (oldParentContainer) {
+                            oldParentId_Val = oldParentContainer.getAttribute('data-id');
+                        }
                     }
 
+                    console.log(`[Sidebar] Drop: ${type}#${id} | From: ${oldParentId_Val || 'root'} -> To: ${newParentId || 'root'} | Idx: ${oldIndex} -> ${newIndex}`);
 
-                    // --- 4. API Requests (Background) ---
+                    // --- 3. Optimistic Local Update (Optional - Sortable already moved it in DOM) ---
+                    // We'll rely on server sync and fetchHierarchy for now, or you can update this.hierarchy manually
+
+                    // --- 4. API Requests ---
                     try {
-                        // Move API
-                        if (newParentId !== oldParentId_Val) {
+                        // Move API (only if parent changed)
+                        if (String(newParentId || '') !== String(oldParentId_Val || '')) {
                              await fetch(`/account/${accountNum}/api/hierarchy/move`, {
                                  method: 'POST',
                                  headers: { 'Content-Type': 'application/json' },
@@ -984,8 +949,17 @@
                              });
                         }
 
-                        // Reorder API
-                        const siblings = Array.from(parentEl.children).filter(el => el.hasAttribute('data-id') && el.style.display !== 'none');
+                        // Reorder API (always, to update order field)
+                        // Get all siblings at the same level
+                        let siblings;
+                        if (parentEl.classList.contains('sortable-root')) {
+                            // Root level - get all space LI elements
+                            siblings = Array.from(parentEl.querySelectorAll(':scope > li[data-id][data-type="space"]'));
+                        } else {
+                            // Nested level - get all child LI elements with data-id
+                            siblings = Array.from(parentEl.querySelectorAll(':scope > li[data-id]'));
+                        }
+                        
                         const items = siblings.map((el, index) => ({
                             id: el.getAttribute('data-id'),
                             type: el.getAttribute('data-type'),
@@ -998,7 +972,7 @@
                             body: JSON.stringify({ items })
                         });
                         
-                        console.log("[Sidebar] Sync success");
+                        console.log("[Sidebar] Sync success", items);
                         
                     } catch (e) {
                          console.error("Sync failed", e);

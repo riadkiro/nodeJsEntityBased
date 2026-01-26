@@ -1495,6 +1495,13 @@
             </h2>
             <ul class="space-y-1 text-sm text-gray-800 pt-2 dark:text-gray-200">
               <li class="hover:bg-primary/10 hover:text-primary px-1 py-2 rounded cursor-pointer transition-colors"
+                @click="openCreateMenu($event, $store.sidebar.contextItem)">
+                <div class="flex items-center gap-2">
+                  <iconify-icon icon="solar:add-square-bold-duotone" class="ml-2" width="18" height="18"></iconify-icon>
+                  <span>Créer</span>
+                </div>
+              </li>
+              <li class="hover:bg-primary/10 hover:text-primary px-1 py-2 rounded cursor-pointer transition-colors"
                 @click="startRename($store.sidebar.contextItem)">
                 <div class="flex items-center gap-2">
                   <iconify-icon icon="solar:pen-bold-duotone" class="ml-2" width="18" height="18"></iconify-icon>

@@ -482,14 +482,20 @@
                                   </div>
                                 </li>
                               </template>
-                              <li x-show="!subChild.children || subChild.children.length === 0" class="flex items-center hover:bg-gray-100 rounded transition-colors dark:hover:bg-gray-900 cursor-pointer" @click.stop="openCreateMenu($event, subChild)">
+                              <li x-show="(!subChild.children || subChild.children.length === 0) && dragOverFolderId !== subChild.id" 
+                                  class="flex items-center hover:bg-gray-100 rounded transition-colors dark:hover:bg-gray-900 cursor-pointer add-placeholder" 
+                                  :data-parent-id="subChild.id"
+                                  @click.stop="openCreateMenu($event, subChild)">
                                   <iconify-icon icon="solar:add-square-linear" class="ml-2 text-primary" width="16" height="16"></iconify-icon>
                                   <span class="ml-2 text-sm text-primary py-1">Ajouter</span>
                               </li>
                             </ul>
                           </li>
                         </template>
-                        <li x-show="!child.children || child.children.length === 0" class="flex items-center hover:bg-gray-100 rounded transition-colors dark:hover:bg-gray-900 cursor-pointer" @click.stop="openCreateMenu($event, child)">
+                        <li x-show="(!child.children || child.children.length === 0) && dragOverFolderId !== child.id" 
+                            class="flex items-center hover:bg-gray-100 rounded transition-colors dark:hover:bg-gray-900 cursor-pointer add-placeholder" 
+                            :data-parent-id="child.id"
+                            @click.stop="openCreateMenu($event, child)">
                             <iconify-icon icon="solar:add-square-linear" class="ml-2 text-primary" width="16" height="16"></iconify-icon>
                             <span class="ml-2 text-sm text-primary py-1">Ajouter</span>
                         </li>
@@ -704,6 +710,8 @@
                 subActive: [],
                 expandedIds: [],
                 savePrefsTimeout: null,
+                dragOverFolderId: null,
+                sortableInstances: [],
                 showCreateModal: false,
                 creationName: '',
                 creationType: 'folder',
@@ -862,15 +870,24 @@
                         return;
                     }
 
+                    // Destroy existing instances first
+                    this.sortableInstances.forEach(instance => {
+                        if (instance && typeof instance.destroy === 'function') {
+                            instance.destroy();
+                        }
+                    });
+                    this.sortableInstances = [];
+
                     // Root list (Spaces) - use data attribute to avoid wrong container
                     const rootEl = document.querySelector('ul[data-parent-type="root"]');
                     if (rootEl) {
                         console.log('[Sidebar] Initializing Sortable for spaces');
-                        new Sortable(rootEl, {
+                        const rootSortable = new Sortable(rootEl, {
                             group: 'spaces',
                             animation: 150,
                             onEnd: (evt) => this.handleDrop(evt, 'space')
                         });
+                        this.sortableInstances.push(rootSortable);
                     } else {
                         console.warn('[Sidebar] Root spaces container not found');
                     }
@@ -878,13 +895,61 @@
                     // Nested lists (Folders/Entities) inside spaces and folders
                     const nestedEls = document.querySelectorAll('.sub-menu');
                     nestedEls.forEach(el => {
-                        new Sortable(el, {
+                        const nestedSortable = new Sortable(el, {
                             group: 'nested',
                             animation: 150,
                             fallbackOnBody: true,
                             swapThreshold: 0.65,
-                            onEnd: (evt) => this.handleDrop(evt, 'nested')
+                            filter: '.add-placeholder',  // Prevent dragging "Ajouter" button
+                            onMove: (evt) => {
+                                // Auto-expand empty folders when dragging over them
+                                const toEl = evt.to;
+                                const parentContainer = toEl.closest('[data-id]');
+                                if (parentContainer) {
+                                    const folderId = parentContainer.getAttribute('data-id');
+                                    const folderType = parentContainer.getAttribute('data-type');
+                                    
+                                    // Check if it's a folder and if it's closed
+                                    if (['folder', 'environment'].includes(folderType)) {
+                                        // Find in hierarchy to check if it has children or is empty
+                                        const findFolder = (list) => {
+                                            for (const item of list) {
+                                                if (item.id === folderId) return item;
+                                                if (item.children) {
+                                                    const found = findFolder(item.children);
+                                                    if (found) return found;
+                                                }
+                                            }
+                                            return null;
+                                        };
+                                        
+                                        const folder = findFolder(this.hierarchy);
+                                        
+                                        // Auto-open if folder exists and not already in subActive or expandedIds
+                                        if (folder) {
+                                            // Check if it's first-level (direct child of space)
+                                            const isFirstLevel = this.hierarchy.some(space => 
+                                                space.children && space.children.some(child => child.id === folderId)
+                                            );
+                                            
+                                            if (isFirstLevel && !this.subActive.includes(folderId)) {
+                                                this.subActive.push(folderId);
+                                            } else if (!isFirstLevel && !this.expandedIds.includes(folderId)) {
+                                                this.expandedIds.push(folderId);
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Track for hiding Add button
+                                    this.dragOverFolderId = folderId;
+                                }
+                            },
+                            onEnd: (evt) => {
+                                this.dragOverFolderId = null; // Clear on drop or cancel
+                                this.handleDrop(evt, 'nested');
+                            }
                         });
+                        this.sortableInstances.push(nestedSortable);
                     });
                 },
 

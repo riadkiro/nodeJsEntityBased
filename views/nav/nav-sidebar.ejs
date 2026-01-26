@@ -326,13 +326,13 @@
             <template x-for="item in hierarchy" :key="item.id">
               <li class="menu nav-item mb-2" :data-id="item.id" data-type="space">
                 <div class="nav-link group flex items-center justify-between"
-                  :class="{'active' : activeDropdown === item.id}">
+                  :class="{'active' : activeDropdown.includes(item.id)}">
                   <div x-data="{ hovered: false }" 
                     class="flex items-center mx-2 cursor-pointer flex-1"
                     @mouseenter="hovered = true" @mouseleave="hovered = false"
                     @click="toggle(item.id)"
                     @contextmenu.prevent="openEditMenu($event, 'space', item)">
-                    <iconify-icon :icon="getIcon(item, item.children && item.children.length > 0, activeDropdown === item.id, hovered)" 
+                    <iconify-icon :icon="getIcon(item, item.children && item.children.length > 0, activeDropdown.includes(item.id), hovered)" 
                       class="ml-1" width="18" height="18" :style="item.color ? 'color: ' + item.color : ''"></iconify-icon>
 
                     <template x-if="editingId !== item.id">
@@ -356,7 +356,7 @@
                       class="cursor-pointer hover:text-primary"
                       @click.stop="openEditMenu($event, 'space', item)"></iconify-icon>
                     <div class="rtl:rotate-180 transition-transform"
-                      :class="{'!rotate-90' : activeDropdown === item.id}"
+                      :class="{'!rotate-90' : activeDropdown.includes(item.id)}"
                       x-show="item.children && item.children.length > 0">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M9 5L15 12L9 19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
@@ -365,23 +365,23 @@
                   </div>
                 </div>
 
-                <ul x-cloak x-show="activeDropdown === item.id" x-collapse class="sub-menu text-gray-500 mx-4 mb-2">
+                <ul x-cloak x-show="activeDropdown.includes(item.id)" x-collapse class="sub-menu text-gray-500 mx-4 mb-2">
                   <template x-for="child in item.children" :key="child.id">
                     <li x-data="{ hovered: false }" class="relative" :data-id="child.id" :data-type="child.type">
                       <div
                         class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900 rounded transition-colors group/sub"
                         @mouseenter="hovered = true" @mouseleave="hovered = false"
                         @contextmenu.prevent="openEditMenu($event, child.type, child, item)">
-                        <iconify-icon :icon="getIcon(child, child.children && child.children.length > 0, subActive === child.id, hovered)"
+                        <iconify-icon :icon="getIcon(child, child.children && child.children.length > 0, subActive.includes(child.id), hovered)"
                           class="ml-2 cursor-pointer" width="16" height="16"
                           :style="child.color ? 'color: ' + child.color : ''"
-                          @click.stop="if(['folder', 'environment'].includes(child.type)) { subActive = (subActive === child.id ? null : child.id); }"></iconify-icon>
+                          @click.stop="if(['folder', 'environment'].includes(child.type)) { toggleSub(child.id); }"></iconify-icon>
 
                         <div class="flex-1 min-w-0">
                           <template x-if="editingId !== child.id">
                             <a :href="child.link || '#'" class="block ml-1 truncate transition-colors"
                               :class="isItemActive(child.link) ? '!text-primary font-bold' : ''"
-                              @click="if(['folder', 'environment'].includes(child.type)) { $event.preventDefault(); subActive = (subActive === child.id ? null : child.id); }">
+                              @click="if(['folder', 'environment'].includes(child.type)) { $event.preventDefault(); toggleSub(child.id); }">
                               <span x-text="child.name"></span>
                             </a>
                           </template>
@@ -408,7 +408,7 @@
                       </div>
 
                       <!-- Nested children for Folders/Environments -->
-                      <ul x-show="['folder', 'environment'].includes(child.type) && subActive === child.id" x-collapse
+                      <ul x-show="['folder', 'environment'].includes(child.type) && subActive.includes(child.id)" x-collapse
                         class="sub-menu text-gray-500 ltr:ml-4 rtl:mr-4 border-l dark:border-gray-800 ml-4">
                         <template x-for="subChild in child.children" :key="subChild.id">
                           <li x-data="{ hovered: false }"
@@ -700,8 +700,8 @@
             document.addEventListener("alpine:init", () => {
               Alpine.data('sidebarHierarchy', () => ({
                 hierarchy: [],
-                activeDropdown: null,
-                subActive: null,
+                activeDropdown: [],
+                subActive: [],
                 expandedIds: [],
                 showCreateModal: false,
                 creationName: '',
@@ -885,30 +885,23 @@
                     const oldIndex = evt.oldIndex;
                     const parentEl = evt.to;
                     const oldParentEl = evt.from;
-                    
+
                     // Optimization: If index didn't change and parent didn't change, do nothing
                     if (newIndex === oldIndex && parentEl === oldParentEl) return;
 
                     const id = itemEl.getAttribute('data-id');
                     const type = itemEl.getAttribute('data-type');
-                    
                     const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
 
                     // --- 1. Identify New Parent ---
                     let newParentId = null;
                     let newParentType = null;
-                    
-                    // We look for the closest parent LI that has data-id.
                     const newParentContainer = parentEl.closest('[data-id]'); 
                     if (newParentContainer) {
                         newParentId = newParentContainer.getAttribute('data-id');
                         newParentType = newParentContainer.getAttribute('data-type');
-                        // Edge case: if the container is the item itself (shouldn't happen with correct markup, but let's be safe)
-                        if (newParentId === id) {
-                             // This implies complex DOM nesting issues, but standard sortable should give us the UL/Group as 'to'
-                        }
                     }
-                    
+
                     // --- 2. Identify Old Parent ---
                     let oldParentId_Val = null;
                     const oldParentContainer = oldParentEl.closest('[data-id]');
@@ -916,12 +909,68 @@
                         oldParentId_Val = oldParentContainer.getAttribute('data-id');
                     }
 
-                    console.log(`[Sidebar] Drop: ${type}#${id} | From Parent: ${oldParentId_Val} -> To Parent: ${newParentId} | Index: ${oldIndex} -> ${newIndex}`);
+                    console.log(`[Sidebar] Drop: ${type}#${id} | From: ${oldParentId_Val} -> To: ${newParentId} | Idx: ${oldIndex} -> ${newIndex}`);
 
-                    // --- 3. Handle Move (Change of Parent) ---
-                    // If the parent ID changed (including null <-> ID). Only skip if both null or equal.
-                    if (newParentId !== oldParentId_Val) {
-                         try {
+                    // --- Helper: Recursive Find & Remove ---
+                    const findAndRemove = (list, itemId) => {
+                        for (let i = 0; i < list.length; i++) {
+                            if (list[i].id === itemId) {
+                                return list.splice(i, 1)[0];
+                            }
+                            if (list[i].children) {
+                                const found = findAndRemove(list[i].children, itemId);
+                                if (found) return found;
+                            }
+                        }
+                        return null;
+                    };
+
+                    // --- Helper: Recursive Find & Insert ---
+                    const findAndInsert = (list, parentId, item, index) => {
+                        if (!parentId) { // Insert into root
+                             list.splice(index, 0, item);
+                             return true;
+                        }
+                        for (let child of list) {
+                            if (child.id === parentId) {
+                                if (!child.children) child.children = [];
+                                child.children.splice(index, 0, item);
+                                return true;
+                            }
+                            if (child.children) {
+                                if (findAndInsert(child.children, parentId, item, index)) return true;
+                            }
+                        }
+                        return false;
+                    };
+
+                    // --- 3. Optimistic Local Update ---
+                    // Remove from old location
+                    // We need to operate on a copy or directly? Alpine proxy allows direct mutation.
+                    // But to be safe and trigger reactivity, we might need to be careful.
+                    // Direct mutation of arrays (splice) works in Alpine.
+                    
+                    const movedItem = findAndRemove(this.hierarchy, id);
+                    
+                    if (movedItem) {
+                         // Insert into new location
+                         findAndInsert(this.hierarchy, newParentId, movedItem, newIndex);
+                         
+                         // Force update arrays to ensure "Add" button visibility toggles 
+                         // (Alpine sometimes misses deep nested array length changes if not reassigned, but splice usually works)
+                         this.hierarchy = [...this.hierarchy]; 
+                    } else {
+                        console.error("Could not find moved item locally!");
+                        // Fallback to fetch if local update fails
+                        this.fetchHierarchy();
+                        return;
+                    }
+
+
+                    // --- 4. API Requests (Background) ---
+                    try {
+                        // Move API
+                        if (newParentId !== oldParentId_Val) {
                              await fetch(`/account/${accountNum}/api/hierarchy/move`, {
                                  method: 'POST',
                                  headers: { 'Content-Type': 'application/json' },
@@ -933,41 +982,28 @@
                                      oldParentId: oldParentId_Val
                                  })
                              });
-                             console.log("[Sidebar] Move success");
-                         } catch(e) { 
-                             console.error("Move failed", e); 
-                             alert("Erreur lors du déplacement");
-                             this.fetchHierarchy(); // Revert UI
-                             return; // Stop processing to avoid messing up with reorder if move failed
-                         }
-                    }
+                        }
 
-                    // --- 4. Handle Reorder (Update Order in New Parent) ---
-                    // Get all siblings in the new parent to persist the new order
-                    // We filter for elements that valid hierarchy items (have data-id)
-                    const siblings = Array.from(parentEl.children).filter(el => el.hasAttribute('data-id') && el.style.display !== 'none');
-                    
-                    const items = siblings.map((el, index) => ({
-                        id: el.getAttribute('data-id'),
-                        type: el.getAttribute('data-type'),
-                        order: index
-                    }));
+                        // Reorder API
+                        const siblings = Array.from(parentEl.children).filter(el => el.hasAttribute('data-id') && el.style.display !== 'none');
+                        const items = siblings.map((el, index) => ({
+                            id: el.getAttribute('data-id'),
+                            type: el.getAttribute('data-type'),
+                            order: index
+                        }));
 
-                    try {
                         await fetch(`/account/${accountNum}/api/hierarchy/reorder`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ items })
                         });
-                        console.log("[Sidebar] Reorder saved");
                         
-                        // Force refresh to ensure UI state matches DB
-                        await new Promise(resolve => setTimeout(resolve, 500)); 
-                        await this.fetchHierarchy();
+                        console.log("[Sidebar] Sync success");
+                        
                     } catch (e) {
-                         console.error("Reorder failed", e);
-                         alert("Erreur lors de la réorganisation");
-                         this.fetchHierarchy(); // Revert
+                         console.error("Sync failed", e);
+                         alert("Erreur de synchronisation serveur");
+                         this.fetchHierarchy(); // Revert on error
                     }
                 },
 
@@ -982,24 +1018,24 @@
                     for (const child of space.children || []) {
                       // Check child (Folder or Entity)
                       if (child.link && decodeURIComponent(child.link) === currentPath) {
-                        this.activeDropdown = space.id;
-                        this.subActive = null;
+                        this.activeDropdown = [space.id];
+                        this.subActive = [];
                         return;
                       }
                       // Check if it's a folder/environment with sub-children
                       if (['folder', 'environment'].includes(child.type) && child.children) {
                         for (const sub of child.children) {
                           if (sub.link && decodeURIComponent(sub.link) === currentPath) {
-                            this.activeDropdown = space.id;
-                            this.subActive = child.id;
+                            this.activeDropdown = [space.id];
+                            this.subActive = [child.id];
                             return;
                           }
                           // Check sub-sub-children
                           if (['folder', 'environment'].includes(sub.type) && sub.children) {
                             for (const subSub of sub.children) {
                               if (subSub.link && decodeURIComponent(subSub.link) === currentPath) {
-                                this.activeDropdown = space.id;
-                                this.subActive = child.id;
+                                this.activeDropdown = [space.id];
+                                this.subActive = [child.id];
                                 return;
                               }
                             }
@@ -1011,7 +1047,19 @@
                 },
 
                 toggle(id) {
-                  this.activeDropdown = this.activeDropdown === id ? null : id;
+                    if (this.activeDropdown.includes(id)) {
+                        this.activeDropdown = this.activeDropdown.filter(x => x !== id);
+                    } else {
+                        this.activeDropdown.push(id);
+                    }
+                },
+
+                toggleSub(id) {
+                    if (this.subActive.includes(id)) {
+                        this.subActive = this.subActive.filter(x => x !== id);
+                    } else {
+                        this.subActive.push(id);
+                    }
                 },
 
                 toggleExpand(id, forceOpen = false) {

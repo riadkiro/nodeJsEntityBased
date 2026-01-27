@@ -28,12 +28,20 @@
         Édition
       </button>
       <button 
-        @click="editorMode = 'design'"
-        :class="editorMode === 'design' ? 'bg-white dark:bg-gray-700 shadow-sm' : 'text-gray-600 dark:text-gray-400'"
+        @click="editorMode = 'layout'"
+        :class="editorMode === 'layout' ? 'bg-white dark:bg-gray-700 shadow-sm' : 'text-gray-600 dark:text-gray-400'"
+        class="px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2"
+      >
+        <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="18"></iconify-icon>
+        Layout
+      </button>
+      <button 
+        @click="editorMode = 'designer'"
+        :class="editorMode === 'designer' ? 'bg-white dark:bg-gray-700 shadow-sm' : 'text-gray-600 dark:text-gray-400'"
         class="px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2"
       >
         <iconify-icon icon="solar:palette-2-bold-duotone" width="18"></iconify-icon>
-        Design
+        Designer
       </button>
     </div>
 
@@ -125,7 +133,7 @@
               
               <!-- DESIGN MODE: Layout with rows -->
               <div 
-                x-show="editorMode === 'design'"
+                x-show="editorMode === 'layout' || editorMode === 'designer'"
                 class="w-full h-full"
                 :style="'padding-top: ' + doc.margins.top + 'px; padding-bottom: ' + doc.margins.bottom + 'px; padding-left: ' + doc.margins.left + 'px; padding-right: ' + doc.margins.right + 'px;'"
               >
@@ -616,61 +624,89 @@
           var temp = document.createElement('div');
           temp.innerHTML = html;
           
-          // Remove Word-specific tags and attributes
-          var elementsToClean = temp.querySelectorAll('*');
-          elementsToClean.forEach(function(el) {
-            // Remove margin and padding styles
-            if (el.style) {
-              el.style.marginTop = '';
-              el.style.marginBottom = '';
-              el.style.marginLeft = '';
-              el.style.marginRight = '';
-              el.style.paddingTop = '';
-              el.style.paddingBottom = '';
-              el.style.lineHeight = '';
-            }
-            
-            // Remove mso- styles (Microsoft Office)
-            var style = el.getAttribute('style');
-            if (style) {
-              style = style.replace(/mso-[^;]+;?/gi, '');
-              style = style.replace(/margin[^;]*;?/gi, '');
-              style = style.replace(/line-height[^;]*;?/gi, '');
-              el.setAttribute('style', style);
-            }
-            
-            // Remove class attributes (Word adds many)
+          // Helper to unwrap element (keep children, remove tag)
+          function unwrap(el) {
+             var parent = el.parentNode;
+             while (el.firstChild) parent.insertBefore(el.firstChild, el);
+             parent.removeChild(el);
+          }
+
+          // 1. Remove all styles and classes everywhere
+          var allElements = temp.querySelectorAll('*');
+          allElements.forEach(function(el) {
+            el.removeAttribute('style');
             el.removeAttribute('class');
+            el.removeAttribute('width');
+            el.removeAttribute('height');
+            el.removeAttribute('align');
+          });
+
+          // 2. Flatten structure: Convert divs, sections, articles to P if they contain text directly, 
+          // or unwrap them if they contain other blocks.
+          // Simplest strategy: Convert EVERYTHING to P, B, I, U, BR.
+          
+          // Remove comments and scripts
+          var toRemove = temp.querySelectorAll('script, style, meta, link, object, embed, iframe, comment');
+          toRemove.forEach(function(el) { el.remove(); });
+          
+          // Process Tables: Word uses tables for layout. We want to linearize them.
+          var tables = temp.querySelectorAll('table');
+          tables.forEach(function(table) {
+             // Create a frag to hold extracted content
+             var div = document.createElement('div');
+             var rows = table.querySelectorAll('tr');
+             rows.forEach(function(row) {
+                 var p = document.createElement('p');
+                 var cells = row.querySelectorAll('td, th');
+                 cells.forEach(function(cell) {
+                     p.innerHTML += cell.innerHTML + ' '; // Add space between cells
+                 });
+                 div.appendChild(p);
+             });
+             table.parentNode.replaceChild(div, table);
           });
           
-          // Get clean HTML
-          var result = temp.innerHTML;
+          // Unwrap basic containers that might nest content deep
+          var containers = temp.querySelectorAll('div, section, article, span, font, center');
+          containers.forEach(function(el) {
+             // If it's a block container (div), we might want to keep it as P if it has text?
+             // Or just unwrap? 
+             // Better strategy: Unwrap everything. Let standard blocks like P, H1-H6 stay.
+             // But if we unwrap a DIV that has text 'Hello', that text becomes orphan text node.
+             // We can wrap orphan text nodes later.
+             unwrap(el);
+          });
+
+          // Now we have a soup of P, H1.., headers, and text nodes.
+          // We need to ensure everything is inside a block element.
           
-          // FIRST: Replace literal newlines and carriage returns with spaces
-          // This fixes the "La\nsociété" problem from Word
-          result = result.replace(/[\r\n]+/g, ' ');
+          var resultHTML = '';
+          var nodes = Array.from(temp.childNodes);
           
-          // Remove Word-specific tags
-          result = result.replace(/<o:p><\/o:p>/gi, '');
-          result = result.replace(/<!--\[if[^>]*>[\s\S]*?<!\[endif\]-->/gi, '');
-          result = result.replace(/<!\[if[^>]*>[\s\S]*?<!\[endif\]>/gi, '');
+          nodes.forEach(function(node) {
+             if (node.nodeType === Node.TEXT_NODE) {
+                var text = node.textContent.trim();
+                if (text) {
+                   resultHTML += '<p>' + text + '</p>';
+                }
+             } else if (node.nodeType === Node.ELEMENT_NODE) {
+                if (['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI', 'BLOCKQUOTE'].includes(node.tagName)) {
+                   resultHTML += node.outerHTML;
+                } else if (node.tagName === 'BR') {
+                   // Ignore loose BR between blocks? Or keep?
+                   // If it's <br> it might be empty line.
+                   resultHTML += '<p><br></p>';
+                } else {
+                   // Other elements (B, I, IMG etc) that ended up at root? Wrap in P.
+                   resultHTML += '<p>' + node.outerHTML + '</p>';
+                }
+             }
+          });
           
-          // Remove empty span tags and merge text
-          result = result.replace(/<span[^>]*>\s*<\/span>/gi, '');
-          
-          // Replace single <br> NOT followed by another <br> with a space (Word soft line breaks)
-          result = result.replace(/<br\s*\/?>\s*(?!<br)/gi, ' ');
-          
-          // Now clean up double+ breaks to proper paragraph breaks
-          result = result.replace(/(<br\s*\/?>\s*){2,}/gi, '<br><br>');
-          
-          // Remove empty paragraphs
-          result = result.replace(/<p[^>]*>\s*(&nbsp;|\s)*\s*<\/p>/gi, '');
-          
-          // Clean up multiple spaces
-          result = result.replace(/\s{2,}/g, ' ');
-          
-          return result;
+          // Final cleanup of the resulting HTML string
+          var clean = resultHTML;
+          // Fix double Ps
+          return clean;
         },
 
         checkOverflow: function(element, pageIndex) {
@@ -863,19 +899,11 @@
               return newRightNode;
             } 
             else if (node.nodeType === Node.ELEMENT_NODE) {
-              // For elements, we can't easily "split" them unless we duplicate the element
-              // and move some children to the duplicate.
-              // BUT, for simple overflow extraction, we usually just want to move the last child.
-              // If the element ITSELF is the last child and needs splitting:
-              
               var children = Array.from(node.childNodes);
               if (children.length > 0) {
-                // Return the last child so the main loop can process it
                 return children[children.length - 1];
-              } else {
-                 // Empty element, maybe contains text? No, that would be a child text node.
-                 return null;
               }
+              return null;
             }
             return null;
           };
@@ -891,105 +919,79 @@
             // Try removing the last child entirely first
             element.removeChild(lastChild);
             
-            // If it STILL overflows after removing the child, then this child was NOT the (sole) culprit,
-            // or there are more previous siblings that also overflow.
-            // But we successfully removed it, so we keep it in removedNodes.
-            
-            // HOWEVER, if removing it fixed the overflow (or made it underflow),
-            // we might have removed too much if 'lastChild' was a huge block.
-            // Check if we are now WAY below the limit? 
-            // In a simple greedy algorithm, we just accept "it fits now".
-            
-            // BUT, the critical case: The page is now empty (or almost empty) but the removed node was huge.
-            // If the page is empty, we MUST split the removed node and put back the first part.
-            
+            // Critical Check: Did we empty the page?
             var pageIsEmpty = element.childNodes.length === 0 || (element.textContent.trim() === '' && element.querySelectorAll('img, table, div').length === 0);
             
-            if (pageIsEmpty && !hasOverflow()) { // It fits now (obviously, it's empty)
-               // But we don't want to leave it empty if we can fit part of the node.
-               // Put it back and try to split it.
+            if (pageIsEmpty && !hasOverflow()) { 
+               // logic: removing the last child resolved overflow, BUT page is now empty.
+               // This means that 'lastChild' ALONE was too big for the page.
+               
+               // We must put it back and try to split it.
                element.appendChild(lastChild);
                
                // Try to split this lastChild
-               // If it's a text node, split text. If element, move its last child out.
-               
+               var didSplitSwapped = false;
+
                if (lastChild.nodeType === Node.TEXT_NODE) {
                   var rightPart = splitNode(lastChild);
                   if (rightPart) {
-                    // splitNode put left part in DOM, we take right part out
                     element.removeChild(rightPart);
                     removedNodes.unshift(rightPart);
-                  } else {
-                    // Can't split further (single char), we must move it even if page empty ?
-                    // If single char overflows, font is too big for page. forceful move.
-                    element.removeChild(lastChild);
-                    removedNodes.unshift(lastChild);
-                  }
+                    didSplitSwapped = true;
+                  } 
                } else if (lastChild.nodeType === Node.ELEMENT_NODE) {
                   // If it has children, dive in.
                   if (lastChild.childNodes.length > 0) {
-                     var subLastChild = lastChild.lastChild;
-                     // We don't remove subLastChild yet, we just loop again.
-                     // The main loop looks at element.lastChild.
-                     // PROBLEM: element.lastChild IS lastChild.
-                     // We need to move the pointer to lastChild.
-                     
-                     // RECURSION STRATEGY CHANGE: 
-                     // Instead of complex pointers, let's keep it simple:
-                     // If we are here, we put the node back. 
-                     // We want to remove *part* of it.
-                     // The loop continues. lastChild is back in element.
-                     // We need to make sure we don't just remove it whole again.
-                     
-                     // We'll perform the extraction on the CHILD element.
+                     // We recursively extract from the child
                      var extractedFromChild = this.extractOverflow(lastChild);
+                     
                      if (extractedFromChild) {
-                        // We extracted stuff from the child.
-                        // Create a container for the extracted stuff?
-                        // extractOverflow returns HTML string.
-                        // We need DOM nodes for removedNodes array. 
+                        // We successfully extracted part of the child. 
+                        // The extracted part needs to be added to removedNodes.
+                        // However, removedNodes expects DOM nodes, extractOverflow returns HTML string.
+                        // We need to wrap this HTML string back into a container to be consistent?
+                        // Or just parse it?
                         
-                        // Wait, extractOverflow returns HTML string. That recursion is tricky.
-                        // Let's manually do one step of moving the grandchild.
+                        var tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = extractedFromChild;
+                        // Move all tempDiv children to removedNodes (in reverse order because unshift)
+                        // Actually we want to preserve order.
+                        // The 'extractedFromChild' is what GOES to the next page.
                         
-                        var grandChild = lastChild.lastChild;
-                        lastChild.removeChild(grandChild);
-                        // Loop continues... check overflow again. 
-                        // If still overflow, next loop will take the next grandchild.
+                        // BUT: We simply cannot easily mix "HTML String" return with "DOM Nodes" array logic here 
+                        // without restructuring.
                         
-                        // We need to add grandChild to removedNodes in a way that respects hierarchy?
-                        // NO, removedNodes is a flat list of stuff moved to next page.
-                        // If we move a grandchild, the next page gets the grandchild.
-                        // But the grandchild needs its parent wrapper!
-                        
-                        // Complexity detected.
-                        // FALLBACK: Just move the whole node if splitting is too hard.
-                        // But that causes the "Last Page Bug".
-                        
-                        // SIMPLIFIED SPLIT for Elements:
-                        // If element is <p> or <div> or <span>, we can clone it wrapper for the next page.
-                        
-                        var wrapper = lastChild.cloneNode(false); // shallow clone (tag + attributes)
-                        wrapper.appendChild(grandChild); // Move grandchild into wrapper
-                        
-                        removedNodes.unshift(wrapper);
-                        
-                        // IMPORTANT: We need to see if we can merge this wrapper with previous removed node if it was same parent?
-                        // For now, let's just push wrappers.
-                     } else {
-                        // Child is atomic or empty. Force move.
-                        element.removeChild(lastChild);
-                        removedNodes.unshift(lastChild);
+                        // SIMPLIFICATION:
+                        // Move the LAST grandchild out.
+                         var grandChild = lastChild.lastChild;
+                         if (grandChild) {
+                           lastChild.removeChild(grandChild);
+                           
+                           // We need to create a clone wrapper for the grandchild on the next page
+                           var wrapper = lastChild.cloneNode(false); // shallow clone
+                           wrapper.removeAttribute('id'); // prevent ID conflicts
+                           wrapper.appendChild(grandChild);
+                           
+                           removedNodes.unshift(wrapper);
+                           didSplitSwapped = true;
+                         }
                      }
-                  } else {
-                     // No children (e.g. <img> or empty <div>). Force move.
-                     element.removeChild(lastChild);
-                     removedNodes.unshift(lastChild);
                   }
                }
+
+               if (!didSplitSwapped) {
+                   // COULD NOT SPLIT.
+                   // This is the "Infinite Loop Killer" logic.
+                   // The element is too big, alone on the page, and unsplittable (e.g. big image).
+                   // WE MUST STOP MOVING IT.
+                   // We leave it on this page (it will overflow visibly, but won't loop).
+                   // We verify if we have anything ELSE in removedNodes to return?
+                   // No, we just break.
+                   break;
+               }
             } else {
-               // Normal case: removing it fixed overflow and page is not empty.
-               // Just keep it removed.
+               // Normal case: removing it fixed overflow (or it still overflows but page isn't empty yet).
+               // Just keep it moved.
                removedNodes.unshift(lastChild);
             }
             

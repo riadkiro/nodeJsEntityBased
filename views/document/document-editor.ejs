@@ -120,7 +120,7 @@
                 @blur="syncPageContent($event, index)"
                 x-init="$el.innerHTML = page.content || ''"
                 x-ref="pageContent"
-                :style="'font-family: Times New Roman, serif; font-size: 12pt; white-space: pre-wrap; word-wrap: break-word; line-height: 1.15; padding-top: ' + doc.margins.top + 'px; padding-bottom: ' + doc.margins.bottom + 'px; padding-left: ' + doc.margins.left + 'px; padding-right: ' + doc.margins.right + 'px;'"
+                :style="'font-family: Times New Roman, serif; font-size: 12pt; white-space: pre-wrap; word-wrap: break-word; line-height: 1.15; padding-top: ' + doc.margins.top + 'px; padding-bottom: ' + doc.margins.bottom + 'px; padding-left: ' + doc.margins.left + 'px; padding-right: ' + doc.margins.right + 'px; overflow: hidden;'"
               ></div>
               
               <!-- DESIGN MODE: Layout with rows -->
@@ -683,30 +683,58 @@
             
             if (overflowContent) {
               // Create next page if it doesn't exist
-              if (pageIndex + 1 >= this.doc.pages.length) {
+              var nextPageIndex = pageIndex + 1;
+              var isNewPage = false;
+              
+              if (nextPageIndex >= this.doc.pages.length) {
                 this.doc.pages.push({
                   content: '',
                   elements: [],
-                  background: { color: '#ffffff' },
+                   background: { color: '#ffffff' },
                   order: this.doc.pages.length
                 });
+                isNewPage = true;
               }
               
               // Prepend overflow to next page
-              var nextPageContent = this.doc.pages[pageIndex + 1].content || '';
-              this.doc.pages[pageIndex + 1].content = overflowContent + nextPageContent;
+              // Use a temp timeout to let data update before reading back? 
+              // No, we can just update the data object directly.
+              var nextPageData = this.doc.pages[nextPageIndex];
+              var oldContent = nextPageData.content || '';
+              nextPageData.content = overflowContent + oldContent;
               
               // Update current page content
               this.doc.pages[pageIndex].content = element.innerHTML;
               
-              // After Alpine re-renders, update DOM and check next page for overflow too
+              // Wait for DOM to assume new pages exist
+              var attemptCount = 0;
+              var maxAttempts = 20; // Try for ~1 second (20 * 50ms)
+              
+              var continuePagination = function() {
+                 var nextPageElement = document.querySelector('[data-page-index="' + nextPageIndex + '"]');
+                 if (nextPageElement) {
+                   // Ensure content is synced in DOM if it wasn't a fresh init
+                   if (!isNewPage) {
+                      nextPageElement.innerHTML = self.doc.pages[nextPageIndex].content;
+                   }
+                   // Force layout reflow
+                   var h = nextPageElement.offsetHeight;
+                   
+                   // Continue the chain
+                   self.checkOverflow(nextPageElement, nextPageIndex);
+                 } else {
+                   attemptCount++;
+                   if (attemptCount < maxAttempts) {
+                     setTimeout(continuePagination, 50);
+                   } else {
+                     console.error('Pagination aborted: Could not find page ' + nextPageIndex + ' after creation.');
+                   }
+                 }
+              };
+              
+              // Start checking for next page
               this.$nextTick(function() {
-                var nextPageElement = document.querySelector('[data-page-index="' + (pageIndex + 1) + '"]');
-                if (nextPageElement) {
-                  // Update the DOM with new content (since x-init only runs once)
-                  nextPageElement.innerHTML = self.doc.pages[pageIndex + 1].content;
-                  self.checkOverflow(nextPageElement, pageIndex + 1);
-                }
+                 continuePagination();
               });
             }
           }
@@ -799,56 +827,182 @@
         },
 
         extractOverflow: function(element) {
-          // Use a more robust iterative approach
-          // Instead of calculating heights, we'll remove elements from the end
-          // until scrollHeight <= clientHeight
-          
+          // Use a robust iterative approach with recursive splitting for large nodes
           var removedNodes = [];
-          var maxIterations = 100; // Safety limit
+          var maxIterations = 2000; // Increased safety limit for fine splitting
           var iterations = 0;
           
-          // First, check if there's actually overflow
-          if (element.scrollHeight <= element.clientHeight) {
-            return ''; // No overflow
-          }
-          
-          // Get all top-level child nodes
-          var children = Array.from(element.childNodes);
-          
-          // If there are no children or only one, we can't split
-          if (children.length <= 1) {
+          // Helper to check overflow
+          var hasOverflow = function() {
+            return element.scrollHeight > element.clientHeight;
+          };
+
+          if (!hasOverflow()) {
             return '';
           }
           
-          // Iteratively remove nodes from the end until no overflow
-          while (element.scrollHeight > element.clientHeight && iterations < maxIterations) {
-            // Remove the last child
+          // Helper to split a node (text or element) if it's too big
+          var splitNode = function(node) {
+            // Cannot split empty nodes or small text
+            if (!node) return null;
+            
+            if (node.nodeType === Node.TEXT_NODE) {
+              var text = node.textContent;
+              if (text.length <= 1) return null; // Can't split single char
+              
+              var mid = Math.floor(text.length / 2);
+              var rightText = text.substring(mid);
+              var leftText = text.substring(0, mid);
+              
+              node.textContent = leftText;
+              var newRightNode = document.createTextNode(rightText);
+              
+              if (node.parentNode) {
+                node.parentNode.insertBefore(newRightNode, node.nextSibling);
+              }
+              return newRightNode;
+            } 
+            else if (node.nodeType === Node.ELEMENT_NODE) {
+              // For elements, we can't easily "split" them unless we duplicate the element
+              // and move some children to the duplicate.
+              // BUT, for simple overflow extraction, we usually just want to move the last child.
+              // If the element ITSELF is the last child and needs splitting:
+              
+              var children = Array.from(node.childNodes);
+              if (children.length > 0) {
+                // Return the last child so the main loop can process it
+                return children[children.length - 1];
+              } else {
+                 // Empty element, maybe contains text? No, that would be a child text node.
+                 return null;
+              }
+            }
+            return null;
+          };
+
+          // Iteratively remove/split nodes from the end until no overflow
+          while (hasOverflow() && iterations < maxIterations) {
             var lastChild = element.lastChild;
             
             if (!lastChild) {
-              break; // No more children to remove
+              break; 
             }
             
-            // Remove and store the node
+            // Try removing the last child entirely first
             element.removeChild(lastChild);
-            removedNodes.unshift(lastChild); // Add to beginning of array
+            
+            // If it STILL overflows after removing the child, then this child was NOT the (sole) culprit,
+            // or there are more previous siblings that also overflow.
+            // But we successfully removed it, so we keep it in removedNodes.
+            
+            // HOWEVER, if removing it fixed the overflow (or made it underflow),
+            // we might have removed too much if 'lastChild' was a huge block.
+            // Check if we are now WAY below the limit? 
+            // In a simple greedy algorithm, we just accept "it fits now".
+            
+            // BUT, the critical case: The page is now empty (or almost empty) but the removed node was huge.
+            // If the page is empty, we MUST split the removed node and put back the first part.
+            
+            var pageIsEmpty = element.childNodes.length === 0 || (element.textContent.trim() === '' && element.querySelectorAll('img, table, div').length === 0);
+            
+            if (pageIsEmpty && !hasOverflow()) { // It fits now (obviously, it's empty)
+               // But we don't want to leave it empty if we can fit part of the node.
+               // Put it back and try to split it.
+               element.appendChild(lastChild);
+               
+               // Try to split this lastChild
+               // If it's a text node, split text. If element, move its last child out.
+               
+               if (lastChild.nodeType === Node.TEXT_NODE) {
+                  var rightPart = splitNode(lastChild);
+                  if (rightPart) {
+                    // splitNode put left part in DOM, we take right part out
+                    element.removeChild(rightPart);
+                    removedNodes.unshift(rightPart);
+                  } else {
+                    // Can't split further (single char), we must move it even if page empty ?
+                    // If single char overflows, font is too big for page. forceful move.
+                    element.removeChild(lastChild);
+                    removedNodes.unshift(lastChild);
+                  }
+               } else if (lastChild.nodeType === Node.ELEMENT_NODE) {
+                  // If it has children, dive in.
+                  if (lastChild.childNodes.length > 0) {
+                     var subLastChild = lastChild.lastChild;
+                     // We don't remove subLastChild yet, we just loop again.
+                     // The main loop looks at element.lastChild.
+                     // PROBLEM: element.lastChild IS lastChild.
+                     // We need to move the pointer to lastChild.
+                     
+                     // RECURSION STRATEGY CHANGE: 
+                     // Instead of complex pointers, let's keep it simple:
+                     // If we are here, we put the node back. 
+                     // We want to remove *part* of it.
+                     // The loop continues. lastChild is back in element.
+                     // We need to make sure we don't just remove it whole again.
+                     
+                     // We'll perform the extraction on the CHILD element.
+                     var extractedFromChild = this.extractOverflow(lastChild);
+                     if (extractedFromChild) {
+                        // We extracted stuff from the child.
+                        // Create a container for the extracted stuff?
+                        // extractOverflow returns HTML string.
+                        // We need DOM nodes for removedNodes array. 
+                        
+                        // Wait, extractOverflow returns HTML string. That recursion is tricky.
+                        // Let's manually do one step of moving the grandchild.
+                        
+                        var grandChild = lastChild.lastChild;
+                        lastChild.removeChild(grandChild);
+                        // Loop continues... check overflow again. 
+                        // If still overflow, next loop will take the next grandchild.
+                        
+                        // We need to add grandChild to removedNodes in a way that respects hierarchy?
+                        // NO, removedNodes is a flat list of stuff moved to next page.
+                        // If we move a grandchild, the next page gets the grandchild.
+                        // But the grandchild needs its parent wrapper!
+                        
+                        // Complexity detected.
+                        // FALLBACK: Just move the whole node if splitting is too hard.
+                        // But that causes the "Last Page Bug".
+                        
+                        // SIMPLIFIED SPLIT for Elements:
+                        // If element is <p> or <div> or <span>, we can clone it wrapper for the next page.
+                        
+                        var wrapper = lastChild.cloneNode(false); // shallow clone (tag + attributes)
+                        wrapper.appendChild(grandChild); // Move grandchild into wrapper
+                        
+                        removedNodes.unshift(wrapper);
+                        
+                        // IMPORTANT: We need to see if we can merge this wrapper with previous removed node if it was same parent?
+                        // For now, let's just push wrappers.
+                     } else {
+                        // Child is atomic or empty. Force move.
+                        element.removeChild(lastChild);
+                        removedNodes.unshift(lastChild);
+                     }
+                  } else {
+                     // No children (e.g. <img> or empty <div>). Force move.
+                     element.removeChild(lastChild);
+                     removedNodes.unshift(lastChild);
+                  }
+               }
+            } else {
+               // Normal case: removing it fixed overflow and page is not empty.
+               // Just keep it removed.
+               removedNodes.unshift(lastChild);
+            }
             
             iterations++;
           }
           
-          // If we removed everything and still have overflow, something's wrong
-          if (element.childNodes.length === 0 && removedNodes.length > 0) {
-            // Put back the first removed node at least
-            element.appendChild(removedNodes.shift());
-          }
-          
-          // Convert removed nodes to HTML
+          // Reconstruct HTML from removedNodes
           var overflowHtml = '';
           removedNodes.forEach(function(node) {
             if (node.nodeType === Node.ELEMENT_NODE) {
               overflowHtml += node.outerHTML;
             } else if (node.nodeType === Node.TEXT_NODE) {
-              overflowHtml += node.textContent;
+              overflowHtml += node.textContent ? node.textContent.replace(/\n/g, '<br>') : '';
             }
           });
           

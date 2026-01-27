@@ -67,7 +67,12 @@
   <div class="flex-1 flex overflow-hidden">
     <!-- Toolbar (Left) -->
     <div class="w-16 bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col items-center py-4 gap-4">
-      <button class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center" title="Texte">
+      <button 
+        class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center cursor-move" 
+        title="Texte"
+        draggable="true"
+        @dragstart="startDrag($event, 'text')"
+      >
         <iconify-icon icon="solar:text-bold-duotone" width="24"></iconify-icon>
       </button>
       <button class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center" title="Image">
@@ -181,10 +186,44 @@
                       <!-- Row content (columns) -->
                       <div class="grid gap-4" :style="'grid-template-columns: repeat(' + (row.columns || 1) + ', minmax(0, 1fr))'">
                         <template x-for="col in (row.columns || 1)" :key="'col-' + col">
-                          <div class="rounded min-h-[100px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center group/col relative cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                            <button class="w-8 h-8 rounded-full bg-white dark:bg-gray-600 shadow-sm flex items-center justify-center text-gray-400 hover:text-primary transition-colors">
-                              <iconify-icon icon="solar:add-circle-bold" width="20"></iconify-icon>
-                            </button>
+                          <div 
+                            class="rounded min-h-[100px] group/col relative transition-all border border-dashed border-transparent"
+                            x-data="{ isOver: false, isHover: false }"
+                            @mouseenter="isHover = true"
+                            @mouseleave="isHover = false"
+                            :style="isHover ? 'border-color: #e5e7eb !important;' : ''"
+                            :class="{ 
+                              'bg-gray-100 dark:bg-gray-800': !(row.elements || []).some(e => e.column === col - 1),
+                              'ring-2 ring-primary/50 bg-primary/5': isOver 
+                            }"
+                            @dragover.prevent="isOver = true"
+                            @dragleave="isOver = false"
+                            @drop="isOver = false; handleDrop($event, index, rowIndex, col - 1)"
+                          >
+                            <!-- Render Elements -->
+                            <div class="flex flex-col gap-2 relative z-10" :class="{ 'p-4': !(row.elements || []).some(e => e.column === col - 1) }">
+                              <template x-for="element in (row.elements || []).filter(e => e.column === col - 1)" :key="element.id">
+                                <div class="group/el">
+                                  <div 
+                                    contenteditable="true" 
+                                    class="outline-none text-sm min-h-[1.5em] p-1 border border-transparent hover:border-gray-100 focus:!border-blue-400/30 focus:!ring-2 focus:!ring-blue-400/10 rounded transition-all"
+                                    style="outline: none !important;"
+                                    x-text="element.content"
+                                    @blur="updateElementContent($event, index, rowIndex, element.id)"
+                                  ></div>
+                                </div>
+                              </template>
+                            </div>
+
+                            <!-- Empty State / Add Button -->
+                            <div 
+                              x-show="!(row.elements || []).some(e => e.column === col - 1)" 
+                              class="absolute inset-0 flex items-center justify-center pointer-events-none"
+                            >
+                              <button class="w-8 h-8 rounded-full bg-white dark:bg-gray-600 shadow-sm flex items-center justify-center text-gray-400 pointer-events-auto">
+                                <iconify-icon icon="solar:add-circle-bold" width="20"></iconify-icon>
+                              </button>
+                            </div>
                           </div>
                         </template>
                       </div>
@@ -399,6 +438,40 @@
           var row = this.doc.pages[pageIndex].rows[rowIndex];
           if ((row.columns || 1) < 12) {
             row.columns = (row.columns || 1) + 1;
+            this.saveDocument();
+          }
+        },
+
+        startDrag: function(event, type) {
+          event.dataTransfer.setData('type', type);
+          event.dataTransfer.effectAllowed = 'copy';
+        },
+
+        handleDrop: function(event, pageIndex, rowIndex, colIndex) {
+          this.isDragging = false;
+          var type = event.dataTransfer.getData('type');
+          
+          if (type === 'text') {
+            if (!this.doc.pages[pageIndex].rows[rowIndex].elements) {
+              this.doc.pages[pageIndex].rows[rowIndex].elements = [];
+            }
+            
+            this.doc.pages[pageIndex].rows[rowIndex].elements.push({
+              id: Date.now(),
+              type: 'text',
+              content: 'Nouveau texte',
+              column: colIndex
+            });
+            this.saveDocument();
+          }
+        },
+
+        updateElementContent: function(event, pageIndex, rowIndex, elementId) {
+          var content = event.target.innerText;
+          var row = this.doc.pages[pageIndex].rows[rowIndex];
+          var element = row.elements.find(e => e.id === elementId);
+          if (element) {
+            element.content = content;
             this.saveDocument();
           }
         },

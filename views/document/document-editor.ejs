@@ -623,89 +623,138 @@
           // Create a temporary div to parse HTML
           var temp = document.createElement('div');
           
-          // Pre-cleaning on the raw string BEFORE setting innerHTML
-          // This is crucial for comments that browsers might ignore or hide
-          
-          // 1. Unwrap "Non-VML" content (The real images Word hides in comments)
-          // Matches <!--[if !vml]--><img ...><!--[endif]-->
+          // Pre-cleaning
           html = html.replace(/<!--\[if\s+!vml\]-->([\s\S]*?)<!--\[endif\]-->/gi, '$1');
           html = html.replace(/<!\[if\s+!vml\]>([\s\S]*?)<!\[endif\]>/gi, '$1');
-          
-          // 2. Remove "VML" content (The vector shapes we don't want)
           html = html.replace(/<!--\[if\s+vml\]>([\s\S]*?)<!\[endif\]-->/gi, '');
           html = html.replace(/<!\[if\s+vml\]>([\s\S]*?)<!\[endif\]>/gi, '');
           html = html.replace(/<!--\[if\s+gte\s+vml\s+1\]>([\s\S]*?)<!\[endif\]-->/gi, '');
           
           temp.innerHTML = html;
           
-          // Helper to unwrap element (keep children, remove tag)
           function unwrap(el) {
              var parent = el.parentNode;
              while (el.firstChild) parent.insertBefore(el.firstChild, el);
              parent.removeChild(el);
           }
 
-          // Gentle Clean: Preserve structure, remove only garbage.
+          // 1. General Gentle Clean (Preserves formatting for normal text)
           var elementsToClean = temp.querySelectorAll('*');
           elementsToClean.forEach(function(el) {
-            // Remove class attributes (Word classes are useless here)
             el.removeAttribute('class');
             el.removeAttribute('lang');
             
-            // Clean styles
+            var tagName = el.tagName;
+            // Skip tables/lists here, we handle them aggressively below
+            if (['TABLE','THEAD','TBODY','TFOOT','TR','TH','TD','UL','OL','LI'].includes(tagName)) return;
+
             var style = el.getAttribute('style');
             if (style) {
-              // Remove Microsoft Office garbage
               style = style.replace(/mso-[^;]+;?/gi, '');
-              
-              // Remove absolute positioning (breaks flow)
               style = style.replace(/position:[^;]+;?/gi, '');
-              style = style.replace(/top:[^;]+;?/gi, '');
-              style = style.replace(/left:[^;]+;?/gi, '');
-              style = style.replace(/right:[^;]+;?/gi, '');
-              style = style.replace(/bottom:[^;]+;?/gi, '');
-              
-              // Remove margins/padding that might conflict with page layout
               style = style.replace(/margin[^;]*;?/gi, '');
               style = style.replace(/padding[^;]*;?/gi, '');
-              
               el.setAttribute('style', style);
             }
             
-            // Safety for specific elements
-            if (el.tagName === 'TABLE') {
+            if (tagName === 'IMG') {
                el.style.maxWidth = '100%';
-               el.style.borderCollapse = 'collapse';
-               // border?
-            }
-            if (el.tagName === 'IMG') {
-               el.style.maxWidth = '100%';
-               el.style.height = 'auto'; // Maintain aspect ratio
+               el.style.height = 'auto'; 
                el.removeAttribute('width');
                el.removeAttribute('height');
-               // Remove VML attributes
                el.removeAttribute('v:shapes');
             }
           });
           
-          // Get clean HTML
+          // 2. DEEP CLEAN & BEAUTIFY: Tables and Lists
+          // User wants to strip ALL original styles inside tables/lists and apply a "Beautiful" look.
+          
+          // Tables
+          var tables = temp.querySelectorAll('table');
+          tables.forEach(function(table) {
+             // 2a. Nuke styles from Table and ALL descendants
+             table.removeAttribute('style');
+             table.removeAttribute('border');
+             table.removeAttribute('cellspacing');
+             table.removeAttribute('cellpadding');
+             table.removeAttribute('width');
+             
+             var descendants = table.querySelectorAll('*');
+             descendants.forEach(function(d) {
+                 d.removeAttribute('style'); // Removes text color, font, bg, everything.
+                 d.removeAttribute('class');
+                 d.removeAttribute('width');
+                 d.removeAttribute('height');
+                 d.removeAttribute('bgcolor');
+                 d.removeAttribute('align');
+                 d.removeAttribute('valign');
+             });
+             
+             // 2b. Apply "Beautiful Table" Inline Styles
+             // Container
+             table.style.width = '100%';
+             table.style.borderCollapse = 'collapse';
+             table.style.marginBottom = '1.5em';
+             table.style.marginTop = '0.5em';
+             table.style.fontFamily = 'inherit'; // or sans-serif?
+             table.style.fontSize = '0.95em'; // slightly compact
+             table.style.border = '1px solid #e5e7eb'; // outer border
+             
+             // Headers
+             var ths = table.querySelectorAll('th');
+             ths.forEach(function(th) {
+                th.style.backgroundColor = '#f9fafb'; // gray-50
+                th.style.color = '#111827'; // gray-900
+                th.style.fontWeight = '600';
+                th.style.textAlign = 'left';
+                th.style.padding = '12px 16px';
+                th.style.borderBottom = '1px solid #e5e7eb';
+             });
+             
+             // Cells
+             var tds = table.querySelectorAll('td');
+             tds.forEach(function(td) {
+                td.style.padding = '12px 16px';
+                td.style.borderBottom = '1px solid #e5e7eb'; // separators
+                td.style.color = '#374151'; // gray-700
+                td.style.verticalAlign = 'top';
+             });
+          });
+
+          // Lists
+          var lists = temp.querySelectorAll('ul, ol');
+          lists.forEach(function(list) {
+             // 2c. Nuke styles from List and ALL descendants
+             list.removeAttribute('style');
+             
+             var descendants = list.querySelectorAll('*');
+             descendants.forEach(function(d) {
+                 d.removeAttribute('style');
+                 d.removeAttribute('class');
+             });
+             
+             // 2d. Apply "Beautiful List" Styles
+             list.style.paddingLeft = '1.5em';
+             list.style.marginBottom = '1em';
+             list.style.color = '#374151';
+             
+             if (list.tagName === 'UL') list.style.listStyleType = 'disc';
+             if (list.tagName === 'OL') list.style.listStyleType = 'decimal';
+             
+             var lis = list.querySelectorAll('li');
+             lis.forEach(function(li) {
+                li.style.marginBottom = '0.5em';
+                li.style.lineHeight = '1.6';
+             });
+          });
+          
+          // Final string cleanup
           var result = temp.innerHTML;
-          
-          // Standard Word Regex Cleanups
-          // Replace literal newlines and carriage returns with spaces
           result = result.replace(/[\r\n]+/g, ' ');
-          
-          // Remove leftover Word-specific tags
           result = result.replace(/<o:p><\/o:p>/gi, '');
-          result = result.replace(/<!--[\s\S]*?-->/gi, ''); // Remove all remaining comments
-          
-          // Remove empty span tags
+          result = result.replace(/<!--[\s\S]*?-->/gi, ''); 
           result = result.replace(/<span[^>]*>\s*<\/span>/gi, '');
-          
-          // Replace single <br> NOT followed by another <br> with a space (Word soft line breaks)
           result = result.replace(/<br\s*\/?>\s*(?!<br)/gi, ' ');
-          
-          // Clean up multiple spaces
           result = result.replace(/\s{2,}/g, ' ');
           
           return result;

@@ -251,81 +251,134 @@
     </div>
 
     <!-- Properties Panel -->
-    <div class="w-80 bg-white dark:bg-gray-900 border-l dark:border-gray-800 p-4 overflow-auto">
-      <h3 class="font-semibold mb-4 dark:text-white">Propriétés</h3>
+    <div class="w-80 bg-white dark:bg-gray-900 border-l dark:border-gray-800 flex flex-col h-full">
+      <!-- Panel Header -->
+      <div class="p-4 border-b dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
+        <h3 class="text-xs font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Document Settings</h3>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white mt-1">Propriétés</h2>
+      </div>
       
-      <div class="space-y-4 mb-6">
-        <div>
-          <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Nom du document</label>
-          <input type="text" x-model="doc.name" @input="saveDocument" class="form-input">
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Format</label>
-          <p class="text-sm text-gray-600 dark:text-gray-400" x-text="doc.format + ' - ' + doc.orientation"></p>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Dimensions</label>
-          <p class="text-sm text-gray-600 dark:text-gray-400" x-text="doc.dimensions.width + ' x ' + doc.dimensions.height + ' px'"></p>
-        </div>
-        
-        <!-- Margins Section -->
-        <div>
-          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Marges (px)</label>
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="text-xs text-gray-500">Haut</label>
-              <input type="number" x-model.number="doc.margins.top" @input="saveDocument" class="form-input text-sm" min="0" max="200">
+      <div class="flex-1 overflow-auto">
+        <!-- Section: Information -->
+        <div class="border-b dark:border-gray-700">
+          <button @click="openSections.info = !openSections.info" class="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
+            <div class="flex items-center gap-3">
+              <iconify-icon icon="tabler:info-circle" width="20" class="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
+              <span class="text-sm font-bold text-gray-700 dark:text-gray-200">Général</span>
             </div>
-            <div>
-              <label class="text-xs text-gray-500">Bas</label>
-              <input type="number" x-model.number="doc.margins.bottom" @input="saveDocument" class="form-input text-sm" min="0" max="200">
-            </div>
-            <div>
-              <label class="text-xs text-gray-500">Gauche</label>
-              <input type="number" x-model.number="doc.margins.left" @input="saveDocument" class="form-input text-sm" min="0" max="200">
-            </div>
-            <div>
-              <label class="text-xs text-gray-500">Droite</label>
-              <input type="number" x-model.number="doc.margins.right" @input="saveDocument" class="form-input text-sm" min="0" max="200">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="border-t dark:border-gray-700 pt-4">
-        <div class="flex items-center justify-between mb-3">
-          <h4 class="font-medium text-sm dark:text-white">Pages (<span x-text="doc.pages.length"></span>)</h4>
-          <button @click="addPage" class="text-primary hover:text-primary-dark">
-            <iconify-icon icon="solar:add-circle-bold" width="20"></iconify-icon>
+            <iconify-icon :icon="openSections.info ? 'tabler:chevron-up' : 'tabler:chevron-down'" width="16" class="text-gray-400"></iconify-icon>
           </button>
-        </div>
-
-        <div class="space-y-2 max-h-[300px] overflow-auto">
-          <template x-for="(page, index) in doc.pages" :key="index">
-            <div class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer" :class="{ 'bg-primary/10 border border-primary': selectedPageIndex === index }" @click="selectPage(index)">
-              <iconify-icon icon="solar:document-text-bold-duotone" width="16" class="text-gray-400"></iconify-icon>
-              <span class="flex-1 text-sm" x-text="'Page ' + (index + 1)"></span>
-              <span class="text-xs text-gray-400" x-text="page.elements.length + ' élément(s)'"></span>
+          
+          <div x-show="openSections.info" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="px-4 pb-4 space-y-4">
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Nom du document</label>
+              <input type="text" x-model="doc.name" @input="saveDocument" class="form-input bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-sm focus:ring-primary/20">
             </div>
-          </template>
-        </div>
-      </div>
-
-      <template x-if="selectedPageIndex !== null">
-        <div class="border-t dark:border-gray-700 pt-4 mt-4">
-          <h4 class="font-medium text-sm mb-3 dark:text-white">Page <span x-text="selectedPageIndex + 1"></span></h4>
-          <div class="space-y-2">
-            <button @click="duplicatePage(selectedPageIndex)" class="btn btn-outline-primary btn-sm w-full">
-              <iconify-icon icon="solar:copy-bold" class="mr-1"></iconify-icon>
-              Dupliquer
-            </button>
-            <button @click="deletePage(selectedPageIndex)" x-show="doc.pages.length > 1" class="btn btn-outline-danger btn-sm w-full">
-              <iconify-icon icon="solar:trash-bin-trash-bold" class="mr-1"></iconify-icon>
-              Supprimer
-            </button>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Format</label>
+                <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="doc.format"></p>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Orientation</label>
+                <p class="text-sm font-medium text-gray-900 dark:text-white capitalize" x-text="doc.orientation"></p>
+              </div>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Dimensions</label>
+              <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="doc.dimensions.width + ' x ' + doc.dimensions.height + ' px'"></p>
+            </div>
           </div>
         </div>
-      </template>
+
+        <!-- Section: Margins -->
+        <div class="border-b dark:border-gray-700">
+          <button @click="openSections.margins = !openSections.margins" class="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
+            <div class="flex items-center gap-3">
+              <iconify-icon icon="tabler:layout-padding-left" width="20" class="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
+              <span class="text-sm font-bold text-gray-700 dark:text-gray-200">Marges de page</span>
+            </div>
+            <iconify-icon :icon="openSections.margins ? 'tabler:chevron-up' : 'tabler:chevron-down'" width="16" class="text-gray-400"></iconify-icon>
+          </button>
+          
+          <div x-show="openSections.margins" x-transition class="px-4 pb-4">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 block mb-1">Haut</label>
+                <div class="relative">
+                  <input type="number" x-model.number="doc.margins.top" @input="saveDocument" class="form-input pl-2 pr-8 py-1.5 text-sm" min="0" max="200">
+                  <span class="absolute right-2 top-1.5 text-[10px] text-gray-400">px</span>
+                </div>
+              </div>
+              <div>
+                <label class="text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 block mb-1">Bas</label>
+                <div class="relative">
+                  <input type="number" x-model.number="doc.margins.bottom" @input="saveDocument" class="form-input pl-2 pr-8 py-1.5 text-sm" min="0" max="200">
+                  <span class="absolute right-2 top-1.5 text-[10px] text-gray-400">px</span>
+                </div>
+              </div>
+              <div>
+                <label class="text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 block mb-1">Gauche</label>
+                <div class="relative">
+                  <input type="number" x-model.number="doc.margins.left" @input="saveDocument" class="form-input pl-2 pr-8 py-1.5 text-sm" min="0" max="200">
+                  <span class="absolute right-2 top-1.5 text-[10px] text-gray-400">px</span>
+                </div>
+              </div>
+              <div>
+                <label class="text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 block mb-1">Droite</label>
+                <div class="relative">
+                  <input type="number" x-model.number="doc.margins.right" @input="saveDocument" class="form-input pl-2 pr-8 py-1.5 text-sm" min="0" max="200">
+                  <span class="absolute right-2 top-1.5 text-[10px] text-gray-400">px</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-b dark:border-gray-700">
+          <div @click="openSections.pages = !openSections.pages" class="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group cursor-pointer">
+            <div class="flex items-center gap-3">
+              <iconify-icon icon="tabler:files" width="20" class="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-bold text-gray-700 dark:text-gray-200">Pages</span>
+                <span class="bg-gray-100 dark:bg-gray-800 text-gray-500 text-[10px] font-bold px-1.5 py-0.5 rounded-full" x-text="doc.pages.length"></span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <button @click.stop="addPage" class="w-6 h-6 rounded-full hover:bg-primary/10 text-primary flex items-center justify-center transition-all hover:scale-110 active:scale-95">
+                <iconify-icon icon="tabler:plus" width="18"></iconify-icon>
+              </button>
+              <iconify-icon :icon="openSections.pages ? 'tabler:chevron-up' : 'tabler:chevron-down'" width="16" class="text-gray-400"></iconify-icon>
+            </div>
+          </div>
+
+          <div x-show="openSections.pages" x-transition class="px-2 pb-4">
+            <div class="space-y-1 max-h-[250px] overflow-auto px-2">
+              <template x-for="(page, index) in doc.pages" :key="index">
+                <div 
+                  class="group/page flex items-center gap-3 p-2 rounded-lg transition-all cursor-pointer relative" 
+                  :class="selectedPageIndex === index ? 'bg-primary/5 ring-1 ring-primary/20 shadow-sm' : 'hover:bg-gray-50 dark:hover:bg-gray-800'" 
+                  @click="selectPage(index)"
+                >
+                  <div class="w-8 h-10 rounded-md bg-white dark:bg-gray-700 border dark:border-gray-600 flex items-center justify-center shadow-xs group-hover/page:scale-105 transition-transform" :class="{ 'border-primary/30 ring-2 ring-primary/10': selectedPageIndex === index }">
+                    <span class="text-[10px] font-bold text-gray-400" x-text="index + 1"></span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold truncate" :class="selectedPageIndex === index ? 'text-primary' : 'text-gray-700 dark:text-gray-200'" x-text="'Page ' + (index + 1)"></p>
+                    <p class="text-[10px] text-gray-400" x-text="page.elements.length + ' élément(s)'"></p>
+                  </div>
+                  <div class="opacity-0 group-hover/page:opacity-100 transition-opacity flex items-center gap-1">
+                    <button @click.stop="duplicatePage(index)" class="p-1 text-gray-400 hover:text-primary"><iconify-icon icon="tabler:copy" width="14"></iconify-icon></button>
+                    <button @click.stop="deletePage(index)" x-show="doc.pages.length > 1" class="p-1 text-gray-400 hover:text-danger"><iconify-icon icon="tabler:trash" width="14"></iconify-icon></button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+
+      </div>
     </div>
   </div>
 </div>
@@ -366,6 +419,11 @@
         selectedRow: null,
         lastSaved: null,
         saveTimeout: null,
+        openSections: {
+          info: true,
+          margins: true,
+          pages: true
+        },
 
         formats: {
           'A4': { width: 794, height: 1123 },

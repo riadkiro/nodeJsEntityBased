@@ -622,6 +622,20 @@
         cleanWordHtml: function(html) {
           // Create a temporary div to parse HTML
           var temp = document.createElement('div');
+          
+          // Pre-cleaning on the raw string BEFORE setting innerHTML
+          // This is crucial for comments that browsers might ignore or hide
+          
+          // 1. Unwrap "Non-VML" content (The real images Word hides in comments)
+          // Matches <!--[if !vml]--><img ...><!--[endif]-->
+          html = html.replace(/<!--\[if\s+!vml\]-->([\s\S]*?)<!--\[endif\]-->/gi, '$1');
+          html = html.replace(/<!\[if\s+!vml\]>([\s\S]*?)<!\[endif\]>/gi, '$1');
+          
+          // 2. Remove "VML" content (The vector shapes we don't want)
+          html = html.replace(/<!--\[if\s+vml\]>([\s\S]*?)<!\[endif\]-->/gi, '');
+          html = html.replace(/<!\[if\s+vml\]>([\s\S]*?)<!\[endif\]>/gi, '');
+          html = html.replace(/<!--\[if\s+gte\s+vml\s+1\]>([\s\S]*?)<!\[endif\]-->/gi, '');
+          
           temp.innerHTML = html;
           
           // Helper to unwrap element (keep children, remove tag)
@@ -631,82 +645,70 @@
              parent.removeChild(el);
           }
 
-          // 1. Remove all styles and classes everywhere
-          var allElements = temp.querySelectorAll('*');
-          allElements.forEach(function(el) {
-            el.removeAttribute('style');
+          // Gentle Clean: Preserve structure, remove only garbage.
+          var elementsToClean = temp.querySelectorAll('*');
+          elementsToClean.forEach(function(el) {
+            // Remove class attributes (Word classes are useless here)
             el.removeAttribute('class');
-            el.removeAttribute('width');
-            el.removeAttribute('height');
-            el.removeAttribute('align');
-          });
-
-          // 2. Flatten structure: Convert divs, sections, articles to P if they contain text directly, 
-          // or unwrap them if they contain other blocks.
-          // Simplest strategy: Convert EVERYTHING to P, B, I, U, BR.
-          
-          // Remove comments and scripts
-          var toRemove = temp.querySelectorAll('script, style, meta, link, object, embed, iframe, comment');
-          toRemove.forEach(function(el) { el.remove(); });
-          
-          // Process Tables: Word uses tables for layout. We want to linearize them.
-          var tables = temp.querySelectorAll('table');
-          tables.forEach(function(table) {
-             // Create a frag to hold extracted content
-             var div = document.createElement('div');
-             var rows = table.querySelectorAll('tr');
-             rows.forEach(function(row) {
-                 var p = document.createElement('p');
-                 var cells = row.querySelectorAll('td, th');
-                 cells.forEach(function(cell) {
-                     p.innerHTML += cell.innerHTML + ' '; // Add space between cells
-                 });
-                 div.appendChild(p);
-             });
-             table.parentNode.replaceChild(div, table);
-          });
-          
-          // Unwrap basic containers that might nest content deep
-          var containers = temp.querySelectorAll('div, section, article, span, font, center');
-          containers.forEach(function(el) {
-             // If it's a block container (div), we might want to keep it as P if it has text?
-             // Or just unwrap? 
-             // Better strategy: Unwrap everything. Let standard blocks like P, H1-H6 stay.
-             // But if we unwrap a DIV that has text 'Hello', that text becomes orphan text node.
-             // We can wrap orphan text nodes later.
-             unwrap(el);
-          });
-
-          // Now we have a soup of P, H1.., headers, and text nodes.
-          // We need to ensure everything is inside a block element.
-          
-          var resultHTML = '';
-          var nodes = Array.from(temp.childNodes);
-          
-          nodes.forEach(function(node) {
-             if (node.nodeType === Node.TEXT_NODE) {
-                var text = node.textContent.trim();
-                if (text) {
-                   resultHTML += '<p>' + text + '</p>';
-                }
-             } else if (node.nodeType === Node.ELEMENT_NODE) {
-                if (['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI', 'BLOCKQUOTE'].includes(node.tagName)) {
-                   resultHTML += node.outerHTML;
-                } else if (node.tagName === 'BR') {
-                   // Ignore loose BR between blocks? Or keep?
-                   // If it's <br> it might be empty line.
-                   resultHTML += '<p><br></p>';
-                } else {
-                   // Other elements (B, I, IMG etc) that ended up at root? Wrap in P.
-                   resultHTML += '<p>' + node.outerHTML + '</p>';
-                }
-             }
+            el.removeAttribute('lang');
+            
+            // Clean styles
+            var style = el.getAttribute('style');
+            if (style) {
+              // Remove Microsoft Office garbage
+              style = style.replace(/mso-[^;]+;?/gi, '');
+              
+              // Remove absolute positioning (breaks flow)
+              style = style.replace(/position:[^;]+;?/gi, '');
+              style = style.replace(/top:[^;]+;?/gi, '');
+              style = style.replace(/left:[^;]+;?/gi, '');
+              style = style.replace(/right:[^;]+;?/gi, '');
+              style = style.replace(/bottom:[^;]+;?/gi, '');
+              
+              // Remove margins/padding that might conflict with page layout
+              style = style.replace(/margin[^;]*;?/gi, '');
+              style = style.replace(/padding[^;]*;?/gi, '');
+              
+              el.setAttribute('style', style);
+            }
+            
+            // Safety for specific elements
+            if (el.tagName === 'TABLE') {
+               el.style.maxWidth = '100%';
+               el.style.borderCollapse = 'collapse';
+               // border?
+            }
+            if (el.tagName === 'IMG') {
+               el.style.maxWidth = '100%';
+               el.style.height = 'auto'; // Maintain aspect ratio
+               el.removeAttribute('width');
+               el.removeAttribute('height');
+               // Remove VML attributes
+               el.removeAttribute('v:shapes');
+            }
           });
           
-          // Final cleanup of the resulting HTML string
-          var clean = resultHTML;
-          // Fix double Ps
-          return clean;
+          // Get clean HTML
+          var result = temp.innerHTML;
+          
+          // Standard Word Regex Cleanups
+          // Replace literal newlines and carriage returns with spaces
+          result = result.replace(/[\r\n]+/g, ' ');
+          
+          // Remove leftover Word-specific tags
+          result = result.replace(/<o:p><\/o:p>/gi, '');
+          result = result.replace(/<!--[\s\S]*?-->/gi, ''); // Remove all remaining comments
+          
+          // Remove empty span tags
+          result = result.replace(/<span[^>]*>\s*<\/span>/gi, '');
+          
+          // Replace single <br> NOT followed by another <br> with a space (Word soft line breaks)
+          result = result.replace(/<br\s*\/?>\s*(?!<br)/gi, ' ');
+          
+          // Clean up multiple spaces
+          result = result.replace(/\s{2,}/g, ' ');
+          
+          return result;
         },
 
         checkOverflow: function(element, pageIndex) {

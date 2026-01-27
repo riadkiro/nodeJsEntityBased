@@ -5,8 +5,8 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 
 const app = express();
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+app.use(bodyParser.json({ limit: '50mb' }));
 
 //Dont remove this comments
 //Auto generated passport

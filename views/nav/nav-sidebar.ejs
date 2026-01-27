@@ -1189,8 +1189,8 @@
                   }
 
                   const effectivelyHasChildren = hasChildren || ['space', 'folder', 'environment'].includes(type);
-                  if (effectivelyHasChildren && hovered && ['space', 'folder', 'environment'].includes(type)) {
-                      return expanded ? 'solar:alt-arrow-down-bold' : 'solar:alt-arrow-right-bold';
+                  if (effectivelyHasChildren && hovered && ['folder', 'environment'].includes(type)) {
+                      return expanded ? 'solar:folder-open-line-duotone' : 'solar:folder-2-line-duotone';
                   }
 
                   if (customIcon) return customIcon;

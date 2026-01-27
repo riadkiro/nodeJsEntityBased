@@ -69,7 +69,7 @@
     <!-- Canvas Area -->
     <div class="flex-1 bg-gray-100 dark:bg-gray-800 overflow-auto p-8" id="canvas-container">
       <div class="flex flex-col gap-8 items-center" style="padding-top: 43px;">
-        <template x-for="(page, index) in doc.pages" :key="index">
+        <template x-for="(page, index) in doc.pages" :key="'page-' + index">
           <div class="relative group">
             <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
               <span class="bg-primary text-white text-xs px-2 py-1 rounded-full shadow-md">
@@ -77,34 +77,41 @@
               </span>
             </div>
 
-            <div class="absolute -right-12 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2">
-              <button @click="duplicatePage(index)" class="w-10 h-10 rounded-lg bg-white dark:bg-gray-900 shadow-md hover:shadow-lg flex items-center justify-center" title="Dupliquer">
-                <iconify-icon icon="solar:copy-bold" class="text-primary"></iconify-icon>
-              </button>
-              <button @click="deletePage(index)" x-show="doc.pages.length > 1" class="w-10 h-10 rounded-lg bg-white dark:bg-gray-900 shadow-md hover:shadow-lg flex items-center justify-center" title="Supprimer">
-                <iconify-icon icon="solar:trash-bin-trash-bold" class="text-danger"></iconify-icon>
-              </button>
+            <div 
+              class="bg-white shadow-2xl relative overflow-hidden" 
+              :style="'width: ' + doc.dimensions.width + 'px; height: ' + doc.dimensions.height + 'px;'" 
+              @click="selectPage(index)" 
+              :class="{ 'ring-2 ring-primary': selectedPageIndex === index }"
+            >
+              <!-- Editable content area with dynamic margins -->
+              <div 
+                class="w-full h-full outline-none text-gray-800 leading-relaxed page-content overflow-hidden"
+                contenteditable="true"
+                :data-page-index="index"
+                @input="handlePageInput($event, index)"
+                @paste="handlePaste($event, index)"
+                @focus="selectPage(index)"
+                @blur="syncPageContent($event, index)"
+                x-init="$el.innerHTML = page.content || ''"
+                x-ref="pageContent"
+                :style="'font-family: Times New Roman, serif; font-size: 12pt; white-space: pre-wrap; word-wrap: break-word; line-height: 1.15; padding-top: ' + doc.margins.top + 'px; padding-bottom: ' + doc.margins.bottom + 'px; padding-left: ' + doc.margins.left + 'px; padding-right: ' + doc.margins.right + 'px;'"
+              ></div>
             </div>
 
-            <div class="bg-white shadow-2xl relative" :style="'width: ' + doc.dimensions.width + 'px; height: ' + doc.dimensions.height + 'px;'" @click="selectPage(index)" :class="{ 'ring-2 ring-primary': selectedPageIndex === index }">
-              <div class="w-full h-full p-8">
-                <template x-if="page.elements.length === 0">
-                  <div class="w-full h-full border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center">
-                    <div class="text-center text-gray-400">
-                      <iconify-icon icon="solar:add-circle-line-duotone" width="32" class="mb-2"></iconify-icon>
-                      <p class="text-sm">Cliquez sur un outil pour ajouter du contenu</p>
-                    </div>
-                  </div>
-                </template>
-              </div>
+            <!-- Page Actions Bar (bottom) -->
+            <div class="flex items-center justify-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button @click="addPageAfter(index)" class="p-2 rounded hover:bg-white dark:hover:bg-gray-700 text-gray-400 hover:text-primary transition-colors" title="Ajouter une page après">
+                <iconify-icon icon="solar:add-circle-bold" width="18"></iconify-icon>
+              </button>
+              <button @click="duplicatePage(index)" class="p-2 rounded hover:bg-white dark:hover:bg-gray-700 text-gray-400 hover:text-primary transition-colors" title="Dupliquer">
+                <iconify-icon icon="solar:copy-bold" width="18"></iconify-icon>
+              </button>
+              <button @click="deletePage(index)" x-show="doc.pages.length > 1" class="p-2 rounded hover:bg-white dark:hover:bg-gray-700 text-gray-400 hover:text-danger transition-colors" title="Supprimer">
+                <iconify-icon icon="solar:trash-bin-trash-bold" width="18"></iconify-icon>
+              </button>
             </div>
           </div>
         </template>
-
-        <button @click="addPage" class="w-full max-w-[794px] h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-white/50 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-primary">
-          <iconify-icon icon="solar:add-circle-bold" width="32"></iconify-icon>
-          <span class="font-medium">Ajouter une page</span>
-        </button>
       </div>
     </div>
 
@@ -124,6 +131,29 @@
         <div>
           <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Dimensions</label>
           <p class="text-sm text-gray-600 dark:text-gray-400" x-text="doc.dimensions.width + ' x ' + doc.dimensions.height + ' px'"></p>
+        </div>
+        
+        <!-- Margins Section -->
+        <div>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Marges (px)</label>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-xs text-gray-500">Haut</label>
+              <input type="number" x-model.number="doc.margins.top" @input="saveDocument" class="form-input text-sm" min="0" max="200">
+            </div>
+            <div>
+              <label class="text-xs text-gray-500">Bas</label>
+              <input type="number" x-model.number="doc.margins.bottom" @input="saveDocument" class="form-input text-sm" min="0" max="200">
+            </div>
+            <div>
+              <label class="text-xs text-gray-500">Gauche</label>
+              <input type="number" x-model.number="doc.margins.left" @input="saveDocument" class="form-input text-sm" min="0" max="200">
+            </div>
+            <div>
+              <label class="text-xs text-gray-500">Droite</label>
+              <input type="number" x-model.number="doc.margins.right" @input="saveDocument" class="form-input text-sm" min="0" max="200">
+            </div>
+          </div>
         </div>
       </div>
 
@@ -193,7 +223,8 @@
           orientation: data.orientation,
           dimensions: data.dimensions,
           pages: data.pages,
-          status: data.status
+          status: data.status,
+          margins: data.margins || { top: 72, bottom: 72, left: 72, right: 72 }
         },
         selectedPageIndex: 0,
         lastSaved: null,
@@ -237,6 +268,17 @@
           });
         },
 
+        addPageAfter: function(index) {
+          var newPage = {
+            elements: [],
+            background: { color: '#ffffff' },
+            order: index + 1
+          };
+          this.doc.pages.splice(index + 1, 0, newPage);
+          this.selectedPageIndex = index + 1;
+          this.saveDocument();
+        },
+
         duplicatePage: function(index) {
           var pageToDuplicate = JSON.parse(JSON.stringify(this.doc.pages[index]));
           pageToDuplicate.order = this.doc.pages.length;
@@ -262,6 +304,300 @@
 
         selectPage: function(index) {
           this.selectedPageIndex = index;
+        },
+
+        syncPageContent: function(event, pageIndex) {
+          // Sync content when user leaves the page
+          var element = event.target;
+          this.doc.pages[pageIndex].content = element.innerHTML;
+        },
+
+        handlePageInput: function(event, pageIndex) {
+          var element = event.target;
+          var content = element.innerHTML;
+          
+          // Save content to page data
+          this.doc.pages[pageIndex].content = content;
+          
+          // Check for overflow (content too big -> push to next page)
+          this.checkOverflow(element, pageIndex);
+          
+          // Check for underflow (space available -> pull from next page)
+          this.checkUnderflow(element, pageIndex);
+          
+          this.saveDocument();
+        },
+
+        handlePaste: function(event, pageIndex) {
+          event.preventDefault();
+          var self = this;
+          
+          // Get pasted text
+          var pastedText = (event.clipboardData || window.clipboardData).getData('text/html');
+          if (!pastedText) {
+            pastedText = (event.clipboardData || window.clipboardData).getData('text/plain');
+            pastedText = pastedText.replace(/\n/g, '<br>');
+          } else {
+            // Clean Word HTML - remove excessive spacing
+            pastedText = this.cleanWordHtml(pastedText);
+          }
+          
+          // Insert at cursor position
+          document.execCommand('insertHTML', false, pastedText);
+          
+          // Get the element and check for overflow
+          var element = event.target;
+          this.doc.pages[pageIndex].content = element.innerHTML;
+          
+          // Use setTimeout to allow DOM to update
+          setTimeout(function() {
+            self.checkOverflow(element, pageIndex);
+            self.saveDocument();
+          }, 100);
+        },
+
+        cleanWordHtml: function(html) {
+          // Create a temporary div to parse HTML
+          var temp = document.createElement('div');
+          temp.innerHTML = html;
+          
+          // Remove Word-specific tags and attributes
+          var elementsToClean = temp.querySelectorAll('*');
+          elementsToClean.forEach(function(el) {
+            // Remove margin and padding styles
+            if (el.style) {
+              el.style.marginTop = '';
+              el.style.marginBottom = '';
+              el.style.marginLeft = '';
+              el.style.marginRight = '';
+              el.style.paddingTop = '';
+              el.style.paddingBottom = '';
+              el.style.lineHeight = '';
+            }
+            
+            // Remove mso- styles (Microsoft Office)
+            var style = el.getAttribute('style');
+            if (style) {
+              style = style.replace(/mso-[^;]+;?/gi, '');
+              style = style.replace(/margin[^;]*;?/gi, '');
+              style = style.replace(/line-height[^;]*;?/gi, '');
+              el.setAttribute('style', style);
+            }
+            
+            // Remove class attributes (Word adds many)
+            el.removeAttribute('class');
+          });
+          
+          // Get clean HTML
+          var result = temp.innerHTML;
+          
+          // FIRST: Replace literal newlines and carriage returns with spaces
+          // This fixes the "La\nsociété" problem from Word
+          result = result.replace(/[\r\n]+/g, ' ');
+          
+          // Remove Word-specific tags
+          result = result.replace(/<o:p><\/o:p>/gi, '');
+          result = result.replace(/<!--\[if[^>]*>[\s\S]*?<!\[endif\]-->/gi, '');
+          result = result.replace(/<!\[if[^>]*>[\s\S]*?<!\[endif\]>/gi, '');
+          
+          // Remove empty span tags and merge text
+          result = result.replace(/<span[^>]*>\s*<\/span>/gi, '');
+          
+          // Replace single <br> NOT followed by another <br> with a space (Word soft line breaks)
+          result = result.replace(/<br\s*\/?>\s*(?!<br)/gi, ' ');
+          
+          // Now clean up double+ breaks to proper paragraph breaks
+          result = result.replace(/(<br\s*\/?>\s*){2,}/gi, '<br><br>');
+          
+          // Remove empty paragraphs
+          result = result.replace(/<p[^>]*>\s*(&nbsp;|\s)*\s*<\/p>/gi, '');
+          
+          // Clean up multiple spaces
+          result = result.replace(/\s{2,}/g, ' ');
+          
+          return result;
+        },
+
+        checkOverflow: function(element, pageIndex) {
+          var self = this;
+          
+          // Check if content overflows
+          if (element.scrollHeight > element.clientHeight) {
+            // Content overflows - need to move excess to next page
+            var overflowContent = this.extractOverflow(element);
+            
+            if (overflowContent) {
+              // Create next page if it doesn't exist
+              if (pageIndex + 1 >= this.doc.pages.length) {
+                this.doc.pages.push({
+                  content: '',
+                  elements: [],
+                  background: { color: '#ffffff' },
+                  order: this.doc.pages.length
+                });
+              }
+              
+              // Prepend overflow to next page
+              var nextPageContent = this.doc.pages[pageIndex + 1].content || '';
+              this.doc.pages[pageIndex + 1].content = overflowContent + nextPageContent;
+              
+              // Update current page content
+              this.doc.pages[pageIndex].content = element.innerHTML;
+              
+              // After Alpine re-renders, update DOM and check next page for overflow too
+              this.$nextTick(function() {
+                var nextPageElement = document.querySelector('[data-page-index="' + (pageIndex + 1) + '"]');
+                if (nextPageElement) {
+                  // Update the DOM with new content (since x-init only runs once)
+                  nextPageElement.innerHTML = self.doc.pages[pageIndex + 1].content;
+                  self.checkOverflow(nextPageElement, pageIndex + 1);
+                }
+              });
+            }
+          }
+        },
+
+        checkUnderflow: function(element, pageIndex) {
+          var self = this;
+          
+          // Only check if there's a next page with content
+          if (pageIndex + 1 >= this.doc.pages.length) {
+            return;
+          }
+          
+          var nextPageContent = this.doc.pages[pageIndex + 1].content;
+          if (!nextPageContent || !nextPageContent.trim()) {
+            return;
+          }
+          
+          // Get next page element
+          var nextPageElement = document.querySelector('[data-page-index="' + (pageIndex + 1) + '"]');
+          if (!nextPageElement) {
+            return;
+          }
+          
+          // Try to pull first element from next page
+          var pulled = this.tryPullFromNextPage(element, nextPageElement, pageIndex);
+          
+          if (pulled) {
+            // Update data
+            this.doc.pages[pageIndex].content = element.innerHTML;
+            this.doc.pages[pageIndex + 1].content = nextPageElement.innerHTML;
+            
+            // Check if next page became empty
+            this.$nextTick(function() {
+              var nextContent = self.doc.pages[pageIndex + 1];
+              if (nextContent && (!nextContent.content || !nextContent.content.trim())) {
+                self.doc.pages.splice(pageIndex + 1, 1);
+                // After removing page, check if current page can still pull more
+                self.checkUnderflow(element, pageIndex);
+              } else {
+                // Try to pull more to current page
+                self.checkUnderflow(element, pageIndex);
+                
+                // CHAIN: Also check if next page can now pull from page after it
+                self.$nextTick(function() {
+                  if (pageIndex + 1 < self.doc.pages.length) {
+                    var updatedNextElement = document.querySelector('[data-page-index="' + (pageIndex + 1) + '"]');
+                    if (updatedNextElement) {
+                      self.checkUnderflow(updatedNextElement, pageIndex + 1);
+                    }
+                  }
+                });
+              }
+            });
+          }
+        },
+
+        tryPullFromNextPage: function(currentElement, nextElement, pageIndex) {
+          // Get first child node from next page
+          var firstChild = nextElement.firstChild;
+          if (!firstChild) {
+            return false;
+          }
+          
+          // Clone it for testing
+          var testNode;
+          if (firstChild.nodeType === Node.ELEMENT_NODE) {
+            testNode = firstChild.cloneNode(true);
+          } else if (firstChild.nodeType === Node.TEXT_NODE) {
+            testNode = document.createTextNode(firstChild.textContent);
+          } else {
+            return false;
+          }
+          
+          // Add to current page temporarily
+          currentElement.appendChild(testNode);
+          
+          // Check if it still fits (no overflow)
+          var fits = currentElement.scrollHeight <= currentElement.clientHeight;
+          
+          if (fits) {
+            // It fits! Now actually remove from next page
+            nextElement.removeChild(firstChild);
+            return true;
+          } else {
+            // Doesn't fit, remove test node
+            currentElement.removeChild(testNode);
+            return false;
+          }
+        },
+
+        extractOverflow: function(element) {
+          // Use a more robust iterative approach
+          // Instead of calculating heights, we'll remove elements from the end
+          // until scrollHeight <= clientHeight
+          
+          var removedNodes = [];
+          var maxIterations = 100; // Safety limit
+          var iterations = 0;
+          
+          // First, check if there's actually overflow
+          if (element.scrollHeight <= element.clientHeight) {
+            return ''; // No overflow
+          }
+          
+          // Get all top-level child nodes
+          var children = Array.from(element.childNodes);
+          
+          // If there are no children or only one, we can't split
+          if (children.length <= 1) {
+            return '';
+          }
+          
+          // Iteratively remove nodes from the end until no overflow
+          while (element.scrollHeight > element.clientHeight && iterations < maxIterations) {
+            // Remove the last child
+            var lastChild = element.lastChild;
+            
+            if (!lastChild) {
+              break; // No more children to remove
+            }
+            
+            // Remove and store the node
+            element.removeChild(lastChild);
+            removedNodes.unshift(lastChild); // Add to beginning of array
+            
+            iterations++;
+          }
+          
+          // If we removed everything and still have overflow, something's wrong
+          if (element.childNodes.length === 0 && removedNodes.length > 0) {
+            // Put back the first removed node at least
+            element.appendChild(removedNodes.shift());
+          }
+          
+          // Convert removed nodes to HTML
+          var overflowHtml = '';
+          removedNodes.forEach(function(node) {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              overflowHtml += node.outerHTML;
+            } else if (node.nodeType === Node.TEXT_NODE) {
+              overflowHtml += node.textContent;
+            }
+          });
+          
+          return overflowHtml;
         },
 
         saveDocument: function() {

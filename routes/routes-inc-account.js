@@ -13,5 +13,8 @@ router.use("/api/", require("./api/api-account.router.js"));
 router.use("/api/user", require("./api/api-user.router.js"));
 router.use("/mailbox", require("./mailbox.router.js"));
 
+// Document Builder
+router.use("/documents", require("./document.routes.js"));
+
 
 module.exports = router;

@@ -1,0 +1,299 @@
+<div x-data="documentEditor()" class="h-[calc(100vh-80px)] flex flex-col">
+  <!-- Header Bar -->
+  <div class="bg-white dark:bg-gray-900 border-b dark:border-gray-800 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="/account/<%= account_number %>/documents" class="text-gray-500 hover:text-primary">
+        <iconify-icon icon="solar:arrow-left-line-duotone" width="24"></iconify-icon>
+      </a>
+      <input 
+        type="text" 
+        x-model="doc.name" 
+        @input="saveDocument"
+        class="form-input font-semibold text-lg border-0 focus:ring-0 px-2 w-80"
+        placeholder="Sans titre"
+      >
+      <span class="text-xs text-gray-400" x-show="lastSaved">
+        Sauvegardé <span x-text="lastSaved"></span>
+      </span>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <select x-model="doc.format" @change="updateDimensions" class="form-select text-sm">
+        <option value="A4">A4</option>
+        <option value="A5">A5</option>
+        <option value="A3">A3</option>
+        <option value="Letter">Letter</option>
+        <option value="Legal">Legal</option>
+      </select>
+
+      <select x-model="doc.orientation" @change="updateDimensions" class="form-select text-sm">
+        <option value="portrait">Portrait</option>
+        <option value="landscape">Paysage</option>
+      </select>
+
+      <select x-model="doc.status" @change="saveDocument" class="form-select text-sm">
+        <option value="draft">Brouillon</option>
+        <option value="published">Publié</option>
+      </select>
+
+      <button @click="saveDocument" class="btn btn-primary btn-sm">
+        <iconify-icon icon="solar:diskette-bold" class="mr-1"></iconify-icon>
+        Sauvegarder
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex overflow-hidden">
+    <!-- Toolbar (Left) -->
+    <div class="w-16 bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col items-center py-4 gap-4">
+      <button class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center" title="Texte">
+        <iconify-icon icon="solar:text-bold-duotone" width="24"></iconify-icon>
+      </button>
+      <button class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center" title="Image">
+        <iconify-icon icon="solar:gallery-bold-duotone" width="24"></iconify-icon>
+      </button>
+      <div class="h-px w-8 bg-gray-200 dark:bg-gray-700"></div>
+      <button class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center" title="Layout 2 colonnes">
+        <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="24"></iconify-icon>
+      </button>
+      <button class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center" title="Layout 3 colonnes">
+        <iconify-icon icon="solar:widget-4-bold-duotone" width="24"></iconify-icon>
+      </button>
+      <div class="h-px w-8 bg-gray-200 dark:bg-gray-700"></div>
+      <button class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center" title="Variable DB">
+        <iconify-icon icon="solar:database-bold-duotone" width="24"></iconify-icon>
+      </button>
+    </div>
+
+    <!-- Canvas Area -->
+    <div class="flex-1 bg-gray-100 dark:bg-gray-800 overflow-auto p-8" id="canvas-container">
+      <div class="flex flex-col gap-8 items-center" style="padding-top: 43px;">
+        <template x-for="(page, index) in doc.pages" :key="index">
+          <div class="relative group">
+            <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+              <span class="bg-primary text-white text-xs px-2 py-1 rounded-full shadow-md">
+                Page <span x-text="index + 1"></span>
+              </span>
+            </div>
+
+            <div class="absolute -right-12 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2">
+              <button @click="duplicatePage(index)" class="w-10 h-10 rounded-lg bg-white dark:bg-gray-900 shadow-md hover:shadow-lg flex items-center justify-center" title="Dupliquer">
+                <iconify-icon icon="solar:copy-bold" class="text-primary"></iconify-icon>
+              </button>
+              <button @click="deletePage(index)" x-show="doc.pages.length > 1" class="w-10 h-10 rounded-lg bg-white dark:bg-gray-900 shadow-md hover:shadow-lg flex items-center justify-center" title="Supprimer">
+                <iconify-icon icon="solar:trash-bin-trash-bold" class="text-danger"></iconify-icon>
+              </button>
+            </div>
+
+            <div class="bg-white shadow-2xl relative" :style="'width: ' + doc.dimensions.width + 'px; height: ' + doc.dimensions.height + 'px;'" @click="selectPage(index)" :class="{ 'ring-2 ring-primary': selectedPageIndex === index }">
+              <div class="w-full h-full p-8">
+                <template x-if="page.elements.length === 0">
+                  <div class="w-full h-full border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center">
+                    <div class="text-center text-gray-400">
+                      <iconify-icon icon="solar:add-circle-line-duotone" width="32" class="mb-2"></iconify-icon>
+                      <p class="text-sm">Cliquez sur un outil pour ajouter du contenu</p>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <button @click="addPage" class="w-full max-w-[794px] h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-white/50 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-primary">
+          <iconify-icon icon="solar:add-circle-bold" width="32"></iconify-icon>
+          <span class="font-medium">Ajouter une page</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Properties Panel -->
+    <div class="w-80 bg-white dark:bg-gray-900 border-l dark:border-gray-800 p-4 overflow-auto">
+      <h3 class="font-semibold mb-4 dark:text-white">Propriétés</h3>
+      
+      <div class="space-y-4 mb-6">
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Nom du document</label>
+          <input type="text" x-model="doc.name" @input="saveDocument" class="form-input">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Format</label>
+          <p class="text-sm text-gray-600 dark:text-gray-400" x-text="doc.format + ' - ' + doc.orientation"></p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Dimensions</label>
+          <p class="text-sm text-gray-600 dark:text-gray-400" x-text="doc.dimensions.width + ' x ' + doc.dimensions.height + ' px'"></p>
+        </div>
+      </div>
+
+      <div class="border-t dark:border-gray-700 pt-4">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="font-medium text-sm dark:text-white">Pages (<span x-text="doc.pages.length"></span>)</h4>
+          <button @click="addPage" class="text-primary hover:text-primary-dark">
+            <iconify-icon icon="solar:add-circle-bold" width="20"></iconify-icon>
+          </button>
+        </div>
+
+        <div class="space-y-2 max-h-[300px] overflow-auto">
+          <template x-for="(page, index) in doc.pages" :key="index">
+            <div class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer" :class="{ 'bg-primary/10 border border-primary': selectedPageIndex === index }" @click="selectPage(index)">
+              <iconify-icon icon="solar:document-text-bold-duotone" width="16" class="text-gray-400"></iconify-icon>
+              <span class="flex-1 text-sm" x-text="'Page ' + (index + 1)"></span>
+              <span class="text-xs text-gray-400" x-text="page.elements.length + ' élément(s)'"></span>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <template x-if="selectedPageIndex !== null">
+        <div class="border-t dark:border-gray-700 pt-4 mt-4">
+          <h4 class="font-medium text-sm mb-3 dark:text-white">Page <span x-text="selectedPageIndex + 1"></span></h4>
+          <div class="space-y-2">
+            <button @click="duplicatePage(selectedPageIndex)" class="btn btn-outline-primary btn-sm w-full">
+              <iconify-icon icon="solar:copy-bold" class="mr-1"></iconify-icon>
+              Dupliquer
+            </button>
+            <button @click="deletePage(selectedPageIndex)" x-show="doc.pages.length > 1" class="btn btn-outline-danger btn-sm w-full">
+              <iconify-icon icon="solar:trash-bin-trash-bold" class="mr-1"></iconify-icon>
+              Supprimer
+            </button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>
+
+<!-- Data passed from server -->
+<script type="application/json" id="document-data">
+<%- JSON.stringify({
+  isNew: isNew,
+  docId: isNew ? null : document._id,
+  name: isNew ? 'Sans titre' : document.name,
+  format: isNew ? 'A4' : document.format,
+  orientation: isNew ? 'portrait' : document.orientation,
+  dimensions: isNew ? { width: 794, height: 1123 } : document.dimensions,
+  pages: isNew ? [{ elements: [], background: { color: '#ffffff' }, order: 0 }] : document.pages,
+  status: isNew ? 'draft' : document.status
+}).replace(/</g, '\\u003C') %>
+</script>
+
+<script>
+  document.addEventListener('alpine:init', function() {
+    Alpine.data('documentEditor', function() {
+      var data = JSON.parse(document.getElementById('document-data').textContent);
+      var accountNumber = '<%= account_number %>';
+      
+      return {
+        doc: {
+          _id: data.docId,
+          name: data.name,
+          format: data.format,
+          orientation: data.orientation,
+          dimensions: data.dimensions,
+          pages: data.pages,
+          status: data.status
+        },
+        selectedPageIndex: 0,
+        lastSaved: null,
+        saveTimeout: null,
+
+        formats: {
+          'A4': { width: 794, height: 1123 },
+          'A5': { width: 559, height: 794 },
+          'A3': { width: 1123, height: 1587 },
+          'Letter': { width: 816, height: 1056 },
+          'Legal': { width: 816, height: 1344 }
+        },
+
+        updateDimensions: function() {
+          var format = this.formats[this.doc.format];
+          if (this.doc.orientation === 'landscape') {
+            this.doc.dimensions = { width: format.height, height: format.width };
+          } else {
+            this.doc.dimensions = { width: format.width, height: format.height };
+          }
+          this.saveDocument();
+        },
+
+        addPage: function() {
+          var newPage = {
+            elements: [],
+            background: { color: '#ffffff' },
+            order: this.doc.pages.length
+          };
+          this.doc.pages.push(newPage);
+          this.selectedPageIndex = this.doc.pages.length - 1;
+          this.saveDocument();
+          
+          var self = this;
+          this.$nextTick(function() {
+            var container = document.getElementById('canvas-container');
+            container.scrollTo({
+              top: container.scrollHeight,
+              behavior: 'smooth'
+            });
+          });
+        },
+
+        duplicatePage: function(index) {
+          var pageToDuplicate = JSON.parse(JSON.stringify(this.doc.pages[index]));
+          pageToDuplicate.order = this.doc.pages.length;
+          this.doc.pages.splice(index + 1, 0, pageToDuplicate);
+          this.selectedPageIndex = index + 1;
+          this.saveDocument();
+        },
+
+        deletePage: function(index) {
+          if (this.doc.pages.length <= 1) {
+            alert('Vous devez avoir au moins une page');
+            return;
+          }
+          
+          if (confirm('Supprimer la page ' + (index + 1) + ' ?')) {
+            this.doc.pages.splice(index, 1);
+            if (this.selectedPageIndex >= this.doc.pages.length) {
+              this.selectedPageIndex = this.doc.pages.length - 1;
+            }
+            this.saveDocument();
+          }
+        },
+
+        selectPage: function(index) {
+          this.selectedPageIndex = index;
+        },
+
+        saveDocument: function() {
+          clearTimeout(this.saveTimeout);
+          var self = this;
+          this.saveTimeout = setTimeout(function() {
+            var method = self.doc._id ? 'PUT' : 'POST';
+            var url = self.doc._id 
+              ? '/account/' + accountNumber + '/documents/api/' + self.doc._id
+              : '/account/' + accountNumber + '/documents/api';
+
+            fetch(url, {
+              method: method,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(self.doc)
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+              if (data.document) {
+                if (!self.doc._id) {
+                  self.doc._id = data.document._id;
+                  window.history.replaceState({}, '', '/account/' + accountNumber + '/documents/' + data.document._id + '/edit');
+                }
+                self.lastSaved = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+              }
+            })
+            .catch(function(error) {
+              console.error('Error saving document:', error);
+            });
+          }, 1000);
+        }
+      };
+    });
+  });
+</script>

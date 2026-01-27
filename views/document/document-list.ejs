@@ -1,0 +1,170 @@
+<div x-data="documentList()" class="panel">
+  <!-- Header -->
+  <div class="mb-5 flex items-center justify-between">
+    <h5 class="text-lg font-semibold dark:text-white-light">Mes Documents</h5>
+    <div class="flex gap-2">
+      <a href="/account/<%= account_number %>/documents/templates" class="btn btn-outline-primary">
+        <iconify-icon icon="solar:document-text-line-duotone" class="mr-1"></iconify-icon>
+        Templates
+      </a>
+      <a href="/account/<%= account_number %>/documents/new" class="btn btn-primary">
+        <iconify-icon icon="solar:add-circle-bold" class="mr-1"></iconify-icon>
+        Nouveau Document
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="mb-4 flex gap-2">
+    <input 
+      type="text" 
+      x-model="searchQuery" 
+      placeholder="Rechercher un document..."
+      class="form-input flex-1"
+    >
+    <select x-model="filterStatus" class="form-select w-40">
+      <option value="">Tous les statuts</option>
+      <option value="draft">Brouillon</option>
+      <option value="published">Publié</option>
+      <option value="archived">Archivé</option>
+    </select>
+  </div>
+
+  <!-- Documents Grid -->
+  <template x-if="filteredDocuments().length > 0">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <template x-for="doc in filteredDocuments()" :key="doc._id">
+        <div class="relative rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 hover:shadow-lg transition-shadow group">
+          <!-- Document Preview Placeholder -->
+          <div class="mb-3 h-40 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <iconify-icon icon="solar:document-text-bold-duotone" width="48" class="text-gray-400"></iconify-icon>
+          </div>
+
+          <!-- Document Info -->
+          <div class="mb-2">
+            <h6 class="font-semibold text-sm truncate dark:text-white" x-text="doc.name"></h6>
+            <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2 mt-1">
+              <span x-text="doc.format"></span>
+              <span>•</span>
+              <span x-text="doc.orientation"></span>
+              <span>•</span>
+              <span x-text="doc.pageCount || 1"></span> page(s)
+            </p>
+          </div>
+
+          <!-- Status Badge -->
+          <div class="mb-2">
+            <span 
+              class="badge text-xs"
+              :class="{
+                'badge-outline-warning': doc.status === 'draft',
+                'badge-outline-success': doc.status === 'published',
+                'badge-outline-secondary': doc.status === 'archived'
+              }"
+              x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"
+            ></span>
+          </div>
+
+          <!-- Date -->
+          <p class="text-xs text-gray-400 mb-3" x-text="formatDate(doc.updatedAt)"></p>
+
+          <!-- Actions -->
+          <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit'" class="btn btn-sm btn-outline-primary flex-1">
+              <iconify-icon icon="solar:pen-bold" class="mr-1"></iconify-icon>
+              Éditer
+            </a>
+            <button @click="duplicateDocument(doc._id)" class="btn btn-sm btn-outline-info">
+              <iconify-icon icon="solar:copy-bold"></iconify-icon>
+            </button>
+            <button @click="deleteDocument(doc._id)" class="btn btn-sm btn-outline-danger">
+              <iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon>
+            </button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <!-- Empty State -->
+  <template x-if="filteredDocuments().length === 0">
+    <div class="text-center py-12">
+      <iconify-icon icon="solar:document-text-line-duotone" width="64" class="text-gray-300 mb-4"></iconify-icon>
+      <h3 class="text-lg font-semibold mb-2 dark:text-white">Aucun document</h3>
+      <p class="text-gray-500 mb-4">Créez votre premier document pour commencer</p>
+      <a href="/account/<%= account_number %>/documents/new" class="btn btn-primary">
+        <iconify-icon icon="solar:add-circle-bold" class="mr-1"></iconify-icon>
+        Créer un document
+      </a>
+    </div>
+  </template>
+</div>
+
+<script>
+  document.addEventListener('alpine:init', function() {
+    Alpine.data('documentList', function() {
+      return {
+        documents: <%- JSON.stringify(documents) %>,
+        searchQuery: '',
+        filterStatus: '',
+
+        filteredDocuments: function() {
+          var self = this;
+          return this.documents.filter(function(doc) {
+            var matchesSearch = !self.searchQuery || 
+              doc.name.toLowerCase().includes(self.searchQuery.toLowerCase());
+            var matchesStatus = !self.filterStatus || doc.status === self.filterStatus;
+            return matchesSearch && matchesStatus;
+          });
+        },
+
+        formatDate: function(date) {
+          return new Date(date).toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        },
+
+        duplicateDocument: function(id) {
+          var self = this;
+          if (!confirm('Dupliquer ce document ?')) return;
+          
+          fetch('/account/<%= account_number %>/documents/api/' + id + '/duplicate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data.document) {
+              self.documents.unshift(data.document);
+            }
+          })
+          .catch(function(error) {
+            console.error('Error duplicating document:', error);
+            alert('Erreur lors de la duplication');
+          });
+        },
+
+        deleteDocument: function(id) {
+          var self = this;
+          if (!confirm('Supprimer ce document ? Cette action est irréversible.')) return;
+
+          fetch('/account/<%= account_number %>/documents/api/' + id, {
+            method: 'DELETE'
+          })
+          .then(function(res) { return res.json(); })
+          .then(function() {
+            self.documents = self.documents.filter(function(d) { return d._id !== id; });
+          })
+          .catch(function(error) {
+            console.error('Error deleting document:', error);
+            alert('Erreur lors de la suppression');
+          });
+        }
+      };
+    });
+  });
+</script>

@@ -1,0 +1,95 @@
+<div x-data="templateList()" class="panel">
+  <!-- Header -->
+  <div class="mb-5 flex items-center justify-between">
+    <h5 class="text-lg font-semibold dark:text-white-light">Templates de Documents</h5>
+    <a href="/account/<%= account_number %>/documents" class="btn btn-outline-secondary">
+      <iconify-icon icon="solar:arrow-left-line-duotone" class="mr-1"></iconify-icon>
+      Retour aux documents
+    </a>
+  </div>
+
+  <!-- Search -->
+  <div class="mb-4">
+    <input 
+      type="text" 
+      x-model="searchQuery" 
+      placeholder="Rechercher un template..."
+      class="form-input w-full max-w-md"
+    >
+  </div>
+
+  <!-- Templates Grid -->
+  <template x-if="filteredTemplates().length > 0">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <template x-for="template in filteredTemplates()" :key="template._id">
+        <div 
+          class="relative rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 hover:shadow-lg transition-shadow cursor-pointer"
+          @click="useTemplate(template._id)"
+        >
+          <!-- Template Preview Placeholder -->
+          <div class="mb-3 h-40 rounded bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 flex items-center justify-center">
+            <iconify-icon icon="solar:document-text-bold-duotone" width="48" class="text-blue-400"></iconify-icon>
+          </div>
+
+          <!-- Template Info -->
+          <div class="mb-2">
+            <h6 class="font-semibold text-sm truncate dark:text-white" x-text="template.name"></h6>
+            <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2 mt-1">
+              <span x-text="template.format"></span>
+              <span>•</span>
+              <span x-text="template.orientation"></span>
+            </p>
+          </div>
+
+          <!-- Category Badge -->
+          <template x-if="template.metadata && template.metadata.category">
+            <div class="mb-2">
+              <span class="badge badge-outline-primary text-xs" x-text="template.metadata.category"></span>
+            </div>
+          </template>
+
+          <!-- Use Template Button -->
+          <button class="btn btn-sm btn-primary w-full">
+            Utiliser ce template
+          </button>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <!-- Empty State -->
+  <template x-if="filteredTemplates().length === 0">
+    <div class="text-center py-12">
+      <iconify-icon icon="solar:document-text-line-duotone" width="64" class="text-gray-300 mb-4"></iconify-icon>
+      <h3 class="text-lg font-semibold mb-2 dark:text-white">Aucun template</h3>
+      <p class="text-gray-500 mb-4">Aucun template disponible pour le moment</p>
+      <a href="/account/<%= account_number %>/documents/new" class="btn btn-primary">
+        <iconify-icon icon="solar:add-circle-bold" class="mr-1"></iconify-icon>
+        Créer un document vierge
+      </a>
+    </div>
+  </template>
+</div>
+
+<script>
+  document.addEventListener('alpine:init', function() {
+    Alpine.data('templateList', function() {
+      return {
+        templates: <%- JSON.stringify(templates) %>,
+        searchQuery: '',
+
+        filteredTemplates: function() {
+          var self = this;
+          return this.templates.filter(function(template) {
+            return !self.searchQuery || 
+              template.name.toLowerCase().includes(self.searchQuery.toLowerCase());
+          });
+        },
+
+        useTemplate: function(templateId) {
+          window.location.href = '/account/<%= account_number %>/documents/new?template=' + templateId;
+        }
+      };
+    });
+  });
+</script>

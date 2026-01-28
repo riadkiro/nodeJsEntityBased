@@ -3,9 +3,10 @@ const mongoose = require('mongoose');
 const elementSchema = new mongoose.Schema({
     type: {
         type: String,
-        enum: ['text', 'image', 'shape', 'variable', 'section', 'table', 'html'],
+        enum: ['text', 'image', 'shape', 'variable', 'section', 'table', 'html', 'plain-text'],
         required: true
     },
+    column: { type: Number, default: 0 },
     position: {
         x: { type: Number, default: 0 },
         y: { type: Number, default: 0 }
@@ -26,10 +27,17 @@ const elementSchema = new mongoose.Schema({
     }
 }, { _id: true });
 
+const rowSchema = new mongoose.Schema({
+    columns: { type: Number, default: 1 },
+    elements: [elementSchema],
+    style: { type: mongoose.Schema.Types.Mixed, default: {} }
+}, { _id: true });
+
 const pageSchema = new mongoose.Schema({
     content: { type: String, default: '' },
     mode: { type: String, enum: ['edition', 'layout', 'designer'], default: 'edition' },
     elements: [elementSchema],
+    rows: [rowSchema],
     background: {
         color: { type: String, default: '#ffffff' },
         image: { type: String }

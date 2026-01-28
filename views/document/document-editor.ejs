@@ -113,6 +113,16 @@
 
         init: function () {
           var self = this;
+
+          // CRITICAL: Safety synchronization on load
+          // If content is empty but rows exist, reconstruct the edition buffer
+          this.doc.pages.forEach(function (page, idx) {
+            if (!page.content && page.rows && page.rows.length > 0) {
+              console.log('Page ' + idx + ': Reconstruction content from rows (safety sync)');
+              self.syncEditionFromLayout(idx);
+            }
+          });
+
           // Intercept Ctrl+A for "Global Selection"
           window.addEventListener('keydown', function (e) {
             if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
@@ -1179,6 +1189,27 @@
         saveDocument: function () {
           clearTimeout(this.saveTimeout);
           var self = this;
+
+          // Seamless synchronization from Layout to Edition before saving
+          // This ensures the 'content' backup is always valid even if we stay in Layout mode
+          this.doc.pages.forEach(function (page, idx) {
+            if ((page.mode === 'layout' || page.mode === 'designer') && page.rows && page.rows.length > 0) {
+              var html = '';
+              page.rows.forEach(function (row) {
+                if (row.elements) {
+                  row.elements.forEach(function (el) {
+                    if (el.type === 'text' || el.type === 'plain-text' || el.type === 'html') {
+                      html += el.content;
+                    } else if (el.type === 'image' && el.content) {
+                      html += '<div style="text-align:center; margin: 10px 0;"><img src="' + el.content + '" style="max-width:100%; height:auto; border-radius:12px;"></div>';
+                    }
+                  });
+                }
+              });
+              page.content = html;
+            }
+          });
+
           this.saveTimeout = setTimeout(function () {
             var method = self.doc._id ? 'PUT' : 'POST';
             var url = self.doc._id

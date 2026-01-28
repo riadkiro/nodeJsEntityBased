@@ -25,16 +25,28 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Format</label>
-                <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="doc.format"></p>
+                <select x-model="doc.format" @change="updateDimensions" class="form-select w-full text-xs py-1.5 focus:ring-primary/20 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                  <option value="A4">A4</option>
+                  <option value="A5">A5</option>
+                  <option value="A3">A3</option>
+                  <option value="Letter">Letter</option>
+                  <option value="Legal">Legal</option>
+                </select>
               </div>
               <div>
                 <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Orientation</label>
-                <p class="text-sm font-medium text-gray-900 dark:text-white capitalize" x-text="doc.orientation"></p>
+                <select x-model="doc.orientation" @change="updateDimensions" class="form-select w-full text-xs py-1.5 focus:ring-primary/20 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                  <option value="portrait">Portrait</option>
+                  <option value="landscape">Paysage</option>
+                </select>
               </div>
             </div>
             <div>
-              <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Dimensions</label>
-              <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="doc.dimensions.width + ' x ' + doc.dimensions.height + ' px'"></p>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Statut</label>
+              <select x-model="doc.status" @change="saveDocument" class="form-select w-full text-xs py-1.5 focus:ring-primary/20 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <option value="draft">Brouillon</option>
+                <option value="published">Publié</option>
+              </select>
             </div>
           </div>
         </div>

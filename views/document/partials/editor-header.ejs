@@ -97,45 +97,22 @@
 
           <div class="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
 
-          <!-- Paint Roller / Status Overlay -->
-          <div class="relative flex items-center gap-3">
-            <button @click="formatDoc('removeFormat')"
-              class="w-8 h-8 flex items-center justify-center rounded-lg text-primary bg-primary/10 hover:bg-primary/20 transition-all"
-              title="Copier style">
-              <iconify-icon icon="tabler:paint" width="18"></iconify-icon>
-            </button>
-
-            <div class="hidden xl:block">
-              <span class="text-[9px] text-gray-400 font-medium whitespace-nowrap" x-show="lastSaved"
-                x-text="'Sauvegardé ' + lastSaved"></span>
-            </div>
-          </div>
+          <!-- Paint Roller -->
+          <button @click="formatDoc('removeFormat')"
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-primary bg-primary/10 hover:bg-primary/20 transition-all"
+            title="Copier style">
+            <iconify-icon icon="tabler:paint" width="18"></iconify-icon>
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Mode Switcher REMOVED -->
-  <div></div>
-
-  <div class="flex items-center gap-2">
-    <select x-model="doc.format" @change="updateDimensions" class="form-select text-sm">
-      <option value="A4">A4</option>
-      <option value="A5">A5</option>
-      <option value="A3">A3</option>
-      <option value="Letter">Letter</option>
-      <option value="Legal">Legal</option>
-    </select>
-
-    <select x-model="doc.orientation" @change="updateDimensions" class="form-select text-sm">
-      <option value="portrait">Portrait</option>
-      <option value="landscape">Paysage</option>
-    </select>
-
-    <select x-model="doc.status" @change="saveDocument" class="form-select text-sm">
-      <option value="draft">Brouillon</option>
-      <option value="published">Publié</option>
-    </select>
+  <div class="flex items-center gap-4">
+    <div class="flex items-center gap-2" x-show="lastSaved">
+      <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Sauvegardé</span>
+      <span class="text-xs text-gray-500 font-medium" x-text="lastSaved"></span>
+    </div>
 
     <button @click="printDocument"
       class="btn btn-outline-primary btn-sm bg-white hover:bg-gray-50 text-primary border border-primary">

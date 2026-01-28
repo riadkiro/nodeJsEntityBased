@@ -1076,24 +1076,15 @@
           var page = this.doc.pages[index];
           var oldMode = page.mode;
 
-          // Conversion logic from Edition to Layout
+          // Seamless Conversion logic from Edition to Layout
           if ((mode === 'layout' || mode === 'designer') && oldMode === 'edition') {
-            // If already has rows, ask for confirmation
-            if (!page.rows || page.rows.length === 0) {
-              this.convertToLayout(index);
-            } else {
-              if (confirm("Ce mode possède déjà un layout. Voulez-vous importer et convertir le contenu actuel (cela remplacera le layout existant) ?")) {
-                this.convertToLayout(index);
-              }
-            }
+            this.convertToLayout(index);
           }
 
-          // Back-sync logic from Layout to Edition
+          // Seamless Back-sync logic from Layout to Edition
           if (mode === 'edition' && (oldMode === 'layout' || oldMode === 'designer')) {
             if (page.rows && page.rows.length > 0) {
-              if (confirm("Voulez-vous synchroniser les changements du Layout vers le mode Edition ?")) {
-                this.syncEditionFromLayout(index);
-              }
+              this.syncEditionFromLayout(index);
             }
           }
 

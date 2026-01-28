@@ -190,11 +190,22 @@
                                     </button>
                                   </div>
 
-                                  <!-- Standard Text Element -->
+                                  <!-- Standard Text Element (with HTML support for presets) -->
                                   <template x-if="element.type === 'text'">
                                     <div 
                                       contenteditable="true" 
-                                      class="outline-none text-sm min-h-[1.5em] p-1 border border-transparent hover:border-gray-100 focus:!border-blue-400/30 focus:!ring-2 focus:!ring-blue-400/10 rounded transition-all"
+                                      class="outline-none min-h-[1.5em] p-1 border border-transparent hover:border-gray-100 focus:!border-blue-400/30 focus:!ring-2 focus:!ring-blue-400/10 rounded transition-all editor-content"
+                                      style="outline: none !important;"
+                                      x-html="element.content"
+                                      @blur="updateElementContent($event, index, rowIndex, element.id)"
+                                    ></div>
+                                  </template>
+
+                                  <!-- Plain Text Element (Stripped HTML) -->
+                                  <template x-if="element.type === 'plain-text'">
+                                    <div 
+                                      contenteditable="true" 
+                                      class="outline-none min-h-[1.5em] p-1 border border-transparent hover:border-gray-100 focus:!border-blue-400/30 focus:!ring-2 focus:!ring-blue-400/10 rounded transition-all italic text-gray-500"
                                       style="outline: none !important;"
                                       x-text="element.content"
                                       @blur="updateElementContent($event, index, rowIndex, element.id)"
@@ -206,7 +217,7 @@
                                      <div class="relative group/html">
                                        <div 
                                          contenteditable="true"
-                                         class="outline-none text-sm min-h-[1.5em] p-1 border border-transparent hover:border-gray-100 focus:!border-blue-400/30 focus:!ring-2 focus:!ring-blue-400/10 rounded transition-all"
+                                         class="outline-none min-h-[1.5em] p-1 border border-transparent hover:border-gray-100 focus:!border-blue-400/30 focus:!ring-2 focus:!ring-blue-400/10 rounded transition-all editor-content"
                                          style="outline: none !important;"
                                          x-html="element.content"
                                          @blur="updateElementContent($event, index, rowIndex, element.id)"

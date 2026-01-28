@@ -1,0 +1,102 @@
+<div 
+    x-show="activeTab === 'text'"
+    x-transition:enter="transition ease-out duration-300 transform"
+    x-transition:enter-start="-translate-x-full opacity-0"
+    x-transition:enter-end="translate-x-0 opacity-100"
+    x-transition:leave="transition ease-in duration-200 transform"
+    x-transition:leave-start="translate-x-0 opacity-100"
+    x-transition:leave-end="-translate-x-full opacity-0"
+    class="w-72 bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col shadow-xl z-20 overflow-hidden"
+    style="display: none; padding: 10px; border: 1px solid #f2f2f2;"
+>
+    <!-- Header -->
+    <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+        <h3 class="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2 uppercase tracking-wider text-xs">
+            <iconify-icon icon="solar:text-bold-duotone" class="text-primary"></iconify-icon>
+            Texte & Contenu
+        </h3>
+        <button @click="activeTab = null" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+            <iconify-icon icon="solar:close-circle-bold" width="20"></iconify-icon>
+        </button>
+    </div>
+
+    <!-- Scrollable Content - Sortable on direct children -->
+    <div class="flex-1 overflow-y-auto p-2 custom-scrollbar space-y-2"
+         x-init="Sortable.create($el, { 
+            group: { name: 'elements', pull: 'clone', put: false }, 
+            sort: false, 
+            draggable: '.text-source-item', 
+            fallbackOnBody: true,
+            onStart: function() { document.body.classList.add('is-dragging'); },
+            onEnd: function() { document.body.classList.remove('is-dragging'); }
+         })">
+        
+        <!-- Basic Text Tools -->
+        <div class="text-source-item group cursor-move bg-gray-50 dark:bg-gray-900/50 p-2 rounded-lg border border-transparent hover:border-primary/30 hover:bg-white dark:hover:bg-gray-800 transition-all flex items-center gap-3 shadow-sm"
+                data-type="text" data-content="<h1>Ajouter un titre</h1>">
+            <div class="w-8 h-8 rounded bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm text-primary flex-shrink-0">
+                <iconify-icon icon="solar:text-bold-duotone" width="20"></iconify-icon>
+            </div>
+            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">Ajouter un titre</span>
+        </div>
+
+        <div class="text-source-item group cursor-move bg-gray-50 dark:bg-gray-900/50 p-2 rounded-lg border border-transparent hover:border-primary/30 hover:bg-white dark:hover:bg-gray-800 transition-all flex items-center gap-3 shadow-sm"
+                data-type="text" data-content="<h3>Ajouter un sous-titre</h3>">
+            <div class="w-8 h-8 rounded bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm text-primary/70 flex-shrink-0">
+                <iconify-icon icon="solar:text-underline-cross-bold-duotone" width="18"></iconify-icon>
+            </div>
+            <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Ajouter un sous-titre</span>
+        </div>
+
+        <div class="text-source-item group cursor-move bg-gray-50 dark:bg-gray-900/50 p-2 rounded-lg border border-transparent hover:border-primary/30 hover:bg-white dark:hover:bg-gray-800 transition-all flex items-center gap-3 shadow-sm"
+                data-type="text" data-content="<p>Texte de corps</p>">
+            <div class="w-8 h-8 rounded bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm text-gray-400 flex-shrink-0">
+                <iconify-icon icon="solar:align-left-bold-duotone" width="18"></iconify-icon>
+            </div>
+            <span class="text-xs text-gray-500 font-medium">Texte de corps</span>
+        </div>
+
+        <div class="h-px bg-gray-100 dark:bg-gray-700 !my-4"></div>
+
+        <!-- Simple Text Tool -->
+        <div class="text-source-item group cursor-move bg-gray-50 dark:bg-gray-900/50 p-2 rounded-lg border border-transparent hover:border-primary/30 hover:bg-white dark:hover:bg-gray-800 transition-all flex items-center gap-3 shadow-sm"
+                data-type="plain-text" data-content="Texte simple sans HTML">
+            <div class="w-8 h-8 rounded bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm text-gray-400 flex-shrink-0">
+                <iconify-icon icon="solar:info-circle-bold-duotone" width="18"></iconify-icon>
+            </div>
+            <span class="text-xs text-gray-500 font-medium">Texte simple (Sans HTML)</span>
+        </div>
+
+        <div class="h-px bg-gray-100 dark:bg-gray-700 !my-4"></div>
+
+        <!-- HTML Tool -->
+        <div class="text-source-item group cursor-move bg-gray-50 dark:bg-gray-900/50 p-2 rounded-lg border border-transparent hover:border-primary/30 hover:bg-white dark:hover:bg-gray-800 transition-all flex items-center gap-3 shadow-sm"
+                data-type="html" data-content="<div style='padding: 20px; background: #f8fafc; border-radius: 8px;'>Code HTML personnalisé</div>">
+            <div class="w-8 h-8 rounded bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm text-green-500 flex-shrink-0">
+                <iconify-icon icon="solar:code-bold-duotone" width="20"></iconify-icon>
+            </div>
+            <span class="text-xs font-bold text-gray-700 dark:text-gray-300">Code HTML Brut</span>
+        </div>
+
+        <div class="mt-6 px-1">
+            <p class="text-[9px] uppercase tracking-widest text-gray-400 font-extrabold mb-3">Styles Démo</p>
+            <div class="space-y-2">
+                <div class="text-source-item group cursor-move bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-2 rounded-lg border border-transparent hover:border-blue-400 transition-all flex items-center gap-3"
+                        data-type="text" data-content="<h2 style='color: #4f46e5; font-weight: 800; font-style: italic;'>STYLE NÉON</h2>">
+                    <div class="w-8 h-8 rounded bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm text-indigo-500 flex-shrink-0">
+                        <iconify-icon icon="solar:stars-minimalistic-bold-duotone" width="18"></iconify-icon>
+                    </div>
+                    <span class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 italic font-bold">STYLE NÉON</span>
+                </div>
+
+                <div class="text-source-item group cursor-move bg-gray-50 dark:bg-gray-900/50 p-2 rounded-lg border border-transparent hover:border-primary/30 transition-all flex items-center gap-3 shadow-sm"
+                        data-type="text" data-content="<div style='border-left: 4px solid #3b82f6; padding-left: 10px; font-style: italic; color: #64748b;'>Citation élégante</div>">
+                    <div class="w-8 h-8 rounded bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm text-blue-500 flex-shrink-0">
+                        <iconify-icon icon="solar:double-quotes-l-bold" width="18"></iconify-icon>
+                    </div>
+                    <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400">Citation</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

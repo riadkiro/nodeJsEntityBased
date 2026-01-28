@@ -4,12 +4,14 @@
       x-init="Sortable.create($el, { group: { name: 'elements', pull: 'clone', put: false }, sort: false, draggable: '.sortable-source', fallbackOnBody: true })"
     >
       <button 
-        class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center cursor-move sortable-source" 
-        title="Texte"
-        data-type="text"
+        class="w-10 h-10 rounded transition-colors flex items-center justify-center" 
+        :class="activeTab === 'text' ? 'bg-primary/20 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'"
+        title="Texte et Contenu"
+        @click="activeTab = activeTab === 'text' ? null : 'text'"
       >
         <iconify-icon icon="solar:text-bold-duotone" width="24"></iconify-icon>
       </button>
+
       <!-- Combined Image & Gallery Tool -->
       <button 
         class="w-10 h-10 rounded transition-colors flex items-center justify-center" 
@@ -29,13 +31,5 @@
       <div class="h-px w-8 bg-gray-200 dark:bg-gray-700"></div>
       <button class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center" title="Variable DB">
         <iconify-icon icon="solar:database-bold-duotone" width="24"></iconify-icon>
-      </button>
-      <div class="h-px w-8 bg-gray-200 dark:bg-gray-700"></div>
-      <button 
-        class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center cursor-move sortable-source" 
-        title="HTML Brut"
-        data-type="html"
-      >
-        <iconify-icon icon="solar:code-bold-duotone" width="24"></iconify-icon>
       </button>
     </div>

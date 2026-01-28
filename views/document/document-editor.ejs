@@ -7,51 +7,52 @@
       <!-- Toolbar (Left) -->
       <%- include('partials/editor-left-sidebar') %>
         <%- include('partials/editor-assets-panel') %>
+          <%- include('partials/editor-text-panel') %>
 
-          <!-- Canvas Area -->
-          <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-            <%- include('partials/editor-canvas') %>
-          </div>
+            <!-- Canvas Area -->
+            <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+              <%- include('partials/editor-canvas') %>
+            </div>
 
-          <!-- Properties Panel (Right) -->
-          <%- include('partials/editor-right-sidebar') %>
+            <!-- Properties Panel (Right) -->
+            <%- include('partials/editor-right-sidebar') %>
 
-            <!-- HTML Editor Modal -->
-            <div x-show="editingHtml"
-              class="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center backdrop-blur-sm"
-              x-transition.opacity style="display: none;">
-              <div
-                class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-3/4 max-w-4xl max-h-[90vh] flex flex-col border dark:border-gray-700"
-                @click.outside="editingHtml = null">
+              <!-- HTML Editor Modal -->
+              <div x-show="editingHtml"
+                class="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center backdrop-blur-sm"
+                x-transition.opacity style="display: none;">
                 <div
-                  class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 rounded-t-xl">
-                  <h3 class="font-bold text-lg flex items-center gap-2">
-                    <iconify-icon icon="solar:code-bold-duotone" class="text-primary"></iconify-icon>
-                    Éditeur HTML
-                  </h3>
-                  <button @click="editingHtml = null"
-                    class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
-                    <iconify-icon icon="solar:close-circle-bold" width="24"></iconify-icon>
-                  </button>
-                </div>
-                <div class="p-0 flex-1 overflow-hidden relative group">
-                  <textarea
-                    class="w-full h-96 p-4 font-mono text-sm bg-gray-900 text-green-400 focus:ring-0 outline-none resize-none border-none leading-relaxed"
-                    x-model="editingHtmlContent" placeholder="<div>Votre code HTML ici...</div>"
-                    spellcheck="false"></textarea>
-                </div>
-                <div
-                  class="p-4 border-t dark:border-gray-700 flex justify-end gap-3 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
-                  <button @click="editingHtml = null"
-                    class="px-4 py-2 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors font-medium">Annuler</button>
-                  <button @click="saveHtmlEdit()"
-                    class="px-6 py-2 rounded-lg bg-primary text-white hover:bg-blue-600 shadow-lg shadow-blue-500/30 transition-all font-bold flex items-center gap-2">
-                    <iconify-icon icon="solar:diskette-bold"></iconify-icon>
-                    Sauvegarder
-                  </button>
+                  class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-3/4 max-w-4xl max-h-[90vh] flex flex-col border dark:border-gray-700"
+                  @click.outside="editingHtml = null">
+                  <div
+                    class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 rounded-t-xl">
+                    <h3 class="font-bold text-lg flex items-center gap-2">
+                      <iconify-icon icon="solar:code-bold-duotone" class="text-primary"></iconify-icon>
+                      Éditeur HTML
+                    </h3>
+                    <button @click="editingHtml = null"
+                      class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                      <iconify-icon icon="solar:close-circle-bold" width="24"></iconify-icon>
+                    </button>
+                  </div>
+                  <div class="p-0 flex-1 overflow-hidden relative group">
+                    <textarea
+                      class="w-full h-96 p-4 font-mono text-sm bg-gray-900 text-green-400 focus:ring-0 outline-none resize-none border-none leading-relaxed"
+                      x-model="editingHtmlContent" placeholder="<div>Votre code HTML ici...</div>"
+                      spellcheck="false"></textarea>
+                  </div>
+                  <div
+                    class="p-4 border-t dark:border-gray-700 flex justify-end gap-3 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
+                    <button @click="editingHtml = null"
+                      class="px-4 py-2 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors font-medium">Annuler</button>
+                    <button @click="saveHtmlEdit()"
+                      class="px-6 py-2 rounded-lg bg-primary text-white hover:bg-blue-600 shadow-lg shadow-blue-500/30 transition-all font-bold flex items-center gap-2">
+                      <iconify-icon icon="solar:diskette-bold"></iconify-icon>
+                      Sauvegarder
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
     </div>
 </div>
 
@@ -403,6 +404,7 @@
           var content = customContent || '';
           if (!customContent) {
             if (type === 'text') content = 'Nouveau texte';
+            else if (type === 'plain-text') content = 'Texte simple';
             else if (type === 'html') content = '<div>Nouveau contenu HTML</div>';
             else if (type === 'image') content = '';
           }
@@ -463,9 +465,10 @@
           var element = row.elements.find(function (e) { return e.id === elementId; });
 
           if (element) {
-            // For HTML type, save innerHTML (Formatted). For Text type, save innerText (Plain).
-            var content = element.type === 'html' ? event.target.innerHTML : event.target.innerText;
-            element.content = content;
+            // For plain-text, we use innerText to strip all HTML tags
+            // For text/html, we use innerHTML to preserve presets and structure
+            var newContent = element.type === 'plain-text' ? event.target.innerText : event.target.innerHTML;
+            element.content = newContent;
             this.saveDocument();
           }
         },
@@ -1318,5 +1321,41 @@
     background: rgba(59, 130, 246, 0.1);
     /* Increased visibility */
     box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+  }
+
+  /* --- Rendered Content Styles (Override Tailwind Reset) --- */
+  .editor-content h1 {
+    font-size: 2.25rem;
+    font-weight: 800;
+    margin-bottom: 0.75rem !important;
+    line-height: 1.2 !important;
+    display: block !important;
+  }
+
+  .editor-content h2 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem !important;
+    line-height: 1.25 !important;
+    display: block !important;
+  }
+
+  .editor-content h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem !important;
+    line-height: 1.3 !important;
+    display: block !important;
+  }
+
+  .editor-content p {
+    font-size: 1rem;
+    line-height: 1.6 !important;
+    margin-bottom: 1rem !important;
+    display: block !important;
+  }
+
+  .editor-content-area div[contenteditable] {
+    font-family: inherit;
   }
 </style>

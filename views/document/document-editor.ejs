@@ -66,7 +66,7 @@
 
       <button @click="printDocument" class="btn btn-outline-primary btn-sm bg-white hover:bg-gray-50 text-primary border border-primary">
         <iconify-icon icon="solar:file-download-bold" class="mr-1"></iconify-icon>
-        Télécharger PDF
+        PDF
       </button>
 
       <button @click="saveDocument" class="btn btn-primary btn-sm">
@@ -125,6 +125,7 @@
               <div 
                 x-show="editorMode === 'edition'"
                 class="w-full h-full outline-none text-gray-800 leading-relaxed page-content overflow-hidden"
+                :class="{ 'global-selection': isGlobalSelection }"
                 contenteditable="true"
                 :data-page-index="index"
                 @input="handlePageInput($event, index)"
@@ -432,6 +433,96 @@
         selectedRow: null,
         lastSaved: null,
         saveTimeout: null,
+        isGlobalSelection: false,
+
+        init: function() {
+            var self = this;
+            // Intercept Ctrl+A for "Global Selection"
+            window.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                    if (self.editorMode === 'edition') {
+                        e.preventDefault();
+                        self.handleGlobalSelection();
+                    }
+                }
+                // Handle Delete/Backspace during Global Selection
+                else if (self.isGlobalSelection && (e.key === 'Delete' || e.key === 'Backspace')) {
+                    e.preventDefault();
+                    self.handleGlobalDelete();
+                }
+                // Cancel global selection on other keys (except navigation/copy)
+                else if (self.isGlobalSelection && !e.ctrlKey && !e.metaKey && e.key !== 'Shift') {
+                    self.isGlobalSelection = false;
+                }
+            });
+
+            // Intercept Copy when Global Selection is active
+            window.addEventListener('copy', function(e) {
+                if (self.isGlobalSelection) {
+                    e.preventDefault();
+                    self.handleGlobalCopy(e);
+                }
+            });
+
+            // Clear selection on click
+            window.addEventListener('click', function(e) {
+                // We clear global selection on any click to behave like native selection
+                self.isGlobalSelection = false;
+            });
+        },
+
+        handleGlobalSelection: function() {
+            this.isGlobalSelection = true;
+            // REMOVED: Do not blur! We need focus for Copy event to fire.
+            // visual hiding of cursor is handled by CSS (caret-color: transparent)
+        },
+
+        handleGlobalCopy: function(e) {
+            // Aggregate content from ALL pages
+            var fullHtml = this.doc.pages.map(function(p) { return p.content; }).join('<br><div class="page-break" style="height: 20px;"></div><br>');
+            
+            // Create plain text version
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = fullHtml;
+            var fullText = tempDiv.innerText;
+
+            e.clipboardData.setData('text/html', fullHtml);
+            e.clipboardData.setData('text/plain', fullText);
+            
+            // Visual feedback
+            var toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded shadow-lg z-50';
+            toast.innerText = 'Contenu copié !';
+            document.body.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, 2000);
+        },
+
+        handleGlobalDelete: function() {
+            // 1. Keep first page, reset it
+            var firstPage = this.doc.pages[0];
+            firstPage.content = '';
+            firstPage.elements = [];
+            
+            // 2. Remove all other pages (Reset array)
+            this.doc.pages = [firstPage];
+            this.selectedPageIndex = 0;
+            
+            // 3. Clear Visual DOM of the remaining page
+            // (Alpine won't re-render x-init for existing element, so we clear manually)
+            var firstPageEl = document.querySelector('.page-content[data-page-index="0"]');
+            if (firstPageEl) {
+                firstPageEl.innerHTML = '';
+            }
+
+            // 4. Reset State & Save
+            this.isGlobalSelection = false;
+            this.saveDocument();
+            
+            // 5. Focus first page
+            setTimeout(function() {
+                 if (firstPageEl) firstPageEl.focus();
+            }, 50);
+        },
         openSections: {
           info: true,
           margins: true,
@@ -592,6 +683,41 @@
           
           // Check for underflow (space available -> pull from next page)
           this.checkUnderflow(element, pageIndex);
+          
+          // [NEW] Automatic Page Deletion Logic
+          // If page is empty (and not the first/only page), remove it.
+          if (this.doc.pages.length > 1 && pageIndex > 0) {
+              var cleanText = element.innerText.trim();
+              // Check if truly empty (no text, no images)
+              // We also check innerHTML for things like <img> tags which innerText misses
+              var hasMedia = element.querySelector('img, table, hr, .page-break');
+              
+              if (cleanText === '' && !hasMedia) {
+                   // Page is empty, remove it!
+                   this.doc.pages.splice(pageIndex, 1);
+                   
+                   // Move focus to end of previous page
+                   var prevPageIdx = pageIndex - 1;
+                   this.selectedPageIndex = prevPageIdx;
+                   
+                   this.$nextTick(function() {
+                       var prevPageEl = document.querySelector('.page-content[data-page-index="' + prevPageIdx + '"]');
+                       if (prevPageEl) {
+                           prevPageEl.focus();
+                           // Place cursor at end
+                           var range = document.createRange();
+                           range.selectNodeContents(prevPageEl);
+                           range.collapse(false);
+                           var sel = window.getSelection();
+                           sel.removeAllRanges();
+                           sel.addRange(range);
+                           
+                           // [FIX] Scroll to the bottom where the cursor is
+                           prevPageEl.scrollIntoView({ block: 'end', behavior: 'smooth' });
+                       }
+                   });
+              }
+          }
           
           this.saveDocument();
         },
@@ -1241,5 +1367,11 @@
     .group .opacity-0 {
         display: none !important;
     }
+  }
+
+  /* Global Selection Simulation */
+  .global-selection {
+     background-color: #b3d4fc !important; /* Native selection blue */
+     caret-color: transparent; /* Hide cursor to look like object selection */
   }
 </style>

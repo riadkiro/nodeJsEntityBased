@@ -6,9 +6,12 @@
     <div class="flex-1 flex overflow-hidden">
       <!-- Toolbar (Left) -->
       <%- include('partials/editor-left-sidebar') %>
+        <%- include('partials/editor-assets-panel') %>
 
-        <!-- Canvas Area -->
-        <%- include('partials/editor-canvas') %>
+          <!-- Canvas Area -->
+          <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <%- include('partials/editor-canvas') %>
+          </div>
 
           <!-- Properties Panel (Right) -->
           <%- include('partials/editor-right-sidebar') %>
@@ -104,6 +107,7 @@
           margins: true,
           info: true
         },
+        activeTab: null, // For sliding sidebar panels
         dragTargetElementId: null,
 
         init: function () {
@@ -190,6 +194,7 @@
 
             onAdd: function (evt) {
               var type = evt.item.dataset.type;
+              var customContent = evt.item.dataset.content;
               if (type) {
                 var toColEl = evt.to.closest('.sortable-column');
                 var toPage = parseInt(toColEl.dataset.pageIndex);
@@ -201,7 +206,7 @@
                 var destElements = self.doc.pages[toPage].rows[toRow].elements || [];
                 var absoluteIndex = self.getAbsoluteIndex(destElements, toCol, evt.newIndex);
 
-                self.processNewElement(type, toPage, toRow, toCol, absoluteIndex);
+                self.processNewElement(type, toPage, toRow, toCol, absoluteIndex, customContent);
               }
             }
           });
@@ -390,15 +395,22 @@
         },
 
 
-        processNewElement: function (type, pageIndex, rowIndex, colIndex, atIndex) {
+        processNewElement: function (type, pageIndex, rowIndex, colIndex, atIndex, customContent) {
           if (!this.doc.pages[pageIndex].rows[rowIndex].elements) {
             this.doc.pages[pageIndex].rows[rowIndex].elements = [];
           }
 
+          var content = customContent || '';
+          if (!customContent) {
+            if (type === 'text') content = 'Nouveau texte';
+            else if (type === 'html') content = '<div>Nouveau contenu HTML</div>';
+            else if (type === 'image') content = '';
+          }
+
           var newElement = {
-            id: Date.now(),
+            id: Date.now() + Math.random(),
             type: type,
-            content: type === 'text' ? 'Nouveau texte' : '<div>Nouveau contenu HTML</div>',
+            content: content,
             column: colIndex
           };
 

@@ -262,6 +262,31 @@
           }
         },
 
+        insertRowAfter: function(pageIndex, rowIndex) {
+            this.doc.pages[pageIndex].rows.splice(rowIndex + 1, 0, {
+                columns: 1,
+                elements: []
+            });
+            this.saveDocument();
+        },
+
+        duplicateRow: function(pageIndex, rowIndex) {
+            var rowToDuplicate = JSON.parse(JSON.stringify(this.doc.pages[pageIndex].rows[rowIndex]));
+            // Regenerate IDs for elements to avoid conflicts
+            if (rowToDuplicate.elements) {
+                rowToDuplicate.elements.forEach(function(el) { el.id = Date.now() + Math.random(); });
+            }
+            this.doc.pages[pageIndex].rows.splice(rowIndex + 1, 0, rowToDuplicate);
+            this.saveDocument();
+        },
+
+        deleteRow: function(pageIndex, rowIndex) {
+            if (confirm("Supprimer cette section ?")) {
+                this.doc.pages[pageIndex].rows.splice(rowIndex, 1);
+                this.saveDocument();
+            }
+        },
+
         startDrag: function(event, type) {
           event.dataTransfer.setData('type', type);
           event.dataTransfer.effectAllowed = 'copy';

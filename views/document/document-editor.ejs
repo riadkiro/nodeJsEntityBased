@@ -2,55 +2,54 @@
   <!-- Header Bar -->
   <%- include('partials/editor-header') %>
 
-  <!-- Main Content -->
-  <div class="flex-1 flex overflow-hidden">
-    <!-- Toolbar (Left) -->
-    <%- include('partials/editor-left-sidebar') %>
+    <!-- Main Content -->
+    <div class="flex-1 flex overflow-hidden">
+      <!-- Toolbar (Left) -->
+      <%- include('partials/editor-left-sidebar') %>
 
-    <!-- Canvas Area -->
-    <%- include('partials/editor-canvas') %>
+        <!-- Canvas Area -->
+        <%- include('partials/editor-canvas') %>
 
-    <!-- Properties Panel (Right) -->
-    <%- include('partials/editor-right-sidebar') %>
-    
-    <!-- HTML Editor Modal -->
-    <div 
-      x-show="editingHtml" 
-      class="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center backdrop-blur-sm"
-      x-transition.opacity
-      style="display: none;"
-    >
-      <div 
-        class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-3/4 max-w-4xl max-h-[90vh] flex flex-col border dark:border-gray-700"
-        @click.outside="editingHtml = null"
-      >
-        <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 rounded-t-xl">
-          <h3 class="font-bold text-lg flex items-center gap-2">
-            <iconify-icon icon="solar:code-bold-duotone" class="text-primary"></iconify-icon>
-            Éditeur HTML
-          </h3>
-          <button @click="editingHtml = null" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
-            <iconify-icon icon="solar:close-circle-bold" width="24"></iconify-icon>
-          </button>
-        </div>
-        <div class="p-0 flex-1 overflow-hidden relative group">
-          <textarea 
-            class="w-full h-96 p-4 font-mono text-sm bg-gray-900 text-green-400 focus:ring-0 outline-none resize-none border-none leading-relaxed"
-            x-model="editingHtmlContent"
-            placeholder="<div>Votre code HTML ici...</div>"
-            spellcheck="false"
-          ></textarea>
-        </div>
-        <div class="p-4 border-t dark:border-gray-700 flex justify-end gap-3 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
-          <button @click="editingHtml = null" class="px-4 py-2 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors font-medium">Annuler</button>
-          <button @click="saveHtmlEdit()" class="px-6 py-2 rounded-lg bg-primary text-white hover:bg-blue-600 shadow-lg shadow-blue-500/30 transition-all font-bold flex items-center gap-2">
-             <iconify-icon icon="solar:diskette-bold"></iconify-icon>
-             Sauvegarder
-          </button>
-        </div>
-      </div>
+          <!-- Properties Panel (Right) -->
+          <%- include('partials/editor-right-sidebar') %>
+
+            <!-- HTML Editor Modal -->
+            <div x-show="editingHtml"
+              class="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center backdrop-blur-sm"
+              x-transition.opacity style="display: none;">
+              <div
+                class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-3/4 max-w-4xl max-h-[90vh] flex flex-col border dark:border-gray-700"
+                @click.outside="editingHtml = null">
+                <div
+                  class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 rounded-t-xl">
+                  <h3 class="font-bold text-lg flex items-center gap-2">
+                    <iconify-icon icon="solar:code-bold-duotone" class="text-primary"></iconify-icon>
+                    Éditeur HTML
+                  </h3>
+                  <button @click="editingHtml = null"
+                    class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <iconify-icon icon="solar:close-circle-bold" width="24"></iconify-icon>
+                  </button>
+                </div>
+                <div class="p-0 flex-1 overflow-hidden relative group">
+                  <textarea
+                    class="w-full h-96 p-4 font-mono text-sm bg-gray-900 text-green-400 focus:ring-0 outline-none resize-none border-none leading-relaxed"
+                    x-model="editingHtmlContent" placeholder="<div>Votre code HTML ici...</div>"
+                    spellcheck="false"></textarea>
+                </div>
+                <div
+                  class="p-4 border-t dark:border-gray-700 flex justify-end gap-3 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
+                  <button @click="editingHtml = null"
+                    class="px-4 py-2 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors font-medium">Annuler</button>
+                  <button @click="saveHtmlEdit()"
+                    class="px-6 py-2 rounded-lg bg-primary text-white hover:bg-blue-600 shadow-lg shadow-blue-500/30 transition-all font-bold flex items-center gap-2">
+                    <iconify-icon icon="solar:diskette-bold"></iconify-icon>
+                    Sauvegarder
+                  </button>
+                </div>
+              </div>
+            </div>
     </div>
-  </div>
 </div>
 
 <!-- Data passed from server -->
@@ -68,11 +67,11 @@
 </script>
 
 <script>
-  document.addEventListener('alpine:init', function() {
-    Alpine.data('documentEditor', function() {
+  document.addEventListener('alpine:init', function () {
+    Alpine.data('documentEditor', function () {
       var data = JSON.parse(document.getElementById('document-data').textContent);
       var accountNumber = '<%= account_number %>';
-      
+
       return {
         doc: {
           _id: data.docId,
@@ -80,7 +79,12 @@
           format: data.format,
           orientation: data.orientation,
           dimensions: data.dimensions,
-          pages: data.pages.map(function(p) { return Object.assign({}, p, { mode: p.mode || 'edition' }); }),
+          pages: (data.pages || []).map(function (p) {
+            var pData = Object.assign({ elements: [], rows: [], mode: 'edition' }, p);
+            if (!pData.elements) pData.elements = [];
+            if (!pData.rows) pData.rows = [];
+            return pData;
+          }),
           status: data.status,
           margins: data.margins || { top: 72, bottom: 72, left: 72, right: 72 }
         },
@@ -92,94 +96,103 @@
         isGlobalSelection: false,
         editingHtml: null,
         editingHtmlContent: '',
-
-        init: function() {
-            var self = this;
-            // Intercept Ctrl+A for "Global Selection"
-            window.addEventListener('keydown', function(e) {
-                if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
-                    if (self.editorMode === 'edition') {
-                        e.preventDefault();
-                        self.handleGlobalSelection();
-                    }
-                }
-                // Handle Delete/Backspace during Global Selection
-                else if (self.isGlobalSelection && (e.key === 'Delete' || e.key === 'Backspace')) {
-                    e.preventDefault();
-                    self.handleGlobalDelete();
-                }
-                // Cancel global selection on other keys (except navigation/copy)
-                else if (self.isGlobalSelection && !e.ctrlKey && !e.metaKey && e.key !== 'Shift') {
-                    self.isGlobalSelection = false;
-                }
-            });
-
-            // Intercept Copy when Global Selection is active
-            window.addEventListener('copy', function(e) {
-                if (self.isGlobalSelection) {
-                    e.preventDefault();
-                    self.handleGlobalCopy(e);
-                }
-            });
-
-            // Clear selection on click
-            window.addEventListener('click', function(e) {
-                // We clear global selection on any click to behave like native selection
-                self.isGlobalSelection = false;
-            });
+        openSections: {
+          pages: true,
+          elements: true,
+          layout: true,
+          settings: true,
+          margins: true,
+          info: true
         },
+        dragTargetElementId: null,
 
-        handleGlobalSelection: function() {
-            this.isGlobalSelection = true;
-            // REMOVED: Do not blur! We need focus for Copy event to fire.
-            // visual hiding of cursor is handled by CSS (caret-color: transparent)
-        },
-
-        handleGlobalCopy: function(e) {
-            // Aggregate content from ALL pages
-            var fullHtml = this.doc.pages.map(function(p) { return p.content; }).join('<br><div class="page-break" style="height: 20px;"></div><br>');
-            
-            // Create plain text version
-            var tempDiv = document.createElement('div');
-            tempDiv.innerHTML = fullHtml;
-            var fullText = tempDiv.innerText;
-
-            e.clipboardData.setData('text/html', fullHtml);
-            e.clipboardData.setData('text/plain', fullText);
-            
-            // Visual feedback
-            var toast = document.createElement('div');
-            toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded shadow-lg z-50';
-            toast.innerText = 'Contenu copié !';
-            document.body.appendChild(toast);
-            setTimeout(function() { toast.remove(); }, 2000);
-        },
-
-        handleGlobalDelete: function() {
-            // 1. Keep first page, reset it
-            var firstPage = this.doc.pages[0];
-            firstPage.content = '';
-            firstPage.elements = [];
-            
-            // 2. Remove all other pages (Reset array)
-            this.doc.pages = [firstPage];
-            this.selectedPageIndex = 0;
-            
-            // 3. Clear Visual DOM of the remaining page
-            // (Alpine won't re-render x-init for existing element, so we clear manually)
-            var firstPageEl = document.querySelector('.page-content[data-page-index="0"]');
-            if (firstPageEl) {
-                firstPageEl.innerHTML = '';
+        init: function () {
+          var self = this;
+          // Intercept Ctrl+A for "Global Selection"
+          window.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+              if (self.editorMode === 'edition') {
+                e.preventDefault();
+                self.handleGlobalSelection();
+              }
             }
+            // Handle Delete/Backspace during Global Selection
+            else if (self.isGlobalSelection && (e.key === 'Delete' || e.key === 'Backspace')) {
+              e.preventDefault();
+              self.handleGlobalDelete();
+            }
+            // Cancel global selection on other keys (except navigation/copy)
+            else if (self.isGlobalSelection && !e.ctrlKey && !e.metaKey && e.key !== 'Shift') {
+              self.isGlobalSelection = false;
+            }
+          });
 
-            // 4. Reset State & Save
-            this.isGlobalSelection = false;
-            this.saveDocument();
-            
-            // 5. Focus first page
-            setTimeout(function() {
-                 if (firstPageEl) firstPageEl.focus();
-            }, 50);
+          // Intercept Copy when Global Selection is active
+          window.addEventListener('copy', function (e) {
+            if (self.isGlobalSelection) {
+              e.preventDefault();
+              self.handleGlobalCopy(e);
+            }
+          });
+
+          // Clear selection on click
+          window.addEventListener('click', function (e) {
+            // We clear global selection on any click to behave like native selection
+            self.isGlobalSelection = false;
+          });
+        },
+
+        handleGlobalSelection: function () {
+          this.isGlobalSelection = true;
+          // REMOVED: Do not blur! We need focus for Copy event to fire.
+          // visual hiding of cursor is handled by CSS (caret-color: transparent)
+        },
+
+        handleGlobalCopy: function (e) {
+          // Aggregate content from ALL pages
+          var fullHtml = this.doc.pages.map(function (p) { return p.content; }).join('<br><div class="page-break" style="height: 20px;"></div><br>');
+
+          // Create plain text version
+          var tempDiv = document.createElement('div');
+          tempDiv.innerHTML = fullHtml;
+          var fullText = tempDiv.innerText;
+
+          e.clipboardData.setData('text/html', fullHtml);
+          e.clipboardData.setData('text/plain', fullText);
+
+          // Visual feedback
+          var toast = document.createElement('div');
+          toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded shadow-lg z-50';
+          toast.innerText = 'Contenu copié !';
+          document.body.appendChild(toast);
+          setTimeout(function () { toast.remove(); }, 2000);
+        },
+
+        handleGlobalDelete: function () {
+          // 1. Keep first page, reset it
+          var firstPage = this.doc.pages[0];
+          firstPage.content = '';
+          firstPage.elements = [];
+
+          // 2. Remove all other pages (Reset array)
+          this.doc.pages = [firstPage];
+          this.selectedPageIndex = 0;
+
+          // 3. Clear Visual DOM of the remaining page
+          // (Alpine won't re-render x-init for existing element, so we clear manually)
+          var firstPageEl = document.querySelector('.page-content[data-page-index="0"]');
+          if (firstPageEl) {
+            firstPageEl.innerHTML = '';
+          }
+
+          // 4. Reset State & Save
+          this.isGlobalSelection = false;
+          this.saveDocument();
+
+          // 5. Focus first page
+          setTimeout(function () {
+            if (firstPageEl) firstPageEl.focus();
+          }, 50);
         },
         openSections: {
           info: true,
@@ -195,7 +208,7 @@
           'Legal': { width: 816, height: 1344 }
         },
 
-        updateDimensions: function() {
+        updateDimensions: function () {
           var format = this.formats[this.doc.format];
           if (this.doc.orientation === 'landscape') {
             this.doc.dimensions = { width: format.height, height: format.width };
@@ -205,7 +218,7 @@
           this.saveDocument();
         },
 
-        addPage: function() {
+        addPage: function () {
           var newPage = {
             elements: [],
             background: { color: '#ffffff' },
@@ -214,9 +227,9 @@
           this.doc.pages.push(newPage);
           this.selectedPageIndex = this.doc.pages.length - 1;
           this.saveDocument();
-          
+
           var self = this;
-          this.$nextTick(function() {
+          this.$nextTick(function () {
             var container = document.getElementById('canvas-container');
             container.scrollTo({
               top: container.scrollHeight,
@@ -225,7 +238,7 @@
           });
         },
 
-        addPageAfter: function(index) {
+        addPageAfter: function (index) {
           var newPage = {
             elements: [],
             background: { color: '#ffffff' },
@@ -236,7 +249,7 @@
           this.saveDocument();
         },
 
-        addRow: function(pageIndex) {
+        addRow: function (pageIndex) {
           if (!this.doc.pages[pageIndex].rows) {
             this.doc.pages[pageIndex].rows = [];
           }
@@ -247,13 +260,26 @@
           this.saveDocument();
         },
 
-        setRowLayout: function(pageIndex, rowIndex, columns) {
+        setRowLayout: function (pageIndex, rowIndex, columns) {
           if (!this.doc.pages[pageIndex].rows) return;
-          this.doc.pages[pageIndex].rows[rowIndex].columns = columns;
+
+          var row = this.doc.pages[pageIndex].rows[rowIndex];
+
+          // Reassign elements if reducing columns
+          if (row.elements && columns < (row.columns || 1)) {
+            row.elements.forEach(function (el) {
+              // If element's column is beyond new limit, move it to the last valid column
+              if (el.column >= columns) {
+                el.column = columns - 1;
+              }
+            });
+          }
+
+          row.columns = columns;
           this.saveDocument();
         },
 
-        addColumnToRow: function(pageIndex, rowIndex) {
+        addColumnToRow: function (pageIndex, rowIndex) {
           if (!this.doc.pages[pageIndex].rows) return;
           var row = this.doc.pages[pageIndex].rows[rowIndex];
           if ((row.columns || 1) < 12) {
@@ -262,45 +288,108 @@
           }
         },
 
-        insertRowAfter: function(pageIndex, rowIndex) {
-            this.doc.pages[pageIndex].rows.splice(rowIndex + 1, 0, {
-                columns: 1,
-                elements: []
-            });
+        insertRowAfter: function (pageIndex, rowIndex) {
+          this.doc.pages[pageIndex].rows.splice(rowIndex + 1, 0, {
+            columns: 1,
+            elements: []
+          });
+          this.saveDocument();
+        },
+
+        duplicateRow: function (pageIndex, rowIndex) {
+          var rowToDuplicate = JSON.parse(JSON.stringify(this.doc.pages[pageIndex].rows[rowIndex]));
+          // Regenerate IDs for elements to avoid conflicts
+          if (rowToDuplicate.elements) {
+            rowToDuplicate.elements.forEach(function (el) { el.id = Date.now() + Math.random(); });
+          }
+          this.doc.pages[pageIndex].rows.splice(rowIndex + 1, 0, rowToDuplicate);
+          this.saveDocument();
+        },
+
+        deleteRow: function (pageIndex, rowIndex) {
+          if (confirm("Supprimer cette section ?")) {
+            this.doc.pages[pageIndex].rows.splice(rowIndex, 1);
             this.saveDocument();
+          }
         },
 
-        duplicateRow: function(pageIndex, rowIndex) {
-            var rowToDuplicate = JSON.parse(JSON.stringify(this.doc.pages[pageIndex].rows[rowIndex]));
-            // Regenerate IDs for elements to avoid conflicts
-            if (rowToDuplicate.elements) {
-                rowToDuplicate.elements.forEach(function(el) { el.id = Date.now() + Math.random(); });
-            }
-            this.doc.pages[pageIndex].rows.splice(rowIndex + 1, 0, rowToDuplicate);
-            this.saveDocument();
-        },
-
-        deleteRow: function(pageIndex, rowIndex) {
-            if (confirm("Supprimer cette section ?")) {
-                this.doc.pages[pageIndex].rows.splice(rowIndex, 1);
-                this.saveDocument();
-            }
-        },
-
-        startDrag: function(event, type) {
+        startDrag: function (event, type) {
           event.dataTransfer.setData('type', type);
           event.dataTransfer.effectAllowed = 'copy';
         },
 
-        handleDrop: function(event, pageIndex, rowIndex, colIndex) {
+        startDragElement: function (event, pageIndex, rowIndex, elementId) {
+          event.dataTransfer.setData('type', 'move_element');
+          event.dataTransfer.setData('sourcePage', pageIndex);
+          event.dataTransfer.setData('sourceRow', rowIndex);
+          event.dataTransfer.setData('elementId', elementId);
+          event.dataTransfer.effectAllowed = 'move';
+        },
+
+        handleDrop: function (event, pageIndex, rowIndex, colIndex) {
           this.isDragging = false;
+          this.dragTargetElementId = null;
           var type = event.dataTransfer.getData('type');
-          
-          if (type === 'text') {
-            if (!this.doc.pages[pageIndex].rows[rowIndex].elements) {
-              this.doc.pages[pageIndex].rows[rowIndex].elements = [];
+
+          if (type === 'move_element') {
+            this.processMoveElement(event, pageIndex, rowIndex, colIndex, null);
+          } else {
+            this.processNewElement(type, pageIndex, rowIndex, colIndex);
+          }
+        },
+
+        handleElementDrop: function (event, pageIndex, rowIndex, colIndex, targetElementId) {
+          event.stopPropagation(); // Stop bubbling to column
+          this.dragTargetElementId = null;
+          var type = event.dataTransfer.getData('type');
+          if (type === 'move_element') {
+            this.processMoveElement(event, pageIndex, rowIndex, colIndex, targetElementId);
+          }
+        },
+
+        processMoveElement: function (event, pageIndex, rowIndex, colIndex, targetElementId) {
+          var sourcePage = parseInt(event.dataTransfer.getData('sourcePage'));
+          var sourceRow = parseInt(event.dataTransfer.getData('sourceRow'));
+          var elementId = parseFloat(event.dataTransfer.getData('elementId'));
+
+          // 1. Get Source
+          var srcRowData = this.doc.pages[sourcePage].rows[sourceRow];
+          var elementIndex = srcRowData.elements.findIndex(function (e) { return e.id === elementId; });
+          if (elementIndex === -1) return;
+
+          var element = srcRowData.elements[elementIndex];
+
+          // 2. Clone/Prepare
+          var elementToMove = JSON.parse(JSON.stringify(element));
+          elementToMove.column = colIndex;
+
+          // 3. Remove from Source
+          srcRowData.elements.splice(elementIndex, 1);
+
+          // 4. Insert into Destination
+          var destRowData = this.doc.pages[pageIndex].rows[rowIndex];
+          if (!destRowData.elements) destRowData.elements = [];
+
+          if (targetElementId) {
+            var targetIndex = destRowData.elements.findIndex(function (e) { return e.id === targetElementId; });
+            if (targetIndex !== -1) {
+              destRowData.elements.splice(targetIndex, 0, elementToMove);
+            } else {
+              destRowData.elements.push(elementToMove);
             }
-            
+          } else {
+            destRowData.elements.push(elementToMove);
+          }
+
+          this.saveDocument();
+        },
+
+        processNewElement: function (type, pageIndex, rowIndex, colIndex) {
+          if (!this.doc.pages[pageIndex].rows[rowIndex].elements) {
+            this.doc.pages[pageIndex].rows[rowIndex].elements = [];
+          }
+
+          if (type === 'text') {
             this.doc.pages[pageIndex].rows[rowIndex].elements.push({
               id: Date.now(),
               type: 'text',
@@ -309,37 +398,55 @@
             });
             this.saveDocument();
           } else if (type === 'html') {
-             if (!this.doc.pages[pageIndex].rows[rowIndex].elements) {
-               this.doc.pages[pageIndex].rows[rowIndex].elements = [];
-             }
-             this.doc.pages[pageIndex].rows[rowIndex].elements.push({
-               id: Date.now(),
-               type: 'html',
-               content: 'Nouveau contenu HTML',
-               column: colIndex
-             });
-             this.saveDocument();
+            this.doc.pages[pageIndex].rows[rowIndex].elements.push({
+              id: Date.now(),
+              type: 'html',
+              content: 'Nouveau contenu HTML',
+              column: colIndex
+            });
+            this.saveDocument();
           }
         },
 
-        editHtml: function(element) {
-            this.editingHtml = element;
-            this.editingHtmlContent = element.content;
-        },
-
-        saveHtmlEdit: function() {
-            if (this.editingHtml) {
-                this.editingHtml.content = this.editingHtmlContent;
-                this.editingHtml = null;
-                this.editingHtmlContent = '';
-                this.saveDocument();
-            }
-        },
-
-        updateElementContent: function(event, pageIndex, rowIndex, elementId) {
+        duplicateElement: function (pageIndex, rowIndex, elementId) {
           var row = this.doc.pages[pageIndex].rows[rowIndex];
-          var element = row.elements.find(function(e) { return e.id === elementId; });
-          
+          var element = row.elements.find(function (e) { return e.id === elementId; });
+          if (element) {
+            var newElement = JSON.parse(JSON.stringify(element));
+            newElement.id = Date.now();
+            var index = row.elements.indexOf(element);
+            row.elements.splice(index + 1, 0, newElement);
+            this.saveDocument();
+          }
+        },
+
+        deleteElement: function (pageIndex, rowIndex, elementId) {
+          var row = this.doc.pages[pageIndex].rows[rowIndex];
+          var index = row.elements.findIndex(function (e) { return e.id === elementId; });
+          if (index !== -1) {
+            row.elements.splice(index, 1);
+            this.saveDocument();
+          }
+        },
+
+        editHtml: function (element) {
+          this.editingHtml = element;
+          this.editingHtmlContent = element.content;
+        },
+
+        saveHtmlEdit: function () {
+          if (this.editingHtml) {
+            this.editingHtml.content = this.editingHtmlContent;
+            this.editingHtml = null;
+            this.editingHtmlContent = '';
+            this.saveDocument();
+          }
+        },
+
+        updateElementContent: function (event, pageIndex, rowIndex, elementId) {
+          var row = this.doc.pages[pageIndex].rows[rowIndex];
+          var element = row.elements.find(function (e) { return e.id === elementId; });
+
           if (element) {
             // For HTML type, save innerHTML (Formatted). For Text type, save innerText (Plain).
             var content = element.type === 'html' ? event.target.innerHTML : event.target.innerText;
@@ -348,22 +455,22 @@
           }
         },
 
-        handleLayoutPaste: function(event, pageIndex, rowIndex, elementId) {
-            event.preventDefault();
-            var pastedText = (event.clipboardData || window.clipboardData).getData('text/html');
-            if (!pastedText) {
-                pastedText = (event.clipboardData || window.clipboardData).getData('text/plain');
-                pastedText = pastedText.replace(/\n/g, '<br>');
-            } else {
-                pastedText = this.cleanWordHtml(pastedText);
-            }
-            document.execCommand('insertHTML', false, pastedText);
-            
-            // Trigger update immediately or let blur handle it? 
-            // Better to let blur handle the model update, but we can verify.
+        handleLayoutPaste: function (event, pageIndex, rowIndex, elementId) {
+          event.preventDefault();
+          var pastedText = (event.clipboardData || window.clipboardData).getData('text/html');
+          if (!pastedText) {
+            pastedText = (event.clipboardData || window.clipboardData).getData('text/plain');
+            pastedText = pastedText.replace(/\n/g, '<br>');
+          } else {
+            pastedText = this.cleanWordHtml(pastedText);
+          }
+          document.execCommand('insertHTML', false, pastedText);
+
+          // Trigger update immediately or let blur handle it? 
+          // Better to let blur handle the model update, but we can verify.
         },
 
-        duplicatePage: function(index) {
+        duplicatePage: function (index) {
           var pageToDuplicate = JSON.parse(JSON.stringify(this.doc.pages[index]));
           pageToDuplicate.order = this.doc.pages.length;
           this.doc.pages.splice(index + 1, 0, pageToDuplicate);
@@ -371,12 +478,12 @@
           this.saveDocument();
         },
 
-        deletePage: function(index) {
+        deletePage: function (index) {
           if (this.doc.pages.length <= 1) {
             alert('Vous devez avoir au moins une page');
             return;
           }
-          
+
           if (confirm('Supprimer la page ' + (index + 1) + ' ?')) {
             this.doc.pages.splice(index, 1);
             if (this.selectedPageIndex >= this.doc.pages.length) {
@@ -386,71 +493,71 @@
           }
         },
 
-        selectPage: function(index) {
+        selectPage: function (index) {
           this.selectedPageIndex = index;
         },
 
-        syncPageContent: function(event, pageIndex) {
+        syncPageContent: function (event, pageIndex) {
           // Sync content when user leaves the page
           var element = event.target;
           this.doc.pages[pageIndex].content = element.innerHTML;
         },
 
-        handlePageInput: function(event, pageIndex) {
+        handlePageInput: function (event, pageIndex) {
           var element = event.target;
           var content = element.innerHTML;
-          
+
           // Save content to page data
           this.doc.pages[pageIndex].content = content;
-          
+
           // Check for overflow (content too big -> push to next page)
           this.checkOverflow(element, pageIndex);
-          
+
           // Check for underflow (space available -> pull from next page)
           this.checkUnderflow(element, pageIndex);
-          
+
           // [NEW] Automatic Page Deletion Logic
           // If page is empty (and not the first/only page), remove it.
           if (this.doc.pages.length > 1 && pageIndex > 0) {
-              var cleanText = element.innerText.trim();
-              // Check if truly empty (no text, no images)
-              // We also check innerHTML for things like <img> tags which innerText misses
-              var hasMedia = element.querySelector('img, table, hr, .page-break');
-              
-              if (cleanText === '' && !hasMedia) {
-                   // Page is empty, remove it!
-                   this.doc.pages.splice(pageIndex, 1);
-                   
-                   // Move focus to end of previous page
-                   var prevPageIdx = pageIndex - 1;
-                   this.selectedPageIndex = prevPageIdx;
-                   
-                   this.$nextTick(function() {
-                       var prevPageEl = document.querySelector('.page-content[data-page-index="' + prevPageIdx + '"]');
-                       if (prevPageEl) {
-                           prevPageEl.focus();
-                           // Place cursor at end
-                           var range = document.createRange();
-                           range.selectNodeContents(prevPageEl);
-                           range.collapse(false);
-                           var sel = window.getSelection();
-                           sel.removeAllRanges();
-                           sel.addRange(range);
-                           
-                           // [FIX] Scroll to the bottom where the cursor is
-                           prevPageEl.scrollIntoView({ block: 'end', behavior: 'smooth' });
-                       }
-                   });
-              }
+            var cleanText = element.innerText.trim();
+            // Check if truly empty (no text, no images)
+            // We also check innerHTML for things like <img> tags which innerText misses
+            var hasMedia = element.querySelector('img, table, hr, .page-break');
+
+            if (cleanText === '' && !hasMedia) {
+              // Page is empty, remove it!
+              this.doc.pages.splice(pageIndex, 1);
+
+              // Move focus to end of previous page
+              var prevPageIdx = pageIndex - 1;
+              this.selectedPageIndex = prevPageIdx;
+
+              this.$nextTick(function () {
+                var prevPageEl = document.querySelector('.page-content[data-page-index="' + prevPageIdx + '"]');
+                if (prevPageEl) {
+                  prevPageEl.focus();
+                  // Place cursor at end
+                  var range = document.createRange();
+                  range.selectNodeContents(prevPageEl);
+                  range.collapse(false);
+                  var sel = window.getSelection();
+                  sel.removeAllRanges();
+                  sel.addRange(range);
+
+                  // [FIX] Scroll to the bottom where the cursor is
+                  prevPageEl.scrollIntoView({ block: 'end', behavior: 'smooth' });
+                }
+              });
+            }
           }
-          
+
           this.saveDocument();
         },
 
-        handlePaste: function(event, pageIndex) {
+        handlePaste: function (event, pageIndex) {
           event.preventDefault();
           var self = this;
-          
+
           // Get pasted text
           var pastedText = (event.clipboardData || window.clipboardData).getData('text/html');
           if (!pastedText) {
@@ -461,59 +568,59 @@
             // Clean Word HTML - remove excessive spacing and garbage
             pastedText = this.cleanWordHtml(pastedText);
           }
-          
+
           // Insert at cursor position if possible, otherwise append
           if (document.getSelection && document.getSelection().rangeCount > 0) {
-             document.execCommand('insertHTML', false, pastedText);
+            document.execCommand('insertHTML', false, pastedText);
           } else {
-             // Fallback: append to end of page content
-             var pageEl = document.querySelector('.page-content[data-page-index="' + pageIndex + '"]');
-             if (pageEl) {
-                pageEl.innerHTML += pastedText;
-             }
+            // Fallback: append to end of page content
+            var pageEl = document.querySelector('.page-content[data-page-index="' + pageIndex + '"]');
+            if (pageEl) {
+              pageEl.innerHTML += pastedText;
+            }
           }
-          
+
           // Get the element and check for overflow
           var element = document.querySelector('.page-content[data-page-index="' + pageIndex + '"]');
           this.doc.pages[pageIndex].content = element ? element.innerHTML : '';
-          
+
           // Use setTimeout to allow DOM to update and browser to breathe
-          setTimeout(function() {
+          setTimeout(function () {
             if (element) {
-                 self.checkOverflow(element, pageIndex);
-                 self.saveDocument();
+              self.checkOverflow(element, pageIndex);
+              self.saveDocument();
             }
           }, 200); // Increased delay for large content
         },
 
-        cleanWordHtml: function(html) {
+        cleanWordHtml: function (html) {
           // Create a temporary div to parse HTML
           var temp = document.createElement('div');
-          
-          // Pre-cleaning
+
+          //Pre-cleaning
           html = html.replace(/<!--\[if\s+!vml\]-->([\s\S]*?)<!--\[endif\]-->/gi, '$1');
-          html = html.replace(/<!\[if\s+!vml\]>([\s\S]*?)<!\[endif\]>/gi, '$1');
+            html = html.replace(/<!\[if\s+!vml\]>([\s\S]*?)<!\[endif\]>/gi, '$1');
           html = html.replace(/<!--\[if\s+vml\]>([\s\S]*?)<!\[endif\]-->/gi, '');
           html = html.replace(/<!\[if\s+vml\]>([\s\S]*?)<!\[endif\]>/gi, '');
           html = html.replace(/<!--\[if\s+gte\s+vml\s+1\]>([\s\S]*?)<!\[endif\]-->/gi, '');
-          
+
           temp.innerHTML = html;
-          
+
           function unwrap(el) {
-             var parent = el.parentNode;
-             while (el.firstChild) parent.insertBefore(el.firstChild, el);
-             parent.removeChild(el);
+            var parent = el.parentNode;
+            while (el.firstChild) parent.insertBefore(el.firstChild, el);
+            parent.removeChild(el);
           }
 
           // 1. General Gentle Clean (Preserves formatting for normal text)
           var elementsToClean = temp.querySelectorAll('*');
-          elementsToClean.forEach(function(el) {
+          elementsToClean.forEach(function (el) {
             el.removeAttribute('class');
             el.removeAttribute('lang');
-            
+
             var tagName = el.tagName;
             // Skip tables/lists here, we handle them aggressively below
-            if (['TABLE','THEAD','TBODY','TFOOT','TR','TH','TD','UL','OL','LI'].includes(tagName)) return;
+            if (['TABLE', 'THEAD', 'TBODY', 'TFOOT', 'TR', 'TH', 'TD', 'UL', 'OL', 'LI'].includes(tagName)) return;
 
             var style = el.getAttribute('style');
             if (style) {
@@ -523,214 +630,214 @@
               style = style.replace(/padding[^;]*;?/gi, '');
               el.setAttribute('style', style);
             }
-            
+
             if (tagName === 'IMG') {
-               el.style.maxWidth = '100%';
-               el.style.height = 'auto'; 
-               el.removeAttribute('width');
-               el.removeAttribute('height');
-               el.removeAttribute('v:shapes');
+              el.style.maxWidth = '100%';
+              el.style.height = 'auto';
+              el.removeAttribute('width');
+              el.removeAttribute('height');
+              el.removeAttribute('v:shapes');
             }
           });
-          
+
           // 2. DEEP CLEAN & BEAUTIFY: Tables and Lists
           // User wants to strip ALL original styles inside tables/lists and apply a "Beautiful" look.
-          
+
           // Tables
           var tables = temp.querySelectorAll('table');
-          tables.forEach(function(table) {
-             // 2a. Nuke styles from Table and ALL descendants
-             table.removeAttribute('style');
-             table.removeAttribute('border');
-             table.removeAttribute('cellspacing');
-             table.removeAttribute('cellpadding');
-             table.removeAttribute('width');
-             
-             var descendants = table.querySelectorAll('*');
-             descendants.forEach(function(d) {
-                 d.removeAttribute('style'); // Removes text color, font, bg, everything.
-                 d.removeAttribute('class');
-                 d.removeAttribute('width');
-                 d.removeAttribute('height');
-                 d.removeAttribute('bgcolor');
-                 d.removeAttribute('align');
-                 d.removeAttribute('valign');
-             });
-             
-             // 2b. Apply "Beautiful Table" Inline Styles
-             // Container
-             table.style.width = '100%';
-             table.style.borderCollapse = 'collapse';
-             table.style.marginBottom = '1em';
-             table.style.marginTop = '0.5em';
-             table.style.fontFamily = 'inherit'; 
-             table.style.fontSize = '0.9em'; // Slightly smaller font for data
-             table.style.border = '1px solid #e5e7eb'; 
-             
-             // Headers
-             var ths = table.querySelectorAll('th');
-             ths.forEach(function(th) {
-                th.style.backgroundColor = '#f9fafb'; 
-                th.style.color = '#111827'; 
-                th.style.fontWeight = '600';
-                th.style.textAlign = 'left';
-                th.style.padding = '8px 12px'; // Reduced padding
-                th.style.borderBottom = '1px solid #d1d5db';
-             });
-             
-             // Cells
-             var tds = table.querySelectorAll('td');
-             tds.forEach(function(td) {
-                td.style.padding = '6px 12px'; // Compact padding
-                td.style.borderBottom = '1px solid #e5e7eb'; 
-                td.style.color = '#374151'; 
-                td.style.verticalAlign = 'top';
-                
-                // Fix: Remove default margins from P tags inside cells to prevent huge rows
-                var paragraphs = td.querySelectorAll('p');
-                paragraphs.forEach(function(p) {
-                    p.style.margin = '0';
-                    p.style.lineHeight = '1.4';
-                });
-             });
+          tables.forEach(function (table) {
+            // 2a. Nuke styles from Table and ALL descendants
+            table.removeAttribute('style');
+            table.removeAttribute('border');
+            table.removeAttribute('cellspacing');
+            table.removeAttribute('cellpadding');
+            table.removeAttribute('width');
+
+            var descendants = table.querySelectorAll('*');
+            descendants.forEach(function (d) {
+              d.removeAttribute('style'); // Removes text color, font, bg, everything.
+              d.removeAttribute('class');
+              d.removeAttribute('width');
+              d.removeAttribute('height');
+              d.removeAttribute('bgcolor');
+              d.removeAttribute('align');
+              d.removeAttribute('valign');
+            });
+
+            // 2b. Apply "Beautiful Table" Inline Styles
+            // Container
+            table.style.width = '100%';
+            table.style.borderCollapse = 'collapse';
+            table.style.marginBottom = '1em';
+            table.style.marginTop = '0.5em';
+            table.style.fontFamily = 'inherit';
+            table.style.fontSize = '0.9em'; // Slightly smaller font for data
+            table.style.border = '1px solid #e5e7eb';
+
+            // Headers
+            var ths = table.querySelectorAll('th');
+            ths.forEach(function (th) {
+              th.style.backgroundColor = '#f9fafb';
+              th.style.color = '#111827';
+              th.style.fontWeight = '600';
+              th.style.textAlign = 'left';
+              th.style.padding = '8px 12px'; // Reduced padding
+              th.style.borderBottom = '1px solid #d1d5db';
+            });
+
+            // Cells
+            var tds = table.querySelectorAll('td');
+            tds.forEach(function (td) {
+              td.style.padding = '6px 12px'; // Compact padding
+              td.style.borderBottom = '1px solid #e5e7eb';
+              td.style.color = '#374151';
+              td.style.verticalAlign = 'top';
+
+              // Fix: Remove default margins from P tags inside cells to prevent huge rows
+              var paragraphs = td.querySelectorAll('p');
+              paragraphs.forEach(function (p) {
+                p.style.margin = '0';
+                p.style.lineHeight = '1.4';
+              });
+            });
           });
 
           // Lists
           var lists = temp.querySelectorAll('ul, ol');
-          lists.forEach(function(list) {
-             // 2c. Nuke styles from List and ALL descendants
-             list.removeAttribute('style');
-             
-             var descendants = list.querySelectorAll('*');
-             descendants.forEach(function(d) {
-                 d.removeAttribute('style');
-                 d.removeAttribute('class');
-             });
-             
-             // 2d. Apply "Beautiful List" Styles
-             list.style.paddingLeft = '1.5em';
-             list.style.marginBottom = '1em';
-             list.style.color = '#374151';
-             
-             if (list.tagName === 'UL') list.style.listStyleType = 'disc';
-             if (list.tagName === 'OL') list.style.listStyleType = 'decimal';
-             
-             var lis = list.querySelectorAll('li');
-             lis.forEach(function(li) {
-                li.style.marginBottom = '0.25em'; // Reduced spacing
-                li.style.lineHeight = '1.5';
-             });
+          lists.forEach(function (list) {
+            // 2c. Nuke styles from List and ALL descendants
+            list.removeAttribute('style');
+
+            var descendants = list.querySelectorAll('*');
+            descendants.forEach(function (d) {
+              d.removeAttribute('style');
+              d.removeAttribute('class');
+            });
+
+            // 2d. Apply "Beautiful List" Styles
+            list.style.paddingLeft = '1.5em';
+            list.style.marginBottom = '1em';
+            list.style.color = '#374151';
+
+            if (list.tagName === 'UL') list.style.listStyleType = 'disc';
+            if (list.tagName === 'OL') list.style.listStyleType = 'decimal';
+
+            var lis = list.querySelectorAll('li');
+            lis.forEach(function (li) {
+              li.style.marginBottom = '0.25em'; // Reduced spacing
+              li.style.lineHeight = '1.5';
+            });
           });
-          
+
           // Final string cleanup
           var result = temp.innerHTML;
           result = result.replace(/[\r\n]+/g, ' ');
           result = result.replace(/<o:p><\/o:p>/gi, '');
-          result = result.replace(/<!--[\s\S]*?-->/gi, ''); 
+          result = result.replace(/<!--[\s\S]*?-->/gi, '');
           result = result.replace(/<span[^>]*>\s*<\/span>/gi, '');
           result = result.replace(/<br\s*\/?>\s*(?!<br)/gi, ' ');
           result = result.replace(/\s{2,}/g, ' ');
-          
+
           return result;
         },
 
-        checkOverflow: function(element, pageIndex) {
+        checkOverflow: function (element, pageIndex) {
           var self = this;
-          
+
           // Check if content overflows
           if (element.scrollHeight > element.clientHeight) {
             // Content overflows - need to move excess to next page
             var overflowContent = this.extractOverflow(element);
-            
+
             if (overflowContent) {
               // Create next page if it doesn't exist
               var nextPageIndex = pageIndex + 1;
               var isNewPage = false;
-              
+
               if (nextPageIndex >= this.doc.pages.length) {
                 this.doc.pages.push({
                   content: '',
                   elements: [],
                   mode: 'edition', // CRITICAL FIX: Ensure new page is in edition mode
-                   background: { color: '#ffffff' },
+                  background: { color: '#ffffff' },
                   order: this.doc.pages.length
                 });
                 isNewPage = true;
               }
-              
+
               // Prepend overflow to next page
               // Use a temp timeout to let data update before reading back? 
               // No, we can just update the data object directly.
               var nextPageData = this.doc.pages[nextPageIndex];
               var oldContent = nextPageData.content || '';
               nextPageData.content = overflowContent + oldContent;
-              
+
               // Update current page content
               this.doc.pages[pageIndex].content = element.innerHTML;
-              
+
               // Wait for DOM to assume new pages exist
               var attemptCount = 0;
               var maxAttempts = 20; // Try for ~1 second (20 * 50ms)
-              
-              var continuePagination = function() {
-                 var nextPageElement = document.querySelector('[data-page-index="' + nextPageIndex + '"]');
-                 if (nextPageElement) {
-                   // Ensure content is synced in DOM if it wasn't a fresh init
-                   if (!isNewPage) {
-                      nextPageElement.innerHTML = self.doc.pages[nextPageIndex].content;
-                   }
-                   // Force layout reflow
-                   var h = nextPageElement.offsetHeight;
-                   
-                   // Continue the chain
-                   self.checkOverflow(nextPageElement, nextPageIndex);
-                 } else {
-                   attemptCount++;
-                   if (attemptCount < maxAttempts) {
-                     setTimeout(continuePagination, 50);
-                   } else {
-                     console.error('Pagination aborted: Could not find page ' + nextPageIndex + ' after creation.');
-                   }
-                 }
+
+              var continuePagination = function () {
+                var nextPageElement = document.querySelector('[data-page-index="' + nextPageIndex + '"]');
+                if (nextPageElement) {
+                  // Ensure content is synced in DOM if it wasn't a fresh init
+                  if (!isNewPage) {
+                    nextPageElement.innerHTML = self.doc.pages[nextPageIndex].content;
+                  }
+                  // Force layout reflow
+                  var h = nextPageElement.offsetHeight;
+
+                  // Continue the chain
+                  self.checkOverflow(nextPageElement, nextPageIndex);
+                } else {
+                  attemptCount++;
+                  if (attemptCount < maxAttempts) {
+                    setTimeout(continuePagination, 50);
+                  } else {
+                    console.error('Pagination aborted: Could not find page ' + nextPageIndex + ' after creation.');
+                  }
+                }
               };
-              
+
               // Start checking for next page
-              this.$nextTick(function() {
-                 continuePagination();
+              this.$nextTick(function () {
+                continuePagination();
               });
             }
           }
         },
 
-        checkUnderflow: function(element, pageIndex) {
+        checkUnderflow: function (element, pageIndex) {
           var self = this;
-          
+
           // Only check if there's a next page with content
           if (pageIndex + 1 >= this.doc.pages.length) {
             return;
           }
-          
+
           var nextPageContent = this.doc.pages[pageIndex + 1].content;
           if (!nextPageContent || !nextPageContent.trim()) {
             return;
           }
-          
+
           // Get next page element
           var nextPageElement = document.querySelector('[data-page-index="' + (pageIndex + 1) + '"]');
           if (!nextPageElement) {
             return;
           }
-          
+
           // Try to pull first element from next page
           var pulled = this.tryPullFromNextPage(element, nextPageElement, pageIndex);
-          
+
           if (pulled) {
             // Update data
             this.doc.pages[pageIndex].content = element.innerHTML;
             this.doc.pages[pageIndex + 1].content = nextPageElement.innerHTML;
-            
+
             // Check if next page became empty
-            this.$nextTick(function() {
+            this.$nextTick(function () {
               var nextContent = self.doc.pages[pageIndex + 1];
               if (nextContent && (!nextContent.content || !nextContent.content.trim())) {
                 self.doc.pages.splice(pageIndex + 1, 1);
@@ -739,9 +846,9 @@
               } else {
                 // Try to pull more to current page
                 self.checkUnderflow(element, pageIndex);
-                
+
                 // CHAIN: Also check if next page can now pull from page after it
-                self.$nextTick(function() {
+                self.$nextTick(function () {
                   if (pageIndex + 1 < self.doc.pages.length) {
                     var updatedNextElement = document.querySelector('[data-page-index="' + (pageIndex + 1) + '"]');
                     if (updatedNextElement) {
@@ -754,13 +861,13 @@
           }
         },
 
-        tryPullFromNextPage: function(currentElement, nextElement, pageIndex) {
+        tryPullFromNextPage: function (currentElement, nextElement, pageIndex) {
           // Get first child node from next page
           var firstChild = nextElement.firstChild;
           if (!firstChild) {
             return false;
           }
-          
+
           // Clone it for testing
           var testNode;
           if (firstChild.nodeType === Node.ELEMENT_NODE) {
@@ -770,13 +877,13 @@
           } else {
             return false;
           }
-          
+
           // Add to current page temporarily
           currentElement.appendChild(testNode);
-          
+
           // Check if it still fits (no overflow)
           var fits = currentElement.scrollHeight <= currentElement.clientHeight;
-          
+
           if (fits) {
             // It fits! Now actually remove from next page
             nextElement.removeChild(firstChild);
@@ -788,42 +895,42 @@
           }
         },
 
-        extractOverflow: function(element) {
+        extractOverflow: function (element) {
           // Use a robust iterative approach with recursive splitting for large nodes
           var removedNodes = [];
           var maxIterations = 2000; // Increased safety limit for fine splitting
           var iterations = 0;
-          
+
           // Helper to check overflow
-          var hasOverflow = function() {
+          var hasOverflow = function () {
             return element.scrollHeight > element.clientHeight;
           };
 
           if (!hasOverflow()) {
             return '';
           }
-          
+
           // Helper to split a node (text or element) if it's too big
-          var splitNode = function(node) {
+          var splitNode = function (node) {
             // Cannot split empty nodes or small text
             if (!node) return null;
-            
+
             if (node.nodeType === Node.TEXT_NODE) {
               var text = node.textContent;
               if (text.length <= 1) return null; // Can't split single char
-              
+
               var mid = Math.floor(text.length / 2);
               var rightText = text.substring(mid);
               var leftText = text.substring(0, mid);
-              
+
               node.textContent = leftText;
               var newRightNode = document.createTextNode(rightText);
-              
+
               if (node.parentNode) {
                 node.parentNode.insertBefore(newRightNode, node.nextSibling);
               }
               return newRightNode;
-            } 
+            }
             else if (node.nodeType === Node.ELEMENT_NODE) {
               var children = Array.from(node.childNodes);
               if (children.length > 0) {
@@ -837,115 +944,158 @@
           // Iteratively remove/split nodes from the end until no overflow
           while (hasOverflow() && iterations < maxIterations) {
             var lastChild = element.lastChild;
-            
+
             if (!lastChild) {
-              break; 
+              break;
             }
-            
+
             // Try removing the last child entirely first
             element.removeChild(lastChild);
-            
+
             // Critical Check: Did we empty the page?
             var pageIsEmpty = element.childNodes.length === 0 || (element.textContent.trim() === '' && element.querySelectorAll('img, table, div').length === 0);
-            
-            if (pageIsEmpty && !hasOverflow()) { 
-               // logic: removing the last child resolved overflow, BUT page is now empty.
-               // This means that 'lastChild' ALONE was too big for the page.
-               
-               // We must put it back and try to split it.
-               element.appendChild(lastChild);
-               
-               // Try to split this lastChild
-               var didSplitSwapped = false;
 
-               if (lastChild.nodeType === Node.TEXT_NODE) {
-                  var rightPart = splitNode(lastChild);
-                  if (rightPart) {
-                    element.removeChild(rightPart);
-                    removedNodes.unshift(rightPart);
-                    didSplitSwapped = true;
-                  } 
-               } else if (lastChild.nodeType === Node.ELEMENT_NODE) {
-                  // If it has children, dive in.
-                  if (lastChild.childNodes.length > 0) {
-                     // We recursively extract from the child
-                     var extractedFromChild = this.extractOverflow(lastChild);
-                     
-                     if (extractedFromChild) {
-                        // We successfully extracted part of the child. 
-                        // The extracted part needs to be added to removedNodes.
-                        // However, removedNodes expects DOM nodes, extractOverflow returns HTML string.
-                        // We need to wrap this HTML string back into a container to be consistent?
-                        // Or just parse it?
-                        
-                        var tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = extractedFromChild;
-                        // Move all tempDiv children to removedNodes (in reverse order because unshift)
-                        // Actually we want to preserve order.
-                        // The 'extractedFromChild' is what GOES to the next page.
-                        
-                        // BUT: We simply cannot easily mix "HTML String" return with "DOM Nodes" array logic here 
-                        // without restructuring.
-                        
-                        // SIMPLIFICATION:
-                        // Move the LAST grandchild out.
-                         var grandChild = lastChild.lastChild;
-                         if (grandChild) {
-                           lastChild.removeChild(grandChild);
-                           
-                           // We need to create a clone wrapper for the grandchild on the next page
-                           var wrapper = lastChild.cloneNode(false); // shallow clone
-                           wrapper.removeAttribute('id'); // prevent ID conflicts
-                           wrapper.appendChild(grandChild);
-                           
-                           removedNodes.unshift(wrapper);
-                           didSplitSwapped = true;
-                         }
-                     }
+            if (pageIsEmpty && !hasOverflow()) {
+              // logic: removing the last child resolved overflow, BUT page is now empty.
+              // This means that 'lastChild' ALONE was too big for the page.
+
+              // We must put it back and try to split it.
+              element.appendChild(lastChild);
+
+              // Try to split this lastChild
+              var didSplitSwapped = false;
+
+              if (lastChild.nodeType === Node.TEXT_NODE) {
+                var rightPart = splitNode(lastChild);
+                if (rightPart) {
+                  element.removeChild(rightPart);
+                  removedNodes.unshift(rightPart);
+                  didSplitSwapped = true;
+                }
+              } else if (lastChild.nodeType === Node.ELEMENT_NODE) {
+                // If it has children, dive in.
+                if (lastChild.childNodes.length > 0) {
+                  // We recursively extract from the child
+                  var extractedFromChild = this.extractOverflow(lastChild);
+
+                  if (extractedFromChild) {
+                    // We successfully extracted part of the child. 
+                    // The extracted part needs to be added to removedNodes.
+                    // However, removedNodes expects DOM nodes, extractOverflow returns HTML string.
+                    // We need to wrap this HTML string back into a container to be consistent?
+                    // Or just parse it?
+
+                    var tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = extractedFromChild;
+                    // Move all tempDiv children to removedNodes (in reverse order because unshift)
+                    // Actually we want to preserve order.
+                    // The 'extractedFromChild' is what GOES to the next page.
+
+                    // BUT: We simply cannot easily mix "HTML String" return with "DOM Nodes" array logic here 
+                    // without restructuring.
+
+                    // SIMPLIFICATION:
+                    // Move the LAST grandchild out.
+                    var grandChild = lastChild.lastChild;
+                    if (grandChild) {
+                      lastChild.removeChild(grandChild);
+
+                      // We need to create a clone wrapper for the grandchild on the next page
+                      var wrapper = lastChild.cloneNode(false); // shallow clone
+                      wrapper.removeAttribute('id'); // prevent ID conflicts
+                      wrapper.appendChild(grandChild);
+
+                      removedNodes.unshift(wrapper);
+                      didSplitSwapped = true;
+                    }
                   }
-               }
+                }
+              }
 
-               if (!didSplitSwapped) {
-                   // COULD NOT SPLIT.
-                   // This is the "Infinite Loop Killer" logic.
-                   // The element is too big, alone on the page, and unsplittable (e.g. big image).
-                   // WE MUST STOP MOVING IT.
-                   // We leave it on this page (it will overflow visibly, but won't loop).
-                   // We verify if we have anything ELSE in removedNodes to return?
-                   // No, we just break.
-                   break;
-               }
+              if (!didSplitSwapped) {
+                // COULD NOT SPLIT.
+                // This is the "Infinite Loop Killer" logic.
+                // The element is too big, alone on the page, and unsplittable (e.g. big image).
+                // WE MUST STOP MOVING IT.
+                // We leave it on this page (it will overflow visibly, but won't loop).
+                // We verify if we have anything ELSE in removedNodes to return?
+                // No, we just break.
+                break;
+              }
             } else {
-               // Normal case: removing it fixed overflow (or it still overflows but page isn't empty yet).
-               // Just keep it moved.
-               removedNodes.unshift(lastChild);
+              // Normal case: removing it fixed overflow (or it still overflows but page isn't empty yet).
+              // Just keep it moved.
+              removedNodes.unshift(lastChild);
             }
-            
+
             iterations++;
           }
-          
+
           // Reconstruct HTML from removedNodes
           var overflowHtml = '';
-          removedNodes.forEach(function(node) {
+          removedNodes.forEach(function (node) {
             if (node.nodeType === Node.ELEMENT_NODE) {
               overflowHtml += node.outerHTML;
             } else if (node.nodeType === Node.TEXT_NODE) {
               overflowHtml += node.textContent ? node.textContent.replace(/\n/g, '<br>') : '';
             }
           });
-          
+
           return overflowHtml;
         },
 
-        saveDocument: function() {
+        selectPage: function (index) {
+          this.selectedPageIndex = index;
+          var el = document.getElementById('page-' + index);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        },
+
+        addPage: function () {
+          this.doc.pages.push({
+            rows: [],
+            mode: 'edition',
+            elements: [],
+            background: { color: '#ffffff' },
+            order: this.doc.pages.length
+          });
+          this.saveDocument();
+          this.selectPage(this.doc.pages.length - 1);
+        },
+
+        duplicatePage: function (index) {
+          var newPage = JSON.parse(JSON.stringify(this.doc.pages[index]));
+          if (newPage.rows) {
+            newPage.rows.forEach(function (row) {
+              if (row.elements) {
+                row.elements.forEach(function (el) { el.id = Date.now() + Math.random(); });
+              }
+            });
+          }
+          this.doc.pages.splice(index + 1, 0, newPage);
+          this.saveDocument();
+          this.selectPage(index + 1);
+        },
+
+        deletePage: function (index) {
+          if (this.doc.pages.length <= 1) return;
+          if (confirm("Supprimer cette page ?")) {
+            this.doc.pages.splice(index, 1);
+            if (this.selectedPageIndex >= this.doc.pages.length) {
+              this.selectedPageIndex = this.doc.pages.length - 1;
+            }
+            this.saveDocument();
+          }
+        },
+
+        saveDocument: function () {
           clearTimeout(this.saveTimeout);
           var self = this;
-          this.saveTimeout = setTimeout(function() {
+          this.saveTimeout = setTimeout(function () {
             var method = self.doc._id ? 'PUT' : 'POST';
-            var url = self.doc._id 
+            var url = self.doc._id
               ? '/account/' + accountNumber + '/documents/api/' + self.doc._id
               : '/account/' + accountNumber + '/documents/api';
-            
+
             console.log('Saving document...', { method: method, url: url, docId: self.doc._id });
 
             fetch(url, {
@@ -953,91 +1103,91 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(self.doc)
             })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-              console.log('Save response:', data);
-              if (data.document) {
-                if (!self.doc._id) {
-                  if (data.document._id) {
+              .then(function (res) { return res.json(); })
+              .then(function (data) {
+                console.log('Save response:', data);
+                if (data.document) {
+                  if (!self.doc._id) {
+                    if (data.document._id) {
                       self.doc._id = data.document._id;
                       var newUrl = '/account/' + accountNumber + '/documents/' + data.document._id + '/edit';
                       console.log('Updating URL to:', newUrl);
                       window.history.replaceState({}, '', newUrl);
-                  } else {
+                    } else {
                       console.error('CRITICAL: Server returned document without _id!', data.document);
+                    }
                   }
-                }
-                self.lastSaved = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-              } else {
+                  self.lastSaved = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                } else {
                   console.warn('Response missing document property:', data);
-              }
-            })
-            .catch(function(error) {
-              console.error('Error saving document:', error);
-            });
+                }
+              })
+              .catch(function (error) {
+                console.error('Error saving document:', error);
+              });
           }, 1000);
         },
 
-        printDocument: function() {
-           var self = this;
-           var btn = this.$event.target.closest('button');
-           var originalText = btn.innerHTML;
-           
-           // Show loading state
-           btn.innerHTML = '<iconify-icon icon="svg-spinners:ring-resize" class="mr-1"></iconify-icon> Génération...';
-           btn.disabled = true;
+        printDocument: function () {
+          var self = this;
+          var btn = this.$event.target.closest('button');
+          var originalText = btn.innerHTML;
 
-           // clone the pages container to send only relevant HTML
-           // FIX: Use robust ID selector
-           var container = document.getElementById('pages-container');
-           var htmlContent = container ? container.innerHTML : '';
-           
-           if (!htmlContent) {
-               alert('Erreur: Impossible de récupérer le contenu du document');
-               btn.innerHTML = originalText;
-               btn.disabled = false;
-               return;
-           }
+          // Show loading state
+          btn.innerHTML = '<iconify-icon icon="svg-spinners:ring-resize" class="mr-1"></iconify-icon> Génération...';
+          btn.disabled = true;
 
-           // Remove Alpine attributes and edit-specific artifacts to clean up the HTML before sending
-           var tempDiv = document.createElement('div');
-           tempDiv.innerHTML = htmlContent;
-           
-           // Clean up: Remove edit buttons, empty state placeholders
-           tempDiv.querySelectorAll('button, .group\\/el > div[contenteditable]').forEach(el => {
-                if (el.tagName === 'BUTTON') el.remove();
-                // We keep contenteditable divs but strip the attribute? 
-                // Puppeteer handles them fine visually.
-           });
+          // clone the pages container to send only relevant HTML
+          // FIX: Use robust ID selector
+          var container = document.getElementById('pages-container');
+          var htmlContent = container ? container.innerHTML : '';
 
-           fetch('/account/' + accountNumber + '/documents/api/' + this.doc._id + '/pdf', {
-               method: 'POST',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify({ html: tempDiv.innerHTML })
-           })
-           .then(res => {
-               if (!res.ok) {
-                    return res.text().then(text => { throw new Error(text) });
-               }
-               return res.blob();
-           })
-           .then(blob => {
-               var url = window.URL.createObjectURL(blob);
-               var a = document.createElement('a');
-               a.href = url;
-               a.download = self.doc.name + '.pdf';
-               document.body.appendChild(a);
-               a.click();
-               a.remove();
-           })
-           .catch(err => {
-               console.error(err);
-               alert('Erreur PDF: ' + err.message);
-           })
-           .finally(() => {
-               btn.innerHTML = originalText;
-               btn.disabled = false;
-           });
+          if (!htmlContent) {
+            alert('Erreur: Impossible de récupérer le contenu du document');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            return;
+          }
+
+          // Remove Alpine attributes and edit-specific artifacts to clean up the HTML before sending
+          var tempDiv = document.createElement('div');
+          tempDiv.innerHTML = htmlContent;
+
+          // Clean up: Remove edit buttons, empty state placeholders
+          tempDiv.querySelectorAll('button, .group\\/el > div[contenteditable]').forEach(el => {
+            if (el.tagName === 'BUTTON') el.remove();
+            // We keep contenteditable divs but strip the attribute? 
+            // Puppeteer handles them fine visually.
+          });
+
+          fetch('/account/' + accountNumber + '/documents/api/' + this.doc._id + '/pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ html: tempDiv.innerHTML })
+          })
+            .then(res => {
+              if (!res.ok) {
+                return res.text().then(text => { throw new Error(text) });
+              }
+              return res.blob();
+            })
+            .then(blob => {
+              var url = window.URL.createObjectURL(blob);
+              var a = document.createElement('a');
+              a.href = url;
+              a.download = self.doc.name + '.pdf';
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+            })
+            .catch(err => {
+              console.error(err);
+              alert('Erreur PDF: ' + err.message);
+            })
+            .finally(() => {
+              btn.innerHTML = originalText;
+              btn.disabled = false;
+            });
         }
       };
     });
@@ -1047,11 +1197,11 @@
 <style>
   /* Print Styles for PDF Generation */
   @media print {
-    @page { 
-      margin: 0; 
+    @page {
+      margin: 0;
       size: auto;
     }
-    
+
     body {
       background: white;
       margin: 0;
@@ -1060,11 +1210,19 @@
     }
 
     /* Hide UI Elements */
-    header, nav, aside, 
-    .bg-white.dark\:bg-gray-900.border-b, /* Top Header */
-    .w-16.bg-white, /* Left Toolbar */
-    .w-80.bg-white, /* Right Sidebar */
-    .btn, button, input, select,
+    header,
+    nav,
+    aside,
+    .bg-white.dark\:bg-gray-900.border-b,
+    /* Top Header */
+    .w-16.bg-white,
+    /* Left Toolbar */
+    .w-80.bg-white,
+    /* Right Sidebar */
+    .btn,
+    button,
+    input,
+    select,
     [x-show="editorMode === 'layout'"],
     [x-show="editorMode === 'designer'"] {
       display: none !important;
@@ -1076,7 +1234,7 @@
       height: auto !important;
       display: block !important;
     }
-    
+
     .overflow-auto {
       overflow: visible !important;
     }
@@ -1094,21 +1252,23 @@
       width: 100% !important;
       /* Force A4 or current format logic if needed, but width:100% usually adapts to print driver */
     }
-    
+
     /* Ensure content inside pages prints */
     .page-content {
       overflow: visible !important;
     }
-    
+
     /* Hide empty page decorators */
     .group .opacity-0 {
-        display: none !important;
+      display: none !important;
     }
   }
 
   /* Global Selection Simulation */
   .global-selection {
-     background-color: #b3d4fc !important; /* Native selection blue */
-     caret-color: transparent; /* Hide cursor to look like object selection */
+    background-color: #b3d4fc !important;
+    /* Native selection blue */
+    caret-color: transparent;
+    /* Hide cursor to look like object selection */
   }
 </style>

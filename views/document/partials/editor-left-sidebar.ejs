@@ -1,10 +1,12 @@
     <!-- Toolbar (Left) -->
-    <div class="w-16 bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col items-center py-4 gap-4">
+    <div 
+      class="w-16 bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col items-center py-4 gap-4"
+      x-init="Sortable.create($el, { group: { name: 'elements', pull: 'clone', put: false }, sort: false, draggable: '.sortable-source', fallbackOnBody: true })"
+    >
       <button 
-        class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center cursor-move" 
+        class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center cursor-move sortable-source" 
         title="Texte"
-        draggable="true"
-        @dragstart="startDrag($event, 'text')"
+        data-type="text"
       >
         <iconify-icon icon="solar:text-bold-duotone" width="24"></iconify-icon>
       </button>
@@ -24,10 +26,9 @@
       </button>
       <div class="h-px w-8 bg-gray-200 dark:bg-gray-700"></div>
       <button 
-        class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center cursor-move" 
+        class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center cursor-move sortable-source" 
         title="HTML Brut"
-        draggable="true"
-        @dragstart="startDrag($event, 'html')"
+        data-type="html"
       >
         <iconify-icon icon="solar:code-bold-duotone" width="24"></iconify-icon>
       </button>

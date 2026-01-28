@@ -137,9 +137,85 @@
 
           // Clear selection on click
           window.addEventListener('click', function (e) {
-            // We clear global selection on any click to behave like native selection
             self.isGlobalSelection = false;
           });
+        },
+
+        initSortableColumn: function (el) {
+          var self = this;
+          if (el._sortable) el._sortable.destroy();
+
+          el._sortable = Sortable.create(el.querySelector('.flex-col'), {
+            group: 'elements',
+            animation: 150,
+            draggable: '.sortable-item',
+            ghostClass: 'sortable-ghost',
+            handle: '.cursor-move',
+            fallbackOnBody: true,
+            swapThreshold: 0.65,
+            emptyInsertThreshold: 50, // Critical for dropping into empty zones
+            dropBubble: true,
+
+            onEnd: function (evt) {
+              if (evt.from === evt.to && evt.oldIndex === evt.newIndex) return;
+
+              // Identifiers
+              var fromPage = parseInt(evt.from.closest('.sortable-column').dataset.pageIndex);
+              var fromRow = parseInt(evt.from.closest('.sortable-column').dataset.rowIndex);
+              var fromCol = parseInt(evt.from.closest('.sortable-column').dataset.columnIndex);
+
+              var toPage = parseInt(evt.to.closest('.sortable-column').dataset.pageIndex);
+              var toRow = parseInt(evt.to.closest('.sortable-column').dataset.rowIndex);
+              var toCol = parseInt(evt.to.closest('.sortable-column').dataset.columnIndex);
+
+              var elementId = parseFloat(evt.item.dataset.id);
+
+              // 1. Find and Extract from Source
+              var srcRow = self.doc.pages[fromPage].rows[fromRow];
+              var elIndex = srcRow.elements.findIndex(e => e.id === elementId);
+              if (elIndex === -1) return;
+
+              var element = srcRow.elements.splice(elIndex, 1)[0];
+              element.column = toCol;
+
+              // 2. Insert into Destination
+              var destRow = self.doc.pages[toPage].rows[toRow];
+              if (!destRow.elements) destRow.elements = [];
+
+              var absoluteIndex = self.getAbsoluteIndex(destRow.elements, toCol, evt.newIndex);
+              destRow.elements.splice(absoluteIndex, 0, element);
+
+              self.saveDocument();
+            },
+
+            onAdd: function (evt) {
+              var type = evt.item.dataset.type;
+              if (type) {
+                var toColEl = evt.to.closest('.sortable-column');
+                var toPage = parseInt(toColEl.dataset.pageIndex);
+                var toRow = parseInt(toColEl.dataset.rowIndex);
+                var toCol = parseInt(toColEl.dataset.columnIndex);
+
+                evt.item.remove();
+
+                var destElements = self.doc.pages[toPage].rows[toRow].elements || [];
+                var absoluteIndex = self.getAbsoluteIndex(destElements, toCol, evt.newIndex);
+
+                self.processNewElement(type, toPage, toRow, toCol, absoluteIndex);
+              }
+            }
+          });
+        },
+
+        getAbsoluteIndex: function (elements, colIndex, relativeIndex) {
+          var count = 0;
+          for (var i = 0; i < elements.length; i++) {
+            if (elements[i].column === colIndex) {
+              if (count === relativeIndex) return i;
+              count++;
+            }
+          }
+          return elements.length;
         },
 
         handleGlobalSelection: function () {
@@ -313,99 +389,26 @@
           }
         },
 
-        startDrag: function (event, type) {
-          event.dataTransfer.setData('type', type);
-          event.dataTransfer.effectAllowed = 'copy';
-        },
 
-        startDragElement: function (event, pageIndex, rowIndex, elementId) {
-          event.dataTransfer.setData('type', 'move_element');
-          event.dataTransfer.setData('sourcePage', pageIndex);
-          event.dataTransfer.setData('sourceRow', rowIndex);
-          event.dataTransfer.setData('elementId', elementId);
-          event.dataTransfer.effectAllowed = 'move';
-        },
-
-        handleDrop: function (event, pageIndex, rowIndex, colIndex) {
-          this.isDragging = false;
-          this.dragTargetElementId = null;
-          var type = event.dataTransfer.getData('type');
-
-          if (type === 'move_element') {
-            this.processMoveElement(event, pageIndex, rowIndex, colIndex, null);
-          } else {
-            this.processNewElement(type, pageIndex, rowIndex, colIndex);
-          }
-        },
-
-        handleElementDrop: function (event, pageIndex, rowIndex, colIndex, targetElementId) {
-          event.stopPropagation(); // Stop bubbling to column
-          this.dragTargetElementId = null;
-          var type = event.dataTransfer.getData('type');
-          if (type === 'move_element') {
-            this.processMoveElement(event, pageIndex, rowIndex, colIndex, targetElementId);
-          }
-        },
-
-        processMoveElement: function (event, pageIndex, rowIndex, colIndex, targetElementId) {
-          var sourcePage = parseInt(event.dataTransfer.getData('sourcePage'));
-          var sourceRow = parseInt(event.dataTransfer.getData('sourceRow'));
-          var elementId = parseFloat(event.dataTransfer.getData('elementId'));
-
-          // 1. Get Source
-          var srcRowData = this.doc.pages[sourcePage].rows[sourceRow];
-          var elementIndex = srcRowData.elements.findIndex(function (e) { return e.id === elementId; });
-          if (elementIndex === -1) return;
-
-          var element = srcRowData.elements[elementIndex];
-
-          // 2. Clone/Prepare
-          var elementToMove = JSON.parse(JSON.stringify(element));
-          elementToMove.column = colIndex;
-
-          // 3. Remove from Source
-          srcRowData.elements.splice(elementIndex, 1);
-
-          // 4. Insert into Destination
-          var destRowData = this.doc.pages[pageIndex].rows[rowIndex];
-          if (!destRowData.elements) destRowData.elements = [];
-
-          if (targetElementId) {
-            var targetIndex = destRowData.elements.findIndex(function (e) { return e.id === targetElementId; });
-            if (targetIndex !== -1) {
-              destRowData.elements.splice(targetIndex, 0, elementToMove);
-            } else {
-              destRowData.elements.push(elementToMove);
-            }
-          } else {
-            destRowData.elements.push(elementToMove);
-          }
-
-          this.saveDocument();
-        },
-
-        processNewElement: function (type, pageIndex, rowIndex, colIndex) {
+        processNewElement: function (type, pageIndex, rowIndex, colIndex, atIndex) {
           if (!this.doc.pages[pageIndex].rows[rowIndex].elements) {
             this.doc.pages[pageIndex].rows[rowIndex].elements = [];
           }
 
-          if (type === 'text') {
-            this.doc.pages[pageIndex].rows[rowIndex].elements.push({
-              id: Date.now(),
-              type: 'text',
-              content: 'Nouveau texte',
-              column: colIndex
-            });
-            this.saveDocument();
-          } else if (type === 'html') {
-            this.doc.pages[pageIndex].rows[rowIndex].elements.push({
-              id: Date.now(),
-              type: 'html',
-              content: 'Nouveau contenu HTML',
-              column: colIndex
-            });
-            this.saveDocument();
+          var newElement = {
+            id: Date.now(),
+            type: type,
+            content: type === 'text' ? 'Nouveau texte' : '<div>Nouveau contenu HTML</div>',
+            column: colIndex
+          };
+
+          if (typeof atIndex === 'number') {
+            this.doc.pages[pageIndex].rows[rowIndex].elements.splice(atIndex, 0, newElement);
+          } else {
+            this.doc.pages[pageIndex].rows[rowIndex].elements.push(newElement);
           }
+
+          this.saveDocument();
         },
 
         duplicateElement: function (pageIndex, rowIndex, elementId) {
@@ -1267,8 +1270,22 @@
   /* Global Selection Simulation */
   .global-selection {
     background-color: #b3d4fc !important;
-    /* Native selection blue */
     caret-color: transparent;
-    /* Hide cursor to look like object selection */
+  }
+
+  /* Sortable.js Styles */
+  .sortable-ghost {
+    opacity: 0.4;
+    background: #ebf3ff !important;
+    border: 2px dashed #3b82f6 !important;
+  }
+
+  .sortable-chosen {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+
+  .sortable-drag {
+    opacity: 1 !important;
   }
 </style>

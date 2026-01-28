@@ -142,28 +142,26 @@
                       <div class="grid gap-4" :style="'grid-template-columns: repeat(' + (row.columns || 1) + ', minmax(0, 1fr))'">
                         <template x-for="col in (row.columns || 1)" :key="'col-' + col">
                           <div 
-                            class="rounded min-h-[100px] group/col relative transition-all border border-dashed border-transparent"
-                            x-data="{ isOver: false, isHover: false }"
+                            class="rounded min-h-[100px] group/col relative transition-all border border-dashed border-transparent sortable-column"
+                            :data-page-index="index"
+                            :data-row-index="rowIndex"
+                            :data-column-index="col - 1"
+                            x-init="initSortableColumn($el)"
+                            x-data="{ isHover: false }"
                             @mouseenter="isHover = true"
                             @mouseleave="isHover = false"
                             :style="isHover ? 'border-color: #e5e7eb !important;' : ''"
                             :class="{ 
-                              'bg-gray-100 dark:bg-gray-800': !(row.elements || []).some(e => e.column === col - 1),
-                              'ring-2 ring-primary/50 bg-primary/5': isOver 
+                              'bg-gray-100 dark:bg-gray-800': !(row.elements || []).filter(e => e.column === col - 1).length === 0,
                             }"
-                            @dragover.prevent="isOver = true"
-                            @dragleave="isOver = false"
-                            @drop="isOver = false; handleDrop($event, index, rowIndex, col - 1)"
                           >
                             <!-- Render Elements -->
-                            <div class="flex flex-col gap-2 relative z-10" :class="{ 'p-4': !(row.elements || []).some(e => e.column === col - 1) }">
+                            <div class="flex flex-col gap-2 relative z-10 p-1 min-h-[100px] h-full">
                               <template x-for="element in (row.elements || []).filter(e => e.column === col - 1)" :key="element.id">
                                 <div 
-                                  class="group/el relative element-wrapper transition-all" 
+                                  class="group/el relative element-wrapper transition-all sortable-item" 
                                   style="border: 1px dashed #dee8ff; margin: 2px;"
-                                  @drop.stop="dragTargetElementId = null; handleElementDrop($event, index, rowIndex, col - 1, element.id)"
-                                  @dragover.prevent="dragTargetElementId = element.id"
-                                  @dragleave="dragTargetElementId === element.id ? dragTargetElementId = null : null"
+                                  :data-id="element.id"
                                 >
                                   <!-- Drop Indicator (Blue Line) -->
                                   <div 
@@ -177,8 +175,6 @@
                                     <button 
                                       class="text-gray-400 hover:text-primary cursor-move" 
                                       title="Déplacer"
-                                      draggable="true"
-                                      @dragstart="startDragElement($event, index, rowIndex, element.id)"
                                     >
                                       <iconify-icon icon="solar:hamburger-menu-linear" width="10"></iconify-icon>
                                     </button>

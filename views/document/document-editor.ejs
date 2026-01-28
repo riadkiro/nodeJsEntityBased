@@ -621,6 +621,10 @@
           html = html.replace(/<!--\[if\s+vml\]>([\s\S]*?)<!\[endif\]-->/gi, '');
           html = html.replace(/<!\[if\s+vml\]>([\s\S]*?)<!\[endif\]>/gi, '');
           html = html.replace(/<!--\[if\s+gte\s+vml\s+1\]>([\s\S]*?)<!\[endif\]-->/gi, '');
+          html = html.replace(/<o:p>\s*<\/o:p>/g, '');
+          html = html.replace(/<o:p>.*?<\/o:p>/g, function (match) {
+            return match.replace(/<o:p>|<\/o:p>/g, '');
+          });
 
           temp.innerHTML = html;
 
@@ -1066,6 +1070,82 @@
           this.selectedPageIndex = index;
           var el = document.getElementById('page-' + index);
           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        },
+
+        setPageMode: function (index, mode) {
+          var page = this.doc.pages[index];
+          var oldMode = page.mode;
+
+          // Conversion logic from Edition to Layout
+          if ((mode === 'layout' || mode === 'designer') && oldMode === 'edition') {
+            // If already has rows, ask for confirmation
+            if (!page.rows || page.rows.length === 0) {
+              this.convertToLayout(index);
+            } else {
+              if (confirm("Ce mode possède déjà un layout. Voulez-vous importer et convertir le contenu actuel (cela remplacera le layout existant) ?")) {
+                this.convertToLayout(index);
+              }
+            }
+          }
+
+          // Back-sync logic from Layout to Edition
+          if (mode === 'edition' && (oldMode === 'layout' || oldMode === 'designer')) {
+            if (page.rows && page.rows.length > 0) {
+              if (confirm("Voulez-vous synchroniser les changements du Layout vers le mode Edition ?")) {
+                this.syncEditionFromLayout(index);
+              }
+            }
+          }
+
+          page.mode = mode;
+          this.saveDocument();
+        },
+
+        syncEditionFromLayout: function (index) {
+          var page = this.doc.pages[index];
+          if (!page.rows || page.rows.length === 0) return;
+
+          var html = '';
+          page.rows.forEach(function (row) {
+            if (row.elements) {
+              row.elements.forEach(function (el) {
+                if (el.type === 'text' || el.type === 'plain-text' || el.type === 'html') {
+                  html += el.content;
+                } else if (el.type === 'image' && el.content) {
+                  html += '<div style="text-align:center; margin: 10px 0;"><img src="' + el.content + '" style="max-width:100%; height:auto; border-radius: 8px;"></div>';
+                }
+              });
+            }
+          });
+          page.content = html;
+
+          // Re-init the innerHTML of the contenteditable if it's currently rendered
+          this.$nextTick(function () {
+            var el = document.querySelector('.page-content[data-page-index="' + index + '"]');
+            if (el) el.innerHTML = html;
+          });
+        },
+
+        convertToLayout: function (index) {
+          var page = this.doc.pages[index];
+          var content = page.content || '';
+          if (!content.trim()) return;
+
+          // Clean HTML using the existing Word cleaner
+          var cleanHtml = this.cleanWordHtml(content);
+
+          // Wrap everything into a single HTML block
+          page.rows = [{
+            columns: 1,
+            elements: [{
+              id: Date.now() + Math.random(),
+              type: 'html',
+              content: cleanHtml,
+              column: 0
+            }]
+          }];
+
+          console.log('Converted whole page to single layout block.');
         },
 
         addPage: function () {

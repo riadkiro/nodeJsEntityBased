@@ -28,6 +28,7 @@ const elementSchema = new mongoose.Schema({
 
 const pageSchema = new mongoose.Schema({
     content: { type: String, default: '' },
+    mode: { type: String, enum: ['edition', 'layout', 'designer'], default: 'edition' },
     elements: [elementSchema],
     background: {
         color: { type: String, default: '#ffffff' },

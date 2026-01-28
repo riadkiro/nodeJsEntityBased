@@ -9,15 +9,49 @@
               </span>
             </div>
 
+            <!-- Page Mode Switcher (Always Visible) -->
+            <div class="absolute -mt-10 left-0 flex bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm rounded-t-lg overflow-hidden z-30">
+               <button 
+                  @click.stop="page.mode = 'edition'; saveDocument()"
+                  :class="page.mode === 'edition' ? 'bg-primary text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
+                  class="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors"
+                  title="Mode Édition"
+                >
+                  <iconify-icon icon="solar:pen-bold-duotone" width="14"></iconify-icon>
+                  <span>Édition</span>
+                </button>
+                <div class="w-px bg-gray-200 dark:bg-gray-700"></div>
+                 <button 
+                  @click.stop="page.mode = 'layout'; saveDocument()"
+                  :class="page.mode === 'layout' ? 'bg-primary text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
+                  class="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors"
+                  title="Mode Layout"
+                >
+                  <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="14"></iconify-icon>
+                  <span>Layout</span>
+                </button>
+                <div class="w-px bg-gray-200 dark:bg-gray-700"></div>
+                 <button 
+                  @click.stop="page.mode = 'designer'; saveDocument()"
+                  :class="page.mode === 'designer' ? 'bg-primary text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
+                  class="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors"
+                  title="Mode Designer"
+                >
+                  <iconify-icon icon="solar:palette-2-broken" width="14"></iconify-icon>
+                  <span>Designer</span>
+                </button>
+            </div>
+
             <div 
               class="bg-white shadow-2xl relative overflow-hidden" 
               :style="'width: ' + doc.dimensions.width + 'px; height: ' + doc.dimensions.height + 'px;'" 
               @click="selectPage(index)" 
               :class="{ 'ring-2 ring-primary': selectedPageIndex === index }"
             >
+
               <!-- EDITION MODE: Editable content area with dynamic margins -->
               <div 
-                x-show="editorMode === 'edition'"
+                x-show="page.mode === 'edition'"
                 class="w-full h-full outline-none text-gray-800 leading-relaxed page-content overflow-hidden"
                 :class="{ 'global-selection': isGlobalSelection }"
                 contenteditable="true"
@@ -33,7 +67,7 @@
               
               <!-- DESIGN MODE: Layout with rows -->
               <div 
-                x-show="editorMode === 'layout' || editorMode === 'designer'"
+                x-show="page.mode === 'layout' || page.mode === 'designer'"
                 class="w-full h-full"
                 :style="'padding-top: ' + doc.margins.top + 'px; padding-bottom: ' + doc.margins.bottom + 'px; padding-left: ' + doc.margins.left + 'px; padding-right: ' + doc.margins.right + 'px;'"
               >

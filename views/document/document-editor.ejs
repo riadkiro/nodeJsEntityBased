@@ -42,11 +42,11 @@
           format: data.format,
           orientation: data.orientation,
           dimensions: data.dimensions,
-          pages: data.pages,
+          pages: data.pages.map(function(p) { return Object.assign({}, p, { mode: p.mode || 'edition' }); }),
           status: data.status,
           margins: data.margins || { top: 72, bottom: 72, left: 72, right: 72 }
         },
-        editorMode: 'edition',
+        editorMode: 'edition', // Keep for backward compat, but pages will use their own.
         selectedPageIndex: 0,
         selectedRow: null,
         lastSaved: null,
@@ -350,22 +350,33 @@
             pastedText = (event.clipboardData || window.clipboardData).getData('text/plain');
             pastedText = pastedText.replace(/\n/g, '<br>');
           } else {
-            // Clean Word HTML - remove excessive spacing
+            console.log("Paste detected, length:", pastedText.length);
+            // Clean Word HTML - remove excessive spacing and garbage
             pastedText = this.cleanWordHtml(pastedText);
           }
           
-          // Insert at cursor position
-          document.execCommand('insertHTML', false, pastedText);
+          // Insert at cursor position if possible, otherwise append
+          if (document.getSelection && document.getSelection().rangeCount > 0) {
+             document.execCommand('insertHTML', false, pastedText);
+          } else {
+             // Fallback: append to end of page content
+             var pageEl = document.querySelector('.page-content[data-page-index="' + pageIndex + '"]');
+             if (pageEl) {
+                pageEl.innerHTML += pastedText;
+             }
+          }
           
           // Get the element and check for overflow
-          var element = event.target;
-          this.doc.pages[pageIndex].content = element.innerHTML;
+          var element = document.querySelector('.page-content[data-page-index="' + pageIndex + '"]');
+          this.doc.pages[pageIndex].content = element ? element.innerHTML : '';
           
-          // Use setTimeout to allow DOM to update
+          // Use setTimeout to allow DOM to update and browser to breathe
           setTimeout(function() {
-            self.checkOverflow(element, pageIndex);
-            self.saveDocument();
-          }, 100);
+            if (element) {
+                 self.checkOverflow(element, pageIndex);
+                 self.saveDocument();
+            }
+          }, 200); // Increased delay for large content
         },
 
         cleanWordHtml: function(html) {
@@ -533,6 +544,7 @@
                 this.doc.pages.push({
                   content: '',
                   elements: [],
+                  mode: 'edition', // CRITICAL FIX: Ensure new page is in edition mode
                    background: { color: '#ffffff' },
                   order: this.doc.pages.length
                 });

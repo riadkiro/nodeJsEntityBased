@@ -94,7 +94,7 @@
 
                     <!-- Row container - Standard Dashed Border -->
                     <div 
-                      class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 hover:border-primary transition-colors min-h-[100px] relative"
+                      class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 hover:border-primary transition-colors min-h-[50px] relative"
                       @click="selectedRow = { pageIndex: index, rowIndex: rowIndex }"
                     >
                       <!-- 1. Layout Selector (Top-Right) - CLASSIC POSITION -->
@@ -142,7 +142,7 @@
                       <div class="grid gap-4" :style="'grid-template-columns: repeat(' + (row.columns || 1) + ', minmax(0, 1fr))'">
                         <template x-for="col in (row.columns || 1)" :key="'col-' + col">
                           <div 
-                            class="rounded min-h-[100px] group/col relative transition-all border border-dashed border-transparent sortable-column"
+                            class="rounded min-h-[50px] group/col relative transition-all border border-dashed border-transparent sortable-column"
                             :data-page-index="index"
                             :data-row-index="rowIndex"
                             :data-column-index="col - 1"
@@ -156,7 +156,7 @@
                             }"
                           >
                             <!-- Render Elements -->
-                            <div class="flex flex-col gap-2 relative z-10 p-1 min-h-[100px] h-full">
+                            <div class="flex flex-col gap-2 relative z-10 p-1 h-full" style="min-height:30px;">
                               <template x-for="element in (row.elements || []).filter(e => e.column === col - 1)" :key="element.id">
                                 <div 
                                   class="group/el relative element-wrapper transition-all sortable-item" 

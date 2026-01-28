@@ -150,7 +150,7 @@
             animation: 150,
             draggable: '.sortable-item',
             ghostClass: 'sortable-ghost',
-            handle: '.cursor-move',
+            handle: '.drag-handle-pill', // Centered handle
             fallbackOnBody: true,
             swapThreshold: 0.65,
             emptyInsertThreshold: 50, // Critical for dropping into empty zones
@@ -1287,5 +1287,22 @@
 
   .sortable-drag {
     opacity: 1 !important;
+  }
+
+  /* Centered Drag Handle Styles */
+  .drag-handle-pill {
+    pointer-events: auto;
+  }
+
+  .element-wrapper {
+    position: relative;
+    padding: 10px 4px 4px 4px !important;
+    /* Space for the handle */
+    min-height: 2em;
+  }
+
+  .element-wrapper:hover {
+    border-color: #3b82f6 !important;
+    background: rgba(59, 130, 246, 0.02);
   }
 </style>

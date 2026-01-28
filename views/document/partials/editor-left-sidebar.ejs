@@ -1,0 +1,25 @@
+    <!-- Toolbar (Left) -->
+    <div class="w-16 bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col items-center py-4 gap-4">
+      <button 
+        class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center cursor-move" 
+        title="Texte"
+        draggable="true"
+        @dragstart="startDrag($event, 'text')"
+      >
+        <iconify-icon icon="solar:text-bold-duotone" width="24"></iconify-icon>
+      </button>
+      <button class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center" title="Image">
+        <iconify-icon icon="solar:gallery-bold-duotone" width="24"></iconify-icon>
+      </button>
+      <div class="h-px w-8 bg-gray-200 dark:bg-gray-700"></div>
+      <button class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center" title="Layout 2 colonnes">
+        <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="24"></iconify-icon>
+      </button>
+      <button class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center" title="Layout 3 colonnes">
+        <iconify-icon icon="solar:widget-4-bold-duotone" width="24"></iconify-icon>
+      </button>
+      <div class="h-px w-8 bg-gray-200 dark:bg-gray-700"></div>
+      <button class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center" title="Variable DB">
+        <iconify-icon icon="solar:database-bold-duotone" width="24"></iconify-icon>
+      </button>
+    </div>

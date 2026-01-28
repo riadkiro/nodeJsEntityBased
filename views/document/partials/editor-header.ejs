@@ -1,0 +1,75 @@
+  <div class="bg-white dark:bg-gray-900 border-b dark:border-gray-800 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="/account/<%= account_number %>/documents" class="text-gray-500 hover:text-primary">
+        <iconify-icon icon="solar:arrow-left-line-duotone" width="24"></iconify-icon>
+      </a>
+      <input 
+        type="text" 
+        x-model="doc.name" 
+        @input="saveDocument"
+        class="form-input font-semibold text-lg border-0 focus:ring-0 px-2 w-80"
+        placeholder="Sans titre"
+      >
+      <span class="text-xs text-gray-400" x-show="lastSaved">
+        Sauvegardé <span x-text="lastSaved"></span>
+      </span>
+    </div>
+    
+    <!-- Mode Switcher -->
+    <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+      <button 
+        @click="editorMode = 'edition'"
+        :class="editorMode === 'edition' ? 'bg-white dark:bg-gray-700 shadow-sm' : 'text-gray-600 dark:text-gray-400'"
+        class="px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2"
+      >
+        <iconify-icon icon="solar:pen-bold-duotone" width="18"></iconify-icon>
+        Édition
+      </button>
+      <button 
+        @click="editorMode = 'layout'"
+        :class="editorMode === 'layout' ? 'bg-white dark:bg-gray-700 shadow-sm' : 'text-gray-600 dark:text-gray-400'"
+        class="px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2"
+      >
+        <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="18"></iconify-icon>
+        Layout
+      </button>
+      <button 
+        @click="editorMode = 'designer'"
+        :class="editorMode === 'designer' ? 'bg-white dark:bg-gray-700 shadow-sm' : 'text-gray-600 dark:text-gray-400'"
+        class="px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2"
+      >
+        <iconify-icon icon="solar:palette-2-bold-duotone" width="18"></iconify-icon>
+        Designer
+      </button>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <select x-model="doc.format" @change="updateDimensions" class="form-select text-sm">
+        <option value="A4">A4</option>
+        <option value="A5">A5</option>
+        <option value="A3">A3</option>
+        <option value="Letter">Letter</option>
+        <option value="Legal">Legal</option>
+      </select>
+
+      <select x-model="doc.orientation" @change="updateDimensions" class="form-select text-sm">
+        <option value="portrait">Portrait</option>
+        <option value="landscape">Paysage</option>
+      </select>
+
+      <select x-model="doc.status" @change="saveDocument" class="form-select text-sm">
+        <option value="draft">Brouillon</option>
+        <option value="published">Publié</option>
+      </select>
+
+      <button @click="printDocument" class="btn btn-outline-primary btn-sm bg-white hover:bg-gray-50 text-primary border border-primary">
+        <iconify-icon icon="solar:file-download-bold" class="mr-1"></iconify-icon>
+        PDF
+      </button>
+
+      <button @click="saveDocument" class="btn btn-primary btn-sm">
+        <iconify-icon icon="solar:diskette-bold" class="mr-1"></iconify-icon>
+        Sauvegarder
+      </button>
+    </div>
+  </div>

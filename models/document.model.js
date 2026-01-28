@@ -27,6 +27,7 @@ const elementSchema = new mongoose.Schema({
 }, { _id: true });
 
 const pageSchema = new mongoose.Schema({
+    content: { type: String, default: '' },
     elements: [elementSchema],
     background: {
         color: { type: String, default: '#ffffff' },

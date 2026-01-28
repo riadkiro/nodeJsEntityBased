@@ -64,6 +64,11 @@
         <option value="published">Publié</option>
       </select>
 
+      <button @click="printDocument" class="btn btn-outline-primary btn-sm bg-white hover:bg-gray-50 text-primary border border-primary">
+        <iconify-icon icon="solar:file-download-bold" class="mr-1"></iconify-icon>
+        Télécharger PDF
+      </button>
+
       <button @click="saveDocument" class="btn btn-primary btn-sm">
         <iconify-icon icon="solar:diskette-bold" class="mr-1"></iconify-icon>
         Sauvegarder
@@ -101,7 +106,7 @@
 
     <!-- Canvas Area -->
     <div class="flex-1 bg-gray-100 dark:bg-gray-800 overflow-auto p-8" id="canvas-container">
-      <div class="flex flex-col gap-8 items-center" style="padding-top: 43px;">
+      <div id="pages-container" class="flex flex-col gap-8 items-center" style="padding-top: 43px;">
         <template x-for="(page, index) in doc.pages" :key="'page-' + index">
           <div class="relative group">
             <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
@@ -694,30 +699,37 @@
              // Container
              table.style.width = '100%';
              table.style.borderCollapse = 'collapse';
-             table.style.marginBottom = '1.5em';
+             table.style.marginBottom = '1em';
              table.style.marginTop = '0.5em';
-             table.style.fontFamily = 'inherit'; // or sans-serif?
-             table.style.fontSize = '0.95em'; // slightly compact
-             table.style.border = '1px solid #e5e7eb'; // outer border
+             table.style.fontFamily = 'inherit'; 
+             table.style.fontSize = '0.9em'; // Slightly smaller font for data
+             table.style.border = '1px solid #e5e7eb'; 
              
              // Headers
              var ths = table.querySelectorAll('th');
              ths.forEach(function(th) {
-                th.style.backgroundColor = '#f9fafb'; // gray-50
-                th.style.color = '#111827'; // gray-900
+                th.style.backgroundColor = '#f9fafb'; 
+                th.style.color = '#111827'; 
                 th.style.fontWeight = '600';
                 th.style.textAlign = 'left';
-                th.style.padding = '12px 16px';
-                th.style.borderBottom = '1px solid #e5e7eb';
+                th.style.padding = '8px 12px'; // Reduced padding
+                th.style.borderBottom = '1px solid #d1d5db';
              });
              
              // Cells
              var tds = table.querySelectorAll('td');
              tds.forEach(function(td) {
-                td.style.padding = '12px 16px';
-                td.style.borderBottom = '1px solid #e5e7eb'; // separators
-                td.style.color = '#374151'; // gray-700
+                td.style.padding = '6px 12px'; // Compact padding
+                td.style.borderBottom = '1px solid #e5e7eb'; 
+                td.style.color = '#374151'; 
                 td.style.verticalAlign = 'top';
+                
+                // Fix: Remove default margins from P tags inside cells to prevent huge rows
+                var paragraphs = td.querySelectorAll('p');
+                paragraphs.forEach(function(p) {
+                    p.style.margin = '0';
+                    p.style.lineHeight = '1.4';
+                });
              });
           });
 
@@ -743,8 +755,8 @@
              
              var lis = list.querySelectorAll('li');
              lis.forEach(function(li) {
-                li.style.marginBottom = '0.5em';
-                li.style.lineHeight = '1.6';
+                li.style.marginBottom = '0.25em'; // Reduced spacing
+                li.style.lineHeight = '1.5';
              });
           });
           
@@ -1101,8 +1113,133 @@
               console.error('Error saving document:', error);
             });
           }, 1000);
+        },
+
+        printDocument: function() {
+           var self = this;
+           var btn = this.$event.target.closest('button');
+           var originalText = btn.innerHTML;
+           
+           // Show loading state
+           btn.innerHTML = '<iconify-icon icon="svg-spinners:ring-resize" class="mr-1"></iconify-icon> Génération...';
+           btn.disabled = true;
+
+           // clone the pages container to send only relevant HTML
+           // FIX: Use robust ID selector
+           var container = document.getElementById('pages-container');
+           var htmlContent = container ? container.innerHTML : '';
+           
+           if (!htmlContent) {
+               alert('Erreur: Impossible de récupérer le contenu du document');
+               btn.innerHTML = originalText;
+               btn.disabled = false;
+               return;
+           }
+
+           // Remove Alpine attributes and edit-specific artifacts to clean up the HTML before sending
+           var tempDiv = document.createElement('div');
+           tempDiv.innerHTML = htmlContent;
+           
+           // Clean up: Remove edit buttons, empty state placeholders
+           tempDiv.querySelectorAll('button, .group\\/el > div[contenteditable]').forEach(el => {
+                if (el.tagName === 'BUTTON') el.remove();
+                // We keep contenteditable divs but strip the attribute? 
+                // Puppeteer handles them fine visually.
+           });
+
+           fetch('/account/' + accountNumber + '/documents/api/' + this.doc._id + '/pdf', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ html: tempDiv.innerHTML })
+           })
+           .then(res => {
+               if (!res.ok) {
+                    return res.text().then(text => { throw new Error(text) });
+               }
+               return res.blob();
+           })
+           .then(blob => {
+               var url = window.URL.createObjectURL(blob);
+               var a = document.createElement('a');
+               a.href = url;
+               a.download = self.doc.name + '.pdf';
+               document.body.appendChild(a);
+               a.click();
+               a.remove();
+           })
+           .catch(err => {
+               console.error(err);
+               alert('Erreur PDF: ' + err.message);
+           })
+           .finally(() => {
+               btn.innerHTML = originalText;
+               btn.disabled = false;
+           });
         }
       };
     });
   });
 </script>
+
+<style>
+  /* Print Styles for PDF Generation */
+  @media print {
+    @page { 
+      margin: 0; 
+      size: auto;
+    }
+    
+    body {
+      background: white;
+      margin: 0;
+      padding: 0;
+      overflow: visible !important;
+    }
+
+    /* Hide UI Elements */
+    header, nav, aside, 
+    .bg-white.dark\:bg-gray-900.border-b, /* Top Header */
+    .w-16.bg-white, /* Left Toolbar */
+    .w-80.bg-white, /* Right Sidebar */
+    .btn, button, input, select,
+    [x-show="editorMode === 'layout'"],
+    [x-show="editorMode === 'designer'"] {
+      display: none !important;
+    }
+
+    /* Target the Main Content Area */
+    .flex-1.flex.overflow-hidden {
+      overflow: visible !important;
+      height: auto !important;
+      display: block !important;
+    }
+    
+    .overflow-auto {
+      overflow: visible !important;
+    }
+
+    /* Target Pages */
+    .bg-white.shadow-2xl {
+      box-shadow: none !important;
+      margin: 0 auto !important;
+      border: none !important;
+      page-break-after: always;
+      position: relative !important;
+      left: 0 !important;
+      top: 0 !important;
+      transform: none !important;
+      width: 100% !important;
+      /* Force A4 or current format logic if needed, but width:100% usually adapts to print driver */
+    }
+    
+    /* Ensure content inside pages prints */
+    .page-content {
+      overflow: visible !important;
+    }
+    
+    /* Hide empty page decorators */
+    .group .opacity-0 {
+        display: none !important;
+    }
+  }
+</style>

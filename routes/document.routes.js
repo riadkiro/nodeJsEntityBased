@@ -237,4 +237,88 @@ router.post('/api/:id/duplicate', async (req, res) => {
     }
 });
 
+// POST - Générer PDF (Puppeteer)
+router.post('/api/:id/pdf', async (req, res) => {
+    let browser = null;
+    try {
+        const puppeteer = require('puppeteer');
+        const htmlContent = req.body.html;
+
+        if (!htmlContent) {
+            console.error('[PDF] HTML content missing in request');
+            return res.status(400).send('Contenu HTML manquant');
+        }
+
+        console.log('[PDF] Generating for doc:', req.params.id);
+        console.log('[PDF] HTML Input Size:', htmlContent.length, 'chars');
+
+        browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+
+        const page = await browser.newPage();
+
+        // Optimize for print: Set content and wait for load
+        // We inject Tailwind via CDN to ensure styles are present in the PDF renderer
+        const wrappedHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <script src="https://cdn.tailwindcss.com"></script>
+                <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+                <style>
+                    body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    /* Ensure pages start on new sheets */
+                    .page-break-after { page-break-after: always; }
+                    /* Resets specific to the editor viewer structure */
+                    .bg-white.shadow-2xl { box-shadow: none !important; margin: 0 auto !important; }
+                    p { margin-bottom: 0.5em; }
+                </style>
+            </head>
+            <body>
+                ${htmlContent}
+            </body>
+            </html>
+        `;
+
+        await page.setContent(wrappedHtml, {
+            waitUntil: ['networkidle0', 'load'],
+            timeout: 30000
+        });
+
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            margin: { top: 0, bottom: 0, left: 0, right: 0 }
+        });
+
+        if (!pdfBuffer || pdfBuffer.length === 0) {
+            throw new Error('Buffer PDF vide généré');
+        }
+
+        console.log('[PDF] Success. Size:', pdfBuffer.length, 'bytes');
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Length': pdfBuffer.length,
+            'Content-Disposition': `attachment; filename="document-${req.params.id}.pdf"`,
+        });
+
+        // FIX: Puppeteer returns Uint8Array, explicitly convert to Buffer to avoid JSON serialization
+        res.send(Buffer.from(pdfBuffer));
+
+    } catch (error) {
+        console.error('[PDF] Critical Error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, error: 'Génération PDF échouée: ' + error.message });
+        }
+    } finally {
+        if (browser) {
+            await browser.close();
+        }
+    }
+});
+
 module.exports = router;

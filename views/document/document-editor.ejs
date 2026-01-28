@@ -786,11 +786,22 @@
               var nextPageIndex = pageIndex + 1;
               var isNewPage = false;
 
-              if (nextPageIndex >= this.doc.pages.length) {
+              // BARRIER: If next page exists but is NOT in 'edition' mode, we must insert a new Edition page
+              if (nextPageIndex < this.doc.pages.length && this.doc.pages[nextPageIndex].mode !== 'edition') {
+                this.doc.pages.splice(nextPageIndex, 0, {
+                  content: '',
+                  elements: [],
+                  mode: 'edition',
+                  background: { color: '#ffffff' },
+                  order: nextPageIndex
+                });
+                isNewPage = true;
+              } 
+              else if (nextPageIndex >= this.doc.pages.length) {
                 this.doc.pages.push({
                   content: '',
                   elements: [],
-                  mode: 'edition', // CRITICAL FIX: Ensure new page is in edition mode
+                  mode: 'edition',
                   background: { color: '#ffffff' },
                   order: this.doc.pages.length
                 });
@@ -846,6 +857,11 @@
 
           // Only check if there's a next page with content
           if (pageIndex + 1 >= this.doc.pages.length) {
+            return;
+          }
+
+          // BARRIER: Do not pull content from pages that are NOT in edition mode (Layout/Designer)
+          if (this.doc.pages[pageIndex + 1].mode !== 'edition') {
             return;
           }
 
@@ -1080,6 +1096,20 @@
           this.selectedPageIndex = index;
           var el = document.getElementById('page-' + index);
           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        },
+
+        getLayoutPages: function () {
+          var layoutPages = [];
+          this.doc.pages.forEach(function (page, index) {
+            if (page.mode === 'layout' || page.mode === 'designer') {
+              layoutPages.push(index + 1);
+            }
+          });
+          return layoutPages;
+        },
+
+        isLayoutActive: function () {
+          return this.getLayoutPages().length > 0;
         },
 
         setPageMode: function (index, mode) {

@@ -49,37 +49,44 @@
               :class="{ 'ring-2 ring-primary': selectedPageIndex === index }"
             >
 
-              <!-- EDITION MODE: Editable content area with dynamic margins -->
-              <div 
-                x-show="page.mode === 'edition'"
-                class="w-full h-full outline-none text-gray-800 leading-relaxed page-content overflow-hidden relative"
-                :class="{ 'global-selection': isGlobalSelection }"
-                :contenteditable="!isLayoutActive()"
-                :data-page-index="index"
-                @input="handlePageInput($event, index)"
-                @paste="handlePaste($event, index)"
-                @focus="selectPage(index)"
-                @blur="syncPageContent($event, index)"
-                x-init="$el.innerHTML = page.content || ''"
-                x-ref="pageContent"
-                :style="'font-family: Times New Roman, serif; font-size: 12pt; white-space: pre-wrap; word-wrap: break-word; line-height: 1.15; padding-top: ' + doc.margins.top + 'px; padding-bottom: ' + doc.margins.bottom + 'px; padding-left: ' + doc.margins.left + 'px; padding-right: ' + doc.margins.right + 'px; overflow: hidden;'"
-              >
-                <!-- LOCK OVERLAY -->
+              <!-- EDITION MODE: Editable content area -->
+              <div x-show="page.mode === 'edition'" class="w-full h-full relative group/edit">
+                <div 
+                  class="w-full h-full outline-none text-gray-800 leading-relaxed page-content overflow-hidden editor-content"
+                  :class="{ 'global-selection': isGlobalSelection }"
+                  :contenteditable="!isLayoutActive()"
+                  :data-page-index="index"
+                  @input="handlePageInput($event, index)"
+                  @paste="handlePaste($event, index)"
+                  @dragover.prevent
+                  @drop.prevent="handleEditionDrop($event, index)"
+                  @focus="selectPage(index)"
+                  @blur="syncPageContent($event, index)"
+                  x-init="$el.innerHTML = page.content || ''"
+                  x-ref="pageContent"
+                  :style="'white-space: pre-wrap; word-wrap: break-word; line-height: 1.15; padding-top: ' + doc.margins.top + 'px; padding-bottom: ' + doc.margins.bottom + 'px; padding-left: ' + doc.margins.left + 'px; padding-right: ' + doc.margins.right + 'px; overflow: hidden;'"
+                ></div>
+
+                <!-- LOCK OVERLAY (Visible only when Layout mode is active on ANY page) -->
                 <div 
                   x-show="isLayoutActive()" 
-                  class="absolute inset-0 bg-gray-100/60 dark:bg-gray-900/60 backdrop-blur-[1px] z-[50] flex flex-col items-center justify-center p-8 text-center"
+                  class="absolute inset-0 z-[100] flex flex-col items-center justify-center p-8 text-center"
+                  style="background-color: rgba(243, 244, 246, 0.75); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);"
                   x-transition.opacity
                 >
-                  <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl border dark:border-gray-700 max-w-sm transform transition-all scale-100">
+                  <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 max-w-sm transform transition-all scale-100">
                     <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <iconify-icon icon="solar:lock-bold-duotone" width="24"></iconify-icon>
+                      <iconify-icon icon="solar:lock-bold-duotone" width="28"></iconify-icon>
                     </div>
-                    <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-2">Édition désactivée</h4>
+                    <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-2 uppercase tracking-wider">Édition verrouillée</h4>
                     <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                      Veuillez désactiver le mode **Layout** sur les pages 
+                      L'édition est désactivée car les pages 
                       <span class="font-black text-amber-600 dark:text-amber-400" x-text="'[' + getLayoutPages().join(', ') + ']'"></span> 
-                      pour éditer ce texte.
+                      sont en mode **Layout**.
                     </p>
+                    <div class="mt-4 text-[10px] text-gray-400 font-medium">
+                      Repassez ces pages en mode Édition pour modifier ce contenu.
+                    </div>
                   </div>
                 </div>
               </div>

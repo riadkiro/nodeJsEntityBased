@@ -40,7 +40,9 @@
         
         <div class="gallery-container flex flex-wrap gap-3">
             <!-- Placeholder / Image Tool -->
-            <div class="gallery-item group cursor-move" data-type="image" data-content="">
+            <div class="gallery-item group cursor-move" 
+                 draggable="true" @dragstart="handleDragStart($event)"
+                 data-type="image" data-content="">
                 <div class="rounded-md overflow-hidden bg-white dark:bg-gray-900 border-2 border-dashed border-gray-300 dark:border-gray-600 group-hover:border-primary transition-all relative shadow-sm flex items-center justify-center" 
                      style="width: 32px !important; height: 32px !important;">
                     <iconify-icon icon="solar:add-circle-bold-duotone" width="18" class="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
@@ -48,7 +50,9 @@
             </div>
 
             <!-- test.png -->
-            <div class="gallery-item group cursor-move" data-type="image" data-content="/images/test.png">
+            <div class="gallery-item group cursor-move" 
+                 draggable="true" @dragstart="handleDragStart($event)"
+                 data-type="image" data-content="/images/test.png">
                 <div class="rounded-md overflow-hidden bg-gray-100 dark:bg-gray-900 border border-transparent group-hover:border-primary transition-all relative shadow-sm" 
                      style="width: 32px !important; height: 32px !important;">
                     <img src="/images/test.png" class="w-full h-full object-cover">
@@ -57,7 +61,9 @@
             </div>
 
             <!-- test2.png -->
-            <div class="gallery-item group cursor-move" data-type="image" data-content="/images/test2.png">
+            <div class="gallery-item group cursor-move" 
+                 draggable="true" @dragstart="handleDragStart($event)"
+                 data-type="image" data-content="/images/test2.png">
                 <div class="rounded-md overflow-hidden bg-gray-100 dark:bg-gray-900 border border-transparent group-hover:border-primary transition-all relative shadow-sm"
                      style="width: 32px !important; height: 32px !important;">
                     <img src="/images/test2.png" class="w-full h-full object-cover">
@@ -66,7 +72,9 @@
             </div>
 
             <!-- test3.png -->
-            <div class="gallery-item group cursor-move" data-type="image" data-content="/images/test3.png">
+            <div class="gallery-item group cursor-move" 
+                 draggable="true" @dragstart="handleDragStart($event)"
+                 data-type="image" data-content="/images/test3.png">
                 <div class="rounded-md overflow-hidden bg-gray-100 dark:bg-gray-900 border border-transparent group-hover:border-primary transition-all relative shadow-sm"
                      style="width: 32px !important; height: 32px !important;">
                     <img src="/images/test3.png" class="w-full h-full object-cover">

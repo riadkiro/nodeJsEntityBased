@@ -582,6 +582,66 @@
           this.saveDocument();
         },
 
+        handleDragStart: function (event) {
+          var el = event.target.closest('[data-type]');
+          if (!el) return;
+
+          var type = el.dataset.type;
+          var content = el.dataset.content;
+
+          event.dataTransfer.setData('type', type);
+          event.dataTransfer.setData('content', content);
+          
+          // Selection appearance
+          event.dataTransfer.effectAllowed = 'copy';
+        },
+
+        handleEditionDrop: function (event, pageIndex) {
+          event.preventDefault();
+          var self = this;
+
+          // Get the data from the drop event
+          var type = event.dataTransfer.getData('type');
+          var content = event.dataTransfer.getData('content');
+
+          if (!content && type !== 'image') return;
+
+          // Identify the drop target and position
+          var x = event.clientX;
+          var y = event.clientY;
+          var range, sel;
+
+          if (document.caretRangeFromPoint) {
+            range = document.caretRangeFromPoint(x, y);
+          } else if (event.rangeParent) {
+            range = document.createRange();
+            range.setStart(event.rangeParent, event.rangeOffset);
+          }
+
+          if (range) {
+            sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            
+            // Focus the targeted page
+            var element = document.querySelector('.page-content[data-page-index="' + pageIndex + '"]');
+            if (element) element.focus();
+
+            // Prepare insertion HTML
+            var htmlToInsert = content;
+            if (type === 'image') {
+              htmlToInsert = '<img src="' + content + '" style="max-width:100%; height:auto; border-radius: 8px; margin: 10px 0;">';
+              if (!content) htmlToInsert = '<div style="width:200px; height:100px; background:#f3f4f6; border:2px dashed #d1d5db; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:10px;">EMPLACEMENT IMAGE</div>';
+            }
+
+            // Insert content
+            document.execCommand('insertHTML', false, htmlToInsert);
+
+            // Update model and trigger pagination
+            this.handlePageInput({ target: element }, pageIndex);
+          }
+        },
+
         handlePaste: function (event, pageIndex) {
           event.preventDefault();
           var self = this;

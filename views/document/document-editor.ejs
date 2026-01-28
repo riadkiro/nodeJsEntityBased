@@ -12,6 +12,44 @@
 
     <!-- Properties Panel (Right) -->
     <%- include('partials/editor-right-sidebar') %>
+    
+    <!-- HTML Editor Modal -->
+    <div 
+      x-show="editingHtml" 
+      class="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center backdrop-blur-sm"
+      x-transition.opacity
+      style="display: none;"
+    >
+      <div 
+        class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-3/4 max-w-4xl max-h-[90vh] flex flex-col border dark:border-gray-700"
+        @click.outside="editingHtml = null"
+      >
+        <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 rounded-t-xl">
+          <h3 class="font-bold text-lg flex items-center gap-2">
+            <iconify-icon icon="solar:code-bold-duotone" class="text-primary"></iconify-icon>
+            Éditeur HTML
+          </h3>
+          <button @click="editingHtml = null" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+            <iconify-icon icon="solar:close-circle-bold" width="24"></iconify-icon>
+          </button>
+        </div>
+        <div class="p-0 flex-1 overflow-hidden relative group">
+          <textarea 
+            class="w-full h-96 p-4 font-mono text-sm bg-gray-900 text-green-400 focus:ring-0 outline-none resize-none border-none leading-relaxed"
+            x-model="editingHtmlContent"
+            placeholder="<div>Votre code HTML ici...</div>"
+            spellcheck="false"
+          ></textarea>
+        </div>
+        <div class="p-4 border-t dark:border-gray-700 flex justify-end gap-3 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
+          <button @click="editingHtml = null" class="px-4 py-2 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors font-medium">Annuler</button>
+          <button @click="saveHtmlEdit()" class="px-6 py-2 rounded-lg bg-primary text-white hover:bg-blue-600 shadow-lg shadow-blue-500/30 transition-all font-bold flex items-center gap-2">
+             <iconify-icon icon="solar:diskette-bold"></iconify-icon>
+             Sauvegarder
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -52,6 +90,8 @@
         lastSaved: null,
         saveTimeout: null,
         isGlobalSelection: false,
+        editingHtml: null,
+        editingHtmlContent: '',
 
         init: function() {
             var self = this;
@@ -243,17 +283,59 @@
               column: colIndex
             });
             this.saveDocument();
+          } else if (type === 'html') {
+             if (!this.doc.pages[pageIndex].rows[rowIndex].elements) {
+               this.doc.pages[pageIndex].rows[rowIndex].elements = [];
+             }
+             this.doc.pages[pageIndex].rows[rowIndex].elements.push({
+               id: Date.now(),
+               type: 'html',
+               content: 'Nouveau contenu HTML',
+               column: colIndex
+             });
+             this.saveDocument();
           }
         },
 
+        editHtml: function(element) {
+            this.editingHtml = element;
+            this.editingHtmlContent = element.content;
+        },
+
+        saveHtmlEdit: function() {
+            if (this.editingHtml) {
+                this.editingHtml.content = this.editingHtmlContent;
+                this.editingHtml = null;
+                this.editingHtmlContent = '';
+                this.saveDocument();
+            }
+        },
+
         updateElementContent: function(event, pageIndex, rowIndex, elementId) {
-          var content = event.target.innerText;
           var row = this.doc.pages[pageIndex].rows[rowIndex];
-          var element = row.elements.find(e => e.id === elementId);
+          var element = row.elements.find(function(e) { return e.id === elementId; });
+          
           if (element) {
+            // For HTML type, save innerHTML (Formatted). For Text type, save innerText (Plain).
+            var content = element.type === 'html' ? event.target.innerHTML : event.target.innerText;
             element.content = content;
             this.saveDocument();
           }
+        },
+
+        handleLayoutPaste: function(event, pageIndex, rowIndex, elementId) {
+            event.preventDefault();
+            var pastedText = (event.clipboardData || window.clipboardData).getData('text/html');
+            if (!pastedText) {
+                pastedText = (event.clipboardData || window.clipboardData).getData('text/plain');
+                pastedText = pastedText.replace(/\n/g, '<br>');
+            } else {
+                pastedText = this.cleanWordHtml(pastedText);
+            }
+            document.execCommand('insertHTML', false, pastedText);
+            
+            // Trigger update immediately or let blur handle it? 
+            // Better to let blur handle the model update, but we can verify.
         },
 
         duplicatePage: function(index) {

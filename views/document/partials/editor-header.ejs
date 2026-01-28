@@ -1,50 +1,151 @@
-  <div class="bg-white dark:bg-gray-900 border-b dark:border-gray-800 px-4 py-3 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <a href="/account/<%= account_number %>/documents" class="text-gray-500 hover:text-primary">
-        <iconify-icon icon="solar:arrow-left-line-duotone" width="24"></iconify-icon>
-      </a>
-      <input 
-        type="text" 
-        x-model="doc.name" 
-        @input="saveDocument"
-        class="form-input font-semibold text-lg border-0 focus:ring-0 px-2 w-80"
-        placeholder="Sans titre"
-      >
-      <span class="text-xs text-gray-400" x-show="lastSaved">
-        Sauvegardé <span x-text="lastSaved"></span>
-      </span>
-    </div>
-    
-    <!-- Mode Switcher REMOVED -->
-    <div></div>
+<div class="bg-white dark:bg-gray-900 border-b dark:border-gray-800 px-4 py-3 flex items-center justify-between">
+  <div class="flex items-center gap-3">
+    <a href="/account/<%= account_number %>/documents" class="text-gray-500 hover:text-primary">
+      <iconify-icon icon="solar:arrow-left-line-duotone" width="24"></iconify-icon>
+    </a>
+    <input type="text" x-model="doc.name" @input="saveDocument"
+      class="form-input font-semibold text-lg border-0 focus:ring-0 px-2 w-60" placeholder="Sans titre">
+    <div class="flex-1 flex justify-center px-4">
+      <!-- MINIMALIST TEXT TOOLBAR (WIDE & CENTERED) -->
+      <div
+        class="flex items-center gap-2 px-4 py-1.5 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 w-full max-w-[800px] justify-between">
+        <div class="flex items-center gap-1.5">
+          <!-- Font Family Pill -->
+          <div
+            class="flex items-center bg-gray-50 dark:bg-gray-700/50 rounded-lg px-2 py-1 border border-gray-200 dark:border-gray-600">
+            <select @change="formatDoc('fontName', $event.target.value)"
+              class="bg-transparent text-gray-700 dark:text-gray-200 text-[11px] font-bold outline-none border-none p-0 cursor-pointer w-24">
+              <option value="Inter">Inter</option>
+              <option value="Times New Roman">Nexa</option>
+              <option value="Arial">Arial</option>
+              <option value="Georgia">Georgia</option>
+            </select>
+          </div>
 
-    <div class="flex items-center gap-2">
-      <select x-model="doc.format" @change="updateDimensions" class="form-select text-sm">
-        <option value="A4">A4</option>
-        <option value="A5">A5</option>
-        <option value="A3">A3</option>
-        <option value="Letter">Letter</option>
-        <option value="Legal">Legal</option>
-      </select>
+          <!-- Font Size Pills -->
+          <div
+            class="flex items-center bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
+            <button @click="formatDoc('fontSize', '2')"
+              class="px-2 py-1 text-gray-500 hover:text-primary transition-colors text-xs font-bold border-r border-gray-200 dark:border-gray-600">-</button>
+            <div class="px-3 py-1 text-gray-700 dark:text-gray-200 text-[11px] font-bold">12</div>
+            <button @click="formatDoc('fontSize', '4')"
+              class="px-2 py-1 text-gray-500 hover:text-primary transition-colors text-xs font-bold border-l border-gray-200 dark:border-gray-600">+</button>
+          </div>
 
-      <select x-model="doc.orientation" @change="updateDimensions" class="form-select text-sm">
-        <option value="portrait">Portrait</option>
-        <option value="landscape">Paysage</option>
-      </select>
+          <div class="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
 
-      <select x-model="doc.status" @change="saveDocument" class="form-select text-sm">
-        <option value="draft">Brouillon</option>
-        <option value="published">Publié</option>
-      </select>
+          <!-- Formatting Buttons -->
+          <div class="flex items-center gap-0.5">
+            <button @click="formatDoc('bold')"
+              class="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all font-serif italic text-sm"
+              title="Gras">
+              <span class="font-bold">B</span>
+            </button>
+            <button @click="formatDoc('italic')"
+              class="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all italic text-sm"
+              title="Italique">
+              <span class="italic">I</span>
+            </button>
+            <button @click="formatDoc('underline')"
+              class="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all text-sm"
+              title="Souligné">
+              <span class="underline">U</span>
+            </button>
+            <button @click="formatDoc('strikethrough')"
+              class="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all text-sm"
+              title="Barré">
+              <span class="line-through">S</span>
+            </button>
+          </div>
+        </div>
 
-      <button @click="printDocument" class="btn btn-outline-primary btn-sm bg-white hover:bg-gray-50 text-primary border border-primary">
-        <iconify-icon icon="solar:file-download-bold" class="mr-1"></iconify-icon>
-        PDF
-      </button>
+        <div class="flex items-center gap-1.5">
+          <div class="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
 
-      <button @click="saveDocument" class="btn btn-primary btn-sm">
-        <iconify-icon icon="solar:diskette-bold" class="mr-1"></iconify-icon>
-        Sauvegarder
-      </button>
+          <!-- Alignment Tools -->
+          <div class="flex items-center gap-0.5">
+            <button @click="formatDoc('justifyLeft')"
+              class="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+              title="Aligner à gauche">
+              <iconify-icon icon="tabler:align-left" width="18"></iconify-icon>
+            </button>
+            <button @click="formatDoc('justifyCenter')"
+              class="w-8 h-8 flex items-center justify-center rounded text-gray-500 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+              title="Aligner au centre">
+              <iconify-icon icon="tabler:align-center" width="18"></iconify-icon>
+            </button>
+            <button @click="formatDoc('justifyRight')"
+              class="w-8 h-8 flex items-center justify-center rounded text-gray-500 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+              title="Aligner à droite">
+              <iconify-icon icon="tabler:align-right" width="18"></iconify-icon>
+            </button>
+          </div>
+
+          <div class="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+          <!-- List/Action Items -->
+          <div class="flex items-center gap-0.5">
+            <button @click="formatDoc('insertUnorderedList')"
+              class="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
+              <iconify-icon icon="tabler:list-details" width="18"></iconify-icon>
+            </button>
+            <button
+              class="px-2 py-1 text-[11px] font-bold text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors uppercase tracking-tight">Effets</button>
+            <button
+              class="px-2 py-1 text-[11px] font-bold text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors uppercase tracking-tight">Animer</button>
+          </div>
+
+          <div class="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+          <!-- Paint Roller / Status Overlay -->
+          <div class="relative flex items-center gap-3">
+            <button @click="formatDoc('removeFormat')"
+              class="w-8 h-8 flex items-center justify-center rounded-lg text-primary bg-primary/10 hover:bg-primary/20 transition-all"
+              title="Copier style">
+              <iconify-icon icon="tabler:paint" width="18"></iconify-icon>
+            </button>
+
+            <div class="hidden xl:block">
+              <span class="text-[9px] text-gray-400 font-medium whitespace-nowrap" x-show="lastSaved"
+                x-text="'Sauvegardé ' + lastSaved"></span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
+
+  <!-- Mode Switcher REMOVED -->
+  <div></div>
+
+  <div class="flex items-center gap-2">
+    <select x-model="doc.format" @change="updateDimensions" class="form-select text-sm">
+      <option value="A4">A4</option>
+      <option value="A5">A5</option>
+      <option value="A3">A3</option>
+      <option value="Letter">Letter</option>
+      <option value="Legal">Legal</option>
+    </select>
+
+    <select x-model="doc.orientation" @change="updateDimensions" class="form-select text-sm">
+      <option value="portrait">Portrait</option>
+      <option value="landscape">Paysage</option>
+    </select>
+
+    <select x-model="doc.status" @change="saveDocument" class="form-select text-sm">
+      <option value="draft">Brouillon</option>
+      <option value="published">Publié</option>
+    </select>
+
+    <button @click="printDocument"
+      class="btn btn-outline-primary btn-sm bg-white hover:bg-gray-50 text-primary border border-primary">
+      <iconify-icon icon="solar:file-download-bold" class="mr-1"></iconify-icon>
+      PDF
+    </button>
+
+    <button @click="saveDocument" class="btn btn-primary btn-sm">
+      <iconify-icon icon="solar:diskette-bold" class="mr-1"></iconify-icon>
+      Sauvegarder
+    </button>
+  </div>
+</div>

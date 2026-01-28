@@ -123,8 +123,20 @@ router.post('/api', async (req, res) => {
             createdBy: req.user._id
         };
 
+        // Ensure we don't try to save an empty/null _id
+        if (documentData._id === null || documentData._id === 'null' || documentData._id === '') {
+            delete documentData._id;
+        }
+
         const document = new Document(documentData);
         await document.save();
+
+        console.log('[Documents] Created new document:', document._id, document.name);
+
+        // Verify ID exists before sending
+        if (!document._id) {
+            console.error('[Documents] CRITICAL: Document saved but has no _id!', document);
+        }
 
         res.json({ success: true, document });
     } catch (error) {

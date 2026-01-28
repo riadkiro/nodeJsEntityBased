@@ -1070,6 +1070,8 @@
             var url = self.doc._id 
               ? '/account/' + accountNumber + '/documents/api/' + self.doc._id
               : '/account/' + accountNumber + '/documents/api';
+            
+            console.log('Saving document...', { method: method, url: url, docId: self.doc._id });
 
             fetch(url, {
               method: method,
@@ -1078,12 +1080,21 @@
             })
             .then(function(res) { return res.json(); })
             .then(function(data) {
+              console.log('Save response:', data);
               if (data.document) {
                 if (!self.doc._id) {
-                  self.doc._id = data.document._id;
-                  window.history.replaceState({}, '', '/account/' + accountNumber + '/documents/' + data.document._id + '/edit');
+                  if (data.document._id) {
+                      self.doc._id = data.document._id;
+                      var newUrl = '/account/' + accountNumber + '/documents/' + data.document._id + '/edit';
+                      console.log('Updating URL to:', newUrl);
+                      window.history.replaceState({}, '', newUrl);
+                  } else {
+                      console.error('CRITICAL: Server returned document without _id!', data.document);
+                  }
                 }
                 self.lastSaved = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+              } else {
+                  console.warn('Response missing document property:', data);
               }
             })
             .catch(function(error) {

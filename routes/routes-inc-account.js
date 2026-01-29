@@ -16,5 +16,8 @@ router.use("/mailbox", require("./mailbox.router.js"));
 // Document Builder
 router.use("/documents", require("./document.routes.js"));
 
+// Database Management
+router.use("/db", require("./db.routes.js"));
+
 
 module.exports = router;

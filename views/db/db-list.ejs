@@ -1,0 +1,99 @@
+<%- contentFor('title') %>
+Base de données
+
+<%- contentFor('styles') %>
+<style>
+    .db-card {
+        background: linear-gradient(135deg, rgba(67, 97, 238, 0.08) 0%, rgba(78, 204, 218, 0.08) 100%);
+        border: 1px solid rgba(67, 97, 238, 0.2);
+        border-radius: 12px;
+        padding: 24px;
+        transition: all 0.3s ease;
+    }
+    .db-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(67, 97, 238, 0.15);
+        border-color: rgba(67, 97, 238, 0.4);
+    }
+    .db-icon {
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(135deg, #4361ee 0%, #4eccda 100%);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        margin-bottom: 16px;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        background: linear-gradient(135deg, rgba(67, 97, 238, 0.03) 0%, rgba(78, 204, 218, 0.03) 100%);
+        border-radius: 16px;
+        border: 2px dashed rgba(67, 97, 238, 0.2);
+    }
+    .empty-state iconify-icon {
+        opacity: 0.5;
+        margin-bottom: 16px;
+    }
+</style>
+
+<%- contentFor('body') %>
+<div class="flex flex-col gap-6 p-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-primary to-cyan-400 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <iconify-icon icon="solar:server-2-broken" width="28" height="28"></iconify-icon>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Base de données</h1>
+                <p class="text-gray-500 dark:text-gray-400 text-sm">Gérez vos folders de type base de données</p>
+            </div>
+        </div>
+        <button class="btn btn-primary flex items-center gap-2 shadow-lg hover:shadow-xl transition-all">
+            <iconify-icon icon="solar:add-square-bold" width="20" height="20"></iconify-icon>
+            Nouvelle base de données
+        </button>
+    </div>
+
+    <!-- Content -->
+    <div class="panel">
+        <!-- Demo Empty State -->
+        <div class="empty-state">
+            <iconify-icon icon="solar:server-2-broken" width="80" height="80" class="text-primary"></iconify-icon>
+            <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Aucune base de données</h3>
+            <p class="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                Créez votre première base de données pour organiser et stocker vos données de manière structurée.
+            </p>
+            <button class="btn btn-primary">
+                <iconify-icon icon="solar:add-square-bold" width="20" height="20" class="mr-2"></iconify-icon>
+                Créer une base de données
+            </button>
+        </div>
+
+        <!-- Demo cards (commented for later implementation) -->
+        <!--
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="db-card cursor-pointer">
+                <div class="db-icon">
+                    <iconify-icon icon="solar:server-2-broken" width="32" height="32"></iconify-icon>
+                </div>
+                <h3 class="font-bold text-lg text-gray-800 dark:text-white mb-1">Clients Database</h3>
+                <p class="text-gray-500 text-sm mb-3">Base de données clients</p>
+                <div class="flex items-center gap-4 text-xs text-gray-400">
+                    <span class="flex items-center gap-1">
+                        <iconify-icon icon="solar:database-bold" width="14"></iconify-icon>
+                        125 records
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <iconify-icon icon="solar:calendar-bold" width="14"></iconify-icon>
+                        Modifié il y a 2h
+                    </span>
+                </div>
+            </div>
+        </div>
+        -->
+    </div>
+</div>

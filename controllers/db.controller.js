@@ -199,10 +199,10 @@ module.exports = {
      */
     createDatabase: async (req, res) => {
         try {
-            const { name, icon, color } = req.body;
+            const { name, slug: providedSlug, description, icon, color } = req.body;
             const FolderModel = await tenantCollection(req, "Folder");
 
-            const slug = slugify(name);
+            const slug = providedSlug || slugify(name);
 
             // Check if slug exists
             const existing = await FolderModel.findOne({ slug, type: "database" });
@@ -213,8 +213,9 @@ module.exports = {
             const database = await FolderModel.create({
                 name,
                 slug,
+                description,
                 type: "database",
-                icon: icon || "solar:server-2-broken",
+                icon: icon || "solar:database-broken",
                 color: color || null,
                 createdBy: req.session?.user?._id
             });

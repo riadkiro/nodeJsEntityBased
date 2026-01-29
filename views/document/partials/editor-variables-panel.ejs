@@ -14,13 +14,47 @@
         selectedEntities: [],
         selectedRelations: [],
         availableEntities: [],
-        saveRelations() {
-            this.selectedRelations = this.availableEntities.filter(e => this.selectedEntities.includes(e.id));
+        relationSections: [],
+        async saveRelations() {
+            // Find newly selected entities
+            const entitiesToAdd = this.selectedEntities.filter(
+                id => !this.selectedRelations.find(r => r.id === id)
+            );
+            
+            // Add each new entity to selectedRelations and fetch its fields
+            for (const entityId of entitiesToAdd) {
+                const entity = this.availableEntities.find(e => e.id === entityId);
+                if (entity) {
+                    this.selectedRelations.push(entity);
+                    await this.addRelationSection(entity.id);
+                }
+            }
+            
             this.selectedEntities = [];
             this.showRelationModal = false;
         },
+        async addRelationSection(entityId) {
+            try {
+                const accountNumber = window.location.pathname.split('/')[2];
+                const response = await fetch(`/account/${accountNumber}/api/hierarchy/entity/${entityId}/fields`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.relationSections.push({
+                        id: data.entity.id,
+                        name: data.entity.name,
+                        icon: data.entity.icon,
+                        fields: data.entity.fields,
+                        isOpen: true
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading entity fields:', error);
+            }
+        },
         removeRelation(relationId) {
             this.selectedRelations = this.selectedRelations.filter(r => r.id !== relationId);
+            this.relationSections = this.relationSections.filter(s => s.id !== relationId);
         },
         async loadEntities() {
             try {
@@ -68,8 +102,17 @@
                 <iconify-icon :icon="openSections.relations ? 'solar:alt-arrow-down-bold' : 'solar:alt-arrow-right-bold'" width="12"></iconify-icon>
             </button>
             <div x-show="openSections.relations" x-collapse>
-                <!-- Selected Relations Badges -->
-                <div class="flex flex-wrap gap-2 mb-2" x-show="selectedRelations.length > 0">
+                <!-- Ajouter button at top -->
+                <button 
+                    @click="showRelationModal = true; loadEntities()" 
+                    class="w-full flex items-center gap-2 px-3 py-2 mb-3 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 transition-all"
+                >
+                    <iconify-icon icon="tabler:plus" width="16"></iconify-icon>
+                    Ajouter
+                </button>
+                
+                <!-- Selected Relations Tags -->
+                <div class="flex flex-wrap gap-2 mb-3" x-show="selectedRelations.length > 0">
                     <template x-for="relation in selectedRelations" :key="relation.id">
                         <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-xs">
                             <iconify-icon :icon="relation.icon || 'solar:database-broken'" class="text-blue-600 dark:text-blue-400" width="14"></iconify-icon>
@@ -83,17 +126,42 @@
                         </div>
                     </template>
                 </div>
-                
-                <!-- Add Button -->
-                <button 
-                    class="text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1.5 transition-colors"
-                    @click="showRelationModal = true"
-                >
-                    <iconify-icon icon="solar:add-square-linear" width="16"></iconify-icon>
-                    Ajouter
-                </button>
             </div>
         </div>
+
+        <!-- Dynamic Relation Sections -->
+        <template x-for="section in relationSections" :key="section.id">
+            <div class="mb-4">
+                <button 
+                    @click="section.isOpen = !section.isOpen"
+                    class="w-full text-left text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 flex items-center justify-between gap-1 cursor-pointer hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                >
+                    <div class="flex items-center gap-1.5">
+                        <iconify-icon :icon="section.icon" width="14"></iconify-icon>
+                        <span x-text="section.name"></span>
+                    </div>
+                    <iconify-icon :icon="section.isOpen ? 'solar:alt-arrow-down-bold' : 'solar:alt-arrow-right-bold'" width="12"></iconify-icon>
+                </button>
+                <div x-show="section.isOpen" x-collapse>
+                    <!-- Fields as Tags -->
+                    <div class="flex flex-wrap gap-2">
+                        <template x-for="field in section.fields" :key="field.id">
+                            <button 
+                                @click="insertToken(`{{${section.name}.${field.name}}}`)"
+                                class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-xs hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer"
+                            >
+                                <iconify-icon :icon="field.icon" class="text-blue-600 dark:text-blue-400" width="14"></iconify-icon>
+                                <span class="text-blue-700 dark:text-blue-300 font-medium" x-text="field.name"></span>
+                            </button>
+                        </template>
+                    </div>
+                    <!-- Empty state -->
+                    <div x-show="section.fields.length === 0" class="text-center py-4 text-xs text-gray-400">
+                        Aucun champ disponible
+                    </div>
+                </div>
+            </div>
+        </template>
 
         <!-- Visual Separator -->
         <div class="mt-6 mb-3 text-[9px] uppercase tracking-wider text-gray-400 font-bold px-1">

@@ -34,6 +34,7 @@ router.post('/hierarchy/icon', hierarchyController.updateIcon);
 router.post('/hierarchy/delete', hierarchyController.deleteItem);
 router.get('/hierarchy/all-entities', hierarchyController.listAllEntities);
 router.get('/hierarchy/all-entities', hierarchyController.listAllEntities);
+router.get('/hierarchy/entity/:entityId/fields', hierarchyController.getEntityFields);
 router.post('/hierarchy/link-entity', hierarchyController.linkEntity);
 
 router.get('/hierarchy/icon-libraries', hierarchyController.getIconLibraries);

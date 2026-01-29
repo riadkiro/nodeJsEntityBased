@@ -381,6 +381,48 @@ module.exports = {
         });
     },
 
+    getEntityFields: async (req, res) => {
+        try {
+            const { entityId } = req.params;
+            const EntityModel = await tenantCollection(req, "Entity");
+            const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
+
+            const entity = await EntityModel.findById(entityId).lean();
+
+            if (!entity) {
+                return res.status(404).json({ success: false, message: "Entity not found" });
+            }
+
+            // Populate customFields with FieldTemplate data
+            const fields = [];
+            if (entity.customFields && entity.customFields.length > 0) {
+                const fieldTemplates = await FieldTemplateModel.find({
+                    _id: { $in: entity.customFields }
+                }).lean();
+
+                fields.push(...fieldTemplates.map(ft => ({
+                    id: ft._id.toString(),
+                    name: ft.name,
+                    type: ft.fieldType || 'text',
+                    icon: ft.icon || 'tabler:text'
+                })));
+            }
+
+            res.json({
+                success: true,
+                entity: {
+                    id: entity._id.toString(),
+                    name: entity.name,
+                    icon: entity.icon || 'solar:database-broken',
+                    fields
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching entity fields:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    },
+
     linkEntity: async (req, res) => {
         const EntityModel = await tenantCollection(req, "Entity");
         const ViewModel = await tenantCollection(req, "View");

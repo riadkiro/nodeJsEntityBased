@@ -369,7 +369,16 @@ module.exports = {
     listAllEntities: async (req, res) => {
         const EntityModel = await tenantCollection(req, "Entity");
         const entities = await EntityModel.find({}).lean();
-        res.json({ success: true, entities: entities.map(e => ({ id: e._id.toString(), name: e.name, slug: e.slug })) });
+        res.json({
+            success: true,
+            entities: entities.map(e => ({
+                id: e._id.toString(),
+                name: e.name,
+                slug: e.slug,
+                icon: e.icon,
+                fieldsCount: (e.customFields || []).length
+            }))
+        });
     },
 
     linkEntity: async (req, res) => {

@@ -7,8 +7,39 @@
     x-transition:leave-start="translate-x-0 opacity-100"
     x-transition:leave-end="-translate-x-full opacity-0"
     class="w-72 bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col shadow-xl z-20 overflow-hidden"
-    style="display: none; width:250px ;"
-    x-data="{ openSections: { relations: true, date: true, document: true, user: true, company: true, collections: true } }"
+    style="display: none; width:250px ; border : 1px solid #f1f1f1"
+    x-data="{ 
+        openSections: { relations: true, date: true, document: true, user: true, company: true, collections: true },
+        showRelationModal: false,
+        selectedEntities: [],
+        selectedRelations: [],
+        availableEntities: [],
+        saveRelations() {
+            this.selectedRelations = this.availableEntities.filter(e => this.selectedEntities.includes(e.id));
+            this.selectedEntities = [];
+            this.showRelationModal = false;
+        },
+        removeRelation(relationId) {
+            this.selectedRelations = this.selectedRelations.filter(r => r.id !== relationId);
+        },
+        async loadEntities() {
+            try {
+                const accountNumber = window.location.pathname.split('/')[2];
+                const response = await fetch(`/account/${accountNumber}/api/hierarchy/all-entities`);
+                const data = await response.json();
+                this.availableEntities = (data.entities || []).map(entity => ({
+                    id: entity.id || entity._id,
+                    name: entity.name,
+                    icon: entity.icon || 'solar:database-broken',
+                    fieldsCount: entity.fieldsCount || 0
+                }));
+            } catch (error) {
+                console.error('Erreur lors du chargement des entités:', error);
+                this.availableEntities = [];
+            }
+        }
+    }"
+    x-init="loadEntities()"
 >
     <!-- Header -->
     <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
@@ -37,9 +68,26 @@
                 <iconify-icon :icon="openSections.relations ? 'solar:alt-arrow-down-bold' : 'solar:alt-arrow-right-bold'" width="12"></iconify-icon>
             </button>
             <div x-show="openSections.relations" x-collapse>
+                <!-- Selected Relations Badges -->
+                <div class="flex flex-wrap gap-2 mb-2" x-show="selectedRelations.length > 0">
+                    <template x-for="relation in selectedRelations" :key="relation.id">
+                        <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-xs">
+                            <iconify-icon :icon="relation.icon || 'solar:database-broken'" class="text-blue-600 dark:text-blue-400" width="14"></iconify-icon>
+                            <span class="text-blue-700 dark:text-blue-300 font-medium" x-text="relation.name"></span>
+                            <button 
+                                @click="removeRelation(relation.id)"
+                                class="ml-0.5 text-blue-400 hover:text-blue-600 dark:text-blue-500 dark:hover:text-blue-300 transition-colors"
+                            >
+                                <iconify-icon icon="tabler:x" width="12"></iconify-icon>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+                
+                <!-- Add Button -->
                 <button 
                     class="text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1.5 transition-colors"
-                    @click="alert('Ajouter une relation - à implémenter')"
+                    @click="showRelationModal = true"
                 >
                     <iconify-icon icon="solar:add-square-linear" width="16"></iconify-icon>
                     Ajouter
@@ -251,6 +299,97 @@
             </div>
         </template>
     </div>
+
+    <!-- Relation Selection Modal (Style Icon Picker) -->
+    <template x-teleport="body">
+        <div x-show="showRelationModal" class="fixed inset-0 z-[999] overflow-y-auto" x-cloak>
+            <!-- Backdrop -->
+            <div x-show="showRelationModal" 
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0" 
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-200" 
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0" 
+                @click="showRelationModal = false"
+                class="fixed inset-0 bg-black/60 backdrop-blur-sm">
+            </div>
+
+            <!-- Modal Content -->
+            <div class="flex items-start justify-center min-h-screen px-4" @click.self="showRelationModal = false">
+                <div x-show="showRelationModal" 
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                    x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                    x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+                    class="panel border-0 py-1 px-4 rounded-lg overflow-hidden w-full max-w-sm my-8 bg-white dark:bg-[#1b2e4b]"
+                    @click.stop>
+
+                    <!-- Header -->
+                    <div class="flex items-center justify-between p-5 font-semibold text-lg dark:text-white">
+                        <span>Ajouter des relations</span>
+                        <button type="button" @click="showRelationModal = false" class="text-white-dark hover:text-dark">
+                            <iconify-icon icon="solar:close-circle-bold" width="24"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="p-5">
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Sélectionnez les entités à lier au document :</p>
+                        
+                        <!-- Entity List with Border Box -->
+                        <div class="flex flex-col gap-1.5 mb-2 max-h-60 overflow-y-auto custom-scrollbar p-1 border rounded dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+                            <template x-for="entity in availableEntities" :key="entity.id">
+                                <label 
+                                    class="flex items-center gap-3 p-1 rounded-lg border cursor-pointer transition-all hover:border-primary/30 hover:bg-white dark:hover:bg-gray-700"
+                                    :class="selectedEntities.includes(entity.id) ? 'bg-primary/10 border-primary/30' : 'border-transparent'"
+                                >
+                                    <input 
+                                        type="checkbox" 
+                                        :value="entity.id"
+                                        x-model="selectedEntities"
+                                        class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary/50"
+                                    >
+                                    <div class="flex items-center gap-2.5 flex-1">
+                                        <div class="w-7 h-7 rounded-lg bg-white dark:bg-gray-700 flex items-center justify-center shrink-0">
+                                            <iconify-icon 
+                                                :icon="entity.icon || 'solar:database-broken'" 
+                                                class="text-gray-500 dark:text-gray-400" 
+                                                width="16"
+                                            ></iconify-icon>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <div class="text-sm font-medium text-gray-900 dark:text-white truncate" x-text="entity.name"></div>
+                                            <div class="text-xs text-gray-400 dark:text-gray-500" x-text="entity.fieldsCount + ' champs'"></div>
+                                        </div>
+                                    </div>
+                                </label>
+                            </template>
+
+                            <!-- Empty State -->
+                            <div x-show="availableEntities.length === 0" class="text-center py-8">
+                                <iconify-icon icon="tabler:folder-off" class="text-gray-300" width="40"></iconify-icon>
+                                <p class="text-xs text-gray-400 mt-2">Aucune entité disponible</p>
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="flex items-center justify-between pt-4">
+                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                <span x-text="selectedEntities.length"></span> sélectionnée(s)
+                            </div>
+                            <button @click="saveRelations()"
+                                class="btn btn-primary" type="button">
+                                Enregistrer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
 
     <!-- Footer -->
     <div class="p-3 border-t dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">

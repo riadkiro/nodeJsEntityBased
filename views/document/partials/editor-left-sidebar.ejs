@@ -30,91 +30,13 @@
       </button>
       <div class="h-px w-8 bg-gray-200 dark:bg-gray-700"></div>
       
-      <!-- Dynamic Content Menu -->
-      <div class="relative" x-data="{ showDynamicMenu: false }">
-        <button 
-          class="w-10 h-10 rounded transition-colors flex items-center justify-center" 
-          :class="showDynamicMenu || activeTab === 'dynamic' ? 'bg-primary/20 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'"
-          title="Contenu Dynamique"
-          @click="showDynamicMenu = !showDynamicMenu"
-        >
-          <iconify-icon icon="solar:database-bold-duotone" width="24"></iconify-icon>
-        </button>
-        
-        <!-- Dropdown Menu -->
-        <div 
-          x-show="showDynamicMenu" 
-          @click.outside="showDynamicMenu = false"
-          x-cloak
-          x-transition:enter="transition ease-out duration-100"
-          x-transition:enter-start="opacity-0 scale-95"
-          x-transition:enter-end="opacity-100 scale-100"
-          x-transition:leave="transition ease-in duration-75"
-          x-transition:leave-start="opacity-100 scale-100"
-          x-transition:leave-end="opacity-0 scale-95"
-          class="absolute left-full ml-2 top-0 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50"
-        >
-          <div class="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-            Contenu Dynamique
-          </div>
-          
-          <!-- Variables -->
-          <button 
-            class="w-full px-3 py-2.5 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors"
-            @click="activeTab = 'variables'; showDynamicMenu = false"
-          >
-            <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <iconify-icon icon="solar:hashtag-bold-duotone" class="text-blue-600 dark:text-blue-400" width="18"></iconify-icon>
-            </div>
-            <div>
-              <div class="text-sm font-medium text-gray-900 dark:text-white">Variables</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">Date, document, société</div>
-            </div>
-          </button>
-          
-          <!-- Collections -->
-          <button 
-            class="w-full px-3 py-2.5 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors"
-            @click="activeTab = 'collections'; showDynamicMenu = false"
-          >
-            <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <iconify-icon icon="solar:folder-with-files-bold-duotone" class="text-purple-600 dark:text-purple-400" width="18"></iconify-icon>
-            </div>
-            <div>
-              <div class="text-sm font-medium text-gray-900 dark:text-white">Collections</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">Sources de données</div>
-            </div>
-          </button>
-          
-          <div class="h-px bg-gray-200 dark:bg-gray-700 my-1"></div>
-          
-          <!-- Table (Query) -->
-          <button 
-            class="w-full px-3 py-2.5 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors"
-            @click="activeTab = 'queryTable'; showDynamicMenu = false"
-          >
-            <div class="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <iconify-icon icon="solar:tuning-square-2-bold-duotone" class="text-green-600 dark:text-green-400" width="18"></iconify-icon>
-            </div>
-            <div>
-              <div class="text-sm font-medium text-gray-900 dark:text-white">Table</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">Tableau basé sur filtres</div>
-            </div>
-          </button>
-          
-          <!-- Calculated Table -->
-          <button 
-            class="w-full px-3 py-2.5 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors"
-            @click="activeTab = 'editableTable'; showDynamicMenu = false"
-          >
-            <div class="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-              <iconify-icon icon="solar:calculator-bold-duotone" class="text-orange-600 dark:text-orange-400" width="18"></iconify-icon>
-            </div>
-            <div>
-              <div class="text-sm font-medium text-gray-900 dark:text-white">Tableau Calculé</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">Lignes éditables + formules</div>
-            </div>
-          </button>
-        </div>
-      </div>
+      <!-- Dynamic Content Button -->
+      <button 
+        class="w-10 h-10 rounded transition-colors flex items-center justify-center" 
+        :class="activeTab === 'dynamic-nav' ? 'bg-primary/20 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'"
+        title="Contenu Dynamique"
+        @click="activeTab = activeTab === 'dynamic-nav' ? null : 'dynamic-nav'"
+      >
+        <iconify-icon icon="solar:database-bold-duotone" width="24"></iconify-icon>
+      </button>
     </div>

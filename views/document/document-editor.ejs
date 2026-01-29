@@ -10,51 +10,52 @@
           <%- include('partials/editor-text-panel') %>
             <%- include('partials/editor-variables-panel') %>
               <%- include('partials/editor-collections-panel') %>
+                <%- include('partials/editor-dynamic-nav-panel') %>
 
-            <!-- Canvas Area -->
-            <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-              <%- include('partials/editor-canvas') %>
-            </div>
+                  <!-- Canvas Area -->
+                  <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+                    <%- include('partials/editor-canvas') %>
+                  </div>
 
-            <!-- Properties Panel (Right) -->
-            <%- include('partials/editor-right-sidebar') %>
+                  <!-- Properties Panel (Right) -->
+                  <%- include('partials/editor-right-sidebar') %>
 
-              <!-- HTML Editor Modal -->
-              <div x-show="editingHtml"
-                class="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center backdrop-blur-sm"
-                x-transition.opacity style="display: none;">
-                <div
-                  class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-3/4 max-w-4xl max-h-[90vh] flex flex-col border dark:border-gray-700"
-                  @click.outside="editingHtml = null">
-                  <div
-                    class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 rounded-t-xl">
-                    <h3 class="font-bold text-lg flex items-center gap-2">
-                      <iconify-icon icon="solar:code-bold-duotone" class="text-primary"></iconify-icon>
-                      Éditeur HTML
-                    </h3>
-                    <button @click="editingHtml = null"
-                      class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
-                      <iconify-icon icon="solar:close-circle-bold" width="24"></iconify-icon>
-                    </button>
-                  </div>
-                  <div class="p-0 flex-1 overflow-hidden relative group">
-                    <textarea
-                      class="w-full h-96 p-4 font-mono text-sm bg-gray-900 text-green-400 focus:ring-0 outline-none resize-none border-none leading-relaxed"
-                      x-model="editingHtmlContent" placeholder="<div>Votre code HTML ici...</div>"
-                      spellcheck="false"></textarea>
-                  </div>
-                  <div
-                    class="p-4 border-t dark:border-gray-700 flex justify-end gap-3 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
-                    <button @click="editingHtml = null"
-                      class="px-4 py-2 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors font-medium">Annuler</button>
-                    <button @click="saveHtmlEdit()"
-                      class="px-6 py-2 rounded-lg bg-primary text-white hover:bg-blue-600 shadow-lg shadow-blue-500/30 transition-all font-bold flex items-center gap-2">
-                      <iconify-icon icon="solar:diskette-bold"></iconify-icon>
-                      Sauvegarder
-                    </button>
-                  </div>
-                </div>
-              </div>
+                    <!-- HTML Editor Modal -->
+                    <div x-show="editingHtml"
+                      class="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center backdrop-blur-sm"
+                      x-transition.opacity style="display: none;">
+                      <div
+                        class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-3/4 max-w-4xl max-h-[90vh] flex flex-col border dark:border-gray-700"
+                        @click.outside="editingHtml = null">
+                        <div
+                          class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 rounded-t-xl">
+                          <h3 class="font-bold text-lg flex items-center gap-2">
+                            <iconify-icon icon="solar:code-bold-duotone" class="text-primary"></iconify-icon>
+                            Éditeur HTML
+                          </h3>
+                          <button @click="editingHtml = null"
+                            class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                            <iconify-icon icon="solar:close-circle-bold" width="24"></iconify-icon>
+                          </button>
+                        </div>
+                        <div class="p-0 flex-1 overflow-hidden relative group">
+                          <textarea
+                            class="w-full h-96 p-4 font-mono text-sm bg-gray-900 text-green-400 focus:ring-0 outline-none resize-none border-none leading-relaxed"
+                            x-model="editingHtmlContent" placeholder="<div>Votre code HTML ici...</div>"
+                            spellcheck="false"></textarea>
+                        </div>
+                        <div
+                          class="p-4 border-t dark:border-gray-700 flex justify-end gap-3 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
+                          <button @click="editingHtml = null"
+                            class="px-4 py-2 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors font-medium">Annuler</button>
+                          <button @click="saveHtmlEdit()"
+                            class="px-6 py-2 rounded-lg bg-primary text-white hover:bg-blue-600 shadow-lg shadow-blue-500/30 transition-all font-bold flex items-center gap-2">
+                            <iconify-icon icon="solar:diskette-bold"></iconify-icon>
+                            Sauvegarder
+                          </button>
+                        </div>
+                      </div>
+                    </div>
     </div>
 </div>
 
@@ -170,10 +171,10 @@
           // Clear selection on click (but not when clicking toolbar elements)
           window.addEventListener('click', function (e) {
             // Don't clear if clicking on toolbar buttons, selects, or their children
-            var clickedToolbar = e.target.closest('.bg-white.dark\\:bg-gray-900.border-b') || 
-                                 e.target.closest('button') || 
-                                 e.target.closest('select');
-            
+            var clickedToolbar = e.target.closest('.bg-white.dark\\:bg-gray-900.border-b') ||
+              e.target.closest('button') ||
+              e.target.closest('select');
+
             if (!clickedToolbar) {
               self.isGlobalSelection = false;
             }
@@ -193,14 +194,14 @@
               var range = selection.getRangeAt(0);
               var container = range.commonAncestorContainer;
               var element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
-              
+
               // Only save if we're currently in an editable area
               if (element && (element.closest('.page-content') || element.closest('[contenteditable="true"]'))) {
                 self.savedRange = range.cloneRange();
                 console.log('Cursor position saved at mouseup');
               }
             }
-            
+
             // Also update styles
             setTimeout(function () {
               if (!self.isGlobalSelection) {
@@ -228,11 +229,11 @@
           }
 
           var range = sel.getRangeAt(0);
-          
+
           // Check if we're in a page content area
           var container = range.commonAncestorContainer;
           var element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
-          
+
           if (!element.closest('.page-content') && !element.closest('[contenteditable="true"]')) {
             this.resetStyleStates();
             return;
@@ -245,7 +246,7 @@
           } else {
             // Selection - detect styles across all selected nodes
             var textNodes = this.getTextNodesInRange(range);
-            
+
             if (textNodes.length === 0) {
               // Fallback to cursor position if no text nodes found
               this.detectStylesAtCursor(element);
@@ -266,7 +267,7 @@
           // Detect all styles at the cursor position (single element)
           var style = window.getComputedStyle(element);
           var validFonts = ['Inter', 'Nunito', 'Poppins', 'Montserrat', 'Raleway', 'Open Sans', 'Lato', 'Roboto', 'Arial', 'Georgia', 'Times New Roman'];
-          
+
           // Font
           var fontFamily = style.fontFamily;
           if (fontFamily) {
@@ -278,26 +279,26 @@
           } else {
             this.currentFont = '';
           }
-          
+
           // Font Size
           var fontSize = style.fontSize;
           this.currentFontSize = fontSize ? parseInt(fontSize) : '';
-          
+
           // Bold
           var fontWeight = style.fontWeight;
           this.isBold = parseInt(fontWeight) >= 600 || fontWeight === 'bold';
-          
+
           // Italic
           var fontStyle = style.fontStyle;
           this.isItalic = fontStyle === 'italic' || fontStyle === 'oblique';
-          
+
           // Underline
           var textDecoration = style.textDecoration;
           this.isUnderline = textDecoration.includes('underline');
-          
+
           // Strikethrough
           this.isStrikethrough = textDecoration.includes('line-through');
-          
+
           // Alignment
           var blockElement = element.closest('div, p, h1, h2, h3, h4, h5, h6, li');
           if (blockElement) {
@@ -330,7 +331,7 @@
         insertVariableToken: function (variablePath) {
           var token = '{{' + variablePath + '}}';
           var range = null;
-          
+
           // Try to use saved range first
           if (this.savedRange) {
             console.log('Using saved cursor position');
@@ -341,14 +342,14 @@
             if (sel && sel.rangeCount > 0) {
               var container = sel.getRangeAt(0).commonAncestorContainer;
               var element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
-              
+
               if (element && (element.closest('.page-content') || element.closest('[contenteditable="true"]'))) {
                 range = sel.getRangeAt(0);
                 console.log('Using current selection');
               }
             }
           }
-          
+
           // If still no range, insert at end of current page
           if (!range) {
             console.log('No saved position, inserting at end');
@@ -361,7 +362,7 @@
             range.selectNodeContents(currentPage);
             range.collapse(false);
           }
-          
+
           // Create styled span for the token (yellow background style)
           var span = document.createElement('span');
           span.className = 'template-token';
@@ -369,31 +370,31 @@
           span.setAttribute('contenteditable', 'false');
           span.style.cssText = 'background: #fef08a; color: #854d0e; padding: 2px 8px; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; font-weight: 600; margin: 0 2px; display: inline-block; cursor: default; user-select: none; border: 1px solid #fde047;';
           span.textContent = token;
-          
+
           // Delete current selection if any
           range.deleteContents();
-          
+
           // Insert the token span
           range.insertNode(span);
-          
+
           // Add a space after the token for easier typing
           var space = document.createTextNode('\u00A0');
           range.setStartAfter(span);
           range.insertNode(space);
           range.setStartAfter(space);
           range.collapse(true);
-          
+
           // Update selection
           var sel = window.getSelection();
           sel.removeAllRanges();
           sel.addRange(range);
-          
+
           // Update saved range for next insertion
           this.savedRange = range.cloneRange();
-          
+
           // Sync content
           this.syncContent();
-          
+
           console.log('Token inserted:', token);
         },
 
@@ -411,38 +412,38 @@
               }
             }
           );
-          
+
           var node;
           while (node = walker.nextNode()) {
             if (node.textContent.trim().length > 0) {
               textNodes.push(node);
             }
           }
-          
+
           return textNodes;
         },
 
         detectFont: function (textNodes) {
           var validFonts = ['Inter', 'Nunito', 'Poppins', 'Montserrat', 'Raleway', 'Open Sans', 'Lato', 'Roboto', 'Arial', 'Georgia', 'Times New Roman'];
           var fonts = new Set();
-          
+
           textNodes.forEach(function (node) {
             var element = node.parentElement;
             var computedFont = window.getComputedStyle(element).fontFamily;
             if (computedFont) {
               var fontName = computedFont.split(',')[0].replace(/['"]/g, '').trim();
-              
+
               // Match with valid fonts
               var matched = validFonts.find(function (f) {
                 return fontName === f || fontName.toLowerCase().includes(f.toLowerCase()) || f.toLowerCase().includes(fontName.toLowerCase());
               });
-              
+
               if (matched) {
                 fonts.add(matched);
               }
             }
           });
-          
+
           if (fonts.size === 1) {
             this.currentFont = Array.from(fonts)[0];
           } else {
@@ -453,7 +454,7 @@
         detectFontSize: function (textNodes) {
           var self = this;
           var sizes = new Set();
-          
+
           textNodes.forEach(function (node) {
             var element = node.parentElement;
             var fontSize = window.getComputedStyle(element).fontSize;
@@ -461,7 +462,7 @@
               sizes.add(fontSize);
             }
           });
-          
+
           if (sizes.size === 1) {
             var size = Array.from(sizes)[0];
             // Convert px to readable number (e.g., "16px" -> "16")
@@ -474,14 +475,14 @@
         detectBold: function (textNodes) {
           var self = this;
           var boldStates = new Set();
-          
+
           textNodes.forEach(function (node) {
             var element = node.parentElement;
             var fontWeight = window.getComputedStyle(element).fontWeight;
             var isBold = parseInt(fontWeight) >= 600 || fontWeight === 'bold';
             boldStates.add(isBold);
           });
-          
+
           if (boldStates.size === 1) {
             this.isBold = Array.from(boldStates)[0];
           } else {
@@ -492,14 +493,14 @@
         detectItalic: function (textNodes) {
           var self = this;
           var italicStates = new Set();
-          
+
           textNodes.forEach(function (node) {
             var element = node.parentElement;
             var fontStyle = window.getComputedStyle(element).fontStyle;
             var isItalic = fontStyle === 'italic' || fontStyle === 'oblique';
             italicStates.add(isItalic);
           });
-          
+
           if (italicStates.size === 1) {
             this.isItalic = Array.from(italicStates)[0];
           } else {
@@ -510,14 +511,14 @@
         detectUnderline: function (textNodes) {
           var self = this;
           var underlineStates = new Set();
-          
+
           textNodes.forEach(function (node) {
             var element = node.parentElement;
             var textDecoration = window.getComputedStyle(element).textDecoration;
             var isUnderline = textDecoration.includes('underline');
             underlineStates.add(isUnderline);
           });
-          
+
           if (underlineStates.size === 1) {
             this.isUnderline = Array.from(underlineStates)[0];
           } else {
@@ -528,14 +529,14 @@
         detectStrikethrough: function (textNodes) {
           var self = this;
           var strikeStates = new Set();
-          
+
           textNodes.forEach(function (node) {
             var element = node.parentElement;
             var textDecoration = window.getComputedStyle(element).textDecoration;
             var isStrike = textDecoration.includes('line-through');
             strikeStates.add(isStrike);
           });
-          
+
           if (strikeStates.size === 1) {
             this.isStrikethrough = Array.from(strikeStates)[0];
           } else {
@@ -546,7 +547,7 @@
         detectAlignment: function (textNodes) {
           var self = this;
           var alignments = new Set();
-          
+
           textNodes.forEach(function (node) {
             var element = node.parentElement;
             // Walk up to find block-level element with text-align
@@ -556,7 +557,7 @@
               alignments.add(textAlign);
             }
           });
-          
+
           if (alignments.size === 1) {
             var align = Array.from(alignments)[0];
             // Normalize alignment values
@@ -1009,7 +1010,7 @@
 
           event.dataTransfer.setData('type', type);
           event.dataTransfer.setData('content', content);
-          
+
           // Selection appearance
           event.dataTransfer.effectAllowed = 'copy';
         },
@@ -1040,7 +1041,7 @@
             sel = window.getSelection();
             sel.removeAllRanges();
             sel.addRange(range);
-            
+
             // Focus the targeted page
             var element = document.querySelector('.page-content[data-page-index="' + pageIndex + '"]');
             if (element) element.focus();
@@ -1274,7 +1275,7 @@
                   order: nextPageIndex
                 });
                 isNewPage = true;
-              } 
+              }
               else if (nextPageIndex >= this.doc.pages.length) {
                 this.doc.pages.push({
                   content: '',
@@ -1819,7 +1820,7 @@
         },
         formatDoc: function (cmd, val) {
           var self = this;
-          
+
           // If global selection is active, apply to ALL pages
           if (this.isGlobalSelection) {
             // Apply to all page content elements
@@ -1832,19 +1833,19 @@
                 var sel = window.getSelection();
                 sel.removeAllRanges();
                 sel.addRange(range);
-                
+
                 // Apply the formatting command
                 document.execCommand(cmd, false, val);
-                
+
                 // Update the page content in the model
                 self.doc.pages[index].content = pageEl.innerHTML;
               }
             });
-            
+
             // Clear selection after applying
             window.getSelection().removeAllRanges();
             this.isGlobalSelection = false;
-            
+
             // Visual feedback
             var toast = document.createElement('div');
             toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded shadow-lg z-50';
@@ -1855,7 +1856,7 @@
             // Standard behavior: apply to current selection
             document.execCommand(cmd, false, val);
           }
-          
+
           // Save the document
           this.saveDocument();
         },
@@ -1863,9 +1864,9 @@
         increaseFontSize: function () {
           var sel = window.getSelection();
           if (!sel || sel.rangeCount === 0) return;
-          
+
           var range = sel.getRangeAt(0);
-          
+
           // If global selection, apply to all pages
           if (this.isGlobalSelection) {
             this.doc.pages.forEach(function (page, index) {
@@ -1883,7 +1884,7 @@
             this.saveDocument();
             return;
           }
-          
+
           // Handle selection or cursor
           if (range.collapsed) {
             // Cursor only - wrap in span with larger font
@@ -1901,7 +1902,7 @@
             // Selection - increase all selected elements
             var container = range.commonAncestorContainer;
             var elements = [];
-            
+
             if (container.nodeType === Node.TEXT_NODE) {
               elements = [container.parentElement];
             } else {
@@ -1910,13 +1911,13 @@
               });
               if (elements.length === 0) elements = [container];
             }
-            
+
             elements.forEach(function (el) {
               var currentSize = parseInt(window.getComputedStyle(el).fontSize);
               el.style.fontSize = (currentSize + 2) + 'px';
             });
           }
-          
+
           this.saveDocument();
           setTimeout(() => this.updateCurrentStyles(), 100);
         },
@@ -1924,9 +1925,9 @@
         decreaseFontSize: function () {
           var sel = window.getSelection();
           if (!sel || sel.rangeCount === 0) return;
-          
+
           var range = sel.getRangeAt(0);
-          
+
           // If global selection, apply to all pages
           if (this.isGlobalSelection) {
             this.doc.pages.forEach(function (page, index) {
@@ -1946,7 +1947,7 @@
             this.saveDocument();
             return;
           }
-          
+
           // Handle selection or cursor
           if (range.collapsed) {
             // Cursor only
@@ -1964,7 +1965,7 @@
             // Selection
             var container = range.commonAncestorContainer;
             var elements = [];
-            
+
             if (container.nodeType === Node.TEXT_NODE) {
               elements = [container.parentElement];
             } else {
@@ -1973,7 +1974,7 @@
               });
               if (elements.length === 0) elements = [container];
             }
-            
+
             elements.forEach(function (el) {
               var currentSize = parseInt(window.getComputedStyle(el).fontSize);
               if (currentSize > 8) {
@@ -1981,26 +1982,26 @@
               }
             });
           }
-          
+
           this.saveDocument();
           setTimeout(() => this.updateCurrentStyles(), 100);
         },
 
         setCustomFontSize: function (value) {
           if (!value || value === '' || value === '-') return;
-          
+
           var size = parseInt(value);
           if (isNaN(size) || size < 8 || size > 200) {
             // Reset to current size if invalid
             this.updateCurrentStyles();
             return;
           }
-          
+
           var sel = window.getSelection();
           if (!sel || sel.rangeCount === 0) return;
-          
+
           var range = sel.getRangeAt(0);
-          
+
           // If global selection, apply to all pages
           if (this.isGlobalSelection) {
             this.doc.pages.forEach(function (page, index) {
@@ -2018,7 +2019,7 @@
             setTimeout(() => this.updateCurrentStyles(), 100);
             return;
           }
-          
+
           // Handle selection or cursor
           if (range.collapsed) {
             // Cursor only - set future typing size
@@ -2034,7 +2035,7 @@
             // Selection - apply to all selected elements
             var container = range.commonAncestorContainer;
             var elements = [];
-            
+
             if (container.nodeType === Node.TEXT_NODE) {
               elements = [container.parentElement];
             } else {
@@ -2043,12 +2044,12 @@
               });
               if (elements.length === 0) elements = [container];
             }
-            
+
             elements.forEach(function (el) {
               el.style.fontSize = size + 'px';
             });
           }
-          
+
           this.saveDocument();
           setTimeout(() => this.updateCurrentStyles(), 100);
         },
@@ -2056,9 +2057,9 @@
         setLineHeight: function (value) {
           var sel = window.getSelection();
           if (!sel || sel.rangeCount === 0) return;
-          
+
           var range = sel.getRangeAt(0);
-          
+
           // If global selection, apply to all pages
           if (this.isGlobalSelection) {
             this.doc.pages.forEach(function (page, index) {
@@ -2076,7 +2077,7 @@
             this.saveDocument();
             return;
           }
-          
+
           // Apply to selection or cursor
           if (range.collapsed) {
             var container = range.commonAncestorContainer;
@@ -2085,7 +2086,7 @@
           } else {
             var container = range.commonAncestorContainer;
             var elements = [];
-            
+
             if (container.nodeType === Node.TEXT_NODE) {
               elements = [container.parentElement];
             } else {
@@ -2094,12 +2095,12 @@
               });
               if (elements.length === 0) elements = [container];
             }
-            
+
             elements.forEach(function (el) {
               el.style.lineHeight = value;
             });
           }
-          
+
           this.currentLineHeight = parseFloat(value);
           this.saveDocument();
         },
@@ -2107,9 +2108,9 @@
         setLetterSpacing: function (value) {
           var sel = window.getSelection();
           if (!sel || sel.rangeCount === 0) return;
-          
+
           var range = sel.getRangeAt(0);
-          
+
           // If global selection, apply to all pages
           if (this.isGlobalSelection) {
             this.doc.pages.forEach(function (page, index) {
@@ -2127,7 +2128,7 @@
             this.saveDocument();
             return;
           }
-          
+
           // Apply to selection or cursor
           if (range.collapsed) {
             var container = range.commonAncestorContainer;
@@ -2136,7 +2137,7 @@
           } else {
             var container = range.commonAncestorContainer;
             var elements = [];
-            
+
             if (container.nodeType === Node.TEXT_NODE) {
               elements = [container.parentElement];
             } else {
@@ -2145,12 +2146,12 @@
               });
               if (elements.length === 0) elements = [container];
             }
-            
+
             elements.forEach(function (el) {
               el.style.letterSpacing = value + 'px';
             });
           }
-          
+
           this.currentLetterSpacing = parseFloat(value);
           this.saveDocument();
         }

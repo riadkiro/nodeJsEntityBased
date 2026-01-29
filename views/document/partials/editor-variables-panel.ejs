@@ -8,12 +8,13 @@
     x-transition:leave-end="-translate-x-full opacity-0"
     class="w-72 bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col shadow-xl z-20 overflow-hidden"
     style="display: none; width:250px ;"
+    x-data="{ openSections: { relations: true, date: true, document: true, user: true, company: true, collections: true } }"
 >
     <!-- Header -->
     <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
         <h3 class="font-bold text-sm flex items-center gap-2">
-            <iconify-icon icon="solar:hashtag-bold-duotone" class="text-blue-500" width="20"></iconify-icon>
-            Variables Globales
+            <iconify-icon icon="solar:database-bold-duotone" class="text-blue-500" width="20"></iconify-icon>
+            Source de données
         </h3>
         <button @click="activeTab = null" class="w-6 h-6 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center">
             <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
@@ -23,139 +24,200 @@
     <!-- Scrollable Content -->
     <div class="flex-1 overflow-y-auto p-3 custom-scrollbar">
         
-        <!-- Date Variables -->
+        <!-- Relations Section (NEW) -->
         <div class="mb-4">
-            <p class="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 flex items-center gap-1">
-                <iconify-icon icon="solar:calendar-bold-duotone" width="14"></iconify-icon>
-                Date
-            </p>
-            <div class="flex flex-wrap gap-2.5">
+            <button 
+                @click="openSections.relations = !openSections.relations"
+                class="w-full text-left text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 flex items-center justify-between gap-1 cursor-pointer hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+            >
+                <div class="flex items-center gap-1">
+                    <iconify-icon icon="solar:link-bold-duotone" width="14"></iconify-icon>
+                    Relations
+                </div>
+                <iconify-icon :icon="openSections.relations ? 'solar:alt-arrow-down-bold' : 'solar:alt-arrow-right-bold'" width="12"></iconify-icon>
+            </button>
+            <div x-show="openSections.relations" x-collapse>
                 <button 
-                    @click="insertVariableToken('date.today')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    class="text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1.5 transition-colors"
+                    @click="alert('Ajouter une relation - à implémenter')"
                 >
-                    Date d'aujourd'hui
-                </button>
-                <button 
-                    @click="insertVariableToken('date.yesterday')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
-                >
-                    Hier
-                </button>
-                <button 
-                    @click="insertVariableToken('date.tomorrow')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
-                >
-                    Demain
-                </button>
-                <button 
-                    @click="insertVariableToken('date.nextMonth')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
-                >
-                    Mois prochain
-                </button>
-                <button 
-                    @click="insertVariableToken('date.year')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
-                >
-                    Année
+                    <iconify-icon icon="solar:add-square-linear" width="16"></iconify-icon>
+                    Ajouter
                 </button>
             </div>
         </div>
 
-        <!-- Document Variables -->
+        <!-- Visual Separator -->
+        <div class="mt-6 mb-3 text-[9px] uppercase tracking-wider text-gray-400 font-bold px-1">
+            Variables Globales
+        </div>
+        
+        <!-- Date Variables (NOW COLLAPSIBLE) -->
         <div class="mb-4">
-            <p class="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 flex items-center gap-1">
-                <iconify-icon icon="solar:document-bold-duotone" width="14"></iconify-icon>
-                Document
-            </p>
-            <div class="flex flex-wrap gap-2.5">
-                <button 
-                    @click="insertVariableToken('doc.name')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
-                >
-                    Nom du document
-                </button>
-                <button 
-                    @click="insertVariableToken('doc.number')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
-                >
-                    Numéro
-                </button>
-                <button 
-                    @click="insertVariableToken('doc.format')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
-                >
-                    Format
-                </button>
-                <button 
-                    @click="insertVariableToken('doc.createdAt')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
-                >
-                    Date de création
-                </button>
+            <button 
+                @click="openSections.date = !openSections.date"
+                class="w-full text-left text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 flex items-center justify-between gap-1 cursor-pointer hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+            >
+                <div class="flex items-center gap-1">
+                    <iconify-icon icon="solar:calendar-bold-duotone" width="14"></iconify-icon>
+                    Date
+                </div>
+                <iconify-icon :icon="openSections.date ? 'solar:alt-arrow-down-bold' : 'solar:alt-arrow-right-bold'" width="12"></iconify-icon>
+            </button>
+            <div x-show="openSections.date" x-collapse>
+                <div class="flex flex-wrap gap-2.5">
+                    <button 
+                        @click="insertVariableToken('date.today')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        Date d'aujourd'hui
+                    </button>
+                    <button 
+                        @click="insertVariableToken('date.yesterday')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        Hier
+                    </button>
+                    <button 
+                        @click="insertVariableToken('date.tomorrow')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        Demain
+                    </button>
+                    <button 
+                        @click="insertVariableToken('date.nextMonth')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        Mois prochain
+                    </button>
+                    <button 
+                        @click="insertVariableToken('date.year')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        Année
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- User Variables -->
+        <!-- Document Variables (NOW COLLAPSIBLE) -->
         <div class="mb-4">
-            <p class="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 flex items-center gap-1">
-                <iconify-icon icon="solar:user-bold-duotone" width="14"></iconify-icon>
-                Utilisateur
-            </p>
-            <div class="flex flex-wrap gap-2.5">
-                <button 
-                    @click="insertVariableToken('user.name')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
-                >
-                    Nom
-                </button>
-                <button 
-                    @click="insertVariableToken('user.email')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
-                >
-                    Email
-                </button>
+            <button 
+                @click="openSections.document = !openSections.document"
+                class="w-full text-left text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 flex items-center justify-between gap-1 cursor-pointer hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+            >
+                <div class="flex items-center gap-1">
+                    <iconify-icon icon="solar:document-bold-duotone" width="14"></iconify-icon>
+                    Document
+                </div>
+                <iconify-icon :icon="openSections.document ? 'solar:alt-arrow-down-bold' : 'solar:alt-arrow-right-bold'" width="12"></iconify-icon>
+            </button>
+            <div x-show="openSections.document" x-collapse>
+                <div class="flex flex-wrap gap-2.5">
+                    <button 
+                        @click="insertVariableToken('doc.name')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        Nom du document
+                    </button>
+                    <button 
+                        @click="insertVariableToken('doc.number')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        Numéro
+                    </button>
+                    <button 
+                        @click="insertVariableToken('doc.format')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        Format
+                    </button>
+                    <button 
+                        @click="insertVariableToken('doc.createdAt')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        Date de création
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- Company Variables -->
+        <!-- User Variables (NOW COLLAPSIBLE) -->
         <div class="mb-4">
-            <p class="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 flex items-center gap-1">
-                <iconify-icon icon="solar:buildings-bold-duotone" width="14"></iconify-icon>
-                Société
-            </p>
-            <div class="flex flex-wrap gap-2.5">
-                <button 
-                    @click="insertVariableToken('company.name')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
-                >
-                    Nom société
-                </button>
-                <button 
-                    @click="insertVariableToken('company.vat')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
-                >
-                    TVA
-                </button>
-                <button 
-                    @click="insertVariableToken('company.address')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
-                >
-                    Adresse
-                </button>
-                <button 
-                    @click="insertVariableToken('company.phone')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
-                >
-                    Téléphone
-                </button>
-                <button 
-                    @click="insertVariableToken('company.email')"
-                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
-                >
-                    Email société
-                </button>
+            <button 
+                @click="openSections.user = !openSections.user"
+                class="w-full text-left text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 flex items-center justify-between gap-1 cursor-pointer hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+            >
+                <div class="flex items-center gap-1">
+                    <iconify-icon icon="solar:user-bold-duotone" width="14"></iconify-icon>
+                    Utilisateur
+                </div>
+                <iconify-icon :icon="openSections.user ? 'solar:alt-arrow-down-bold' : 'solar:alt-arrow-right-bold'" width="12"></iconify-icon>
+            </button>
+            <div x-show="openSections.user" x-collapse>
+                <div class="flex flex-wrap gap-2.5">
+                    <button 
+                        @click="insertVariableToken('user.name')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        Nom
+                    </button>
+                    <button 
+                        @click="insertVariableToken('user.email')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        Email
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Company Variables (NOW COLLAPSIBLE) -->
+        <div class="mb-4">
+            <button 
+                @click="openSections.company = !openSections.company"
+                class="w-full text-left text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 flex items-center justify-between gap-1 cursor-pointer hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+            >
+                <div class="flex items-center gap-1">
+                    <iconify-icon icon="solar:buildings-bold-duotone" width="14"></iconify-icon>
+                    Société
+                </div>
+                <iconify-icon :icon="openSections.company ? 'solar:alt-arrow-down-bold' : 'solar:alt-arrow-right-bold'" width="12"></iconify-icon>
+            </button>
+            <div x-show="openSections.company" x-collapse>
+                <div class="flex flex-wrap gap-2.5">
+                    <button 
+                        @click="insertVariableToken('company.name')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        Nom société
+                    </button>
+                    <button 
+                        @click="insertVariableToken('company.vat')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        TVA
+                    </button>
+                    <button 
+                        @click="insertVariableToken('company.address')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        Adresse
+                    </button>
+                    <button 
+                        @click="insertVariableToken('company.phone')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        Téléphone
+                    </button>
+                    <button 
+                        @click="insertVariableToken('company.email')"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                    >
+                        Email société
+                    </button>
+                </div>
             </div>
         </div>
 

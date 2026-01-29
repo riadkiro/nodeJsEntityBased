@@ -424,20 +424,14 @@ module.exports = {
      */
     reorderCollections: async (req, res) => {
         try {
-            const { dbId } = req.params;
+            const EntityModel = await tenantCollection(req, "Entity");
             const { collectionIds } = req.body;
-            const User = require("../models/user.model");
 
-            // Get current user from session
-            const userId = req.session?.user?._id;
-            if (!userId) {
-                return res.status(401).json({ success: false, message: "Not authenticated" });
-            }
-
-            // Update user preferences with collection order for this database
-            await User.findByIdAndUpdate(userId, {
-                $set: { [`preferences.collectionOrder.${dbId}`]: collectionIds }
-            });
+            // Update order field for each collection
+            const updates = collectionIds.map((id, index) =>
+                EntityModel.updateOne({ _id: id }, { $set: { order: index } })
+            );
+            await Promise.all(updates);
 
             res.json({ success: true });
         } catch (error) {

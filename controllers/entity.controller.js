@@ -18,8 +18,9 @@ module.exports = {
       Entity.remove(query, function (err) {
         if (err) {
           console.log(err);
+          return res.status(500).json({ success: false, error: err.message });
         }
-        res.send("Deleted");
+        res.json({ success: true, message: "Deleted" });
       });
     });
   },
@@ -31,8 +32,9 @@ module.exports = {
       Entity.remove(query, function (err) {
         if (err) {
           console.log(err);
+          return res.status(500).json({ success: false, error: err.message });
         }
-        res.send("Deleted");
+        res.json({ success: true, message: "Deleted" });
       });
     });
   },

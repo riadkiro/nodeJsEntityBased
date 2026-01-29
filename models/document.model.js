@@ -1,5 +1,100 @@
 const mongoose = require('mongoose');
 
+// ============================================
+// Dynamic Template System - Collection Schemas
+// ============================================
+
+const FilterSchema = new mongoose.Schema({
+    field: String,                              // "status" or standard field
+    fieldId: mongoose.Schema.Types.ObjectId,    // Stable ref for custom fields
+    operator: {
+        type: String,
+        enum: ['eq', 'ne', 'gt', 'lt', 'gte', 'lte', 'contains', 'in', 'ref']
+    },
+    value: mongoose.Schema.Types.Mixed,         // Static or "{{invoice._id}}"
+    valueIsToken: { type: Boolean, default: false }
+}, { _id: false });
+
+const CollectionSchema = new mongoose.Schema({
+    alias: { type: String, required: true },    // "client", "products"
+    entityId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Entity',
+        required: true
+    },
+    type: {
+        type: String,
+        enum: ['single', 'query'],
+        required: true
+    },
+
+    // For single bindings
+    selectionMode: {
+        type: String,
+        enum: ['runtime', 'fixed']
+    },
+    fixedRecordId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Record'
+    },
+
+    // For query bindings
+    query: {
+        filters: [FilterSchema],
+        sort: [{
+            field: String,
+            fieldId: mongoose.Schema.Types.ObjectId,
+            direction: { type: String, enum: ['asc', 'desc'], default: 'asc' }
+        }],
+        limit: { type: Number, default: 500 }
+    }
+}, { _id: true });
+
+const ColumnSchema = new mongoose.Schema({
+    key: String,
+    label: String,
+    expr: String,                               // "{{record.name}}", "{{record.price * row.qty}}"
+    fieldId: mongoose.Schema.Types.ObjectId,    // Stable ref for cf.* fields
+    input: { type: Boolean, default: false },
+    inputType: {
+        type: String,
+        enum: ['number', 'text', 'select', 'date']
+    },
+    inputDefault: mongoose.Schema.Types.Mixed,
+    width: String
+}, { _id: true });
+
+const TokenRefSchema = new mongoose.Schema({
+    token: String,                              // "{{client.cf.customName}}"
+    fieldId: mongoose.Schema.Types.ObjectId     // Stable ref
+}, { _id: false });
+
+const ContentBlockSchema = new mongoose.Schema({
+    type: {
+        type: String,
+        enum: ['text', 'table', 'image', 'divider']
+    },
+
+    // Text blocks
+    html: String,
+    tokenRefs: [TokenRefSchema],                // Stable field references
+
+    // Table blocks
+    mode: { type: String, enum: ['query', 'editable'] },
+    source: String,                             // Collection alias (query mode)
+    entityId: mongoose.Schema.Types.ObjectId,   // Entity ref (editable mode)
+    datasetAlias: String,                       // "lineItems" - exposed for sum(), etc.
+    columns: [ColumnSchema],
+    showHeader: { type: Boolean, default: true },
+
+    // Common styling
+    style: mongoose.Schema.Types.Mixed
+}, { _id: true });
+
+// ============================================
+// Existing Element/Row/Page Schemas
+// ============================================
+
 const elementSchema = new mongoose.Schema({
     type: {
         type: String,
@@ -108,7 +203,13 @@ const DocumentSchema = new mongoose.Schema({
         type: String,
         enum: ['draft', 'published', 'archived'],
         default: 'draft'
-    }
+    },
+
+    // ============================================
+    // Dynamic Template System Fields
+    // ============================================
+    collections: [CollectionSchema],        // Data sources (single/query)
+    contentBlocks: [ContentBlockSchema]     // Structured content blocks
 }, {
     timestamps: true
 });

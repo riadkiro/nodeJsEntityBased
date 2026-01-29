@@ -8,6 +8,8 @@
       <%- include('partials/editor-left-sidebar') %>
         <%- include('partials/editor-assets-panel') %>
           <%- include('partials/editor-text-panel') %>
+            <%- include('partials/editor-variables-panel') %>
+              <%- include('partials/editor-collections-panel') %>
 
             <!-- Canvas Area -->
             <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -66,7 +68,9 @@
   orientation: isNew ? 'portrait' : document.orientation,
   dimensions: isNew ? { width: 794, height: 1123 } : document.dimensions,
   pages: isNew ? [{ elements: [], background: { color: '#ffffff' }, order: 0 }] : document.pages,
-  status: isNew ? 'draft' : document.status
+  status: isNew ? 'draft' : document.status,
+  collections: isNew ? [] : (document.collections || []),
+  contentBlocks: isNew ? [] : (document.contentBlocks || [])
 }).replace(/</g, '\\u003C') %>
 </script>
 
@@ -90,7 +94,10 @@
             return pData;
           }),
           status: data.status,
-          margins: data.margins || { top: 72, bottom: 72, left: 72, right: 72 }
+          margins: data.margins || { top: 72, bottom: 72, left: 72, right: 72 },
+          // Dynamic Template System fields
+          collections: data.collections || [],
+          contentBlocks: data.contentBlocks || []
         },
         editorMode: 'edition', // Keep for backward compat, but pages will use their own.
         selectedPageIndex: 0,
@@ -303,6 +310,54 @@
           this.isStrikethrough = null;
           this.currentAlignment = '';
         },
+
+        // Insert variable token at cursor position
+        insertVariableToken: function (variablePath) {
+          var token = '{{' + variablePath + '}}';
+          var sel = window.getSelection();
+          
+          if (!sel || sel.rangeCount === 0) {
+            console.warn('No selection to insert token');
+            return;
+          }
+          
+          var range = sel.getRangeAt(0);
+          
+          // Check if we're in a page content area
+          var container = range.commonAncestorContainer;
+          var element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
+          
+          if (!element.closest('.page-content') && !element.closest('[contenteditable="true"]')) {
+            console.warn('Cursor not in editable area');
+            return;
+          }
+          
+          // Create styled span for the token
+          var span = document.createElement('span');
+          span.className = 'template-token';
+          span.setAttribute('data-token', variablePath);
+          span.setAttribute('contenteditable', 'false');
+          span.style.cssText = 'background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: white; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85em; margin: 0 2px; display: inline-block; cursor: default; user-select: none;';
+          span.textContent = token;
+          
+          // Delete current selection if any
+          range.deleteContents();
+          
+          // Insert the token span
+          range.insertNode(span);
+          
+          // Move cursor after the inserted token
+          range.setStartAfter(span);
+          range.setEndAfter(span);
+          sel.removeAllRanges();
+          sel.addRange(range);
+          
+          // Trigger content sync
+          if (typeof this.syncContentFromEditor === 'function') {
+            this.syncContentFromEditor();
+          }
+        },
+
 
         getTextNodesInRange: function (range) {
           var textNodes = [];

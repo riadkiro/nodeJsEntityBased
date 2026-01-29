@@ -126,6 +126,7 @@
         },
         activeTab: null, // For sliding sidebar panels
         dragTargetElementId: null,
+        savedRange: null, // Save cursor position when clicking outside editor
 
         init: function () {
           var self = this;
@@ -185,8 +186,22 @@
             }
           });
 
-          // Also update font on mouse up (for better responsiveness)
-          window.addEventListener('mouseup', function () {
+          // Save cursor position when user clicks in document (before opening sidebar)
+          document.addEventListener('mouseup', function (e) {
+            var selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+              var range = selection.getRangeAt(0);
+              var container = range.commonAncestorContainer;
+              var element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
+              
+              // Only save if we're currently in an editable area
+              if (element && (element.closest('.page-content') || element.closest('[contenteditable="true"]'))) {
+                self.savedRange = range.cloneRange();
+                console.log('Cursor position saved at mouseup');
+              }
+            }
+            
+            // Also update styles
             setTimeout(function () {
               if (!self.isGlobalSelection) {
                 self.updateCurrentStyles();
@@ -314,30 +329,45 @@
         // Insert variable token at cursor position
         insertVariableToken: function (variablePath) {
           var token = '{{' + variablePath + '}}';
-          var sel = window.getSelection();
+          var range = null;
           
-          if (!sel || sel.rangeCount === 0) {
-            console.warn('No selection to insert token');
-            return;
+          // Try to use saved range first
+          if (this.savedRange) {
+            console.log('Using saved cursor position');
+            range = this.savedRange.cloneRange();
+          } else {
+            // Fallback: check current selection
+            var sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+              var container = sel.getRangeAt(0).commonAncestorContainer;
+              var element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
+              
+              if (element && (element.closest('.page-content') || element.closest('[contenteditable="true"]'))) {
+                range = sel.getRangeAt(0);
+                console.log('Using current selection');
+              }
+            }
           }
           
-          var range = sel.getRangeAt(0);
-          
-          // Check if we're in a page content area
-          var container = range.commonAncestorContainer;
-          var element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
-          
-          if (!element.closest('.page-content') && !element.closest('[contenteditable="true"]')) {
-            console.warn('Cursor not in editable area');
-            return;
+          // If still no range, insert at end of current page
+          if (!range) {
+            console.log('No saved position, inserting at end');
+            var currentPage = document.querySelector('.page-content');
+            if (!currentPage) {
+              console.warn('No editable page found');
+              return;
+            }
+            range = document.createRange();
+            range.selectNodeContents(currentPage);
+            range.collapse(false);
           }
           
-          // Create styled span for the token
+          // Create styled span for the token (yellow background style)
           var span = document.createElement('span');
           span.className = 'template-token';
           span.setAttribute('data-token', variablePath);
           span.setAttribute('contenteditable', 'false');
-          span.style.cssText = 'background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: white; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85em; margin: 0 2px; display: inline-block; cursor: default; user-select: none;';
+          span.style.cssText = 'background: #fef08a; color: #854d0e; padding: 2px 8px; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; font-weight: 600; margin: 0 2px; display: inline-block; cursor: default; user-select: none; border: 1px solid #fde047;';
           span.textContent = token;
           
           // Delete current selection if any
@@ -346,18 +376,26 @@
           // Insert the token span
           range.insertNode(span);
           
-          // Move cursor after the inserted token
+          // Add a space after the token for easier typing
+          var space = document.createTextNode('\u00A0');
           range.setStartAfter(span);
-          range.setEndAfter(span);
+          range.insertNode(space);
+          range.setStartAfter(space);
+          range.collapse(true);
+          
+          // Update selection
+          var sel = window.getSelection();
           sel.removeAllRanges();
           sel.addRange(range);
           
-          // Trigger content sync
-          if (typeof this.syncContentFromEditor === 'function') {
-            this.syncContentFromEditor();
-          }
+          // Update saved range for next insertion
+          this.savedRange = range.cloneRange();
+          
+          // Sync content
+          this.syncContent();
+          
+          console.log('Token inserted:', token);
         },
-
 
         getTextNodesInRange: function (range) {
           var textNodes = [];

@@ -7,7 +7,7 @@
     x-transition:leave-start="translate-x-0 opacity-100"
     x-transition:leave-end="-translate-x-full opacity-0"
     class="w-72 bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col shadow-xl z-20 overflow-hidden"
-    style="display: none;"
+    style="display: none; width:250px ;"
 >
     <!-- Header -->
     <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
@@ -29,41 +29,36 @@
                 <iconify-icon icon="solar:calendar-bold-duotone" width="14"></iconify-icon>
                 Date
             </p>
-            <div class="space-y-1">
+            <div class="flex flex-wrap gap-2.5">
                 <button 
                     @click="insertVariableToken('date.today')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">Date d'aujourd'hui</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{date.today}}</code>
+                    Date d'aujourd'hui
                 </button>
                 <button 
                     @click="insertVariableToken('date.yesterday')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">Hier</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{date.yesterday}}</code>
+                    Hier
                 </button>
                 <button 
                     @click="insertVariableToken('date.tomorrow')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">Demain</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{date.tomorrow}}</code>
+                    Demain
                 </button>
                 <button 
                     @click="insertVariableToken('date.nextMonth')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">Mois prochain</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{date.nextMonth}}</code>
+                    Mois prochain
                 </button>
                 <button 
                     @click="insertVariableToken('date.year')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">Année</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{date.year}}</code>
+                    Année
                 </button>
             </div>
         </div>
@@ -74,34 +69,30 @@
                 <iconify-icon icon="solar:document-bold-duotone" width="14"></iconify-icon>
                 Document
             </p>
-            <div class="space-y-1">
+            <div class="flex flex-wrap gap-2.5">
                 <button 
                     @click="insertVariableToken('doc.name')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">Nom du document</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{doc.name}}</code>
+                    Nom du document
                 </button>
                 <button 
                     @click="insertVariableToken('doc.number')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">Numéro du document</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{doc.number}}</code>
+                    Numéro
                 </button>
                 <button 
                     @click="insertVariableToken('doc.format')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">Format</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{doc.format}}</code>
+                    Format
                 </button>
                 <button 
                     @click="insertVariableToken('doc.createdAt')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">Date de création</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{doc.createdAt}}</code>
+                    Date de création
                 </button>
             </div>
         </div>
@@ -112,20 +103,18 @@
                 <iconify-icon icon="solar:user-bold-duotone" width="14"></iconify-icon>
                 Utilisateur
             </p>
-            <div class="space-y-1">
+            <div class="flex flex-wrap gap-2.5">
                 <button 
                     @click="insertVariableToken('user.name')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">Nom</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{user.name}}</code>
+                    Nom
                 </button>
                 <button 
                     @click="insertVariableToken('user.email')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">Email</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{user.email}}</code>
+                    Email
                 </button>
             </div>
         </div>
@@ -136,41 +125,36 @@
                 <iconify-icon icon="solar:buildings-bold-duotone" width="14"></iconify-icon>
                 Société
             </p>
-            <div class="space-y-1">
+            <div class="flex flex-wrap gap-2.5">
                 <button 
                     @click="insertVariableToken('company.name')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">Nom société</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{company.name}}</code>
+                    Nom société
                 </button>
                 <button 
                     @click="insertVariableToken('company.vat')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">TVA société</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{company.vat}}</code>
+                    TVA
                 </button>
                 <button 
                     @click="insertVariableToken('company.address')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">Adresse société</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{company.address}}</code>
+                    Adresse
                 </button>
                 <button 
                     @click="insertVariableToken('company.phone')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">Téléphone société</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{company.phone}}</code>
+                    Téléphone
                 </button>
                 <button 
                     @click="insertVariableToken('company.email')"
-                    class="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group"
+                    class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                 >
-                    <span class="text-xs text-gray-700 dark:text-gray-300">Email société</span>
-                    <code class="text-[10px] font-mono text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">{{company.email}}</code>
+                    Email société
                 </button>
             </div>
         </div>
@@ -185,21 +169,19 @@
                 </p>
                 <template x-for="col in doc.collections.filter(c => c.type === 'single')" :key="col.alias">
                     <div class="mb-3">
-                        <p class="text-[9px] font-semibold text-purple-600 dark:text-purple-400 uppercase mb-1" x-text="col.alias"></p>
-                        <div class="space-y-1">
+                        <p class="text-[9px] font-semibold text-purple-600 dark:text-purple-400 uppercase mb-1.5" x-text="col.alias"></p>
+                        <div class="flex flex-wrap gap-2.5">
                             <button 
                                 @click="insertVariableToken(col.alias + '.title')"
-                                class="w-full text-left px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-transparent hover:border-purple-200 dark:hover:border-purple-800 transition-all flex items-center justify-between group"
+                                class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                             >
-                                <span class="text-xs text-gray-700 dark:text-gray-300">Titre</span>
-                                <code class="text-[10px] font-mono text-purple-500 opacity-0 group-hover:opacity-100 transition-opacity" x-text="'{{' + col.alias + '.title}}'"></code>
+                                Titre
                             </button>
                             <button 
                                 @click="insertVariableToken(col.alias + '.description')"
-                                class="w-full text-left px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-transparent hover:border-purple-200 dark:hover:border-purple-800 transition-all flex items-center justify-between group"
+                                class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
                             >
-                                <span class="text-xs text-gray-700 dark:text-gray-300">Description</span>
-                                <code class="text-[10px] font-mono text-purple-500 opacity-0 group-hover:opacity-100 transition-opacity" x-text="'{{' + col.alias + '.description}}'"></code>
+                                Description
                             </button>
                         </div>
                     </div>

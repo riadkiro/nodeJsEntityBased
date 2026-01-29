@@ -9,6 +9,7 @@ router.get("/list", dbController.list);
 router.get("/api/tree", dbController.getDatabaseTree);
 router.post("/api/move-collection", dbController.moveCollection);
 router.post("/api/create", dbController.createDatabase);
+router.post("/api/reorder", dbController.reorderDatabases);
 router.put("/api/:id", dbController.updateDatabase);
 router.delete("/api/:id", dbController.deleteDatabase);
 

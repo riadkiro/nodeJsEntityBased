@@ -81,7 +81,10 @@ Base de données
                 <div class="flex items-center gap-3" >
                     <iconify-icon icon="solar:alt-arrow-down-bold" width="16" x-show="tree.global.isOpen" class="text-gray-400"></iconify-icon>
                     <iconify-icon icon="solar:alt-arrow-right-bold" width="16" x-show="!tree.global.isOpen" class="text-gray-400"></iconify-icon>
-                    <iconify-icon :icon="tree.global.icon || 'solar:database-broken'" width="22" class="text-primary"></iconify-icon>
+                    <div class="relative inline-flex" style="width: 22px; height: 22px;">
+                        <iconify-icon icon="solar:database-broken" width="22" height="22" class="text-gray-700 dark:text-gray-300"></iconify-icon>
+                        <span class="absolute" style="bottom: -2px; right: -2px; width: 8px; height: 8px; background: #22c55e; border-radius: 50%; border: 2px solid white;"></span>
+                    </div>
                     <span class="font-semibold text-gray-800 dark:text-white" x-text="tree.global.name"></span>
                     <span class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 px-2 py-0.5 rounded-full" x-text="(tree.global.collections || []).length + ' collections'"></span>
                 </div>
@@ -93,28 +96,34 @@ Base de données
                  data-db-id="global"
                  x-init="$nextTick(() => initSortable($el, 'global'))">
                 <template x-for="collection in tree.global.collections" :key="collection.id">
-                    <div class="collection-item flex items-center gap-3 py-2.5 px-4 rounded-lg mb-1"  style="margin-left:37px;"
+                    <div class="collection-item flex items-center gap-3 py-1 px-4 rounded-lg mb-1"  style="margin-left:37px;"
                          :data-collection-id="collection.id">
-                        <iconify-icon icon="solar:menu-dots-bold" width="14" class="text-gray-300 cursor-grab"></iconify-icon>
-                        <iconify-icon :icon="collection.icon || 'solar:layers-minimalistic-broken'" width="18" :style="collection.color ? 'color:' + collection.color : ''" class="text-gray-500"></iconify-icon>
+                        <iconify-icon icon="mdi:drag-vertical" width="14" class="text-gray-300 cursor-grab"></iconify-icon>
+                        <iconify-icon icon="solar:inbox-line-broken" width="18" class="text-gray-500"></iconify-icon>
                         <span class="text-gray-700 dark:text-gray-300" x-text="collection.name"></span>
+                        <span class="text-xs text-gray-400 ml-auto" x-text="collection.recordCount + ' enreg.'"></span>
                     </div>
                 </template>
-                <div x-show="(tree.global.collections || []).length === 0" class="text-center py-6 text-gray-400 text-sm">
-                    <iconify-icon icon="solar:inbox-line-broken" width="24" class="mb-1"></iconify-icon>
-                    <p>Aucune collection</p>
-                </div>
+
             </div>
         </div>
 
-        <!-- Custom Databases -->
-        <template x-for="db in tree.databases" :key="db.id">
-            <div class="border-b dark:border-gray-700 last:border-0">
-                <div class="db-header flex items-center justify-between p-4" @click="db.isOpen = !db.isOpen">
-                    <div class="flex items-center gap-3">
-                        <iconify-icon icon="solar:alt-arrow-down-bold" width="16" x-show="db.isOpen" class="text-gray-400"></iconify-icon>
-                        <iconify-icon icon="solar:alt-arrow-right-bold" width="16" x-show="!db.isOpen" class="text-gray-400"></iconify-icon>
-                        <iconify-icon :icon="db.icon || 'solar:server-2-broken'" width="22" :style="db.color ? 'color:' + db.color : ''" class="text-primary"></iconify-icon>
+        <!-- Custom Databases (Sortable) -->
+        <div id="databases-sortable">
+            <template x-for="db in tree.databases" :key="db.id">
+                <div class="database-item border-b dark:border-gray-700 last:border-0" :data-db-id="db.id">
+                    <div class="db-header flex items-center justify-between p-4" @click="db.isOpen = !db.isOpen">
+                        <div class="flex items-center gap-3">
+                            <iconify-icon icon="mdi:drag-vertical" width="16" class="text-gray-300 cursor-grab db-drag-handle" @click.stop></iconify-icon>
+                        <div class="relative inline-flex" style="width: 22px; height: 22px;">
+                            <iconify-icon icon="solar:database-broken" width="22" height="22" class="text-gray-700 dark:text-gray-300"></iconify-icon>
+                            <!-- Pending indicator (clock) -->
+                            <span x-show="db.pending" class="absolute flex items-center justify-center" style="bottom: -3px; right: -3px; width: 12px; height: 12px; background: #f59e0b; border-radius: 50%; border: 2px solid white;">
+                                <iconify-icon icon="solar:clock-circle-bold" width="8" height="8" class="text-white animate-spin"></iconify-icon>
+                            </span>
+                            <!-- Active indicator (green dot) -->
+                            <span x-show="!db.pending" class="absolute" style="bottom: -2px; right: -2px; width: 8px; height: 8px; background: #22c55e; border-radius: 50%; border: 2px solid white;"></span>
+                        </div>
                         <span class="font-semibold text-gray-800 dark:text-white" x-text="db.name"></span>
                         <span class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 px-2 py-0.5 rounded-full" x-text="(db.collections || []).length + ' collections'"></span>
                     </div>
@@ -133,20 +142,19 @@ Base de données
                      :data-db-id="db.id"
                      x-init="$nextTick(() => initSortable($el, db.id))">
                     <template x-for="collection in db.collections" :key="collection.id">
-                        <div class="collection-item flex items-center gap-3 py-2.5 px-4 rounded-lg mb-1" 
+                        <div class="collection-item flex items-center gap-3 py-1 px-4 rounded-lg mb-1" style="margin-left:37px;"
                              :data-collection-id="collection.id">
-                            <iconify-icon icon="solar:menu-dots-bold" width="14" class="text-gray-300 cursor-grab"></iconify-icon>
-                            <iconify-icon :icon="collection.icon || 'solar:layers-minimalistic-broken'" width="18" :style="collection.color ? 'color:' + collection.color : ''" class="text-gray-500"></iconify-icon>
+                            <iconify-icon icon="mdi:drag-vertical" width="14" class="text-gray-300 cursor-grab"></iconify-icon>
+                            <iconify-icon icon="solar:inbox-line-broken" width="18" class="text-gray-500"></iconify-icon>
                             <span class="text-gray-700 dark:text-gray-300" x-text="collection.name"></span>
+                            <span class="text-xs text-gray-400 ml-auto" x-text="collection.recordCount + ' enreg.'"></span>
                         </div>
                     </template>
-                    <div x-show="(db.collections || []).length === 0" class="text-center py-6 text-gray-400 text-sm empty-placeholder">
-                        <iconify-icon icon="solar:inbox-line-broken" width="24" class="mb-1"></iconify-icon>
-                        <p>Glissez des collections ici</p>
-                    </div>
+
                 </div>
             </div>
         </template>
+        </div>
     </div>
 
     <!-- Create Modal -->
@@ -233,13 +241,60 @@ function databaseTree() {
             if (globalContainer) {
                 this.initSortable(globalContainer, 'global');
             }
-            // Custom databases
+            // Custom databases collections
             this.tree.databases.forEach(db => {
                 const container = document.getElementById('collections-' + db.id);
                 if (container) {
                     this.initSortable(container, db.id);
                 }
             });
+            // Databases sortable (for reordering databases)
+            this.initDatabasesSortable();
+        },
+
+        initDatabasesSortable() {
+            const container = document.getElementById('databases-sortable');
+            if (!container || this.sortables['databases']) return;
+            
+            const self = this;
+            this.sortables['databases'] = new Sortable(container, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                handle: '.db-drag-handle',
+                draggable: '.database-item',
+                onEnd: async function(evt) {
+                    const oldIndex = evt.oldIndex;
+                    const newIndex = evt.newIndex;
+                    
+                    if (oldIndex === newIndex) return;
+                    
+                    console.log('[DB] Drop: database moved from', oldIndex, 'to', newIndex);
+                    
+                    // Let Sortable handle the DOM - don't touch Alpine state
+                    // Read the new order from DOM (Sortable has already moved it)
+                    const items = container.querySelectorAll('.database-item');
+                    const databaseIds = Array.from(items).map(item => item.dataset.dbId);
+                    
+                    console.log('[DB] New order:', databaseIds);
+                    
+                    // Save to user preferences
+                    await self.saveDatabaseOrder(databaseIds);
+                }
+            });
+        },
+
+        async saveDatabaseOrder(databaseIds) {
+            try {
+                const accountNum = window.location.pathname.split('/')[2];
+                await fetch(`/account/${accountNum}/db/api/reorder`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ databaseIds })
+                });
+            } catch (e) {
+                console.error('Error saving database order:', e);
+            }
         },
 
         initSortable(el, dbId) {
@@ -300,9 +355,17 @@ function databaseTree() {
 
                 if (data.success) {
                     data.database.isOpen = true;
+                    data.database.pending = true; // Show pending state
                     this.tree.databases.push(data.database);
                     this.showCreateModal = false;
                     this.newDbName = '';
+                    
+                    // Switch to active after 3 seconds
+                    const dbId = data.database.id;
+                    setTimeout(() => {
+                        const db = this.tree.databases.find(d => d.id === dbId);
+                        if (db) db.pending = false;
+                    }, 5000);
                     
                     // Init sortable for new database
                     this.$nextTick(() => {

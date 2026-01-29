@@ -188,6 +188,16 @@
             }
           });
 
+          // Event delegation for clicking on template tokens (for alignment support)
+          document.addEventListener('click', function (e) {
+            var token = e.target.closest('.template-token');
+            if (token && token.closest('.page-content')) {
+              e.preventDefault();
+              e.stopPropagation();
+              self.selectTokenBlock(token);
+            }
+          }, true); // Use capture phase to intercept before other handlers
+
           // Save cursor position when user clicks in document (before opening sidebar)
           document.addEventListener('mouseup', function (e) {
             var selection = window.getSelection();
@@ -384,8 +394,15 @@
           span.className = 'template-token';
           span.setAttribute('data-token', token); // Full token with @fieldId for backend
           span.setAttribute('contenteditable', 'false');
-          span.style.cssText = 'background: #fef08a; color: #854d0e; padding: 2px 8px; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; font-weight: 600; margin: 0 2px; display: inline-block; cursor: default; user-select: none; border: 1px solid #fde047;';
+          span.style.cssText = 'background: #fef08a; color: #854d0e; padding: 0px 2px; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; font-weight: 600; margin: 0 2px; display: inline-block; cursor: pointer; user-select: none; border: 1px solid #fde047;';
           span.textContent = displayToken; // Clean display without fieldId
+
+          // Add click handler to select parent block for alignment support
+          var self = this;
+          span.addEventListener('click', function (e) {
+            e.stopPropagation();
+            self.selectTokenBlock(this);
+          });
 
           // Delete current selection if any
           range.deleteContents();
@@ -409,6 +426,52 @@
           this.savedRange = range.cloneRange();
 
           console.log('Token inserted:', token);
+
+          // Auto-save after inserting variable
+          this.saveDocument();
+        },
+
+        // Select the parent block element of a token for alignment support
+        selectTokenBlock: function (tokenElement) {
+          // Select only the token element itself
+          var range = document.createRange();
+          range.selectNode(tokenElement);
+
+          var sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+
+          // Visual feedback - highlight the token
+          tokenElement.style.outline = '2px solid #3b82f6';
+          tokenElement.style.outlineOffset = '2px';
+
+          // Remove highlight after a short delay
+          setTimeout(function () {
+            tokenElement.style.outline = 'none';
+            tokenElement.style.outlineOffset = '0';
+          }, 300);
+
+          // Save the range for potential use
+          this.savedRange = range.cloneRange();
+
+          // Detect alignment from parent block
+          var blockParent = tokenElement.closest('div, p, h1, h2, h3, h4, h5, h6, li') ||
+            tokenElement.closest('.page-content');
+
+          if (blockParent) {
+            var textAlign = window.getComputedStyle(blockParent).textAlign;
+            if (textAlign === 'start' || textAlign === 'left') {
+              this.currentAlignment = 'left';
+            } else if (textAlign === 'center') {
+              this.currentAlignment = 'center';
+            } else if (textAlign === 'end' || textAlign === 'right') {
+              this.currentAlignment = 'right';
+            } else {
+              this.currentAlignment = '';
+            }
+          }
+
+          console.log('Token selected, ready for alignment');
         },
 
         getTextNodesInRange: function (range) {
@@ -1032,7 +1095,47 @@
           event.preventDefault();
           var self = this;
 
-          // Get the data from the drop event
+          // Check for JSON data (variable drops from panel)
+          var jsonData = event.dataTransfer.getData('application/json');
+          if (jsonData) {
+            try {
+              var data = JSON.parse(jsonData);
+              if (data.type === 'variable') {
+                // Position cursor at drop point
+                var x = event.clientX;
+                var y = event.clientY;
+                var range;
+
+                if (document.caretRangeFromPoint) {
+                  range = document.caretRangeFromPoint(x, y);
+                } else if (event.rangeParent) {
+                  range = document.createRange();
+                  range.setStart(event.rangeParent, event.rangeOffset);
+                }
+
+                if (range) {
+                  var sel = window.getSelection();
+                  sel.removeAllRanges();
+                  sel.addRange(range);
+
+                  // Focus the targeted page
+                  var element = document.querySelector('.page-content[data-page-index="' + pageIndex + '"]');
+                  if (element) element.focus();
+
+                  // Save this range for insertVariableToken
+                  this.savedRange = range;
+
+                  // Insert the variable token
+                  this.insertVariableToken(data.path, data.metadata || null);
+                }
+                return;
+              }
+            } catch (e) {
+              console.warn('Invalid JSON in drop:', e);
+            }
+          }
+
+          // Get the data from the drop event (legacy text panel drops)
           var type = event.dataTransfer.getData('type');
           var content = event.dataTransfer.getData('content');
 

@@ -148,7 +148,9 @@
                         <template x-for="field in section.fields" :key="field.id">
                             <button 
                                 @click="$dispatch('insert-token', { path: `${section.name}.cf.${field.name}`, metadata: { isCustomField: true, fieldId: field.id } })"
-                                class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-xs hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer"
+                                draggable="true"
+                                @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: `${section.name}.cf.${field.name}`, metadata: { isCustomField: true, fieldId: field.id } })); $event.dataTransfer.effectAllowed = 'copy';"
+                                class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-xs hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-grab active:cursor-grabbing"
                             >
                                 <iconify-icon :icon="field.icon" class="text-blue-600 dark:text-blue-400" width="14"></iconify-icon>
                                 <span class="text-blue-700 dark:text-blue-300 font-medium" x-text="field.name"></span>
@@ -184,31 +186,41 @@
                 <div class="flex flex-wrap gap-2.5">
                     <button 
                         @click="insertVariableToken('date.today')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'date.today' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         Date d'aujourd'hui
                     </button>
                     <button 
                         @click="insertVariableToken('date.yesterday')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'date.yesterday' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         Hier
                     </button>
                     <button 
                         @click="insertVariableToken('date.tomorrow')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'date.tomorrow' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         Demain
                     </button>
                     <button 
                         @click="insertVariableToken('date.nextMonth')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'date.nextMonth' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         Mois prochain
                     </button>
                     <button 
                         @click="insertVariableToken('date.year')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'date.year' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         Année
                     </button>
@@ -232,25 +244,33 @@
                 <div class="flex flex-wrap gap-2.5">
                     <button 
                         @click="insertVariableToken('doc.name')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'doc.name' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         Nom du document
                     </button>
                     <button 
                         @click="insertVariableToken('doc.number')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'doc.number' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         Numéro
                     </button>
                     <button 
                         @click="insertVariableToken('doc.format')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'doc.format' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         Format
                     </button>
                     <button 
                         @click="insertVariableToken('doc.createdAt')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'doc.createdAt' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         Date de création
                     </button>
@@ -274,13 +294,17 @@
                 <div class="flex flex-wrap gap-2.5">
                     <button 
                         @click="insertVariableToken('user.name')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'user.name' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         Nom
                     </button>
                     <button 
                         @click="insertVariableToken('user.email')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'user.email' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         Email
                     </button>
@@ -305,31 +329,41 @@
                 <div class="flex flex-wrap gap-2.5">
                     <button 
                         @click="insertVariableToken('company.name')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'company.name' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         Nom société
                     </button>
                     <button 
                         @click="insertVariableToken('company.vat')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'company.vat' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         TVA
                     </button>
                     <button 
                         @click="insertVariableToken('company.address')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'company.address' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         Adresse
                     </button>
                     <button 
                         @click="insertVariableToken('company.phone')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'company.phone' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         Téléphone
                     </button>
                     <button 
                         @click="insertVariableToken('company.email')"
-                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-pointer border border-yellow-300 dark:border-yellow-700"
+                        draggable="true"
+                        @dragstart="$event.dataTransfer.setData('application/json', JSON.stringify({ type: 'variable', path: 'company.email' })); $event.dataTransfer.effectAllowed = 'copy';"
+                        class="px-2 py-0 rounded bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200 text-xs font-semibold transition-colors cursor-grab active:cursor-grabbing border border-yellow-300 dark:border-yellow-700"
                     >
                         Email société
                     </button>

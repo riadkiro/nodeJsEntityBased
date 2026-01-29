@@ -103,19 +103,42 @@ module.exports = {
             const User = require("../models/user.model");
             const userId = req.session?.user?._id;
             let databaseOrder = [];
+            let collectionOrder = {};
             if (userId) {
                 const user = await User.findById(userId).lean();
                 databaseOrder = user?.preferences?.databaseOrder || [];
+                collectionOrder = user?.preferences?.collectionOrder || {};
             }
 
-            // Build databases list
-            let databasesList = databases.map(db => ({
-                id: db._id.toString(),
-                name: db.name,
-                icon: db.icon || "solar:server-2-broken",
-                color: db.color,
-                collections: databaseCollections[db._id.toString()] || []
-            }));
+            // Helper function to sort collections by saved order
+            function sortCollections(collections, order) {
+                if (!order || order.length === 0) return collections;
+                return collections.sort((a, b) => {
+                    const indexA = order.indexOf(a.id);
+                    const indexB = order.indexOf(b.id);
+                    if (indexA === -1 && indexB === -1) return 0;
+                    if (indexA === -1) return 1;
+                    if (indexB === -1) return -1;
+                    return indexA - indexB;
+                });
+            }
+
+            // Sort global collections
+            sortCollections(globalCollections, collectionOrder['global']);
+
+            // Build databases list with sorted collections
+            let databasesList = databases.map(db => {
+                const dbId = db._id.toString();
+                const collections = databaseCollections[dbId] || [];
+                sortCollections(collections, collectionOrder[dbId]);
+                return {
+                    id: dbId,
+                    name: db.name,
+                    icon: db.icon || "solar:server-2-broken",
+                    color: db.color,
+                    collections
+                };
+            });
 
             // Sort databases by user preference order
             if (databaseOrder.length > 0) {
@@ -321,6 +344,104 @@ module.exports = {
             res.json({ success: true });
         } catch (error) {
             console.error("Error reordering databases:", error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    },
+
+    /**
+     * Create a new collection (Entity) in a specific database
+     * POST /account/:account_id/db/api/:dbId/collections/create
+     * Body: { name, slug, description, icon, color, standardFields }
+     */
+    createCollection: async (req, res) => {
+        try {
+            const EntityModel = await tenantCollection(req, "Entity");
+            const { dbId } = req.params;
+            const { name, slug: providedSlug, description, icon, color, standardFields } = req.body;
+
+            if (!name) {
+                return res.status(400).json({ success: false, error: "Name is required" });
+            }
+
+            // Generate slug from name if not provided
+            const slug = providedSlug || name.toLowerCase()
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_|_$/g, '');
+
+            // Check for duplicate slug
+            const existing = await EntityModel.findOne({ slug });
+            if (existing) {
+                return res.status(400).json({ success: false, error: "A collection with this slug already exists" });
+            }
+
+            // Convert standardFields object to enabledStandardFields array
+            const enabledStandardFields = [];
+            if (standardFields) {
+                if (standardFields.title) enabledStandardFields.push('title');
+                if (standardFields.slug) enabledStandardFields.push('slug');
+                if (standardFields.date) enabledStandardFields.push('date');
+            }
+
+            // Create Entity document
+            // If dbId is 'global', don't add any folder (global collections have empty folders array)
+            const folders = (dbId && dbId !== 'global') ? [dbId] : [];
+
+            const entity = new EntityModel({
+                name,
+                slug,
+                description: description || '',
+                icon: icon || 'solar:inbox-line-broken',
+                color: color || '',
+                enabledStandardFields,
+                folders // Link to the database (empty for global)
+            });
+
+            await entity.save();
+
+            console.log("[DB] Collection created:", entity._id, entity.name);
+
+            res.json({
+                success: true,
+                collection: {
+                    id: entity._id.toString(),
+                    name: entity.name,
+                    slug: entity.slug,
+                    icon: entity.icon,
+                    color: entity.color,
+                    recordCount: 0
+                }
+            });
+        } catch (error) {
+            console.error("Error creating collection:", error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    },
+
+    /**
+     * Reorder collections within a database
+     * POST /account/:account_id/db/api/:dbId/collections/reorder
+     * Body: { collectionIds: ["id1", "id2", ...] }
+     */
+    reorderCollections: async (req, res) => {
+        try {
+            const { dbId } = req.params;
+            const { collectionIds } = req.body;
+            const User = require("../models/user.model");
+
+            // Get current user from session
+            const userId = req.session?.user?._id;
+            if (!userId) {
+                return res.status(401).json({ success: false, message: "Not authenticated" });
+            }
+
+            // Update user preferences with collection order for this database
+            await User.findByIdAndUpdate(userId, {
+                $set: { [`preferences.collectionOrder.${dbId}`]: collectionIds }
+            });
+
+            res.json({ success: true });
+        } catch (error) {
+            console.error("Error reordering collections:", error);
             res.status(500).json({ success: false, message: error.message });
         }
     }

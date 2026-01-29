@@ -11,6 +11,8 @@ router.post("/api/move-collection", dbController.moveCollection);
 router.post("/api/create", dbController.createDatabase);
 router.post("/api/reorder", dbController.reorderDatabases);
 router.put("/api/:id", dbController.updateDatabase);
+router.post("/api/:dbId/collections/create", dbController.createCollection);
+router.post("/api/:dbId/collections/reorder", dbController.reorderCollections);
 router.delete("/api/:id", dbController.deleteDatabase);
 
 module.exports = router;

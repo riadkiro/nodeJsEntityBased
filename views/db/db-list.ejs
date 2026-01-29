@@ -87,8 +87,10 @@ Base de données
                     </div>
                     <span class="font-semibold text-gray-800 dark:text-white" x-text="tree.global.name"></span>
                     <span class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 px-2 py-0.5 rounded-full" x-text="(tree.global.collections || []).length + ' collections'"></span>
+                    <button @click.stop="openCreateCollectionModal({id: 'global', name: 'Global'})" class="p-1 hover:bg-primary/10 rounded-full transition-colors" title="Ajouter une collection">
+                        <iconify-icon icon="solar:add-circle-linear" width="16" class="text-gray-400"></iconify-icon>
+                    </button>
                 </div>
-                <div class="text-xs text-gray-400">Par défaut</div>
             </div>
             <div x-show="tree.global.isOpen" x-collapse 
                  class="collections-container" 
@@ -126,13 +128,14 @@ Base de données
                         </div>
                         <span class="font-semibold text-gray-800 dark:text-white" x-text="db.name"></span>
                         <span class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 px-2 py-0.5 rounded-full" x-text="(db.collections || []).length + ' collections'"></span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button @click.stop="editDatabase(db)" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                            <iconify-icon icon="solar:pen-2-linear" width="16" class="text-gray-400"></iconify-icon>
+                        <button @click.stop="openCreateCollectionModal(db)" class="p-1 hover:bg-primary/10 rounded" title="Ajouter une collection">
+                            <iconify-icon icon="solar:add-circle-linear" width="16" class="text-gray-400"></iconify-icon>
                         </button>
-                        <button @click.stop="confirmDelete(db)" class="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">
-                            <iconify-icon icon="solar:trash-bin-trash-linear" width="16" class="text-red-400"></iconify-icon>
+                        <button @click.stop="editDatabase(db)" class="p-1 hover:text-primary dark:hover:bg-gray-700 rounded" title="Modifier">
+                            <iconify-icon icon="solar:pen-broken" width="16" class="text-gray-400"></iconify-icon>
+                        </button>
+                        <button @click.stop="confirmDelete(db)" class="p-1 hover:text-primary dark:hover:bg-red-900/20 rounded" title="Supprimer">
+                            <iconify-icon icon="solar:trash-bin-trash-broken" width="16" class="text-gray-400"></iconify-icon>
                         </button>
                     </div>
                 </div>
@@ -331,6 +334,184 @@ Base de données
             </div>
         </div>
     </div>
+
+    <!-- Create Collection Modal -->
+    <div class="fixed inset-0 bg-[black]/60 z-[999] overflow-y-auto" x-show="showCreateCollectionModal" x-transition style="display: none;">
+        <div class="flex items-start justify-center min-h-screen px-4" @click.self="showCreateCollectionModal = false">
+            <div x-show="showCreateCollectionModal" x-transition x-transition.duration.300
+                class="panel border-0 py-1 px-4 rounded-lg overflow-hidden w-full max-w-sm my-8 bg-white dark:bg-[#1b2e4b]">
+                <div class="flex items-center justify-between p-5 font-semibold text-lg dark:text-white">
+                    <div class="flex items-center gap-2">
+                        <iconify-icon icon="solar:inbox-line-broken" width="22" class="text-primary"></iconify-icon>
+                        <span>Nouvelle collection</span>
+                    </div>
+                    <button type="button" @click="showCreateCollectionModal = false" class="text-white-dark hover:text-dark">
+                        <iconify-icon icon="solar:close-circle-bold" width="24" height="24"></iconify-icon>
+                    </button>
+                </div>
+                <div class="p-5">
+                    <form @submit.prevent="createCollection()">
+                        <!-- Nom -->
+                        <div class="relative mb-4">
+                            <label class="mb-2 block text-sm font-bold">Nom *</label>
+                            <input type="text" x-model="newCollectionName" placeholder="Ex: Articles, Clients..."
+                                class="form-input w-full" required />
+                        </div>
+
+                        <!-- Slug -->
+                        <div class="relative mb-4">
+                            <label class="mb-2 block text-sm font-bold">Slug</label>
+                            <input type="text" x-model="newCollectionSlug" placeholder="articles, clients..."
+                                class="form-input w-full" />
+                        </div>
+
+                        <!-- Description -->
+                        <div class="relative mb-4">
+                            <label class="mb-2 block text-sm font-bold">Description</label>
+                            <textarea x-model="newCollectionDescription" rows="3" placeholder="Description de la collection..."
+                                class="form-input w-full resize-none"></textarea>
+                        </div>
+
+                        <!-- Icône -->
+                        <div class="relative mb-4">
+                            <label class="mb-2 block text-sm font-bold">Icône</label>
+                            
+                            <!-- Minimal Trigger -->
+                            <div @click="showCollectionIconPicker = !showCollectionIconPicker" class="flex items-center gap-2 cursor-pointer group">
+                                <iconify-icon :icon="newCollectionIcon || 'solar:inbox-line-broken'" width="18" 
+                                    :class="newCollectionIcon ? 'text-gray-700' : 'text-gray-400'"></iconify-icon>
+                                <span class="text-sm flex-1" :class="newCollectionIcon ? 'text-gray-700' : 'text-gray-400'" 
+                                    x-text="newCollectionIcon || 'Icône personnalisée'"></span>
+                                <iconify-icon icon="solar:alt-arrow-down-linear" class="text-gray-400 group-hover:text-primary transition-colors" width="14"
+                                    :class="showCollectionIconPicker && 'rotate-180'" style="transition: transform 0.2s, color 0.2s"></iconify-icon>
+                            </div>
+
+                            <!-- Expandable Picker -->
+                            <div x-show="showCollectionIconPicker" x-collapse class="mt-3">
+                                <!-- Search & Library -->
+                                <div class="relative mb-2 flex gap-2">
+                                    <select x-model="selectedLibrary"
+                                        class="form-select w-1/3 text-xs py-1.5 border-gray-300 dark:border-gray-600 focus:border-primary">
+                                        <template x-for="lib in libraries" :key="lib.id">
+                                            <option :value="lib.id" x-text="lib.name"></option>
+                                        </template>
+                                    </select>
+                                    <div class="relative w-2/3">
+                                        <input type="text" x-model="iconSearch" placeholder="Rechercher..."
+                                            class="form-input w-full text-xs pl-8 py-1.5 border-gray-300 dark:border-gray-600" />
+                                        <iconify-icon icon="solar:magnifer-linear" class="absolute left-2.5 top-2 text-gray-400"
+                                            width="14"></iconify-icon>
+                                    </div>
+                                </div>
+
+                                <!-- Grid -->
+                                <div
+                                    class="flex flex-wrap gap-1 mb-2 max-h-48 overflow-y-auto custom-scrollbar p-1 border rounded dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 content-start"
+                                    @scroll.debounce="if($el.scrollTop + $el.clientHeight >= $el.scrollHeight - 20) loadMoreIcons()">
+                                    <template x-for="icon in icons" :key="icon">
+                                        <div
+                                            class="w-8 h-8 rounded cursor-pointer border border-transparent hover:border-primary/50 hover:bg-white dark:hover:bg-gray-700 transition-all flex items-center justify-center shrink-0"
+                                            :class="newCollectionIcon === icon ? '!bg-primary/10 !border-primary text-primary shadow-sm' : 'text-gray-500 dark:text-gray-400'"
+                                            @click="newCollectionIcon = icon; showCollectionIconPicker = false" :title="icon">
+                                            <iconify-icon :icon="icon" width="20" height="20"></iconify-icon>
+                                        </div>
+                                    </template>
+                                    <template x-if="icons.length === 0 && !isLoadingIcons">
+                                        <div class="w-full text-center py-4 text-xs text-gray-400">Aucune icône trouvée</div>
+                                    </template>
+                                    <template x-if="isLoadingIcons">
+                                        <div class="w-full text-center py-2">
+                                            <span class="animate-spin border-2 border-primary border-l-transparent rounded-full w-4 h-4 inline-block"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Couleur -->
+                        <div class="mb-4">
+                            <label class="mb-2 block text-sm font-bold">Couleur</label>
+                            
+                            <!-- Minimal Trigger -->
+                            <div @click="showCollectionColorPicker = !showCollectionColorPicker" class="flex items-center gap-2 cursor-pointer group">
+                                <iconify-icon icon="solar:pallete-2-bold-duotone" width="18" 
+                                    :style="newCollectionColor ? 'color:' + newCollectionColor : ''"
+                                    :class="!newCollectionColor && 'text-gray-400'"></iconify-icon>
+                                <span class="text-sm flex-1" :class="newCollectionColor ? 'text-gray-700' : 'text-gray-400'" 
+                                    x-text="newCollectionColor || 'Couleur personnalisée'"></span>
+                                <iconify-icon icon="solar:alt-arrow-down-linear" class="text-gray-400 group-hover:text-primary transition-colors" width="14"
+                                    :class="showCollectionColorPicker && 'rotate-180'" style="transition: transform 0.2s, color 0.2s"></iconify-icon>
+                            </div>
+
+                            <!-- Expandable Picker -->
+                            <div x-show="showCollectionColorPicker" x-collapse class="mt-3">
+                                <div class="flex flex-wrap gap-2.5">
+                                    <template x-for="color in availableColors" :key="color">
+                                        <div
+                                            class="w-7 h-7 rounded-full cursor-pointer flex items-center justify-center border-2 transition-transform hover:scale-110"
+                                            :style="'background-color: ' + color + '; border-color: ' + (newCollectionColor === color ? 'black' : 'transparent')"
+                                            @click="newCollectionColor = color; showCollectionColorPicker = false">
+                                            <iconify-icon icon="solar:check-circle-bold" class="text-white" width="14"
+                                                x-show="newCollectionColor === color"></iconify-icon>
+                                        </div>
+                                    </template>
+
+                                    <!-- Custom Picker -->
+                                    <div class="relative w-7 h-7 rounded-full cursor-pointer border-2 border-gray-300 flex items-center justify-center overflow-hidden hover:border-gray-400"
+                                        :style="newCollectionColor && !availableColors.includes(newCollectionColor) ? 'background-color: ' + newCollectionColor + '; border-color: ' + newCollectionColor : ''">
+                                        <iconify-icon icon="solar:pen-new-square-linear" width="14" class="pointer-events-none"
+                                            :class="newCollectionColor && !availableColors.includes(newCollectionColor) ? 'text-white mix-blend-difference' : 'text-gray-500'"></iconify-icon>
+                                        <input type="color" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full p-0 border-0"
+                                            x-model="newCollectionColor" title="Couleur personnalisée" />
+                                    </div>
+
+                                    <!-- Reset -->
+                                    <div class="w-7 h-7 rounded-full cursor-pointer flex items-center justify-center border-2 hover:border-gray-400 bg-white text-gray-400"
+                                        title="Réinitialiser" @click="newCollectionColor = ''" :class="!newCollectionColor && 'border-black'">
+                                        <iconify-icon icon="solar:close-circle-linear" width="16"></iconify-icon>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Champs standards -->
+                        <div class="mb-4">
+                            <label class="mb-2 block text-sm font-bold">Champs standards</label>
+                            <div class="flex flex-wrap gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" x-model="newCollectionStandardFields.title" class="form-checkbox text-primary">
+                                    <span class="text-sm">Titre</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" x-model="newCollectionStandardFields.slug" class="form-checkbox text-primary">
+                                    <span class="text-sm">Slug</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" x-model="newCollectionStandardFields.date" class="form-checkbox text-primary">
+                                    <span class="text-sm">Date</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Active Toggle -->
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm font-bold">Active</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" x-model="newCollectionActive" class="sr-only peer">
+                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-full" :disabled="isSubmitting">
+                            <span x-show="isSubmitting"
+                                class="animate-spin border-2 border-white border-l-transparent rounded-full w-5 h-5 ltr:mr-2 rtl:ml-2 inline-block align-middle"></span>
+                            Créer la collection
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- SortableJS CDN -->
@@ -373,6 +554,19 @@ function databaseTree() {
             '#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', 
             '#EF4444', '#06B6D4', '#6366F1', '#9CA3AF', '#EC4899'
         ],
+
+        // Collection creation state
+        showCreateCollectionModal: false,
+        targetDatabaseId: null,
+        newCollectionName: '',
+        newCollectionSlug: '',
+        newCollectionDescription: '',
+        newCollectionIcon: '',
+        newCollectionColor: '',
+        showCollectionIconPicker: false,
+        showCollectionColorPicker: false,
+        newCollectionStandardFields: { title: true, slug: false, date: false },
+        newCollectionActive: true,
 
         init() {
             this.loadTree();
@@ -532,10 +726,29 @@ function databaseTree() {
                     // Call API to move collection
                     await self.moveCollection(collectionId, targetDbId);
                 },
-                onEnd: function(evt) {
-                    // Update order if needed (same container reorder)
+                onEnd: async function(evt) {
+                    // Save order when reordering within same container
+                    if (evt.from === evt.to) {
+                        const items = evt.to.querySelectorAll('.collection-item');
+                        const collectionIds = Array.from(items).map(item => item.dataset.collectionId);
+                        await self.saveCollectionOrder(dbId, collectionIds);
+                    }
                 }
             });
+        },
+
+        async saveCollectionOrder(dbId, collectionIds) {
+            try {
+                const accountNum = window.location.pathname.split('/')[2];
+                await fetch(`/account/${accountNum}/db/api/${dbId}/collections/reorder`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ collectionIds })
+                });
+                console.log('[DB] Saved collection order for', dbId, collectionIds);
+            } catch (e) {
+                console.error('Error saving collection order:', e);
+            }
         },
 
         async moveCollection(collectionId, targetDatabaseId) {
@@ -606,6 +819,69 @@ function databaseTree() {
                 }
             } catch (e) {
                 console.error('Error creating database:', e);
+            } finally {
+                this.isSubmitting = false;
+            }
+        },
+
+        // Open collection creation modal for a specific database
+        openCreateCollectionModal(db) {
+            this.targetDatabaseId = db.id;
+            this.newCollectionName = '';
+            this.newCollectionSlug = '';
+            this.newCollectionDescription = '';
+            this.newCollectionIcon = '';
+            this.newCollectionColor = '';
+            this.newCollectionStandardFields = { title: true, slug: false, date: false };
+            this.newCollectionActive = true;
+            this.showCollectionIconPicker = false;
+            this.showCollectionColorPicker = false;
+            this.showCreateCollectionModal = true;
+        },
+
+        // Create a new collection (Entity) in the target database
+        async createCollection() {
+            if (!this.newCollectionName.trim() || !this.targetDatabaseId) return;
+            this.isSubmitting = true;
+
+            try {
+                const accountNum = window.location.pathname.split('/')[2];
+                const res = await fetch(`/account/${accountNum}/db/api/${this.targetDatabaseId}/collections/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: this.newCollectionName,
+                        slug: this.newCollectionSlug,
+                        description: this.newCollectionDescription,
+                        icon: this.newCollectionIcon,
+                        color: this.newCollectionColor,
+                        standardFields: this.newCollectionStandardFields
+                    })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    // Add collection to the correct database (or global)
+                    if (this.targetDatabaseId === 'global') {
+                        if (!this.tree.global.collections) this.tree.global.collections = [];
+                        this.tree.global.collections.push(data.collection);
+                        this.tree.global.isOpen = true;
+                    } else {
+                        const db = this.tree.databases.find(d => d.id === this.targetDatabaseId);
+                        if (db) {
+                            if (!db.collections) db.collections = [];
+                            db.collections.push(data.collection);
+                            db.isOpen = true; // Expand to show new collection
+                        }
+                    }
+                    this.showCreateCollectionModal = false;
+                    console.log('[DB] Collection created:', data.collection);
+                } else {
+                    alert('Erreur: ' + (data.error || 'Création échouée'));
+                }
+            } catch (e) {
+                console.error('Error creating collection:', e);
+                alert('Erreur: ' + e.message);
             } finally {
                 this.isSubmitting = false;
             }

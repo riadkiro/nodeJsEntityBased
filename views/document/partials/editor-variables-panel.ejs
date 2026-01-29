@@ -147,7 +147,7 @@
                     <div class="flex flex-wrap gap-2">
                         <template x-for="field in section.fields" :key="field.id">
                             <button 
-                                @click="insertToken(`{{${section.name}.${field.name}}}`)"
+                                @click="$dispatch('insert-token', { path: `${section.name}.cf.${field.name}`, metadata: { isCustomField: true, fieldId: field.id } })"
                                 class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-xs hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer"
                             >
                                 <iconify-icon :icon="field.icon" class="text-blue-600 dark:text-blue-400" width="14"></iconify-icon>

@@ -1,4 +1,5 @@
-<div x-data="documentEditor()" class="h-[calc(100vh-80px)] flex flex-col">
+<div x-data="documentEditor()" @insert-token.window="insertVariableToken($event.detail.path, $event.detail.metadata)"
+  class="h-[calc(100vh-80px)] flex flex-col">
   <!-- Header Bar -->
   <%- include('partials/editor-header') %>
 
@@ -328,8 +329,23 @@
         },
 
         // Insert variable token at cursor position
-        insertVariableToken: function (variablePath) {
-          var token = '{{' + variablePath + '}}';
+        // For custom fields, pass fieldMetadata: { isCustomField: true, fieldId: 'xxx' }
+        insertVariableToken: function (variablePath, fieldMetadata) {
+          var token;
+          var displayToken;
+
+          if (fieldMetadata && fieldMetadata.isCustomField && fieldMetadata.fieldId) {
+            // Custom field: embed fieldId in token
+            // Internal: {{alias.cf.fieldName@fieldId}}
+            // Display shows without fieldId for readability
+            token = '{{' + variablePath + '@' + fieldMetadata.fieldId + '}}';
+            displayToken = '{{' + variablePath + '}}';
+          } else {
+            // Standard field: no fieldId
+            token = '{{' + variablePath + '}}';
+            displayToken = token;
+          }
+
           var range = null;
 
           // Try to use saved range first
@@ -366,10 +382,10 @@
           // Create styled span for the token (yellow background style)
           var span = document.createElement('span');
           span.className = 'template-token';
-          span.setAttribute('data-token', variablePath);
+          span.setAttribute('data-token', token); // Full token with @fieldId for backend
           span.setAttribute('contenteditable', 'false');
           span.style.cssText = 'background: #fef08a; color: #854d0e; padding: 2px 8px; border-radius: 4px; font-family: "Courier New", monospace; font-size: 0.9em; font-weight: 600; margin: 0 2px; display: inline-block; cursor: default; user-select: none; border: 1px solid #fde047;';
-          span.textContent = token;
+          span.textContent = displayToken; // Clean display without fieldId
 
           // Delete current selection if any
           range.deleteContents();
@@ -391,9 +407,6 @@
 
           // Update saved range for next insertion
           this.savedRange = range.cloneRange();
-
-          // Sync content
-          this.syncContent();
 
           console.log('Token inserted:', token);
         },

@@ -1,3 +1,26 @@
+<style>
+  /* Custom Range Slider Styling */
+  input[type="range"].range-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  input[type="range"].range-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+</style>
+
 <div class="bg-white dark:bg-gray-900 border-b dark:border-gray-800 px-4 py-3 flex items-center justify-between">
   <div class="flex items-center gap-3">
     <a href="/account/<%= account_number %>/documents" class="text-gray-500 hover:text-primary">
@@ -13,22 +36,50 @@
           <!-- Font Family Pill -->
           <div
             class="flex items-center bg-gray-50 dark:bg-gray-700/50 rounded-lg px-2 py-1 border border-gray-200 dark:border-gray-600">
-            <select @change="formatDoc('fontName', $event.target.value)"
+            <select @change="formatDoc('fontName', $event.target.value)" x-model="currentFont"
               class="bg-transparent text-gray-700 dark:text-gray-200 text-[11px] font-bold outline-none border-none p-0 cursor-pointer w-24">
+              <option value="">-</option>
               <option value="Inter">Inter</option>
-              <option value="Times New Roman">Nexa</option>
+              <option value="Nunito">Nunito</option>
+              <option value="Poppins">Poppins</option>
+              <option value="Montserrat">Montserrat</option>
+              <option value="Raleway">Raleway</option>
+              <option value="Open Sans">Open Sans</option>
+              <option value="Lato">Lato</option>
+              <option value="Roboto">Roboto</option>
               <option value="Arial">Arial</option>
               <option value="Georgia">Georgia</option>
+              <option value="Times New Roman">Times New Roman</option>
             </select>
           </div>
 
           <!-- Font Size Pills -->
           <div
             class="flex items-center bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
-            <button @click="formatDoc('fontSize', '2')"
+            <button @click="decreaseFontSize()"
               class="px-2 py-1 text-gray-500 hover:text-primary transition-colors text-xs font-bold border-r border-gray-200 dark:border-gray-600">-</button>
-            <div class="px-3 py-1 text-gray-700 dark:text-gray-200 text-[11px] font-bold">12</div>
-            <button @click="formatDoc('fontSize', '4')"
+            <select x-model="currentFontSize" @change="setCustomFontSize($event.target.value)"
+              class="w-14 px-1 py-1 text-center bg-transparent text-gray-700 dark:text-gray-200 text-[11px] font-bold outline-none border-none cursor-pointer appearance-none">
+              <option value="">-</option>
+              <option value="6">6</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="14">14</option>
+              <option value="16">16</option>
+              <option value="18">18</option>
+              <option value="20">20</option>
+              <option value="22">22</option>
+              <option value="24">24</option>
+              <option value="28">28</option>
+              <option value="32">32</option>
+              <option value="36">36</option>
+              <option value="48">48</option>
+              <option value="72">72</option>
+            </select>
+            <button @click="increaseFontSize()"
               class="px-2 py-1 text-gray-500 hover:text-primary transition-colors text-xs font-bold border-l border-gray-200 dark:border-gray-600">+</button>
           </div>
 
@@ -37,22 +88,26 @@
           <!-- Formatting Buttons -->
           <div class="flex items-center gap-0.5">
             <button @click="formatDoc('bold')"
-              class="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all font-serif italic text-sm"
+              :class="isBold === true ? 'text-primary bg-primary/10' : isBold === null ? 'text-gray-300' : 'text-gray-400'"
+              class="w-8 h-8 flex items-center justify-center rounded hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all text-sm"
               title="Gras">
               <span class="font-bold">B</span>
             </button>
             <button @click="formatDoc('italic')"
-              class="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all italic text-sm"
+              :class="isItalic === true ? 'text-primary bg-primary/10' : isItalic === null ? 'text-gray-300' : 'text-gray-400'"
+              class="w-8 h-8 flex items-center justify-center rounded hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all text-sm"
               title="Italique">
               <span class="italic">I</span>
             </button>
             <button @click="formatDoc('underline')"
-              class="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all text-sm"
+              :class="isUnderline === true ? 'text-primary bg-primary/10' : isUnderline === null ? 'text-gray-300' : 'text-gray-400'"
+              class="w-8 h-8 flex items-center justify-center rounded hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all text-sm"
               title="Souligné">
               <span class="underline">U</span>
             </button>
             <button @click="formatDoc('strikethrough')"
-              class="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all text-sm"
+              :class="isStrikethrough === true ? 'text-primary bg-primary/10' : isStrikethrough === null ? 'text-gray-300' : 'text-gray-400'"
+              class="w-8 h-8 flex items-center justify-center rounded hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all text-sm"
               title="Barré">
               <span class="line-through">S</span>
             </button>
@@ -65,20 +120,68 @@
           <!-- Alignment Tools -->
           <div class="flex items-center gap-0.5">
             <button @click="formatDoc('justifyLeft')"
-              class="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+              :class="currentAlignment === 'left' ? 'text-primary bg-primary/10' : 'text-gray-400'"
+              class="w-8 h-8 flex items-center justify-center rounded hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
               title="Aligner à gauche">
               <iconify-icon icon="tabler:align-left" width="18"></iconify-icon>
             </button>
             <button @click="formatDoc('justifyCenter')"
-              class="w-8 h-8 flex items-center justify-center rounded text-gray-500 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+              :class="currentAlignment === 'center' ? 'text-primary bg-primary/10' : 'text-gray-400'"
+              class="w-8 h-8 flex items-center justify-center rounded hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
               title="Aligner au centre">
               <iconify-icon icon="tabler:align-center" width="18"></iconify-icon>
             </button>
             <button @click="formatDoc('justifyRight')"
-              class="w-8 h-8 flex items-center justify-center rounded text-gray-500 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+              :class="currentAlignment === 'right' ? 'text-primary bg-primary/10' : 'text-gray-400'"
+              class="w-8 h-8 flex items-center justify-center rounded hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
               title="Aligner à droite">
               <iconify-icon icon="tabler:align-right" width="18"></iconify-icon>
             </button>
+          </div>
+
+          <div class="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+          <!-- Spacing Dropdown Menu -->
+          <div class="relative" x-data="{ showSpacing: false }">
+            <button @click="showSpacing = !showSpacing"
+              class="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+              title="Espacement">
+              <iconify-icon icon="tabler:letter-spacing" width="18"></iconify-icon>
+            </button>
+
+            <!-- Dropdown Panel -->
+            <div x-show="showSpacing" @click.outside="showSpacing = false"
+              x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95"
+              x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-75"
+              x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+              class="absolute top-full mt-2 left-0 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-4 z-50">
+
+              <!-- Letter Spacing -->
+              <div class="mb-4">
+                <label class="text-xs text-gray-700 dark:text-gray-300 font-medium mb-2 block">Espacement des
+                  lettres</label>
+                <div class="flex items-center gap-3">
+                  <input type="range" x-model.number="currentLetterSpacing"
+                    @input="setLetterSpacing($event.target.value)" min="-2" max="10" step="0.5"
+                    class="flex-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer range-slider">
+                  <span class="text-sm font-mono w-10 text-right text-gray-900 dark:text-white"
+                    x-text="currentLetterSpacing.toFixed(1)"></span>
+                </div>
+              </div>
+
+              <!-- Line Height -->
+              <div>
+                <label class="text-xs text-gray-700 dark:text-gray-300 font-medium mb-2 block">Interligne</label>
+                <div class="flex items-center gap-3">
+                  <input type="range" x-model.number="currentLineHeight" @input="setLineHeight($event.target.value)"
+                    min="0.5" max="3" step="0.1"
+                    class="flex-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer range-slider">
+                  <span class="text-sm font-mono w-10 text-right text-gray-900 dark:text-white"
+                    x-text="currentLineHeight.toFixed(1)"></span>
+                </div>
+              </div>
+
+            </div>
           </div>
 
           <div class="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>

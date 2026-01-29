@@ -98,6 +98,15 @@
         lastSaved: null,
         saveTimeout: null,
         isGlobalSelection: false,
+        currentFont: 'Inter', // Track current font for the selector
+        currentFontSize: '', // Track current font size, empty if mixed
+        isBold: null, // true/false/null (null = mixed state)
+        isItalic: null, // true/false/null (null = mixed state)
+        isUnderline: null, // true/false/null (null = mixed state)
+        isStrikethrough: null, // true/false/null (null = mixed state)
+        currentAlignment: '', // 'left'/'center'/'right' or empty if mixed
+        currentLineHeight: 1.5, // Line height (interligne)
+        currentLetterSpacing: 0, // Letter spacing in px
         editingHtml: null,
         editingHtmlContent: '',
         openSections: {
@@ -150,10 +159,326 @@
             }
           });
 
-          // Clear selection on click
+          // Clear selection on click (but not when clicking toolbar elements)
           window.addEventListener('click', function (e) {
-            self.isGlobalSelection = false;
+            // Don't clear if clicking on toolbar buttons, selects, or their children
+            var clickedToolbar = e.target.closest('.bg-white.dark\\:bg-gray-900.border-b') || 
+                                 e.target.closest('button') || 
+                                 e.target.closest('select');
+            
+            if (!clickedToolbar) {
+              self.isGlobalSelection = false;
+            }
           });
+
+          // Track font changes when selection changes
+          document.addEventListener('selectionchange', function () {
+            if (!self.isGlobalSelection) {
+              self.updateCurrentStyles();
+            }
+          });
+
+          // Also update font on mouse up (for better responsiveness)
+          window.addEventListener('mouseup', function () {
+            setTimeout(function () {
+              if (!self.isGlobalSelection) {
+                self.updateCurrentStyles();
+              }
+            }, 10);
+          });
+
+          // Update font on keyboard navigation
+          window.addEventListener('keyup', function (e) {
+            // Only update on arrow keys or when navigating
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) {
+              if (!self.isGlobalSelection) {
+                self.updateCurrentStyles();
+              }
+            }
+          });
+        },
+
+        updateCurrentStyles: function () {
+          var sel = window.getSelection();
+          if (!sel || sel.rangeCount === 0) {
+            this.resetStyleStates();
+            return;
+          }
+
+          var range = sel.getRangeAt(0);
+          
+          // Check if we're in a page content area
+          var container = range.commonAncestorContainer;
+          var element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
+          
+          if (!element.closest('.page-content') && !element.closest('[contenteditable="true"]')) {
+            this.resetStyleStates();
+            return;
+          }
+
+          // Check if this is just a cursor position (collapsed range) or a selection
+          if (range.collapsed) {
+            // Cursor position only - detect styles at cursor
+            this.detectStylesAtCursor(element);
+          } else {
+            // Selection - detect styles across all selected nodes
+            var textNodes = this.getTextNodesInRange(range);
+            
+            if (textNodes.length === 0) {
+              // Fallback to cursor position if no text nodes found
+              this.detectStylesAtCursor(element);
+            } else {
+              // Detect each style across selection
+              this.detectFont(textNodes);
+              this.detectFontSize(textNodes);
+              this.detectBold(textNodes);
+              this.detectItalic(textNodes);
+              this.detectUnderline(textNodes);
+              this.detectStrikethrough(textNodes);
+              this.detectAlignment(textNodes);
+            }
+          }
+        },
+
+        detectStylesAtCursor: function (element) {
+          // Detect all styles at the cursor position (single element)
+          var style = window.getComputedStyle(element);
+          var validFonts = ['Inter', 'Nunito', 'Poppins', 'Montserrat', 'Raleway', 'Open Sans', 'Lato', 'Roboto', 'Arial', 'Georgia', 'Times New Roman'];
+          
+          // Font
+          var fontFamily = style.fontFamily;
+          if (fontFamily) {
+            var fontName = fontFamily.split(',')[0].replace(/['"]/g, '').trim();
+            var matched = validFonts.find(function (f) {
+              return fontName === f || fontName.toLowerCase().includes(f.toLowerCase());
+            });
+            this.currentFont = matched || '';
+          } else {
+            this.currentFont = '';
+          }
+          
+          // Font Size
+          var fontSize = style.fontSize;
+          this.currentFontSize = fontSize ? parseInt(fontSize) : '';
+          
+          // Bold
+          var fontWeight = style.fontWeight;
+          this.isBold = parseInt(fontWeight) >= 600 || fontWeight === 'bold';
+          
+          // Italic
+          var fontStyle = style.fontStyle;
+          this.isItalic = fontStyle === 'italic' || fontStyle === 'oblique';
+          
+          // Underline
+          var textDecoration = style.textDecoration;
+          this.isUnderline = textDecoration.includes('underline');
+          
+          // Strikethrough
+          this.isStrikethrough = textDecoration.includes('line-through');
+          
+          // Alignment
+          var blockElement = element.closest('div, p, h1, h2, h3, h4, h5, h6, li');
+          if (blockElement) {
+            var textAlign = window.getComputedStyle(blockElement).textAlign;
+            if (textAlign === 'start' || textAlign === 'left') {
+              this.currentAlignment = 'left';
+            } else if (textAlign === 'center') {
+              this.currentAlignment = 'center';
+            } else if (textAlign === 'end' || textAlign === 'right') {
+              this.currentAlignment = 'right';
+            } else {
+              this.currentAlignment = '';
+            }
+          } else {
+            this.currentAlignment = '';
+          }
+        },
+
+        resetStyleStates: function () {
+          this.currentFont = '';
+          this.currentFontSize = '';
+          this.isBold = null;
+          this.isItalic = null;
+          this.isUnderline = null;
+          this.isStrikethrough = null;
+          this.currentAlignment = '';
+        },
+
+        getTextNodesInRange: function (range) {
+          var textNodes = [];
+          var walker = document.createTreeWalker(
+            range.commonAncestorContainer,
+            NodeFilter.SHOW_TEXT,
+            {
+              acceptNode: function (node) {
+                if (range.intersectsNode(node)) {
+                  return NodeFilter.FILTER_ACCEPT;
+                }
+                return NodeFilter.FILTER_REJECT;
+              }
+            }
+          );
+          
+          var node;
+          while (node = walker.nextNode()) {
+            if (node.textContent.trim().length > 0) {
+              textNodes.push(node);
+            }
+          }
+          
+          return textNodes;
+        },
+
+        detectFont: function (textNodes) {
+          var validFonts = ['Inter', 'Nunito', 'Poppins', 'Montserrat', 'Raleway', 'Open Sans', 'Lato', 'Roboto', 'Arial', 'Georgia', 'Times New Roman'];
+          var fonts = new Set();
+          
+          textNodes.forEach(function (node) {
+            var element = node.parentElement;
+            var computedFont = window.getComputedStyle(element).fontFamily;
+            if (computedFont) {
+              var fontName = computedFont.split(',')[0].replace(/['"]/g, '').trim();
+              
+              // Match with valid fonts
+              var matched = validFonts.find(function (f) {
+                return fontName === f || fontName.toLowerCase().includes(f.toLowerCase()) || f.toLowerCase().includes(fontName.toLowerCase());
+              });
+              
+              if (matched) {
+                fonts.add(matched);
+              }
+            }
+          });
+          
+          if (fonts.size === 1) {
+            this.currentFont = Array.from(fonts)[0];
+          } else {
+            this.currentFont = ''; // Mixed or no font
+          }
+        },
+
+        detectFontSize: function (textNodes) {
+          var self = this;
+          var sizes = new Set();
+          
+          textNodes.forEach(function (node) {
+            var element = node.parentElement;
+            var fontSize = window.getComputedStyle(element).fontSize;
+            if (fontSize) {
+              sizes.add(fontSize);
+            }
+          });
+          
+          if (sizes.size === 1) {
+            var size = Array.from(sizes)[0];
+            // Convert px to readable number (e.g., "16px" -> "16")
+            this.currentFontSize = parseInt(size);
+          } else {
+            this.currentFontSize = ''; // Mixed sizes
+          }
+        },
+
+        detectBold: function (textNodes) {
+          var self = this;
+          var boldStates = new Set();
+          
+          textNodes.forEach(function (node) {
+            var element = node.parentElement;
+            var fontWeight = window.getComputedStyle(element).fontWeight;
+            var isBold = parseInt(fontWeight) >= 600 || fontWeight === 'bold';
+            boldStates.add(isBold);
+          });
+          
+          if (boldStates.size === 1) {
+            this.isBold = Array.from(boldStates)[0];
+          } else {
+            this.isBold = null; // Mixed state
+          }
+        },
+
+        detectItalic: function (textNodes) {
+          var self = this;
+          var italicStates = new Set();
+          
+          textNodes.forEach(function (node) {
+            var element = node.parentElement;
+            var fontStyle = window.getComputedStyle(element).fontStyle;
+            var isItalic = fontStyle === 'italic' || fontStyle === 'oblique';
+            italicStates.add(isItalic);
+          });
+          
+          if (italicStates.size === 1) {
+            this.isItalic = Array.from(italicStates)[0];
+          } else {
+            this.isItalic = null; // Mixed state
+          }
+        },
+
+        detectUnderline: function (textNodes) {
+          var self = this;
+          var underlineStates = new Set();
+          
+          textNodes.forEach(function (node) {
+            var element = node.parentElement;
+            var textDecoration = window.getComputedStyle(element).textDecoration;
+            var isUnderline = textDecoration.includes('underline');
+            underlineStates.add(isUnderline);
+          });
+          
+          if (underlineStates.size === 1) {
+            this.isUnderline = Array.from(underlineStates)[0];
+          } else {
+            this.isUnderline = null; // Mixed state
+          }
+        },
+
+        detectStrikethrough: function (textNodes) {
+          var self = this;
+          var strikeStates = new Set();
+          
+          textNodes.forEach(function (node) {
+            var element = node.parentElement;
+            var textDecoration = window.getComputedStyle(element).textDecoration;
+            var isStrike = textDecoration.includes('line-through');
+            strikeStates.add(isStrike);
+          });
+          
+          if (strikeStates.size === 1) {
+            this.isStrikethrough = Array.from(strikeStates)[0];
+          } else {
+            this.isStrikethrough = null; // Mixed state
+          }
+        },
+
+        detectAlignment: function (textNodes) {
+          var self = this;
+          var alignments = new Set();
+          
+          textNodes.forEach(function (node) {
+            var element = node.parentElement;
+            // Walk up to find block-level element with text-align
+            var blockElement = element.closest('div, p, h1, h2, h3, h4, h5, h6, li');
+            if (blockElement) {
+              var textAlign = window.getComputedStyle(blockElement).textAlign;
+              alignments.add(textAlign);
+            }
+          });
+          
+          if (alignments.size === 1) {
+            var align = Array.from(alignments)[0];
+            // Normalize alignment values
+            if (align === 'start' || align === 'left') {
+              this.currentAlignment = 'left';
+            } else if (align === 'center') {
+              this.currentAlignment = 'center';
+            } else if (align === 'end' || align === 'right') {
+              this.currentAlignment = 'right';
+            } else {
+              this.currentAlignment = '';
+            }
+          } else {
+            this.currentAlignment = ''; // Mixed alignments
+          }
         },
 
         initSortableColumn: function (el) {
@@ -1400,8 +1725,340 @@
             });
         },
         formatDoc: function (cmd, val) {
-          document.execCommand(cmd, false, val);
-          // Focus the last selected element if possible, or trigger a global save
+          var self = this;
+          
+          // If global selection is active, apply to ALL pages
+          if (this.isGlobalSelection) {
+            // Apply to all page content elements
+            this.doc.pages.forEach(function (page, index) {
+              var pageEl = document.querySelector('.page-content[data-page-index="' + index + '"]');
+              if (pageEl) {
+                // Select all content in this page
+                var range = document.createRange();
+                range.selectNodeContents(pageEl);
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+                
+                // Apply the formatting command
+                document.execCommand(cmd, false, val);
+                
+                // Update the page content in the model
+                self.doc.pages[index].content = pageEl.innerHTML;
+              }
+            });
+            
+            // Clear selection after applying
+            window.getSelection().removeAllRanges();
+            this.isGlobalSelection = false;
+            
+            // Visual feedback
+            var toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded shadow-lg z-50';
+            toast.innerText = 'Style appliqué à toutes les pages !';
+            document.body.appendChild(toast);
+            setTimeout(function () { toast.remove(); }, 2000);
+          } else {
+            // Standard behavior: apply to current selection
+            document.execCommand(cmd, false, val);
+          }
+          
+          // Save the document
+          this.saveDocument();
+        },
+
+        increaseFontSize: function () {
+          var sel = window.getSelection();
+          if (!sel || sel.rangeCount === 0) return;
+          
+          var range = sel.getRangeAt(0);
+          
+          // If global selection, apply to all pages
+          if (this.isGlobalSelection) {
+            this.doc.pages.forEach(function (page, index) {
+              var pageEl = document.querySelector('.page-content[data-page-index="' + index + '"]');
+              if (pageEl) {
+                var elements = pageEl.querySelectorAll('*');
+                elements.forEach(function (el) {
+                  if (el.textContent.trim().length > 0) {
+                    var currentSize = parseInt(window.getComputedStyle(el).fontSize);
+                    el.style.fontSize = (currentSize + 2) + 'px';
+                  }
+                });
+              }
+            });
+            this.saveDocument();
+            return;
+          }
+          
+          // Handle selection or cursor
+          if (range.collapsed) {
+            // Cursor only - wrap in span with larger font
+            var currentSize = this.currentFontSize || 16;
+            var newSize = currentSize + 2;
+            document.execCommand('fontSize', false, '7'); // Temp size
+            var fontElements = document.querySelectorAll('font[size="7"]');
+            fontElements.forEach(function (el) {
+              var span = document.createElement('span');
+              span.style.fontSize = newSize + 'px';
+              span.innerHTML = el.innerHTML;
+              el.parentNode.replaceChild(span, el);
+            });
+          } else {
+            // Selection - increase all selected elements
+            var container = range.commonAncestorContainer;
+            var elements = [];
+            
+            if (container.nodeType === Node.TEXT_NODE) {
+              elements = [container.parentElement];
+            } else {
+              elements = Array.from(container.querySelectorAll('*')).filter(function (el) {
+                return range.intersectsNode(el) && el.textContent.trim().length > 0;
+              });
+              if (elements.length === 0) elements = [container];
+            }
+            
+            elements.forEach(function (el) {
+              var currentSize = parseInt(window.getComputedStyle(el).fontSize);
+              el.style.fontSize = (currentSize + 2) + 'px';
+            });
+          }
+          
+          this.saveDocument();
+          setTimeout(() => this.updateCurrentStyles(), 100);
+        },
+
+        decreaseFontSize: function () {
+          var sel = window.getSelection();
+          if (!sel || sel.rangeCount === 0) return;
+          
+          var range = sel.getRangeAt(0);
+          
+          // If global selection, apply to all pages
+          if (this.isGlobalSelection) {
+            this.doc.pages.forEach(function (page, index) {
+              var pageEl = document.querySelector('.page-content[data-page-index="' + index + '"]');
+              if (pageEl) {
+                var elements = pageEl.querySelectorAll('*');
+                elements.forEach(function (el) {
+                  if (el.textContent.trim().length > 0) {
+                    var currentSize = parseInt(window.getComputedStyle(el).fontSize);
+                    if (currentSize > 8) { // Min size 8px
+                      el.style.fontSize = (currentSize - 2) + 'px';
+                    }
+                  }
+                });
+              }
+            });
+            this.saveDocument();
+            return;
+          }
+          
+          // Handle selection or cursor
+          if (range.collapsed) {
+            // Cursor only
+            var currentSize = this.currentFontSize || 16;
+            var newSize = Math.max(8, currentSize - 2); // Min 8px
+            document.execCommand('fontSize', false, '7');
+            var fontElements = document.querySelectorAll('font[size="7"]');
+            fontElements.forEach(function (el) {
+              var span = document.createElement('span');
+              span.style.fontSize = newSize + 'px';
+              span.innerHTML = el.innerHTML;
+              el.parentNode.replaceChild(span, el);
+            });
+          } else {
+            // Selection
+            var container = range.commonAncestorContainer;
+            var elements = [];
+            
+            if (container.nodeType === Node.TEXT_NODE) {
+              elements = [container.parentElement];
+            } else {
+              elements = Array.from(container.querySelectorAll('*')).filter(function (el) {
+                return range.intersectsNode(el) && el.textContent.trim().length > 0;
+              });
+              if (elements.length === 0) elements = [container];
+            }
+            
+            elements.forEach(function (el) {
+              var currentSize = parseInt(window.getComputedStyle(el).fontSize);
+              if (currentSize > 8) {
+                el.style.fontSize = (currentSize - 2) + 'px';
+              }
+            });
+          }
+          
+          this.saveDocument();
+          setTimeout(() => this.updateCurrentStyles(), 100);
+        },
+
+        setCustomFontSize: function (value) {
+          if (!value || value === '' || value === '-') return;
+          
+          var size = parseInt(value);
+          if (isNaN(size) || size < 8 || size > 200) {
+            // Reset to current size if invalid
+            this.updateCurrentStyles();
+            return;
+          }
+          
+          var sel = window.getSelection();
+          if (!sel || sel.rangeCount === 0) return;
+          
+          var range = sel.getRangeAt(0);
+          
+          // If global selection, apply to all pages
+          if (this.isGlobalSelection) {
+            this.doc.pages.forEach(function (page, index) {
+              var pageEl = document.querySelector('.page-content[data-page-index="' + index + '"]');
+              if (pageEl) {
+                var elements = pageEl.querySelectorAll('*');
+                elements.forEach(function (el) {
+                  if (el.textContent.trim().length > 0) {
+                    el.style.fontSize = size + 'px';
+                  }
+                });
+              }
+            });
+            this.saveDocument();
+            setTimeout(() => this.updateCurrentStyles(), 100);
+            return;
+          }
+          
+          // Handle selection or cursor
+          if (range.collapsed) {
+            // Cursor only - set future typing size
+            document.execCommand('fontSize', false, '7');
+            var fontElements = document.querySelectorAll('font[size="7"]');
+            fontElements.forEach(function (el) {
+              var span = document.createElement('span');
+              span.style.fontSize = size + 'px';
+              span.innerHTML = el.innerHTML || '&nbsp;';
+              el.parentNode.replaceChild(span, el);
+            });
+          } else {
+            // Selection - apply to all selected elements
+            var container = range.commonAncestorContainer;
+            var elements = [];
+            
+            if (container.nodeType === Node.TEXT_NODE) {
+              elements = [container.parentElement];
+            } else {
+              elements = Array.from(container.querySelectorAll('*')).filter(function (el) {
+                return range.intersectsNode(el) && el.textContent.trim().length > 0;
+              });
+              if (elements.length === 0) elements = [container];
+            }
+            
+            elements.forEach(function (el) {
+              el.style.fontSize = size + 'px';
+            });
+          }
+          
+          this.saveDocument();
+          setTimeout(() => this.updateCurrentStyles(), 100);
+        },
+
+        setLineHeight: function (value) {
+          var sel = window.getSelection();
+          if (!sel || sel.rangeCount === 0) return;
+          
+          var range = sel.getRangeAt(0);
+          
+          // If global selection, apply to all pages
+          if (this.isGlobalSelection) {
+            this.doc.pages.forEach(function (page, index) {
+              var pageEl = document.querySelector('.page-content[data-page-index="' + index + '"]');
+              if (pageEl) {
+                var elements = pageEl.querySelectorAll('*');
+                elements.forEach(function (el) {
+                  if (el.textContent.trim().length > 0) {
+                    el.style.lineHeight = value;
+                  }
+                });
+              }
+            });
+            this.currentLineHeight = parseFloat(value);
+            this.saveDocument();
+            return;
+          }
+          
+          // Apply to selection or cursor
+          if (range.collapsed) {
+            var container = range.commonAncestorContainer;
+            var element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
+            element.style.lineHeight = value;
+          } else {
+            var container = range.commonAncestorContainer;
+            var elements = [];
+            
+            if (container.nodeType === Node.TEXT_NODE) {
+              elements = [container.parentElement];
+            } else {
+              elements = Array.from(container.querySelectorAll('*')).filter(function (el) {
+                return range.intersectsNode(el) && el.textContent.trim().length > 0;
+              });
+              if (elements.length === 0) elements = [container];
+            }
+            
+            elements.forEach(function (el) {
+              el.style.lineHeight = value;
+            });
+          }
+          
+          this.currentLineHeight = parseFloat(value);
+          this.saveDocument();
+        },
+
+        setLetterSpacing: function (value) {
+          var sel = window.getSelection();
+          if (!sel || sel.rangeCount === 0) return;
+          
+          var range = sel.getRangeAt(0);
+          
+          // If global selection, apply to all pages
+          if (this.isGlobalSelection) {
+            this.doc.pages.forEach(function (page, index) {
+              var pageEl = document.querySelector('.page-content[data-page-index="' + index + '"]');
+              if (pageEl) {
+                var elements = pageEl.querySelectorAll('*');
+                elements.forEach(function (el) {
+                  if (el.textContent.trim().length > 0) {
+                    el.style.letterSpacing = value + 'px';
+                  }
+                });
+              }
+            });
+            this.currentLetterSpacing = parseFloat(value);
+            this.saveDocument();
+            return;
+          }
+          
+          // Apply to selection or cursor
+          if (range.collapsed) {
+            var container = range.commonAncestorContainer;
+            var element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
+            element.style.letterSpacing = value + 'px';
+          } else {
+            var container = range.commonAncestorContainer;
+            var elements = [];
+            
+            if (container.nodeType === Node.TEXT_NODE) {
+              elements = [container.parentElement];
+            } else {
+              elements = Array.from(container.querySelectorAll('*')).filter(function (el) {
+                return range.intersectsNode(el) && el.textContent.trim().length > 0;
+              });
+              if (elements.length === 0) elements = [container];
+            }
+            
+            elements.forEach(function (el) {
+              el.style.letterSpacing = value + 'px';
+            });
+          }
+          
+          this.currentLetterSpacing = parseFloat(value);
           this.saveDocument();
         }
       };

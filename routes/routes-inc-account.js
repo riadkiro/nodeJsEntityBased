@@ -22,5 +22,34 @@ router.use("/db", require("./db.routes.js"));
 // Page Builder
 router.use("/page-builder", require("./page-builder.routes.js"));
 
+// Profile Page
+router.use("/profile", require("./profile.routes.js"));
+
+// Tasks Page
+router.get("/tasks", (req, res) => {
+    res.render("record/record-tasks", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
+// Chat Page
+router.get("/chat", (req, res) => {
+    res.render("record/record-chat", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
+// Notes Page
+router.get("/notes", (req, res) => {
+    res.render("record/record-notes", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
 
 module.exports = router;

@@ -37,6 +37,38 @@ module.exports = {
         }
     },
 
+    tasks: async (req, res) => {
+        try {
+            await tenantCollection(req, "FieldTemplate");
+            await tenantCollection(req, "Classification");
+            const EntityModel = await tenantCollection(req, "Entity");
+            const RecordModel = await tenantCollection(req, "Record");
+
+            const entity = await EntityModel.findOne({ slug: req.params.entityName })
+                .populate('customFields')
+                .populate('statusClassification')
+                .populate('classifications');
+            if (!entity) return res.status(404).render("errors/404", {
+                message: "Entity not found",
+                account_number: req.account_number,
+                layout: "layout-app"
+            });
+
+            const records = await RecordModel.find({ entityId: entity._id }).populate('customFields.field_id');
+
+            res.render("record/record-tasks", {
+                entity,
+                records,
+                account_number: req.account_number,
+                preferences: req.user ? (req.user.preferences || {}) : {},
+                layout: "layout-app"
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).send("Server Error");
+        }
+    },
+
     addForm: async (req, res) => {
         try {
             await tenantCollection(req, "FieldTemplate");

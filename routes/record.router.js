@@ -6,12 +6,12 @@ const upload = uploadTo((req) => `public/uploads/${req.account_number}`);
 
 // Dynamic Record management based on Entity slug
 router.get("/:entityName/list", recordController.list);
+router.get("/:entityName/tasks", recordController.tasks);
 router.get("/:entityName/add", recordController.addForm);
 router.post("/:entityName/save", upload.single("image"), recordController.save);
 router.get("/:entityName/edit/:id", recordController.editForm);
 router.post("/:entityName/update/:id", upload.single("image"), recordController.update);
 router.get("/:entityName/delete/:id", recordController.delete);
-
 // API for relations
 router.get("/api/search", recordController.searchAjax);
 

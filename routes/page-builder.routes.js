@@ -3,6 +3,25 @@ const router = express.Router();
 const PageConfig = require('../models/PageConfig');
 
 // List page configs
+router.get('/list', async (req, res) => {
+    try {
+        const configs = await PageConfig.find({ accountId: req.user.accountNumber })
+            .sort({ updatedAt: -1 })
+            .select('name type entityRef status version updatedAt');
+
+        res.render('page-builder/page-list', {
+            layout: 'layout-app',
+            user: req.user,
+            account_number: req.account_number,
+            configs
+        });
+    } catch (error) {
+        console.error('Error fetching page configs:', error);
+        res.status(500).send('Error loading page configs');
+    }
+});
+
+// List page configs (alias)
 router.get('/', async (req, res) => {
     try {
         const configs = await PageConfig.find({ accountId: req.user.accountNumber })

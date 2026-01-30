@@ -44,14 +44,33 @@
                   class="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700">
                   <iconify-icon icon="solar:copy-bold" width="16"></iconify-icon>
                 </button>
-                <button 
-                  @click.stop="deleteRow(row.id)"
-                  title="Delete Row" 
-                  class="w-8 h-8 flex items-center justify-center rounded hover:bg-danger/10 hover:text-danger">
-                  <iconify-icon icon="solar:trash-bin-2-bold" width="16"></iconify-icon>
-                </button>
               </div>
             </template>
+
+
+            <!-- Row Controls (show on hover) -->
+            <div 
+              x-show="builderState.mode === 'edit'"
+              class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1 items-center">
+              <button 
+                @click.stop="moveUpRow(row.id)"
+                title="Move Up" 
+                class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <iconify-icon icon="solar:arrow-up-outline" width="16"></iconify-icon>
+              </button>
+              <button 
+                @click.stop="moveDownRow(row.id)"
+                title="Move Down" 
+                class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <iconify-icon icon="solar:arrow-down-outline" width="16"></iconify-icon>
+              </button>
+              <button 
+                @click.stop="deleteRow(row.id)"
+                title="Delete Row" 
+                class="w-7 h-7 flex items-center justify-center rounded hover:bg-red-100 dark:hover:bg-red-900/20 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400">
+                <iconify-icon icon="solar:trash-bin-minimalistic-outline" width="16"></iconify-icon>
+              </button>
+            </div>
 
             <!-- Layout mode buttons -->
             <template x-if="layoutMode">
@@ -127,7 +146,6 @@
           <div 
             :class="[
               'grid gap-6',
-              builderState.mode === 'edit' && builderState.selectedRowId === row.id && 'ring-2 ring-primary ring-offset-4',
               builderState.mode === 'edit' && 'min-h-[100px]'
             ]"
             :style="`grid-template-columns: repeat(12, 1fr)`">
@@ -136,12 +154,17 @@
             <template x-for="(column, colIndex) in row.columns" :key="colIndex">
               <div 
                 :style="`grid-column: span ${column.width}`"
-                class="relative"
-                :class="builderState.mode === 'edit' && 'min-h-[200px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800'">
+                class="relative transition-all duration-200"
+                :class="[
+                  builderState.mode === 'edit' && 'border-2 border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg hover:border-gray-400 dark:hover:border-gray-500',
+                  builderState.mode === 'edit' && column.blocks.length === 0 && 'h-[90px]',
+                  builderState.mode === 'edit' && column.blocks.length > 0 && 'min-h-[64px]'
+                ]">
+                
                 
                 <!-- Blocks in Column -->
                 <div 
-                  class="min-h-[150px]"
+                  :class="column.blocks.length > 0 ? 'min-h-[150px]' : 'h-full'"
                   x-init="initSortableColumn($el, row.id, colIndex)">
                   <template x-for="blockId in column.blocks" :key="blockId">
                     <div 
@@ -151,8 +174,8 @@
                       @mouseleave="builderState.hoveredBlockId = null"
                       class="relative"
                       :class="[
-                        builderState.mode === 'edit' && builderState.selectedBlockId === blockId && 'ring-2 ring-primary',
-                        builderState.mode === 'edit' && 'cursor-pointer'
+                        builderState.mode === 'edit' && builderState.hoveredBlockId === blockId && 'ring-1 ring-gray-300 dark:ring-gray-600',
+                        builderState.mode === 'edit' && 'cursor-pointer transition-all duration-150'
                       ]">
                       
                       <!-- Block Popover (on selection) -->
@@ -300,11 +323,15 @@
                   </template>
                 </div>
 
-                <!-- Drop Placeholder -->
+                <!-- Drop Placeholder with Add Button (Absolutely positioned when empty) -->
                 <div 
                   x-show="builderState.mode === 'edit' && column.blocks.length === 0"
-                  class="h-full flex items-center justify-center text-gray-400 text-sm">
-                  Drop blocks here
+                  class="absolute inset-0 flex items-center justify-center">
+                  <button 
+                    @click="openDrawer('blocks')"
+                    class="w-10 h-10 rounded-full bg-primary/10 hover:bg-primary/20 transition-all flex items-center justify-center group">
+                    <iconify-icon icon="solar:add-circle-bold" width="20" class="text-primary"></iconify-icon>
+                  </button>
                 </div>
               </div>
             </template>

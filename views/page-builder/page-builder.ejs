@@ -1,39 +1,42 @@
-<div x-data="pageBuilder()" class="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-  <!-- Header -->
-  <div class="h-14 bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex items-center justify-between px-6">
-    <div class="flex items-center gap-4">
-      <h1 class="text-lg font-semibold" x-text="pageConfig.name"></h1>
-      <div class="flex gap-2">
-        <button 
-          :class="builderState.mode === 'edit' && 'bg-primary text-white'"
-          @click="builderState.mode = 'edit'"
-          class="px-3 py-1 rounded text-sm transition-colors hover:bg-primary/10">
-          Edit
+<div x-data="pageBuilder()">
+  
+  <!-- Header Bar -->
+  <div class="mb-4 bg-white dark:bg-gray-800 border dark:border-gray-700 shadow-sm rounded-lg">
+    <div class="h-14 flex items-center justify-between px-6">
+      <div class="flex items-center gap-4">
+        <h1 class="text-lg font-semibold" x-text="pageConfig.name"></h1>
+        <div class="flex gap-2">
+          <button 
+            :class="builderState.mode === 'edit' && 'bg-primary text-white'"
+            @click="builderState.mode = 'edit'"
+            class="px-3 py-1 rounded text-sm transition-colors hover:bg-primary/10">
+            Edit
+          </button>
+          <button 
+            :class="builderState.mode === 'preview' && 'bg-primary text-white'"
+            @click="builderState.mode = 'preview'"
+            class="px-3 py-1 rounded text-sm transition-colors hover:bg-primary/10">
+            Preview
+          </button>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500" x-show="lastSaved">
+          Last saved: <span x-text="lastSaved"></span>
+        </span>
+        <button @click="saveConfig()" class="btn btn-primary btn-sm">
+          <iconify-icon icon="solar:diskette-bold" class="mr-1"></iconify-icon>
+          Save
         </button>
-        <button 
-          :class="builderState.mode === 'preview' && 'bg-primary text-white'"
-          @click="builderState.mode = 'preview'"
-          class="px-3 py-1 rounded text-sm transition-colors hover:bg-primary/10">
-          Preview
+        <button @click="publishConfig()" class="btn btn-success btn-sm">
+          Publish
         </button>
       </div>
     </div>
-    <div class="flex items-center gap-3">
-      <span class="text-xs text-gray-500" x-show="lastSaved">
-        Last saved: <span x-text="lastSaved"></span>
-      </span>
-      <button @click="saveConfig()" class="btn btn-primary btn-sm">
-        <iconify-icon icon="solar:diskette-bold" class="mr-1"></iconify-icon>
-        Save
-      </button>
-      <button @click="publishConfig()" class="btn btn-success btn-sm">
-        Publish
-      </button>
-    </div>
   </div>
 
-  <!-- Main Area -->
-  <div class="flex-1 flex overflow-hidden">
+  <!-- Main Builder Area -->
+  <div class="flex gap-4" style="height: calc(100vh - 250px);">
     <%- include('partials/builder-sidebar') %>
     <%- include('partials/builder-drawer') %>
     <%- include('partials/builder-canvas') %>
@@ -42,6 +45,7 @@
 
 <script type="application/json" id="page-config-data">
 <%- JSON.stringify({
+  accountNumber: account_number,
   configId: typeof pageConfig !== 'undefined' ? pageConfig._id : null,
   isNew: typeof pageConfig === 'undefined',
   config: typeof pageConfig !== 'undefined' ? pageConfig : {
@@ -65,7 +69,12 @@
       actions: []
     },
     tabs: [],
-    layout: { default: [] },
+    layout: { 
+      default: [{
+        id: 'row_default_1',
+        columns: [{ width: 12, blocks: [] }]
+      }]
+    },
     blocks: {},
     actions: {}
   }
@@ -78,6 +87,7 @@ document.addEventListener('alpine:init', () => {
     const data = JSON.parse(document.getElementById('page-config-data').textContent);
     
     return {
+      accountNumber: data.accountNumber,
       configId: data.configId,
       pageConfig: data.config,
       lastSaved: null,
@@ -282,8 +292,8 @@ document.addEventListener('alpine:init', () => {
       async saveConfig() {
         try {
           const url = this.configId 
-            ? `/api/page-configs/${this.configId}`
-            : '/api/page-configs';
+            ? `/account/${this.accountNumber}/page-builder/api/page-configs/${this.configId}`
+            : `/account/${this.accountNumber}/page-builder/api/page-configs`;
           
           const method = this.configId ? 'PUT' : 'POST';
           
@@ -313,7 +323,7 @@ document.addEventListener('alpine:init', () => {
         }
         
         try {
-          const response = await fetch(`/api/page-configs/${this.configId}/publish`, {
+          const response = await fetch(`/account/${this.accountNumber}/page-builder/api/page-configs/${this.configId}/publish`, {
             method: 'PATCH'
           });
           

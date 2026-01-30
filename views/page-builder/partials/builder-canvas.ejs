@@ -137,11 +137,11 @@
               <div 
                 :style="`grid-column: span ${column.width}`"
                 class="relative"
-                :class="builderState.mode === 'edit' && 'min-h-[200px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800'">
+                :class="builderState.mode === 'edit' && 'min-h-[200px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800'">
                 
                 <!-- Blocks in Column -->
                 <div 
-                  class="space-y-4 min-h-[150px]"
+                  class="min-h-[150px]"
                   x-init="initSortableColumn($el, row.id, colIndex)">
                   <template x-for="blockId in column.blocks" :key="blockId">
                     <div 

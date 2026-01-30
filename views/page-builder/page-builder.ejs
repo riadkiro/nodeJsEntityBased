@@ -35,10 +35,80 @@
     </div>
   </div>
 
-  <!-- Main Builder Area -->
-  <div class="flex gap-4" style="height: calc(100vh - 250px);">
+  <!-- Main Builder Area with Left Sidebar -->
+  <div class="relative flex gap-4" style="height: calc(100vh - 250px);">
+    
+    <!-- Icon Sidebar (Always Visible) -->
     <%- include('partials/builder-sidebar') %>
-    <%- include('partials/builder-drawer') %>
+
+    <!-- Blocks Sidebar (Slides from Complete Left) -->
+    <div 
+      x-show="builderState.drawerMode === 'blocks'"
+      x-transition:enter="transform transition ease-out duration-300"
+      x-transition:enter-start="-translate-x-full opacity-0"
+      x-transition:enter-end="translate-x-0 opacity-100"
+      x-transition:leave="transform transition ease-in duration-200"
+      x-transition:leave-start="translate-x-0 opacity-100"
+      x-transition:leave-end="-translate-x-full opacity-0"
+      class="fixed top-0 left-0 z-50 w-[298px] h-screen bg-white dark:bg-gray-800 border-r dark:border-gray-700 shadow-xl overflow-y-auto">
+      
+      <!-- Single Header -->
+      <div class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold">Add Blocks</h3>
+        <button @click="builderState.drawerMode = null" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <iconify-icon icon="solar:close-circle-bold" width="24"></iconify-icon>
+        </button>
+      </div>
+
+      <!-- Blocks Grid (Direct, no wrapper) -->
+      <div class="p-4">
+        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold mb-3">Drag blocks to canvas</p>
+        
+        <div 
+          class="grid grid-cols-2 gap-2"
+          x-init="
+            Sortable.create($el, {
+              group: { name: 'blocks', pull: 'clone', put: false },
+              animation: 150,
+              sort: false
+            })
+          ">
+          <!-- Panel Block -->
+          <div 
+            data-block-type="panel"
+            class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
+            <iconify-icon icon="solar:widget-5-bold-duotone" width="32" class="text-primary"></iconify-icon>
+            <span class="text-xs font-medium">Panel</span>
+          </div>
+
+          <!-- Text Block -->
+          <div 
+            data-block-type="text"
+            class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
+            <iconify-icon icon="solar:text-bold-duotone" width="32" class="text-success"></iconify-icon>
+            <span class="text-xs font-medium">Text</span>
+          </div>
+
+          <!-- KPI Card Block -->
+          <div 
+            data-block-type="kpi-card"
+            class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
+            <iconify-icon icon="solar:presentation-graph-bold-duotone" width="32" class="text-warning"></iconify-icon>
+            <span class="text-xs font-medium">KPI Card</span>
+          </div>
+
+          <!-- Statistics Block -->
+          <div 
+            data-block-type="statistics"
+            class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
+            <iconify-icon icon="solar:chart-bold-duotone" width="32" class="text-info"></iconify-icon>
+            <span class="text-xs font-medium">Statistics</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Canvas Area (Full Width) -->
     <%- include('partials/builder-canvas') %>
   </div>
 </div>

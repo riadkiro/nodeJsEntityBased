@@ -10,16 +10,18 @@ const upload = uploadTo((req) => `public/uploads/${req.account_number}`);
 
 //list
 router.get("/list", fieldTemplateController.list);
+//System fields API for picker
+router.get("/api/system", fieldTemplateController.systemFields_Api);
 //Form
 router.get("/add", fieldTemplateController.addForm);
 //On post create new product
-router.post("/add",upload.single("image"), fieldTemplateController.save);
+router.post("/add", upload.single("image"), fieldTemplateController.save);
 //Single page
 router.get("/:id", fieldTemplateController.singlePage);
 //Update form
 router.get("/edit/:id", fieldTemplateController.editForm);
 //Update form
-router.post("/edit/:id",upload.single("image"), fieldTemplateController.update);
+router.post("/edit/:id", upload.single("image"), fieldTemplateController.update);
 //Delete
 router.delete("/:id", fieldTemplateController.delete);
 

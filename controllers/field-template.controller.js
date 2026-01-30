@@ -316,4 +316,55 @@ module.exports = {
     const field = await FieldTemplateModel.findById(req.params.id);
     res.json(field);
   },
+
+  // System fields grouped by category for picker
+  systemFields_Api: async (req, res) => {
+    const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
+    try {
+      const fields = await FieldTemplateModel.find({ isSystem: true }).sort({ category: 1, label: 1 });
+
+      // Group by category
+      const categoryLabels = {
+        popular: 'Populaires',
+        text: 'Texte',
+        numeric: 'Numérique',
+        date: 'Date / Temps',
+        choice: 'Choix',
+        relation: 'Relation',
+        media: 'Média',
+        computed: 'Calcul',
+        advanced: 'Avancé'
+      };
+
+      const grouped = {};
+      for (const field of fields) {
+        const cat = field.category || 'other';
+        if (!grouped[cat]) {
+          grouped[cat] = {
+            key: cat,
+            label: categoryLabels[cat] || cat,
+            fields: []
+          };
+        }
+        grouped[cat].fields.push({
+          _id: field._id,
+          name: field.name,
+          label: field.label,
+          description: field.description,
+          type: field.type,
+          subtype: field.subtype,
+          icon: field.ui?.icon || 'solar:widget-bold-duotone',
+          category: field.category
+        });
+      }
+
+      // Order categories
+      const order = ['popular', 'text', 'numeric', 'date', 'choice', 'relation', 'media', 'computed', 'advanced'];
+      const result = order.filter(k => grouped[k]).map(k => grouped[k]);
+
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
 };

@@ -189,18 +189,37 @@ module.exports = {
     const Entity = await tenantCollection(req, "Entity");
     let accountNumber = req.account_number;
     const entityData = req.body;
+    const isJsonRequest = req.headers['content-type']?.includes('application/json');
 
-    console.log(entityData); // ✅
+    console.log('Creating entity:', entityData);
 
     let errors = [];
+    if (!entityData.name) {
+      errors.push({ msg: 'Le nom est requis' });
+    }
+
     if (errors.length > 0) {
-      res.render("entity/entity-add", {
-        errors,
-      });
-    } else {
+      if (isJsonRequest) {
+        return res.status(400).json({ success: false, errors });
+      }
+      return res.render("entity/entity-add", { errors });
+    }
+
+    try {
       const newEntity = new Entity(entityData);
-      newEntity.save().then((entity) => {
-        res.redirect(`/account/${accountNumber}/entity/list`);
+      await newEntity.save();
+
+      if (isJsonRequest) {
+        return res.json({ success: true, entity: newEntity });
+      }
+      res.redirect(`/account/${accountNumber}/entity/list`);
+    } catch (error) {
+      console.error('Entity save error:', error);
+      if (isJsonRequest) {
+        return res.status(500).json({ success: false, error: error.message });
+      }
+      res.status(500).render("entity/entity-add", {
+        errors: [{ msg: error.message }]
       });
     }
   },

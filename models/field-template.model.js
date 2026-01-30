@@ -84,7 +84,24 @@ const FieldTemplateSchema = new mongoose.Schema({
 
   // 🔗 Lien logique
   entities: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Entity' }],
-  isCustom: { type: Boolean, default: true }
+  isCustom: { type: Boolean, default: true },
+
+  // 🏷️ System fields
+  isSystem: { type: Boolean, default: false },
+  category: {
+    type: String,
+    enum: ['popular', 'text', 'numeric', 'date', 'choice', 'relation', 'media', 'computed', 'advanced'],
+    default: 'text'
+  },
+
+  // 🎨 Render configuration
+  render: {
+    input: { type: String }, // 'text', 'number', 'date', 'select', 'relation', etc.
+    display: {
+      table: { type: String }, // 'text', 'badge', 'avatar', 'link', 'currency'
+      card: { type: String }
+    }
+  }
 
 }, { timestamps: true });
 

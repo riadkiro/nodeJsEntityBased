@@ -352,15 +352,16 @@
   <!-- MODAL: Nouveau/Modifier champ - Clean UX with Progressive Disclosure -->
   <!-- ═══════════════════════════════════════════════════════════════════════════ -->
   <div x-show="showFieldModal" x-transition.opacity.duration.300ms 
-       class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 backdrop-blur-sm" 
+       class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" 
        @click.self="showFieldModal = false"
        @keydown.escape.window="showFieldModal = false">
     
-    <div class="panel border-0 rounded-lg overflow-hidden w-full max-w-lg mx-4 bg-white dark:bg-[#1b2e4b] shadow-xl" 
+    <div class="panel border-0 rounded-lg overflow-hidden w-full max-w-lg bg-white dark:bg-[#1b2e4b] shadow-xl flex flex-col" 
+         style="max-height: calc(100vh - 2rem);"
          x-show="showFieldModal" x-transition.scale.origin.center>
       
-      <!-- Header -->
-      <div class="flex items-center justify-between px-5 py-4 border-b dark:border-gray-700">
+      <!-- Header (fixed) -->
+      <div class="flex items-center justify-between px-5 py-4 border-b dark:border-gray-700 flex-shrink-0">
         <div class="flex items-center gap-2">
           <iconify-icon icon="solar:widget-add-bold-duotone" width="22" class="text-primary"></iconify-icon>
           <span class="font-semibold text-lg" x-text="editField ? 'Modifier le champ' : 'Nouveau champ'"></span>
@@ -371,7 +372,7 @@
       </div>
 
       <!-- Scrollable Content -->
-      <div class="p-5 max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
+      <div class="perfect-scrollbar p-5 overflow-y-auto flex-grow" style="overflow-y: auto;">
         <form @submit.prevent="submitFieldTemplate()" class="space-y-5">
           
           <!-- ═══════════════════════════════════════════ -->

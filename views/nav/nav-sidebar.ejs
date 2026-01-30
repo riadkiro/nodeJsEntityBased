@@ -318,6 +318,15 @@
                 </a>
               </div>
             </li>
+            <li x-data="{ hovered: false }">
+              <div class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900"
+                @mouseenter="hovered = true" @mouseleave="hovered = false">
+                <iconify-icon icon="solar:database-bold-duotone" class="ml-2" width="16" height="16"></iconify-icon>
+                <a href="/account/<%= account_number %>/datatable" class="flex items-center w-full py-2 ml-2">
+                  Data Table
+                </a>
+              </div>
+            </li>
           </ul>
         </li>
 

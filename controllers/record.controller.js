@@ -37,6 +37,52 @@ module.exports = {
         }
     },
 
+    // New list view with filters and datatable
+    listView: async (req, res) => {
+        try {
+            const Entity = await tenantCollection(req, "Entity");
+            const entity = await Entity.findOne({ slug: req.params.entityName })
+                .populate('customFields')
+                .populate('classifications')
+                .populate('statusClassification');
+
+            if (!entity) {
+                return res.status(404).send("Entity not found");
+            }
+
+            res.render("record/record-list-view", {
+                entity,
+                layout: "layout-app",
+                account_number: req.account_number,
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).send("Server Error");
+        }
+    },
+
+    // API endpoint to get records as JSON
+    listApi: async (req, res) => {
+        try {
+            const Entity = await tenantCollection(req, "Entity");
+            const RecordModel = await tenantCollection(req, "Record");
+
+            const entity = await Entity.findOne({ slug: req.params.entityName });
+            if (!entity) {
+                return res.status(404).json({ error: "Entity not found" });
+            }
+
+            const records = await RecordModel.find({ entityId: entity._id })
+                .populate('customFields')
+                .sort({ createdAt: -1 });
+
+            res.json(records);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: error.message });
+        }
+    },
+
     tasks: async (req, res) => {
         try {
             await tenantCollection(req, "FieldTemplate");
@@ -111,6 +157,36 @@ module.exports = {
                 account_number: req.account_number,
                 layout: "layout-app"
             });
+
+            // Check if request is JSON (from Quick Add)
+            const isJson = req.headers['content-type']?.includes('application/json');
+
+            if (isJson) {
+                // Handle JSON request
+                const { title, slug, date, entityId, customFields } = req.body;
+
+                const customFieldsArray = [];
+                if (customFields) {
+                    for (const [fieldId, value] of Object.entries(customFields)) {
+                        if (value !== null && value !== undefined && value !== '') {
+                            customFieldsArray.push({ field_id: fieldId, value });
+                        }
+                    }
+                }
+
+                const newRecord = new RecordModel({
+                    entityId: entity._id,
+                    title: title || 'Sans titre',
+                    slug: slug,
+                    date: date,
+                    published: true,
+                    customFields: customFieldsArray,
+                    createdBy: req.user?._id
+                });
+
+                await newRecord.save();
+                return res.json({ success: true, _id: newRecord._id });
+            }
 
             // 🛠️ Robust Body Parsing for Multipart/Form-Data (Multer doesn't nest objects)
             const data = { standard: {}, custom: {}, classifications: {} };

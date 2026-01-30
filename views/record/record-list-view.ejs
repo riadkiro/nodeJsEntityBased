@@ -1,0 +1,367 @@
+<div class="animate__animated p-6" :class="[$store.app.animation]">
+    <div x-data="recordList">
+        <div class="relative flex h-full gap-5 sm:h-[calc(100vh_-_150px)] sm:min-h-0">
+            <!-- Sidebar: Filters / Quick Add -->
+            <div class="panel w-full max-w-xs flex-none space-y-4 p-4 xl:h-full">
+                <!-- Show Filters -->
+                <div x-show="!showQuickAdd">
+                    <!-- Entity Info -->
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <iconify-icon :icon="entity.icon || 'solar:database-bold'" width="24" class="text-primary"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-base" x-text="entity.name"></h3>
+                                <p class="text-xs text-white-dark" x-text="`${records.length} enregistrements`"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Button -->
+                    <button @click="showQuickAdd = true" class="btn btn-primary w-full mb-4">
+                        <iconify-icon icon="solar:add-circle-bold-duotone" width="20" class="mr-2"></iconify-icon>
+                        Ajouter
+                    </button>
+
+                    <div class="h-px w-full border-b border-[#e0e6ed] dark:border-[#1b2e4b] mb-4"></div>
+
+                    <!-- Filters -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm font-semibold mb-2 block">Recherche</label>
+                            <input type="text" x-model="searchQuery" placeholder="Rechercher..." 
+                                class="form-input" @input="filterRecords">
+                        </div>
+
+                        <!-- Classification Filters -->
+                        <template x-if="entity.classifications && entity.classifications.length > 0">
+                            <div>
+                                <label class="text-sm font-semibold mb-2 block">Filtres</label>
+                                <template x-for="classif in entity.classifications" :key="classif._id">
+                                    <div class="mb-3">
+                                        <label class="text-xs text-white-dark mb-1 block" x-text="classif.name"></label>
+                                        <select class="form-select text-sm" 
+                                            x-model="filters[classif._id]" 
+                                            @change="filterRecords">
+                                            <option value="">Tous</option>
+                                            <template x-for="option in classif.options" :key="option">
+                                                <option :value="option" x-text="option"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Status Filter -->
+                        <div x-show="entity.statusClassification">
+                            <label class="text-sm font-semibold mb-2 block">Statut</label>
+                            <select class="form-select text-sm" x-model="filters.status" @change="filterRecords">
+                                <option value="">Tous</option>
+                                <template x-for="status in statusOptions" :key="status">
+                                    <option :value="status" x-text="status"></option>
+                                </template>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Add Form -->
+                <div x-show="showQuickAdd" x-transition>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-base">Ajout rapide</h3>
+                        <button @click="showQuickAdd = false" class="text-white-dark hover:text-dark">
+                            <iconify-icon icon="solar:close-circle-bold" width="24"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <form @submit.prevent="submitQuickAdd" class="space-y-4">
+                        <!-- Standard Fields -->
+                        <div x-show="entity.enabledStandardFields?.includes('title')">
+                            <label class="text-sm font-bold mb-2 block">Titre *</label>
+                            <input type="text" x-model="quickAddData.title" 
+                                placeholder="Entrez le titre..." 
+                                class="form-input w-full" required />
+                        </div>
+
+                        <div x-show="entity.enabledStandardFields?.includes('slug')">
+                            <label class="text-sm font-bold mb-2 block">Slug</label>
+                            <input type="text" x-model="quickAddData.slug" 
+                                placeholder="Auto-généré..." 
+                                class="form-input w-full" />
+                        </div>
+
+                        <div x-show="entity.enabledStandardFields?.includes('date')">
+                            <label class="text-sm font-bold mb-2 block">Date</label>
+                            <input type="date" x-model="quickAddData.date" 
+                                class="form-input w-full" />
+                        </div>
+
+                        <!-- Custom Fields -->
+                        <template x-if="entity.customFields && entity.customFields.length > 0">
+                            <div class="pt-4 border-t dark:border-gray-700">
+                                <h4 class="font-semibold mb-3 text-sm text-gray-700 dark:text-gray-300">Attributs</h4>
+                                
+                                <template x-for="field in entity.customFields" :key="field._id">
+                                    <div class="mb-3">
+                                        <label class="text-sm font-bold mb-1 block" 
+                                            x-text="field.label + (field.required ? ' *' : '')"></label>
+                                        
+                                        <!-- Text input -->
+                                        <template x-if="field.type === 'text' && field.subtype === 'input'">
+                                            <input type="text" 
+                                                x-model="quickAddData.cf[field._id]"
+                                                :placeholder="field.ui?.placeholder || ''"
+                                                :required="field.required"
+                                                class="form-input w-full text-sm" />
+                                        </template>
+
+                                        <!-- Textarea -->
+                                        <template x-if="field.type === 'text' && field.subtype === 'textarea'">
+                                            <textarea 
+                                                x-model="quickAddData.cf[field._id]"
+                                                :placeholder="field.ui?.placeholder || ''"
+                                                :required="field.required"
+                                                rows="2"
+                                                class="form-textarea w-full text-sm"></textarea>
+                                        </template>
+
+                                        <!-- Number -->
+                                        <template x-if="field.type === 'numeric'">
+                                            <input type="number" 
+                                                x-model="quickAddData.cf[field._id]"
+                                                :placeholder="field.ui?.placeholder || ''"
+                                                :required="field.required"
+                                                class="form-input w-full text-sm" />
+                                        </template>
+
+                                        <!-- Date -->
+                                        <template x-if="field.type === 'date'">
+                                            <input type="date" 
+                                                x-model="quickAddData.cf[field._id]"
+                                                :required="field.required"
+                                                class="form-input w-full text-sm" />
+                                        </template>
+
+                                        <!-- Select -->
+                                        <template x-if="field.type === 'choice' && field.subtype === 'select'">
+                                            <select 
+                                                x-model="quickAddData.cf[field._id]"
+                                                :required="field.required"
+                                                class="form-select w-full text-sm">
+                                                <option value="">Sélectionnez...</option>
+                                                <template x-for="option in field.options" :key="option">
+                                                    <option :value="option" x-text="option"></option>
+                                                </template>
+                                            </select>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <button type="submit" class="btn btn-primary w-full" :disabled="isSubmitting">
+                            <span x-show="isSubmitting"
+                                class="animate-spin border-2 border-white border-l-transparent rounded-full w-5 h-5 ltr:mr-2 rtl:ml-2 inline-block align-middle"></span>
+                            Créer
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Main Content: DataTable -->
+            <div class="panel flex-1 overflow-auto p-0">
+                <!-- Header -->
+                <div class="flex items-center justify-between p-4 border-b border-[#e0e6ed] dark:border-[#1b2e4b]">
+                    <h5 class="text-lg font-semibold">
+                        <span x-text="entity.name"></span>
+                        <span class="text-xs text-white-dark ml-2">(<span x-text="filteredRecords.length"></span>)</span>
+                    </h5>
+                    <div class="flex items-center gap-2">
+                        <button @click="refreshRecords" class="btn btn-sm btn-outline-primary">
+                            <iconify-icon icon="solar:refresh-bold-duotone" width="18"></iconify-icon>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DataTable -->
+                <div class="p-4">
+                    <div class="table-responsive">
+                        <table id="recordsTable" class="table-hover"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('recordList', () => ({
+        entity: {},
+        records: [],
+        filteredRecords: [],
+        filters: {},
+        searchQuery: '',
+        statusOptions: [],
+        showQuickAdd: false,
+        quickAddData: { title: '', slug: '', date: null, cf: {} },
+        isSubmitting: false,
+        datatable: null,
+
+        async init() {
+            const entityId = window.location.pathname.split('/').pop();
+            const accountNum = '<%= account_number %>';
+            
+            try {
+                // Fetch entity
+                const entityRes = await fetch(`/account/${accountNum}/api/entity/${entityId}`);
+                this.entity = await entityRes.json();
+                
+                // Fetch records
+                await this.fetchRecords();
+                
+                // Initialize DataTable
+                this.$nextTick(() => {
+                    this.initDataTable();
+                });
+            } catch (e) {
+                console.error('Init error:', e);
+                alert('Erreur lors du chargement');
+            }
+        },
+
+        async fetchRecords() {
+            const accountNum = '<%= account_number %>';
+            try {
+                const res = await fetch(`/account/${accountNum}/record/${this.entity.slug}/list-api`);
+                this.records = await res.json();
+                this.filteredRecords = this.records;
+            } catch (e) {
+                console.error('Fetch records error:', e);
+            }
+        },
+
+        filterRecords() {
+            this.filteredRecords = this.records.filter(record => {
+                // Search filter
+                if (this.searchQuery) {
+                    const search = this.searchQuery.toLowerCase();
+                    const matchesTitle = record.title?.toLowerCase().includes(search);
+                    if (!matchesTitle) return false;
+                }
+
+                // Classification filters
+                for (const [classifId, value] of Object.entries(this.filters)) {
+                    if (!value) continue;
+                    const recordValue = record.classifications?.find(c => c.classificationId === classifId)?.value;
+                    if (recordValue !== value) return false;
+                }
+
+                return true;
+            });
+
+            this.updateDataTable();
+        },
+
+        initDataTable() {
+            if (this.datatable) {
+                this.datatable.destroy();
+            }
+
+            const columns = [
+                { data: 'title', title: 'Titre' },
+                { data: 'slug', title: 'Slug' },
+                { data: 'date', title: 'Date' },
+                { data: 'status', title: 'Statut' },
+            ];
+
+            this.datatable = new simpleDatatables.DataTable('#recordsTable', {
+                data: {
+                    headings: columns.map(c => c.title),
+                    data: this.filteredRecords.map(r => [
+                        r.title || '-',
+                        r.slug || '-',
+                        r.date ? new Date(r.date).toLocaleDateString() : '-',
+                        r.status || '-'
+                    ])
+                },
+                searchable: true,
+                perPage: 20,
+                perPageSelect: [10, 20, 50, 100],
+                labels: {
+                    perPage: '{select}',
+                },
+                layout: {
+                    top: '{search}',
+                    bottom: '{info}{select}{pager}',
+                },
+            });
+        },
+
+        updateDataTable() {
+            if (this.datatable) {
+                this.datatable.destroy();
+                this.initDataTable();
+            }
+        },
+
+        async submitQuickAdd() {
+            if (!this.quickAddData.title) return;
+            
+            this.isSubmitting = true;
+            const accountNum = '<%= account_number %>';
+            
+            try {
+                const slug = this.quickAddData.slug || this.quickAddData.title
+                    .toLowerCase()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-|-$/g, '');
+                
+                const recordData = {
+                    title: this.quickAddData.title,
+                    slug: slug,
+                    date: this.quickAddData.date,
+                    entityId: this.entity._id,
+                    customFields: this.quickAddData.cf
+                };
+                
+                const res = await fetch(`/account/${accountNum}/record/${this.entity.slug}/save`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(recordData)
+                });
+                
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                
+                // Reset form
+                this.quickAddData = { title: '', slug: '', date: null, cf: {} };
+                this.showQuickAdd = false;
+                
+                // Refresh records
+                await this.fetchRecords();
+                this.updateDataTable();
+                
+                // Show success
+                Swal.fire({ 
+                    icon: 'success', 
+                    title: 'Record créé !', 
+                    timer: 1500, 
+                    showConfirmButton: false 
+                });
+            } catch (e) {
+                alert("Erreur: " + e.message);
+            } finally {
+                this.isSubmitting = false;
+            }
+        },
+
+        async refreshRecords() {
+            await this.fetchRecords();
+            this.filterRecords();
+        }
+    }));
+});
+</script>

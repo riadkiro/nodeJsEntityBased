@@ -52,4 +52,13 @@ router.get("/notes", (req, res) => {
     });
 });
 
+// Data Table Page
+router.get("/datatable", (req, res) => {
+    res.render("record/record-demo-datatable", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
 module.exports = router;

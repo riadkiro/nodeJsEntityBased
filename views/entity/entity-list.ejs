@@ -1,153 +1,377 @@
-<div x-data="miscellaneous">
+<% const rows = entities.map((e, i) => [
+  i + 1,
+  e.name,
+  e.slug,
+  e.description || "",
+  e.color || "#ffffff",
+  e.icon || "",
+  (e.enabledStandardFields || []).join(', '),
+  e.createdAt,
+  include("../components/btn-entity-actions", { id: e._id, account_number }),
+]);
+%>
+
+<script>
+  document.addEventListener("alpine:init", () => {
+    Alpine.data("collectionsManager", () => ({
+      // DataTable
+      columns: [
+        { name: "Select", hidden: false },
+        { name: "Nom", hidden: false },
+        { name: "Slug", hidden: false },
+        { name: "Description", hidden: true },
+        { name: "Couleur", hidden: true },
+        { name: "Icône", hidden: true },
+        { name: "Champs standards", hidden: true },
+        { name: "Date de création", hidden: true },
+        { name: "Actions", hidden: false },
+      ],
+      hideCols: [0],
+      showCols: [1, 2, 3, 4, 5, 6, 7, 8],
+      datatable1: null,
+
+      // Modal state
+      showCreateModal: false,
+      showIconPicker: false,
+      showColorPicker: false,
+      isSubmitting: false,
+      
+      // Icon picker
+      selectedLibrary: 'solar',
+      iconSearch: '',
+      icons: [],
+      
+      // Colors
+      availableColors: ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#6366F1', '#9CA3AF', '#EC4899'],
+      
+      // New collection form
+      newCollection: {
+        name: '',
+        slug: '',
+        description: '',
+        icon: '',
+        color: '',
+        active: true,
+        standardFields: { title: true, slug: false, date: false }
+      },
+
+      showHideColumns(col, value) {
+        if (value) {
+          this.showCols.push(col);
+          this.hideCols = this.hideCols.filter((d) => d != col);
+        } else {
+          this.hideCols.push(col);
+          this.showCols = this.showCols.filter((d) => d != col);
+        }
+        let headers = this.datatable1.columns();
+        headers.hide(this.hideCols);
+        headers.show(this.showCols);
+      },
+
+      async loadIcons() {
+        const prefix = this.selectedLibrary;
+        const search = this.iconSearch.toLowerCase();
+        const commonIcons = {
+          solar: ['solar:box-bold-duotone', 'solar:user-bold-duotone', 'solar:folder-bold-duotone', 'solar:document-bold-duotone', 
+                 'solar:cart-bold-duotone', 'solar:bag-bold-duotone', 'solar:ticket-bold-duotone', 'solar:tag-bold-duotone',
+                 'solar:calendar-bold-duotone', 'solar:clock-circle-bold-duotone', 'solar:star-bold-duotone', 'solar:heart-bold-duotone',
+                 'solar:flag-bold-duotone', 'solar:bookmark-bold-duotone', 'solar:home-bold-duotone', 'solar:buildings-bold-duotone',
+                 'solar:phone-bold-duotone', 'solar:letter-bold-duotone', 'solar:map-bold-duotone', 'solar:globe-bold-duotone'],
+          mdi: ['mdi:account', 'mdi:folder', 'mdi:file-document', 'mdi:cart', 'mdi:tag', 'mdi:calendar', 'mdi:clock', 'mdi:star',
+               'mdi:heart', 'mdi:flag', 'mdi:bookmark', 'mdi:home', 'mdi:office-building', 'mdi:phone', 'mdi:email', 'mdi:map'],
+          tabler: ['tabler:user', 'tabler:folder', 'tabler:file', 'tabler:shopping-cart', 'tabler:tag', 'tabler:calendar', 'tabler:clock',
+                  'tabler:star', 'tabler:heart', 'tabler:flag', 'tabler:bookmark', 'tabler:home', 'tabler:building', 'tabler:phone', 'tabler:mail']
+        };
+        this.icons = (commonIcons[prefix] || []).filter(i => !search || i.includes(search));
+      },
+
+      resetForm() {
+        this.newCollection = {
+          name: '',
+          slug: '',
+          description: '',
+          icon: '',
+          color: '',
+          active: true,
+          standardFields: { title: true, slug: false, date: false }
+        };
+        this.showIconPicker = false;
+        this.showColorPicker = false;
+      },
+
+      async createCollection() {
+        if (!this.newCollection.name) return;
+        this.isSubmitting = true;
+
+        if (!this.newCollection.slug) {
+          this.newCollection.slug = this.newCollection.name
+            .toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '');
+        }
+
+        const enabledStandardFields = Object.entries(this.newCollection.standardFields)
+          .filter(([k, v]) => v).map(([k]) => k);
+
+        try {
+          const res = await fetch('/account/<%= account_number %>/entity/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: this.newCollection.name,
+              slug: this.newCollection.slug,
+              description: this.newCollection.description,
+              icon: this.newCollection.icon,
+              color: this.newCollection.color,
+              active: this.newCollection.active,
+              enabledStandardFields
+            })
+          });
+
+          if (res.ok) {
+            Swal.fire({ icon: 'success', title: 'Collection créée !', timer: 1500, showConfirmButton: false });
+            this.showCreateModal = false;
+            this.resetForm();
+            setTimeout(() => location.reload(), 1000);
+          } else {
+            throw new Error('Erreur lors de la création');
+          }
+        } catch (e) {
+          Swal.fire({ icon: 'error', title: 'Erreur', text: e.message });
+        } finally {
+          this.isSubmitting = false;
+        }
+      },
+
+      init() {
+        const rows = <%- JSON.stringify(rows) %>;
+        this.loadIcons();
+
+        window.addEventListener('open-collection-modal', () => {
+          this.showCreateModal = true;
+        });
+
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('openModal') === 'true') {
+          this.showCreateModal = true;
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+
+        this.datatable1 = new simpleDatatables.DataTable("#myTable1", {
+          data: {
+            headings: this.columns.map((c) => c.name),
+            data: rows,
+          },
+          perPage: 10,
+          perPageSelect: [10, 20, 30, 50, 100],
+          columns: [
+            {
+              select: 0,
+              sort: "asc",
+              render: (data) =>
+                `<input type="checkbox" class="form-checkbox" value="${data}" />`,
+            },
+            {
+              select: 4,
+              render: (data) =>
+                `<div class="w-6 h-6 rounded-full border" style="background-color:${data};"></div>`,
+            },
+            {
+              select: 7,
+              render: (data) => {
+                const dt = new Date(data);
+                const month = dt.getMonth() + 1 < 10 ? "0" + (dt.getMonth() + 1) : dt.getMonth() + 1;
+                const day = dt.getDate() < 10 ? "0" + dt.getDate() : dt.getDate();
+                return day + "/" + month + "/" + dt.getFullYear();
+              },
+            },
+            {
+              select: 8,
+              render: (html) => html,
+            },
+          ],
+          firstLast: true,
+          layout: {
+            top: "{search}",
+            bottom: "{info}{select}{pager}",
+          },
+        });
+
+        this.datatable1.columns().hide(this.hideCols);
+        this.datatable1.columns().show(this.showCols);
+      },
+    }));
+  });
+</script>
+
+<div x-data="collectionsManager()">
   <div class="space-y-6">
-
-    <div>
-      <a href="/account/<%= account_number %>/entity/add" class="inline-block">
-        <button type="button" class="btn btn-primary mt-6">
-          Ajouter
-        </button>
-      </a></span>
-
     <div class="panel">
-      <h5 class="mb-5 text-lg font-semibold dark:text-white-light md:absolute md:top-[25px] md:mb-0">
-        Entities
-      </h5>
+      <div class="flex items-center justify-between mb-5">
+        <div class="flex items-center gap-3">
+          <iconify-icon icon="solar:box-bold-duotone" width="24" height="24" class="text-primary"></iconify-icon>
+          <h5 class="text-lg font-semibold dark:text-white-light">Collections</h5>
+        </div>
+        <button @click="showCreateModal = true" class="btn btn-primary btn-sm flex items-center gap-2">
+          <iconify-icon icon="solar:add-circle-bold" width="18" height="18"></iconify-icon>
+          Nouvelle collection
+        </button>
+      </div>
       <div class="relative">
         <div class="mb-5 sm:absolute sm:top-0 sm:mb-0 sm:ltr:right-56 sm:rtl:left-56">
           <div class="flex items-center">
-            <div class="theme-dropdown relative" x-data="{ columnDropdown: false }"
-                @click.outside="columnDropdown = false">
-            <a href="javascript:;"
-              class="flex items-center rounded-md border border-[#e0e6ed] px-4 py-2 text-sm font-semibold dark:border-[#253b5c] dark:bg-[#1b2e4b] dark:text-white-dark"
-                  @click="columnDropdown = ! columnDropdown">
-            <span class="ltr:mr-1 rtl:ml-1">Columns</span>
-            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M19 9L12 15L5 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-                stroke-linejoin="round"></path>
-            </svg>
-          </a>
-          <div
-            class="absolute top-11 z-[10] hidden w-[100px] min-w-[150px] rounded bg-white py-2 text-dark shadow ltr:left-0 rtl:right-0 dark:bg-[#1b2e4b] dark:text-white-light"
-                  :class="columnDropdown && '!block'">
-          <ul class="space-y-2 px-4 font-semibold">
-            <template x-for="(col,i) in columns" :key="i">
-            <li>
-              <div>
-                <label class="cursor-pointer">
-                  <input type="checkbox" class="form-checkbox" :id="`chk-${i}`" :value="(i)"
-                  @change="col.hidden=  $event.target.checked,showHideColumns(i,$event.target.checked)"
-                              :checked="col.hidden" />
-                  <span:for="`chk-${i}`" class="ltr:ml-2 rtl:mr-2" x-text="col.name"></span>
+            <div class="theme-dropdown relative" x-data="{ columnDropdown: false }" @click.outside="columnDropdown = false">
+              <a href="javascript:;" class="flex items-center rounded-md border border-[#e0e6ed] px-4 py-2 text-sm font-semibold dark:border-[#253b5c] dark:bg-[#1b2e4b] dark:text-white-dark" @click="columnDropdown = !columnDropdown">
+                <span class="ltr:mr-1 rtl:ml-1">Columns</span>
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 9L12 15L5 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </a>
+              <div class="absolute top-11 z-[10] hidden w-[100px] min-w-[150px] rounded bg-white py-2 text-dark shadow ltr:left-0 rtl:right-0 dark:bg-[#1b2e4b] dark:text-white-light" :class="columnDropdown && '!block'">
+                <ul class="space-y-2 px-4 font-semibold">
+                  <template x-for="(col,i) in columns" :key="i">
+                    <li>
+                      <label class="cursor-pointer">
+                        <input type="checkbox" class="form-checkbox" :id="`chk-${i}`" :value="(i)" @change="col.hidden = $event.target.checked, showHideColumns(i, $event.target.checked)" :checked="col.hidden" />
+                        <span class="ltr:ml-2 rtl:mr-2" x-text="col.name"></span>
+                      </label>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <table id="myTable1" class="whitespace-nowrap"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Nouvelle Collection -->
+  <div x-show="showCreateModal" x-transition.opacity.duration.300ms class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 backdrop-blur-sm" @click.self="showCreateModal = false">
+    <div class="panel border-0 py-1 px-4 rounded-lg overflow-hidden w-full max-w-sm my-8 bg-white dark:bg-[#1b2e4b]" x-show="showCreateModal" x-transition.scale.origin.center>
+      <div class="flex items-center justify-between p-5 font-semibold text-lg dark:text-white">
+        <div class="flex items-center gap-2">
+          <iconify-icon icon="solar:inbox-line-broken" width="22" class="text-primary"></iconify-icon>
+          <span>Nouvelle collection</span>
+        </div>
+        <button type="button" @click="showCreateModal = false" class="text-white-dark hover:text-dark">
+          <iconify-icon icon="solar:close-circle-bold" width="24" height="24"></iconify-icon>
+        </button>
+      </div>
+      <div class="p-5">
+        <form @submit.prevent="createCollection()">
+          <!-- Nom -->
+          <div class="relative mb-4">
+            <label class="mb-2 block text-sm font-bold">Nom *</label>
+            <input type="text" x-model="newCollection.name" placeholder="Ex: Articles, Clients..." class="form-input w-full" required>
+          </div>
+
+          <!-- Slug -->
+          <div class="relative mb-4">
+            <label class="mb-2 block text-sm font-bold">Slug</label>
+            <input type="text" x-model="newCollection.slug" placeholder="articles, clients..." class="form-input w-full">
+          </div>
+
+          <!-- Description -->
+          <div class="relative mb-4">
+            <label class="mb-2 block text-sm font-bold">Description</label>
+            <textarea x-model="newCollection.description" rows="3" placeholder="Description de la collection..." class="form-input w-full resize-none"></textarea>
+          </div>
+
+          <!-- Icône -->
+          <div class="relative mb-4">
+            <label class="mb-2 block text-sm font-bold">Icône</label>
+            <div @click="showIconPicker = !showIconPicker" class="flex items-center gap-2 cursor-pointer group">
+              <iconify-icon :icon="newCollection.icon || 'solar:inbox-line-broken'" width="18" :class="newCollection.icon ? 'text-gray-700' : 'text-gray-400'"></iconify-icon>
+              <span class="text-sm flex-1" :class="newCollection.icon ? 'text-gray-700' : 'text-gray-400'" x-text="newCollection.icon || 'Icône personnalisée'"></span>
+              <iconify-icon icon="solar:alt-arrow-down-linear" class="text-gray-400 group-hover:text-primary transition-colors" width="14" :class="showIconPicker && 'rotate-180'" style="transition: transform 0.2s"></iconify-icon>
+            </div>
+            <div x-show="showIconPicker" x-collapse class="mt-3">
+              <div class="relative mb-2 flex gap-2">
+                <select x-model="selectedLibrary" @change="loadIcons()" class="form-select w-1/3 text-xs py-1.5">
+                  <option value="solar">Solar</option>
+                  <option value="mdi">Material</option>
+                  <option value="tabler">Tabler</option>
+                </select>
+                <div class="relative w-2/3">
+                  <input type="text" x-model="iconSearch" @input.debounce.300ms="loadIcons()" placeholder="Rechercher..." class="form-input w-full text-xs pl-8 py-1.5">
+                  <iconify-icon icon="solar:magnifer-linear" class="absolute left-2.5 top-2 text-gray-400" width="14"></iconify-icon>
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-1 mb-2 max-h-48 overflow-y-auto custom-scrollbar p-1 border rounded dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 content-start">
+                <template x-for="icon in icons" :key="icon">
+                  <div class="w-8 h-8 rounded cursor-pointer border border-transparent hover:border-primary/50 hover:bg-white dark:hover:bg-gray-700 transition-all flex items-center justify-center shrink-0" :class="newCollection.icon === icon ? '!bg-primary/10 !border-primary text-primary shadow-sm' : 'text-gray-500 dark:text-gray-400'" @click="newCollection.icon = icon; showIconPicker = false" :title="icon">
+                    <iconify-icon :icon="icon" width="20" height="20"></iconify-icon>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- Couleur -->
+          <div class="mb-4">
+            <label class="mb-2 block text-sm font-bold">Couleur</label>
+            <div @click="showColorPicker = !showColorPicker" class="flex items-center gap-2 cursor-pointer group">
+              <iconify-icon icon="solar:pallete-2-bold-duotone" width="18" :style="newCollection.color ? 'color:' + newCollection.color : ''" :class="!newCollection.color && 'text-gray-400'"></iconify-icon>
+              <span class="text-sm flex-1" :class="newCollection.color ? 'text-gray-700' : 'text-gray-400'" x-text="newCollection.color || 'Couleur personnalisée'"></span>
+              <iconify-icon icon="solar:alt-arrow-down-linear" class="text-gray-400 group-hover:text-primary transition-colors" width="14" :class="showColorPicker && 'rotate-180'" style="transition: transform 0.2s"></iconify-icon>
+            </div>
+            <div x-show="showColorPicker" x-collapse class="mt-3">
+              <div class="flex flex-wrap gap-2.5">
+                <template x-for="color in availableColors" :key="color">
+                  <div class="w-7 h-7 rounded-full cursor-pointer flex items-center justify-center border-2 transition-transform hover:scale-110" :style="'background-color: ' + color + '; border-color: ' + (newCollection.color === color ? 'black' : 'transparent')" @click="newCollection.color = color; showColorPicker = false">
+                    <iconify-icon icon="solar:check-circle-bold" class="text-white" width="14" x-show="newCollection.color === color"></iconify-icon>
+                  </div>
+                </template>
+                <div class="relative w-7 h-7 rounded-full cursor-pointer border-2 border-gray-300 flex items-center justify-center overflow-hidden hover:border-gray-400">
+                  <iconify-icon icon="solar:pen-new-square-linear" width="14" class="pointer-events-none text-gray-500"></iconify-icon>
+                  <input type="color" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" x-model="newCollection.color">
+                </div>
+                <div class="w-7 h-7 rounded-full cursor-pointer flex items-center justify-center border-2 hover:border-gray-400 bg-white text-gray-400" :class="!newCollection.color && 'border-black'" @click="newCollection.color = ''">
+                  <iconify-icon icon="solar:close-circle-linear" width="16"></iconify-icon>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Champs standards -->
+          <div class="mb-4">
+            <label class="mb-2 block text-sm font-bold">Champs standards</label>
+            <div class="flex flex-wrap gap-4">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" x-model="newCollection.standardFields.title" class="form-checkbox text-primary">
+                <span class="text-sm">Titre</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" x-model="newCollection.standardFields.slug" class="form-checkbox text-primary">
+                <span class="text-sm">Slug</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" x-model="newCollection.standardFields.date" class="form-checkbox text-primary">
+                <span class="text-sm">Date</span>
               </label>
             </div>
-          </li>
-        </template>
-      </ul>
+          </div>
+
+          <!-- Active Toggle -->
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-sm font-bold">Active</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" x-model="newCollection.active" class="sr-only peer">
+              <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-full" :disabled="isSubmitting">
+            <span x-show="isSubmitting" class="animate-spin border-2 border-white border-l-transparent rounded-full w-5 h-5 ltr:mr-2 rtl:ml-2 inline-block align-middle"></span>
+            Créer la collection
+          </button>
+        </form>
+      </div>
     </div>
   </div>
 </div>
-          </div >
-  <table id="myTable1" class="whitespace-nowrap"></table>
-        </div >
-      </div >
-    </div >
-  </div >
 
-  <% const rows = entities.map((e, i) => [
-    i + 1,
-    e.name,
-    e.slug,
-    e.description || "",
-    e.color || "#ffffff",
-    e.icon || "",
-    (e.enabledStandardFields || []).join(', '),
-    e.createdAt,
-    include("../components/btn-entity-actions", { id: e._id, account_number }), // ✅ boutons générés serveur
-  ]);
-    %>
-
-    <script>
-      document.addEventListener("alpine:init", () => {
-        Alpine.data("miscellaneous", () => ({
-          columns: [
-            { name: "Select", hidden: false },
-            { name: "Nom", hidden: false },
-            { name: "Slug", hidden: false },
-            { name: "Description", hidden: true },
-            { name: "Couleur", hidden: true },
-            { name: "Icône", hidden: true },
-            { name: "Champs standards", hidden: true },
-            { name: "Date de création", hidden: true },
-            { name: "Actions", hidden: false },
-          ],
-          hideCols: [0],
-          showCols: [1, 2, 3, 4, 5, 6, 7, 8],
-          datatable1: null,
-
-          showHideColumns(col, value) {
-            if (value) {
-              this.showCols.push(col);
-              this.hideCols = this.hideCols.filter((d) => d != col);
-            } else {
-              this.hideCols.push(col);
-              this.showCols = this.showCols.filter((d) => d != col);
-            }
-            let headers = this.datatable1.columns();
-            headers.hide(this.hideCols);
-            headers.show(this.showCols);
-          },
-
-          init() {
-            const rows = <%- JSON.stringify(rows) %>;
-
-            this.datatable1 = new simpleDatatables.DataTable("#myTable1", {
-              data: {
-                headings: this.columns.map((c) => c.name),
-                data: rows,
-              },
-              perPage: 10,
-              perPageSelect: [10, 20, 30, 50, 100],
-              columns: [
-                {
-                  select: 0,
-                  sort: "asc",
-                  render: (data) =>
-                    `<input type="checkbox" class="form-checkbox" value="${data}" />`,
-                },
-                {
-                  select: 4,
-                  render: (data) =>
-                    `<div class="w-6 h-6 rounded-full border" style="background-color:${data};"></div>`,
-                },
-                {
-                  select: 7,
-                  render: (data) => {
-                    const dt = new Date(data);
-                    const month = dt.getMonth() + 1 < 10 ? "0" + (dt.getMonth() + 1) : dt.getMonth() + 1;
-                    const day = dt.getDate() < 10 ? "0" + dt.getDate() : dt.getDate();
-                    return day + "/" + month + "/" + dt.getFullYear();
-                  },
-                },
-                {
-                  select: 8,
-                  render: (html) => html, // ✅ HTML rendu par EJS
-                },
-              ],
-              firstLast: true,
-              layout: {
-                top: "{search}",
-                bottom: "{info}{select}{pager}",
-              },
-            });
-
-            this.datatable1.columns().hide(this.hideCols);
-            this.datatable1.columns().show(this.showCols);
-          },
-        }));
-      });
-    </script>
-
-
-
-
-    <script src="/themes/default/assets/js/simple-datatables.js"></script>
+<script src="/themes/default/assets/js/simple-datatables.js"></script>

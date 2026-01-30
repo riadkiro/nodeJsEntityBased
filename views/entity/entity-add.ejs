@@ -1,16 +1,21 @@
 <div class="panel">
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100 dark:border-gray-800">
+      <iconify-icon icon="solar:box-bold-duotone" width="28" height="28" class="text-primary"></iconify-icon>
+      <h2 class="text-xl font-bold dark:text-white">Nouvelle collection</h2>
+    </div>
+
     <!-- form controls -->
     <form class="space-y-5" method="POST" enctype="multipart/form-data" action="/account/<%= account_number %>/entity/add">
         <!-- Nom -->
         <div>
-            <label for="name">Nom</label>
-            <input id="name" name="name" type="text" placeholder="Nom de l'entité" class="form-input" required />
-        </div>
+            <label for="name">Nom de la collection</label>
+            <input id="name" name="name" type="text" placeholder="Ex: Contacts, Projets, Factures..." class="form-input" required />
 
         <!-- Slug -->
         <div>
-            <label for="slug">Slug</label>
-            <input id="slug" name="slug" type="text" placeholder="ex: mon-entity" class="form-input" required />
+            <label for="slug">Identifiant (slug)</label>
+            <input id="slug" name="slug" type="text" placeholder="ex: contacts, projets" class="form-input" required />
         </div>
 
         <!-- Description -->
@@ -70,6 +75,9 @@
         
 
         <!-- Bouton submit -->
-        <button type="submit" class="btn btn-primary !mt-6">Publier</button>
+        <button type="submit" class="btn btn-primary !mt-6 flex items-center gap-2">
+          <iconify-icon icon="solar:add-circle-bold" width="18" height="18"></iconify-icon>
+          Créer la collection
+        </button>
     </form>
 </div>

@@ -48,6 +48,22 @@ const EntitySchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       default: [], // ex: [ { id: "row1", columns: [ { fields: ["id1"] }, { fields: ["id2"] } ] } ]
     },
+    // Overrides par entité pour les FieldTemplates partagés
+    // Clé: FieldTemplate._id (string), Valeur: { label, required, width, order, visible, ... }
+    fieldOverrides: {
+      type: Map,
+      of: new mongoose.Schema({
+        label: String,              // Override du label pour cette entité
+        required: Boolean,          // Champ obligatoire pour cette entité
+        width: { type: String, enum: ['full', 'half', 'third', 'quarter'] },
+        order: Number,              // Ordre d'affichage
+        visible: { type: Boolean, default: true },
+        placeholder: String,        // Placeholder spécifique
+        helpText: String,           // Texte d'aide contextuel
+        defaultValue: mongoose.Schema.Types.Mixed // Valeur par défaut
+      }, { _id: false }),
+      default: new Map()
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

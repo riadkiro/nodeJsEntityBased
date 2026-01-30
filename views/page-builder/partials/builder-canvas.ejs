@@ -131,6 +131,17 @@
                   <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
                 </button>
 
+                <div class="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+
+                <!-- Equal Height Toggle -->
+                <button 
+                  @click.stop="toggleEqualHeight(row.id)"
+                  :title="row.equalHeight ? 'Disable Equal Height' : 'Enable Equal Height'" 
+                  :class="row.equalHeight ? 'bg-primary text-white' : 'hover:bg-primary/10 hover:text-primary'"
+                  class="w-8 h-8 flex items-center justify-center rounded transition-colors">
+                  <iconify-icon icon="solar:align-vertical-center-bold" width="16"></iconify-icon>
+                </button>
+
                 <!-- Close layout mode -->
                 <button 
                   @click.stop="layoutMode = false"
@@ -146,7 +157,8 @@
           <div 
             :class="[
               'grid gap-6',
-              builderState.mode === 'edit' && 'min-h-[100px]'
+              builderState.mode === 'edit' && 'min-h-[100px]',
+              row.equalHeight && 'items-stretch'
             ]"
             :style="`grid-template-columns: repeat(12, 1fr)`">
             
@@ -157,8 +169,9 @@
                 class="relative transition-all duration-200"
                 :class="[
                   builderState.mode === 'edit' && 'border-2 border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg hover:border-gray-400 dark:hover:border-gray-500',
-                  builderState.mode === 'edit' && column.blocks.length === 0 && 'h-[90px]',
-                  builderState.mode === 'edit' && column.blocks.length > 0 && 'min-h-[64px]'
+                  builderState.mode === 'edit' && column.blocks.length === 0 && !row.equalHeight && 'h-[90px]',
+                  builderState.mode === 'edit' && column.blocks.length > 0 && !row.equalHeight && 'min-h-[64px]',
+                  row.equalHeight && 'flex flex-col h-full'
                 ]">
                 
                 
@@ -167,7 +180,10 @@
                   data-sortable-column
                   :data-row-id="row.id"
                   :data-col-index="colIndex"
-                  :class="column.blocks.length > 0 ? 'min-h-[150px]' : 'h-full'"
+                  :class="[
+                    column.blocks.length > 0 ? 'min-h-[150px]' : 'h-full',
+                    row.equalHeight && 'flex-1 flex flex-col'
+                  ]"
                   x-init="initSortableColumn($el, row.id, colIndex)">
                   <template x-for="blockId in column.blocks" :key="blockId">
                     <div 
@@ -178,7 +194,8 @@
                       class="relative"
                       :class="[
                         builderState.mode === 'edit' && builderState.hoveredBlockId === blockId && 'ring-1 ring-gray-300 dark:ring-gray-600',
-                        builderState.mode === 'edit' && 'cursor-pointer transition-all duration-150'
+                        builderState.mode === 'edit' && 'cursor-pointer transition-all duration-150',
+                        row.equalHeight && 'flex-1 flex flex-col [&>.panel]:flex-1 [&>.panel]:h-full'
                       ]">
                       
                       <!-- Block Popover (on selection) -->

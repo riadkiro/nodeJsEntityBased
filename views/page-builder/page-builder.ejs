@@ -298,6 +298,15 @@ document.addEventListener('alpine:init', () => {
         });
       },
       
+      toggleEqualHeight(rowId) {
+        const tabId = this.builderState.activeTab;
+        const row = this.pageConfig.layout[tabId].find(r => r.id === rowId);
+        
+        if (!row) return;
+        
+        row.equalHeight = !row.equalHeight;
+      },
+      
       initSortableColumn(el, rowId, columnIndex) {
         const self = this;
         

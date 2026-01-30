@@ -314,8 +314,87 @@
                           </div>
                         </template>
 
+                        <!-- Expense Tracker Block -->
+                        <template x-if="block && block.type === 'expense-tracker'">
+                          <div class="panel h-full">
+                            <div class="mb-5 flex items-center justify-between dark:text-white-light">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Expenses'"></h5>
+                            </div>
+                            <div class="my-10 text-3xl font-bold text-[#e95f2b]">
+                              <span x-text="`${block.currency || '$'} ${(block.value || 0).toLocaleString()}`"></span>
+                              <span class="text-sm text-black ltr:mr-1 rtl:ml-1 dark:text-white-light" x-text="block.period || 'this week'"></span>
+                              <svg class="inline h-5 w-5 text-success" viewBox="0 0 24 24" fill="none">
+                                <path opacity="0.5" d="M22 7L14.6203 14.3347C13.6227 15.3263 13.1238 15.822 12.5051 15.822C11.8864 15.8219 11.3876 15.326 10.3902 14.3342L10.1509 14.0962C9.15254 13.1035 8.65338 12.6071 8.03422 12.6074C7.41506 12.6076 6.91626 13.1043 5.91867 14.0977L2 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M22.0001 12.5458V7H16.418" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                              </svg>
+                            </div>
+                            <div class="flex items-center justify-between">
+                              <div class="h-5 w-full overflow-hidden rounded-full bg-dark-light p-1 shadow-3xl dark:bg-dark-light/10 dark:shadow-none">
+                                <div class="relative h-full w-full rounded-full bg-gradient-to-r from-[#4361ee] to-[#805dca] before:absolute before:inset-y-0 before:m-auto before:h-2 before:w-2 before:rounded-full before:bg-white ltr:before:right-0.5 rtl:before:left-0.5" :style="`width: ${block.progress || 0}%`"></div>
+                              </div>
+                              <span class="ltr:ml-5 rtl:mr-5 dark:text-white-light" x-text="`${block.progress || 0}%`"></span>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Progress List Block -->
+                        <template x-if="block && block.type === 'progress-list'">
+                          <div class="panel h-full" x-data="{
+                            getGradient(color) {
+                              const gradients = {
+                                primary: 'linear-gradient(to right, #009ffd, #2a2a72)',
+                                danger: 'linear-gradient(to right, #a71d31, #3f0d12)',
+                                warning: 'linear-gradient(to right, #fe5f75, #fc9842)',
+                                success: 'linear-gradient(to right, #11998e, #38ef7d)',
+                                info: 'linear-gradient(to right, #4361ee, #805dca)',
+                                secondary: 'linear-gradient(to right, #667eea, #764ba2)'
+                              };
+                              return gradients[color] || gradients.primary;
+                            },
+                            getBgColor(color) {
+                              const colors = {
+                                primary: '#4361ee',
+                                danger: '#e7515a',
+                                warning: '#e2a03f',
+                                success: '#00ab55',
+                                info: '#2196f3',
+                                secondary: '#805dca'
+                              };
+                              return colors[color] || colors.primary;
+                            }
+                          }">
+                            <div class="mb-5 flex items-start justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white-light" x-text="block.title || 'Progress List'"></h5>
+                            </div>
+                            <div class="flex flex-col space-y-5">
+                              <template x-for="item in block.items || []" :key="item.label">
+                                <div class="flex items-center">
+                                  <div class="h-9 w-9">
+                                    <div class="flex h-9 w-9 items-center justify-center rounded-xl" 
+                                         :style="`background-color: ${getBgColor(item.color)}20; color: ${getBgColor(item.color)}`">
+                                      <iconify-icon icon="solar:globe-bold" width="20"></iconify-icon>
+                                    </div>
+                                  </div>
+                                  <div class="w-full flex-initial px-3">
+                                    <div class="w-summary-info mb-1 flex justify-between font-semibold text-white-dark">
+                                      <h6 x-text="item.label"></h6>
+                                      <p class="text-xs ltr:ml-auto rtl:mr-auto" x-text="`${item.value}%`"></p>
+                                    </div>
+                                    <div>
+                                      <div class="h-5 w-full overflow-hidden rounded-full bg-dark-light p-1 shadow-3xl dark:bg-dark-light/10 dark:shadow-none">
+                                        <div class="relative h-full rounded-full before:absolute before:inset-y-0 before:m-auto before:h-2 before:w-2 before:rounded-full before:bg-white ltr:before:right-0.5 rtl:before:left-0.5"
+                                             :style="`width: ${item.value}%; background: ${getGradient(item.color)}`"></div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </template>
+                            </div>
+                          </div>
+                        </template>
+
                         <!-- Unknown Block Type -->
-                        <template x-if="block && !['panel', 'text', 'kpi-card', 'statistics'].includes(block.type)">
+                        <template x-if="block && !['panel', 'text', 'kpi-card', 'statistics', 'expense-tracker', 'progress-list'].includes(block.type)">
                           <div class="panel">
                             <span x-text="'Unknown block type: ' + block.type"></span>
                           </div>

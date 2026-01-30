@@ -19,5 +19,8 @@ router.use("/documents", require("./document.routes.js"));
 // Database Management
 router.use("/db", require("./db.routes.js"));
 
+// Page Builder
+router.use("/page-builder", require("./page-builder.routes.js"));
+
 
 module.exports = router;

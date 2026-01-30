@@ -1,0 +1,61 @@
+<!-- Sidebar Icons (64px) -->
+<div class="w-16 bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col items-center py-4 gap-3">
+  <!-- Add Blocks -->
+  <button 
+    @click="openDrawer('blocks')"
+    :class="builderState.drawerMode === 'blocks' && 'bg-primary/20 text-primary'"
+    class="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700"
+    title="Add Blocks">
+    <iconify-icon icon="solar:add-circle-bold-duotone" width="24"></iconify-icon>
+  </button>
+
+  <!-- Rows -->
+  <button 
+    @click="openDrawer('rows')"
+    :class="builderState.drawerMode === 'rows' && 'bg-primary/20 text-primary'"
+    class="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700"
+    title="Rows">
+    <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="24"></iconify-icon>
+  </button>
+
+  <div class="h-px w-8 bg-gray-200 dark:bg-gray-700"></div>
+
+  <!-- Data Sources -->
+  <button 
+    @click="openDrawer('data')"
+    :class="builderState.drawerMode === 'data' && 'bg-primary/20 text-primary'"
+    class="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700"
+    title="Data Sources">
+    <iconify-icon icon="solar:database-bold-duotone" width="24"></iconify-icon>
+  </button>
+
+  <!-- Global Style -->
+  <button 
+    @click="openDrawer('style')"
+    :class="builderState.drawerMode === 'style' && 'bg-primary/20 text-primary'"
+    class="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700"
+    title="Global Style">
+    <iconify-icon icon="solar:pallete-2-bold-duotone" width="24"></iconify-icon>
+  </button>
+
+  <!-- Tabs -->
+  <button 
+    @click="openDrawer('tabs')"
+    :class="builderState.drawerMode === 'tabs' && 'bg-primary/20 text-primary'"
+    class="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700"
+    title="Tabs"
+    x-show="pageConfig.type === 'record_page'">
+    <iconify-icon icon="solar:widget-3-bold-duotone" width="24"></iconify-icon>
+  </button>
+
+  <div class="h-px w-8 bg-gray-200 dark:bg-gray-700"></div>
+
+  <!-- Layers -->
+  <button 
+    @click="openDrawer('layers')"
+    :class="builderState.drawerMode === 'layers' && 'bg-primary/20 text-primary'"
+    class="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700"
+    title="Layers">
+    <iconify-icon icon="solar:folder-2-bold-duotone" width="24"></iconify-icon>
+  </button>
+</div>

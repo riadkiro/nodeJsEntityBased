@@ -1,0 +1,300 @@
+<div x-data="pageBuilder()" class="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+  <!-- Header -->
+  <div class="h-14 bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex items-center justify-between px-6">
+    <div class="flex items-center gap-4">
+      <h1 class="text-lg font-semibold" x-text="pageConfig.name"></h1>
+      <div class="flex gap-2">
+        <button 
+          :class="builderState.mode === 'edit' && 'bg-primary text-white'"
+          @click="builderState.mode = 'edit'"
+          class="px-3 py-1 rounded text-sm transition-colors hover:bg-primary/10">
+          Edit
+        </button>
+        <button 
+          :class="builderState.mode === 'preview' && 'bg-primary text-white'"
+          @click="builderState.mode = 'preview'"
+          class="px-3 py-1 rounded text-sm transition-colors hover:bg-primary/10">
+          Preview
+        </button>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="text-xs text-gray-500" x-show="lastSaved">
+        Last saved: <span x-text="lastSaved"></span>
+      </span>
+      <button @click="saveConfig()" class="btn btn-primary btn-sm">
+        <iconify-icon icon="solar:diskette-bold" class="mr-1"></iconify-icon>
+        Save
+      </button>
+      <button @click="publishConfig()" class="btn btn-success btn-sm">
+        Publish
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Area -->
+  <div class="flex-1 flex overflow-hidden">
+    <%- include('partials/builder-sidebar') %>
+    <%- include('partials/builder-drawer') %>
+    <%- include('partials/builder-canvas') %>
+  </div>
+</div>
+
+<script type="application/json" id="page-config-data">
+<%- JSON.stringify({
+  configId: typeof pageConfig !== 'undefined' ? pageConfig._id : null,
+  isNew: typeof pageConfig === 'undefined',
+  config: typeof pageConfig !== 'undefined' ? pageConfig : {
+    name: 'New Page',
+    type: 'dashboard',
+    schemaVersion: '1.0',
+    theme: {
+      spacing: 'normal',
+      radius: 'md',
+      fontScale: 1,
+      accentColor: '#4361ee'
+    },
+    dataPlan: {
+      prefetch: [],
+      lazy: [],
+      cacheTTL: 300
+    },
+    header: {
+      title: '',
+      breadcrumb: true,
+      actions: []
+    },
+    tabs: [],
+    layout: { default: [] },
+    blocks: {},
+    actions: {}
+  }
+}).replace(/</g, '\\u003C') %>
+</script>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('pageBuilder', () => {
+    const data = JSON.parse(document.getElementById('page-config-data').textContent);
+    
+    return {
+      configId: data.configId,
+      pageConfig: data.config,
+      lastSaved: null,
+      
+      builderState: {
+        mode: 'edit',
+        selectedBlockId: null,
+        selectedRowId: null,
+        hoveredBlockId: null,
+        hoveredRowId: null,
+        drawerMode: null,
+        drawerContext: null,
+        isDragging: false,
+        dragSource: null,
+        clipboard: null,
+        undoStack: [],
+        redoStack: [],
+        activeTab: 'default'
+      },
+      
+      init() {
+        console.log('PageBuilder initialized', this.pageConfig);
+      },
+      
+      openDrawer(mode, context = null) {
+        this.builderState.drawerMode = mode;
+        this.builderState.drawerContext = context;
+      },
+      
+      closeDrawer() {
+        this.builderState.drawerMode = null;
+        this.builderState.drawerContext = null;
+      },
+      
+      selectBlock(blockId) {
+        this.builderState.selectedBlockId = blockId;
+        this.builderState.selectedRowId = null;
+      },
+      
+      selectRow(rowId) {
+        this.builderState.selectedRowId = rowId;
+        this.builderState.selectedBlockId = null;
+      },
+      
+      addRow() {
+        const tabId = this.builderState.activeTab;
+        if (!this.pageConfig.layout[tabId]) {
+          this.pageConfig.layout[tabId] = [];
+        }
+        
+        const rowId = 'row_' + Date.now();
+        this.pageConfig.layout[tabId].push({
+          id: rowId,
+          columns: [{ width: 12, blocks: [] }]
+        });
+      },
+      
+      duplicateRow(rowId) {
+        const tabId = this.builderState.activeTab;
+        const rows = this.pageConfig.layout[tabId];
+        const index = rows.findIndex(r => r.id === rowId);
+        
+        if (index !== -1) {
+          const newRow = JSON.parse(JSON.stringify(rows[index]));
+          newRow.id = 'row_' + Date.now();
+          rows.splice(index + 1, 0, newRow);
+        }
+      },
+      
+      deleteRow(rowId) {
+        const tabId = this.builderState.activeTab;
+        const rows = this.pageConfig.layout[tabId];
+        const index = rows.findIndex(r => r.id === rowId);
+        
+        if (index !== -1) {
+          rows.splice(index, 1);
+        }
+      },
+      
+      setRowLayout(rowId, numColumns) {
+        const tabId = this.builderState.activeTab;
+        const row = this.pageConfig.layout[tabId].find(r => r.id === rowId);
+        
+        if (!row) return;
+        
+        // Calculate column widths for equal distribution
+        const columnWidth = Math.floor(12 / numColumns);
+        const remainder = 12 % numColumns;
+        
+        // Preserve existing blocks if possible
+        const existingBlocks = row.columns.flatMap(col => col.blocks);
+        
+        // Create new columns
+        const newColumns = [];
+        for (let i = 0; i < numColumns; i++) {
+          newColumns.push({
+            width: columnWidth + (i < remainder ? 1 : 0),
+            blocks: existingBlocks[i] ? [existingBlocks[i]] : []
+          });
+        }
+        
+        row.columns = newColumns;
+      },
+      
+      addColumnToRow(rowId) {
+        const tabId = this.builderState.activeTab;
+        const row = this.pageConfig.layout[tabId].find(r => r.id === rowId);
+        
+        if (!row) return;
+        
+        // Check max 12 columns (total width)
+        const totalWidth = row.columns.reduce((sum, col) => sum + col.width, 0);
+        if (totalWidth >= 12) {
+          this.showToast('Maximum 12 columns reached', 'info');
+          return;
+        }
+        
+        // Add new column with width 1
+        row.columns.push({
+          width: 1,
+          blocks: []
+        });
+      },
+      
+      addBlock(blockType, rowId, columnIndex) {
+        const blockId = blockType + '_' + Date.now();
+        
+        // Create block definition
+        this.pageConfig.blocks[blockId] = {
+          type: blockType,
+          meta: {
+            category: 'default',
+            locked: false
+          },
+          title: blockType.charAt(0).toUpperCase() + blockType.slice(1),
+          ...this.getBlockDefaults(blockType)
+        };
+        
+        // Add to column
+        const tabId = this.builderState.activeTab;
+        const row = this.pageConfig.layout[tabId].find(r => r.id === rowId);
+        if (row && row.columns[columnIndex]) {
+          row.columns[columnIndex].blocks.push(blockId);
+        }
+        
+        // Auto-select
+        this.selectBlock(blockId);
+      },
+      
+      getBlockDefaults(type) {
+        const defaults = {
+          panel: { collapsible: false, icon: '' },
+          text: { content: 'Double-click to edit' },
+          'kpi-card': { label: 'KPI', valueField: '', color: 'primary' }
+        };
+        return defaults[type] || {};
+      },
+      
+      async saveConfig() {
+        try {
+          const url = this.configId 
+            ? `/api/page-configs/${this.configId}`
+            : '/api/page-configs';
+          
+          const method = this.configId ? 'PUT' : 'POST';
+          
+          const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.pageConfig)
+          });
+          
+          if (response.ok) {
+            const saved = await response.json();
+            this.configId = saved._id;
+            this.lastSaved = new Date().toLocaleTimeString();
+            
+            // Toast notification
+            this.showToast('Configuration saved!', 'success');
+          }
+        } catch (error) {
+          console.error('Save error:', error);
+          this.showToast('Failed to save', 'error');
+        }
+      },
+      
+      async publishConfig() {
+        if (!this.configId) {
+          await this.saveConfig();
+        }
+        
+        try {
+          const response = await fetch(`/api/page-configs/${this.configId}/publish`, {
+            method: 'PATCH'
+          });
+          
+          if (response.ok) {
+            this.pageConfig.status = 'published';
+            this.showToast('Page published!', 'success');
+          }
+        } catch (error) {
+          console.error('Publish error:', error);
+          this.showToast('Failed to publish', 'error');
+        }
+      },
+      
+      showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg z-50 ${
+          type === 'success' ? 'bg-success text-white' : 
+          type === 'error' ? 'bg-danger text-white' : 'bg-gray-800 text-white'
+        }`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      }
+    };
+  });
+});
+</script>

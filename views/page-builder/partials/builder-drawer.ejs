@@ -1,0 +1,128 @@
+<!-- Drawer (320px, slide from left) -->
+<div 
+  x-show="builderState.drawerMode !== null"
+  x-transition:enter="transition ease-out duration-300"
+  x-transition:enter-start="-translate-x-full"
+  x-transition:enter-end="translate-x-0"
+  x-transition:leave="transition ease-in duration-200"
+  x-transition:leave-start="translate-x-0"
+  x-transition:leave-end="-translate-x-full"
+  @click.outside="closeDrawer()"
+  class="fixed left-16 top-14 bottom-0 w-80 bg-white dark:bg-gray-800 border-r dark:border-gray-700 z-40 shadow-xl overflow-y-auto"
+  style="display: none;">
+
+  <!-- Drawer Header -->
+  <div class="sticky top-0 bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-4 flex items-center justify-between z-10">
+    <h3 class="font-semibold text-sm uppercase tracking-wide" x-text="
+      builderState.drawerMode === 'blocks' ? 'Add Blocks' :
+      builderState.drawerMode === 'rows' ? 'Manage Rows' :
+      builderState.drawerMode === 'block-settings' ? 'Block Settings' :
+      builderState.drawerMode === 'style' ? 'Global Style' :
+      builderState.drawerMode === 'tabs' ? 'Tabs' :
+      builderState.drawerMode === 'layers' ? 'Layers' :
+      builderState.drawerMode === 'data' ? 'Data Sources' : 'Settings'
+    "></h3>
+    <button @click="closeDrawer()" class="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+      <iconify-icon icon="solar:close-circle-bold" width="20"></iconify-icon>
+    </button>
+  </div>
+
+  <!-- Drawer Content -->
+  <div class="p-4">
+    
+    <!-- Blocks Palette -->
+    <div x-show="builderState.drawerMode === 'blocks'" class="space-y-2">
+      <h4 class="text-xs font-semibold text-gray-500 uppercase mb-3">Drag blocks to canvas</h4>
+      
+      <div class="grid grid-cols-2 gap-2">
+        <!-- Panel Block -->
+        <div 
+          draggable="true"
+          @dragstart="builderState.dragSource = { type: 'block', blockType: 'panel' }"
+          class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
+          <iconify-icon icon="solar:widget-5-bold-duotone" width="32" class="text-primary"></iconify-icon>
+          <span class="text-xs font-medium">Panel</span>
+        </div>
+
+        <!-- Text Block -->
+        <div 
+          draggable="true"
+          @dragstart="builderState.dragSource = { type: 'block', blockType: 'text' }"
+          class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
+          <iconify-icon icon="solar:text-bold-duotone" width="32" class="text-success"></iconify-icon>
+          <span class="text-xs font-medium">Text</span>
+        </div>
+
+        <!-- KPI Card Block -->
+        <div 
+          draggable="true"
+          @dragstart="builderState.dragSource = { type: 'block', blockType: 'kpi-card' }"
+          class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
+          <iconify-icon icon="solar:presentation-graph-bold-duotone" width="32" class="text-warning"></iconify-icon>
+          <span class="text-xs font-medium">KPI Card</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rows Management -->
+    <div x-show="builderState.drawerMode === 'rows'" class="space-y-3">
+      <button @click="addRow()" class="w-full btn btn-primary btn-sm">
+        <iconify-icon icon="solar:add-circle-bold" class="mr-1"></iconify-icon>
+        Add Row
+      </button>
+
+      <div class="text-xs text-gray-500">
+        <p class="mb-2 font-medium">Layout Presets:</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button class="p-2 border rounded hover:bg-gray-50 dark:hover:bg-gray-700">1 Column</button>
+          <button class="p-2 border rounded hover:bg-gray-50 dark:hover:bg-gray-700">2 Columns</button>
+          <button class="p-2 border rounded hover:bg-gray-50 dark:hover:bg-gray-700">3 Columns</button>
+          <button class="p-2 border rounded hover:bg-gray-50 dark:hover:bg-gray-700">4 Columns</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Block Settings (contextual) -->
+    <div x-show="builderState.drawerMode === 'block-settings'" class="space-y-4">
+      <template x-if="builderState.selectedBlockId && pageConfig.blocks[builderState.selectedBlockId]">
+        <div>
+          <label class="block text-sm font-medium mb-1">Title</label>
+          <input 
+            type="text" 
+            class="form-input w-full"
+            :value="pageConfig.blocks[builderState.selectedBlockId].title"
+            @input="pageConfig.blocks[builderState.selectedBlockId].title = $event.target.value">
+        </div>
+      </template>
+    </div>
+
+    <!-- Global Style -->
+    <div x-show="builderState.drawerMode === 'style'" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Spacing</label>
+        <select class="form-select w-full" x-model="pageConfig.theme.spacing">
+          <option value="compact">Compact</option>
+          <option value="normal">Normal</option>
+          <option value="relaxed">Relaxed</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Border Radius</label>
+        <select class="form-select w-full" x-model="pageConfig.theme.radius">
+          <option value="none">None</option>
+          <option value="sm">Small</option>
+          <option value="md">Medium</option>
+          <option value="lg">Large</option>
+          <option value="xl">Extra Large</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Accent Color</label>
+        <input type="color" class="w-full h-10" x-model="pageConfig.theme.accentColor">
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -164,6 +164,9 @@
                 
                 <!-- Blocks in Column -->
                 <div 
+                  data-sortable-column
+                  :data-row-id="row.id"
+                  :data-col-index="colIndex"
                   :class="column.blocks.length > 0 ? 'min-h-[150px]' : 'h-full'"
                   x-init="initSortableColumn($el, row.id, colIndex)">
                   <template x-for="blockId in column.blocks" :key="blockId">

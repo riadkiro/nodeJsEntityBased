@@ -302,18 +302,35 @@ document.addEventListener('alpine:init', () => {
             }
           },
           onEnd(evt) {
-            // Reorder blocks within column
             const tabId = self.builderState.activeTab;
-            const row = self.pageConfig.layout[tabId].find(r => r.id === rowId);
+            const rows = self.pageConfig.layout[tabId];
             
-            if (row && row.columns[columnIndex]) {
-              const blockElements = Array.from(el.children);
-              const newOrder = blockElements
-                .filter(child => child.dataset.blockId)
-                .map(child => child.dataset.blockId);
-              
-              row.columns[columnIndex].blocks = newOrder;
-            }
+            // If dragging from palette (no blockId), ignore - already handled in onAdd
+            if (!evt.item.dataset.blockId) return;
+            
+            // Rebuild all columns from DOM state
+            // This ensures we capture any cross-column moves
+            rows.forEach(row => {
+              row.columns.forEach((col, colIdx) => {
+                // Find the Sortable container for this column
+                // We'll use a data attribute approach
+                const containers = document.querySelectorAll('[data-sortable-column]');
+                containers.forEach(container => {
+                  const containerRowId = container.getAttribute('data-row-id');
+                  const containerColIdx = parseInt(container.getAttribute('data-col-index'));
+                  
+                  if (containerRowId === row.id && containerColIdx === colIdx) {
+                    // Read blocks from DOM
+                    const blockElements = Array.from(container.children);
+                    const newOrder = blockElements
+                      .filter(child => child.dataset.blockId)
+                      .map(child => child.dataset.blockId);
+                    
+                    row.columns[colIdx].blocks = newOrder;
+                  }
+                });
+              });
+            });
           }
         });
       },

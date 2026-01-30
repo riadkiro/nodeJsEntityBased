@@ -34,11 +34,18 @@
     <div x-show="builderState.drawerMode === 'blocks'" class="space-y-2">
       <h4 class="text-xs font-semibold text-gray-500 uppercase mb-3">Drag blocks to canvas</h4>
       
-      <div class="grid grid-cols-2 gap-2">
+      <div 
+        class="grid grid-cols-2 gap-2"
+        x-init="
+          Sortable.create($el, {
+            group: { name: 'blocks', pull: 'clone', put: false },
+            animation: 150,
+            sort: false
+          })
+        ">
         <!-- Panel Block -->
         <div 
-          draggable="true"
-          @dragstart="builderState.dragSource = { type: 'block', blockType: 'panel' }"
+          data-block-type="panel"
           class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
           <iconify-icon icon="solar:widget-5-bold-duotone" width="32" class="text-primary"></iconify-icon>
           <span class="text-xs font-medium">Panel</span>
@@ -46,8 +53,7 @@
 
         <!-- Text Block -->
         <div 
-          draggable="true"
-          @dragstart="builderState.dragSource = { type: 'block', blockType: 'text' }"
+          data-block-type="text"
           class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
           <iconify-icon icon="solar:text-bold-duotone" width="32" class="text-success"></iconify-icon>
           <span class="text-xs font-medium">Text</span>
@@ -55,11 +61,18 @@
 
         <!-- KPI Card Block -->
         <div 
-          draggable="true"
-          @dragstart="builderState.dragSource = { type: 'block', blockType: 'kpi-card' }"
+          data-block-type="kpi-card"
           class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
           <iconify-icon icon="solar:presentation-graph-bold-duotone" width="32" class="text-warning"></iconify-icon>
           <span class="text-xs font-medium">KPI Card</span>
+        </div>
+
+        <!-- Statistics Block -->
+        <div 
+          data-block-type="statistics"
+          class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
+          <iconify-icon icon="solar:chart-bold-duotone" width="32" class="text-info"></iconify-icon>
+          <span class="text-xs font-medium">Statistics</span>
         </div>
       </div>
     </div>

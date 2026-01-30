@@ -137,14 +137,15 @@
               <div 
                 :style="`grid-column: span ${column.width}`"
                 class="relative"
-                @drop.prevent="handleDrop($event, row.id, colIndex)"
-                @dragover.prevent
-                :class="builderState.mode === 'edit' && 'min-h-[80px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-800'">
+                :class="builderState.mode === 'edit' && 'min-h-[200px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800'">
                 
                 <!-- Blocks in Column -->
-                <div class="space-y-4">
+                <div 
+                  class="space-y-4 min-h-[150px]"
+                  x-init="initSortableColumn($el, row.id, colIndex)">
                   <template x-for="blockId in column.blocks" :key="blockId">
                     <div 
+                      :data-block-id="blockId"
                       @click.stop="selectBlock(blockId)"
                       @mouseenter="builderState.hoveredBlockId = blockId"
                       @mouseleave="builderState.hoveredBlockId = null"
@@ -193,52 +194,3 @@
 
   </div>
 </div>
-
-<script>
-function handleDrop(event, rowId, columnIndex) {
-  const dragSource = this.builderState.dragSource;
-  
-  if (dragSource && dragSource.type === 'block') {
-    this.addBlock(dragSource.blockType, rowId, columnIndex);
-    this.builderState.dragSource = null;
-  }
-}
-
-function renderBlock(blockId) {
-  const block = this.pageConfig.blocks[blockId];
-  if (!block) return '';
-  
-  switch (block.type) {
-    case 'panel':
-      return `
-        <div class="panel">
-          <div class="mb-5 flex items-center justify-between">
-            <h5 class="text-lg font-semibold" contenteditable="${this.builderState.mode === 'edit'}">${block.title || 'Panel Title'}</h5>
-          </div>
-          <div class="text-sm text-gray-500">Panel content...</div>
-        </div>
-      `;
-    
-    case 'text':
-      return `
-        <div class="panel p-4">
-          <div contenteditable="${this.builderState.mode === 'edit'}" class="prose max-w-none">
-            ${block.content || 'Double-click to edit text...'}
-          </div>
-        </div>
-      `;
-    
-    case 'kpi-card':
-      return `
-        <div class="panel h-full p-5">
-          <div class="mb-1 text-xs font-semibold text-gray-500 uppercase">${block.label || 'KPI'}</div>
-          <div class="text-3xl font-bold text-primary mb-2">0</div>
-          <div class="text-xs text-success">↑ 12%</div>
-        </div>
-      `;
-    
-    default:
-      return `<div class="panel">Unknown block type: ${block.type}</div>`;
-  }
-}
-</script>

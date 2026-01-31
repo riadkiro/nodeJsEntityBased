@@ -242,6 +242,17 @@
                 <span>Bibliothèque de champs</span>
               </a>
             </li>
+            <!-- Types de champs (Admin) -->
+            <li x-data="{ hovered: false }">
+              <a href="/account/<%= account_number %>/field-type/list" 
+                class="flex items-center px-3 py-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+                :class="window.location.pathname.includes('/field-type') ? 'bg-primary/10 text-primary' : ''"
+                @mouseenter="hovered = true" @mouseleave="hovered = false">
+                <iconify-icon icon="solar:code-square-bold-duotone" class="mr-2" width="16" height="16"></iconify-icon>
+                <span>Types de champs</span>
+                <span class="ml-auto text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded">Admin</span>
+              </a>
+            </li>
             <!-- Mailbox -->
             <li x-data="{ hovered: false }">
               <a href="/account/<%= account_number %>/mailbox/1" 

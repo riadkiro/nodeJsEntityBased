@@ -1,228 +1,126 @@
 /**
- * Seed Script - Add demo data to collections
+ * Seed Script - Créer des personnes démo à partir du datatable de démonstration
  * 
- * Usage: node scripts/seed-demo-data.js <account_number> [entity_slug]
- * 
- * Examples:
- *   node scripts/seed-demo-data.js 12345              # Seed all entities
- *   node scripts/seed-demo-data.js 12345 contacts     # Seed only 'contacts' entity
+ * Usage: node scripts/seed-demo-data.js <account_number> <entity_id>
  */
 
 const mongoose = require('mongoose');
 const config = require('../config/db');
-
-// Models
-const Entity = require('../models/entity.model');
 const Record = require('../models/record.model');
-const FieldTemplate = require('../models/field-template.model');
 
-// Demo data templates by entity type
-const demoDataTemplates = {
-    // Contacts / Clients
-    contacts: [
-        { title: 'Jean Dupont', description: 'Client fidèle depuis 2020', status: 'active' },
-        { title: 'Marie Martin', description: 'Prospect intéressé', status: 'prospect' },
-        { title: 'Pierre Durand', description: 'Partenaire commercial', status: 'partner' },
-        { title: 'Sophie Bernard', description: 'Client B2B', status: 'active' },
-        { title: 'Lucas Petit', description: 'Nouveau contact', status: 'new' },
-    ],
+// Données extraites du demo datatable
+const demoPersons = [
+    { id: 1, name: 'Caroline Jensen', email: 'carolinejensen@zidant.com', age: 39, phone: '+1 (821) 447-3782' },
+    { id: 2, name: 'Celeste Grant', email: 'celestegrant@polarax.com', age: 32, phone: '+1 (838) 515-3408' },
+    { id: 3, name: 'Tillman Forbes', email: 'tillmanforbes@manglo.com', age: 26, phone: '+1 (969) 496-2892' },
+    { id: 4, name: 'Daisy Whitley', email: 'daisywhitley@applideck.com', age: 21, phone: '+1 (861) 564-2877' },
+    { id: 5, name: 'Weber Bowman', email: 'weberbowman@volax.com', age: 26, phone: '+1 (962) 466-3483' },
+    { id: 6, name: 'Buckley Townsend', email: 'buckleytownsend@orbaxter.com', age: 40, phone: '+1 (884) 595-2643' },
+    { id: 7, name: 'Latoya Bradshaw', email: 'latoyabradshaw@opportech.com', age: 24, phone: '+1 (906) 474-3155' },
+    { id: 8, name: 'Kate Lindsay', email: 'katelindsay@gorganic.com', age: 24, phone: '+1 (930) 546-2952' },
+    { id: 9, name: 'Marva Sandoval', email: 'marvasandoval@avit.com', age: 28, phone: '+1 (927) 566-3600' },
+    { id: 10, name: 'Decker Russell', email: 'deckerrussell@quilch.com', age: 27, phone: '+1 (846) 535-3283' },
+    { id: 11, name: 'Odom Mills', email: 'odommills@memora.com', age: 34, phone: '+1 (995) 525-3402' },
+    { id: 12, name: 'Sellers Walters', email: 'sellerswalters@zorromop.com', age: 28, phone: '+1 (830) 430-3157' },
+    { id: 13, name: 'Wendi Powers', email: 'wendipowers@orboid.com', age: 31, phone: '+1 (863) 457-2088' },
+    { id: 14, name: 'Sophie Horn', email: 'sophiehorn@snorus.com', age: 22, phone: '+1 (885) 418-3948' },
+    { id: 15, name: 'Levine Rodriquez', email: 'levinerodriquez@xth.com', age: 27, phone: '+1 (999) 565-3239' },
+    { id: 16, name: 'Little Hatfield', email: 'littlehatfield@comtract.com', age: 33, phone: '+1 (812) 488-3011' },
+    { id: 17, name: 'Larson Kelly', email: 'larsonkelly@zidant.com', age: 20, phone: '+1 (892) 484-2162' },
+    { id: 18, name: 'Kendra Molina', email: 'kendramolina@sureplex.com', age: 31, phone: '+1 (920) 528-3330' },
+    { id: 19, name: 'Ebony Livingston', email: 'ebonylivingston@danja.com', age: 33, phone: '+1 (970) 591-3039' },
+    { id: 20, name: 'Kaufman Rush', email: 'kaufmanrush@euron.com', age: 39, phone: '+1 (924) 463-2934' },
+    { id: 21, name: 'Frank Hays', email: 'frankhays@illumity.com', age: 31, phone: '+1 (930) 577-2670' },
+    { id: 22, name: 'Carmella Mccarty', email: 'carmellamccarty@sybixtex.com', age: 21, phone: '+1 (876) 456-3218' },
+    { id: 23, name: 'Massey Owen', email: 'masseyowen@zedalis.com', age: 40, phone: '+1 (917) 567-3786' },
+    { id: 24, name: 'Lottie Lowery', email: 'lottielowery@dyno.com', age: 36, phone: '+1 (912) 539-3498' },
+    { id: 25, name: 'Addie Luna', email: 'addieluna@multiflex.com', age: 32, phone: '+1 (962) 537-2981' }
+];
 
-    // Products / Services
-    products: [
-        { title: 'Formation Web', description: 'Formation complète développement web', status: 'published' },
-        { title: 'Consulting IT', description: 'Service de conseil informatique', status: 'published' },
-        { title: 'Maintenance', description: 'Contrat de maintenance annuel', status: 'draft' },
-        { title: 'Design UX', description: 'Création interfaces utilisateur', status: 'published' },
-        { title: 'Audit SEO', description: 'Analyse référencement naturel', status: 'draft' },
-    ],
-
-    // Projects / Tasks
-    projects: [
-        { title: 'Refonte Site Web', description: 'Redesign complet du site corporate', status: 'in_progress' },
-        { title: 'App Mobile v2', description: 'Nouvelle version application mobile', status: 'planning' },
-        { title: 'Migration Cloud', description: 'Migration infrastructure vers AWS', status: 'completed' },
-        { title: 'CRM Integration', description: 'Intégration système CRM', status: 'in_progress' },
-        { title: 'Formation Équipe', description: 'Sessions de formation interne', status: 'pending' },
-    ],
-
-    // Generic fallback
-    default: [
-        { title: 'Élément Demo 1', description: 'Description de démonstration', status: 'active' },
-        { title: 'Élément Demo 2', description: 'Autre élément de test', status: 'draft' },
-        { title: 'Élément Demo 3', description: 'Troisième élément', status: 'active' },
-        { title: 'Élément Demo 4', description: 'Quatrième élément', status: 'pending' },
-        { title: 'Élément Demo 5', description: 'Cinquième élément', status: 'completed' },
-    ]
+// IDs des champs personnalisés (à ajuster selon votre configuration)
+// Vous devrez remplacer ces IDs par les vôtres
+const FIELD_IDS = {
+    nom: new mongoose.Types.ObjectId('69727b3fccf73a414a783c23'),       // Champ "nom"
+    email: new mongoose.Types.ObjectId('6878745fd372aa750c638183'),     // Champ "email"
+    telephone: new mongoose.Types.ObjectId('6874aa37444c189ff59f2a13'), // Champ "telephone"
+    age: new mongoose.Types.ObjectId('000000000000000000000002')         // Champ "age" (à créer si nécessaire)
 };
-
-// Generate random custom field values
-function generateCustomFieldValue(field) {
-    const type = field.type || 'string';
-
-    switch (type) {
-        case 'string':
-        case 'text':
-            return `Valeur demo pour ${field.label || field.name}`;
-
-        case 'number':
-            const min = field.type_config?.min || 0;
-            const max = field.type_config?.max || 1000;
-            return Math.floor(Math.random() * (max - min + 1)) + min;
-
-        case 'boolean':
-            return Math.random() > 0.5;
-
-        case 'date':
-            const date = new Date();
-            date.setDate(date.getDate() - Math.floor(Math.random() * 365));
-            return date;
-
-        case 'select':
-            const options = field.type_config?.options || [];
-            return options.length > 0 ? options[Math.floor(Math.random() * options.length)] : null;
-
-        case 'email':
-            return `demo${Math.floor(Math.random() * 1000)}@example.com`;
-
-        case 'phone':
-            return `+33 6 ${Math.floor(10000000 + Math.random() * 90000000)}`;
-
-        case 'url':
-            return `https://example.com/demo/${Math.floor(Math.random() * 1000)}`;
-
-        case 'money':
-        case 'currency':
-            return Math.floor(Math.random() * 10000) / 100;
-
-        default:
-            return `Demo ${field.name}`;
-    }
-}
-
-async function seedEntity(tenantDb, entity, count = 5) {
-    console.log(`\n📦 Seeding entity: ${entity.name} (${entity.slug})`);
-
-    // Get field templates for this entity
-    const fields = await FieldTemplate.find({
-        _id: { $in: entity.customFields || [] }
-    });
-
-    console.log(`   Found ${fields.length} custom fields`);
-
-    // Select appropriate demo data template
-    const templateKey = Object.keys(demoDataTemplates).find(key =>
-        entity.slug.toLowerCase().includes(key) ||
-        entity.name.toLowerCase().includes(key)
-    ) || 'default';
-
-    const templates = demoDataTemplates[templateKey];
-    console.log(`   Using template: ${templateKey}`);
-
-    const records = [];
-
-    for (let i = 0; i < count; i++) {
-        const template = templates[i % templates.length];
-
-        // Build custom field values
-        const customFields = fields.map(field => ({
-            field_id: field._id,
-            value: generateCustomFieldValue(field)
-        }));
-
-        const record = {
-            entityId: entity._id,
-            spaces: entity.spaces || [],
-            folders: entity.folders || [],
-            title: template.title,
-            description: template.description,
-            status: template.status || 'draft',
-            order: i,
-            customFields: customFields,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        };
-
-        records.push(record);
-    }
-
-    // Insert records
-    const RecordModel = tenantDb.model('Record', Record.schema);
-    const result = await RecordModel.insertMany(records);
-
-    console.log(`   ✅ Created ${result.length} records`);
-    return result.length;
-}
 
 async function main() {
     const args = process.argv.slice(2);
 
-    if (args.length < 1) {
-        console.log('Usage: node scripts/seed-demo-data.js <account_number> [entity_slug] [count]');
+    if (args.length < 2) {
+        console.log('Usage: node scripts/seed-demo-data.js <account_number> <entity_id>');
         console.log('');
-        console.log('Examples:');
-        console.log('  node scripts/seed-demo-data.js 12345');
-        console.log('  node scripts/seed-demo-data.js 12345 contacts');
-        console.log('  node scripts/seed-demo-data.js 12345 contacts 10');
+        console.log('Example:');
+        console.log('  node scripts/seed-demo-data.js 5001 697cc1dfc202fdaf7ada715c');
         process.exit(1);
     }
 
     const accountNumber = args[0];
-    const targetSlug = args[1] || null;
-    const recordCount = parseInt(args[2]) || 5;
+    const entityId = args[1];
 
-    console.log('🌱 Starting seed process...');
+    console.log('🌱 Création des personnes démo du datatable...');
     console.log(`   Account: ${accountNumber}`);
-    console.log(`   Target: ${targetSlug || 'all entities'}`);
-    console.log(`   Records per entity: ${recordCount}`);
+    console.log(`   Entity ID: ${entityId}`);
 
     try {
-        // Connect to global DB
-        await mongoose.connect(config.globalDbUri);
-        console.log('✅ Connected to global database');
+        // Connexion à la DB de l'account
+        const tenantDbUrl = config.getDatabaseUrl(accountNumber);
+        const tenantDb = await mongoose.createConnection(tenantDbUrl).asPromise();
+        console.log(`✓ Connexion établie à la DB de l'account ${accountNumber}`);
 
-        // Connect to tenant DB
-        const tenantDbUri = `${config.uri}saas_app_rb_${accountNumber}`;
-        const tenantDb = mongoose.createConnection(tenantDbUri);
-        console.log(`✅ Connected to tenant database: saas_app_rb_${accountNumber}`);
+        // Utiliser le modèle avec la connexion du tenant
+        const TenantRecord = tenantDb.model('Record', Record.schema);
 
-        // Find entities
-        const EntityModel = tenantDb.model('Entity', Entity.schema);
-        const FieldTemplateModel = tenantDb.model('FieldTemplate', FieldTemplate.schema);
+        let createdCount = 0;
 
-        let query = {};
-        if (targetSlug) {
-            query.slug = targetSlug;
-        }
+        for (const person of demoPersons) {
+            try {
+                const recordData = {
+                    title: person.name,
+                    entity_id: new mongoose.Types.ObjectId(entityId),
+                    account_number: accountNumber,
+                    custom_fields: [
+                        {
+                            field_id: FIELD_IDS.nom,
+                            value: person.name
+                        },
+                        {
+                            field_id: FIELD_IDS.email,
+                            value: person.email
+                        },
+                        {
+                            field_id: FIELD_IDS.telephone,
+                            value: person.phone
+                        },
+                        {
+                            field_id: FIELD_IDS.age,
+                            value: person.age
+                        }
+                    ]
+                };
 
-        const entities = await EntityModel.find(query);
-
-        if (entities.length === 0) {
-            console.log('❌ No entities found');
-            if (targetSlug) {
-                console.log(`   Make sure entity with slug "${targetSlug}" exists`);
+                const record = new TenantRecord(recordData);
+                await record.save();
+                createdCount++;
+                console.log(`  ✓ ${person.name} créé`);
+            } catch (err) {
+                console.error(`  ✗ Erreur lors de la création de ${person.name}:`, err.message);
             }
-            process.exit(1);
         }
 
-        console.log(`\n📋 Found ${entities.length} entities to seed`);
+        console.log('');
+        console.log(`✅ ${createdCount}/${demoPersons.length} personnes créées avec succès !`);
 
-        let totalRecords = 0;
-
-        for (const entity of entities) {
-            const count = await seedEntity(tenantDb, entity, recordCount);
-            totalRecords += count;
-        }
-
-        console.log('\n' + '='.repeat(50));
-        console.log(`✅ Seed completed! Created ${totalRecords} records total`);
-        console.log('='.repeat(50));
+        // Fermer la connexion
+        await tenantDb.close();
+        console.log('✓ Connexion fermée');
+        process.exit(0);
 
     } catch (error) {
-        console.error('❌ Error:', error.message);
-        console.error(error.stack);
-    } finally {
-        await mongoose.disconnect();
-        process.exit(0);
+        console.error('❌ Erreur:', error);
+        process.exit(1);
     }
 }
 

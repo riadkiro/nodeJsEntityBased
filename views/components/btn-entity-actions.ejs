@@ -1,6 +1,6 @@
 <div class="flex items-center gap-2">
   <a href="/account/<%= account_number %>/entity/<%= id %>" class="text-primary hover:underline">Voir</a> |
-  <a href="/account/<%= account_number %>/entity/edit/<%= id %>" class="text-primary hover:underline">Modifier</a> |
+  <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-edit-modal', { detail: '<%= id %>' }))" class="text-primary hover:underline">Modifier</button> |
   <a href="#" class="text-danger hover:underline" onclick="deleteItem({
     url: '/account/<%= account_number %>/entity/<%= id %>',
     redirectTo: '/account/<%= account_number %>/entity/list'

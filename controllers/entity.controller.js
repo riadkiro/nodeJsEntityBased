@@ -347,7 +347,28 @@ module.exports = {
   },
 
   update_Api: async (req, res) => {
-    res.send("Edit function here");
+    try {
+      const Entity = await tenantCollection(req, "Entity");
+      const entityId = req.params.id;
+      const entityData = req.body;
+
+      console.log("🔄 API Update Entity:", entityId, entityData);
+
+      const updated = await Entity.findByIdAndUpdate(entityId, entityData, {
+        new: true,
+        runValidators: true,
+      });
+
+      if (!updated) {
+        return res.status(404).json({ error: "Entity not found" });
+      }
+
+      console.log("✅ Entity updated via API:", updated);
+      res.json({ success: true, entity: updated });
+    } catch (err) {
+      console.error("❌ Error updating entity:", err);
+      res.status(500).json({ error: err.message });
+    }
   },
 
   getDetails_Api: async (req, res) => {

@@ -4,6 +4,7 @@ const router = express.Router();
 router.use("/dashboard", require("./account.router.js"));
 router.use("/entity", require("./entity.router.js"));
 router.use("/field-template", require("./field-template.router.js"));
+router.use("/field-type", require("./field-type.router.js")); // Admin: Types de champs
 router.use("/record", require("./record.router.js"));
 router.use("/view", require("./view.router.js"));
 router.use("/classification", require("./classification.router.js"));

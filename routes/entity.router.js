@@ -10,6 +10,10 @@ const upload = uploadTo((req) => `public/uploads/${req.account_number}`);
 
 //list
 router.get("/list", entityController.list);
+//API - Get entity details by ID (JSON)
+router.get("/api/:id", entityController.getDetails_Api);
+//API - Update entity (JSON)
+router.post("/api/update/:id", entityController.update_Api);
 //Form
 router.get("/add", entityController.addForm);
 //On post create new product

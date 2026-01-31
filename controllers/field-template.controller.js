@@ -321,7 +321,8 @@ module.exports = {
   systemFields_Api: async (req, res) => {
     const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
     try {
-      const fields = await FieldTemplateModel.find({ isSystem: true }).sort({ category: 1, label: 1 });
+      // Récupérer tous les champs (système + personnalisés)
+      const fields = await FieldTemplateModel.find({}).sort({ category: 1, label: 1 });
 
       // Group by category
       const categoryLabels = {
@@ -333,12 +334,18 @@ module.exports = {
         relation: 'Relation',
         media: 'Média',
         computed: 'Calcul',
-        advanced: 'Avancé'
+        advanced: 'Avancé',
+        custom: 'Personnalisés'
       };
 
       const grouped = {};
       for (const field of fields) {
-        const cat = field.category || 'other';
+        // Si le champ n'est pas système et n'a pas de catégorie, le mettre dans 'custom'
+        let cat = field.category || 'other';
+        if (!field.isSystem && !['popular', 'text', 'numeric', 'date', 'choice', 'relation', 'media', 'computed', 'advanced'].includes(cat)) {
+          cat = 'custom';
+        }
+
         if (!grouped[cat]) {
           grouped[cat] = {
             key: cat,
@@ -354,12 +361,13 @@ module.exports = {
           type: field.type,
           subtype: field.subtype,
           icon: field.ui?.icon || 'solar:widget-bold-duotone',
-          category: field.category
+          category: field.category,
+          isSystem: field.isSystem || false
         });
       }
 
-      // Order categories
-      const order = ['popular', 'text', 'numeric', 'date', 'choice', 'relation', 'media', 'computed', 'advanced'];
+      // Order categories (custom juste après popular)
+      const order = ['popular', 'custom', 'text', 'numeric', 'date', 'choice', 'relation', 'media', 'computed', 'advanced'];
       const result = order.filter(k => grouped[k]).map(k => grouped[k]);
 
       res.json(result);

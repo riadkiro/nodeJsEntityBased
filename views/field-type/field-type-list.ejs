@@ -1,0 +1,202 @@
+<% const accountNum = account_number; %>
+<% const rows = (locals.fieldTypes || []).map((ft, i) => [
+  i + 1,
+  ft.name,
+  ft.label,
+  ft.description || '',
+  ft.category || '',
+  ft.icon || '',
+  ft.subtypes ? ft.subtypes.length : 0,
+  ft.filterOperators ? ft.filterOperators.length : 0,
+  ft.createdAt,
+  `<div class="flex items-center justify-end gap-2">
+    <a href="/account/${accountNum}/field-type/edit/${ft._id}" class="text-primary hover:text-primary/80 transition-colors" title="Modifier">
+      <iconify-icon icon="solar:pen-bold" width="18"></iconify-icon>
+    </a>
+  </div>`
+]); %>
+
+<script id="field-type-rows-data" type="application/json">
+<%- JSON.stringify(rows) %>
+</script>
+
+<script>
+  const ACCOUNT_NUMBER = '<%= account_number %>';
+  document.addEventListener("alpine:init", () => {
+    Alpine.data("fieldTypeManager", () => ({
+      // DataTable
+      columns: [
+        { name: "#", hidden: false },
+        { name: "Clé", hidden: false },
+        { name: "Nom", hidden: false },
+        { name: "Description", hidden: true },
+        { name: "Catégorie", hidden: false },
+        { name: "Icône", hidden: true },
+        { name: "Sous-types", hidden: false },
+        { name: "Filtres", hidden: true },
+        { name: "Créé le", hidden: true },
+        { name: "Actions", hidden: false },
+      ],
+      hideCols: [0],
+      showCols: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+      datatable1: null,
+      search: '',
+
+      init() {
+        const jsonContent = document.getElementById('field-type-rows-data').textContent;
+        const rows = JSON.parse(jsonContent);
+
+        this.datatable1 = new simpleDatatables.DataTable("#fieldTypesTable", {
+          data: {
+            headings: this.columns.map((c) => c.name),
+            data: rows,
+          },
+          perPage: 30,
+          perPageSelect: [10, 20, 30, 50, 100],
+          columns: [
+            {
+              select: 5,
+              render: (data) => data ? `<iconify-icon icon="${data}" width="20" class="text-primary"></iconify-icon>` : '—',
+            },
+            {
+              select: 6,
+              render: (data) => data > 0 ? `<span class="badge badge-outline-primary">${data}</span>` : '—',
+            },
+            {
+              select: 8,
+              render: (data) => {
+                if (!data) return '—';
+                const dt = new Date(data);
+                const month = dt.getMonth() + 1 < 10 ? "0" + (dt.getMonth() + 1) : dt.getMonth() + 1;
+                const day = dt.getDate() < 10 ? "0" + dt.getDate() : dt.getDate();
+                return day + "/" + month + "/" + dt.getFullYear();
+              },
+            },
+            {
+              select: 9,
+              render: (html) => html,
+            },
+          ],
+          firstLast: true,
+          layout: {
+            top: "{search}",
+            bottom: "{info}{select}{pager}",
+          },
+        });
+
+        this.datatable1.columns().hide(this.hideCols);
+        this.datatable1.columns().show(this.showCols);
+      },
+
+      showHideColumns(col, value) {
+        if (value) {
+          this.showCols.push(col);
+          this.hideCols = this.hideCols.filter((d) => d != col);
+        } else {
+          this.hideCols.push(col);
+          this.showCols = this.showCols.filter((d) => d != col);
+        }
+        let headers = this.datatable1.columns();
+        headers.hide(this.hideCols);
+        headers.show(this.showCols);
+      },
+
+      confirmDelete(id, label) {
+        Swal.fire({
+          title: 'Supprimer le type ?',
+          text: `Voulez-vous vraiment supprimer "${label}" ?`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Supprimer',
+          cancelButtonText: 'Annuler',
+          confirmButtonColor: '#e7515a'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            window.location.href = `/account/${ACCOUNT_NUMBER}/field-type/delete/${id}`;
+          }
+        });
+      }
+    }));
+  });
+</script>
+
+<div x-data="fieldTypeManager()">
+  <div class="space-y-6">
+
+    <!-- Header -->
+    <div class="panel">
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+        <div class="flex items-center gap-3">
+          <iconify-icon icon="solar:code-square-bold-duotone" width="28" class="text-primary"></iconify-icon>
+          <div>
+            <h5 class="text-xl font-bold dark:text-white">Types de champs</h5>
+            <p class="text-sm text-gray-500">Composants techniques de base (admin only)</p>
+          </div>
+        </div>
+        <a href="/account/<%= account_number %>/field-type/add" class="btn btn-primary flex items-center gap-2">
+          <iconify-icon icon="solar:add-circle-bold" width="18"></iconify-icon>
+          <span>Nouveau type</span>
+        </a>
+      </div>
+
+      <div class="relative">
+        <div class="mb-5 sm:absolute sm:top-0 sm:mb-0 sm:ltr:right-56 sm:rtl:left-56">
+          <div class="flex items-center">
+            <div class="theme-dropdown relative" x-data="{ columnDropdown: false }" @click.outside="columnDropdown = false">
+              <a href="javascript:;" class="flex items-center rounded-md border border-[#e0e6ed] px-4 py-2 text-sm font-semibold dark:border-[#253b5c] dark:bg-[#1b2e4b] dark:text-white-dark" @click="columnDropdown = !columnDropdown">
+                <span class="ltr:mr-1 rtl:ml-1">Colonnes</span>
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 9L12 15L5 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </a>
+              <div class="absolute top-11 z-[10] hidden w-[100px] min-w-[150px] rounded bg-white py-2 text-dark shadow ltr:left-0 rtl:right-0 dark:bg-[#1b2e4b] dark:text-white-light" :class="columnDropdown && '!block'">
+                <ul class="space-y-2 px-4 font-semibold">
+                  <template x-for="(col,i) in columns" :key="i">
+                    <li>
+                      <label class="cursor-pointer">
+                        <input type="checkbox" class="form-checkbox" :id="`chk-${i}`" :value="i" @change="col.hidden = $event.target.checked; showHideColumns(i, $event.target.checked)" :checked="col.hidden" />
+                        <span class="ltr:ml-2 rtl:mr-2" x-text="col.name"></span>
+                      </label>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <table id="fieldTypesTable" class="whitespace-nowrap w-full"></table>
+      </div>
+    </div>
+    
+    <!-- Categories Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <% 
+      const categoryLabels = {
+        text: { label: 'Texte', icon: 'solar:text-bold-duotone', color: 'primary' },
+        numeric: { label: 'Numérique', icon: 'solar:hashtag-bold-duotone', color: 'success' },
+        date: { label: 'Date / Temps', icon: 'solar:calendar-bold-duotone', color: 'warning' },
+        choice: { label: 'Choix', icon: 'solar:checklist-bold-duotone', color: 'info' },
+        relation: { label: 'Relation', icon: 'solar:link-round-bold-duotone', color: 'secondary' },
+        media: { label: 'Média', icon: 'solar:gallery-bold-duotone', color: 'danger' },
+        advanced: { label: 'Avancé', icon: 'solar:code-bold-duotone', color: 'dark' }
+      };
+      
+      (locals.categories || []).forEach(function(cat) { 
+        const catInfo = categoryLabels[cat.key] || { label: cat.label, icon: 'solar:widget-bold-duotone', color: 'primary' };
+      %>
+      <div class="panel p-4 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-lg bg-<%= catInfo.color %>/10 flex items-center justify-center">
+          <iconify-icon icon="<%= catInfo.icon %>" width="24" class="text-<%= catInfo.color %>"></iconify-icon>
+        </div>
+        <div>
+          <h6 class="font-semibold text-lg dark:text-white"><%= cat.types.length %></h6>
+          <p class="text-sm text-gray-500"><%= catInfo.label %></p>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+
+  </div>
+</div>
+
+<script src="/themes/default/assets/js/simple-datatables.js"></script>

@@ -45,6 +45,18 @@
     window.PickerManager = PickerManager;
 
     // ============================================
+    // ICON STYLES (for Solar)
+    // ============================================
+    const ICON_STYLES = {
+        'bold-duotone': { name: 'Bold Duotone', suffix: '-bold-duotone' },
+        'linear': { name: 'Linear', suffix: '-linear' },
+        'bold': { name: 'Bold', suffix: '-bold' },
+        'outline': { name: 'Outline', suffix: '-outline' },
+        'broken': { name: 'Broken', suffix: '-broken' },
+        'line-duotone': { name: 'Line Duotone', suffix: '-line-duotone' }
+    };
+
+    // ============================================
     // ICON LIBRARIES - Loaded dynamically
     // ============================================
     const ICON_LIBRARIES = {
@@ -52,7 +64,7 @@
             name: 'Solar',
             prefix: 'solar:',
             jsonUrl: '/data/solar-icons.json',
-            filter: (icon) => icon.endsWith('-bold-duotone'), // Only bold duotone
+            hasStyles: true, // Supports style filtering
             icons: [] // Will be loaded dynamically
         },
         mdi: {
@@ -84,45 +96,41 @@
         }
     };
 
-    // Cache for loaded icon libraries
-    const _iconCache = {};
+    // Cache for loaded icon libraries (raw JSON)
+    const _iconJsonCache = {};
 
-    // Load icons from JSON for a library
-    async function loadLibraryIcons(libraryKey) {
+    // Load icons from JSON for a library with optional style filter
+    async function loadLibraryIcons(libraryKey, styleKey = null) {
         const lib = ICON_LIBRARIES[libraryKey];
         if (!lib) return [];
 
-        // Return cached if already loaded
-        if (_iconCache[libraryKey]) {
-            return _iconCache[libraryKey];
+        // If static icons (no JSON URL), return directly
+        if (!lib.jsonUrl) {
+            return lib.icons || [];
         }
 
-        // If static icons, cache and return
-        if (lib.icons && lib.icons.length > 0 && !lib.jsonUrl) {
-            _iconCache[libraryKey] = lib.icons;
-            return lib.icons;
-        }
-
-        // Load from JSON
-        if (lib.jsonUrl) {
+        // Load raw JSON if not cached
+        if (!_iconJsonCache[libraryKey]) {
             try {
                 const response = await fetch(lib.jsonUrl);
                 if (response.ok) {
-                    let allIcons = await response.json();
-                    // Apply filter if exists
-                    if (lib.filter) {
-                        allIcons = allIcons.filter(lib.filter);
-                    }
-                    lib.icons = allIcons;
-                    _iconCache[libraryKey] = allIcons;
-                    return allIcons;
+                    _iconJsonCache[libraryKey] = await response.json();
                 }
             } catch (e) {
                 console.warn(`Failed to load icons for ${libraryKey}:`, e);
+                return [];
             }
         }
 
-        return lib.icons || [];
+        const allIcons = _iconJsonCache[libraryKey] || [];
+
+        // Apply style filter if library supports styles
+        if (lib.hasStyles && styleKey && ICON_STYLES[styleKey]) {
+            const suffix = ICON_STYLES[styleKey].suffix;
+            return allIcons.filter(icon => icon.endsWith(suffix));
+        }
+
+        return allIcons;
     }
 
     const ICONS_PER_PAGE = 60;
@@ -154,6 +162,7 @@
             this.isOpen = false;
             this.selectedIcon = this.options.value;
             this.currentLibrary = this.options.library;
+            this.currentStyle = 'bold-duotone'; // Default style for Solar
             this.searchQuery = '';
             this.currentPage = 1;
             this.filteredIcons = [];
@@ -209,7 +218,14 @@
                 `<option value="${key}" ${key === this.currentLibrary ? 'selected' : ''}>${lib.name}</option>`
             ).join('')}
           </select>
-          <div class="picker-search-wrap">
+          <select class="picker-style form-select" ${ICON_LIBRARIES[this.currentLibrary].hasStyles ? '' : 'style="display:none"'}>
+            ${Object.entries(ICON_STYLES).map(([key, style]) =>
+                `<option value="${key}" ${key === this.currentStyle ? 'selected' : ''}>${style.name}</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="picker-controls">
+          <div class="picker-search-wrap" style="flex:1">
             <iconify-icon icon="solar:magnifer-linear" class="picker-search-icon" width="16"></iconify-icon>
             <input type="text" class="picker-search form-input" placeholder="Rechercher...">
           </div>
@@ -224,6 +240,7 @@
 
             // Cache elements
             this.librarySelect = this.panel.querySelector('.picker-library');
+            this.styleSelect = this.panel.querySelector('.picker-style');
             this.searchInput = this.panel.querySelector('.picker-search');
             this.grid = this.panel.querySelector('.picker-grid');
             this.loadMoreBtn = this.panel.querySelector('.picker-load-more');
@@ -246,6 +263,17 @@
             // Library change
             this.librarySelect.addEventListener('change', async () => {
                 this.currentLibrary = this.librarySelect.value;
+                this.currentPage = 1;
+                // Show/hide style selector based on library
+                const lib = ICON_LIBRARIES[this.currentLibrary];
+                this.styleSelect.style.display = lib.hasStyles ? '' : 'none';
+                await this._loadIcons();
+                this._renderGrid();
+            });
+
+            // Style change (for Solar icons)
+            this.styleSelect.addEventListener('change', async () => {
+                this.currentStyle = this.styleSelect.value;
                 this.currentPage = 1;
                 await this._loadIcons();
                 this._renderGrid();
@@ -276,7 +304,7 @@
         }
 
         async _loadIcons() {
-            const allIcons = await loadLibraryIcons(this.currentLibrary);
+            const allIcons = await loadLibraryIcons(this.currentLibrary, this.currentStyle);
 
             // Filter icons by search query
             if (this.searchQuery) {

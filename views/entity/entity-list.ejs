@@ -302,6 +302,71 @@
           .map(token => token.id);
       },
       
+      // Get fields that are NOT already in the format
+      getAvailableFields() {
+        const usedFieldIds = this.getDerivedFields();
+        const available = [];
+        
+        // Add title if not used
+        if (!usedFieldIds.includes('title')) {
+          available.push({ id: 'title', label: 'Titre', icon: 'solar:text-bold-duotone' });
+        }
+        
+        // Add standard fields that are enabled and not used
+        const standardFieldOrder = ['description', 'icon', 'attachments', 'image', 'slug', 'date'];
+        standardFieldOrder.forEach(field => {
+          if (this.newCollection.standardFields[field] && !usedFieldIds.includes(field)) {
+            available.push({ id: field, label: this.getFieldLabel(field), icon: this.getFieldIcon(field) });
+          }
+        });
+        
+        // Add custom fields that are not used
+        this.selectedFields.forEach(field => {
+          if (!usedFieldIds.includes(field._id)) {
+            available.push({ id: field._id, label: field.label || field.name, icon: this.getFieldIcon(field._id) });
+          }
+        });
+        
+        return available;
+      },
+      
+      // Add field to format by clicking on available field tag
+      addFieldById(fieldId) {
+        const editor = this.$refs.formatEditor;
+        
+        // Sync tokens from current DOM state
+        if (editor) {
+          const tokens = [];
+          editor.childNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('field-tag')) {
+              const fid = node.getAttribute('data-field-id');
+              tokens.push({ t: 'field', id: fid });
+            } else if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+              tokens.push({ t: 'text', v: node.textContent });
+            }
+          });
+          this.newCollection.referenceTitleTokens = tokens;
+        }
+        
+        // Check if there are any existing field tokens
+        const hasFieldTokens = this.newCollection.referenceTitleTokens.some(token => token.t === 'field');
+        
+        // Add space before if there are existing field tokens
+        if (hasFieldTokens) {
+          this.newCollection.referenceTitleTokens.push({ t: 'text', v: ' ' });
+        }
+        
+        // Add field token
+        this.newCollection.referenceTitleTokens.push({ t: 'field', id: fieldId });
+        
+        // Force re-render of contenteditable
+        this.$nextTick(() => {
+          if (editor) {
+            editor.innerHTML = this.renderTokensAsHTML();
+          }
+        });
+      },
+      
       // Parse contenteditable content and update tokens
       syncTokensFromEditor(event) {
         const editor = event.target;
@@ -702,7 +767,7 @@
                 <!-- Couleur - Rond simple -->
                 <div class="relative">
                   <button type="button" @click="showColorPicker = !showColorPicker"
-                          class="w-6 h-6 rounded-full hover:scale-110 transition-transform"
+                          class="w-5 h-5 rounded-full hover:scale-110 transition-transform"
                           :style="newCollection.color ? 'background-color:' + newCollection.color : 'background: linear-gradient(135deg, #06b6d4, #8b5cf6, #ec4899)'"
                           title="Changer la couleur">
                   </button>
@@ -788,48 +853,31 @@
               <label class="mb-2 block text-sm font-bold">Champ de référence *</label>
               <p class="text-xs text-gray-400 mb-2">Ce champ sera utilisé comme titre lors des listings, relations, mentions, etc.</p>
               
-              <div class="flex gap-3">
-                <!-- Select field (50%) -->
-                <div class="flex-1">
-                  <select x-model="newCollection.referenceField" @change="addFieldToken()" class="form-select w-full">
-                    <option value="title">Titre</option>
-                    <template x-for="(enabled, field) in newCollection.standardFields" :key="field">
-                      <template x-if="enabled && field !== 'title'">
-                        <option :value="field" x-text="getFieldLabel(field)"></option>
-                      </template>
-                    </template>
-                    <!-- Custom fields -->
-                    <template x-for="field in selectedFields" :key="field._id">
-                      <option :value="field._id" x-text="field.label || field.name"></option>
-                    </template>
-                  </select>
-                </div>
-                
-                <!-- Contenteditable Format Field (50%) -->
-                <div class="flex-1">
-                  <div class="form-input w-full text-sm min-h-[38px] p-2 cursor-text focus-within:ring-2 focus-within:ring-primary/50" 
-                       contenteditable="true"
-                       @input="syncTokensFromEditor($event)"
-                       x-init="$el.innerHTML = renderTokensAsHTML()"
-                       x-ref="formatEditor">
-                  </div>
-                  <label class="text-xs text-gray-500 mt-1 block">Format (cliquez pour éditer)</label>
-                </div>
-              </div>
-              
-              <!-- Token tags -->
-              <div class="mt-3 flex flex-wrap gap-1.5" x-show="newCollection.referenceTitleTokens.length > 0">
-                <template x-for="(token, idx) in newCollection.referenceTitleTokens" :key="idx">
-                  <div x-show="token.t === 'field'" class="inline-flex items-center gap-1 px-2 py-0 bg-warning/10 border border-warning/30 rounded-full text-xs font-medium text-warning">
-                    <iconify-icon :icon="getFieldIcon(token.id)" width="12"></iconify-icon>
-                    <span x-text="getFieldLabel(token.id)"></span>
-                    <button type="button" @click="removeToken(idx)" class="hover:text-red-500">
-                      <iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon>
-                    </button>
-                  </div>
+              <!-- Available fields as clickable tags -->
+              <div class="mb-2 flex flex-wrap gap-1.5" x-show="getAvailableFields().length > 0">
+                <span class="text-xs text-gray-500 mr-1">Champs disponibles:</span>
+                <template x-for="field in getAvailableFields()" :key="field.id">
+                  <button type="button" @click="addFieldById(field.id)" 
+                          class="inline-flex items-center gap-1 px-2 py-0 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:border-primary hover:text-primary transition-colors cursor-pointer">
+                    <iconify-icon :icon="field.icon" width="12"></iconify-icon>
+                    <span x-text="field.label"></span>
+                    <iconify-icon icon="solar:add-circle-bold" width="12" class="opacity-50"></iconify-icon>
+                  </button>
                 </template>
               </div>
+              
+              <!-- Format field (100% width) -->
+              <div class="w-full">
+                <div class="form-input w-full text-sm min-h-[38px] p-2 cursor-text focus-within:ring-2 focus-within:ring-primary/50" 
+                     contenteditable="true"
+                     @input="syncTokensFromEditor($event)"
+                     x-init="$el.innerHTML = renderTokensAsHTML()"
+                     x-ref="formatEditor">
+                </div>
+                <label class="text-xs text-gray-500 mt-1 block">Format du titre de référence</label>
+              </div>
             </div>
+
 
             <!-- Active Toggle -->
             <div class="flex items-center justify-between pt-3 border-t dark:border-gray-700">
@@ -1024,7 +1072,7 @@
                 <!-- Couleur - Rond simple -->
                 <div class="relative">
                   <button type="button" @click="showColorPicker = !showColorPicker"
-                          class="w-7 h-7 rounded-full hover:scale-110 transition-transform"
+                          class="w-5 h-5 rounded-full hover:scale-110 transition-transform"
                           :style="newCollection.color ? 'background-color:' + newCollection.color : 'background: linear-gradient(135deg, #06b6d4, #8b5cf6, #ec4899)'"
                           title="Changer la couleur">
                   </button>
@@ -1110,35 +1158,31 @@
               <label class="mb-2 block text-sm font-bold">Champ de référence *</label>
               <p class="text-xs text-gray-400 mb-2">Ce champ sera utilisé comme titre lors des listings, relations, mentions, etc.</p>
               
-              <div class="flex gap-3">
-                <!-- Select field (50%) -->
-                <div class="flex-1">
-                  <select x-model="newCollection.referenceField" @change="addFieldToken()" class="form-select w-full">
-                    <option value="title">Titre</option>
-                    <template x-for="(enabled, field) in newCollection.standardFields" :key="field">
-                      <template x-if="enabled && field !== 'title'">
-                        <option :value="field" x-text="getFieldLabel(field)"></option>
-                      </template>
-                    </template>
-                    <!-- Custom fields -->
-                    <template x-for="field in selectedFields" :key="field._id">
-                      <option :value="field._id" x-text="field.label || field.name"></option>
-                    </template>
-                  </select>
+              <!-- Available fields as clickable tags -->
+              <div class="mb-2 flex flex-wrap gap-1.5" x-show="getAvailableFields().length > 0">
+                <span class="text-xs text-gray-500 mr-1">Champs disponibles:</span>
+                <template x-for="field in getAvailableFields()" :key="field.id">
+                  <button type="button" @click="addFieldById(field.id)" 
+                          class="inline-flex items-center gap-1 px-2 py-0 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:border-primary hover:text-primary transition-colors cursor-pointer">
+                    <iconify-icon :icon="field.icon" width="12"></iconify-icon>
+                    <span x-text="field.label"></span>
+                    <iconify-icon icon="solar:add-circle-bold" width="12" class="opacity-50"></iconify-icon>
+                  </button>
+                </template>
+              </div>
+              
+              <!-- Format field (100% width) -->
+              <div class="w-full">
+                <div class="form-input w-full text-sm min-h-[38px] p-2 cursor-text focus-within:ring-2 focus-within:ring-primary/50" 
+                     contenteditable="true"
+                     @input="syncTokensFromEditor($event)"
+                     x-init="$el.innerHTML = renderTokensAsHTML()"
+                     x-ref="formatEditor">
                 </div>
-                
-                <!-- Contenteditable Format Field (50%) -->
-                <div class="flex-1">
-                  <div class="form-input w-full text-sm min-h-[38px] p-2 cursor-text focus-within:ring-2 focus-within:ring-primary/50" 
-                       contenteditable="true"
-                       @input="syncTokensFromEditor($event)"
-                       x-init="$el.innerHTML = renderTokensAsHTML()"
-                       x-ref="formatEditor">
-                  </div>
-                  <label class="text-xs text-gray-500 mt-1 block">Format (cliquez pour éditer)</label>
-                </div>
+                <label class="text-xs text-gray-500 mt-1 block">Format du titre de référence</label>
               </div>
             </div>
+
 
 
             <!-- Active Toggle -->

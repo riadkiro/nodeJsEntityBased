@@ -94,8 +94,6 @@
       // Modal state
       showCreateModal: false,
       showEditModal: false,
-      showIconPicker: false,
-      showColorPicker: false,
       isSubmitting: false,
       editingId: null,
       
@@ -104,14 +102,6 @@
       fieldSearch: '',
       selectedFields: [],
       systemFields: [],
-      
-      // Icon picker
-      selectedLibrary: 'solar',
-      iconSearch: '',
-      icons: [],
-      
-      // Colors
-      availableColors: ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#6366F1', '#9CA3AF', '#EC4899'],
       
       // New collection form
       newCollection: {
@@ -424,23 +414,6 @@
         headers.show(this.showCols);
       },
 
-      async loadIcons() {
-        const prefix = this.selectedLibrary;
-        const search = this.iconSearch.toLowerCase();
-        const commonIcons = {
-          solar: ['solar:box-bold-duotone', 'solar:user-bold-duotone', 'solar:folder-bold-duotone', 'solar:document-bold-duotone', 
-                 'solar:cart-bold-duotone', 'solar:bag-bold-duotone', 'solar:ticket-bold-duotone', 'solar:tag-bold-duotone',
-                 'solar:calendar-bold-duotone', 'solar:clock-circle-bold-duotone', 'solar:star-bold-duotone', 'solar:heart-bold-duotone',
-                 'solar:flag-bold-duotone', 'solar:bookmark-bold-duotone', 'solar:home-bold-duotone', 'solar:buildings-bold-duotone',
-                 'solar:phone-bold-duotone', 'solar:letter-bold-duotone', 'solar:map-bold-duotone', 'solar:globe-bold-duotone'],
-          mdi: ['mdi:account', 'mdi:folder', 'mdi:file-document', 'mdi:cart', 'mdi:tag', 'mdi:calendar', 'mdi:clock', 'mdi:star',
-               'mdi:heart', 'mdi:flag', 'mdi:bookmark', 'mdi:home', 'mdi:office-building', 'mdi:phone', 'mdi:email', 'mdi:map'],
-          tabler: ['tabler:user', 'tabler:folder', 'tabler:file', 'tabler:shopping-cart', 'tabler:tag', 'tabler:calendar', 'tabler:clock',
-                  'tabler:star', 'tabler:heart', 'tabler:flag', 'tabler:bookmark', 'tabler:home', 'tabler:building', 'tabler:phone', 'tabler:mail']
-        };
-        this.icons = (commonIcons[prefix] || []).filter(i => !search || i.includes(search));
-      },
-
       resetForm() {
         this.step = 1;
         this.fieldSearch = '';
@@ -455,8 +428,6 @@
           referenceTitleTokens: [{ t: 'field', id: 'title' }],
           standardFields: { title: true, slug: false, date: false }
         };
-        this.showIconPicker = false;
-        this.showColorPicker = false;
       },
 
       async createCollection() {
@@ -577,7 +548,6 @@
 
       init() {
         const rows = <%- JSON.stringify(rows) %>;
-        this.loadIcons();
         this.loadSystemFields();
 
         window.addEventListener('open-collection-modal', () => {
@@ -734,61 +704,11 @@
             <div class="mb-5">
               <label class="mb-3 block text-sm font-bold">Visuel</label>
               <div class="flex items-center gap-4">
-                <!-- Icône -->
-                <div class="relative">
-                  <button type="button" @click="showIconPicker = !showIconPicker" 
-                          class="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                          title="Changer l'icône">
-                    <iconify-icon :icon="newCollection.icon || 'solar:box-bold-duotone'" width="24" :class="newCollection.icon ? 'text-primary' : 'text-gray-400'"></iconify-icon>
-                  </button>
-                  <!-- Icon Picker Dropdown -->
-                  <div x-show="showIconPicker" @click.outside="showIconPicker = false" x-transition
-                       class="absolute top-11 left-0 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border dark:border-gray-700 p-3 w-72">
-                    <div class="flex gap-2 mb-2">
-                      <select x-model="selectedLibrary" @change="loadIcons()" class="form-select text-xs py-1 flex-1">
-                        <option value="solar">Solar</option>
-                        <option value="mdi">Material</option>
-                        <option value="tabler">Tabler</option>
-                      </select>
-                      <input type="text" x-model="iconSearch" @input.debounce.300ms="loadIcons()" placeholder="Rechercher..." class="form-input text-xs py-1 flex-1">
-                    </div>
-                    <div class="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
-                      <template x-for="icon in icons" :key="icon">
-                        <div class="w-8 h-8 rounded cursor-pointer hover:bg-primary/10 flex items-center justify-center"
-                             :class="newCollection.icon === icon && 'bg-primary/20 text-primary'"
-                             @click="newCollection.icon = icon; showIconPicker = false">
-                          <iconify-icon :icon="icon" width="20"></iconify-icon>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
-                </div>
+                <!-- Icône (Vanilla JS Picker) -->
+                <div id="create-icon-picker"></div>
 
-                <!-- Couleur - Rond simple -->
-                <div class="relative">
-                  <button type="button" @click="showColorPicker = !showColorPicker"
-                          class="w-5 h-5 rounded-full hover:scale-110 transition-transform"
-                          :style="newCollection.color ? 'background-color:' + newCollection.color : 'background: linear-gradient(135deg, #06b6d4, #8b5cf6, #ec4899)'"
-                          title="Changer la couleur">
-                  </button>
-                  <!-- Color Picker Dropdown -->
-                  <div x-show="showColorPicker" @click.outside="showColorPicker = false" x-transition
-                       class="absolute top-9 left-0 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border dark:border-gray-700 p-3">
-                    <div class="flex flex-wrap gap-2 w-48">
-                      <template x-for="color in availableColors" :key="color">
-                        <div class="w-7 h-7 rounded-full cursor-pointer hover:scale-110 transition-transform flex items-center justify-center"
-                             :style="'background-color:' + color"
-                             :class="newCollection.color === color && 'ring-2 ring-offset-2 ring-gray-800'"
-                             @click="newCollection.color = color; showColorPicker = false">
-                        </div>
-                      </template>
-                      <div class="relative w-7 h-7 rounded-full cursor-pointer border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden hover:border-gray-400">
-                        <iconify-icon icon="solar:pen-new-square-linear" width="12" class="pointer-events-none text-gray-400"></iconify-icon>
-                        <input type="color" class="absolute inset-0 opacity-0 cursor-pointer" x-model="newCollection.color">
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <!-- Couleur (Vanilla JS Picker) -->
+                <div id="create-color-picker"></div>
 
                 <!-- Media - Icône simple -->
                 <label class="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer" title="Ajouter une image">
@@ -1039,61 +959,11 @@
             <div class="mb-5">
               <label class="mb-3 block text-sm font-bold">Visuel</label>
               <div class="flex items-center gap-4">
-                <!-- Icône -->
-                <div class="relative">
-                  <button type="button" @click="showIconPicker = !showIconPicker" 
-                          class="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                          title="Changer l'icône">
-                    <iconify-icon :icon="newCollection.icon || 'solar:box-bold-duotone'" width="24" :class="newCollection.icon ? 'text-primary' : 'text-gray-400'"></iconify-icon>
-                  </button>
-                  <!-- Icon Picker Dropdown -->
-                  <div x-show="showIconPicker" @click.outside="showIconPicker = false" x-transition
-                       class="absolute top-11 left-0 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border dark:border-gray-700 p-3 w-72">
-                    <div class="flex gap-2 mb-2">
-                      <select x-model="selectedLibrary" @change="loadIcons()" class="form-select text-xs py-1 flex-1">
-                        <option value="solar">Solar</option>
-                        <option value="mdi">Material</option>
-                        <option value="tabler">Tabler</option>
-                      </select>
-                      <input type="text" x-model="iconSearch" @input.debounce.300ms="loadIcons()" placeholder="Rechercher..." class="form-input text-xs py-1 flex-1">
-                    </div>
-                    <div class="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
-                      <template x-for="icon in icons" :key="icon">
-                        <div class="w-8 h-8 rounded cursor-pointer hover:bg-primary/10 flex items-center justify-center"
-                             :class="newCollection.icon === icon && 'bg-primary/20 text-primary'"
-                             @click="newCollection.icon = icon; showIconPicker = false">
-                          <iconify-icon :icon="icon" width="20"></iconify-icon>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
-                </div>
+                <!-- Icône (Vanilla JS Picker) -->
+                <div id="edit-icon-picker"></div>
 
-                <!-- Couleur - Rond simple -->
-                <div class="relative">
-                  <button type="button" @click="showColorPicker = !showColorPicker"
-                          class="w-5 h-5 rounded-full hover:scale-110 transition-transform"
-                          :style="newCollection.color ? 'background-color:' + newCollection.color : 'background: linear-gradient(135deg, #06b6d4, #8b5cf6, #ec4899)'"
-                          title="Changer la couleur">
-                  </button>
-                  <!-- Color Picker Dropdown -->
-                  <div x-show="showColorPicker" @click.outside="showColorPicker = false" x-transition
-                       class="absolute top-9 left-0 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border dark:border-gray-700 p-3">
-                    <div class="flex flex-wrap gap-2 w-48">
-                      <template x-for="color in availableColors" :key="color">
-                        <div class="w-7 h-7 rounded-full cursor-pointer hover:scale-110 transition-transform flex items-center justify-center"
-                             :style="'background-color:' + color"
-                             :class="newCollection.color === color && 'ring-2 ring-offset-2 ring-gray-800'"
-                             @click="newCollection.color = color; showColorPicker = false">
-                        </div>
-                      </template>
-                      <div class="relative w-7 h-7 rounded-full cursor-pointer border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden hover:border-gray-400">
-                        <iconify-icon icon="solar:pen-new-square-linear" width="12" class="pointer-events-none text-gray-400"></iconify-icon>
-                        <input type="color" class="absolute inset-0 opacity-0 cursor-pointer" x-model="newCollection.color">
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <!-- Couleur (Vanilla JS Picker) -->
+                <div id="edit-color-picker"></div>
 
                 <!-- Media - Icône simple -->
                 <label class="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer" title="Ajouter une image">
@@ -1302,3 +1172,187 @@
 </div>
 
 <script src="/themes/default/assets/js/simple-datatables.js"></script>
+
+<script>
+// ============================================
+// VANILLA JS PICKER INITIALIZATION
+// ============================================
+(function() {
+  'use strict';
+
+  // Store picker instances for cleanup
+  let createIconPicker = null;
+  let createColorPicker = null;
+  let editIconPicker = null;
+  let editColorPicker = null;
+
+  // Get Alpine component data
+  function getAlpineData() {
+    const root = document.querySelector('[x-data="collectionsManager()"]');
+    return root ? Alpine.$data(root) : null;
+  }
+
+  // Initialize create modal pickers
+  function initCreatePickers() {
+    const data = getAlpineData();
+    if (!data) return;
+
+    const iconContainer = document.getElementById('create-icon-picker');
+    const colorContainer = document.getElementById('create-color-picker');
+
+    if (iconContainer && !createIconPicker) {
+      createIconPicker = new IconPicker(iconContainer, {
+        name: 'icon',
+        value: data.newCollection.icon || '',
+        onSelect: (icon) => {
+          data.newCollection.icon = icon;
+        }
+      });
+    }
+
+    if (colorContainer && !createColorPicker) {
+      createColorPicker = new ColorPicker(colorContainer, {
+        name: 'color',
+        value: data.newCollection.color || '',
+        onSelect: (color) => {
+          data.newCollection.color = color;
+        }
+      });
+    }
+  }
+
+  // Initialize edit modal pickers
+  function initEditPickers() {
+    const data = getAlpineData();
+    if (!data) return;
+
+    const iconContainer = document.getElementById('edit-icon-picker');
+    const colorContainer = document.getElementById('edit-color-picker');
+
+    if (iconContainer && !editIconPicker) {
+      editIconPicker = new IconPicker(iconContainer, {
+        name: 'icon',
+        value: data.newCollection.icon || '',
+        onSelect: (icon) => {
+          data.newCollection.icon = icon;
+        }
+      });
+    }
+
+    if (colorContainer && !editColorPicker) {
+      editColorPicker = new ColorPicker(colorContainer, {
+        name: 'color',
+        value: data.newCollection.color || '',
+        onSelect: (color) => {
+          data.newCollection.color = color;
+        }
+      });
+    }
+  }
+
+  // Destroy create modal pickers
+  function destroyCreatePickers() {
+    if (createIconPicker) {
+      createIconPicker.destroy();
+      createIconPicker = null;
+    }
+    if (createColorPicker) {
+      createColorPicker.destroy();
+      createColorPicker = null;
+    }
+  }
+
+  // Destroy edit modal pickers
+  function destroyEditPickers() {
+    if (editIconPicker) {
+      editIconPicker.destroy();
+      editIconPicker = null;
+    }
+    if (editColorPicker) {
+      editColorPicker.destroy();
+      editColorPicker = null;
+    }
+  }
+
+  // Update picker values when Alpine data changes
+  function updatePickerValues(isEdit = false) {
+    const data = getAlpineData();
+    if (!data) return;
+
+    if (isEdit) {
+      if (editIconPicker) editIconPicker.setValue(data.newCollection.icon || '');
+      if (editColorPicker) editColorPicker.setValue(data.newCollection.color || '');
+    } else {
+      if (createIconPicker) createIconPicker.setValue(data.newCollection.icon || '');
+      if (createColorPicker) createColorPicker.setValue(data.newCollection.color || '');
+    }
+  }
+
+  // Watch for modal open/close via Alpine
+  document.addEventListener('alpine:init', () => {
+    // After Alpine initializes, set up watchers
+    document.addEventListener('alpine:initialized', () => {
+      const data = getAlpineData();
+      if (!data) return;
+
+      // Use Alpine effect to watch modal state
+      Alpine.effect(() => {
+        const showCreate = data.showCreateModal;
+        const showEdit = data.showEditModal;
+
+        if (showCreate) {
+          // Wait for DOM to render
+          requestAnimationFrame(() => {
+            initCreatePickers();
+            updatePickerValues(false);
+          });
+        } else {
+          destroyCreatePickers();
+        }
+
+        if (showEdit) {
+          // Wait for DOM to render
+          requestAnimationFrame(() => {
+            initEditPickers();
+            updatePickerValues(true);
+          });
+        } else {
+          destroyEditPickers();
+        }
+      });
+    });
+  });
+
+  // Fallback: Use MutationObserver if Alpine effect doesn't work
+  const observer = new MutationObserver((mutations) => {
+    const createModal = document.querySelector('[x-show="showCreateModal"]');
+    const editModal = document.querySelector('[x-show="showEditModal"]');
+
+    // Check if create modal is visible
+    if (createModal && createModal.style.display !== 'none' && !createIconPicker) {
+      setTimeout(() => {
+        initCreatePickers();
+        updatePickerValues(false);
+      }, 100);
+    }
+
+    // Check if edit modal is visible
+    if (editModal && editModal.style.display !== 'none' && !editIconPicker) {
+      setTimeout(() => {
+        initEditPickers();
+        updatePickerValues(true);
+      }, 100);
+    }
+  });
+
+  // Start observing when DOM is ready
+  document.addEventListener('DOMContentLoaded', () => {
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style', 'class']
+    });
+  });
+})();
+</script>

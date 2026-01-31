@@ -22,6 +22,8 @@ router.get("/:id", fieldTemplateController.singlePage);
 router.get("/edit/:id", fieldTemplateController.editForm);
 //Update form
 router.post("/edit/:id", upload.single("image"), fieldTemplateController.update);
+//Factory Reset - Restore default fields
+router.post("/factory-reset", fieldTemplateController.factoryReset);
 //Delete
 router.delete("/:id", fieldTemplateController.delete);
 

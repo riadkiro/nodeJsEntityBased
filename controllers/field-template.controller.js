@@ -375,4 +375,117 @@ module.exports = {
       res.status(500).json({ error: err.message });
     }
   },
+
+  /**
+   * Factory Reset - Supprime tous les champs et remet les champs par défaut
+   */
+  factoryReset: async (req, res) => {
+    try {
+      const FieldTemplate = await tenantCollection(req, "FieldTemplate");
+
+      // Supprimer tous les champs existants
+      await FieldTemplate.deleteMany({});
+
+      // Champs métier prêts à l'emploi (pas des types génériques !)
+      const defaultFields = [
+        // ═══════════════════════════════════════════════════════════════
+        // IDENTITÉ / CONTACT
+        // ═══════════════════════════════════════════════════════════════
+        { name: 'nom', label: 'Nom', type: 'string', icon: 'solar:user-bold-duotone', width: 'half', category: 'popular', isSystem: true, placeholder: 'Dupont' },
+        { name: 'prenom', label: 'Prénom', type: 'string', icon: 'solar:user-bold-duotone', width: 'half', category: 'popular', isSystem: true, placeholder: 'Jean' },
+        { name: 'email', label: 'Email', type: 'string', subType: 'email', icon: 'solar:letter-bold-duotone', width: 'half', category: 'popular', isSystem: true, placeholder: 'jean@exemple.com' },
+        { name: 'telephone', label: 'Téléphone', type: 'string', subType: 'tel', icon: 'solar:phone-bold-duotone', width: 'half', category: 'popular', isSystem: true, placeholder: '+33 6 12 34 56 78' },
+        { name: 'adresse', label: 'Adresse', type: 'text', icon: 'solar:map-point-bold-duotone', width: 'full', category: 'popular', isSystem: true, placeholder: '123 Rue de la Paix, 75001 Paris' },
+        { name: 'ville', label: 'Ville', type: 'string', icon: 'solar:city-bold-duotone', width: 'half', category: 'popular', isSystem: true, placeholder: 'Paris' },
+        { name: 'code_postal', label: 'Code postal', type: 'string', icon: 'solar:mailbox-bold-duotone', width: 'half', category: 'popular', isSystem: true, placeholder: '75001' },
+        { name: 'pays', label: 'Pays', type: 'string', icon: 'solar:global-bold-duotone', width: 'half', category: 'popular', isSystem: true, placeholder: 'France' },
+
+        // ═══════════════════════════════════════════════════════════════
+        // ENTREPRISE / PROFESSIONNEL
+        // ═══════════════════════════════════════════════════════════════
+        { name: 'entreprise', label: 'Entreprise', type: 'string', icon: 'solar:buildings-bold-duotone', width: 'half', category: 'pro', isSystem: true, placeholder: 'Acme Inc.' },
+        { name: 'poste', label: 'Poste / Fonction', type: 'string', icon: 'solar:case-bold-duotone', width: 'half', category: 'pro', isSystem: true, placeholder: 'Directeur Commercial' },
+        { name: 'site_web', label: 'Site web', type: 'string', subType: 'url', icon: 'solar:global-bold-duotone', width: 'half', category: 'pro', isSystem: true, placeholder: 'https://www.exemple.com' },
+        { name: 'linkedin', label: 'LinkedIn', type: 'string', subType: 'url', icon: 'mdi:linkedin', width: 'half', category: 'pro', isSystem: true, placeholder: 'https://linkedin.com/in/...' },
+        { name: 'siret', label: 'SIRET', type: 'string', icon: 'solar:document-bold-duotone', width: 'half', category: 'pro', isSystem: true, placeholder: '123 456 789 00012' },
+        { name: 'tva', label: 'N° TVA', type: 'string', icon: 'solar:document-bold-duotone', width: 'half', category: 'pro', isSystem: true, placeholder: 'FR12345678901' },
+
+        // ═══════════════════════════════════════════════════════════════
+        // DATES / ÉVÉNEMENTS
+        // ═══════════════════════════════════════════════════════════════
+        { name: 'date_naissance', label: 'Date de naissance', type: 'date', icon: 'solar:calendar-bold-duotone', width: 'half', category: 'dates', isSystem: true },
+        { name: 'date_debut', label: 'Date de début', type: 'date', icon: 'solar:calendar-bold-duotone', width: 'half', category: 'dates', isSystem: true },
+        { name: 'date_fin', label: 'Date de fin', type: 'date', icon: 'solar:calendar-bold-duotone', width: 'half', category: 'dates', isSystem: true },
+        { name: 'echeance', label: 'Échéance', type: 'date', icon: 'solar:alarm-bold-duotone', width: 'half', category: 'dates', isSystem: true },
+        { name: 'rappel', label: 'Date de rappel', type: 'date', subType: 'datetime', icon: 'solar:bell-bold-duotone', width: 'half', category: 'dates', isSystem: true },
+
+        // ═══════════════════════════════════════════════════════════════
+        // FINANCIER / COMMERCE
+        // ═══════════════════════════════════════════════════════════════
+        { name: 'montant', label: 'Montant', type: 'number', subType: 'currency', icon: 'solar:dollar-bold-duotone', width: 'half', category: 'finance', isSystem: true, placeholder: '1 500,00 €' },
+        { name: 'prix_unitaire', label: 'Prix unitaire', type: 'number', subType: 'currency', icon: 'solar:tag-price-bold-duotone', width: 'half', category: 'finance', isSystem: true },
+        { name: 'quantite', label: 'Quantité', type: 'number', icon: 'solar:box-bold-duotone', width: 'half', category: 'finance', isSystem: true, placeholder: '10' },
+        { name: 'remise', label: 'Remise (%)', type: 'number', subType: 'percent', icon: 'solar:tag-bold-duotone', width: 'half', category: 'finance', isSystem: true },
+        { name: 'total_ht', label: 'Total HT', type: 'number', subType: 'currency', icon: 'solar:calculator-bold-duotone', width: 'half', category: 'finance', isSystem: true },
+        { name: 'total_ttc', label: 'Total TTC', type: 'number', subType: 'currency', icon: 'solar:calculator-bold-duotone', width: 'half', category: 'finance', isSystem: true },
+
+        // ═══════════════════════════════════════════════════════════════
+        // GESTION / WORKFLOW
+        // ═══════════════════════════════════════════════════════════════
+        {
+          name: 'statut', label: 'Statut', type: 'select', icon: 'solar:verified-check-bold-duotone', width: 'half', category: 'workflow', isSystem: true, options: [
+            { label: 'Brouillon', value: 'draft', color: '#94a3b8' },
+            { label: 'En cours', value: 'in_progress', color: '#3b82f6' },
+            { label: 'En attente', value: 'pending', color: '#f59e0b' },
+            { label: 'Terminé', value: 'done', color: '#22c55e' },
+            { label: 'Annulé', value: 'cancelled', color: '#ef4444' }
+          ]
+        },
+        {
+          name: 'priorite', label: 'Priorité', type: 'select', icon: 'solar:flag-bold-duotone', width: 'half', category: 'workflow', isSystem: true, options: [
+            { label: 'Basse', value: 'low', color: '#94a3b8' },
+            { label: 'Normale', value: 'normal', color: '#3b82f6' },
+            { label: 'Haute', value: 'high', color: '#f59e0b' },
+            { label: 'Urgente', value: 'urgent', color: '#ef4444' }
+          ]
+        },
+        { name: 'assignee', label: 'Assigné à', type: 'relation', subType: 'user', icon: 'solar:user-check-bold-duotone', width: 'half', category: 'workflow', isSystem: true },
+        { name: 'tags', label: 'Tags', type: 'select', subType: 'multi', icon: 'solar:tag-bold-duotone', width: 'full', category: 'workflow', isSystem: true, multiple: true },
+
+        // ═══════════════════════════════════════════════════════════════
+        // CONTENU / DESCRIPTION
+        // ═══════════════════════════════════════════════════════════════
+        { name: 'description', label: 'Description', type: 'text', icon: 'solar:document-text-bold-duotone', width: 'full', category: 'content', isSystem: true, placeholder: 'Description détaillée...' },
+        { name: 'notes', label: 'Notes', type: 'text', icon: 'solar:notes-bold-duotone', width: 'full', category: 'content', isSystem: true, placeholder: 'Notes internes...' },
+        { name: 'commentaire', label: 'Commentaire', type: 'text', icon: 'solar:chat-round-dots-bold-duotone', width: 'full', category: 'content', isSystem: true },
+
+        // ═══════════════════════════════════════════════════════════════
+        // MÉDIAS / FICHIERS
+        // ═══════════════════════════════════════════════════════════════
+        { name: 'photo', label: 'Photo', type: 'image', icon: 'solar:camera-bold-duotone', width: 'half', category: 'media', isSystem: true },
+        { name: 'avatar', label: 'Avatar', type: 'image', icon: 'solar:user-circle-bold-duotone', width: 'half', category: 'media', isSystem: true },
+        { name: 'logo', label: 'Logo', type: 'image', icon: 'solar:gallery-bold-duotone', width: 'half', category: 'media', isSystem: true },
+        { name: 'document', label: 'Document', type: 'file', icon: 'solar:file-bold-duotone', width: 'full', category: 'media', isSystem: true },
+        { name: 'signature', label: 'Signature', type: 'image', subType: 'signature', icon: 'solar:pen-bold-duotone', width: 'half', category: 'media', isSystem: true },
+
+        // ═══════════════════════════════════════════════════════════════
+        // DIVERS
+        // ═══════════════════════════════════════════════════════════════
+        { name: 'reference', label: 'Référence', type: 'string', icon: 'solar:hashtag-bold-duotone', width: 'half', category: 'other', isSystem: true, placeholder: 'REF-001' },
+        { name: 'code', label: 'Code', type: 'string', icon: 'solar:qr-code-bold-duotone', width: 'half', category: 'other', isSystem: true },
+        { name: 'actif', label: 'Actif', type: 'boolean', icon: 'solar:check-circle-bold-duotone', width: 'half', category: 'other', isSystem: true },
+        { name: 'note_evaluation', label: 'Note / Évaluation', type: 'number', subType: 'rating', icon: 'solar:star-bold-duotone', width: 'half', category: 'other', isSystem: true }
+      ];
+
+      // Insérer les champs par défaut
+      await FieldTemplate.insertMany(defaultFields);
+
+      console.log(`✅ Factory reset: ${defaultFields.length} champs système restaurés`);
+
+      res.json({ success: true, message: `${defaultFields.length} champs restaurés` });
+    } catch (err) {
+      console.error('❌ Factory reset error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  },
 };

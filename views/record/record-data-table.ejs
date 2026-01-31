@@ -1,766 +1,302 @@
+<div style="">
+    <ul class="mb-6 flex space-x-2 rtl:space-x-reverse">
+        <li>
+            <a href="javascript:;" class="text-primary hover:underline">Dashboard</a>
+        </li>
+        <li class="before:content-['/'] ltr:before:mr-1 rtl:before:ml-1">
+            <span><%= entity ? entity.name : 'Records' %></span>
+        </li>
+    </ul>
+    <!-- start main content section -->
+    <div x-data="chat">
+        <div class="relative flex h-full gap-5 sm:h-[calc(100vh_-_150px)] sm:min-h-0"
+            :class="{'min-h-[999px]' : isShowChatMenu}">
+            <!-- Sidebar contacts -->
+            <div class="panel absolute z-10 hidden w-full max-w-xs flex-none space-y-4 overflow-hidden p-4 xl:relative xl:block xl:h-full"
+                :class="isShowChatMenu && '!block'">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex items-center text-center">
+                            <div>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
+                                    <path
+                                        d="M20.3116 12.6473L20.8293 10.7154C21.4335 8.46034 21.7356 7.3328 21.5081 6.35703C21.3285 5.58657 20.9244 4.88668 20.347 4.34587C19.6157 3.66095 18.4881 3.35883 16.2331 2.75458C13.978 2.15033 12.8504 1.84821 11.8747 2.07573C11.1042 2.25537 10.4043 2.65945 9.86351 3.23687C9.27709 3.86298 8.97128 4.77957 8.51621 6.44561C8.43979 6.7254 8.35915 7.02633 8.27227 7.35057L8.27222 7.35077L7.75458 9.28263C7.15033 11.5377 6.84821 12.6652 7.07573 13.641C7.25537 14.4115 7.65945 15.1114 8.23687 15.6522C8.96815 16.3371 10.0957 16.6392 12.3508 17.2435L12.3508 17.2435C14.3834 17.7881 15.4999 18.0873 16.415 17.9744C16.5152 17.9621 16.6129 17.9448 16.7092 17.9223C17.4796 17.7427 18.1795 17.3386 18.7203 16.7612C19.4052 16.0299 19.7074 14.9024 20.3116 12.6473Z"
+                                        stroke="currentColor" stroke-width="1.5"></path>
+                                    <path opacity="0.5"
+                                        d="M16.415 17.9741C16.2065 18.6126 15.8399 19.1902 15.347 19.6519C14.6157 20.3368 13.4881 20.6389 11.2331 21.2432C8.97798 21.8474 7.85044 22.1495 6.87466 21.922C6.10421 21.7424 5.40432 21.3383 4.86351 20.7609C4.17859 20.0296 3.87647 18.9021 3.27222 16.647L2.75458 14.7151C2.15033 12.46 1.84821 11.3325 2.07573 10.3567C2.25537 9.58627 2.65945 8.88638 3.23687 8.34557C3.96815 7.66065 5.09569 7.35853 7.35077 6.75428C7.77741 6.63996 8.16368 6.53646 8.51621 6.44531"
+                                        stroke="currentColor" stroke-width="1.5"></path>
+                                    <path d="M11.7769 10L16.6065 11.2941" stroke="currentColor" stroke-width="1.5"
+                                        stroke-linecap="round"></path>
+                                    <path opacity="0.5" d="M11 12.8975L13.8978 13.6739" stroke="currentColor"
+                                        stroke-width="1.5" stroke-linecap="round"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-semibold ltr:ml-3 rtl:mr-3"><%= entity ? entity.name : 'Records' %></h3>
+                        </div>
+                    </div>
+                    <div x-data="dropdown" @click.outside="open = false" class="dropdown">
+                        <button type="button"
+                            class="flex h-8 w-8 items-center justify-center rounded-full bg-[#f4f4f4] hover:bg-primary-light dark:bg-[#1b2e4b]"
+                            @click="toggle">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-70">
+                                <circle cx="5" cy="12" r="2" stroke="currentColor" stroke-width="1.5"></circle>
+                                <circle opacity="0.5" cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5">
+                                </circle>
+                                <circle cx="19" cy="12" r="2" stroke="currentColor" stroke-width="1.5"></circle>
+                            </svg>
+                        </button>
+                        <ul x-show="open" x-transition x-transition.duration.300ms
+                            class="whitespace-nowrap ltr:right-0 rtl:left-0">
+                            <li>
+                                <a href="javascript:;" @click="toggle">
+                                    <iconify-icon icon="solar:settings-bold-duotone"
+                                        class="h-4.5 w-4.5 shrink-0 ltr:mr-1 rtl:ml-1"></iconify-icon>
+                                    Paramètres
+                                </a>
+                            </li>
+                            <li>
+                                <a href="javascript:;" @click="toggle">
+                                    <iconify-icon icon="solar:question-circle-bold-duotone"
+                                        class="h-4.5 w-4.5 shrink-0 ltr:mr-1 rtl:ml-1"></iconify-icon>
+                                    Aide
+                                </a>
+                            </li>
+                            <li>
+                                <a href="javascript:;" @click="toggle">
+                                    <iconify-icon icon="solar:logout-2-bold-duotone"
+                                        class="h-4.5 w-4.5 shrink-0 ltr:mr-1 rtl:ml-1"></iconify-icon>
+                                    Retour
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+
+                <div class="h-px w-full border-b border-[#e0e6ed] dark:border-[#1b2e4b]"></div>
+                <div class="!mt-0">
+                    <div class="flex h-full flex-col pb-16">
+
+
+                        <div class="perfect-scrollbar relative -mr-3.5 h-full grow pr-3.5 ps">
+                            <div class="space-y-1">
+                                <button type="button"
+                                    class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-primary dark:hover:bg-[#181F32] dark:hover:text-primary bg-gray-100 dark:text-primary text-primary dark:bg-[#181F32]"
+                                    :class="{ 'bg-gray-100 dark:text-primary text-primary dark:bg-[#181F32]': selectedTab === 'all' }"
+                                    @click="tabChanged('all')">
+                                    <div class="flex items-center">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                            xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
+                                            <path
+                                                d="M18.18 8.03933L18.6435 7.57589C19.4113 6.80804 20.6563 6.80804 21.4241 7.57589C22.192 8.34374 22.192 9.58868 21.4241 10.3565L20.9607 10.82M18.18 8.03933C18.18 8.03933 18.238 9.02414 19.1069 9.89309C19.9759 10.762 20.9607 10.82 20.9607 10.82M18.18 8.03933L13.9194 12.2999C13.6308 12.5885 13.4865 12.7328 13.3624 12.8919C13.2161 13.0796 13.0906 13.2827 12.9882 13.4975C12.9014 13.6797 12.8368 13.8732 12.7078 14.2604L12.2946 15.5L12.1609 15.901M20.9607 10.82L16.7001 15.0806C16.4115 15.3692 16.2672 15.5135 16.1081 15.6376C15.9204 15.7839 15.7173 15.9094 15.5025 16.0118C15.3203 16.0986 15.1268 16.1632 14.7396 16.2922L13.5 16.7054L13.099 16.8391M13.099 16.8391L12.6979 16.9728C12.5074 17.0363 12.2973 16.9867 12.1553 16.8447C12.0133 16.7027 11.9637 16.4926 12.0272 16.3021L12.1609 15.901M13.099 16.8391L12.1609 15.901"
+                                                stroke="currentColor" stroke-width="1.5"></path>
+                                            <path d="M8 13H10.5" stroke="currentColor" stroke-width="1.5"
+                                                stroke-linecap="round"></path>
+                                            <path d="M8 9H14.5" stroke="currentColor" stroke-width="1.5"
+                                                stroke-linecap="round"></path>
+                                            <path d="M8 17H9.5" stroke="currentColor" stroke-width="1.5"
+                                                stroke-linecap="round"></path>
+                                            <path opacity="0.5"
+                                                d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z"
+                                                stroke="currentColor" stroke-width="1.5"></path>
+                                        </svg>
+                                        <div class="ltr:ml-3 rtl:mr-3">Tous les enregistrements</div>
+                                    </div>
+                                </button>
+                                <button type="button"
+                                    class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-primary dark:hover:bg-[#181F32] dark:hover:text-primary"
+                                    :class="{ 'bg-gray-100 dark:text-primary text-primary dark:bg-[#181F32]': selectedTab === 'fav' }"
+                                    @click="tabChanged('fav')">
+                                    <div class="flex items-center">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                            xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
+                                            <path
+                                                d="M9.15316 5.40838C10.4198 3.13613 11.0531 2 12 2C12.9469 2 13.5802 3.13612 14.8468 5.40837L15.1745 5.99623C15.5345 6.64193 15.7144 6.96479 15.9951 7.17781C16.2757 7.39083 16.6251 7.4699 17.3241 7.62805L17.9605 7.77203C20.4201 8.32856 21.65 8.60682 21.9426 9.54773C22.2352 10.4886 21.3968 11.4691 19.7199 13.4299L19.2861 13.9372C18.8096 14.4944 18.5713 14.773 18.4641 15.1177C18.357 15.4624 18.393 15.8341 18.465 16.5776L18.5306 17.2544C18.7841 19.8706 18.9109 21.1787 18.1449 21.7602C17.3788 22.3417 16.2273 21.8115 13.9243 20.7512L13.3285 20.4768C12.6741 20.1755 12.3469 20.0248 12 20.0248C11.6531 20.0248 11.3259 20.1755 10.6715 20.4768L10.0757 20.7512C7.77268 21.8115 6.62118 22.3417 5.85515 21.7602C5.08912 21.1787 5.21588 19.8706 5.4694 17.2544L5.53498 16.5776C5.60703 15.8341 5.64305 15.4624 5.53586 15.1177C5.42868 14.773 5.19043 14.4944 4.71392 13.9372L4.2801 13.4299C2.60325 11.4691 1.76482 10.4886 2.05742 9.54773C2.35002 8.60682 3.57986 8.32856 6.03954 7.77203L6.67589 7.62805C7.37485 7.4699 7.72433 7.39083 8.00494 7.17781C8.28555 6.96479 8.46553 6.64194 8.82547 5.99623L9.15316 5.40838Z"
+                                                stroke="currentColor" stroke-width="1.5"></path>
+                                        </svg>
+                                        <div class="ltr:ml-3 rtl:mr-3">Favoris</div>
+                                    </div>
+                                </button>
+                                <div class="h-px w-full border-b border-[#e0e6ed] dark:border-[#1b2e4b]"></div>
+                                <div class="px-1 py-3 text-white-dark">Tags</div>
+                                <div class="flex flex-wrap gap-1">
+                                    <button type="button"
+                                        class="badge badge-outline-primary mb-0 py-0 px-2 uppercase cursor-pointer transition-all"
+                                        :class="selectedTab === 'personal' ? 'bg-primary/10' : 'hover:bg-primary/5'"
+                                        @click="tabChanged('personal')">
+                                        Personal
+                                    </button>
+
+                                    <button type="button"
+                                        class="badge badge-outline-warning mb-0 py-0 px-2 uppercase cursor-pointer transition-all"
+                                        :class="selectedTab === 'work' ? 'bg-warning/10' : 'hover:bg-warning/5'"
+                                        @click="tabChanged('work')">
+                                        Work
+                                    </button>
+
+                                    <button type="button"
+                                        class="badge badge-outline-info mb-0 py-0 px-2 uppercase cursor-pointer transition-all"
+                                        :class="selectedTab === 'social' ? 'bg-info/10' : 'hover:bg-info/5'"
+                                        @click="tabChanged('social')">
+                                        Social
+                                    </button>
+
+                                    <button type="button"
+                                        class="badge badge-outline-danger mb-0 py-0 px-2 uppercase cursor-pointer transition-all"
+                                        :class="selectedTab === 'important' ? 'bg-danger/10' : 'hover:bg-danger/5'"
+                                        @click="tabChanged('important')">
+                                        Important
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="ps__rail-x" style="left: 0px; bottom: 0px;">
+                                <div class="ps__thumb-x" tabindex="0" style="left: 0px; width: 0px;"></div>
+                            </div>
+                            <div class="ps__rail-y" style="top: 0px; right: 0px;">
+                                <div class="ps__thumb-y" tabindex="0" style="top: 0px; height: 0px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-0 w-full p-4 ltr:left-0 rtl:right-0">
+                        <button class="btn btn-primary w-full" type="button" @click="editNote">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" class="h-5 w-5 ltr:mr-2 rtl:ml-2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Ajouter
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="absolute z-[5] hidden h-full w-full rounded-md bg-black/60"
+                :class="isShowChatMenu && '!block xl:!hidden'" @click="isShowChatMenu = !isShowChatMenu"></div>
+            <!-- Chat panel -->
+            <div class="panel flex-1 p-4 flex flex-col overflow-hidden h-full">
+                <div class="dataTable-wrapper flex-1 flex flex-col overflow-hidden">
+                    <div class="dataTable-top mb-4">
+                        <div class="dataTable-search"><input class="dataTable-input" placeholder="Search..."
+                                type="text"></div>
+                    </div>
+                    <div class="dataTable-container flex-1 overflow-auto">
+                        <table id="myTable" class="table-hover whitespace-nowrap dataTable-table">
+                            <thead class="sticky top-0 bg-white dark:bg-[#1b2e4b] z-10">
+                                <tr>
+                                    <th data-sortable="" style="width: 14.2582%;"><a href="#"
+                                            class="dataTable-sorter">User</a></th>
+                                    <th data-sortable="" style="width: 17.4053%;"><a href="#"
+                                            class="dataTable-sorter">Email</a></th>
+                                    <th data-sortable="" style="width: 11.2396%;"><a href="#"
+                                            class="dataTable-sorter">Phone</a></th>
+                                    <th data-sortable="false" style="width: 9.63391%;">
+                                        <div class="text-center">Rate</div>
+                                    </th>
+                                    <th data-sortable="false" style="width: 8.41362%;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (records && records.length > 0) { %>
+                                    <% records.forEach(function(record, index) { %>
+                                        <%
+                                            // Helper function to get custom field value
+                                            function getFieldValue(record, fieldName) {
+                                                if (!record.customFields) return '';
+                                                const field = record.customFields.find(f => {
+                                                    if (!f.field_id) return false;
+                                                    const name = f.field_id.name || f.field_id;
+                                                    return name === fieldName || (typeof name === 'string' && name.toLowerCase() === fieldName.toLowerCase());
+                                                });
+                                                return field ? field.value : '';
+                                            }
+                                            
+                                            const email = getFieldValue(record, 'email') || '';
+                                            const telephone = getFieldValue(record, 'telephone') || getFieldValue(record, 'mobile') || '';
+                                            const imagePath = record.image || '/assets/images/profile-' + ((index % 34) + 1) + '.jpeg';
+                                            
+                                            // Random rate (1-5 stars) - hardcoded as per user request
+                                            const randomStars = (index % 5) + 1;
+                                            
+                                            // Random status - hardcoded as per user request
+                                            const statuses = ['PAID', 'APPROVED', 'FAILED', 'CANCEL', 'SUCCESS', 'PENDING', 'COMPLETE'];
+                                            const statusColors = ['primary', 'secondary', 'success', 'danger', 'warning', 'info'];
+                                            const randomStatus = statuses[index % statuses.length];
+                                            const randomColor = statusColors[index % statusColors.length];
+                                        %>
+                                        <tr>
+                                            <td>
+                                                <div class="flex items-center gap-2">
+                                                    <img src="<%= imagePath %>"
+                                                        class="w-9 h-9 rounded-full max-w-none" alt="user-profile">
+                                                    <div class="font-semibold"><%= record.title %></div>
+                                                </div>
+                                            </td>
+                                            <td><a href="mailto:<%= email %>"
+                                                    class="text-primary hover:underline"><%= email %></a></td>
+                                            <td><%= telephone %></td>
+                                            <td>
+                                                <div class="flex items-center justify-center text-warning">
+                                                    <% for (let i = 0; i < randomStars; i++) { %>
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                        xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-warning">
+                                                        <path
+                                                            d="M9.15316 5.40838C10.4198 3.13613 11.0531 2 12 2C12.9469 2 13.5802 3.13612 14.8468 5.40837L15.1745 5.99623C15.5345 6.64193 15.7144 6.96479 15.9951 7.17781C16.2757 7.39083 16.6251 7.4699 17.3241 7.62805L17.9605 7.77203C20.4201 8.32856 21.65 8.60682 21.9426 9.54773C22.2352 10.4886 21.3968 11.4691 19.7199 13.4299L19.2861 13.9372C18.8096 14.4944 18.5713 14.773 18.4641 15.1177C18.357 15.4624 18.393 15.8341 18.465 16.5776L18.5306 17.2544C18.7841 19.8706 18.9109 21.1787 18.1449 21.7602C17.3788 22.3417 16.2273 21.8115 13.9243 20.7512L13.3285 20.4768C12.6741 20.1755 12.3469 20.0248 12 20.0248C11.6531 20.0248 11.3259 20.1755 10.6715 20.4768L10.0757 20.7512C7.77268 21.8115 6.62118 22.3417 5.85515 21.7602C5.08912 21.1787 5.21588 19.8706 5.4694 17.2544L5.53498 16.5776C5.60703 15.8341 5.64305 15.4624 5.53586 15.1177C5.42868 14.773 5.19043 14.4944 4.71392 13.9372L4.2801 13.4299C2.60325 11.4691 1.76482 10.4886 2.05742 9.54773C2.35002 8.60682 3.57986 8.32856 6.03954 7.77203L6.67589 7.62805C7.37485 7.4699 7.72433 7.39083 8.00494 7.17781C8.28555 6.96479 8.46553 6.64194 8.82547 5.99623L9.15316 5.40838Z"
+                                                            stroke="currentColor" stroke-width="1.5"></path>
+                                                    </svg>
+                                                    <% } %>
+                                                </div>
+                                            </td>
+                                            <td><span class="badge badge-outline-<%= randomColor %>"><%= randomStatus %></span></td>
+                                        </tr>
+                                    <% }); %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4 text-gray-500">Aucun enregistrement trouvé</td>
+                                    </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div
+                        class="dataTable-bottom mt-4 flex items-center justify-between border-t pt-4 dark:border-gray-700">
+                        <div class="dataTable-info text-gray-500 dark:text-gray-400">Affichage de <%= records ? records.length : 0 %> enregistrements</div>
+                        <nav class="dataTable-pagination">
+                            <ul class="inline-flex items-center space-x-1">
+                                <li><button
+                                        class="flex justify-center font-semibold p-2 rounded-full transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:opacity-50"
+                                        disabled>&laquo;</button></li>
+                                <li><button
+                                        class="flex justify-center font-semibold px-3.5 py-2 rounded-full transition bg-primary text-white dark:bg-primary dark:text-white-light">1</button>
+                                </li>
+                                <li><button
+                                        class="flex justify-center font-semibold p-2 rounded-full transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary">&raquo;</button>
+                                </li>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- end main content section -->
+</div>
+</div>
+
 <script>
-            document.addEventListener('alpine:init', () => {
-                // main section
-                Alpine.data('scrollToTop', () => ({
-                    showTopButton: false,
-                    init() {
-                        window.onscroll = () => {
-                            this.scrollFunction();
-                        };
-                    },
-
-                    scrollFunction() {
-                        if (document.body.scrollTop > 50 || document.documentElement.scrollTop > 50) {
-                            this.showTopButton = true;
-                        } else {
-                            this.showTopButton = false;
-                        }
-                    },
-
-                    goToTop() {
-                        document.body.scrollTop = 0;
-                        document.documentElement.scrollTop = 0;
-                    },
-                }));
-
-                // theme customization
-                Alpine.data('customizer', () => ({
-                    showCustomizer: false,
-                }));
-
-                // sidebar section
-                Alpine.data('sidebar', () => ({
-                    init() {
-                        const selector = document.querySelector('.sidebar ul a[href="' + window.location.pathname + '"]');
-                        if (selector) {
-                            selector.classList.add('active');
-                            const ul = selector.closest('ul.sub-menu');
-                            if (ul) {
-                                let ele = ul.closest('li.menu').querySelectorAll('.nav-link');
-                                if (ele) {
-                                    ele = ele[0];
-                                    setTimeout(() => {
-                                        ele.click();
-                                    });
-                                }
-                            }
-                        }
-                    },
-                }));
-
-                // header section
-                Alpine.data('header', () => ({
-                    init() {
-                        const selector = document.querySelector('ul.horizontal-menu a[href="' + window.location.pathname + '"]');
-                        if (selector) {
-                            selector.classList.add('active');
-                            const ul = selector.closest('ul.sub-menu');
-                            if (ul) {
-                                let ele = ul.closest('li.menu').querySelectorAll('.nav-link');
-                                if (ele) {
-                                    ele = ele[0];
-                                    setTimeout(() => {
-                                        ele.classList.add('active');
-                                    });
-                                }
-                            }
-                        }
-                    },
-
-                    notifications: [
-                        {
-                            id: 1,
-                            profile: 'user-profile.jpeg',
-                            message: '<strong class="text-sm mr-1">John Doe</strong>invite you to <strong>Prototyping</strong>',
-                            time: '45 min ago',
-                        },
-                        {
-                            id: 2,
-                            profile: 'profile-34.jpeg',
-                            message: '<strong class="text-sm mr-1">Adam Nolan</strong>mentioned you to <strong>UX Basics</strong>',
-                            time: '9h Ago',
-                        },
-                        {
-                            id: 3,
-                            profile: 'profile-16.jpeg',
-                            message: '<strong class="text-sm mr-1">Anna Morgan</strong>Upload a file',
-                            time: '9h Ago',
-                        },
-                    ],
-
-                    messages: [
-                        {
-                            id: 1,
-                            image: '<span class="grid place-content-center w-9 h-9 rounded-full bg-success-light dark:bg-success text-success dark:text-success-light"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></span>',
-                            title: 'Congratulations!',
-                            message: 'Your OS has been updated.',
-                            time: '1hr',
-                        },
-                        {
-                            id: 2,
-                            image: '<span class="grid place-content-center w-9 h-9 rounded-full bg-info-light dark:bg-info text-info dark:text-info-light"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>',
-                            title: 'Did you know?',
-                            message: 'You can switch between artboards.',
-                            time: '2hr',
-                        },
-                        {
-                            id: 3,
-                            image: '<span class="grid place-content-center w-9 h-9 rounded-full bg-danger-light dark:bg-danger text-danger dark:text-danger-light"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>',
-                            title: 'Something went wrong!',
-                            message: 'Send Reposrt',
-                            time: '2days',
-                        },
-                        {
-                            id: 4,
-                            image: '<span class="grid place-content-center w-9 h-9 rounded-full bg-warning-light dark:bg-warning text-warning dark:text-warning-light"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">    <circle cx="12" cy="12" r="10"></circle>    <line x1="12" y1="8" x2="12" y2="12"></line>    <line x1="12" y1="16" x2="12.01" y2="16"></line></svg></span>',
-                            title: 'Warning',
-                            message: 'Your password strength is low.',
-                            time: '5days',
-                        },
-                    ],
-
-                    languages: [
-                        {
-                            id: 1,
-                            key: 'Chinese',
-                            value: 'zh',
-                        },
-                        {
-                            id: 2,
-                            key: 'Danish',
-                            value: 'da',
-                        },
-                        {
-                            id: 3,
-                            key: 'English',
-                            value: 'en',
-                        },
-                        {
-                            id: 4,
-                            key: 'French',
-                            value: 'fr',
-                        },
-                        {
-                            id: 5,
-                            key: 'German',
-                            value: 'de',
-                        },
-                        {
-                            id: 6,
-                            key: 'Greek',
-                            value: 'el',
-                        },
-                        {
-                            id: 7,
-                            key: 'Hungarian',
-                            value: 'hu',
-                        },
-                        {
-                            id: 8,
-                            key: 'Italian',
-                            value: 'it',
-                        },
-                        {
-                            id: 9,
-                            key: 'Japanese',
-                            value: 'ja',
-                        },
-                        {
-                            id: 10,
-                            key: 'Polish',
-                            value: 'pl',
-                        },
-                        {
-                            id: 11,
-                            key: 'Portuguese',
-                            value: 'pt',
-                        },
-                        {
-                            id: 12,
-                            key: 'Russian',
-                            value: 'ru',
-                        },
-                        {
-                            id: 13,
-                            key: 'Spanish',
-                            value: 'es',
-                        },
-                        {
-                            id: 14,
-                            key: 'Swedish',
-                            value: 'sv',
-                        },
-                        {
-                            id: 15,
-                            key: 'Turkish',
-                            value: 'tr',
-                        },
-                    ],
-
-                    removeNotification(value) {
-                        this.notifications = this.notifications.filter((d) => d.id !== value);
-                    },
-
-                    removeMessage(value) {
-                        this.messages = this.messages.filter((d) => d.id !== value);
-                    },
-                }));
-
-                Alpine.data('basic', () => ({
-                    datatable: null,
-                    countryList: [
-                        {
-                            code: 'AE',
-                            name: 'United Arab Emirates',
-                        },
-                        {
-                            code: 'AR',
-                            name: 'Argentina',
-                        },
-                        {
-                            code: 'AT',
-                            name: 'Austria',
-                        },
-                        {
-                            code: 'AU',
-                            name: 'Australia',
-                        },
-                        {
-                            code: 'BE',
-                            name: 'Belgium',
-                        },
-                        {
-                            code: 'BG',
-                            name: 'Bulgaria',
-                        },
-                        {
-                            code: 'BN',
-                            name: 'Brunei',
-                        },
-                        {
-                            code: 'BR',
-                            name: 'Brazil',
-                        },
-                        {
-                            code: 'BY',
-                            name: 'Belarus',
-                        },
-                        {
-                            code: 'CA',
-                            name: 'Canada',
-                        },
-                        {
-                            code: 'CH',
-                            name: 'Switzerland',
-                        },
-                        {
-                            code: 'CL',
-                            name: 'Chile',
-                        },
-                        {
-                            code: 'CN',
-                            name: 'China',
-                        },
-                        {
-                            code: 'CO',
-                            name: 'Colombia',
-                        },
-                        {
-                            code: 'CZ',
-                            name: 'Czech Republic',
-                        },
-                        {
-                            code: 'DE',
-                            name: 'Germany',
-                        },
-                        {
-                            code: 'DK',
-                            name: 'Denmark',
-                        },
-                        {
-                            code: 'DZ',
-                            name: 'Algeria',
-                        },
-                        {
-                            code: 'EC',
-                            name: 'Ecuador',
-                        },
-                        {
-                            code: 'EG',
-                            name: 'Egypt',
-                        },
-                        {
-                            code: 'ES',
-                            name: 'Spain',
-                        },
-                        {
-                            code: 'FI',
-                            name: 'Finland',
-                        },
-                        {
-                            code: 'FR',
-                            name: 'France',
-                        },
-                        {
-                            code: 'GB',
-                            name: 'United Kingdom',
-                        },
-                        {
-                            code: 'GR',
-                            name: 'Greece',
-                        },
-                        {
-                            code: 'HK',
-                            name: 'Hong Kong',
-                        },
-                        {
-                            code: 'HR',
-                            name: 'Croatia',
-                        },
-                        {
-                            code: 'HU',
-                            name: 'Hungary',
-                        },
-                        {
-                            code: 'ID',
-                            name: 'Indonesia',
-                        },
-                        {
-                            code: 'IE',
-                            name: 'Ireland',
-                        },
-                        {
-                            code: 'IL',
-                            name: 'Israel',
-                        },
-                        {
-                            code: 'IN',
-                            name: 'India',
-                        },
-                        {
-                            code: 'IT',
-                            name: 'Italy',
-                        },
-                        {
-                            code: 'JO',
-                            name: 'Jordan',
-                        },
-                        {
-                            code: 'JP',
-                            name: 'Japan',
-                        },
-                        {
-                            code: 'KE',
-                            name: 'Kenya',
-                        },
-                        {
-                            code: 'KH',
-                            name: 'Cambodia',
-                        },
-                        {
-                            code: 'KR',
-                            name: 'South Korea',
-                        },
-                        {
-                            code: 'KZ',
-                            name: 'Kazakhstan',
-                        },
-                        {
-                            code: 'LA',
-                            name: 'Laos',
-                        },
-                        {
-                            code: 'LK',
-                            name: 'Sri Lanka',
-                        },
-                        {
-                            code: 'MA',
-                            name: 'Morocco',
-                        },
-                        {
-                            code: 'MM',
-                            name: 'Myanmar',
-                        },
-                        {
-                            code: 'MO',
-                            name: 'Macau',
-                        },
-                        {
-                            code: 'MX',
-                            name: 'Mexico',
-                        },
-                        {
-                            code: 'MY',
-                            name: 'Malaysia',
-                        },
-                        {
-                            code: 'NG',
-                            name: 'Nigeria',
-                        },
-                        {
-                            code: 'NL',
-                            name: 'Netherlands',
-                        },
-                        {
-                            code: 'NO',
-                            name: 'Norway',
-                        },
-                        {
-                            code: 'NZ',
-                            name: 'New Zealand',
-                        },
-                        {
-                            code: 'PE',
-                            name: 'Peru',
-                        },
-                        {
-                            code: 'PH',
-                            name: 'Philippines',
-                        },
-                        {
-                            code: 'PK',
-                            name: 'Pakistan',
-                        },
-                        {
-                            code: 'PL',
-                            name: 'Poland',
-                        },
-                        {
-                            code: 'PT',
-                            name: 'Portugal',
-                        },
-                        {
-                            code: 'QA',
-                            name: 'Qatar',
-                        },
-                        {
-                            code: 'RO',
-                            name: 'Romania',
-                        },
-                        {
-                            code: 'RS',
-                            name: 'Serbia',
-                        },
-                        {
-                            code: 'RU',
-                            name: 'Russia',
-                        },
-                        {
-                            code: 'SA',
-                            name: 'Saudi Arabia',
-                        },
-                        {
-                            code: 'SE',
-                            name: 'Sweden',
-                        },
-                        {
-                            code: 'SG',
-                            name: 'Singapore',
-                        },
-                        {
-                            code: 'SK',
-                            name: 'Slovakia',
-                        },
-                        {
-                            code: 'TH',
-                            name: 'Thailand',
-                        },
-                        {
-                            code: 'TN',
-                            name: 'Tunisia',
-                        },
-                        {
-                            code: 'TR',
-                            name: 'Turkey',
-                        },
-                        {
-                            code: 'TW',
-                            name: 'Taiwan',
-                        },
-                        {
-                            code: 'UK',
-                            name: 'Ukraine',
-                        },
-                        {
-                            code: 'UG',
-                            name: 'Uganda',
-                        },
-                        {
-                            code: 'US',
-                            name: 'United States',
-                        },
-                        {
-                            code: 'VN',
-                            name: 'Vietnam',
-                        },
-                        {
-                            code: 'ZA',
-                            name: 'South Africa',
-                        },
-                        {
-                            code: 'BA',
-                            name: 'Bosnia and Herzegovina',
-                        },
-                        {
-                            code: 'BD',
-                            name: 'Bangladesh',
-                        },
-                        {
-                            code: 'EE',
-                            name: 'Estonia',
-                        },
-                        {
-                            code: 'IQ',
-                            name: 'Iraq',
-                        },
-                        {
-                            code: 'LU',
-                            name: 'Luxembourg',
-                        },
-                        {
-                            code: 'LV',
-                            name: 'Latvia',
-                        },
-                        {
-                            code: 'MK',
-                            name: 'North Macedonia',
-                        },
-                        {
-                            code: 'SI',
-                            name: 'Slovenia',
-                        },
-                        {
-                            code: 'PA',
-                            name: 'Panama',
-                        },
-                    ],
-                    init() {
-                        this.datatable = new simpleDatatables.DataTable('#myTable', {
-                            data: {
-                                headings: ['ID', 'User', 'Country', 'Email', 'Progress', 'Phone', "<div class='text-center'>Rate</div>", 'Progress', 'Status'],
-                                data: [
-                                    [1, 'Caroline Jensen', '', 'carolinejensen@zidant.com', 39, '+1 (821) 447-3782', '', '', ''],
-                                    [2, 'Celeste Grant', '', 'celestegrant@polarax.com', 32, '+1 (838) 515-3408', '', '', ''],
-                                    [3, 'Tillman Forbes', '', 'tillmanforbes@manglo.com', 26, '+1 (969) 496-2892', '', '', ''],
-                                    [4, 'Daisy Whitley', '', 'daisywhitley@applideck.com', 21, '+1 (861) 564-2877', '', '', ''],
-                                    [5, 'Weber Bowman', '', 'weberbowman@volax.com', 26, '+1 (962) 466-3483', '', '', ''],
-                                    [6, 'Buckley Townsend', '', 'buckleytownsend@orbaxter.com', 40, '+1 (884) 595-2643', '', '', ''],
-                                    [7, 'Latoya Bradshaw', '', 'latoyabradshaw@opportech.com', 24, '+1 (906) 474-3155', '', '', ''],
-                                    [8, 'Kate Lindsay', '', 'katelindsay@gorganic.com', 24, '+1 (930) 546-2952', '', '', ''],
-                                    [9, 'Marva Sandoval', '', 'marvasandoval@avit.com', 28, '+1 (927) 566-3600', '', '', ''],
-                                    [10, 'Decker Russell', '', 'deckerrussell@quilch.com', 27, '+1 (846) 535-3283', '', '', ''],
-                                    [11, 'Odom Mills', '', 'odommills@memora.com', 34, '+1 (995) 525-3402', '', '', ''],
-                                    [12, 'Sellers Walters', '', 'sellerswalters@zorromop.com', 28, '+1 (830) 430-3157', '', '', ''],
-                                    [13, 'Wendi Powers', '', 'wendipowers@orboid.com', 31, '+1 (863) 457-2088', '', '', ''],
-                                    [14, 'Sophie Horn', '', 'sophiehorn@snorus.com', 22, '+1 (885) 418-3948', '', '', ''],
-                                    [15, 'Levine Rodriquez', '', 'levinerodriquez@xth.com', 27, '+1 (999) 565-3239', '', '', ''],
-                                    [16, 'Little Hatfield', '', 'littlehatfield@comtract.com', 33, '+1 (812) 488-3011', '', '', ''],
-                                    [17, 'Larson Kelly', '', 'larsonkelly@zidant.com', 20, '+1 (892) 484-2162', '', '', ''],
-                                    [18, 'Kendra Molina', '', 'kendramolina@sureplex.com', 31, '+1 (920) 528-3330', '', '', ''],
-                                    [19, 'Ebony Livingston', '', 'ebonylivingston@danja.com', 33, '+1 (970) 591-3039', '', '', ''],
-                                    [20, 'Kaufman Rush', '', 'kaufmanrush@euron.com', 39, '+1 (924) 463-2934', '', '', ''],
-                                    [21, 'Frank Hays', '', 'frankhays@illumity.com', 31, '+1 (930) 577-2670', '', '', ''],
-                                    [22, 'Carmella Mccarty', '', 'carmellamccarty@sybixtex.com', 21, '+1 (876) 456-3218', '', '', ''],
-                                    [23, 'Massey Owen', '', 'masseyowen@zedalis.com', 40, '+1 (917) 567-3786', '', '', ''],
-                                    [24, 'Lottie Lowery', '', 'lottielowery@dyno.com', 36, '+1 (912) 539-3498', '', '', ''],
-                                    [25, 'Addie Luna', '', 'addieluna@multiflex.com', 32, '+1 (962) 537-2981', '', '', ''],
-                                ],
-                            },
-                            searchable: true,
-                            perPage: 10,
-                            perPageSelect: [10, 20, 30, 50, 100],
-                            columns: [
-                                {
-                                    select: 0,
-                                    render: (data, cell, row) => {
-                                        return `<strong class="text-info">#${data}</strong>`;
-                                    },
-                                },
-                                {
-                                    select: 1,
-                                    render: (data, cell, row) => {
-                                        return `<div class="flex items-center gap-2">
-                                                <img src="assets/images/profile-${this.getRandomNumber(
-                                                    1,
-                                                    34
-                                                )}.jpeg" class="w-9 h-9 rounded-full max-w-none" alt="user-profile" />
-                                                <div class="font-semibold">${data}</div>
-                                        </div>`;
-                                    },
-                                },
-                                {
-                                    select: 2,
-                                    render: (data, cell, row) => {
-                                        return `<div class="flex items-center gap-2">
-                                            <img width="24" src="assets/images/flags/${this.getCountry().code}.svg" class="max-w-none" alt="user profile" />
-                                            <div>${this.getCountry().name}</div>
-                                        </div>`;
-                                    },
-                                    sortable: false,
-                                },
-                                {
-                                    select: 3,
-                                    render: (data, cell, row) => {
-                                        return `<a href="mailto:${data}" class="text-primary hover:underline">${data}</a>`;
-                                    },
-                                },
-                                {
-                                    select: 4,
-                                    render: (data, cell, row) => {
-                                        return `<div class="w-4/5 min-w-[100px] h-2.5 bg-[#ebedf2] dark:bg-dark/40 rounded-full flex">
-                                            <div class="h-2.5 rounded-full rounded-bl-full text-center text-white text-xs bg-${this.randomStatusColor()}" style="width:${this.getRandomNumber(
-                                            15,
-                                            100
-                                        )}%"></div>
-                                        </div>`;
-                                    },
-                                    sortable: false,
-                                },
-                                {
-                                    select: 6,
-                                    render: (data, cell, row) => {
-                                        let str = '<div class="flex items-center justify-center text-warning">';
-                                        for (let i = 0; i < this.getRandomNumber(1, 5); i++) {
-                                            str += `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-warning">
-                                                <path d="M9.15316 5.40838C10.4198 3.13613 11.0531 2 12 2C12.9469 2 13.5802 3.13612 14.8468 5.40837L15.1745 5.99623C15.5345 6.64193 15.7144 6.96479 15.9951 7.17781C16.2757 7.39083 16.6251 7.4699 17.3241 7.62805L17.9605 7.77203C20.4201 8.32856 21.65 8.60682 21.9426 9.54773C22.2352 10.4886 21.3968 11.4691 19.7199 13.4299L19.2861 13.9372C18.8096 14.4944 18.5713 14.773 18.4641 15.1177C18.357 15.4624 18.393 15.8341 18.465 16.5776L18.5306 17.2544C18.7841 19.8706 18.9109 21.1787 18.1449 21.7602C17.3788 22.3417 16.2273 21.8115 13.9243 20.7512L13.3285 20.4768C12.6741 20.1755 12.3469 20.0248 12 20.0248C11.6531 20.0248 11.3259 20.1755 10.6715 20.4768L10.0757 20.7512C7.77268 21.8115 6.62118 22.3417 5.85515 21.7602C5.08912 21.1787 5.21588 19.8706 5.4694 17.2544L5.53498 16.5776C5.60703 15.8341 5.64305 15.4624 5.53586 15.1177C5.42868 14.773 5.19043 14.4944 4.71392 13.9372L4.2801 13.4299C2.60325 11.4691 1.76482 10.4886 2.05742 9.54773C2.35002 8.60682 3.57986 8.32856 6.03954 7.77203L6.67589 7.62805C7.37485 7.4699 7.72433 7.39083 8.00494 7.17781C8.28555 6.96479 8.46553 6.64194 8.82547 5.99623L9.15316 5.40838Z" stroke="currentColor" stroke-width="1.5" />
-                                            </svg>`;
-                                        }
-                                        str += '</div>';
-                                        return str;
-                                    },
-                                    sortable: false,
-                                },
-                                {
-                                    select: 7,
-                                    render: (data, cell, row) => {
-                                        return `<div style="width: 150px"> <div class="progress-chart"></div></div>`;
-                                    },
-                                    sortable: false,
-                                },
-                                {
-                                    select: 8,
-                                    render: (data, cell, row) => {
-                                        return `<span class="badge badge-outline-${this.randomStatusColor()}">${this.randomStatus()}</span>`;
-                                    },
-                                    sortable: false,
-                                },
-                            ],
-                            firstLast: true,
-                            firstText:
-                                '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5 rtl:rotate-180"> <path d="M13 19L7 12L13 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/> <path opacity="0.5" d="M16.9998 19L10.9998 12L16.9998 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/> </svg>',
-                            lastText:
-                                '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5 rtl:rotate-180"> <path d="M11 19L17 12L11 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/> <path opacity="0.5" d="M6.99976 19L12.9998 12L6.99976 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/> </svg>',
-                            prevText:
-                                '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5 rtl:rotate-180"> <path d="M15 5L9 12L15 19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/> </svg>',
-                            nextText:
-                                '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5 rtl:rotate-180"> <path d="M9 5L15 12L9 19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/> </svg>',
-                            labels: {
-                                perPage: '{select}',
-                            },
-                            layout: {
-                                top: '{search}',
-                                bottom: '{info}{select}{pager}',
-                            },
-                        });
-
-                        this.datatable.on('datatable.sort', () => {
-                            this.initChart();
-                        });
-
-                        this.datatable.on('datatable.page', () => {
-                            this.initChart();
-                        });
-
-                        this.datatable.on('datatable.perpage', () => {
-                            this.initChart();
-                        });
-
-                        setTimeout(() => {
-                            this.initChart();
-                        }, 300);
-                    },
-
-                    initChart() {
-                        const ele = document.querySelectorAll('.progress-chart');
-                        let chart = [];
-                        for (let i = 0; i < ele.length; i++) {
-                            ele[i].innerHTML = '';
-                            chart[i] = new ApexCharts(ele[i], this.chart_options);
-                            chart[i].render();
-                        }
-                    },
-
-                    get chart_options() {
-                        let option = {
-                            series: [
-                                {
-                                    data: [21, 9, 36, 12, 44, 25, 59],
-                                },
-                            ],
-                            chart: {
-                                type: 'line',
-                                height: 30,
-                                sparkline: {
-                                    enabled: true,
-                                },
-                            },
-                            stroke: {
-                                curve: 'smooth',
-                                width: 2,
-                            },
-                            markers: {
-                                size: [4, 7],
-                                strokeWidth: 0,
-                            },
-                            colors: [this.randomColor()],
-                            grid: {
-                                padding: {
-                                    top: 5,
-                                    bottom: 5,
-                                },
-                            },
-                            tooltip: {
-                                x: {
-                                    show: false,
-                                },
-                                y: {
-                                    title: {
-                                        formatter: () => {
-                                            return '';
-                                        },
-                                    },
-                                },
-                            },
-                        };
-                        return option;
-                    },
-
-                    randomColor() {
-                        const color = ['#4361ee', '#805dca', '#00ab55', '#e7515a', '#e2a03f', '#2196f3'];
-                        const random = Math.floor(Math.random() * color.length);
-                        return color[random];
-                    },
-
-                    randomStatusColor() {
-                        const color = ['primary', 'secondary', 'success', 'danger', 'warning', 'info'];
-                        const random = Math.floor(Math.random() * color.length);
-                        return color[random];
-                    },
-
-                    randomStatus() {
-                        const status = ['PAID', 'APPROVED', 'FAILED', 'CANCEL', 'SUCCESS', 'PENDING', 'COMPLETE'];
-                        const random = Math.floor(Math.random() * status.length);
-                        return status[random];
-                    },
-
-                    getRandomNumber(min, max) {
-                        return Math.floor(Math.random() * (max - min + 1)) + min;
-                    },
-
-                    getCountry() {
-                        const random = Math.floor(Math.random() * this.countryList.length);
-                        return this.countryList[random];
-                    },
-                }));
-            });
-        </script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('chat', () => ({
+            isShowChatMenu: false,
+            selectedTab: 'all',
+            
+            tabChanged(tab) {
+                this.selectedTab = tab;
+            },
+            
+            editNote() {
+                // Add new record action
+                console.log('Add new record');
+            }
+        }));
+    });
+</script>

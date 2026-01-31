@@ -11,7 +11,68 @@
 ]);
 %>
 
+<style>
+.field-tag {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.5rem !important;  /* py-0 px-2 */
+  background-color: rgba(var(--warning-rgb, 251 191 36) / 0.2);
+  border: 1px solid rgba(var(--warning-rgb, 251 191 36) / 0.4);
+  border-radius: 9999px;  /* rounded-full */
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgb(var(--warning-rgb, 251 191 36));
+  user-select: all;
+  cursor: default;
+  vertical-align: middle;
+  line-height: 1.5 !important;  /* Control line height */
+  height: auto !important;  /* Allow py-0 to work */
+}
+
+.field-tag:hover {
+  background-color: rgba(var(--warning-rgb, 251 191 36) / 0.3);
+}
+
+.field-tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  margin-left: 0.125rem;
+}
+
+.field-tag-remove:hover {
+  opacity: 1;
+  color: #ef4444;
+}
+
+/* Ensure field-tag inside contenteditable has correct padding */
+[contenteditable] .field-tag {
+  padding: 0 0.5rem !important;
+}
+</style>
+
 <script>
+  // Global function to remove field tag from contenteditable
+  window.removeFieldTag = function(removeBtn) {
+    const fieldTag = removeBtn.closest('.field-tag');
+    if (fieldTag) {
+      const editor = fieldTag.closest('[contenteditable]');
+      const tokenIndex = parseInt(fieldTag.getAttribute('data-token-index'));
+      
+      // Remove the element from DOM
+      fieldTag.remove();
+      
+      // Trigger input event to sync tokens
+      if (editor) {
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+  };
+
   document.addEventListener("alpine:init", () => {
     Alpine.data("collectionsManager", () => ({
       // DataTable
@@ -59,9 +120,23 @@
         description: '',
         icon: '',
         color: '',
+        image: '',
         active: true,
-        standardFields: { title: true, slug: false, date: false }
+        referenceField: 'title', // For backward compatibility
+        referenceTitleTokens: [{ t: 'field', id: 'title' }], // Token-based format
+        standardFields: { 
+          title: true, 
+          description: true, 
+          icon: true,
+          attachments: true,
+          image: true,
+          slug: true,
+          date: true
+        }
       },
+      
+      // UI state
+      showDescSlug: false,
       
       // Computed: filtered categories based on search
       get filteredCategories() {
@@ -104,6 +179,160 @@
           advanced: 'solar:code-bold-duotone'
         };
         return icons[key] || 'solar:widget-bold-duotone';
+      },
+      
+      getFieldIcon(fieldId) {
+        // Check system fields first
+        const icons = {
+          title: 'solar:text-bold-duotone',
+          description: 'solar:document-text-bold-duotone',
+          icon: 'solar:star-bold-duotone',
+          attachments: 'solar:paperclip-bold-duotone',
+          image: 'solar:gallery-bold-duotone',
+          slug: 'solar:link-bold-duotone',
+          date: 'solar:calendar-bold-duotone'
+        };
+        
+        if (icons[fieldId]) return icons[fieldId];
+        
+        // Check custom fields
+        const customField = this.selectedFields.find(f => f._id === fieldId);
+        if (customField) return customField.icon || 'solar:widget-bold-duotone';
+        
+        return 'solar:widget-bold-duotone';
+      },
+      
+      getFieldLabel(fieldId) {
+        // Check system fields first
+        const labels = {
+          title: 'Titre',
+          description: 'Description',
+          icon: 'Icône',
+          attachments: 'Pièces jointes',
+          image: 'Image',
+          slug: 'Slug',
+          date: 'Date'
+        };
+        
+        if (labels[fieldId]) return labels[fieldId];
+        
+        // Check custom fields
+        const customField = this.selectedFields.find(f => f._id === fieldId);
+        if (customField) return customField.label || customField.name || fieldId;
+        
+        return fieldId;
+      },
+      
+      handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+          // Store file for form submit
+          this.newCollection.imageFile = file;
+          // Create preview URL
+          this.newCollection.image = URL.createObjectURL(file);
+        }
+      },
+      
+      // Token-based reference title methods
+      addFieldToken() {
+        const fieldId = this.newCollection.referenceField;
+        const editor = this.$refs.formatEditor;
+        
+        // FIRST: Sync tokens from current DOM state before doing anything
+        if (editor) {
+          const tokens = [];
+          editor.childNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('field-tag')) {
+              const fid = node.getAttribute('data-field-id');
+              tokens.push({ t: 'field', id: fid });
+            } else if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+              tokens.push({ t: 'text', v: node.textContent });
+            }
+          });
+          this.newCollection.referenceTitleTokens = tokens;
+        }
+        
+        // Check if there are any existing field tokens
+        const hasFieldTokens = this.newCollection.referenceTitleTokens.some(token => token.t === 'field');
+        
+        // Add space before if there are existing field tokens
+        if (hasFieldTokens) {
+          this.newCollection.referenceTitleTokens.push({ t: 'text', v: ' ' });
+        }
+        
+        // Add field token
+        this.newCollection.referenceTitleTokens.push({ t: 'field', id: fieldId });
+        
+        // Force re-render of contenteditable
+        this.$nextTick(() => {
+          if (editor) {
+            editor.innerHTML = this.renderTokensAsHTML();
+          }
+        });
+      },
+      
+      removeToken(index) {
+        this.newCollection.referenceTitleTokens.splice(index, 1);
+        
+        // Clean up orphaned spaces
+        const tokens = this.newCollection.referenceTitleTokens;
+        for (let i = tokens.length - 1; i >= 0; i--) {
+          if (tokens[i].t === 'text' && tokens[i].v === ' ') {
+            // Remove space if it's at start, end, or next to another space
+            if (i === 0 || i === tokens.length - 1 || 
+                (tokens[i-1] && tokens[i-1].t === 'text' && tokens[i-1].v === ' ')) {
+              tokens.splice(i, 1);
+            }
+          }
+        }
+      },
+      
+      getFormatString() {
+        return this.newCollection.referenceTitleTokens.map(token => {
+          if (token.t === 'field') {
+            return `{{${token.id}}}`;
+          }
+          return token.v || '';
+        }).join('');
+      },
+      
+      getDerivedFields() {
+        return this.newCollection.referenceTitleTokens
+          .filter(token => token.t === 'field')
+          .map(token => token.id);
+      },
+      
+      // Parse contenteditable content and update tokens
+      syncTokensFromEditor(event) {
+        const editor = event.target;
+        const tokens = [];
+        
+        // Iterate through child nodes
+        editor.childNodes.forEach(node => {
+          if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('field-tag')) {
+            // Field token
+            const fieldId = node.getAttribute('data-field-id');
+            tokens.push({ t: 'field', id: fieldId });
+          } else if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+            // Text token
+            tokens.push({ t: 'text', v: node.textContent });
+          }
+        });
+        
+        // Allow empty tokens array instead of forcing default to 'title'
+        this.newCollection.referenceTitleTokens = tokens;
+      },
+      
+      // Render tokens as contenteditable HTML
+      renderTokensAsHTML() {
+        return this.newCollection.referenceTitleTokens.map((token, idx) => {
+          if (token.t === 'field') {
+            const icon = this.getFieldIcon(token.id);
+            const label = this.getFieldLabel(token.id);
+            return `<span class="field-tag" data-field-id="${token.id}" data-token-index="${idx}" contenteditable="false"><iconify-icon icon="${icon}" width="12"></iconify-icon> ${label}<span class="field-tag-remove" onclick="window.removeFieldTag(this)"><iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon></span></span>`;
+          }
+          return token.v || '';
+        }).join('');
       },
       
       async loadSystemFields() {
@@ -158,6 +387,7 @@
           icon: '',
           color: '',
           active: true,
+          referenceTitleTokens: [{ t: 'field', id: 'title' }],
           standardFields: { title: true, slug: false, date: false }
         };
         this.showIconPicker = false;
@@ -191,7 +421,8 @@
               color: this.newCollection.color,
               active: this.newCollection.active,
               enabledStandardFields,
-              customFields: this.selectedFields.map(f => f._id)
+              customFields: this.selectedFields.map(f => f._id),
+              referenceTitleTokens: this.newCollection.referenceTitleTokens
             })
           });
 
@@ -223,6 +454,7 @@
               icon: entity.icon || '',
               color: entity.color || '',
               active: entity.active !== false,
+              referenceTitleTokens: entity.referenceTitleTokens || [{ t: 'field', id: 'title' }],
               standardFields: {
                 title: (entity.enabledStandardFields || []).includes('title'),
                 slug: (entity.enabledStandardFields || []).includes('slug'),
@@ -258,7 +490,8 @@
               color: this.newCollection.color,
               active: this.newCollection.active,
               enabledStandardFields,
-              customFields: this.selectedFields.map(f => f._id || f)
+              customFields: this.selectedFields.map(f => f._id || f),
+              referenceTitleTokens: this.newCollection.referenceTitleTokens
             })
           });
 
@@ -414,101 +647,193 @@
           <!-- STEP 1: Infos de base -->
           <div x-show="step === 1" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
             <!-- Nom -->
-            <div class="relative mb-4">
+            <div class="mb-4">
               <label class="mb-2 block text-sm font-bold">Nom *</label>
-              <input type="text" x-model="newCollection.name" placeholder="Ex: Articles, Clients..." class="form-input w-full" required>
-            </div>
-
-            <!-- Slug -->
-            <div class="relative mb-4">
-              <label class="mb-2 block text-sm font-bold">Slug</label>
-              <input type="text" x-model="newCollection.slug" placeholder="articles, clients..." class="form-input w-full">
+              <input type="text" x-model="newCollection.name" placeholder="Ex: Contacts, Projets, Factures..." class="form-input w-full" required>
             </div>
 
             <!-- Description -->
-            <div class="relative mb-4">
+            <div class="mb-4">
               <label class="mb-2 block text-sm font-bold">Description</label>
               <textarea x-model="newCollection.description" rows="2" placeholder="Description de la collection..." class="form-input w-full resize-none"></textarea>
             </div>
 
-            <!-- Icône -->
-            <div class="relative mb-4">
-              <label class="mb-2 block text-sm font-bold">Icône</label>
-              <div @click="showIconPicker = !showIconPicker" class="flex items-center gap-2 cursor-pointer group">
-                <iconify-icon :icon="newCollection.icon || 'solar:inbox-line-broken'" width="18" :class="newCollection.icon ? 'text-gray-700' : 'text-gray-400'"></iconify-icon>
-                <span class="text-sm flex-1" :class="newCollection.icon ? 'text-gray-700' : 'text-gray-400'" x-text="newCollection.icon || 'Icône personnalisée'"></span>
-                <iconify-icon icon="solar:alt-arrow-down-linear" class="text-gray-400 group-hover:text-primary transition-colors" width="14" :class="showIconPicker && 'rotate-180'" style="transition: transform 0.2s"></iconify-icon>
+            <!-- Slug -->
+            <div class="mb-4">
+              <label class="mb-2 block text-sm font-bold">Slug</label>
+              <input type="text" x-model="newCollection.slug" placeholder="slug-de-la-collection" class="form-input w-full">
+              <p class="text-xs text-gray-400 mt-1">Identifiant unique (généré automatiquement si vide)</p>
+            </div>
+
+            <!-- Visuel: Icône, Couleur, Media -->
+            <div class="mb-5">
+              <label class="mb-3 block text-sm font-bold">Visuel</label>
+              <div class="flex items-center gap-4">
+                <!-- Icône -->
+                <div class="relative">
+                  <button type="button" @click="showIconPicker = !showIconPicker" 
+                          class="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Changer l'icône">
+                    <iconify-icon :icon="newCollection.icon || 'solar:box-bold-duotone'" width="24" :class="newCollection.icon ? 'text-primary' : 'text-gray-400'"></iconify-icon>
+                  </button>
+                  <!-- Icon Picker Dropdown -->
+                  <div x-show="showIconPicker" @click.outside="showIconPicker = false" x-transition
+                       class="absolute top-11 left-0 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border dark:border-gray-700 p-3 w-72">
+                    <div class="flex gap-2 mb-2">
+                      <select x-model="selectedLibrary" @change="loadIcons()" class="form-select text-xs py-1 flex-1">
+                        <option value="solar">Solar</option>
+                        <option value="mdi">Material</option>
+                        <option value="tabler">Tabler</option>
+                      </select>
+                      <input type="text" x-model="iconSearch" @input.debounce.300ms="loadIcons()" placeholder="Rechercher..." class="form-input text-xs py-1 flex-1">
+                    </div>
+                    <div class="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
+                      <template x-for="icon in icons" :key="icon">
+                        <div class="w-8 h-8 rounded cursor-pointer hover:bg-primary/10 flex items-center justify-center"
+                             :class="newCollection.icon === icon && 'bg-primary/20 text-primary'"
+                             @click="newCollection.icon = icon; showIconPicker = false">
+                          <iconify-icon :icon="icon" width="20"></iconify-icon>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Couleur - Rond simple -->
+                <div class="relative">
+                  <button type="button" @click="showColorPicker = !showColorPicker"
+                          class="w-6 h-6 rounded-full hover:scale-110 transition-transform"
+                          :style="newCollection.color ? 'background-color:' + newCollection.color : 'background: linear-gradient(135deg, #06b6d4, #8b5cf6, #ec4899)'"
+                          title="Changer la couleur">
+                  </button>
+                  <!-- Color Picker Dropdown -->
+                  <div x-show="showColorPicker" @click.outside="showColorPicker = false" x-transition
+                       class="absolute top-9 left-0 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border dark:border-gray-700 p-3">
+                    <div class="flex flex-wrap gap-2 w-48">
+                      <template x-for="color in availableColors" :key="color">
+                        <div class="w-7 h-7 rounded-full cursor-pointer hover:scale-110 transition-transform flex items-center justify-center"
+                             :style="'background-color:' + color"
+                             :class="newCollection.color === color && 'ring-2 ring-offset-2 ring-gray-800'"
+                             @click="newCollection.color = color; showColorPicker = false">
+                        </div>
+                      </template>
+                      <div class="relative w-7 h-7 rounded-full cursor-pointer border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden hover:border-gray-400">
+                        <iconify-icon icon="solar:pen-new-square-linear" width="12" class="pointer-events-none text-gray-400"></iconify-icon>
+                        <input type="color" class="absolute inset-0 opacity-0 cursor-pointer" x-model="newCollection.color">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Media - Icône simple -->
+                <label class="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer" title="Ajouter une image">
+                  <iconify-icon icon="solar:gallery-bold-duotone" width="22" class="text-gray-400 hover:text-primary"></iconify-icon>
+                  <input type="file" accept="image/*" class="hidden" @change="handleImageUpload($event)">
+                </label>
               </div>
-              <div x-show="showIconPicker" x-collapse class="mt-3">
-                <div class="relative mb-2 flex gap-2">
-                  <select x-model="selectedLibrary" @change="loadIcons()" class="form-select w-1/3 text-xs py-1.5">
-                    <option value="solar">Solar</option>
-                    <option value="mdi">Material</option>
-                    <option value="tabler">Tabler</option>
+            </div>
+
+            <!-- Champs -->
+            <div class="mb-4">
+              <div class="flex items-center gap-2 mb-3">
+                <iconify-icon icon="solar:layers-bold-duotone" class="text-warning" width="16"></iconify-icon>
+                <label class="text-sm font-bold">Champs</label>
+                <button type="button" @click="step = 2" class="inline-flex items-center gap-1 text-xs text-info hover:text-info/80 transition-colors">
+                  <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
+                  Ajouter
+                </button>
+              </div>
+              
+              <!-- Champs système -->
+              <div class="p-3 border border-warning/30 rounded-lg mb-2">
+                <div class="text-xs text-warning font-medium mb-2 flex items-center gap-1">
+                  <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                  <span x-text="Object.values(newCollection.standardFields).filter(v => v).length + ' champ(s) sélectionné(s)'"></span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  <template x-for="(enabled, field) in newCollection.standardFields" :key="'std-'+field">
+                    <button type="button" 
+                            @click="newCollection.standardFields[field] = !newCollection.standardFields[field]"
+                            class="inline-flex items-center gap-1 px-2 py-0 rounded-full text-xs font-medium border transition-colors"
+                            :class="enabled ? 'bg-warning/10 border-warning/30 text-warning' : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'">
+                      <iconify-icon :icon="getFieldIcon(field)" width="12"></iconify-icon>
+                      <span x-text="getFieldLabel(field)"></span>
+                    </button>
+                  </template>
+                </div>
+              </div>
+              
+              <!-- Champs personnalisés -->
+              <div class="p-3 border border-warning/30 rounded-lg" x-show="selectedFields.length > 0">
+                <div class="text-xs text-warning font-medium mb-2 flex items-center gap-1">
+                  <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                  <span x-text="selectedFields.length + ' champ(s) sélectionné(s)'"></span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  <template x-for="(field, idx) in selectedFields" :key="field._id || idx">
+                    <div class="inline-flex items-center gap-1 px-2 py-0 bg-warning/10 border border-warning/30 rounded-full text-xs font-medium text-warning">
+                      <iconify-icon :icon="field.icon || 'solar:widget-bold'" width="12"></iconify-icon>
+                      <span x-text="field.label || field.name || 'Champ'"></span>
+                      <button type="button" @click="selectedFields.splice(idx, 1)" class="hover:text-red-500">
+                        <iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon>
+                      </button>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <!-- Champ de référence -->
+            <div class="mb-4">
+              <label class="mb-2 block text-sm font-bold">Champ de référence *</label>
+              <p class="text-xs text-gray-400 mb-2">Ce champ sera utilisé comme titre lors des listings, relations, mentions, etc.</p>
+              
+              <div class="flex gap-3">
+                <!-- Select field (50%) -->
+                <div class="flex-1">
+                  <select x-model="newCollection.referenceField" @change="addFieldToken()" class="form-select w-full">
+                    <option value="title">Titre</option>
+                    <template x-for="(enabled, field) in newCollection.standardFields" :key="field">
+                      <template x-if="enabled && field !== 'title'">
+                        <option :value="field" x-text="getFieldLabel(field)"></option>
+                      </template>
+                    </template>
+                    <!-- Custom fields -->
+                    <template x-for="field in selectedFields" :key="field._id">
+                      <option :value="field._id" x-text="field.label || field.name"></option>
+                    </template>
                   </select>
-                  <div class="relative w-2/3">
-                    <input type="text" x-model="iconSearch" @input.debounce.300ms="loadIcons()" placeholder="Rechercher..." class="form-input w-full text-xs pl-8 py-1.5">
-                    <iconify-icon icon="solar:magnifer-linear" class="absolute left-2.5 top-2 text-gray-400" width="14"></iconify-icon>
-                  </div>
                 </div>
-                <div class="flex flex-wrap gap-1 mb-2 max-h-32 overflow-y-auto custom-scrollbar p-1 border rounded dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 content-start">
-                  <template x-for="icon in icons" :key="icon">
-                    <div class="w-8 h-8 rounded cursor-pointer border border-transparent hover:border-primary/50 hover:bg-white dark:hover:bg-gray-700 transition-all flex items-center justify-center shrink-0" :class="newCollection.icon === icon ? '!bg-primary/10 !border-primary text-primary shadow-sm' : 'text-gray-500 dark:text-gray-400'" @click="newCollection.icon = icon; showIconPicker = false" :title="icon">
-                      <iconify-icon :icon="icon" width="20" height="20"></iconify-icon>
-                    </div>
-                  </template>
-                </div>
-              </div>
-            </div>
-
-            <!-- Couleur -->
-            <div class="mb-4">
-              <label class="mb-2 block text-sm font-bold">Couleur</label>
-              <div @click="showColorPicker = !showColorPicker" class="flex items-center gap-2 cursor-pointer group">
-                <iconify-icon icon="solar:pallete-2-bold-duotone" width="18" :style="newCollection.color ? 'color:' + newCollection.color : ''" :class="!newCollection.color && 'text-gray-400'"></iconify-icon>
-                <span class="text-sm flex-1" :class="newCollection.color ? 'text-gray-700' : 'text-gray-400'" x-text="newCollection.color || 'Couleur personnalisée'"></span>
-                <iconify-icon icon="solar:alt-arrow-down-linear" class="text-gray-400 group-hover:text-primary transition-colors" width="14" :class="showColorPicker && 'rotate-180'" style="transition: transform 0.2s"></iconify-icon>
-              </div>
-              <div x-show="showColorPicker" x-collapse class="mt-3">
-                <div class="flex flex-wrap gap-2.5">
-                  <template x-for="color in availableColors" :key="color">
-                    <div class="w-7 h-7 rounded-full cursor-pointer flex items-center justify-center border-2 transition-transform hover:scale-110" :style="'background-color: ' + color + '; border-color: ' + (newCollection.color === color ? 'black' : 'transparent')" @click="newCollection.color = color; showColorPicker = false">
-                      <iconify-icon icon="solar:check-circle-bold" class="text-white" width="14" x-show="newCollection.color === color"></iconify-icon>
-                    </div>
-                  </template>
-                  <div class="relative w-7 h-7 rounded-full cursor-pointer border-2 border-gray-300 flex items-center justify-center overflow-hidden hover:border-gray-400">
-                    <iconify-icon icon="solar:pen-new-square-linear" width="14" class="pointer-events-none text-gray-500"></iconify-icon>
-                    <input type="color" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" x-model="newCollection.color">
+                
+                <!-- Contenteditable Format Field (50%) -->
+                <div class="flex-1">
+                  <div class="form-input w-full text-sm min-h-[38px] p-2 cursor-text focus-within:ring-2 focus-within:ring-primary/50" 
+                       contenteditable="true"
+                       @input="syncTokensFromEditor($event)"
+                       x-init="$el.innerHTML = renderTokensAsHTML()"
+                       x-ref="formatEditor">
                   </div>
-                  <div class="w-7 h-7 rounded-full cursor-pointer flex items-center justify-center border-2 hover:border-gray-400 bg-white text-gray-400" :class="!newCollection.color && 'border-black'" @click="newCollection.color = ''">
-                    <iconify-icon icon="solar:close-circle-linear" width="16"></iconify-icon>
-                  </div>
+                  <label class="text-xs text-gray-500 mt-1 block">Format (cliquez pour éditer)</label>
                 </div>
               </div>
-            </div>
-
-            <!-- Champs standards -->
-            <div class="mb-4">
-              <label class="mb-2 block text-sm font-bold">Champs standards</label>
-              <div class="flex flex-wrap gap-4">
-                <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" x-model="newCollection.standardFields.title" class="form-checkbox text-primary">
-                  <span class="text-sm">Titre</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" x-model="newCollection.standardFields.slug" class="form-checkbox text-primary">
-                  <span class="text-sm">Slug</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" x-model="newCollection.standardFields.date" class="form-checkbox text-primary">
-                  <span class="text-sm">Date</span>
-                </label>
+              
+              <!-- Token tags -->
+              <div class="mt-3 flex flex-wrap gap-1.5" x-show="newCollection.referenceTitleTokens.length > 0">
+                <template x-for="(token, idx) in newCollection.referenceTitleTokens" :key="idx">
+                  <div x-show="token.t === 'field'" class="inline-flex items-center gap-1 px-2 py-0 bg-warning/10 border border-warning/30 rounded-full text-xs font-medium text-warning">
+                    <iconify-icon :icon="getFieldIcon(token.id)" width="12"></iconify-icon>
+                    <span x-text="getFieldLabel(token.id)"></span>
+                    <button type="button" @click="removeToken(idx)" class="hover:text-red-500">
+                      <iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon>
+                    </button>
+                  </div>
+                </template>
               </div>
             </div>
 
             <!-- Active Toggle -->
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-bold">Active</span>
+            <div class="flex items-center justify-between pt-3 border-t dark:border-gray-700">
+              <span class="text-sm text-gray-500">Collection active</span>
               <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" x-model="newCollection.active" class="sr-only peer">
                 <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
@@ -642,102 +967,183 @@
           <!-- STEP 1: Infos de base -->
           <div x-show="step === 1" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
             <!-- Nom -->
-            <div class="relative mb-4">
+            <div class="mb-4">
               <label class="mb-2 block text-sm font-bold">Nom *</label>
-              <input type="text" x-model="newCollection.name" placeholder="Ex: Articles, Clients..." class="form-input w-full" required>
+              <input type="text" x-model="newCollection.name" placeholder="Ex: Contacts, Projets, Factures..." class="form-input w-full" required>
             </div>
 
-            <!-- Slug -->
-            <div class="relative mb-4">
-              <label class="mb-2 block text-sm font-bold">Slug</label>
-              <input type="text" x-model="newCollection.slug" placeholder="articles, clients..." class="form-input w-full" disabled>
-              <p class="text-xs text-gray-400 mt-1">Le slug ne peut pas être modifié</p>
-            </div>
-
-            <!-- Description -->
-            <div class="relative mb-4">
-              <label class="mb-2 block text-sm font-bold">Description</label>
-              <textarea x-model="newCollection.description" rows="2" placeholder="Description de la collection..." class="form-input w-full resize-none"></textarea>
-            </div>
-
-            <!-- Icône -->
-            <div class="relative mb-4">
-              <label class="mb-2 block text-sm font-bold">Icône</label>
-              <div @click="showIconPicker = !showIconPicker" class="flex items-center gap-2 cursor-pointer group">
-                <iconify-icon :icon="newCollection.icon || 'solar:inbox-line-broken'" width="18" :class="newCollection.icon ? 'text-gray-700' : 'text-gray-400'"></iconify-icon>
-                <span class="text-sm flex-1" :class="newCollection.icon ? 'text-gray-700' : 'text-gray-400'" x-text="newCollection.icon || 'Icône personnalisée'"></span>
-                <iconify-icon icon="solar:alt-arrow-down-linear" class="text-gray-400 group-hover:text-primary transition-colors" width="14" :class="showIconPicker && 'rotate-180'" style="transition: transform 0.2s"></iconify-icon>
+            <!-- Description et Slug - Collapsible -->
+            <div class="mb-4">
+              <button type="button" @click="showDescSlug = !showDescSlug" class="mb-2 flex items-center gap-1 text-sm font-bold">
+                <span>Description et Slug</span>
+                <iconify-icon icon="solar:alt-arrow-down-linear" width="14" :class="showDescSlug && 'rotate-180'" style="transition: transform 0.2s"></iconify-icon>
+              </button>
+              <div x-show="showDescSlug" x-collapse class="mt-3 space-y-3">
+                <textarea x-model="newCollection.description" rows="2" placeholder="Description de la collection..." class="form-input w-full resize-none text-sm"></textarea>
+                <div>
+                  <input type="text" x-model="newCollection.slug" placeholder="slug-de-la-collection" class="form-input w-full text-sm bg-gray-50 dark:bg-gray-800" disabled>
+                  <p class="text-xs text-gray-400 mt-1">Le slug ne peut pas être modifié</p>
+                </div>
               </div>
-              <div x-show="showIconPicker" x-collapse class="mt-3">
-                <div class="relative mb-2 flex gap-2">
-                  <select x-model="selectedLibrary" @change="loadIcons()" class="form-select w-1/3 text-xs py-1.5">
-                    <option value="solar">Solar</option>
-                    <option value="mdi">Material</option>
-                    <option value="tabler">Tabler</option>
+            </div>
+
+            <!-- Visuel: Icône, Couleur, Media -->
+            <div class="mb-5">
+              <label class="mb-3 block text-sm font-bold">Visuel</label>
+              <div class="flex items-center gap-4">
+                <!-- Icône -->
+                <div class="relative">
+                  <button type="button" @click="showIconPicker = !showIconPicker" 
+                          class="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Changer l'icône">
+                    <iconify-icon :icon="newCollection.icon || 'solar:box-bold-duotone'" width="24" :class="newCollection.icon ? 'text-primary' : 'text-gray-400'"></iconify-icon>
+                  </button>
+                  <!-- Icon Picker Dropdown -->
+                  <div x-show="showIconPicker" @click.outside="showIconPicker = false" x-transition
+                       class="absolute top-11 left-0 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border dark:border-gray-700 p-3 w-72">
+                    <div class="flex gap-2 mb-2">
+                      <select x-model="selectedLibrary" @change="loadIcons()" class="form-select text-xs py-1 flex-1">
+                        <option value="solar">Solar</option>
+                        <option value="mdi">Material</option>
+                        <option value="tabler">Tabler</option>
+                      </select>
+                      <input type="text" x-model="iconSearch" @input.debounce.300ms="loadIcons()" placeholder="Rechercher..." class="form-input text-xs py-1 flex-1">
+                    </div>
+                    <div class="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
+                      <template x-for="icon in icons" :key="icon">
+                        <div class="w-8 h-8 rounded cursor-pointer hover:bg-primary/10 flex items-center justify-center"
+                             :class="newCollection.icon === icon && 'bg-primary/20 text-primary'"
+                             @click="newCollection.icon = icon; showIconPicker = false">
+                          <iconify-icon :icon="icon" width="20"></iconify-icon>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Couleur - Rond simple -->
+                <div class="relative">
+                  <button type="button" @click="showColorPicker = !showColorPicker"
+                          class="w-7 h-7 rounded-full hover:scale-110 transition-transform"
+                          :style="newCollection.color ? 'background-color:' + newCollection.color : 'background: linear-gradient(135deg, #06b6d4, #8b5cf6, #ec4899)'"
+                          title="Changer la couleur">
+                  </button>
+                  <!-- Color Picker Dropdown -->
+                  <div x-show="showColorPicker" @click.outside="showColorPicker = false" x-transition
+                       class="absolute top-9 left-0 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border dark:border-gray-700 p-3">
+                    <div class="flex flex-wrap gap-2 w-48">
+                      <template x-for="color in availableColors" :key="color">
+                        <div class="w-7 h-7 rounded-full cursor-pointer hover:scale-110 transition-transform flex items-center justify-center"
+                             :style="'background-color:' + color"
+                             :class="newCollection.color === color && 'ring-2 ring-offset-2 ring-gray-800'"
+                             @click="newCollection.color = color; showColorPicker = false">
+                        </div>
+                      </template>
+                      <div class="relative w-7 h-7 rounded-full cursor-pointer border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden hover:border-gray-400">
+                        <iconify-icon icon="solar:pen-new-square-linear" width="12" class="pointer-events-none text-gray-400"></iconify-icon>
+                        <input type="color" class="absolute inset-0 opacity-0 cursor-pointer" x-model="newCollection.color">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Media - Icône simple -->
+                <label class="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer" title="Ajouter une image">
+                  <iconify-icon icon="solar:gallery-bold-duotone" width="22" class="text-gray-400 hover:text-primary"></iconify-icon>
+                  <input type="file" accept="image/*" class="hidden" @change="handleImageUpload($event)">
+                </label>
+              </div>
+            </div>
+
+            <!-- Champs -->
+            <div class="mb-4">
+              <div class="flex items-center gap-2 mb-3">
+                <iconify-icon icon="solar:layers-bold-duotone" class="text-warning" width="16"></iconify-icon>
+                <label class="text-sm font-bold">Champs</label>
+                <button type="button" @click="step = 2" class="inline-flex items-center gap-1 text-xs text-info hover:text-info/80 transition-colors">
+                  <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
+                  Ajouter
+                </button>
+              </div>
+              
+              <!-- Champs système -->
+              <div class="p-3 border border-warning/30 rounded-lg mb-2">
+                <div class="text-xs text-warning font-medium mb-2 flex items-center gap-1">
+                  <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                  <span x-text="Object.values(newCollection.standardFields).filter(v => v).length + ' champ(s) sélectionné(s)'"></span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  <template x-for="(enabled, field) in newCollection.standardFields" :key="'std-'+field">
+                    <button type="button" 
+                            @click="newCollection.standardFields[field] = !newCollection.standardFields[field]"
+                            class="inline-flex items-center gap-1 px-2 py-0 rounded-full text-xs font-medium border transition-colors"
+                            :class="enabled ? 'bg-warning/10 border-warning/30 text-warning' : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'">
+                      <iconify-icon :icon="getFieldIcon(field)" width="12"></iconify-icon>
+                      <span x-text="getFieldLabel(field)"></span>
+                    </button>
+                  </template>
+                </div>
+              </div>
+              
+              <!-- Champs personnalisés -->
+              <div class="p-3 border border-warning/30 rounded-lg" x-show="selectedFields.length > 0">
+                <div class="text-xs text-warning font-medium mb-2 flex items-center gap-1">
+                  <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                  <span x-text="selectedFields.length + ' champ(s) sélectionné(s)'"></span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  <template x-for="(field, idx) in selectedFields" :key="field._id || idx">
+                    <div class="inline-flex items-center gap-1 px-2 py-0 bg-warning/10 border border-warning/30 rounded-full text-xs font-medium text-warning">
+                      <iconify-icon :icon="field.icon || 'solar:widget-bold'" width="12"></iconify-icon>
+                      <span x-text="field.label || field.name || 'Champ'"></span>
+                      <button type="button" @click="selectedFields.splice(idx, 1)" class="hover:text-red-500">
+                        <iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon>
+                      </button>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <!-- Champ de référence -->
+            <div class="mb-4">
+              <label class="mb-2 block text-sm font-bold">Champ de référence *</label>
+              <p class="text-xs text-gray-400 mb-2">Ce champ sera utilisé comme titre lors des listings, relations, mentions, etc.</p>
+              
+              <div class="flex gap-3">
+                <!-- Select field (50%) -->
+                <div class="flex-1">
+                  <select x-model="newCollection.referenceField" @change="addFieldToken()" class="form-select w-full">
+                    <option value="title">Titre</option>
+                    <template x-for="(enabled, field) in newCollection.standardFields" :key="field">
+                      <template x-if="enabled && field !== 'title'">
+                        <option :value="field" x-text="getFieldLabel(field)"></option>
+                      </template>
+                    </template>
+                    <!-- Custom fields -->
+                    <template x-for="field in selectedFields" :key="field._id">
+                      <option :value="field._id" x-text="field.label || field.name"></option>
+                    </template>
                   </select>
-                  <div class="relative w-2/3">
-                    <input type="text" x-model="iconSearch" @input.debounce.300ms="loadIcons()" placeholder="Rechercher..." class="form-input w-full text-xs pl-8 py-1.5">
-                    <iconify-icon icon="solar:magnifer-linear" class="absolute left-2.5 top-2 text-gray-400" width="14"></iconify-icon>
-                  </div>
                 </div>
-                <div class="flex flex-wrap gap-1 mb-2 max-h-32 overflow-y-auto custom-scrollbar p-1 border rounded dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 content-start">
-                  <template x-for="icon in icons" :key="icon">
-                    <div class="w-8 h-8 rounded cursor-pointer border border-transparent hover:border-primary/50 hover:bg-white dark:hover:bg-gray-700 transition-all flex items-center justify-center shrink-0" :class="newCollection.icon === icon ? '!bg-primary/10 !border-primary text-primary shadow-sm' : 'text-gray-500 dark:text-gray-400'" @click="newCollection.icon = icon; showIconPicker = false" :title="icon">
-                      <iconify-icon :icon="icon" width="20" height="20"></iconify-icon>
-                    </div>
-                  </template>
-                </div>
-              </div>
-            </div>
-
-            <!-- Couleur -->
-            <div class="mb-4">
-              <label class="mb-2 block text-sm font-bold">Couleur</label>
-              <div @click="showColorPicker = !showColorPicker" class="flex items-center gap-2 cursor-pointer group">
-                <iconify-icon icon="solar:pallete-2-bold-duotone" width="18" :style="newCollection.color ? 'color:' + newCollection.color : ''" :class="!newCollection.color && 'text-gray-400'"></iconify-icon>
-                <span class="text-sm flex-1" :class="newCollection.color ? 'text-gray-700' : 'text-gray-400'" x-text="newCollection.color || 'Couleur personnalisée'"></span>
-                <iconify-icon icon="solar:alt-arrow-down-linear" class="text-gray-400 group-hover:text-primary transition-colors" width="14" :class="showColorPicker && 'rotate-180'" style="transition: transform 0.2s"></iconify-icon>
-              </div>
-              <div x-show="showColorPicker" x-collapse class="mt-3">
-                <div class="flex flex-wrap gap-2.5">
-                  <template x-for="color in availableColors" :key="color">
-                    <div class="w-7 h-7 rounded-full cursor-pointer flex items-center justify-center border-2 transition-transform hover:scale-110" :style="'background-color: ' + color + '; border-color: ' + (newCollection.color === color ? 'black' : 'transparent')" @click="newCollection.color = color; showColorPicker = false">
-                      <iconify-icon icon="solar:check-circle-bold" class="text-white" width="14" x-show="newCollection.color === color"></iconify-icon>
-                    </div>
-                  </template>
-                  <div class="relative w-7 h-7 rounded-full cursor-pointer border-2 border-gray-300 flex items-center justify-center overflow-hidden hover:border-gray-400">
-                    <iconify-icon icon="solar:pen-new-square-linear" width="14" class="pointer-events-none text-gray-500"></iconify-icon>
-                    <input type="color" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" x-model="newCollection.color">
+                
+                <!-- Contenteditable Format Field (50%) -->
+                <div class="flex-1">
+                  <div class="form-input w-full text-sm min-h-[38px] p-2 cursor-text focus-within:ring-2 focus-within:ring-primary/50" 
+                       contenteditable="true"
+                       @input="syncTokensFromEditor($event)"
+                       x-init="$el.innerHTML = renderTokensAsHTML()"
+                       x-ref="formatEditor">
                   </div>
-                  <div class="w-7 h-7 rounded-full cursor-pointer flex items-center justify-center border-2 hover:border-gray-400 bg-white text-gray-400" :class="!newCollection.color && 'border-black'" @click="newCollection.color = ''">
-                    <iconify-icon icon="solar:close-circle-linear" width="16"></iconify-icon>
-                  </div>
+                  <label class="text-xs text-gray-500 mt-1 block">Format (cliquez pour éditer)</label>
                 </div>
               </div>
             </div>
 
-            <!-- Champs standards -->
-            <div class="mb-4">
-              <label class="mb-2 block text-sm font-bold">Champs standards</label>
-              <div class="flex flex-wrap gap-4">
-                <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" x-model="newCollection.standardFields.title" class="form-checkbox text-primary">
-                  <span class="text-sm">Titre</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" x-model="newCollection.standardFields.slug" class="form-checkbox text-primary">
-                  <span class="text-sm">Slug</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" x-model="newCollection.standardFields.date" class="form-checkbox text-primary">
-                  <span class="text-sm">Date</span>
-                </label>
-              </div>
-            </div>
 
             <!-- Active Toggle -->
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-bold">Active</span>
+            <div class="flex items-center justify-between pt-3 border-t dark:border-gray-700">
+              <span class="text-sm text-gray-500">Collection active</span>
               <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" x-model="newCollection.active" class="sr-only peer">
                 <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>

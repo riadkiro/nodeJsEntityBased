@@ -20,6 +20,18 @@ const EntitySchema = new mongoose.Schema(
     // Champs standards activés
     enabledStandardFields: [String], // ex: ['title', 'slug', 'date']
 
+    // Token-based reference title format
+    referenceTitleTokens: {
+      type: [
+        {
+          t: { type: String, enum: ['field', 'text'], required: true },
+          id: String,  // field id (for field tokens)
+          v: String    // text value (for text tokens)
+        }
+      ],
+      default: [{ t: 'field', id: 'title' }]
+    },
+
     // Hierarchy
     spaces: [{ type: mongoose.Schema.Types.ObjectId, ref: "Space" }],
     folders: [{ type: mongoose.Schema.Types.ObjectId, ref: "Folder" }],

@@ -1,0 +1,19 @@
+<!-- views/record/record-view-htmx-test.ejs -->
+<!-- Test wrapper for HTMX table view -->
+<div x-data="recordView">
+    <div class="view-content">
+        <%- include('partials/view-table-htmx') %>
+    </div>
+</div>
+
+<!-- HTMX Library -->
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+<script>
+    document.addEventListener("alpine:init", () => {
+        Alpine.data("recordView", () => ({
+            showConfig: false,
+            viewType: 'table'
+        }));
+    });
+</script>

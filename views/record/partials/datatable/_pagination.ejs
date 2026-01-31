@@ -1,0 +1,107 @@
+<%# Pagination Controls - Matching original simple-datatables style %>
+
+<% if (pagination.total > 0) { %>
+<div class="flex items-center justify-between text-xs">
+    <%# Left: Total count %>
+    <div class="text-gray-600 dark:text-gray-400">
+        Affichage de 
+        <span class="font-medium"><%= ((pagination.page - 1) * pagination.limit) + 1 %></span>
+        à 
+        <span class="font-medium"><%= Math.min(pagination.page * pagination.limit, pagination.total) %></span>
+        sur 
+        <span class="font-medium"><%= pagination.total %></span>
+    </div>
+    
+    <%# Center: Page navigation %>
+    <div class="flex items-center gap-2">
+        <%# Previous button %>
+        <button 
+            type="button"
+            <%= pagination.page <= 1 ? 'disabled' : '' %>
+            hx-get="/account/<%= account_number %>/entity/<%= entityId %>/views/<%= viewId %>/table"
+            hx-trigger="click"
+            hx-target="#dt-wrap-<%= viewId %>"
+            hx-swap="outerHTML"
+            hx-include="[data-dt-params]"
+            hx-vals='{"page":"<%= pagination.page - 1 %>"}'
+            data-action="click->datatable#handlePageChange"
+            class="px-2 py-1 text-xs rounded border <%= pagination.page <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700' %> 
+                   border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
+            Précédent
+        </button>
+        
+        <%# Page numbers - Circular style like original %>
+        <div class="flex gap-1">
+            <% 
+            const maxVisible = 5;
+            let startPage = Math.max(1, pagination.page - Math.floor(maxVisible / 2));
+            let endPage = Math.min(pagination.pages, startPage + maxVisible - 1);
+            
+            if (endPage - startPage + 1 < maxVisible) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+            
+            for (let p = startPage; p <= endPage; p++) { 
+            %>
+                <button 
+                    type="button"
+                    hx-get="/account/<%= account_number %>/entity/<%= entityId %>/views/<%= viewId %>/table"
+                    hx-trigger="click"
+                    hx-target="#dt-wrap-<%= viewId %>"
+                    hx-swap="outerHTML"
+                    hx-include="[data-dt-params]"
+                    hx-vals='{"page":"<%= p %>"}'
+                    data-action="click->datatable#handlePageChange"
+                    class="w-7 h-7 text-xs rounded-full flex items-center justify-center
+                           <%= p === pagination.page 
+                               ? 'bg-primary text-white' 
+                               : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' %>">
+                    <%= p %>
+                </button>
+            <% } %>
+            
+            <% if (endPage < pagination.pages) { %>
+                <span class="w-7 h-7 flex items-center justify-center text-gray-400">...</span>
+            <% } %>
+        </div>
+        
+        <%# Next button %>
+        <button 
+            type="button"
+            <%= pagination.page >= pagination.pages ? 'disabled' : '' %>
+            hx-get="/account/<%= account_number %>/entity/<%= entityId %>/views/<%= viewId %>/table"
+            hx-trigger="click"
+            hx-target="#dt-wrap-<%= viewId %>"
+            hx-swap="outerHTML"
+            hx-include="[data-dt-params]"
+            hx-vals='{"page":"<%= pagination.page + 1 %>"}'
+            data-action="click->datatable#handlePageChange"
+            class="px-2 py-1 text-xs rounded border <%= pagination.page >= pagination.pages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700' %> 
+                   border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
+            Suivant
+        </button>
+    </div>
+    
+    <%# Right: Page size selector %>
+    <div class="flex items-center gap-2">
+        <label class="text-gray-600 dark:text-gray-400">Par page:</label>
+        <select 
+            name="limit"
+            hx-get="/account/<%= account_number %>/entity/<%= entityId %>/views/<%= viewId %>/table"
+            hx-trigger="change"
+            hx-target="#dt-wrap-<%= viewId %>"
+            hx-swap="outerHTML"
+            hx-include="[data-dt-params]"
+            data-action="change->datatable#handleLimitChange"
+            class="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded
+                   bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                   focus:ring-2 focus:ring-primary focus:border-transparent">
+            <% [10, 20, 30, 50, 100].forEach(option => { %>
+                <option value="<%= option %>" <%= pagination.limit === option ? 'selected' : '' %>>
+                    <%= option %>
+                </option>
+            <% }); %>
+        </select>
+    </div>
+</div>
+<% } %>

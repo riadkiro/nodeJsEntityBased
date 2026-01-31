@@ -1,0 +1,26 @@
+<%# Datatable Body - Table + Pagination (for HTMX partial refresh) %>
+
+<div id="datatable-body-<%= viewId %>">
+    <%# Table structure %>
+    <div class="dt-container flex-1 overflow-auto">
+        <%- include('./_table', { 
+            viewId,
+            entityId,
+            entity,
+            columns,
+            records,
+            sort,
+            account_number
+        }) %>
+    </div>
+    
+    <%# Pagination %>
+    <div class="dt-footer">
+        <%- include('./_pagination', { 
+            viewId,
+            entityId,
+            pagination,
+            account_number
+        }) %>
+    </div>
+</div>

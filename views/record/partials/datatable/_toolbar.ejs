@@ -1,0 +1,168 @@
+<%# Toolbar - Canva Style with Expandable Tools %>
+
+<div class="flex items-center justify-between mb-4 gap-4 flex-shrink-0">
+    <%# Left side - empty for now %>
+    <div class="flex-1"></div>
+    
+    <%# Right side - Search + Expandable Toolbar %>
+    <div class="flex items-center gap-3">
+        <%# Search Input with HTMX - Focus preserved %>
+        <div class="relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" 
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <input 
+                type="text" 
+                id="dt-search-<%= viewId %>"
+                name="q"
+                value="<%= searchQuery || '' %>"
+                placeholder="Rechercher..."
+                hx-get="/account/<%= account_number %>/entity/<%= entityId %>/views/<%= viewId %>/table"
+                hx-trigger="keyup changed delay:500ms, search"
+                hx-target="#datatable-body-<%= viewId %>"
+                hx-select="#datatable-body-<%= viewId %>"
+                hx-swap="outerHTML"
+                hx-include="[data-dt-params]"
+                hx-preserve="true"
+                data-datatable-target="search"
+                class="w-48 pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md 
+                       bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                       focus:ring-1 focus:ring-primary focus:border-primary
+                       placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            />
+        </div>
+        
+        <%# Expandable Toolbar - Canva Style %>
+        <div class="config-toolbar" x-data="{ showToolbar: false, activePanel: null }">
+            <div class="flex flex-row-reverse items-center bg-white dark:bg-[#0e1726] rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
+                
+                <%# Main Settings Toggle Button (stays on right) %>
+                <button type="button" 
+                        @click="showToolbar = !showToolbar; if(!showToolbar) activePanel = null"
+                        :class="showToolbar ? 'text-primary' : 'text-gray-400 hover:text-primary'"
+                        class="p-2 transition-colors flex items-center justify-center"
+                        title="Paramètres d'affichage">
+                    <iconify-icon icon="solar:settings-line-duotone" width="20"></iconify-icon>
+                </button>
+                
+                <%# Tool buttons that appear to the left when open %>
+                <div class="toolbar-tools flex flex-row-reverse items-center overflow-hidden transition-all duration-300"
+                     :style="showToolbar ? 'max-width: 200px; opacity: 1;' : 'max-width: 0; opacity: 0;'">
+                    
+                    <%# Separator %>
+                    <div class="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-0.5"></div>
+                    
+                    <%# Spacing Control %>
+                    <div class="relative">
+                        <button type="button" 
+                                @click="activePanel = activePanel === 'spacing' ? null : 'spacing'"
+                                :class="activePanel === 'spacing' ? 'text-primary' : 'text-gray-400 hover:text-primary'"
+                                class="p-2 transition-colors flex items-center justify-center"
+                                title="Espacement">
+                            <iconify-icon icon="solar:sort-vertical-line-duotone" width="20"></iconify-icon>
+                        </button>
+                        <%# Spacing Panel %>
+                        <div x-show="activePanel === 'spacing'" 
+                             x-transition
+                             @click.outside="activePanel = null"
+                             class="absolute right-0 top-full mt-2 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 w-56 z-50">
+                            
+                            <%# Row Height %>
+                            <div class="mb-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">Hauteur des lignes</span>
+                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="$store.dtSettings?.rowSpacing || 4"></span>
+                                </div>
+                                <input type="range" 
+                                       min="0" max="16" step="2"
+                                       value="4"
+                                       class="w-full accent-primary">
+                            </div>
+                            
+                            <%# Cell Padding %>
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">Interligne</span>
+                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="$store.dtSettings?.cellPadding || 8"></span>
+                                </div>
+                                <input type="range" 
+                                       min="4" max="20" step="2"
+                                       value="8"
+                                       class="w-full accent-primary">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <%# Columns Control %>
+                    <div class="relative">
+                        <button type="button" 
+                                @click="activePanel = activePanel === 'columns' ? null : 'columns'"
+                                :class="activePanel === 'columns' ? 'text-primary' : 'text-gray-400 hover:text-primary'"
+                                class="p-2 transition-colors flex items-center justify-center"
+                                title="Colonnes">
+                            <iconify-icon icon="solar:checklist-line-duotone" width="20"></iconify-icon>
+                        </button>
+                        <%# Columns Panel %>
+                        <div x-show="activePanel === 'columns'" 
+                             x-transition
+                             @click.outside="activePanel = null"
+                             class="absolute right-0 top-full mt-2 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 w-56 z-50">
+                            <div class="text-xs font-semibold mb-2 text-gray-600 dark:text-gray-400">Colonnes visibles</div>
+                            <div class="space-y-1 max-h-48 overflow-y-auto">
+                                <% if (typeof columns !== 'undefined' && columns) { %>
+                                    <% columns.forEach((col, index) => { %>
+                                        <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1 rounded text-sm">
+                                            <input type="checkbox" 
+                                                   <%= col.hidden ? '' : 'checked' %>
+                                                   class="form-checkbox text-primary w-4 h-4 rounded">
+                                            <span class="text-sm dark:text-gray-300"><%= col.name %></span>
+                                        </label>
+                                    <% }); %>
+                                <% } %>
+                            </div>
+                            
+                            <div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
+                            
+                            <div class="text-xs font-semibold mb-2 text-gray-600 dark:text-gray-400">Par page</div>
+                            <div class="flex flex-wrap gap-1">
+                                <% [10, 20, 30, 50, 100].forEach(option => { %>
+                                    <button type="button"
+                                            hx-get="/account/<%= account_number %>/entity/<%= entityId %>/views/<%= viewId %>/table"
+                                            hx-trigger="click"
+                                            hx-target="#dt-wrap-<%= viewId %>"
+                                            hx-swap="outerHTML"
+                                            hx-vals='{"limit":"<%= option %>", "page":"1"}'
+                                            class="px-2 py-0 text-xs rounded <%= (typeof pagination !== 'undefined' && pagination.limit === option) ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' %> hover:opacity-80">
+                                        <%= option %>
+                                    </button>
+                                <% }); %>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <%# Filter Control %>
+                    <div class="relative">
+                        <button type="button" 
+                                @click="activePanel = activePanel === 'filter' ? null : 'filter'"
+                                :class="activePanel === 'filter' ? 'text-primary' : 'text-gray-400 hover:text-primary'"
+                                class="p-2 transition-colors flex items-center justify-center"
+                                title="Filtres">
+                            <iconify-icon icon="solar:filter-line-duotone" width="20"></iconify-icon>
+                        </button>
+                        <%# Filter Panel (placeholder) %>
+                        <div x-show="activePanel === 'filter'" 
+                             x-transition
+                             @click.outside="activePanel = null"
+                             class="absolute right-0 top-full mt-2 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 w-64 z-50">
+                            <div class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                                Filtres à venir...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

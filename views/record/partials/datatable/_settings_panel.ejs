@@ -1,0 +1,152 @@
+<%# Settings Panel - Canva Style %>
+
+<div data-datatable-target="settingsPanel"
+     data-controller="columns"
+     data-columns-view-id-value="<%= viewId %>"
+     data-columns-entity-id-value="<%= entityId %>"
+     class="fixed inset-y-0 right-0 w-80 bg-white dark:bg-gray-900 shadow-2xl 
+            transform translate-x-full transition-transform duration-300 ease-in-out z-50
+            border-l border-gray-200 dark:border-gray-700 hidden"
+     data-datatable-settings-value="closed">
+    
+    <%# Header %>
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Paramètres d'affichage
+        </h3>
+        <button 
+            type="button"
+            data-action="click->datatable#closeSettings"
+            class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
+    
+    <%# Content %>
+    <div class="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+        
+        <%# Columns Section %>
+        <div>
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                Colonnes visibles
+            </h4>
+            <div data-columns-target="list" class="space-y-2">
+                <% columns.forEach((column, index) => { %>
+                    <label class="flex items-center gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-move group"
+                           data-column-id="<%= column.id %>">
+                        <%# Drag handle %>
+                        <svg class="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
+                        </svg>
+                        
+                        <%# Checkbox %>
+                        <input 
+                            type="checkbox" 
+                            <%= column.hidden ? '' : 'checked' %>
+                            data-action="change->columns#toggleColumn"
+                            data-columns-target="checkbox"
+                            data-column-index="<%= index %>"
+                            class="form-checkbox w-4 h-4 text-primary rounded border-gray-300 dark:border-gray-600
+                                   focus:ring-2 focus:ring-primary focus:ring-offset-0 flex-shrink-0" />
+                        
+                        <%# Column name %>
+                        <span class="text-sm text-gray-900 dark:text-gray-100 flex-1">
+                            <%= column.name %>
+                        </span>
+                    </label>
+                <% }); %>
+            </div>
+        </div>
+        
+        <%# Divider %>
+        <div class="border-t border-gray-200 dark:border-gray-700"></div>
+        
+        <%# Density Section %>
+        <div>
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                Densité des lignes
+            </h4>
+            <div class="space-y-2">
+                <% ['compact', 'normal', 'comfortable'].forEach(densityOption => { %>
+                    <label class="flex items-center gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                        <input 
+                            type="radio" 
+                            name="density-<%= viewId %>"
+                            value="<%= densityOption %>"
+                            <%= density === densityOption ? 'checked' : '' %>
+                            data-action="change->columns#changeDensity"
+                            class="form-radio w-4 h-4 text-primary border-gray-300 dark:border-gray-600
+                                   focus:ring-2 focus:ring-primary focus:ring-offset-0" />
+                        <span class="text-sm text-gray-900 dark:text-gray-100 capitalize">
+                            <%= densityOption === 'compact' ? 'Compacte' : densityOption === 'normal' ? 'Normale' : 'Confortable' %>
+                        </span>
+                    </label>
+                <% }); %>
+            </div>
+        </div>
+        
+        <%# Divider %>
+        <div class="border-t border-gray-200 dark:border-gray-700"></div>
+        
+        <%# Sort Section %>
+        <div>
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                Tri par défaut
+            </h4>
+            <div class="space-y-2">
+                <select class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded
+                               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                               focus:ring-2 focus:ring-primary focus:border-transparent"
+                        data-action="change->columns#changeSort">
+                    <% columns.forEach(column => { %>
+                        <option value="<%= column.id %>" <%= sort.field === column.id ? 'selected' : '' %>>
+                            <%= column.name %>
+                        </option>
+                    <% }); %>
+                </select>
+                
+                <div class="flex gap-2">
+                    <button type="button"
+                            data-action="click->columns#setSortDirection"
+                            data-direction="asc"
+                            class="flex-1 px-3 py-2 text-sm rounded border <%= sort.direction === 'asc' ? 'bg-primary text-white border-primary' : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800' %>">
+                        Croissant
+                    </button>
+                    <button type="button"
+                            data-action="click->columns#setSortDirection"
+                            data-direction="desc"
+                            class="flex-1 px-3 py-2 text-sm rounded border <%= sort.direction === 'desc' ? 'bg-primary text-white border-primary' : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800' %>">
+                        Décroissant
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <%# Footer %>
+    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+        <button 
+            type="button"
+            data-action="click->columns#savePreferences"
+            data-columns-target="saveButton"
+            class="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark 
+                   transition-colors font-medium text-sm">
+            Enregistrer les préférences
+        </button>
+        <button 
+            type="button"
+            data-action="click->columns#resetPreferences"
+            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 
+                   rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm">
+            Réinitialiser
+        </button>
+    </div>
+</div>
+
+<%# Backdrop %>
+<div data-datatable-target="settingsBackdrop"
+     data-action="click->datatable#closeSettings"
+     class="fixed inset-0 bg-black/30 z-40 hidden"></div>

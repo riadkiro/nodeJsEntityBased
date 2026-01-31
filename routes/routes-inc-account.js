@@ -14,6 +14,11 @@ router.use("/api/", require("./api/api-account.router.js"));
 router.use("/api/user", require("./api/api-user.router.js"));
 router.use("/mailbox", require("./mailbox.router.js"));
 
+// React Islands API (JSON endpoints)
+router.use("/", require("./api.routes.js"));
+
+
+
 // Document Builder
 router.use("/documents", require("./document.routes.js"));
 
@@ -22,6 +27,9 @@ router.use("/db", require("./db.routes.js"));
 
 // Page Builder
 router.use("/page-builder", require("./page-builder.routes.js"));
+
+// DataTable HTMX
+router.use("/", require("./datatable.routes.js"));
 
 // Profile Page
 router.use("/profile", require("./profile.routes.js"));
@@ -62,4 +70,119 @@ router.get("/datatable", (req, res) => {
     });
 });
 
+// Test HTMX DataTable with full layout
+router.get("/test-datatable/:entityName", async (req, res) => {
+    try {
+        const tenantCollection = require('../middleware/tenant').tenantCollection;
+
+        // Register all required models BEFORE using populate
+        await tenantCollection(req, "FieldTemplate");
+        await tenantCollection(req, "Classification");
+        const EntityModel = await tenantCollection(req, "Entity");
+        const RecordModel = await tenantCollection(req, "Record");
+
+        const entity = await EntityModel.findOne({ slug: req.params.entityName })
+            .populate('customFields')
+            .populate('classifications')
+            .populate('statusClassification');
+
+        if (!entity) {
+            return res.status(404).send("Entity not found");
+        }
+
+        // Fetch records for initial render
+        const limit = 10;
+        const records = await RecordModel.find({ entityId: entity._id })
+            .sort({ createdAt: -1 })
+            .limit(limit);
+
+        // Get total count for pagination
+        const totalRecords = await RecordModel.countDocuments({ entityId: entity._id });
+
+        // Create a mock view object for compatibility
+        const view = {
+            _id: entity._id,
+            viewType: 'table',
+            entity: entity._id
+        };
+
+        res.render("record/record-view-htmx-test", {
+            entity,
+            records,
+            view,
+            totalRecords,
+            limit,
+            layout: "layout-app",
+            account_number: req.account_number,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Server Error");
+    }
+});
+
+// Test Progressive DataTable (React Island vs HTMX mode)
+// Use ?virtualize=true to force React Island mode
+router.get("/test-progressive/:entityName", async (req, res) => {
+    try {
+        const tenantCollection = require('../middleware/tenant').tenantCollection;
+
+        // Register all required models BEFORE using populate
+        await tenantCollection(req, "FieldTemplate");
+        await tenantCollection(req, "Classification");
+        const EntityModel = await tenantCollection(req, "Entity");
+        const RecordModel = await tenantCollection(req, "Record");
+
+        const entity = await EntityModel.findOne({ slug: req.params.entityName })
+            .populate('customFields')
+            .populate('classifications')
+            .populate('statusClassification');
+
+        if (!entity) {
+            return res.status(404).send("Entity not found");
+        }
+
+        // Check if virtualize mode is requested
+        const virtualize = req.query.virtualize === 'true';
+
+        // Fetch records for initial render (only if not virtualize mode)
+        const limit = virtualize ? 0 : 10;
+        const records = virtualize ? [] : await RecordModel.find({ entityId: entity._id })
+            .sort({ createdAt: -1 })
+            .limit(limit);
+
+        // Get total count for mode decision
+        const totalRecords = await RecordModel.countDocuments({ entityId: entity._id });
+
+        // Create a mock view object for compatibility
+        const view = {
+            _id: entity._id,
+            viewType: 'table',
+            entity: entity._id,
+            virtualize: virtualize || totalRecords > 5000
+        };
+
+        res.render("record/record-view-progressive", {
+            entity,
+            records,
+            view,
+            totalRecords,
+            limit,
+            pagination: {
+                page: 1,
+                limit: limit || 25,
+                total: totalRecords,
+                pages: Math.ceil(totalRecords / (limit || 25))
+            },
+            layout: "layout-app",
+            account_number: req.account_number,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Server Error");
+    }
+});
+
 module.exports = router;
+
+

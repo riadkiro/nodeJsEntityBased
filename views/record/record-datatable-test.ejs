@@ -1,0 +1,107 @@
+<%- contentFor('body') %>
+
+<%# Test page for HTMX + Stimulus DataTable %>
+
+<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
+    <%# Main Content %>
+    <main class="flex-1 flex flex-col overflow-hidden">
+        <%# Header %>
+        <header class="px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        <%= entity.name %>
+                    </h1>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        HTMX + Stimulus DataTable Test
+                    </p>
+                </div>
+                <a href="/account/<%= account_number %>/record/<%= entity.slug %>/add" 
+                   class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+                    + Ajouter
+                </a>
+            </div>
+        </header>
+        
+        <%# DataTable Container %>
+        <div class="flex-1 overflow-hidden">
+            <%
+            // Prepare data for datatable
+            const viewId = `entity-${entity._id}-table`;
+            
+            // Build columns from entity fields
+            const columns = [
+                { id: 'title', name: 'Titre', hidden: false, order: 0 }
+            ];
+            
+            // Safety check for customFields
+            if (entity.customFields && Array.isArray(entity.customFields)) {
+                entity.customFields.forEach((field, index) => {
+                    columns.push({
+                        id: field._id.toString(),
+                        fieldId: field._id,
+                        name: field.label,
+                        hidden: false,
+                        order: index + 1
+                    });
+                });
+            }
+            
+            columns.push({
+                id: 'createdAt',
+                name: 'Créé le',
+                hidden: false,
+                order: columns.length
+            });
+            
+            // Get initial records (empty on first load, HTMX will fetch)
+            const records = [];
+            
+            // Pagination defaults
+            const pagination = {
+                page: 1,
+                limit: 10,
+                total: 0,
+                pages: 0
+            };
+            
+            // Sort defaults
+            const sort = {
+                field: 'createdAt',
+                direction: 'desc'
+            };
+            %>
+            
+            <div class="h-full p-6">
+                <div class="h-full bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+                    <%# Include the HTMX DataTable Component %>
+                    <%- include('./partials/datatable/_datatable', {
+                        viewId,
+                        entityId: entity._id.toString(),
+                        entity,
+                        records,
+                        columns,
+                        pagination,
+                        sort,
+                        searchQuery: '',
+                        account_number
+                    }) %>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<%# Make sure HTMX is loaded %>
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+<%# Trigger initial load %>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Trigger initial HTMX load
+    const searchInput = document.querySelector('[data-datatable-target="search"]');
+    if (searchInput) {
+        htmx.trigger(searchInput, 'search');
+    }
+});
+</script>

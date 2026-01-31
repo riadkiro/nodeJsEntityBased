@@ -174,7 +174,7 @@
         <div class="absolute z-[5] hidden h-full w-full rounded-md bg-black/60"
             :class="isShowChatMenu && '!block xl:!hidden'" @click="isShowChatMenu = !isShowChatMenu"></div>
         <!-- Main panel with datatable -->
-        <div class="panel flex-1 p-4 flex flex-col overflow-hidden h-full" x-data="recordTable">
+        <div class="panel relative flex-1 p-4 flex flex-col overflow-hidden h-full" x-data="recordTable">
             <style>
                 /* Force simple-datatables wrapper to match demo structure */
                 #recordTableMain-wrapper.dataTable-wrapper {
@@ -187,6 +187,11 @@
                 #recordTableMain-wrapper .dataTable-top {
                     flex-shrink: 0;
                     margin-bottom: 0.75rem;
+                    display: flex;
+                    justify-content: flex-start;
+                }
+                #recordTableMain-wrapper .dataTable-search {
+                    max-width: 300px;
                 }
                 #recordTableMain-wrapper .dataTable-container {
                     flex: 1 !important;
@@ -214,32 +219,194 @@
                     padding: 0.25rem 0.5rem;
                     font-size: 0.75rem;
                 }
+                
+                /* First column (Titre) needs more space */
+                #recordTableMain th:first-child,
+                #recordTableMain td:first-child {
+                    min-width: 220px;
+                }
+                
+                /* Config dropdown styles */
+                .table-config-dropdown {
+                    position: absolute;
+                    right: 0;
+                    top: 100%;
+                    margin-top: 0.5rem;
+                    background: white;
+                    border: 1px solid #e0e6ed;
+                    border-radius: 0.5rem;
+                    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+                    width: 280px;
+                    max-height: 400px;
+                    overflow-y: auto;
+                    z-index: 50;
+                    display: none;
+                }
+                .dark .table-config-dropdown {
+                    background: #0e1726;
+                    border-color: #1b2e4b;
+                }
+                .table-config-dropdown.show {
+                    display: block;
+                }
             </style>
+            
             <table id="recordTableMain" class="whitespace-nowrap w-full"></table>
+            
+            <!-- Expandable Control Toolbar -->
+            <div class="config-toolbar" style="position: absolute; top: 16px; right: 16px; z-index: 10;">
+                <div class="flex flex-row-reverse items-center bg-white dark:bg-[#0e1726] rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
+                    
+                    <!-- Main Settings Toggle Button (stays on right) -->
+                    <button type="button" 
+                            @click="showToolbar = !showToolbar; if(!showToolbar) activePanel = null"
+                            :class="showToolbar ? 'text-primary' : 'text-gray-400 hover:text-primary'"
+                            class="p-2 transition-colors flex items-center justify-center"
+                            title="Paramètres d'affichage">
+                        <iconify-icon icon="solar:settings-line-duotone" width="20"></iconify-icon>
+                    </button>
+                    
+                    <!-- Tool buttons that appear to the left when open -->
+                    <div class="toolbar-tools flex flex-row-reverse items-center overflow-hidden transition-all duration-300"
+                         :style="showToolbar ? 'max-width: 150px; opacity: 1;' : 'max-width: 0; opacity: 0;'">
+                        
+                        <!-- Separator -->
+                        <div class="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-0.5"></div>
+                        
+                        <!-- Spacing Control with dropdown like reference -->
+                        <div class="relative">
+                            <button type="button" 
+                                    @click="activePanel = activePanel === 'spacing' ? null : 'spacing'"
+                                    :class="activePanel === 'spacing' ? 'text-primary' : 'text-gray-400 hover:text-primary'"
+                                    class="p-2 transition-colors flex items-center justify-center"
+                                    title="Espacement">
+                                <iconify-icon icon="solar:sort-vertical-line-duotone" width="20"></iconify-icon>
+                            </button>
+                            <!-- Spacing Panel like reference image -->
+                            <div x-show="activePanel === 'spacing'" 
+                                 x-transition
+                                 @click.outside="activePanel = null"
+                                 class="absolute right-0 top-full mt-2 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 w-56 z-50">
+                                
+                                <!-- Row Height -->
+                                <div class="mb-4">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm text-gray-600 dark:text-gray-400">Hauteur des lignes</span>
+                                        <span class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="rowSpacing"></span>
+                                    </div>
+                                    <input type="range" 
+                                           min="0" max="16" step="2"
+                                           x-model="rowSpacing"
+                                           @input="applyRowSpacing()"
+                                           class="w-full accent-primary">
+                                </div>
+                                
+                                <!-- Cell Padding -->
+                                <div>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm text-gray-600 dark:text-gray-400">Interligne</span>
+                                        <span class="text-sm font-medium text-gray-800 dark:text-gray-200" x-text="cellPadding"></span>
+                                    </div>
+                                    <input type="range" 
+                                           min="4" max="20" step="2"
+                                           x-model="cellPadding"
+                                           @input="applyCellPadding()"
+                                           class="w-full accent-primary">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Columns Control -->
+                        <div class="relative">
+                            <button type="button" 
+                                    @click="activePanel = activePanel === 'columns' ? null : 'columns'"
+                                    :class="activePanel === 'columns' ? 'text-primary' : 'text-gray-400 hover:text-primary'"
+                                    class="p-2 transition-colors flex items-center justify-center"
+                                    title="Colonnes">
+                                <iconify-icon icon="solar:check-square-line-duotone" width="20"></iconify-icon>
+                            </button>
+                            <!-- Columns Panel -->
+                            <div x-show="activePanel === 'columns'" 
+                                 x-transition
+                                 @click.outside="activePanel = null"
+                                 class="absolute right-0 top-full mt-2 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 w-56 z-50">
+                                <div class="text-xs font-semibold mb-2 text-gray-600 dark:text-gray-400">Colonnes visibles</div>
+                                <template x-for="(col, index) in columns" :key="index">
+                                    <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1 rounded text-sm">
+                                        <input type="checkbox" 
+                                               :checked="!col.hidden"
+                                               @change="toggleColumn(index)"
+                                               class="form-checkbox text-primary w-4 h-4">
+                                        <span class="text-sm dark:text-gray-300" x-text="col.name"></span>
+                                    </label>
+                                </template>
+                                
+                                <div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
+                                
+                                <div class="text-xs font-semibold mb-2 text-gray-600 dark:text-gray-400">Par page</div>
+                                <div class="flex flex-wrap gap-1">
+                                    <template x-for="option in [10, 20, 30, 50, 100]" :key="option">
+                                        <button type="button"
+                                                @click="perPageValue = option; updatePerPage()"
+                                                :class="perPageValue === option ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                                                class="px-2 py-0 text-xs rounded hover:opacity-80">
+                                            <span x-text="option"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 </div>
 
-<% const columnNames=[]; if (entity.enabledStandardFields && entity.enabledStandardFields.includes('title')) {
-    columnNames.push("Titre"); } entity.customFields.forEach(field=> {
+<% const columnNames=['Titre']; 
+entity.customFields.forEach(field => {
     columnNames.push(field.label);
-    });
-    columnNames.push("Créé le");
-    columnNames.push("Actions");
+});
+columnNames.push("Créé le");
+columnNames.push("Actions");
 
-    const dataRows = records.map(record => {
+const dataRows = records.map(record => {
     const row = [];
-    if (entity.enabledStandardFields && entity.enabledStandardFields.includes('title')) {
-    row.push(record.title || '');
+    
+    // Reference column with image or initial
+    const refTitle = record.referenceTitle || record.title || 'Sans titre';
+    const initial = refTitle.charAt(0).toUpperCase();
+    const imageUrl = record.image || null;
+    
+    let refHtml = '';
+    if (imageUrl) {
+        refHtml = `<div class="flex items-center gap-3">
+            <img src="${imageUrl}" alt="${refTitle}" class="w-8 h-8 rounded-full object-cover">
+            <span class="font-medium">${refTitle}</span>
+        </div>`;
+    } else {
+        // Generate color from initial
+        const colors = ['bg-primary', 'bg-info', 'bg-success', 'bg-warning', 'bg-danger', 'bg-secondary'];
+        const colorIndex = initial.charCodeAt(0) % colors.length;
+        const bgColor = colors[colorIndex];
+        refHtml = `<div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full ${bgColor} flex items-center justify-center text-white font-semibold text-sm">${initial}</div>
+            <span class="font-medium">${refTitle}</span>
+        </div>`;
     }
+    row.push(refHtml);
+    
+    // Custom fields
     entity.customFields.forEach(field => {
-    const customField = record.customFields.find(cf =>
-    cf.field_id && (cf.field_id._id || cf.field_id).toString() === field._id.toString()
-    );
-    row.push(customField ? customField.value : '');
+        const customField = record.customFields.find(cf =>
+            cf.field_id && (cf.field_id._id || cf.field_id).toString() === field._id.toString()
+        );
+        row.push(customField ? customField.value : '');
     });
+    
     row.push(new Date(record.createdAt).toLocaleDateString());
+    
     const actionsHtml = `<div class="flex items-center gap-2">
         <a href="/account/${account_number}/record/${entity.slug}/edit/${record._id}"
             class="btn btn-sm btn-outline-info">Modifier</a>
@@ -248,8 +415,8 @@
     </div>`;
     row.push(actionsHtml);
     return row;
-    });
-    %>
+});
+%>
 
     <script id="table-columns-data" type="application/json"><%- JSON.stringify(columnNames) %></script>
     <script id="table-rows-data" type="application/json"><%- JSON.stringify(dataRows) %></script>
@@ -270,6 +437,12 @@
                 datatable: null,
                 columns: [],
                 preferenceKey: 'record_table_cols_<%= entity._id %>',
+                showConfig: false,
+                showToolbar: false,
+                activePanel: null,
+                rowSpacing: 4,
+                cellPadding: 8,
+                perPageValue: 10,
 
                 init() {
                     try {
@@ -322,6 +495,27 @@
                     });
                     if (hiddenIndices.length > 0) this.datatable.columns().hide(hiddenIndices);
                     if (visibleIndices.length > 0) this.datatable.columns().show(visibleIndices);
+                },
+
+                updatePerPage() {
+                    if (this.datatable) {
+                        this.datatable.setPerPage(this.perPageValue);
+                    }
+                },
+
+                applyRowSpacing() {
+                    const rows = document.querySelectorAll('#recordTableMain tbody tr');
+                    rows.forEach(row => {
+                        row.style.height = `${32 + this.rowSpacing * 2}px`;
+                    });
+                },
+
+                applyCellPadding() {
+                    const cells = document.querySelectorAll('#recordTableMain tbody td');
+                    cells.forEach(cell => {
+                        cell.style.paddingTop = `${this.cellPadding}px`;
+                        cell.style.paddingBottom = `${this.cellPadding}px`;
+                    });
                 },
 
                 savePreferences() {

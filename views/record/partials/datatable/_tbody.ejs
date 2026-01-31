@@ -1,0 +1,70 @@
+<%# Table Body - Matching original view-table.ejs design %>
+
+<tbody class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-transparent">
+    <% if (records && records.length > 0) { %>
+        <% records.forEach(record => { %>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                <% columns.forEach(column => { %>
+                    <% if (!column.hidden) { %>
+                        <td class="px-4 py-3 text-gray-900 dark:text-gray-100 text-sm">
+                            <% if (column.id === 'title') { %>
+                                <%# Title column with avatar/initial - Matching original %>
+                                <%
+                                const refTitle = record.referenceTitle || record.title || 'Sans titre';
+                                const initial = refTitle.charAt(0).toUpperCase();
+                                const imageUrl = record.image || null;
+                                
+                                // Generate color from initial
+                                const colors = ['bg-primary', 'bg-info', 'bg-success', 'bg-warning', 'bg-danger', 'bg-secondary'];
+                                const colorIndex = initial.charCodeAt(0) % colors.length;
+                                const bgColor = colors[colorIndex];
+                                %>
+                                <div class="flex items-center gap-3">
+                                    <% if (imageUrl) { %>
+                                        <img src="<%= imageUrl %>" alt="<%= refTitle %>" class="w-8 h-8 rounded-full object-cover">
+                                    <% } else { %>
+                                        <div class="w-8 h-8 rounded-full <%= bgColor %> flex items-center justify-center text-white font-semibold text-sm shrink-0">
+                                            <%= initial %>
+                                        </div>
+                                    <% } %>
+                                    <span class="font-medium"><%= refTitle %></span>
+                                </div>
+                            <% } else if (column.id === 'createdAt') { %>
+                                <%# Date column %>
+                                <span class="text-gray-600 dark:text-gray-400">
+                                    <%= new Date(record.createdAt).toLocaleDateString('fr-FR') %>
+                                </span>
+                            <% } else { %>
+                                <%# Custom field - Use field_id matching like original %>
+                                <% 
+                                let value = '';
+                                if (record.customFields && Array.isArray(record.customFields)) {
+                                    const customField = record.customFields.find(cf => {
+                                        const cfFieldId = cf.field_id?._id || cf.field_id || cf.fieldId;
+                                        return cfFieldId && cfFieldId.toString() === column.id.toString();
+                                    });
+                                    value = customField?.value || '';
+                                }
+                                %>
+                                <%= value %>
+                            <% } %>
+                        </td>
+                    <% } %>
+                <% }); %>
+            </tr>
+        <% }); %>
+    <% } else { %>
+        <tr>
+            <td colspan="<%= columns.filter(c => !c.hidden).length %>" 
+                class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+                <div class="flex flex-col items-center gap-2">
+                    <svg class="w-12 h-12 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                    </svg>
+                    <span class="text-sm">Aucun enregistrement trouvé</span>
+                </div>
+            </td>
+        </tr>
+    <% } %>
+</tbody>

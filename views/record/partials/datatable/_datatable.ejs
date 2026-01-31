@@ -1,0 +1,100 @@
+<%# 
+  DataTable Component - HTMX + Stimulus
+  Props:
+    - viewId: unique identifier for this datatable instance
+    - entityId: entity ID for data fetching
+    - entity: entity object
+    - records: array of records to display
+    - columns: array of column definitions
+    - pagination: { page, limit, total, pages }
+    - sort: { field, direction }
+    - searchQuery: current search term
+%>
+
+<style>
+    /* Match simple-datatables wrapper structure */
+    #dt-wrap-<%= viewId %> {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        height: 100%;
+    }
+    #dt-wrap-<%= viewId %> .dt-container {
+        flex: 1;
+        overflow: auto;
+    }
+    #dt-wrap-<%= viewId %> .dt-footer {
+        flex-shrink: 0;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #e0e6ed;
+    }
+    .dark #dt-wrap-<%= viewId %> .dt-footer {
+        border-top-color: #1b2e4b;
+    }
+    /* First column needs more space for avatar */
+    #dt-wrap-<%= viewId %> th:first-child,
+    #dt-wrap-<%= viewId %> td:first-child {
+        min-width: 220px;
+    }
+</style>
+
+<div id="dt-wrap-<%= viewId %>" 
+     data-controller="datatable"
+     data-datatable-view-id-value="<%= viewId %>"
+     data-datatable-entity-id-value="<%= entityId %>"
+     class="flex flex-col h-full p-4">
+    
+    <%# Hidden inputs for HTMX to include in requests %>
+    <input type="hidden" name="page" value="<%= pagination.page %>" data-datatable-target="pageInput" data-dt-params>
+    <input type="hidden" name="limit" value="<%= pagination.limit %>" data-datatable-target="limitInput" data-dt-params>
+    <input type="hidden" name="sort" value="<%= sort.field %>:<%= sort.direction %>" data-datatable-target="sortInput" data-dt-params>
+    <input type="hidden" name="cols" value="<%= JSON.stringify(columns.map(c => c.id)) %>" data-datatable-target="colsInput" data-dt-params>
+    
+    <%# Toolbar with search and settings - NOT replaced by HTMX %>
+    <%- include('./_toolbar', { 
+        viewId, 
+        entityId, 
+        searchQuery,
+        columns,
+        pagination,
+        account_number
+    }) %>
+    
+    <%# Table content that gets replaced by HTMX %>
+    <div id="datatable-body-<%= viewId %>">
+        <%# Table structure %>
+        <div class="dt-container flex-1 overflow-auto">
+            <%- include('./_table', { 
+                viewId,
+                entityId,
+                entity,
+                columns,
+                records,
+                sort,
+                account_number
+            }) %>
+        </div>
+        
+        <%# Pagination %>
+        <div class="dt-footer">
+            <%- include('./_pagination', { 
+                viewId,
+                entityId,
+                pagination,
+                account_number
+            }) %>
+        </div>
+    </div>
+    
+    <%# Settings Panel %>
+    <%- include('./_settings_panel', { 
+        viewId,
+        entityId,
+        columns,
+        sort,
+        density: 'normal',
+        account_number
+    }) %>
+</div>

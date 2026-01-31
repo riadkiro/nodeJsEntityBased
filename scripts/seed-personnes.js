@@ -29,6 +29,22 @@ const noms = [
 // Domaines email
 const domaines = ['gmail.com', 'yahoo.fr', 'outlook.com', 'orange.fr', 'free.fr', 'hotmail.com', 'laposte.net'];
 
+// Villes françaises avec codes postaux
+const villes = [
+    { ville: 'Paris', code: '75001' }, { ville: 'Marseille', code: '13001' }, { ville: 'Lyon', code: '69001' },
+    { ville: 'Toulouse', code: '31000' }, { ville: 'Nice', code: '06000' }, { ville: 'Nantes', code: '44000' },
+    { ville: 'Strasbourg', code: '67000' }, { ville: 'Montpellier', code: '34000' }, { ville: 'Bordeaux', code: '33000' },
+    { ville: 'Lille', code: '59000' }, { ville: 'Rennes', code: '35000' }, { ville: 'Reims', code: '51100' },
+    { ville: 'Saint-Étienne', code: '42000' }, { ville: 'Toulon', code: '83000' }, { ville: 'Grenoble', code: '38000' }
+];
+
+// Types de rues
+const rues = ['Rue', 'Avenue', 'Boulevard', 'Place', 'Impasse', 'Allée', 'Chemin'];
+const nomsRues = ['de la Paix', 'Victor Hugo', 'Jean Jaurès', 'du Général de Gaulle', 'de la Liberté', 'des Fleurs', 'du Moulin', 'de la Gare', 'du Château', 'des Écoles'];
+
+// Genres
+const genres = ['Homme', 'Femme'];
+
 // Générer un email à partir du nom/prénom
 function generateEmail(prenom, nom) {
     const domaine = domaines[Math.floor(Math.random() * domaines.length)];
@@ -53,11 +69,27 @@ function generatePhone() {
     return number;
 }
 
-// IDs des champs personnalisés (fournis par l'utilisateur)
+// Images de profil disponibles (profile-1.jpeg à profile-34.jpeg)
+const PROFILE_IMAGES = Array.from({ length: 34 }, (_, i) => `/assets/images/profile-${i + 1}.jpeg`);
+
+// Générer une image de profil aléatoire
+function getRandomProfileImage() {
+    return PROFILE_IMAGES[Math.floor(Math.random() * PROFILE_IMAGES.length)];
+}
+
+// IDs des champs personnalisés pour l'entity "Personne" (account 5001)
 const FIELD_IDS = {
-    nom: new mongoose.Types.ObjectId('69727b3fccf73a414a783c23'),
-    email: new mongoose.Types.ObjectId('6878745fd372aa750c638183'),
-    telephone: new mongoose.Types.ObjectId('6874aa37444c189ff59f2a13')
+    nom: new mongoose.Types.ObjectId('697dad0651a0e3777df61fac'),
+    prenom: new mongoose.Types.ObjectId('697dad0651a0e3777df61fad'),
+    nom_complet: new mongoose.Types.ObjectId('697dad0651a0e3777df61fae'),
+    email: new mongoose.Types.ObjectId('697dad0651a0e3777df61faf'),
+    telephone: new mongoose.Types.ObjectId('697dad0651a0e3777df61fb0'),
+    mobile: new mongoose.Types.ObjectId('697dad0651a0e3777df61fb1'),
+    adresse: new mongoose.Types.ObjectId('697dad0651a0e3777df61fb2'),
+    ville: new mongoose.Types.ObjectId('697dad0651a0e3777df61fb3'),
+    code_postal: new mongoose.Types.ObjectId('697dad0651a0e3777df61fb4'),
+    pays: new mongoose.Types.ObjectId('697dad0651a0e3777df61fb5'),
+    genre: new mongoose.Types.ObjectId('697dad0651a0e3777df61fb6')
 };
 
 async function main() {
@@ -135,16 +167,35 @@ async function main() {
 
             const email = generateEmail(prenom, nom);
             const phone = generatePhone();
+            const mobile = generatePhone();
+            const image = getRandomProfileImage();
+
+            // Location data
+            const location = villes[Math.floor(Math.random() * villes.length)];
+            const numRue = Math.floor(Math.random() * 150) + 1;
+            const typeRue = rues[Math.floor(Math.random() * rues.length)];
+            const nomRue = nomsRues[Math.floor(Math.random() * nomsRues.length)];
+            const adresse = `${numRue} ${typeRue} ${nomRue}`;
+            const genre = genres[Math.floor(Math.random() * genres.length)];
 
             const record = {
                 entityId: new mongoose.Types.ObjectId(targetEntityId),
                 title: fullName,
+                image: image,
                 status: 'active',
                 order: i,
                 customFields: [
-                    { field_id: FIELD_IDS.nom, value: fullName },
+                    { field_id: FIELD_IDS.nom, value: nom },
+                    { field_id: FIELD_IDS.prenom, value: prenom },
+                    { field_id: FIELD_IDS.nom_complet, value: fullName },
                     { field_id: FIELD_IDS.email, value: email },
-                    { field_id: FIELD_IDS.telephone, value: phone }
+                    { field_id: FIELD_IDS.telephone, value: phone },
+                    { field_id: FIELD_IDS.mobile, value: mobile },
+                    { field_id: FIELD_IDS.adresse, value: adresse },
+                    { field_id: FIELD_IDS.ville, value: location.ville },
+                    { field_id: FIELD_IDS.code_postal, value: location.code },
+                    { field_id: FIELD_IDS.pays, value: 'France' },
+                    { field_id: FIELD_IDS.genre, value: genre }
                 ],
                 createdAt: new Date(),
                 updatedAt: new Date()

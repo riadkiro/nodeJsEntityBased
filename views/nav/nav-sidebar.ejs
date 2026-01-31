@@ -175,40 +175,29 @@
         </h2>
 
         <!-- 📦 Collections -->
-        <li class="menu nav-item mb-2">
+        <li class="menu nav-item pb-2">
           <div class="nav-link group flex items-center justify-between"
             :class="window.location.pathname.includes('/entity') ? 'active' : ''">
-            <div class="flex items-center mx-2 cursor-pointer flex-1">
+            <a href="/account/<%= account_number %>/entity/list" class="flex items-center mx-2 cursor-pointer flex-1">
               <iconify-icon icon="solar:box-bold-duotone" class="ml-1" width="18" height="18" style="color: var(--primary)"></iconify-icon>
-              <a href="/account/<%= account_number %>/entity/list" 
-                class="text-black ltr:pl-2 rtl:pr-2 dark:text-[#506690] dark:group-hover:text-white-dark transition-all">Collections</a>
-            </div>
-            <div class="flex items-center gap-2 pr-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <iconify-icon icon="solar:add-square-linear" width="16" height="16"
-                class="cursor-pointer hover:text-primary"
-                onclick="if(window.location.pathname.includes('/entity/list')) { window.dispatchEvent(new CustomEvent('open-collection-modal')); } else { window.location.href='/account/<%= account_number %>/entity/list?openModal=true'; }"></iconify-icon>
-            </div>
+              <span class="text-black ltr:pl-2 rtl:pr-2 dark:text-[#506690] dark:group-hover:text-white-dark transition-all">Collections</span>
+            </a>
           </div>
         </li>
 
-        <!-- 🏷️ Statuts -->
-        <li class="menu nav-item mb-2">
+        <!-- 🏷️ Classifications -->
+        <li class="menu nav-item pb-2">
           <div class="nav-link group flex items-center justify-between"
             :class="window.location.pathname.includes('/classification') ? 'active' : ''">
             <a href="/account/<%= account_number %>/classification/list" class="flex items-center mx-2 cursor-pointer flex-1">
               <iconify-icon icon="solar:tag-horizontal-bold-duotone" class="ml-1" width="18" height="18" style="color: #f59e0b"></iconify-icon>
-              <span class="text-black ltr:pl-2 rtl:pr-2 dark:text-[#506690] dark:group-hover:text-white-dark transition-all">Statuts</span>
+              <span class="text-black ltr:pl-2 rtl:pr-2 dark:text-[#506690] dark:group-hover:text-white-dark transition-all">Classifications</span>
             </a>
-            <div class="flex items-center gap-2 pr-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <iconify-icon icon="solar:add-square-linear" width="16" height="16"
-                class="cursor-pointer hover:text-primary"
-                onclick="event.stopPropagation(); window.location.href='/account/<%= account_number %>/classification/add'"></iconify-icon>
-            </div>
           </div>
         </li>
 
         <!-- 📄 Modèles -->
-        <li class="menu nav-item mb-2">
+        <li class="menu nav-item pb-2">
           <div class="nav-link group flex items-center justify-between"
             :class="window.location.pathname.includes('/documents') ? 'active' : ''">
             <a href="/account/<%= account_number %>/documents" class="flex items-center mx-2 cursor-pointer flex-1">
@@ -219,7 +208,7 @@
         </li>
 
         <!-- ⚙️ Réglages (submenu) -->
-        <li class="menu nav-item mb-2">
+        <li class="menu nav-item pb-2">
           <div class="nav-link group flex items-center justify-between" 
             :class="{'active' : activeDropdown === 'settings'}"
             @click="activeDropdown === 'settings' ? activeDropdown = null : activeDropdown = 'settings'">

@@ -45,93 +45,85 @@
     window.PickerManager = PickerManager;
 
     // ============================================
-    // ICON LIBRARIES
+    // ICON LIBRARIES - Loaded dynamically
     // ============================================
     const ICON_LIBRARIES = {
         solar: {
             name: 'Solar',
             prefix: 'solar:',
-            suffix: '-bold-duotone',
-            icons: [
-                'box', 'user', 'folder', 'document', 'cart', 'bag', 'ticket', 'tag',
-                'calendar', 'clock-circle', 'star', 'heart', 'flag', 'bookmark', 'home', 'buildings',
-                'phone', 'letter', 'map', 'globe', 'settings', 'cog', 'bell', 'notification',
-                'chat-round', 'chat-dots', 'clipboard', 'file', 'archive', 'trash', 'pen', 'pen-new-square',
-                'add-circle', 'minus-circle', 'check-circle', 'close-circle', 'info-circle', 'danger',
-                'link', 'link-round', 'upload', 'download', 'cloud', 'database', 'server', 'code',
-                'widget', 'layers', 'copy', 'scissors', 'magnet', 'key', 'lock', 'lock-open',
-                'eye', 'eye-closed', 'camera', 'gallery', 'image', 'video', 'music', 'microphone',
-                'headphones', 'speaker', 'volume', 'play', 'pause', 'stop', 'forward', 'rewind',
-                'arrow-up', 'arrow-down', 'arrow-left', 'arrow-right', 'refresh', 'sync', 'search', 'filter',
-                'sort', 'grid', 'list', 'menu', 'more', 'dots-horizontal', 'dots-vertical',
-                'wallet', 'card', 'dollar', 'money', 'chart', 'graph', 'pie-chart', 'bar-chart',
-                'users', 'user-plus', 'user-minus', 'user-check', 'user-cross', 'people', 'group',
-                'shield', 'verified', 'crown', 'diamond', 'gift', 'cup', 'medal', 'fire',
-                'sun', 'moon', 'cloud-sun', 'rain', 'snow', 'lightning', 'wind', 'thermometer',
-                'laptop', 'monitor', 'smartphone', 'tablet', 'watch', 'keyboard', 'mouse', 'printer',
-                'wifi', 'bluetooth', 'signal', 'battery', 'power', 'flash', 'plug', 'usb',
-                'calculator', 'ruler', 'compass', 'target', 'crosshair', 'aim', 'pin', 'location',
-                'car', 'bus', 'train', 'plane', 'ship', 'rocket', 'bicycle', 'walk',
-                'food', 'restaurant', 'coffee', 'wine', 'beer', 'cake', 'pizza', 'apple',
-                'book', 'book-open', 'book-bookmark', 'notebook', 'notes', 'newspaper', 'magazine',
-                'graduation-cap', 'diploma', 'certificate', 'award', 'trophy', 'badge',
-                'palette', 'brush', 'paint-bucket', 'scissors', 'needle', 'thread', 'fabric',
-                'stethoscope', 'pill', 'syringe', 'dna', 'atom', 'flask', 'microscope',
-                'football', 'basketball', 'tennis', 'golf', 'bowling', 'dumbbell', 'swimming'
-            ]
+            jsonUrl: '/data/solar-icons.json',
+            filter: (icon) => icon.endsWith('-bold-duotone'), // Only bold duotone
+            icons: [] // Will be loaded dynamically
         },
         mdi: {
             name: 'Material',
             prefix: 'mdi:',
-            suffix: '',
             icons: [
-                'account', 'account-circle', 'folder', 'file-document', 'cart', 'basket', 'tag', 'label',
-                'calendar', 'clock', 'star', 'heart', 'flag', 'bookmark', 'home', 'office-building',
-                'phone', 'email', 'map-marker', 'earth', 'cog', 'bell', 'message', 'chat',
-                'clipboard', 'file', 'archive', 'delete', 'pencil', 'plus-circle', 'minus-circle',
-                'check-circle', 'close-circle', 'information', 'alert', 'link', 'upload', 'download',
-                'cloud', 'database', 'server', 'code-tags', 'widgets', 'layers', 'content-copy',
-                'key', 'lock', 'lock-open', 'eye', 'eye-off', 'camera', 'image', 'video',
-                'music', 'microphone', 'headphones', 'volume-high', 'play', 'pause', 'stop',
-                'arrow-up', 'arrow-down', 'arrow-left', 'arrow-right', 'refresh', 'magnify', 'filter',
-                'grid', 'view-list', 'menu', 'dots-horizontal', 'dots-vertical', 'wallet', 'credit-card',
-                'currency-usd', 'chart-line', 'chart-pie', 'chart-bar', 'account-group', 'shield',
-                'check-decagram', 'crown', 'diamond', 'gift', 'trophy', 'fire', 'white-balance-sunny',
-                'weather-night', 'cloud-outline', 'laptop', 'monitor', 'cellphone', 'tablet',
-                'keyboard', 'mouse', 'printer', 'wifi', 'bluetooth', 'battery', 'power', 'flash',
-                'calculator', 'ruler', 'compass', 'target', 'map-marker', 'car', 'bus', 'train',
-                'airplane', 'ship', 'rocket', 'bike', 'walk', 'food', 'coffee', 'glass-wine',
-                'book', 'book-open', 'notebook', 'newspaper', 'school', 'certificate', 'palette',
-                'brush', 'medical-bag', 'pill', 'dna', 'atom', 'flask', 'soccer', 'basketball',
-                'tennis', 'golf', 'dumbbell', 'swim'
+                'mdi:account', 'mdi:account-circle', 'mdi:folder', 'mdi:file-document', 'mdi:cart', 'mdi:basket', 'mdi:tag', 'mdi:label',
+                'mdi:calendar', 'mdi:clock', 'mdi:star', 'mdi:heart', 'mdi:flag', 'mdi:bookmark', 'mdi:home', 'mdi:office-building',
+                'mdi:phone', 'mdi:email', 'mdi:map-marker', 'mdi:earth', 'mdi:cog', 'mdi:bell', 'mdi:message', 'mdi:chat',
+                'mdi:clipboard', 'mdi:file', 'mdi:archive', 'mdi:delete', 'mdi:pencil', 'mdi:plus-circle', 'mdi:minus-circle',
+                'mdi:check-circle', 'mdi:close-circle', 'mdi:information', 'mdi:alert', 'mdi:link', 'mdi:upload', 'mdi:download',
+                'mdi:cloud', 'mdi:database', 'mdi:server', 'mdi:code-tags', 'mdi:widgets', 'mdi:layers', 'mdi:content-copy',
+                'mdi:key', 'mdi:lock', 'mdi:lock-open', 'mdi:eye', 'mdi:eye-off', 'mdi:camera', 'mdi:image', 'mdi:video',
+                'mdi:music', 'mdi:microphone', 'mdi:headphones', 'mdi:volume-high', 'mdi:play', 'mdi:pause', 'mdi:stop'
             ]
         },
         tabler: {
             name: 'Tabler',
             prefix: 'tabler:',
-            suffix: '',
             icons: [
-                'user', 'users', 'folder', 'file', 'shopping-cart', 'tag', 'calendar', 'clock',
-                'star', 'heart', 'flag', 'bookmark', 'home', 'building', 'phone', 'mail',
-                'map-pin', 'world', 'settings', 'bell', 'message', 'clipboard', 'file-text',
-                'archive', 'trash', 'pencil', 'plus', 'minus', 'check', 'x', 'info-circle',
-                'alert-triangle', 'link', 'upload', 'download', 'cloud', 'database', 'server',
-                'code', 'layout', 'layers', 'copy', 'key', 'lock', 'lock-open', 'eye',
-                'eye-off', 'camera', 'photo', 'video', 'music', 'microphone', 'headphones',
-                'volume', 'player-play', 'player-pause', 'player-stop', 'arrow-up', 'arrow-down',
-                'arrow-left', 'arrow-right', 'refresh', 'search', 'filter', 'grid-dots', 'list',
-                'menu-2', 'dots', 'wallet', 'credit-card', 'currency-dollar', 'chart-line',
-                'chart-pie', 'chart-bar', 'users', 'shield', 'circle-check', 'crown', 'diamond',
-                'gift', 'trophy', 'flame', 'sun', 'moon', 'cloud', 'device-laptop', 'device-desktop',
-                'device-mobile', 'device-tablet', 'keyboard', 'mouse', 'printer', 'wifi', 'bluetooth',
-                'battery', 'power', 'bolt', 'calculator', 'ruler', 'compass', 'target', 'map-pin',
-                'car', 'bus', 'train', 'plane', 'ship', 'rocket', 'bike', 'walk', 'meat',
-                'coffee', 'glass', 'book', 'book-2', 'notebook', 'news', 'school', 'certificate',
-                'palette', 'brush', 'first-aid-kit', 'pill', 'dna', 'atom', 'flask', 'ball-football',
-                'ball-basketball', 'ball-tennis', 'golf', 'barbell', 'swimming'
+                'tabler:user', 'tabler:users', 'tabler:folder', 'tabler:file', 'tabler:shopping-cart', 'tabler:tag', 'tabler:calendar', 'tabler:clock',
+                'tabler:star', 'tabler:heart', 'tabler:flag', 'tabler:bookmark', 'tabler:home', 'tabler:building', 'tabler:phone', 'tabler:mail',
+                'tabler:map-pin', 'tabler:world', 'tabler:settings', 'tabler:bell', 'tabler:message', 'tabler:clipboard', 'tabler:file-text',
+                'tabler:archive', 'tabler:trash', 'tabler:pencil', 'tabler:plus', 'tabler:minus', 'tabler:check', 'tabler:x', 'tabler:info-circle',
+                'tabler:alert-triangle', 'tabler:link', 'tabler:upload', 'tabler:download', 'tabler:cloud', 'tabler:database', 'tabler:server',
+                'tabler:code', 'tabler:layout', 'tabler:layers', 'tabler:copy', 'tabler:key', 'tabler:lock', 'tabler:lock-open', 'tabler:eye',
+                'tabler:eye-off', 'tabler:camera', 'tabler:photo', 'tabler:video', 'tabler:music', 'tabler:microphone', 'tabler:headphones'
             ]
         }
     };
+
+    // Cache for loaded icon libraries
+    const _iconCache = {};
+
+    // Load icons from JSON for a library
+    async function loadLibraryIcons(libraryKey) {
+        const lib = ICON_LIBRARIES[libraryKey];
+        if (!lib) return [];
+
+        // Return cached if already loaded
+        if (_iconCache[libraryKey]) {
+            return _iconCache[libraryKey];
+        }
+
+        // If static icons, cache and return
+        if (lib.icons && lib.icons.length > 0 && !lib.jsonUrl) {
+            _iconCache[libraryKey] = lib.icons;
+            return lib.icons;
+        }
+
+        // Load from JSON
+        if (lib.jsonUrl) {
+            try {
+                const response = await fetch(lib.jsonUrl);
+                if (response.ok) {
+                    let allIcons = await response.json();
+                    // Apply filter if exists
+                    if (lib.filter) {
+                        allIcons = allIcons.filter(lib.filter);
+                    }
+                    lib.icons = allIcons;
+                    _iconCache[libraryKey] = allIcons;
+                    return allIcons;
+                }
+            } catch (e) {
+                console.warn(`Failed to load icons for ${libraryKey}:`, e);
+            }
+        }
+
+        return lib.icons || [];
+    }
 
     const ICONS_PER_PAGE = 60;
     const SEARCH_DEBOUNCE_MS = 200;
@@ -177,10 +169,11 @@
             this._init();
         }
 
-        _init() {
+        async _init() {
             this._createDOM();
             this._bindEvents();
-            this._loadIcons();
+            await this._loadIcons();
+            this._renderGrid();
         }
 
         _createDOM() {
@@ -251,20 +244,20 @@
             });
 
             // Library change
-            this.librarySelect.addEventListener('change', () => {
+            this.librarySelect.addEventListener('change', async () => {
                 this.currentLibrary = this.librarySelect.value;
                 this.currentPage = 1;
-                this._loadIcons();
+                await this._loadIcons();
                 this._renderGrid();
             });
 
             // Search input with debounce
             this.searchInput.addEventListener('input', () => {
                 clearTimeout(this.searchTimeout);
-                this.searchTimeout = setTimeout(() => {
+                this.searchTimeout = setTimeout(async () => {
                     this.searchQuery = this.searchInput.value.trim().toLowerCase();
                     this.currentPage = 1;
-                    this._loadIcons();
+                    await this._loadIcons();
                     this._renderGrid();
                 }, SEARCH_DEBOUNCE_MS);
             });
@@ -282,23 +275,17 @@
             });
         }
 
-        _loadIcons() {
-            const lib = ICON_LIBRARIES[this.currentLibrary];
-            if (!lib) return;
+        async _loadIcons() {
+            const allIcons = await loadLibraryIcons(this.currentLibrary);
 
             // Filter icons by search query
             if (this.searchQuery) {
-                this.filteredIcons = lib.icons.filter(name =>
+                this.filteredIcons = allIcons.filter(name =>
                     name.toLowerCase().includes(this.searchQuery)
                 );
             } else {
-                this.filteredIcons = [...lib.icons];
+                this.filteredIcons = [...allIcons];
             }
-        }
-
-        _getFullIconName(iconName) {
-            const lib = ICON_LIBRARIES[this.currentLibrary];
-            return `${lib.prefix}${iconName}${lib.suffix}`;
         }
 
         _renderGrid() {
@@ -309,13 +296,14 @@
             // Use DocumentFragment for performance
             const fragment = document.createDocumentFragment();
 
-            iconsToShow.forEach(iconName => {
-                const fullIcon = this._getFullIconName(iconName);
+            iconsToShow.forEach(fullIcon => {
                 const item = document.createElement('button');
                 item.type = 'button';
                 item.className = 'picker-item';
                 item.dataset.icon = fullIcon;
-                item.title = iconName;
+                // Extract display name from full icon (e.g., "solar:box-bold-duotone" -> "box")
+                const displayName = fullIcon.replace(/^[^:]+:/, '').replace(/-bold-duotone$/, '');
+                item.title = displayName;
 
                 if (this.selectedIcon === fullIcon) {
                     item.classList.add('picker-item--selected');
@@ -334,7 +322,7 @@
             this.grid.appendChild(fragment);
 
             // Update count and load more visibility
-            this.countDisplay.textContent = `${displayCount} icônes affichées`;
+            this.countDisplay.textContent = `${displayCount} / ${totalIcons} icônes`;
             this.loadMoreBtn.style.display = displayCount < totalIcons ? 'inline' : 'none';
         }
 

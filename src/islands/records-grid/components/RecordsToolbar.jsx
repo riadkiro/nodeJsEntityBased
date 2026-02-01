@@ -86,9 +86,9 @@ export default function RecordsToolbar({
         : columns
 
     return (
-        <div className="dataTable-top flex items-center mb-0 justify-end gap-2">
-            {/* Search input */}
-            <div className="dataTable-search relative w-64">
+        <div className="dataTable-top flex items-center mb-0 justify-between gap-2">
+            {/* Search input - LEFT */}
+            <div className="dataTable-search relative w-64" style={{ marginLeft: 0 }}>
                 <svg
                     className="absolute left-4 top-1/2 ml-2 -translate-y-1/2 h-4 w-4 text-gray-400"
                     viewBox="0 0 24 24"
@@ -111,62 +111,64 @@ export default function RecordsToolbar({
                     </div>
                 )}
             </div>
+            {/* Icons group - RIGHT */}
+            <div className="flex items-center gap-2">
+                {/* Sort button */}
+                {(() => {
+                    const isSortActive = preferences.sort?.field !== 'createdAt' || preferences.sort?.direction !== 'desc'
+                    return (
+                        <button
+                            ref={sortBtnRef}
+                            type="button"
+                            onClick={() => { setSortPopover(!sortPopover); setDisplayPopover(false); setColumnsPopover(false) }}
+                            className={`p-2 rounded-lg border transition-all ${sortPopover || isSortActive
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50'}`}
+                            title="Trier"
+                        >
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                                <path d="M16 18L16 6M16 6L20 10M16 6L12 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M8 6L8 18M8 18L12 14M8 18L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </button>
+                    )
+                })()}
 
-            {/* Sort button */}
-            {(() => {
-                const isSortActive = preferences.sort?.field !== 'createdAt' || preferences.sort?.direction !== 'desc'
-                return (
-                    <button
-                        ref={sortBtnRef}
-                        type="button"
-                        onClick={() => { setSortPopover(!sortPopover); setDisplayPopover(false); setColumnsPopover(false) }}
-                        className={`p-2 rounded-lg border transition-all ${sortPopover || isSortActive
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50'}`}
-                        title="Trier"
-                    >
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                            <path d="M16 18L16 6M16 6L20 10M16 6L12 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M8 6L8 18M8 18L12 14M8 18L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </button>
-                )
-            })()}
+                {/* Display settings button (density + pageSize) */}
+                <button
+                    ref={displayBtnRef}
+                    type="button"
+                    onClick={() => { setDisplayPopover(!displayPopover); setSortPopover(false); setColumnsPopover(false) }}
+                    className={`p-2 rounded-lg border transition-all ${displayPopover
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50'}`}
+                    title="Mode d'affichage"
+                >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <path d="M3 7H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        <path d="M6 12H18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        <path d="M10 17H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                </button>
 
-            {/* Display settings button (density + pageSize) */}
-            <button
-                ref={displayBtnRef}
-                type="button"
-                onClick={() => { setDisplayPopover(!displayPopover); setSortPopover(false); setColumnsPopover(false) }}
-                className={`p-2 rounded-lg border transition-all ${displayPopover
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50'}`}
-                title="Mode d'affichage"
-            >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <path d="M3 7H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M6 12H18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M10 17H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-            </button>
-
-            {/* Columns visibility button */}
-            <button
-                ref={columnsBtnRef}
-                type="button"
-                onClick={() => { setColumnsPopover(!columnsPopover); setDisplayPopover(false); setSortPopover(false) }}
-                className={`p-2 rounded-lg border transition-all ${columnsPopover
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50'}`}
-                title="Colonnes visibles"
-            >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <path d="M9 3H4C3.44772 3 3 3.44772 3 4V11C3 11.5523 3.44772 12 4 12H9C9.55228 12 10 11.5523 10 11V4C10 3.44772 9.55228 3 9 3Z" stroke="currentColor" strokeWidth="1.5" />
-                    <path d="M20 3H15C14.4477 3 14 3.44772 14 4V7C14 7.55228 14.4477 8 15 8H20C20.5523 8 21 7.55228 21 7V4C21 3.44772 20.5523 3 20 3Z" stroke="currentColor" strokeWidth="1.5" />
-                    <path d="M20 12H15C14.4477 12 14 12.4477 14 13V20C14 20.5523 14.4477 21 15 21H20C20.5523 21 21 20.5523 21 20V13C21 12.4477 20.5523 12 20 12Z" stroke="currentColor" strokeWidth="1.5" />
-                    <path d="M9 16H4C3.44772 16 3 16.4477 3 17V20C3 20.5523 3.44772 21 4 21H9C9.55228 21 10 20.5523 10 20V17C10 16.4477 9.55228 16 9 16Z" stroke="currentColor" strokeWidth="1.5" />
-                </svg>
-            </button>
+                {/* Columns visibility button */}
+                <button
+                    ref={columnsBtnRef}
+                    type="button"
+                    onClick={() => { setColumnsPopover(!columnsPopover); setDisplayPopover(false); setSortPopover(false) }}
+                    className={`p-2 rounded-lg border transition-all ${columnsPopover
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50'}`}
+                    title="Colonnes visibles"
+                >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <path d="M9 3H4C3.44772 3 3 3.44772 3 4V11C3 11.5523 3.44772 12 4 12H9C9.55228 12 10 11.5523 10 11V4C10 3.44772 9.55228 3 9 3Z" stroke="currentColor" strokeWidth="1.5" />
+                        <path d="M20 3H15C14.4477 3 14 3.44772 14 4V7C14 7.55228 14.4477 8 15 8H20C20.5523 8 21 7.55228 21 7V4C21 3.44772 20.5523 3 20 3Z" stroke="currentColor" strokeWidth="1.5" />
+                        <path d="M20 12H15C14.4477 12 14 12.4477 14 13V20C14 20.5523 14.4477 21 15 21H20C20.5523 21 21 20.5523 21 20V13C21 12.4477 20.5523 12 20 12Z" stroke="currentColor" strokeWidth="1.5" />
+                        <path d="M9 16H4C3.44772 16 3 16.4477 3 17V20C3 20.5523 3.44772 21 4 21H9C9.55228 21 10 20.5523 10 20V17C10 16.4477 9.55228 16 9 16Z" stroke="currentColor" strokeWidth="1.5" />
+                    </svg>
+                </button>
+            </div>
 
             {/* Sort Popover */}
             {sortPopover && createPortal(

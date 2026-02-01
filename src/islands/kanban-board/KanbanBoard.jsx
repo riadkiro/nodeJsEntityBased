@@ -58,11 +58,20 @@ export default function KanbanBoard({
 
         const handleWheel = (e) => {
             if (e.shiftKey) return
-            if (e.deltaY !== 0) {
+
+            const canScrollY = container.scrollHeight > container.clientHeight
+            const canScrollX = container.scrollWidth > container.clientWidth
+
+            // Si on peut scroller verticalement, on laisse le navigateur faire (pas de preventDefault)
+            if (canScrollY) return
+
+            // Sinon (pas de scroll vertical possible), on convertit en horizontal
+            if (canScrollX && e.deltaY !== 0) {
                 e.preventDefault()
                 container.scrollLeft += e.deltaY
             }
         }
+
 
         container.addEventListener('wheel', handleWheel, { passive: false })
 
@@ -460,7 +469,7 @@ export default function KanbanBoard({
                 width: '100%',
                 minWidth: 0,
                 overflowX: 'auto',
-                overflowY: 'hidden',
+                overflowY: 'auto',
                 overscrollBehaviorX: 'contain',
                 cursor: 'grab',
                 userSelect: 'none',

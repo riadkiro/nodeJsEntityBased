@@ -1,5 +1,9 @@
 <%# 
   record-view-progressive.ejs
-  Test page for Progressive DataTable (React Island vs HTMX)
+  Progressive views (React Islands) for DataTable and Kanban
 %>
-<%- include('partials/view-table-progressive') %>
+<% if (view.viewType === 'kanban') { %>
+    <%- include('partials/view-kanban-progressive') %>
+<% } else { %>
+    <%- include('partials/view-table-progressive') %>
+<% } %>

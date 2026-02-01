@@ -1,0 +1,25 @@
+<!-- views/record/partials/view-kanban-progressive.ejs -->
+<!-- React Kanban Board Island -->
+
+<%
+  // Build viewId for uniqueness
+  const viewId = (typeof view !== 'undefined' && view._id) ? view._id.toString() : entity._id.toString();
+%>
+
+<div 
+    data-island="kanban-board"
+    data-account-number="<%= account_number %>"
+    data-entity-id="<%= entity._id %>"
+    data-view-id="<%= viewId %>"
+    data-entity-name="<%= entity.name %>"
+    data-entity-slug="<%= entity.slug %>"
+    data-kanban-field-id="<%= (view.settings && view.settings.kanbanField) || 'status' %>"
+>
+    <!-- Loading placeholder -->
+    <div class="flex items-center justify-center h-64">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    </div>
+</div>
+
+<!-- Load built asset (run 'npm run build' if missing) -->
+<script type="module" src="/dist/kanbanBoard.js"></script>

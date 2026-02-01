@@ -102,6 +102,18 @@
       fieldSearch: '',
       selectedFields: [],
       systemFields: [],
+      openCategories: { popular: true }, // Categories accordion state - popular open by default
+      
+      // Classifications
+      allClassifications: [],
+      classificationsLoaded: false,
+      
+      // Accordion state
+      showDescSlug: false,
+      accordionVisuel: false,
+      accordionChamps: false,
+      accordionClassifications: false,
+      accordionReference: false,
       
       // New collection form
       newCollection: {
@@ -122,7 +134,9 @@
           image: true,
           slug: true,
           date: true
-        }
+        },
+        statusClassificationId: '',
+        classifications: []
       },
       
       // UI state
@@ -395,10 +409,57 @@
           const res = await fetch('/account/<%= account_number %>/field-template/api/system');
           if (res.ok) {
             this.systemFields = await res.json();
+            console.log('📦 systemFields loaded:', this.systemFields);
+            console.log('📦 Total categories:', this.systemFields.length);
+            this.systemFields.forEach(cat => console.log(`  - ${cat.label}: ${cat.fields.length} champs`));
           }
         } catch (e) {
           console.error('Failed to load system fields:', e);
         }
+      },
+      
+      async loadClassifications() {
+        if (this.classificationsLoaded) return;
+        try {
+          const res = await fetch('/account/<%= account_number %>/classification/api/list');
+          if (res.ok) {
+            this.allClassifications = await res.json();
+            this.classificationsLoaded = true;
+          }
+        } catch (e) {
+          console.error('Failed to load classifications:', e);
+        }
+      },
+      
+      toggleClassification(id) {
+        // Don't allow selecting status classification in additional
+        if (id === this.newCollection.statusClassificationId) return;
+        
+        const idx = this.newCollection.classifications.indexOf(id);
+        if (idx >= 0) {
+          this.newCollection.classifications.splice(idx, 1);
+        } else {
+          this.newCollection.classifications.push(id);
+        }
+      },
+      
+      isClassificationSelected(id) {
+        return this.newCollection.classifications.includes(id);
+      },
+      
+      onStatusClassificationChange() {
+        // Remove from additional classifications if selected as status
+        const statusId = this.newCollection.statusClassificationId;
+        if (statusId) {
+          const idx = this.newCollection.classifications.indexOf(statusId);
+          if (idx >= 0) {
+            this.newCollection.classifications.splice(idx, 1);
+          }
+        }
+      },
+      
+      getClassificationById(id) {
+        return this.allClassifications.find(c => c._id === id);
       },
 
       showHideColumns(col, value) {
@@ -418,6 +479,10 @@
         this.step = 1;
         this.fieldSearch = '';
         this.selectedFields = [];
+        this.accordionVisuel = false;
+        this.accordionChamps = true;
+        this.accordionClassifications = false;
+        this.accordionReference = false;
         this.newCollection = {
           name: '',
           slug: '',
@@ -426,7 +491,9 @@
           color: '',
           active: true,
           referenceTitleTokens: [{ t: 'field', id: 'title' }],
-          standardFields: { title: true, slug: false, date: false }
+          standardFields: { title: true, slug: false, date: false },
+          statusClassificationId: '',
+          classifications: []
         };
       },
 
@@ -458,7 +525,9 @@
               active: this.newCollection.active,
               enabledStandardFields,
               customFields: this.selectedFields.map(f => f._id),
-              referenceTitleTokens: this.newCollection.referenceTitleTokens
+              referenceTitleTokens: this.newCollection.referenceTitleTokens,
+              statusClassification: this.newCollection.statusClassificationId || null,
+              classifications: this.newCollection.classifications
             })
           });
 
@@ -479,6 +548,7 @@
 
       async openEditModal(entityId) {
         this.editingId = entityId;
+        await this.loadClassifications();
         try {
           const res = await fetch(`/account/<%= account_number %>/entity/api/${entityId}`);
           if (res.ok) {
@@ -493,9 +563,15 @@
               referenceTitleTokens: entity.referenceTitleTokens || [{ t: 'field', id: 'title' }],
               standardFields: {
                 title: (entity.enabledStandardFields || []).includes('title'),
+                description: (entity.enabledStandardFields || []).includes('description'),
+                icon: (entity.enabledStandardFields || []).includes('icon'),
+                attachments: (entity.enabledStandardFields || []).includes('attachments'),
+                image: (entity.enabledStandardFields || []).includes('image'),
                 slug: (entity.enabledStandardFields || []).includes('slug'),
                 date: (entity.enabledStandardFields || []).includes('date')
-              }
+              },
+              statusClassificationId: entity.statusClassification?._id || entity.statusClassification || '',
+              classifications: (entity.classifications || []).map(c => c._id || c)
             };
             this.selectedFields = entity.customFields || [];
             this.step = 1;
@@ -527,7 +603,9 @@
               active: this.newCollection.active,
               enabledStandardFields,
               customFields: this.selectedFields.map(f => f._id || f),
-              referenceTitleTokens: this.newCollection.referenceTitleTokens
+              referenceTitleTokens: this.newCollection.referenceTitleTokens,
+              statusClassification: this.newCollection.statusClassificationId || null,
+              classifications: this.newCollection.classifications
             })
           });
 
@@ -549,8 +627,10 @@
       init() {
         const rows = <%- JSON.stringify(rows) %>;
         this.loadSystemFields();
+        this.loadClassifications();
 
         window.addEventListener('open-collection-modal', () => {
+          this.loadClassifications();
           this.showCreateModal = true;
         });
 
@@ -652,7 +732,6 @@
         <table id="myTable1" class="whitespace-nowrap"></table>
       </div>
     </div>
-  </div>
 
   <!-- Modal Nouvelle Collection - Wizard 2 Étapes -->
   <div x-show="showCreateModal" x-transition.opacity.duration.300ms 
@@ -676,7 +755,7 @@
       </div>
 
       <!-- Body - Scrollable -->
-      <div class="p-5 overflow-y-auto flex-grow">
+      <div class="px-5 pt-3 pb-5 overflow-y-auto flex-grow">
         <form @submit.prevent="step === 2 ? createCollection() : null">
           
           <!-- STEP 1: Infos de base -->
@@ -687,114 +766,213 @@
               <input type="text" x-model="newCollection.name" placeholder="Ex: Contacts, Projets, Factures..." class="form-input w-full" required>
             </div>
 
-            <!-- Description -->
+            <!-- Description et Slug - Accordion -->
             <div class="mb-4">
-              <label class="mb-2 block text-sm font-bold">Description</label>
-              <textarea x-model="newCollection.description" rows="2" placeholder="Description de la collection..." class="form-input w-full resize-none"></textarea>
-            </div>
-
-            <!-- Slug -->
-            <div class="mb-4">
-              <label class="mb-2 block text-sm font-bold">Slug</label>
-              <input type="text" x-model="newCollection.slug" placeholder="slug-de-la-collection" class="form-input w-full">
-              <p class="text-xs text-gray-400 mt-1">Identifiant unique (généré automatiquement si vide)</p>
-            </div>
-
-            <!-- Visuel: Icône, Couleur, Media -->
-            <div class="mb-5">
-              <label class="mb-3 block text-sm font-bold">Visuel</label>
-              <div class="flex items-center gap-4">
-                <!-- Icône (Vanilla JS Picker) -->
-                <div id="create-icon-picker"></div>
-
-                <!-- Couleur (Vanilla JS Picker) -->
-                <div id="create-color-picker"></div>
-
-                <!-- Media - Icône simple -->
-                <label class="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer" title="Ajouter une image">
-                  <iconify-icon icon="solar:gallery-bold-duotone" width="22" class="text-gray-400 hover:text-primary"></iconify-icon>
-                  <input type="file" accept="image/*" class="hidden" @change="handleImageUpload($event)">
-                </label>
-              </div>
-            </div>
-
-            <!-- Champs -->
-            <div class="mb-4">
-              <div class="flex items-center gap-2 mb-3">
-                <iconify-icon icon="solar:layers-bold-duotone" class="text-warning" width="16"></iconify-icon>
-                <label class="text-sm font-bold">Champs</label>
-                <button type="button" @click="step = 2" class="inline-flex items-center gap-1 text-xs text-info hover:text-info/80 transition-colors">
-                  <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
-                  Ajouter
-                </button>
-              </div>
-              
-              <!-- Champs système -->
-              <div class="p-3 border border-warning/30 rounded-lg mb-2">
-                <div class="text-xs text-warning font-medium mb-2 flex items-center gap-1">
-                  <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
-                  <span x-text="Object.values(newCollection.standardFields).filter(v => v).length + ' champ(s) sélectionné(s)'"></span>
+              <button type="button" @click="showDescSlug = !showDescSlug" 
+                      class="mb-2 flex items-center justify-between w-full text-sm font-bold">
+                <div class="flex items-center gap-2">
+                  <iconify-icon icon="solar:document-text-bold-duotone" width="16" class="text-secondary"></iconify-icon>
+                  <span>Description et Slug</span>
                 </div>
-                <div class="flex flex-wrap gap-1.5">
-                  <template x-for="(enabled, field) in newCollection.standardFields" :key="'std-'+field">
-                    <button type="button" 
-                            @click="newCollection.standardFields[field] = !newCollection.standardFields[field]"
-                            class="inline-flex items-center gap-1 px-2 py-0 rounded-full text-xs font-medium border transition-colors"
-                            :class="enabled ? 'bg-warning/10 border-warning/30 text-warning' : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'">
-                      <iconify-icon :icon="getFieldIcon(field)" width="12"></iconify-icon>
-                      <span x-text="getFieldLabel(field)"></span>
+                <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
+                              :class="showDescSlug && 'rotate-180'" 
+                              style="transition: transform 0.2s"></iconify-icon>
+              </button>
+              <div x-show="showDescSlug" x-collapse class="mt-2 space-y-3">
+                <textarea x-model="newCollection.description" rows="2" placeholder="Description de la collection..." class="form-input w-full resize-none text-sm"></textarea>
+                <div>
+                  <input type="text" x-model="newCollection.slug" placeholder="slug-de-la-collection" class="form-input w-full text-sm">
+                  <p class="text-xs text-gray-400 mt-1">Identifiant unique (généré automatiquement si vide)</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Visuel - Accordion -->
+            <div class="mb-4">
+              <button type="button" @click="accordionVisuel = !accordionVisuel" 
+                      class="mb-2 flex items-center justify-between w-full text-sm font-bold">
+                <div class="flex items-center gap-2">
+                  <iconify-icon icon="solar:pallete-2-bold-duotone" width="16" class="text-primary"></iconify-icon>
+                  <span>Visuel</span>
+                </div>
+                <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
+                              :class="accordionVisuel && 'rotate-180'" 
+                              style="transition: transform 0.2s"></iconify-icon>
+              </button>
+              <div x-show="accordionVisuel" x-collapse class="mt-2">
+                <div class="flex items-center gap-4">
+                  <!-- Icône (Vanilla JS Picker) -->
+                  <div id="create-icon-picker"></div>
+
+                  <!-- Couleur (Vanilla JS Picker) -->
+                  <div id="create-color-picker"></div>
+
+                  <!-- Media - Icône simple -->
+                  <label class="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer" title="Ajouter une image">
+                    <iconify-icon icon="solar:gallery-bold-duotone" width="22" class="text-gray-400 hover:text-primary"></iconify-icon>
+                    <input type="file" accept="image/*" class="hidden" @change="handleImageUpload($event)">
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Champs - Accordion -->
+            <div class="mb-4">
+              <button type="button" @click="accordionChamps = !accordionChamps" 
+                      class="mb-2 flex items-center justify-between w-full text-sm font-bold">
+                <div class="flex items-center gap-2">
+                  <iconify-icon icon="solar:layers-bold-duotone" class="text-warning" width="16"></iconify-icon>
+                  <span>Champs</span>
+                </div>
+                <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
+                              :class="accordionChamps && 'rotate-180'" 
+                              style="transition: transform 0.2s"></iconify-icon>
+              </button>
+              <div x-show="accordionChamps" x-collapse class="space-y-2">
+                <!-- Ajouter des champs -->
+                <button type="button" @click="loadSystemFields(); step = 2" 
+                        class="w-full flex items-center justify-center gap-2 py-2 text-sm text-info hover:text-info/80 border border-dashed border-info/30 rounded-lg hover:bg-info/5 transition-colors">
+                  <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
+                  <span>Ajouter des champs</span>
+                </button>
+                
+                <!-- Champs système -->
+                <div class="p-3 border border-warning/30 rounded-lg">
+                  <div class="text-xs text-warning font-medium mb-2 flex items-center gap-1">
+                    <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                    <span>Champs par défaut</span>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <template x-for="(enabled, field) in newCollection.standardFields" :key="'std-'+field">
+                      <button type="button" 
+                              @click="newCollection.standardFields[field] = !newCollection.standardFields[field]"
+                              class="inline-flex items-center gap-1 px-2 py-0 rounded-full text-xs font-medium border transition-colors"
+                              :class="enabled ? 'bg-warning/10 border-warning/30 text-warning' : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'">
+                        <iconify-icon :icon="getFieldIcon(field)" width="12"></iconify-icon>
+                        <span x-text="getFieldLabel(field)"></span>
+                      </button>
+                    </template>
+                  </div>
+                </div>
+                
+                <!-- Champs personnalisés -->
+                <div class="p-3 border border-warning/30 rounded-lg" x-show="selectedFields.length > 0">
+                  <div class="text-xs text-warning font-medium mb-2 flex items-center gap-1">
+                    <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                    <span x-text="selectedFields.length + ' champ(s) sélectionné(s)'"></span>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <template x-for="(field, idx) in selectedFields" :key="field._id || idx">
+                      <div class="inline-flex items-center gap-1 px-2 py-0 bg-warning/10 border border-warning/30 rounded-full text-xs font-medium text-warning">
+                        <iconify-icon :icon="field.icon || 'solar:widget-bold'" width="12"></iconify-icon>
+                        <span x-text="field.label || field.name || 'Champ'"></span>
+                        <button type="button" @click="selectedFields.splice(idx, 1)" class="hover:text-red-500">
+                          <iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon>
+                        </button>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Classifications - Accordion -->
+            <div class="mb-4">
+              <button type="button" @click="accordionClassifications = !accordionClassifications" 
+                      class="mb-2 flex items-center justify-between w-full text-sm font-bold">
+                <div class="flex items-center gap-2">
+                  <iconify-icon icon="solar:tag-bold-duotone" width="16" class="text-info"></iconify-icon>
+                  <span>Classifications</span>
+                </div>
+                <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
+                              :class="accordionClassifications && 'rotate-180'" 
+                              style="transition: transform 0.2s"></iconify-icon>
+              </button>
+              <div x-show="accordionClassifications" x-collapse class="mt-2 space-y-3">
+                <!-- Status Classification (Kanban driver) -->
+                <div class="p-3 border border-info/30 rounded-lg">
+                  <label class="text-xs text-info font-medium mb-2 block">
+                    <iconify-icon icon="solar:diploma-bold-duotone" width="14" class="mr-1"></iconify-icon>
+                    Classification de statut (Kanban)
+                  </label>
+                  <select x-model="newCollection.statusClassificationId" 
+                          @change="onStatusClassificationChange()"
+                          class="form-select w-full text-sm">
+                    <option value="">Aucune</option>
+                    <template x-for="cls in allClassifications" :key="cls._id">
+                      <option :value="cls._id" x-text="cls.name"></option>
+                    </template>
+                  </select>
+                  <p class="text-xs text-gray-400 mt-1">Utilisée pour le tableau Kanban</p>
+                </div>
+                
+                <!-- Other Classifications (Multi-select) -->
+                <div class="p-3 border border-info/30 rounded-lg">
+                  <label class="text-xs text-info font-medium mb-2 block">
+                    <iconify-icon icon="solar:tag-horizontal-bold-duotone" width="14" class="mr-1"></iconify-icon>
+                    Classifications additionnelles
+                  </label>
+                  <div class="flex flex-wrap gap-1.5" x-show="allClassifications.length > 0">
+                    <template x-for="cls in allClassifications" :key="cls._id">
+                      <button type="button" 
+                              @click="toggleClassification(cls._id)"
+                              class="inline-flex items-center gap-1 px-2 py-0 rounded-full text-xs font-medium border transition-colors"
+                              :class="isClassificationSelected(cls._id) 
+                                ? 'bg-info/10 border-info/30 text-info' 
+                                : cls._id === newCollection.statusClassificationId 
+                                  ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-300 cursor-not-allowed' 
+                                  : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400 hover:border-info/50'"
+                              :disabled="cls._id === newCollection.statusClassificationId">
+                        <iconify-icon icon="solar:tag-bold-duotone" width="12"></iconify-icon>
+                        <span x-text="cls.name"></span>
+                      </button>
+                    </template>
+                  </div>
+                  <div x-show="allClassifications.length === 0" class="text-xs text-gray-400">
+                    Aucune classification disponible
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Champ de référence - Accordion -->
+            <div class="mb-4">
+              <button type="button" @click="accordionReference = !accordionReference" 
+                      class="mb-2 flex items-center justify-between w-full text-sm font-bold">
+                <div class="flex items-center gap-2">
+                  <iconify-icon icon="solar:document-text-bold-duotone" width="16" class="text-success"></iconify-icon>
+                  <span>Champ de référence</span>
+                </div>
+                <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
+                              :class="accordionReference && 'rotate-180'" 
+                              style="transition: transform 0.2s"></iconify-icon>
+              </button>
+              <div x-show="accordionReference" x-collapse class="mt-2">
+                <p class="text-xs text-gray-400 mb-2">Ce champ sera utilisé comme titre lors des listings, relations, mentions, etc.</p>
+                
+                <!-- Available fields as clickable tags -->
+                <div class="mb-2 flex flex-wrap gap-1.5" x-show="getAvailableFields().length > 0">
+                  <span class="text-xs text-gray-500 mr-1">Champs disponibles:</span>
+                  <template x-for="field in getAvailableFields()" :key="field.id">
+                    <button type="button" @click="addFieldById(field.id)" 
+                            class="inline-flex items-center gap-1 px-2 py-0 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:border-primary hover:text-primary transition-colors cursor-pointer">
+                      <iconify-icon :icon="field.icon" width="12"></iconify-icon>
+                      <span x-text="field.label"></span>
+                      <iconify-icon icon="solar:add-circle-bold" width="12" class="opacity-50"></iconify-icon>
                     </button>
                   </template>
                 </div>
-              </div>
-              
-              <!-- Champs personnalisés -->
-              <div class="p-3 border border-warning/30 rounded-lg" x-show="selectedFields.length > 0">
-                <div class="text-xs text-warning font-medium mb-2 flex items-center gap-1">
-                  <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
-                  <span x-text="selectedFields.length + ' champ(s) sélectionné(s)'"></span>
+                
+                <!-- Format field (100% width) -->
+                <div class="w-full">
+                  <div class="form-input w-full text-sm min-h-[38px] p-2 cursor-text focus-within:ring-2 focus-within:ring-primary/50" 
+                       contenteditable="true"
+                       @input="syncTokensFromEditor($event)"
+                       x-init="$el.innerHTML = renderTokensAsHTML()"
+                       x-ref="formatEditor">
+                  </div>
+                  <label class="text-xs text-gray-500 mt-1 block">Format du titre de référence</label>
                 </div>
-                <div class="flex flex-wrap gap-1.5">
-                  <template x-for="(field, idx) in selectedFields" :key="field._id || idx">
-                    <div class="inline-flex items-center gap-1 px-2 py-0 bg-warning/10 border border-warning/30 rounded-full text-xs font-medium text-warning">
-                      <iconify-icon :icon="field.icon || 'solar:widget-bold'" width="12"></iconify-icon>
-                      <span x-text="field.label || field.name || 'Champ'"></span>
-                      <button type="button" @click="selectedFields.splice(idx, 1)" class="hover:text-red-500">
-                        <iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon>
-                      </button>
-                    </div>
-                  </template>
-                </div>
-              </div>
-            </div>
-
-            <!-- Champ de référence -->
-            <div class="mb-4">
-              <label class="mb-2 block text-sm font-bold">Champ de référence *</label>
-              <p class="text-xs text-gray-400 mb-2">Ce champ sera utilisé comme titre lors des listings, relations, mentions, etc.</p>
-              
-              <!-- Available fields as clickable tags -->
-              <div class="mb-2 flex flex-wrap gap-1.5" x-show="getAvailableFields().length > 0">
-                <span class="text-xs text-gray-500 mr-1">Champs disponibles:</span>
-                <template x-for="field in getAvailableFields()" :key="field.id">
-                  <button type="button" @click="addFieldById(field.id)" 
-                          class="inline-flex items-center gap-1 px-2 py-0 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:border-primary hover:text-primary transition-colors cursor-pointer">
-                    <iconify-icon :icon="field.icon" width="12"></iconify-icon>
-                    <span x-text="field.label"></span>
-                    <iconify-icon icon="solar:add-circle-bold" width="12" class="opacity-50"></iconify-icon>
-                  </button>
-                </template>
-              </div>
-              
-              <!-- Format field (100% width) -->
-              <div class="w-full">
-                <div class="form-input w-full text-sm min-h-[38px] p-2 cursor-text focus-within:ring-2 focus-within:ring-primary/50" 
-                     contenteditable="true"
-                     @input="syncTokensFromEditor($event)"
-                     x-init="$el.innerHTML = renderTokensAsHTML()"
-                     x-ref="formatEditor">
-                </div>
-                <label class="text-xs text-gray-500 mt-1 block">Format du titre de référence</label>
               </div>
             </div>
 
@@ -838,15 +1016,24 @@
             </div>
 
             <!-- Catégories de champs -->
-            <div class="space-y-3 max-h-64 overflow-y-auto pr-1">
+            <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
               <template x-for="category in filteredCategories" :key="category.key">
                 <div class="border dark:border-gray-700 rounded-lg overflow-hidden">
-                  <div class="px-3 py-2 bg-gray-50 dark:bg-gray-800 font-medium text-sm flex items-center gap-2">
-                    <iconify-icon :icon="getCategoryIcon(category.key)" width="16" class="text-primary"></iconify-icon>
-                    <span x-text="category.label"></span>
-                    <span class="text-gray-400 text-xs" x-text="'(' + category.fields.length + ')'"></span>
-                  </div>
-                  <div class="divide-y dark:divide-gray-700">
+                  <!-- Category Header - Clickable Accordion -->
+                  <button type="button" 
+                          @click="openCategories[category.key] = !openCategories[category.key]"
+                          class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 font-medium text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <div class="flex items-center gap-2">
+                      <iconify-icon :icon="getCategoryIcon(category.key)" width="16" class="text-primary"></iconify-icon>
+                      <span x-text="category.label"></span>
+                      <span class="text-gray-400 text-xs" x-text="'(' + category.fields.length + ')'"></span>
+                    </div>
+                    <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
+                                  :class="openCategories[category.key] && 'rotate-180'" 
+                                  style="transition: transform 0.2s"></iconify-icon>
+                  </button>
+                  <!-- Category Content - Collapsible -->
+                  <div x-show="openCategories[category.key]" x-collapse class="divide-y dark:divide-gray-700">
                     <template x-for="field in category.fields" :key="field._id">
                       <div class="px-3 py-2 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                            :class="isFieldSelected(field._id) && 'bg-primary/5'">
@@ -880,10 +1067,10 @@
       </div>
 
       <!-- Footer - Navigation -->
-      <div class="p-5 border-t dark:border-gray-700 flex gap-3">
+      <div class="p-5 border-t dark:border-gray-700 flex gap-3 flex-shrink-0">
         <!-- Step 1 -->
         <template x-if="step === 1">
-          <button type="button" @click="if(newCollection.name) step = 2" 
+          <button type="button" @click="if(newCollection.name) { loadSystemFields(); step = 2; }" 
                   class="btn btn-primary w-full" :disabled="!newCollection.name">
             Suivant
             <iconify-icon icon="solar:arrow-right-linear" width="18" class="ml-1"></iconify-icon>
@@ -929,7 +1116,7 @@
       </div>
 
       <!-- Body - Scrollable -->
-      <div class="p-5 overflow-y-auto flex-grow">
+      <div class="px-5 pt-3 pb-5 overflow-y-auto flex-grow">
         <form @submit.prevent="step === 2 ? updateCollection() : null">
           
           <!-- STEP 1: Infos de base -->
@@ -940,13 +1127,19 @@
               <input type="text" x-model="newCollection.name" placeholder="Ex: Contacts, Projets, Factures..." class="form-input w-full" required>
             </div>
 
-            <!-- Description et Slug - Collapsible -->
+            <!-- Description et Slug - Accordion -->
             <div class="mb-4">
-              <button type="button" @click="showDescSlug = !showDescSlug" class="mb-2 flex items-center gap-1 text-sm font-bold">
-                <span>Description et Slug</span>
-                <iconify-icon icon="solar:alt-arrow-down-linear" width="14" :class="showDescSlug && 'rotate-180'" style="transition: transform 0.2s"></iconify-icon>
+              <button type="button" @click="showDescSlug = !showDescSlug" 
+                      class="mb-2 flex items-center justify-between w-full text-sm font-bold">
+                <div class="flex items-center gap-2">
+                  <iconify-icon icon="solar:document-text-bold-duotone" width="16" class="text-secondary"></iconify-icon>
+                  <span>Description et Slug</span>
+                </div>
+                <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
+                              :class="showDescSlug && 'rotate-180'" 
+                              style="transition: transform 0.2s"></iconify-icon>
               </button>
-              <div x-show="showDescSlug" x-collapse class="mt-3 space-y-3">
+              <div x-show="showDescSlug" x-collapse class="mt-2 space-y-3">
                 <textarea x-model="newCollection.description" rows="2" placeholder="Description de la collection..." class="form-input w-full resize-none text-sm"></textarea>
                 <div>
                   <input type="text" x-model="newCollection.slug" placeholder="slug-de-la-collection" class="form-input w-full text-sm bg-gray-50 dark:bg-gray-800" disabled>
@@ -955,101 +1148,192 @@
               </div>
             </div>
 
-            <!-- Visuel: Icône, Couleur, Media -->
-            <div class="mb-5">
-              <label class="mb-3 block text-sm font-bold">Visuel</label>
-              <div class="flex items-center gap-4">
-                <!-- Icône (Vanilla JS Picker) -->
-                <div id="edit-icon-picker"></div>
+            <!-- Visuel - Accordion -->
+            <div class="mb-4">
+              <button type="button" @click="accordionVisuel = !accordionVisuel" 
+                      class="mb-2 flex items-center justify-between w-full text-sm font-bold">
+                <div class="flex items-center gap-2">
+                  <iconify-icon icon="solar:pallete-2-bold-duotone" width="16" class="text-primary"></iconify-icon>
+                  <span>Visuel</span>
+                </div>
+                <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
+                              :class="accordionVisuel && 'rotate-180'" 
+                              style="transition: transform 0.2s"></iconify-icon>
+              </button>
+              <div x-show="accordionVisuel" x-collapse class="mt-2">
+                <div class="flex items-center gap-4">
+                  <!-- Icône (Vanilla JS Picker) -->
+                  <div id="edit-icon-picker"></div>
 
-                <!-- Couleur (Vanilla JS Picker) -->
-                <div id="edit-color-picker"></div>
+                  <!-- Couleur (Vanilla JS Picker) -->
+                  <div id="edit-color-picker"></div>
 
-                <!-- Media - Icône simple -->
-                <label class="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer" title="Ajouter une image">
-                  <iconify-icon icon="solar:gallery-bold-duotone" width="22" class="text-gray-400 hover:text-primary"></iconify-icon>
-                  <input type="file" accept="image/*" class="hidden" @change="handleImageUpload($event)">
-                </label>
+                  <!-- Media - Icône simple -->
+                  <label class="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer" title="Ajouter une image">
+                    <iconify-icon icon="solar:gallery-bold-duotone" width="22" class="text-gray-400 hover:text-primary"></iconify-icon>
+                    <input type="file" accept="image/*" class="hidden" @change="handleImageUpload($event)">
+                  </label>
+                </div>
               </div>
             </div>
 
-            <!-- Champs -->
+            <!-- Champs - Accordion -->
             <div class="mb-4">
-              <div class="flex items-center gap-2 mb-3">
-                <iconify-icon icon="solar:layers-bold-duotone" class="text-warning" width="16"></iconify-icon>
-                <label class="text-sm font-bold">Champs</label>
-                <button type="button" @click="step = 2" class="inline-flex items-center gap-1 text-xs text-info hover:text-info/80 transition-colors">
-                  <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
-                  Ajouter
-                </button>
-              </div>
-              
-              <!-- Champs système -->
-              <div class="p-3 border border-warning/30 rounded-lg mb-2">
-                <div class="text-xs text-warning font-medium mb-2 flex items-center gap-1">
-                  <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
-                  <span x-text="Object.values(newCollection.standardFields).filter(v => v).length + ' champ(s) sélectionné(s)'"></span>
+              <button type="button" @click="accordionChamps = !accordionChamps" 
+                      class="mb-2 flex items-center justify-between w-full text-sm font-bold">
+                <div class="flex items-center gap-2">
+                  <iconify-icon icon="solar:layers-bold-duotone" class="text-warning" width="16"></iconify-icon>
+                  <span>Champs</span>
                 </div>
-                <div class="flex flex-wrap gap-1.5">
-                  <template x-for="(enabled, field) in newCollection.standardFields" :key="'std-'+field">
-                    <button type="button" 
-                            @click="newCollection.standardFields[field] = !newCollection.standardFields[field]"
-                            class="inline-flex items-center gap-1 px-2 py-0 rounded-full text-xs font-medium border transition-colors"
-                            :class="enabled ? 'bg-warning/10 border-warning/30 text-warning' : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'">
-                      <iconify-icon :icon="getFieldIcon(field)" width="12"></iconify-icon>
-                      <span x-text="getFieldLabel(field)"></span>
+                <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
+                              :class="accordionChamps && 'rotate-180'" 
+                              style="transition: transform 0.2s"></iconify-icon>
+              </button>
+              <div x-show="accordionChamps" x-collapse class="space-y-2">
+                <!-- Ajouter des champs -->
+                <button type="button" @click="loadSystemFields(); step = 2" 
+                        class="w-full flex items-center justify-center gap-2 py-2 text-sm text-info hover:text-info/80 border border-dashed border-info/30 rounded-lg hover:bg-info/5 transition-colors">
+                  <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
+                  <span>Ajouter des champs</span>
+                </button>
+                
+                <!-- Champs système -->
+                <div class="p-3 border border-warning/30 rounded-lg">
+                  <div class="text-xs text-warning font-medium mb-2 flex items-center gap-1">
+                    <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                    <span>Champs par défaut</span>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <template x-for="(enabled, field) in newCollection.standardFields" :key="'std-'+field">
+                      <button type="button" 
+                              @click="newCollection.standardFields[field] = !newCollection.standardFields[field]"
+                              class="inline-flex items-center gap-1 px-2 py-0 rounded-full text-xs font-medium border transition-colors"
+                              :class="enabled ? 'bg-warning/10 border-warning/30 text-warning' : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'">
+                        <iconify-icon :icon="getFieldIcon(field)" width="12"></iconify-icon>
+                        <span x-text="getFieldLabel(field)"></span>
+                      </button>
+                    </template>
+                  </div>
+                </div>
+                
+                <!-- Champs personnalisés -->
+                <div class="p-3 border border-warning/30 rounded-lg" x-show="selectedFields.length > 0">
+                  <div class="text-xs text-warning font-medium mb-2 flex items-center gap-1">
+                    <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                    <span x-text="selectedFields.length + ' champ(s) sélectionné(s)'"></span>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <template x-for="(field, idx) in selectedFields" :key="field._id || idx">
+                      <div class="inline-flex items-center gap-1 px-2 py-0 bg-warning/10 border border-warning/30 rounded-full text-xs font-medium text-warning">
+                        <iconify-icon :icon="field.icon || 'solar:widget-bold'" width="12"></iconify-icon>
+                        <span x-text="field.label || field.name || 'Champ'"></span>
+                        <button type="button" @click="selectedFields.splice(idx, 1)" class="hover:text-red-500">
+                          <iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon>
+                        </button>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Classifications - Accordion -->
+            <div class="mb-4">
+              <button type="button" @click="accordionClassifications = !accordionClassifications" 
+                      class="mb-2 flex items-center justify-between w-full text-sm font-bold">
+                <div class="flex items-center gap-2">
+                  <iconify-icon icon="solar:tag-bold-duotone" width="16" class="text-info"></iconify-icon>
+                  <span>Classifications</span>
+                </div>
+                <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
+                              :class="accordionClassifications && 'rotate-180'" 
+                              style="transition: transform 0.2s"></iconify-icon>
+              </button>
+              <div x-show="accordionClassifications" x-collapse class="mt-2 space-y-3">
+                <!-- Status Classification (Kanban driver) -->
+                <div class="p-3 border border-info/30 rounded-lg">
+                  <label class="text-xs text-info font-medium mb-2 block">
+                    <iconify-icon icon="solar:diploma-bold-duotone" width="14" class="mr-1"></iconify-icon>
+                    Classification de statut (Kanban)
+                  </label>
+                  <select x-model="newCollection.statusClassificationId" 
+                          @change="onStatusClassificationChange()"
+                          class="form-select w-full text-sm">
+                    <option value="">Aucune</option>
+                    <template x-for="cls in allClassifications" :key="cls._id">
+                      <option :value="cls._id" x-text="cls.name"></option>
+                    </template>
+                  </select>
+                  <p class="text-xs text-gray-400 mt-1">Utilisée pour le tableau Kanban</p>
+                </div>
+                
+                <!-- Other Classifications (Multi-select) -->
+                <div class="p-3 border border-info/30 rounded-lg">
+                  <label class="text-xs text-info font-medium mb-2 block">
+                    <iconify-icon icon="solar:tag-horizontal-bold-duotone" width="14" class="mr-1"></iconify-icon>
+                    Classifications additionnelles
+                  </label>
+                  <div class="flex flex-wrap gap-1.5" x-show="allClassifications.length > 0">
+                    <template x-for="cls in allClassifications" :key="cls._id">
+                      <button type="button" 
+                              @click="toggleClassification(cls._id)"
+                              class="inline-flex items-center gap-1 px-2 py-0 rounded-full text-xs font-medium border transition-colors"
+                              :class="isClassificationSelected(cls._id) 
+                                ? 'bg-info/10 border-info/30 text-info' 
+                                : cls._id === newCollection.statusClassificationId 
+                                  ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-300 cursor-not-allowed' 
+                                  : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400 hover:border-info/50'"
+                              :disabled="cls._id === newCollection.statusClassificationId">
+                        <iconify-icon icon="solar:tag-bold-duotone" width="12"></iconify-icon>
+                        <span x-text="cls.name"></span>
+                      </button>
+                    </template>
+                  </div>
+                  <div x-show="allClassifications.length === 0" class="text-xs text-gray-400">
+                    Aucune classification disponible
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Champ de référence - Accordion -->
+            <div class="mb-4">
+              <button type="button" @click="accordionReference = !accordionReference" 
+                      class="mb-2 flex items-center justify-between w-full text-sm font-bold">
+                <div class="flex items-center gap-2">
+                  <iconify-icon icon="solar:document-text-bold-duotone" width="16" class="text-success"></iconify-icon>
+                  <span>Champ de référence</span>
+                </div>
+                <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
+                              :class="accordionReference && 'rotate-180'" 
+                              style="transition: transform 0.2s"></iconify-icon>
+              </button>
+              <div x-show="accordionReference" x-collapse class="mt-2">
+                <p class="text-xs text-gray-400 mb-2">Ce champ sera utilisé comme titre lors des listings, relations, mentions, etc.</p>
+                
+                <!-- Available fields as clickable tags -->
+                <div class="mb-2 flex flex-wrap gap-1.5" x-show="getAvailableFields().length > 0">
+                  <span class="text-xs text-gray-500 mr-1">Champs disponibles:</span>
+                  <template x-for="field in getAvailableFields()" :key="field.id">
+                    <button type="button" @click="addFieldById(field.id)" 
+                            class="inline-flex items-center gap-1 px-2 py-0 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:border-primary hover:text-primary transition-colors cursor-pointer">
+                      <iconify-icon :icon="field.icon" width="12"></iconify-icon>
+                      <span x-text="field.label"></span>
+                      <iconify-icon icon="solar:add-circle-bold" width="12" class="opacity-50"></iconify-icon>
                     </button>
                   </template>
                 </div>
-              </div>
-              
-              <!-- Champs personnalisés -->
-              <div class="p-3 border border-warning/30 rounded-lg" x-show="selectedFields.length > 0">
-                <div class="text-xs text-warning font-medium mb-2 flex items-center gap-1">
-                  <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
-                  <span x-text="selectedFields.length + ' champ(s) sélectionné(s)'"></span>
+                
+                <!-- Format field (100% width) -->
+                <div class="w-full">
+                  <div class="form-input w-full text-sm min-h-[38px] p-2 cursor-text focus-within:ring-2 focus-within:ring-primary/50" 
+                       contenteditable="true"
+                       @input="syncTokensFromEditor($event)"
+                       x-init="$el.innerHTML = renderTokensAsHTML()"
+                       x-ref="formatEditorEdit">
+                  </div>
+                  <label class="text-xs text-gray-500 mt-1 block">Format du titre de référence</label>
                 </div>
-                <div class="flex flex-wrap gap-1.5">
-                  <template x-for="(field, idx) in selectedFields" :key="field._id || idx">
-                    <div class="inline-flex items-center gap-1 px-2 py-0 bg-warning/10 border border-warning/30 rounded-full text-xs font-medium text-warning">
-                      <iconify-icon :icon="field.icon || 'solar:widget-bold'" width="12"></iconify-icon>
-                      <span x-text="field.label || field.name || 'Champ'"></span>
-                      <button type="button" @click="selectedFields.splice(idx, 1)" class="hover:text-red-500">
-                        <iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon>
-                      </button>
-                    </div>
-                  </template>
-                </div>
-              </div>
-            </div>
-
-            <!-- Champ de référence -->
-            <div class="mb-4">
-              <label class="mb-2 block text-sm font-bold">Champ de référence *</label>
-              <p class="text-xs text-gray-400 mb-2">Ce champ sera utilisé comme titre lors des listings, relations, mentions, etc.</p>
-              
-              <!-- Available fields as clickable tags -->
-              <div class="mb-2 flex flex-wrap gap-1.5" x-show="getAvailableFields().length > 0">
-                <span class="text-xs text-gray-500 mr-1">Champs disponibles:</span>
-                <template x-for="field in getAvailableFields()" :key="field.id">
-                  <button type="button" @click="addFieldById(field.id)" 
-                          class="inline-flex items-center gap-1 px-2 py-0 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:border-primary hover:text-primary transition-colors cursor-pointer">
-                    <iconify-icon :icon="field.icon" width="12"></iconify-icon>
-                    <span x-text="field.label"></span>
-                    <iconify-icon icon="solar:add-circle-bold" width="12" class="opacity-50"></iconify-icon>
-                  </button>
-                </template>
-              </div>
-              
-              <!-- Format field (100% width) -->
-              <div class="w-full">
-                <div class="form-input w-full text-sm min-h-[38px] p-2 cursor-text focus-within:ring-2 focus-within:ring-primary/50" 
-                     contenteditable="true"
-                     @input="syncTokensFromEditor($event)"
-                     x-init="$el.innerHTML = renderTokensAsHTML()"
-                     x-ref="formatEditor">
-                </div>
-                <label class="text-xs text-gray-500 mt-1 block">Format du titre de référence</label>
               </div>
             </div>
 
@@ -1094,15 +1378,24 @@
             </div>
 
             <!-- Catégories de champs -->
-            <div class="space-y-3 max-h-64 overflow-y-auto pr-1">
+            <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
               <template x-for="category in filteredCategories" :key="category.key">
                 <div class="border dark:border-gray-700 rounded-lg overflow-hidden">
-                  <div class="px-3 py-2 bg-gray-50 dark:bg-gray-800 font-medium text-sm flex items-center gap-2">
-                    <iconify-icon :icon="getCategoryIcon(category.key)" width="16" class="text-warning"></iconify-icon>
-                    <span x-text="category.label"></span>
-                    <span class="text-gray-400 text-xs" x-text="'(' + category.fields.length + ')'"></span>
-                  </div>
-                  <div class="divide-y dark:divide-gray-700">
+                  <!-- Category Header - Clickable Accordion -->
+                  <button type="button" 
+                          @click="openCategories[category.key] = !openCategories[category.key]"
+                          class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 font-medium text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <div class="flex items-center gap-2">
+                      <iconify-icon :icon="getCategoryIcon(category.key)" width="16" class="text-warning"></iconify-icon>
+                      <span x-text="category.label"></span>
+                      <span class="text-gray-400 text-xs" x-text="'(' + category.fields.length + ')'"></span>
+                    </div>
+                    <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
+                                  :class="openCategories[category.key] && 'rotate-180'" 
+                                  style="transition: transform 0.2s"></iconify-icon>
+                  </button>
+                  <!-- Category Content - Collapsible -->
+                  <div x-show="openCategories[category.key]" x-collapse class="divide-y dark:divide-gray-700">
                     <template x-for="field in category.fields" :key="field._id">
                       <div class="px-3 py-2 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                            :class="isFieldSelected(field._id) && 'bg-warning/5'">
@@ -1136,7 +1429,7 @@
       </div>
 
       <!-- Footer - Navigation -->
-      <div class="p-5 border-t dark:border-gray-700 flex gap-3">
+      <div class="p-5 border-t dark:border-gray-700 flex gap-3 flex-shrink-0">
         <!-- Step 1 -->
         <template x-if="step === 1">
           <div class="flex gap-3 w-full">
@@ -1145,7 +1438,7 @@
               <iconify-icon icon="solar:diskette-bold" width="18" class="mr-1"></iconify-icon>
               Sauvegarde
             </button>
-            <button type="button" @click="if(newCollection.name) step = 2" 
+            <button type="button" @click="if(newCollection.name) { loadSystemFields(); step = 2; }" 
                     class="btn btn-outline-warning flex-1" :disabled="!newCollection.name">
               Champs personnalisés
               <iconify-icon icon="solar:arrow-right-linear" width="18" class="ml-1"></iconify-icon>

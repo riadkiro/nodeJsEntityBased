@@ -11,7 +11,10 @@ export default function RecordsToolbar({
     columns,
     preferences,
     onPreferencesChange,
-    loading
+    loading,
+    accountNumber,
+    entitySlug,
+    viewId
 }) {
     const [displayPopover, setDisplayPopover] = useState(false)
     const [sortPopover, setSortPopover] = useState(false)
@@ -113,6 +116,19 @@ export default function RecordsToolbar({
             </div>
             {/* Icons group - RIGHT */}
             <div className="flex items-center gap-2">
+                {/* View switcher - Kanban */}
+                <a
+                    href={`/account/${accountNumber}/test-progressive/${entitySlug}?viewType=kanban`}
+                    className="p-2 rounded-lg border transition-all border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50"
+                    title="Vue Kanban"
+                >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="3" width="5" height="18" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                        <rect x="9.5" y="3" width="5" height="12" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                        <rect x="16" y="3" width="5" height="15" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                    </svg>
+                </a>
+
                 {/* Sort button */}
                 {(() => {
                     const isSortActive = preferences.sort?.field !== 'createdAt' || preferences.sort?.direction !== 'desc'

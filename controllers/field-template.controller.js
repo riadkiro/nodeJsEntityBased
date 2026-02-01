@@ -327,12 +327,18 @@ module.exports = {
       // Group by category
       const categoryLabels = {
         popular: 'Populaires',
+        pro: 'Entreprise / Professionnel',
+        dates: 'Dates / Événements',
+        finance: 'Financier / Commerce',
+        workflow: 'Gestion / Workflow',
+        content: 'Contenu / Description',
+        media: 'Média',
+        other: 'Divers',
         text: 'Texte',
         numeric: 'Numérique',
         date: 'Date / Temps',
         choice: 'Choix',
         relation: 'Relation',
-        media: 'Média',
         computed: 'Calcul',
         advanced: 'Avancé',
         custom: 'Personnalisés'
@@ -340,9 +346,10 @@ module.exports = {
 
       const grouped = {};
       for (const field of fields) {
-        // Si le champ n'est pas système et n'a pas de catégorie, le mettre dans 'custom'
+        // Si le champ n'est pas système et n'a pas de catégorie connue, le mettre dans 'custom'
         let cat = field.category || 'other';
-        if (!field.isSystem && !['popular', 'text', 'numeric', 'date', 'choice', 'relation', 'media', 'computed', 'advanced'].includes(cat)) {
+        const knownCategories = ['popular', 'pro', 'dates', 'finance', 'workflow', 'content', 'media', 'other', 'text', 'numeric', 'date', 'choice', 'relation', 'computed', 'advanced'];
+        if (!field.isSystem && !knownCategories.includes(cat)) {
           cat = 'custom';
         }
 
@@ -366,8 +373,8 @@ module.exports = {
         });
       }
 
-      // Order categories (custom juste après popular)
-      const order = ['popular', 'custom', 'text', 'numeric', 'date', 'choice', 'relation', 'media', 'computed', 'advanced'];
+      // Order categories - popular first, then business categories, then technical
+      const order = ['popular', 'pro', 'dates', 'finance', 'workflow', 'content', 'media', 'other', 'custom', 'text', 'numeric', 'date', 'choice', 'relation', 'computed', 'advanced'];
       const result = order.filter(k => grouped[k]).map(k => grouped[k]);
 
       res.json(result);

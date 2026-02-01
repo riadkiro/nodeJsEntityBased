@@ -338,6 +338,9 @@ export default function RecordsGrid({
                 preferences={preferences}
                 onPreferencesChange={handlePreferencesChange}
                 loading={loading}
+                accountNumber={accountNumber}
+                entitySlug={entitySlug}
+                viewId={viewId}
             />
 
             {/* Table wrapper with proper spacing */}

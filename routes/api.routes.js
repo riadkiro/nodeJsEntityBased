@@ -31,12 +31,15 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
         const pageNum = parseInt(page)
         const limitNum = parseInt(limit)
 
-        // Register FieldTemplate BEFORE Entity to allow populate
+        // Register FieldTemplate and Classification BEFORE Entity to allow populate
         await tenantCollection(req, 'FieldTemplate')
+        await tenantCollection(req, 'Classification')
 
-        // Get entity with customFields populated
+        // Get entity with customFields, statusClassification, classifications populated
         const entity = await Entity.findById(entityId)
             .populate('customFields')
+            .populate('statusClassification')
+            .populate('classifications')
             .lean()
 
         if (!entity) {
@@ -110,6 +113,7 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             records,
             columns,
             preferences,
+            entity, // Include entity for Kanban (statusClassification, classifications)
             pagination: {
                 page: pageNum,
                 limit: limitNum,

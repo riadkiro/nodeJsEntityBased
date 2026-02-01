@@ -154,10 +154,13 @@ router.get("/test-progressive/:entityName", async (req, res) => {
         // Get total count for mode decision
         const totalRecords = await RecordModel.countDocuments({ entityId: entity._id });
 
+        // Check viewType from query params (table or kanban)
+        const viewType = req.query.viewType || 'table';
+
         // Create a mock view object for compatibility
         const view = {
             _id: entity._id,
-            viewType: 'table',
+            viewType: viewType,
             entity: entity._id,
             virtualize: virtualize || totalRecords > 5000
         };

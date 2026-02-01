@@ -10,8 +10,8 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 recordsGrid: path.resolve(__dirname, 'src/islands/records-grid/entry.jsx'),
+                kanbanBoard: path.resolve(__dirname, 'src/islands/kanban-board/entry.jsx'),
                 // Future islands:
-                // kanbanBoard: path.resolve(__dirname, 'src/islands/kanban-board/entry.jsx'),
                 // pageBuilder: path.resolve(__dirname, 'src/islands/page-builder/entry.jsx'),
             },
             output: {

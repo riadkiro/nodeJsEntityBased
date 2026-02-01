@@ -89,15 +89,26 @@ export default function RecordsTable({
                     const record = records[virtualRow.index]
                     if (!record) return null
 
+                    // Inline padding based on density for stronger specificity
+                    const cellPadding = {
+                        compact: '4px 8px',
+                        normal: '8px 12px',
+                        comfortable: '12px 12px'
+                    }[density] || '12px 12px'
+
                     return (
                         <tr
                             key={record._id}
                             data-index={virtualRow.index}
                             ref={virtualizer.measureElement}
-                            style={{ height: config.rowHeight }}
+                            style={{ minHeight: config.rowHeight }}
                         >
                             {columns.map(col => (
-                                <td key={col.id} className={`${config.cellClass} ${config.fontSize}`}>
+                                <td
+                                    key={col.id}
+                                    className={config.fontSize}
+                                    style={{ padding: cellPadding }}
+                                >
                                     {renderCellValue(record, col, accountNumber, entitySlug, config)}
                                 </td>
                             ))}

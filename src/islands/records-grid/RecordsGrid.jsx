@@ -206,6 +206,11 @@ export default function RecordsGrid({
         overscan: 10
     })
 
+    // Force virtualizer recalculation when density changes
+    useEffect(() => {
+        virtualizer.measure()
+    }, [rowHeight, virtualizer])
+
     // Visible columns
     const visibleColumns = useMemo(() => {
         if (!preferences.columns?.length) return columns

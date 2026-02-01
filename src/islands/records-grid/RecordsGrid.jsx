@@ -7,7 +7,6 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import RecordsToolbar from './components/RecordsToolbar'
 import RecordsTable from './components/RecordsTable'
-import SettingsPanel from './components/SettingsPanel'
 
 export default function RecordsGrid({
     accountId,
@@ -25,7 +24,6 @@ export default function RecordsGrid({
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [searchQuery, setSearchQuery] = useState('')
-    const [settingsOpen, setSettingsOpen] = useState(false)
 
     // Preferences state
     const [preferences, setPreferences] = useState({
@@ -45,7 +43,6 @@ export default function RecordsGrid({
 
     // Refs
     const parentRef = useRef(null)
-    const settingsButtonRef = useRef(null)
 
     // Fetch ALL records once (CLIENT-SIDE SEARCH)
     const fetchRecords = useCallback(async () => {
@@ -251,8 +248,6 @@ export default function RecordsGrid({
                 columns={columns}
                 preferences={preferences}
                 onPreferencesChange={handlePreferencesChange}
-                onSettingsOpen={() => setSettingsOpen(true)}
-                settingsButtonRef={settingsButtonRef}
                 loading={loading}
             />
 
@@ -334,16 +329,6 @@ export default function RecordsGrid({
                     </nav>
                 </div>
             </div>
-
-            {/* Settings Panel */}
-            <SettingsPanel
-                open={settingsOpen}
-                onClose={() => setSettingsOpen(false)}
-                columns={columns}
-                preferences={preferences}
-                onPreferencesChange={handlePreferencesChange}
-                triggerRef={settingsButtonRef}
-            />
         </div>
     )
 }

@@ -1,8 +1,9 @@
 /**
  * RecordsToolbar - Clean minimalist toolbar
- * Affichage dropdown for column visibility
+ * Search + Icon buttons for settings
  */
 import React, { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function RecordsToolbar({
     searchQuery,
@@ -10,31 +11,60 @@ export default function RecordsToolbar({
     columns,
     preferences,
     onPreferencesChange,
-    onSettingsOpen,
-    settingsButtonRef,
     loading
 }) {
-    const [dropdownOpen, setDropdownOpen] = useState(false)
-    const dropdownRef = useRef(null)
+    const [displayPopover, setDisplayPopover] = useState(false)
+    const [columnsPopover, setColumnsPopover] = useState(false)
+    const [columnSearch, setColumnSearch] = useState('')
 
-    // Close dropdown when clicking outside
+    const displayBtnRef = useRef(null)
+    const columnsBtnRef = useRef(null)
+    const displayPanelRef = useRef(null)
+    const columnsPanelRef = useRef(null)
+
+    // Close popovers on ESC
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setDropdownOpen(false)
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') {
+                setDisplayPopover(false)
+                setColumnsPopover(false)
             }
         }
+        document.addEventListener('keydown', handleEsc)
+        return () => document.removeEventListener('keydown', handleEsc)
+    }, [])
 
-        if (dropdownOpen) {
-            document.addEventListener('mousedown', handleClickOutside)
+    // Close display popover on outside click
+    useEffect(() => {
+        const handleClick = (e) => {
+            if (displayPopover &&
+                displayPanelRef.current && !displayPanelRef.current.contains(e.target) &&
+                displayBtnRef.current && !displayBtnRef.current.contains(e.target)) {
+                setDisplayPopover(false)
+            }
         }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
+        if (displayPopover) {
+            setTimeout(() => document.addEventListener('mousedown', handleClick), 0)
         }
-    }, [dropdownOpen])
+        return () => document.removeEventListener('mousedown', handleClick)
+    }, [displayPopover])
 
-    // Toggle single column visibility
+    // Close columns popover on outside click
+    useEffect(() => {
+        const handleClick = (e) => {
+            if (columnsPopover &&
+                columnsPanelRef.current && !columnsPanelRef.current.contains(e.target) &&
+                columnsBtnRef.current && !columnsBtnRef.current.contains(e.target)) {
+                setColumnsPopover(false)
+            }
+        }
+        if (columnsPopover) {
+            setTimeout(() => document.addEventListener('mousedown', handleClick), 0)
+        }
+        return () => document.removeEventListener('mousedown', handleClick)
+    }, [columnsPopover])
+
+    // Toggle column visibility
     const toggleColumn = (columnId) => {
         const newColumns = preferences.columns.map(col =>
             col.id === columnId ? { ...col, visible: !col.visible } : col
@@ -42,89 +72,25 @@ export default function RecordsToolbar({
         onPreferencesChange('columns', newColumns)
     }
 
-    // Toggle all columns
-    const toggleAll = () => {
-        const allVisible = preferences.columns.every(col => col.visible)
-        const newColumns = preferences.columns.map(col => ({
-            ...col,
-            visible: !allVisible
-        }))
-        onPreferencesChange('columns', newColumns)
+    // Get popover position
+    const getPosition = (btnRef) => {
+        if (!btnRef?.current) return { top: 0, right: 0 }
+        const rect = btnRef.current.getBoundingClientRect()
+        return {
+            top: rect.bottom + 8,
+            right: window.innerWidth - rect.right
+        }
     }
 
-    const allVisible = preferences.columns.every(col => col.visible)
+    // Filtered columns for search
+    const filteredColumns = columnSearch.trim()
+        ? columns.filter(col => col.name.toLowerCase().includes(columnSearch.toLowerCase()))
+        : columns
 
     return (
-        <div className="dataTable-top flex items-center mb-0 justify-between gap-3">
-            {/* Affichage dropdown */}
-            <div className="relative" ref={dropdownRef}>
-                <button
-                    type="button"
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="btn btn-outline-primary btn-sm flex items-center gap-2"
-                >
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M3 7H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                        <path d="M6 12H18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                        <path d="M10 17H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                    Affichage
-                    <svg
-                        className={`h-4 w-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
-                        viewBox="0 0 24 24"
-                        fill="none"
-                    >
-                        <path d="M19 9L12 16L5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                </button>
-
-                {/* Dropdown panel */}
-                {dropdownOpen && (
-                    <div
-                        className="absolute left-0 top-full mt-2 bg-white dark:bg-[#1b2e4b] rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-64 p-4 z-[80]"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Toggle all */}
-                        <div className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
-                            <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded transition-colors">
-                                <input
-                                    type="checkbox"
-                                    checked={allVisible}
-                                    onChange={toggleAll}
-                                    className="form-checkbox h-4 w-4 rounded border-gray-300"
-                                />
-                                <span className="font-semibold text-sm">Tout afficher/masquer</span>
-                            </label>
-                        </div>
-
-                        {/* Column list */}
-                        <div className="space-y-1 max-h-80 overflow-y-auto">
-                            {columns.map(col => {
-                                const pref = preferences.columns.find(p => p.id === col.id)
-                                const isVisible = pref ? pref.visible : true
-
-                                return (
-                                    <label
-                                        key={col.id}
-                                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded transition-colors"
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={isVisible}
-                                            onChange={() => toggleColumn(col.id)}
-                                            className="form-checkbox h-4 w-4 rounded border-gray-300"
-                                        />
-                                        <span className="text-sm">{col.name}</span>
-                                    </label>
-                                )
-                            })}
-                        </div>
-                    </div>
-                )}
-            </div>
-
+        <div className="dataTable-top flex items-center mb-0 justify-end gap-2">
             {/* Search input */}
-            <div className="dataTable-search relative flex-1 max-w-md">
+            <div className="dataTable-search relative w-64">
                 <svg
                     className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
                     viewBox="0 0 24 24"
@@ -133,7 +99,6 @@ export default function RecordsToolbar({
                     <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="1.5" />
                     <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
-
                 <input
                     type="text"
                     value={searchQuery}
@@ -141,7 +106,6 @@ export default function RecordsToolbar({
                     placeholder="Rechercher..."
                     className="dataTable-input form-input w-full pl-9 pr-10"
                 />
-
                 {loading && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
@@ -149,30 +113,164 @@ export default function RecordsToolbar({
                 )}
             </div>
 
-            {/* Settings button */}
+            {/* Display settings button (density + pageSize) */}
             <button
-                ref={settingsButtonRef}
+                ref={displayBtnRef}
                 type="button"
-                onClick={onSettingsOpen}
-                className="btn btn-outline-primary btn-sm"
-                title="Paramètres de la table"
+                onClick={() => { setDisplayPopover(!displayPopover); setColumnsPopover(false) }}
+                className={`p-2 rounded-lg border transition-all ${displayPopover
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50'}`}
+                title="Mode d'affichage"
             >
-                <svg
-                    className="h-4 w-4"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
-                    <path
-                        d="M13.7654 2.15224C13.3978 2 12.9319 2 12 2C11.0681 2 10.6022 2 10.2346 2.15224C9.74457 2.35523 9.35522 2.74458 9.15223 3.23463C9.05957 3.45834 9.0233 3.7185 9.00911 4.09799C8.98826 4.65568 8.70226 5.17189 8.21894 5.45093C7.73564 5.72996 7.14559 5.71954 6.65219 5.45876C6.31645 5.2813 6.07301 5.18262 5.83294 5.15102C5.30704 5.08178 4.77518 5.22429 4.35436 5.5472C4.03874 5.78938 3.80577 6.1929 3.33983 6.99993C2.87389 7.80697 2.64092 8.21048 2.58899 8.60491C2.51976 9.1308 2.66227 9.66266 2.98518 10.0835C3.13256 10.2756 3.3397 10.437 3.66119 10.639C4.1338 10.936 4.43789 11.4419 4.43786 12C4.43783 12.5581 4.13375 13.0639 3.66118 13.3608C3.33965 13.5629 3.13248 13.7244 2.98508 13.9165C2.66217 14.3373 2.51966 14.8691 2.5889 15.395C2.64082 15.7894 2.87379 16.193 3.33973 17C3.80568 17.807 4.03865 18.2106 4.35426 18.4527C4.77508 18.7756 5.30694 18.9181 5.83284 18.8489C6.07289 18.8173 6.31632 18.7186 6.65204 18.5412C7.14547 18.2804 7.73556 18.27 8.2189 18.549C8.70224 18.8281 8.98826 19.3443 9.00911 19.9021C9.02331 20.2815 9.05957 20.5417 9.15223 20.7654C9.35522 21.2554 9.74457 21.6448 10.2346 21.8478C10.6022 22 11.0681 22 12 22C12.9319 22 13.3978 22 13.7654 21.8478C14.2554 21.6448 14.6448 21.2554 14.8477 20.7654C14.9404 20.5417 14.9767 20.2815 14.9909 19.902C15.0117 19.3443 15.2977 18.8281 15.781 18.549C16.2643 18.2699 16.8544 18.2804 17.3479 18.5412C17.6836 18.7186 17.927 18.8172 18.167 18.8488C18.6929 18.9181 19.2248 18.7756 19.6456 18.4527C19.9612 18.2105 20.1942 17.807 20.6601 16.9999C21.1261 16.1929 21.3591 15.7894 21.411 15.395C21.4802 14.8691 21.3377 14.3372 21.0148 13.9164C20.8674 13.7243 20.6602 13.5628 20.3387 13.3608C19.8662 13.0639 19.5621 12.558 19.5621 11.9999C19.5621 11.4418 19.8662 10.9361 20.3387 10.6392C20.6603 10.4371 20.8675 10.2757 21.0149 10.0835C21.3378 9.66273 21.4803 9.13087 21.4111 8.60497C21.3592 8.21055 21.1262 7.80703 20.6602 7C20.1943 6.19297 19.9613 5.78945 19.6457 5.54727C19.2249 5.22436 18.693 5.08185 18.1671 5.15109C17.9271 5.18269 17.6837 5.28136 17.3479 5.4588C16.8545 5.71959 16.2644 5.73002 15.7811 5.45096C15.2977 5.17191 15.0117 4.65566 14.9909 4.09794C14.9767 3.71848 14.9404 3.45833 14.8477 3.23463C14.6448 2.74458 14.2554 2.35523 13.7654 2.15224Z"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                    />
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 7H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    <path d="M6 12H18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    <path d="M10 17H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
             </button>
+
+            {/* Columns visibility button */}
+            <button
+                ref={columnsBtnRef}
+                type="button"
+                onClick={() => { setColumnsPopover(!columnsPopover); setDisplayPopover(false) }}
+                className={`p-2 rounded-lg border transition-all ${columnsPopover
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50'}`}
+                title="Colonnes visibles"
+            >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 3H4C3.44772 3 3 3.44772 3 4V11C3 11.5523 3.44772 12 4 12H9C9.55228 12 10 11.5523 10 11V4C10 3.44772 9.55228 3 9 3Z" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M20 3H15C14.4477 3 14 3.44772 14 4V7C14 7.55228 14.4477 8 15 8H20C20.5523 8 21 7.55228 21 7V4C21 3.44772 20.5523 3 20 3Z" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M20 12H15C14.4477 12 14 12.4477 14 13V20C14 20.5523 14.4477 21 15 21H20C20.5523 21 21 20.5523 21 20V13C21 12.4477 20.5523 12 20 12Z" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M9 16H4C3.44772 16 3 16.4477 3 17V20C3 20.5523 3.44772 21 4 21H9C9.55228 21 10 20.5523 10 20V17C10 16.4477 9.55228 16 9 16Z" stroke="currentColor" strokeWidth="1.5" />
+                </svg>
+            </button>
+
+            {/* Display Popover */}
+            {displayPopover && createPortal(
+                <>
+                    <div
+                        className="fixed inset-0"
+                        style={{ zIndex: 9998 }}
+                        onClick={() => setDisplayPopover(false)}
+                    />
+                    <div
+                        ref={displayPanelRef}
+                        className="fixed bg-white dark:bg-[#1b2e4b] rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 w-72"
+                        style={{
+                            zIndex: 9999,
+                            top: getPosition(displayBtnRef).top,
+                            right: getPosition(displayBtnRef).right,
+                            animation: 'popoverSlide 0.15s ease-out'
+                        }}
+                    >
+                        {/* Density */}
+                        <div className="mb-4">
+                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Densité</div>
+                            <div className="flex gap-1">
+                                {['compact', 'normal', 'comfortable'].map(d => (
+                                    <button
+                                        key={d}
+                                        onClick={() => onPreferencesChange('density', d)}
+                                        className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${preferences.density === d
+                                                ? 'bg-primary text-white'
+                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        {d === 'compact' ? 'Compact' : d === 'normal' ? 'Normal' : 'Confort'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Page Size */}
+                        <div>
+                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Lignes par page</div>
+                            <div className="flex gap-1">
+                                {[10, 25, 50, 100].map(size => (
+                                    <button
+                                        key={size}
+                                        onClick={() => onPreferencesChange('pageSize', size)}
+                                        className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${preferences.pageSize === size
+                                                ? 'bg-primary text-white'
+                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        {size}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </>,
+                document.body
+            )}
+
+            {/* Columns Popover */}
+            {columnsPopover && createPortal(
+                <>
+                    <div
+                        className="fixed inset-0"
+                        style={{ zIndex: 9998 }}
+                        onClick={() => setColumnsPopover(false)}
+                    />
+                    <div
+                        ref={columnsPanelRef}
+                        className="fixed bg-white dark:bg-[#1b2e4b] rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 w-64"
+                        style={{
+                            zIndex: 9999,
+                            top: getPosition(columnsBtnRef).top,
+                            right: getPosition(columnsBtnRef).right,
+                            animation: 'popoverSlide 0.15s ease-out'
+                        }}
+                    >
+                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Colonnes visibles</div>
+
+                        {/* Search */}
+                        <div className="relative mb-2">
+                            <input
+                                type="text"
+                                value={columnSearch}
+                                onChange={(e) => setColumnSearch(e.target.value)}
+                                placeholder="Filtrer..."
+                                className="w-full px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                            />
+                        </div>
+
+                        {/* Column list */}
+                        <div className="space-y-0.5 max-h-48 overflow-y-auto">
+                            {filteredColumns.map(col => {
+                                const pref = preferences.columns.find(p => p.id === col.id)
+                                const isVisible = pref ? pref.visible !== false : true
+                                return (
+                                    <label
+                                        key={col.id}
+                                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={isVisible}
+                                            onChange={() => toggleColumn(col.id)}
+                                            className="form-checkbox text-primary w-3.5 h-3.5 rounded"
+                                        />
+                                        <span className="text-xs text-gray-700 dark:text-gray-300">{col.name}</span>
+                                    </label>
+                                )
+                            })}
+                        </div>
+                    </div>
+                </>,
+                document.body
+            )}
+
+            <style>{`
+                @keyframes popoverSlide {
+                    from { opacity: 0; transform: translateY(-4px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
         </div>
     )
 }

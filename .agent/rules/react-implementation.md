@@ -70,3 +70,53 @@ const sortedRecords = useMemo(() => {
 - Préférer le tri/filtrage côté client quand toutes les données sont déjà chargées
 - Utiliser `useMemo` pour les calculs dérivés (sorted, filtered records)
 - Utiliser `useCallback` pour les handlers passés en props
+
+## Drag & Drop avec React (CRITICAL)
+
+### Le Problème d'Index avec les Listes Filtrées
+Quand on implémente du drag & drop sur une **liste filtrée** (ex: `visibleColumns`) mais qu'on modifie la **liste complète** (ex: `columns`), les index ne correspondent pas !
+
+```jsx
+// ❌ MAUVAIS - Index de la liste filtrée appliqué à la liste complète
+const visibleColumns = columns.filter(c => c.visible)  // [A, C, E] (index 0, 1, 2)
+const allColumns = columns  // [A, B, C, D, E] (index 0, 1, 2, 3, 4)
+
+// Si on drag C (index 1 dans visible) vers E (index 2 dans visible)
+// On applique splice(1, 2) sur allColumns → déplace B au lieu de C !
+onColumnReorder(fromIndex, toIndex)  // ← ERREUR D'INDEX
+```
+
+### Solution : Toujours utiliser les IDs, jamais les index
+
+```jsx
+// ✅ BON - Dans le composant enfant (RecordsTable)
+onDrop={(e) => {
+    // Passer les IDs, pas les index
+    onColumnReorder(draggedColumnId, targetColumnId)
+}}
+
+// ✅ BON - Dans le parent (RecordsGrid)
+const handleColumnReorder = useCallback((fromId, toId) => {
+    setColumns(prev => {
+        // Trouver les index dans la liste COMPLÈTE via les IDs
+        const fromIndex = prev.findIndex(c => c.id === fromId)
+        const toIndex = prev.findIndex(c => c.id === toId)
+        
+        if (fromIndex === -1 || toIndex === -1) return prev
+        
+        const newColumns = [...prev]
+        const [moved] = newColumns.splice(fromIndex, 1)
+        newColumns.splice(toIndex, 0, moved)
+        return newColumns
+    })
+}, [])
+```
+
+### Règle d'Or Drag & Drop
+> Toujours passer des **identifiants uniques** (IDs) entre composants pour le drag & drop, jamais des index. Le parent qui gère le state complet doit résoudre les index lui-même.
+
+### Autres règles drag & drop
+- **pointer-events: none** sur les conteneurs internes pour éviter les conflits d'événements
+- **pointer-events: auto** sur les éléments cliquables à l'intérieur (liens, boutons)
+- **onDragEnter** est plus fiable que onDragOver pour détecter l'entrée
+- **stopPropagation()** sur onDrop pour éviter les conflits avec les parents

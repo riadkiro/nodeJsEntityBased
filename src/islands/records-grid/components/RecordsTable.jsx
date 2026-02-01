@@ -2,7 +2,7 @@
  * RecordsTable - Virtual scrolling table
  * Pixel-perfect reproduction of existing HTMX table styling
  */
-import React from 'react'
+import React, { useState } from 'react'
 
 export default function RecordsTable({
     records,
@@ -10,10 +10,13 @@ export default function RecordsTable({
     virtualizer,
     sort,
     onSort,
+    onColumnReorder,
     density,
     accountNumber,
     entitySlug
 }) {
+    const [draggedColumn, setDraggedColumn] = useState(null)
+    const [dragOverColumn, setDragOverColumn] = useState(null)
     const virtualRows = virtualizer.getVirtualItems()
 
     // Density configuration
@@ -56,38 +59,92 @@ export default function RecordsTable({
         <table className="table-hover whitespace-nowrap dataTable-table w-full">
             <thead className="sticky top-0 bg-white dark:bg-[#1b2e4b] z-10">
                 <tr>
-                    {columns.map(col => {
+                    {columns.map((col, index) => {
                         // Check if this column is currently sorted
                         const isSorted = sort?.field === col.id ||
                             (col.id === 'title' && sort?.field === 'title') ||
                             (col.id === 'createdAt' && sort?.field === 'createdAt')
                         const sortDirection = sort?.direction || 'desc'
+                        const isDragging = draggedColumn === col.id
+                        const isDragOver = dragOverColumn === col.id && draggedColumn !== col.id
+                        const canDrag = col.id !== 'actions'
 
                         return (
-                            <th key={col.id} data-sortable={col.sortable !== false ? '' : undefined}>
-                                {col.sortable !== false ? (
-                                    <a
-                                        href="#"
-                                        className="dataTable-sorter flex items-center gap-1"
-                                        onClick={(e) => {
-                                            e.preventDefault()
-                                            onSort(col.id)
-                                        }}
-                                    >
-                                        {col.name}
-                                        {isSorted && (
-                                            <svg
-                                                className={`h-3 w-3 text-primary transition-transform ${sortDirection === 'asc' ? 'rotate-180' : ''}`}
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                            >
-                                                <path d="M12 5V19M12 19L6 13M12 19L18 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <th
+                                key={col.id}
+                                data-sortable={col.sortable !== false ? '' : undefined}
+                                data-column-id={col.id}
+                                onDragEnter={(e) => {
+                                    e.preventDefault()
+                                    if (col.id !== 'actions' && draggedColumn && draggedColumn !== col.id) {
+                                        setDragOverColumn(col.id)
+                                    }
+                                }}
+                                onDragOver={(e) => {
+                                    e.preventDefault()
+                                }}
+                                onDrop={(e) => {
+                                    e.preventDefault()
+                                    if (draggedColumn && draggedColumn !== col.id && col.id !== 'actions' && onColumnReorder) {
+                                        onColumnReorder(draggedColumn, col.id)
+                                    }
+                                    setDraggedColumn(null)
+                                    setDragOverColumn(null)
+                                }}
+                                className={`px-2 ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'border-l-2 border-l-primary bg-primary/5' : ''}`}
+                                style={{ transition: 'opacity 0.15s, border-color 0.15s, background 0.15s' }}
+                            >
+                                <div className="flex items-center gap-1">
+                                    {/* Drag handle - only this element is draggable */}
+                                    {canDrag && (
+                                        <span
+                                            draggable="true"
+                                            onDragStart={(e) => {
+                                                setDraggedColumn(col.id)
+                                                e.dataTransfer.effectAllowed = 'move'
+                                                e.dataTransfer.setData('text/plain', col.id)
+                                            }}
+                                            onDragEnd={() => {
+                                                setDraggedColumn(null)
+                                                setDragOverColumn(null)
+                                            }}
+                                            className="cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                                        >
+                                            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                                                <circle cx="9" cy="6" r="1.5" />
+                                                <circle cx="15" cy="6" r="1.5" />
+                                                <circle cx="9" cy="12" r="1.5" />
+                                                <circle cx="15" cy="12" r="1.5" />
+                                                <circle cx="9" cy="18" r="1.5" />
+                                                <circle cx="15" cy="18" r="1.5" />
                                             </svg>
-                                        )}
-                                    </a>
-                                ) : (
-                                    col.name
-                                )}
+                                        </span>
+                                    )}
+                                    {col.sortable !== false ? (
+                                        <a
+                                            href="#"
+                                            className="dataTable-sorter flex items-center gap-1"
+                                            draggable="false"
+                                            onClick={(e) => {
+                                                e.preventDefault()
+                                                onSort(col.id)
+                                            }}
+                                        >
+                                            {col.name}
+                                            {isSorted && (
+                                                <svg
+                                                    className={`h-3 w-3 text-primary transition-transform ${sortDirection === 'asc' ? 'rotate-180' : ''}`}
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                >
+                                                    <path d="M12 5V19M12 19L6 13M12 19L18 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                            )}
+                                        </a>
+                                    ) : (
+                                        col.name
+                                    )}
+                                </div>
                             </th>
                         )
                     })}

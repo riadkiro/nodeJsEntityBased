@@ -237,6 +237,28 @@ export default function RecordsGrid({
         setPagination(prev => ({ ...prev, page: newPage }))
     }, [])
 
+    // Handle column reorder - receives column IDs from visible columns
+    const handleColumnReorder = useCallback((fromColumnId, toColumnId) => {
+        setColumns(prevColumns => {
+            const fromIndex = prevColumns.findIndex(c => c.id === fromColumnId)
+            const toIndex = prevColumns.findIndex(c => c.id === toColumnId)
+
+            if (fromIndex === -1 || toIndex === -1) return prevColumns
+
+            const newColumns = [...prevColumns]
+            const [movedColumn] = newColumns.splice(fromIndex, 1)
+            newColumns.splice(toIndex, 0, movedColumn)
+
+            // Update preferences with new column order
+            const newColumnPrefs = newColumns.map(col => {
+                const existingPref = preferences.columns.find(p => p.id === col.id)
+                return existingPref || { id: col.id, visible: true }
+            })
+            handlePreferencesChange('columns', newColumnPrefs)
+
+            return newColumns
+        })
+    }, [preferences.columns, handlePreferencesChange])
 
     // Virtual row height based on density
     const rowHeight = useMemo(() => {
@@ -317,6 +339,7 @@ export default function RecordsGrid({
                                 : 'asc'
                             handlePreferencesChange('sort', { field, direction })
                         }}
+                        onColumnReorder={handleColumnReorder}
                         density={preferences.density}
                         accountNumber={accountNumber}
                         entitySlug={entitySlug}

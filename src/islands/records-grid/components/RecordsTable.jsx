@@ -234,13 +234,48 @@ function renderCellValue(record, col, accountNumber, entitySlug, config) {
 
         case 'actions':
             return (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                    {/* View */}
                     <a
                         href={`/account/${accountNumber}/record/${entitySlug}/${record._id}`}
-                        className="btn btn-sm btn-outline-info"
+                        className="p-1.5 rounded-lg text-gray-500 hover:text-primary hover:bg-primary/10 transition-all"
+                        title="Voir"
                     >
-                        Modifier
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                            <path d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" stroke="currentColor" strokeWidth="1.5" />
+                            <path d="M12 5C7.5 5 3.73 7.94 2 12C3.73 16.06 7.5 19 12 19C16.5 19 20.27 16.06 22 12C20.27 7.94 16.5 5 12 5Z" stroke="currentColor" strokeWidth="1.5" />
+                        </svg>
                     </a>
+                    {/* Edit */}
+                    <a
+                        href={`/account/${accountNumber}/record/${entitySlug}/${record._id}/edit`}
+                        className="p-1.5 rounded-lg text-gray-500 hover:text-info hover:bg-info/10 transition-all"
+                        title="Modifier"
+                    >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                            <path d="M16.862 4.487L18.55 2.8C19.33 2.02 20.59 2.02 21.37 2.8C22.15 3.58 22.15 4.84 21.37 5.62L19.681 7.307M16.862 4.487L4.162 17.187C3.882 17.467 3.682 17.818 3.592 18.198L2.732 21.596C2.642 21.966 2.952 22.296 3.322 22.226L6.892 21.556C7.242 21.486 7.572 21.306 7.832 21.046L20.513 8.366M16.862 4.487L19.681 7.307" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </a>
+                    {/* Delete */}
+                    <button
+                        type="button"
+                        className="p-1.5 rounded-lg text-gray-500 hover:text-danger hover:bg-danger/10 transition-all"
+                        title="Supprimer"
+                        onClick={() => {
+                            if (confirm('Êtes-vous sûr de vouloir supprimer cet enregistrement ?')) {
+                                // TODO: Implement delete
+                                console.log('Delete record:', record._id)
+                            }
+                        }}
+                    >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                            <path d="M20.5 6H3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            <path d="M18.833 8.5L18.373 15.4C18.196 18.054 18.108 19.381 17.243 20.19C16.378 21 15.048 21 12.387 21H11.613C8.952 21 7.622 21 6.757 20.19C5.892 19.381 5.804 18.054 5.627 15.4L5.167 8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            <path d="M9.5 11L10 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            <path d="M14.5 11L14 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            <path d="M6.5 6C6.556 5.367 6.612 5.1 6.877 4.714C7.178 4.275 7.945 3.917 9.484 3.2L9.924 2.984C10.683 2.589 11.06 2.392 11.476 2.318C11.823 2.254 12.177 2.254 12.524 2.318C12.94 2.392 13.317 2.589 14.076 2.984L14.516 3.2C16.055 3.917 16.822 4.275 17.123 4.714C17.388 5.1 17.444 5.367 17.5 6" stroke="currentColor" strokeWidth="1.5" />
+                        </svg>
+                    </button>
                 </div>
             )
 

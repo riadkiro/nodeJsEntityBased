@@ -14,55 +14,53 @@ export default function RecordsToolbar({
     loading
 }) {
     const [displayPopover, setDisplayPopover] = useState(false)
+    const [sortPopover, setSortPopover] = useState(false)
     const [columnsPopover, setColumnsPopover] = useState(false)
     const [columnSearch, setColumnSearch] = useState('')
 
     const displayBtnRef = useRef(null)
+    const sortBtnRef = useRef(null)
     const columnsBtnRef = useRef(null)
     const displayPanelRef = useRef(null)
+    const sortPanelRef = useRef(null)
     const columnsPanelRef = useRef(null)
+
+    // Close all popovers
+    const closeAll = () => {
+        setDisplayPopover(false)
+        setSortPopover(false)
+        setColumnsPopover(false)
+    }
 
     // Close popovers on ESC
     useEffect(() => {
         const handleEsc = (e) => {
-            if (e.key === 'Escape') {
-                setDisplayPopover(false)
-                setColumnsPopover(false)
-            }
+            if (e.key === 'Escape') closeAll()
         }
         document.addEventListener('keydown', handleEsc)
         return () => document.removeEventListener('keydown', handleEsc)
     }, [])
 
-    // Close display popover on outside click
-    useEffect(() => {
-        const handleClick = (e) => {
-            if (displayPopover &&
-                displayPanelRef.current && !displayPanelRef.current.contains(e.target) &&
-                displayBtnRef.current && !displayBtnRef.current.contains(e.target)) {
-                setDisplayPopover(false)
+    // Generic outside click handler
+    const useOutsideClick = (popoverState, panelRef, btnRef, setPopover) => {
+        useEffect(() => {
+            const handleClick = (e) => {
+                if (popoverState &&
+                    panelRef.current && !panelRef.current.contains(e.target) &&
+                    btnRef.current && !btnRef.current.contains(e.target)) {
+                    setPopover(false)
+                }
             }
-        }
-        if (displayPopover) {
-            setTimeout(() => document.addEventListener('mousedown', handleClick), 0)
-        }
-        return () => document.removeEventListener('mousedown', handleClick)
-    }, [displayPopover])
+            if (popoverState) {
+                setTimeout(() => document.addEventListener('mousedown', handleClick), 0)
+            }
+            return () => document.removeEventListener('mousedown', handleClick)
+        }, [popoverState])
+    }
 
-    // Close columns popover on outside click
-    useEffect(() => {
-        const handleClick = (e) => {
-            if (columnsPopover &&
-                columnsPanelRef.current && !columnsPanelRef.current.contains(e.target) &&
-                columnsBtnRef.current && !columnsBtnRef.current.contains(e.target)) {
-                setColumnsPopover(false)
-            }
-        }
-        if (columnsPopover) {
-            setTimeout(() => document.addEventListener('mousedown', handleClick), 0)
-        }
-        return () => document.removeEventListener('mousedown', handleClick)
-    }, [columnsPopover])
+    useOutsideClick(displayPopover, displayPanelRef, displayBtnRef, setDisplayPopover)
+    useOutsideClick(sortPopover, sortPanelRef, sortBtnRef, setSortPopover)
+    useOutsideClick(columnsPopover, columnsPanelRef, columnsBtnRef, setColumnsPopover)
 
     // Toggle column visibility
     const toggleColumn = (columnId) => {
@@ -92,7 +90,7 @@ export default function RecordsToolbar({
             {/* Search input */}
             <div className="dataTable-search relative w-64">
                 <svg
-                    className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+                    className="absolute left-4 top-1/2 ml-2 -translate-y-1/2 h-4 w-4 text-gray-400"
                     viewBox="0 0 24 24"
                     fill="none"
                 >
@@ -104,7 +102,8 @@ export default function RecordsToolbar({
                     value={searchQuery}
                     onChange={(e) => onSearch(e.target.value)}
                     placeholder="Rechercher..."
-                    className="dataTable-input form-input w-full pl-9 pr-10"
+                    className="dataTable-input form-input w-full pl-11 pr-10"
+                    style={{ "padding-left": "33px" }}
                 />
                 {loading && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -113,11 +112,32 @@ export default function RecordsToolbar({
                 )}
             </div>
 
+            {/* Sort button */}
+            {(() => {
+                const isSortActive = preferences.sort?.field !== 'createdAt' || preferences.sort?.direction !== 'desc'
+                return (
+                    <button
+                        ref={sortBtnRef}
+                        type="button"
+                        onClick={() => { setSortPopover(!sortPopover); setDisplayPopover(false); setColumnsPopover(false) }}
+                        className={`p-2 rounded-lg border transition-all ${sortPopover || isSortActive
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50'}`}
+                        title="Trier"
+                    >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                            <path d="M16 18L16 6M16 6L20 10M16 6L12 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M8 6L8 18M8 18L12 14M8 18L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </button>
+                )
+            })()}
+
             {/* Display settings button (density + pageSize) */}
             <button
                 ref={displayBtnRef}
                 type="button"
-                onClick={() => { setDisplayPopover(!displayPopover); setColumnsPopover(false) }}
+                onClick={() => { setDisplayPopover(!displayPopover); setSortPopover(false); setColumnsPopover(false) }}
                 className={`p-2 rounded-lg border transition-all ${displayPopover
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50'}`}
@@ -134,7 +154,7 @@ export default function RecordsToolbar({
             <button
                 ref={columnsBtnRef}
                 type="button"
-                onClick={() => { setColumnsPopover(!columnsPopover); setDisplayPopover(false) }}
+                onClick={() => { setColumnsPopover(!columnsPopover); setDisplayPopover(false); setSortPopover(false) }}
                 className={`p-2 rounded-lg border transition-all ${columnsPopover
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50'}`}
@@ -147,6 +167,78 @@ export default function RecordsToolbar({
                     <path d="M9 16H4C3.44772 16 3 16.4477 3 17V20C3 20.5523 3.44772 21 4 21H9C9.55228 21 10 20.5523 10 20V17C10 16.4477 9.55228 16 9 16Z" stroke="currentColor" strokeWidth="1.5" />
                 </svg>
             </button>
+
+            {/* Sort Popover */}
+            {sortPopover && createPortal(
+                <>
+                    <div
+                        className="fixed inset-0"
+                        style={{ zIndex: 9998 }}
+                        onClick={() => setSortPopover(false)}
+                    />
+                    <div
+                        ref={sortPanelRef}
+                        className="fixed bg-white dark:bg-[#1b2e4b] rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 w-72"
+                        style={{
+                            zIndex: 9999,
+                            top: getPosition(sortBtnRef).top,
+                            right: getPosition(sortBtnRef).right,
+                            animation: 'popoverSlide 0.15s ease-out'
+                        }}
+                    >
+                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Trier par</div>
+                        <div className="flex gap-2">
+                            {/* Column selector */}
+                            <select
+                                value={preferences.sort?.field || 'createdAt'}
+                                onChange={(e) => onPreferencesChange('sort', {
+                                    ...preferences.sort,
+                                    field: e.target.value
+                                })}
+                                className="flex-1 px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                            >
+                                <option value="createdAt">Date de création</option>
+                                <option value="title">Titre</option>
+                                {columns.filter(c => c.id !== 'title' && c.id !== 'actions').map(col => (
+                                    <option key={col.id} value={col.id}>{col.name}</option>
+                                ))}
+                            </select>
+
+                            {/* Direction toggle */}
+                            <button
+                                onClick={() => onPreferencesChange('sort', {
+                                    ...preferences.sort,
+                                    direction: preferences.sort?.direction === 'asc' ? 'desc' : 'asc'
+                                })}
+                                className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                                title={preferences.sort?.direction === 'asc' ? 'Croissant' : 'Décroissant'}
+                            >
+                                <svg
+                                    className={`h-4 w-4 text-gray-600 dark:text-gray-300 transition-transform ${preferences.sort?.direction === 'asc' ? 'rotate-180' : ''}`}
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                >
+                                    <path d="M12 5V19M12 19L6 13M12 19L18 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            </button>
+
+                            {/* Reset sort */}
+                            <button
+                                onClick={() => onPreferencesChange('sort', { field: 'createdAt', direction: 'desc' })}
+                                className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 hover:bg-red-50 hover:border-red-300 hover:text-red-500 dark:hover:bg-red-900/20 transition-all"
+                                title="Réinitialiser le tri"
+                            >
+                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4.06189 13C4.02104 12.6724 4 12.3387 4 12C4 7.58172 7.58172 4 12 4C14.5006 4 16.7332 5.14727 18.2002 6.94416M19.9381 11C19.979 11.3276 20 11.6613 20 12C20 16.4183 16.4183 20 12 20C9.49944 20 7.26681 18.8527 5.79984 17.0558" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d="M15 7H19V3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d="M9 17H5V21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </>,
+                document.body
+            )}
 
             {/* Display Popover */}
             {displayPopover && createPortal(
@@ -175,8 +267,8 @@ export default function RecordsToolbar({
                                         key={d}
                                         onClick={() => onPreferencesChange('density', d)}
                                         className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${preferences.density === d
-                                                ? 'bg-primary text-white'
-                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
+                                            ? 'bg-primary text-white'
+                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
                                             }`}
                                     >
                                         {d === 'compact' ? 'Compact' : d === 'normal' ? 'Normal' : 'Confort'}
@@ -194,8 +286,8 @@ export default function RecordsToolbar({
                                         key={size}
                                         onClick={() => onPreferencesChange('pageSize', size)}
                                         className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${preferences.pageSize === size
-                                                ? 'bg-primary text-white'
-                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
+                                            ? 'bg-primary text-white'
+                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
                                             }`}
                                     >
                                         {size}

@@ -56,24 +56,41 @@ export default function RecordsTable({
         <table className="table-hover whitespace-nowrap dataTable-table w-full">
             <thead className="sticky top-0 bg-white dark:bg-[#1b2e4b] z-10">
                 <tr>
-                    {columns.map(col => (
-                        <th key={col.id} data-sortable={col.sortable !== false ? '' : undefined}>
-                            {col.sortable !== false ? (
-                                <a
-                                    href="#"
-                                    className="dataTable-sorter"
-                                    onClick={(e) => {
-                                        e.preventDefault()
-                                        onSort(col.id)
-                                    }}
-                                >
-                                    {col.name}
-                                </a>
-                            ) : (
-                                col.name
-                            )}
-                        </th>
-                    ))}
+                    {columns.map(col => {
+                        // Check if this column is currently sorted
+                        const isSorted = sort?.field === col.id ||
+                            (col.id === 'title' && sort?.field === 'title') ||
+                            (col.id === 'createdAt' && sort?.field === 'createdAt')
+                        const sortDirection = sort?.direction || 'desc'
+
+                        return (
+                            <th key={col.id} data-sortable={col.sortable !== false ? '' : undefined}>
+                                {col.sortable !== false ? (
+                                    <a
+                                        href="#"
+                                        className="dataTable-sorter flex items-center gap-1"
+                                        onClick={(e) => {
+                                            e.preventDefault()
+                                            onSort(col.id)
+                                        }}
+                                    >
+                                        {col.name}
+                                        {isSorted && (
+                                            <svg
+                                                className={`h-3 w-3 text-primary transition-transform ${sortDirection === 'asc' ? 'rotate-180' : ''}`}
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                            >
+                                                <path d="M12 5V19M12 19L6 13M12 19L18 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                        )}
+                                    </a>
+                                ) : (
+                                    col.name
+                                )}
+                            </th>
+                        )
+                    })}
                 </tr>
             </thead>
             <tbody>

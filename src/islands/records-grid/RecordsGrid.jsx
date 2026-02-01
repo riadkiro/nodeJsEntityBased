@@ -103,9 +103,47 @@ export default function RecordsGrid({
         fetchRecords()
     }, []) // Only on mount
 
+    // CLIENT-SIDE SORTING - Sort allRecords when sort preferences change
+    const sortedRecords = useMemo(() => {
+        if (!allRecords.length) return []
+
+        const { field, direction } = preferences.sort
+        const multiplier = direction === 'asc' ? 1 : -1
+
+        return [...allRecords].sort((a, b) => {
+            let valA, valB
+
+            // Handle built-in fields
+            if (field === 'title') {
+                valA = (a.referenceTitle || a.title || '').toLowerCase()
+                valB = (b.referenceTitle || b.title || '').toLowerCase()
+            } else if (field === 'createdAt' || field === 'updatedAt') {
+                valA = new Date(a[field] || 0).getTime()
+                valB = new Date(b[field] || 0).getTime()
+            } else {
+                // Custom field - find by field_id
+                const cfA = (a.customFields || []).find(cf => {
+                    const cfId = cf.field_id?._id || cf.field_id
+                    return cfId?.toString() === field
+                })
+                const cfB = (b.customFields || []).find(cf => {
+                    const cfId = cf.field_id?._id || cf.field_id
+                    return cfId?.toString() === field
+                })
+                valA = (cfA?.value || '').toString().toLowerCase()
+                valB = (cfB?.value || '').toString().toLowerCase()
+            }
+
+            // Compare
+            if (valA < valB) return -1 * multiplier
+            if (valA > valB) return 1 * multiplier
+            return 0
+        })
+    }, [allRecords, preferences.sort.field, preferences.sort.direction])
+
     // Pre-compute search index for performance
     const recordsWithSearchIndex = useMemo(() => {
-        return allRecords.map(record => ({
+        return sortedRecords.map(record => ({
             ...record,
             _searchIndex: [
                 record.title || '',
@@ -113,7 +151,7 @@ export default function RecordsGrid({
                 ...(record.customFields || []).map(cf => cf.value || '')
             ].join(' ').toLowerCase()
         }))
-    }, [allRecords])
+    }, [sortedRecords])
 
     // CLIENT-SIDE SEARCH - Instant local filtering
     const handleSearch = useCallback((queryOrEvent) => {
@@ -134,6 +172,19 @@ export default function RecordsGrid({
             record._searchIndex.includes(lowerQuery)
         )
         setFilteredRecords(filtered)
+    }, [recordsWithSearchIndex])
+
+    // Update filteredRecords when sort changes
+    useEffect(() => {
+        if (!searchQuery.trim()) {
+            setFilteredRecords(recordsWithSearchIndex)
+        } else {
+            const lowerQuery = searchQuery.toLowerCase()
+            const filtered = recordsWithSearchIndex.filter(record =>
+                record._searchIndex.includes(lowerQuery)
+            )
+            setFilteredRecords(filtered)
+        }
     }, [recordsWithSearchIndex])
 
     // LOCAL PAGINATION - Slice filtered records
@@ -174,15 +225,12 @@ export default function RecordsGrid({
         setPreferences(newPrefs)
         savePreferences(newPrefs)
 
-        // Refetch all records with new sort (for client-side search)
-        if (key === 'sort') {
-            fetchRecords()
-        }
         // pageSize change updates pagination limit
         if (key === 'pageSize') {
             setPagination(prev => ({ ...prev, limit: value, page: 1 }))
         }
-    }, [preferences, savePreferences, fetchRecords])
+        // Sort changes are handled by useEffect
+    }, [preferences, savePreferences])
 
     // Handle page change
     const handlePageChange = useCallback((newPage) => {

@@ -172,7 +172,7 @@ export default function KanbanBoard({
                 // Use status classification
                 if (entity.statusClassification?.options) {
                     cols = entity.statusClassification.options.map(opt => ({
-                        id: opt._id,
+                        id: String(opt._id),
                         title: opt.label,
                         color: opt.color || '#6366f1',
                         icon: opt.icon
@@ -184,7 +184,7 @@ export default function KanbanBoard({
                 const cls = entity.classifications?.find(c => c._id === kanbanFieldId)
                 if (cls?.options) {
                     cols = cls.options.map(opt => ({
-                        id: opt._id,
+                        id: String(opt._id),
                         title: opt.label,
                         color: opt.color || '#6366f1',
                         icon: opt.icon
@@ -192,6 +192,14 @@ export default function KanbanBoard({
                 }
                 cols.push({ id: 'none', title: 'Non classé', color: '#9ca3af' })
             }
+
+            console.log('[KanbanBoard] Columns:', cols)
+            console.log('[KanbanBoard] Records sample:', data.records?.slice(0, 3).map(r => ({
+                _id: r._id,
+                title: r.title,
+                status: r.status,
+                statusType: typeof r.status
+            })))
 
             setColumns(cols)
             setRecords(data.records || [])
@@ -216,11 +224,23 @@ export default function KanbanBoard({
     // Get column ID for a record
     const getRecordColumnId = useCallback((record) => {
         if (kanbanFieldId === 'status') {
-            return record.status || 'none'
+            const s = record.status
+            if (!s) return 'none'
+            if (typeof s === 'string') return s
+            if (typeof s === 'object') return String(s._id || s.id || 'none')
+            return 'none'
         }
-        const cv = record.classificationValues?.find(v => v.classificationId === kanbanFieldId)
-        return cv?.optionId || 'none'
+
+        const cv = record.classificationValues?.find(v => String(v.classificationId) === String(kanbanFieldId))
+        if (!cv) return 'none'
+
+        const opt = cv.optionId
+        if (!opt) return 'none'
+        if (typeof opt === 'string') return opt
+        if (typeof opt === 'object') return String(opt._id || opt.id || 'none')
+        return 'none'
     }, [kanbanFieldId])
+
 
     // Records grouped by column with order applied
     const recordsByColumn = useMemo(() => {
@@ -297,6 +317,8 @@ export default function KanbanBoard({
                 }
             }
 
+            console.log('[KanbanBoard] Updating record:', { url, body })
+
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -304,8 +326,11 @@ export default function KanbanBoard({
                 body: JSON.stringify(body)
             })
 
+            const data = await res.json()
+            console.log('[KanbanBoard] Update response:', data)
+
             if (!res.ok) {
-                console.error('[KanbanBoard] Update failed')
+                console.error('[KanbanBoard] Update failed:', data)
             }
         } catch (err) {
             console.error('[KanbanBoard] Update error:', err)

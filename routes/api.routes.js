@@ -73,7 +73,7 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
 
         // Fetch records with pagination - minimal populate for performance
         const records = await Record.find(query)
-            .select('title referenceTitle image customFields createdAt updatedAt')
+            .select('title referenceTitle image customFields status classificationValues createdAt updatedAt')
             .populate({
                 path: 'customFields.field_id',
                 select: 'label fieldType'

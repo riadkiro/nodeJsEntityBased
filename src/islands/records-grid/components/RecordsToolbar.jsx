@@ -1,15 +1,138 @@
 /**
- * RecordsToolbar - Search + Settings button
- * Pixel-perfect reproduction of HTMX toolbar styling
+ * RecordsToolbar - Clean minimalist toolbar
+ * Affichage dropdown for column visibility
  */
-import React from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 
-export default function RecordsToolbar({ searchQuery, onSearch, onSettingsOpen, loading }) {
+export default function RecordsToolbar({
+    searchQuery,
+    onSearch,
+    columns,
+    preferences,
+    onPreferencesChange,
+    onSettingsOpen,
+    settingsButtonRef,
+    loading
+}) {
+    const [dropdownOpen, setDropdownOpen] = useState(false)
+    const dropdownRef = useRef(null)
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setDropdownOpen(false)
+            }
+        }
+
+        if (dropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside)
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [dropdownOpen])
+
+    // Toggle single column visibility
+    const toggleColumn = (columnId) => {
+        const newColumns = preferences.columns.map(col =>
+            col.id === columnId ? { ...col, visible: !col.visible } : col
+        )
+        onPreferencesChange('columns', newColumns)
+    }
+
+    // Toggle all columns
+    const toggleAll = () => {
+        const allVisible = preferences.columns.every(col => col.visible)
+        const newColumns = preferences.columns.map(col => ({
+            ...col,
+            visible: !allVisible
+        }))
+        onPreferencesChange('columns', newColumns)
+    }
+
+    const allVisible = preferences.columns.every(col => col.visible)
+
     return (
-        <div className="dataTable-top flex items-center mb-0 justify-end gap-3">
-            {/* Search input on the right */}
-            <div className="dataTable-search relative">
+        <div className="dataTable-top flex items-center mb-0 justify-between gap-3">
+            {/* Affichage dropdown */}
+            <div className="relative" ref={dropdownRef}>
+                <button
+                    type="button"
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="btn btn-outline-primary btn-sm flex items-center gap-2"
+                >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 7H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        <path d="M6 12H18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        <path d="M10 17H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                    Affichage
+                    <svg
+                        className={`h-4 w-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                    >
+                        <path d="M19 9L12 16L5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                </button>
 
+                {/* Dropdown panel */}
+                {dropdownOpen && (
+                    <div
+                        className="absolute left-0 top-full mt-2 bg-white dark:bg-[#1b2e4b] rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-64 p-4 z-[80]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Toggle all */}
+                        <div className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+                            <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={allVisible}
+                                    onChange={toggleAll}
+                                    className="form-checkbox h-4 w-4 rounded border-gray-300"
+                                />
+                                <span className="font-semibold text-sm">Tout afficher/masquer</span>
+                            </label>
+                        </div>
+
+                        {/* Column list */}
+                        <div className="space-y-1 max-h-80 overflow-y-auto">
+                            {columns.map(col => {
+                                const pref = preferences.columns.find(p => p.id === col.id)
+                                const isVisible = pref ? pref.visible : true
+
+                                return (
+                                    <label
+                                        key={col.id}
+                                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded transition-colors"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={isVisible}
+                                            onChange={() => toggleColumn(col.id)}
+                                            className="form-checkbox h-4 w-4 rounded border-gray-300"
+                                        />
+                                        <span className="text-sm">{col.name}</span>
+                                    </label>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Search input */}
+            <div className="dataTable-search relative flex-1 max-w-md">
+                <svg
+                    className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                >
+                    <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
 
                 <input
                     type="text"
@@ -28,6 +151,7 @@ export default function RecordsToolbar({ searchQuery, onSearch, onSettingsOpen, 
 
             {/* Settings button */}
             <button
+                ref={settingsButtonRef}
                 type="button"
                 onClick={onSettingsOpen}
                 className="btn btn-outline-primary btn-sm"

@@ -45,6 +45,7 @@ export default function RecordsGrid({
 
     // Refs
     const parentRef = useRef(null)
+    const settingsButtonRef = useRef(null)
 
     // Fetch ALL records once (CLIENT-SIDE SEARCH)
     const fetchRecords = useCallback(async () => {
@@ -176,7 +177,10 @@ export default function RecordsGrid({
         if (key === 'sort') {
             fetchRecords()
         }
-        // pageSize change just updates pagination (no refetch needed)
+        // pageSize change updates pagination limit
+        if (key === 'pageSize') {
+            setPagination(prev => ({ ...prev, limit: value, page: 1 }))
+        }
     }, [preferences, savePreferences, fetchRecords])
 
     // Handle page change
@@ -184,12 +188,13 @@ export default function RecordsGrid({
         setPagination(prev => ({ ...prev, page: newPage }))
     }, [])
 
+
     // Virtual row height based on density
     const rowHeight = useMemo(() => {
         switch (preferences.density) {
-            case 'compact': return 32
+            case 'compact': return 36
             case 'comfortable': return 56
-            default: return 44
+            default: return 44  // normal
         }
     }, [preferences.density])
 
@@ -234,7 +239,11 @@ export default function RecordsGrid({
             <RecordsToolbar
                 searchQuery={searchQuery}
                 onSearch={handleSearch}
+                columns={columns}
+                preferences={preferences}
+                onPreferencesChange={handlePreferencesChange}
                 onSettingsOpen={() => setSettingsOpen(true)}
+                settingsButtonRef={settingsButtonRef}
                 loading={loading}
             />
 
@@ -324,6 +333,7 @@ export default function RecordsGrid({
                 columns={columns}
                 preferences={preferences}
                 onPreferencesChange={handlePreferencesChange}
+                triggerRef={settingsButtonRef}
             />
         </div>
     )

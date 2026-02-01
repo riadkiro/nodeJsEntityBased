@@ -2,6 +2,14 @@
 trigger: always_on
 ---
 
+Key Design Elements:
+
+Clean white background
+Subtle borders
+Dropdown menus for settings
+Search input with icon
+Minimalist button styles
+
 Conversion HTML → React (PIXEL PERFECT)
 
 Tu es un Senior Frontend Engineer spécialisé en migrations HTML → React pour SaaS Admin.
@@ -195,4 +203,3 @@ Entry Vite
 Instructions d’intégration EJS
 
 Liste “0 changement visuel confirmé”
-

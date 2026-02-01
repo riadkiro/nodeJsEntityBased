@@ -16,10 +16,40 @@ export default function RecordsTable({
 }) {
     const virtualRows = virtualizer.getVirtualItems()
 
+    // Density configuration
+    // Comfortable = default (comme avant)
+    // Normal = espacement réduit, font inchangée
+    // Compact = espacement réduit + image réduite + font réduite
+    const densityConfig = {
+        compact: {
+            rowHeight: 36,
+            cellClass: 'py-1',
+            fontSize: 'text-xs',
+            imageSize: 'w-6 h-6',
+            fontWeight: 'font-medium'
+        },
+        normal: {
+            rowHeight: 44,
+            cellClass: 'py-2',
+            fontSize: 'text-sm',  // Font inchangée
+            imageSize: 'w-9 h-9', // Image inchangée
+            fontWeight: 'font-semibold'
+        },
+        comfortable: {
+            rowHeight: 56,
+            cellClass: 'py-3',
+            fontSize: 'text-sm',  // Défaut
+            imageSize: 'w-9 h-9', // Défaut
+            fontWeight: 'font-semibold'
+        }
+    }
+
+    const config = densityConfig[density] || densityConfig.comfortable
+
     console.log('[RecordsTable] Rendering with:', {
         recordsCount: records.length,
         virtualRowsCount: virtualRows.length,
-        firstRecordTitle: records[0]?.title || records[0]?.referenceTitle
+        density
     })
 
     return (
@@ -64,10 +94,11 @@ export default function RecordsTable({
                             key={record._id}
                             data-index={virtualRow.index}
                             ref={virtualizer.measureElement}
+                            style={{ height: config.rowHeight }}
                         >
                             {columns.map(col => (
-                                <td key={col.id}>
-                                    {renderCellValue(record, col, accountNumber, entitySlug)}
+                                <td key={col.id} className={`${config.cellClass} ${config.fontSize}`}>
+                                    {renderCellValue(record, col, accountNumber, entitySlug, config)}
                                 </td>
                             ))}
                         </tr>
@@ -92,7 +123,7 @@ export default function RecordsTable({
 }
 
 // Helper to render cell values with proper formatting
-function renderCellValue(record, col, accountNumber, entitySlug) {
+function renderCellValue(record, col, accountNumber, entitySlug, config) {
     switch (col.id) {
         case 'title': {
             const refTitle = record.referenceTitle || record.title || 'Sans titre'
@@ -106,9 +137,9 @@ function renderCellValue(record, col, accountNumber, entitySlug) {
                     <img
                         src={imageUrl}
                         alt={refTitle}
-                        className="w-9 h-9 rounded-full max-w-none"
+                        className={`${config.imageSize} rounded-full max-w-none`}
                     />
-                    <div className="font-semibold">{refTitle}</div>
+                    <div className={config.fontWeight}>{refTitle}</div>
                 </div>
             )
         }

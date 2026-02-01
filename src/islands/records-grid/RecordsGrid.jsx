@@ -82,6 +82,10 @@ export default function RecordsGrid({
                         ? data.preferences.columns
                         : data.columns?.map(c => ({ id: c.id, visible: true })) || []
                 }))
+                // Sync pagination.limit with saved pageSize
+                if (data.preferences.pageSize) {
+                    setPagination(prev => ({ ...prev, limit: data.preferences.pageSize }))
+                }
             } else if (data.columns) {
                 setPreferences(prev => ({
                     ...prev,

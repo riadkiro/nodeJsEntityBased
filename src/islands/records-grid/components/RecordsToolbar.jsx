@@ -6,21 +6,10 @@ import React from 'react'
 
 export default function RecordsToolbar({ searchQuery, onSearch, onSettingsOpen, loading }) {
     return (
-        <div className="dataTable-top mb-4 flex items-center justify-end gap-3">
+        <div className="dataTable-top flex items-center mb-0 justify-end gap-3">
             {/* Search input on the right */}
             <div className="dataTable-search relative">
-                {/* Search icon */}
-                <svg
-                    className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <circle cx="11.5" cy="11.5" r="9.5" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
-                    <path d="M18.5 18.5L22 22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
+
 
                 <input
                     type="text"

@@ -30,13 +30,13 @@ export default function RecordsGrid({
         columns: [],
         sort: { field: 'createdAt', direction: 'desc' },
         density: 'normal',
-        pageSize: 25
+        pageSize: 10
     })
 
     // Pagination state
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 25,
+        limit: 10,
         total: 0,
         pages: 0
     })
@@ -102,18 +102,45 @@ export default function RecordsGrid({
         fetchRecords()
     }, []) // Only on mount
 
-    // Debounced search
-    const handleSearch = useCallback((query) => {
+    // Debounced search - direct API call to avoid stale closure
+    const handleSearch = (query) => {
+        console.log('[RecordsGrid] handleSearch called with:', query)
         setSearchQuery(query)
 
         if (searchTimeoutRef.current) {
             clearTimeout(searchTimeoutRef.current)
         }
 
-        searchTimeoutRef.current = setTimeout(() => {
-            fetchRecords({ q: query, page: 1 })
+        searchTimeoutRef.current = setTimeout(async () => {
+            try {
+                setLoading(true)
+                const queryParams = new URLSearchParams({
+                    page: 1,
+                    limit: preferences.pageSize,
+                    sort: `${preferences.sort.field}:${preferences.sort.direction}`,
+                    q: query
+                })
+                console.log('[RecordsGrid] Fetching with params:', queryParams.toString())
+
+                const res = await fetch(
+                    `/account/${accountNumber}/api/entity/${entityId}/views/${viewId}/records?${queryParams}`,
+                    { credentials: 'include' }
+                )
+
+                if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+                const data = await res.json()
+                console.log('[RecordsGrid] Search results:', data.records?.length, 'records')
+                setRecords(data.records || [])
+                setPagination(data.pagination || pagination)
+            } catch (err) {
+                console.error('[RecordsGrid] Search error:', err)
+                setError(err.message)
+            } finally {
+                setLoading(false)
+            }
         }, 300)
-    }, [fetchRecords])
+    }
 
     // Save preferences to server
     const savePreferences = useCallback(async (newPrefs) => {

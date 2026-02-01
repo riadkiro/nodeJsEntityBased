@@ -45,12 +45,21 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
 
         // Build query - use entityId field name as in Record model
         let query = { entityId: entityId }
-        if (q) {
-            query.$or = [
-                { title: { $regex: q, $options: 'i' } },
-                { referenceTitle: { $regex: q, $options: 'i' } }
-            ]
+        if (q && q.trim()) {
+            query = {
+                $and: [
+                    { entityId: entityId },
+                    {
+                        $or: [
+                            { title: { $regex: q, $options: 'i' } },
+                            { referenceTitle: { $regex: q, $options: 'i' } },
+                            { 'customFields.value': { $regex: q, $options: 'i' } }
+                        ]
+                    }
+                ]
+            }
         }
+        console.log('[API] Search query:', JSON.stringify({ q, query }, null, 2))
 
         // Get total count (required for accurate pagination)
         const total = await Record.countDocuments(query)

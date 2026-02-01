@@ -71,7 +71,7 @@ module.exports = {
 
             const records = await RecordModel.find(query).sort(sort).populate('customFields.field_id');
 
-            res.render("record/record-view", {
+            res.render("record/record-view-progressive", {
                 view,
                 entity,
                 records,

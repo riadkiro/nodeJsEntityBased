@@ -68,7 +68,6 @@ export default function RecordsGrid({
 
             setAllRecords(data.records || [])
             setFilteredRecords(data.records || [])
-            setColumns(data.columns || [])
 
             // Merge server preferences with local
             if (data.preferences) {
@@ -83,7 +82,27 @@ export default function RecordsGrid({
                 if (data.preferences.pageSize) {
                     setPagination(prev => ({ ...prev, limit: data.preferences.pageSize }))
                 }
+
+                // Reorder columns based on saved preferences order
+                if (data.preferences.columns?.length && data.columns?.length) {
+                    const orderedColumns = []
+                    // First add columns in the order they appear in preferences
+                    data.preferences.columns.forEach(pref => {
+                        const col = data.columns.find(c => c.id === pref.id)
+                        if (col) orderedColumns.push(col)
+                    })
+                    // Then add any new columns that aren't in preferences yet
+                    data.columns.forEach(col => {
+                        if (!orderedColumns.find(c => c.id === col.id)) {
+                            orderedColumns.push(col)
+                        }
+                    })
+                    setColumns(orderedColumns)
+                } else {
+                    setColumns(data.columns || [])
+                }
             } else if (data.columns) {
+                setColumns(data.columns || [])
                 setPreferences(prev => ({
                     ...prev,
                     columns: data.columns.map(c => ({ id: c.id, visible: true }))

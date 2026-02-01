@@ -17,8 +17,10 @@ export default function RecordsGrid({
     entityName,
     entitySlug
 }) {
-    // State
-    const [records, setRecords] = useState([])
+    // State - CLIENT-SIDE SEARCH
+    const [allRecords, setAllRecords] = useState([])  // All fetched records (immutable after load)
+    const [filteredRecords, setFilteredRecords] = useState([])  // After search filter
+    const [displayRecords, setDisplayRecords] = useState([])  // Current page slice
     const [columns, setColumns] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -43,19 +45,16 @@ export default function RecordsGrid({
 
     // Refs
     const parentRef = useRef(null)
-    const searchTimeoutRef = useRef(null)
 
-    // Fetch records from JSON API
-    const fetchRecords = useCallback(async (params = {}) => {
+    // Fetch ALL records once (CLIENT-SIDE SEARCH)
+    const fetchRecords = useCallback(async () => {
         try {
             setLoading(true)
             setError(null)
 
             const queryParams = new URLSearchParams({
-                page: params.page || pagination.page,
-                limit: params.limit || preferences.pageSize,
-                sort: `${preferences.sort.field}:${preferences.sort.direction}`,
-                q: params.q !== undefined ? params.q : searchQuery
+                limit: 10000,  // Fetch all records
+                sort: `${preferences.sort.field}:${preferences.sort.direction}`
             })
 
             const res = await fetch(
@@ -69,9 +68,9 @@ export default function RecordsGrid({
 
             const data = await res.json()
 
-            setRecords(data.records || [])
+            setAllRecords(data.records || [])
+            setFilteredRecords(data.records || [])
             setColumns(data.columns || [])
-            setPagination(data.pagination || pagination)
 
             // Merge server preferences with local
             if (data.preferences) {
@@ -95,52 +94,60 @@ export default function RecordsGrid({
         } finally {
             setLoading(false)
         }
-    }, [accountNumber, entityId, viewId, pagination.page, preferences.pageSize, preferences.sort, searchQuery])
+    }, [accountNumber, entityId, viewId, preferences.sort])
 
     // Initial fetch
     useEffect(() => {
         fetchRecords()
     }, []) // Only on mount
 
-    // Debounced search - direct API call to avoid stale closure
-    const handleSearch = (query) => {
-        console.log('[RecordsGrid] handleSearch called with:', query)
-        setSearchQuery(query)
+    // Pre-compute search index for performance
+    const recordsWithSearchIndex = useMemo(() => {
+        return allRecords.map(record => ({
+            ...record,
+            _searchIndex: [
+                record.title || '',
+                record.referenceTitle || '',
+                ...(record.customFields || []).map(cf => cf.value || '')
+            ].join(' ').toLowerCase()
+        }))
+    }, [allRecords])
 
-        if (searchTimeoutRef.current) {
-            clearTimeout(searchTimeoutRef.current)
+    // CLIENT-SIDE SEARCH - Instant local filtering
+    const handleSearch = useCallback((queryOrEvent) => {
+        const query = typeof queryOrEvent === 'string'
+            ? queryOrEvent
+            : queryOrEvent?.target?.value || ''
+
+        setSearchQuery(query)
+        setPagination(prev => ({ ...prev, page: 1 }))  // Reset to page 1
+
+        if (!query.trim()) {
+            setFilteredRecords(recordsWithSearchIndex)
+            return
         }
 
-        searchTimeoutRef.current = setTimeout(async () => {
-            try {
-                setLoading(true)
-                const queryParams = new URLSearchParams({
-                    page: 1,
-                    limit: preferences.pageSize,
-                    sort: `${preferences.sort.field}:${preferences.sort.direction}`,
-                    q: query
-                })
-                console.log('[RecordsGrid] Fetching with params:', queryParams.toString())
+        const lowerQuery = query.toLowerCase()
+        const filtered = recordsWithSearchIndex.filter(record =>
+            record._searchIndex.includes(lowerQuery)
+        )
+        setFilteredRecords(filtered)
+    }, [recordsWithSearchIndex])
 
-                const res = await fetch(
-                    `/account/${accountNumber}/api/entity/${entityId}/views/${viewId}/records?${queryParams}`,
-                    { credentials: 'include' }
-                )
+    // LOCAL PAGINATION - Slice filtered records
+    useEffect(() => {
+        const start = (pagination.page - 1) * pagination.limit
+        const end = start + pagination.limit
+        const slice = filteredRecords.slice(start, end)
+        setDisplayRecords(slice)
 
-                if (!res.ok) throw new Error(`HTTP ${res.status}`)
-
-                const data = await res.json()
-                console.log('[RecordsGrid] Search results:', data.records?.length, 'records')
-                setRecords(data.records || [])
-                setPagination(data.pagination || pagination)
-            } catch (err) {
-                console.error('[RecordsGrid] Search error:', err)
-                setError(err.message)
-            } finally {
-                setLoading(false)
-            }
-        }, 300)
-    }
+        // Update pagination metadata
+        setPagination(prev => ({
+            ...prev,
+            total: filteredRecords.length,
+            pages: Math.ceil(filteredRecords.length / pagination.limit)
+        }))
+    }, [filteredRecords, pagination.page, pagination.limit])
 
     // Save preferences to server
     const savePreferences = useCallback(async (newPrefs) => {
@@ -165,20 +172,17 @@ export default function RecordsGrid({
         setPreferences(newPrefs)
         savePreferences(newPrefs)
 
-        // Refetch if sort or pageSize changed
-        if (key === 'sort' || key === 'pageSize') {
-            fetchRecords({
-                page: 1,
-                limit: key === 'pageSize' ? value : preferences.pageSize
-            })
+        // Refetch all records with new sort (for client-side search)
+        if (key === 'sort') {
+            fetchRecords()
         }
+        // pageSize change just updates pagination (no refetch needed)
     }, [preferences, savePreferences, fetchRecords])
 
     // Handle page change
     const handlePageChange = useCallback((newPage) => {
         setPagination(prev => ({ ...prev, page: newPage }))
-        fetchRecords({ page: newPage })
-    }, [fetchRecords])
+    }, [])
 
     // Virtual row height based on density
     const rowHeight = useMemo(() => {
@@ -189,9 +193,9 @@ export default function RecordsGrid({
         }
     }, [preferences.density])
 
-    // Virtual scrolling
+    // Virtual scrolling - update count to use displayRecords
     const virtualizer = useVirtualizer({
-        count: records.length,
+        count: displayRecords.length,
         getScrollElement: () => parentRef.current,
         estimateSize: () => rowHeight,
         overscan: 10
@@ -207,7 +211,7 @@ export default function RecordsGrid({
     }, [columns, preferences.columns])
 
     // Loading state
-    if (loading && records.length === 0) {
+    if (loading && displayRecords.length === 0) {
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -216,7 +220,7 @@ export default function RecordsGrid({
     }
 
     // Error state
-    if (error && records.length === 0) {
+    if (error && displayRecords.length === 0) {
         return (
             <div className="flex items-center justify-center h-64 text-danger">
                 <span>Erreur: {error}</span>
@@ -242,7 +246,7 @@ export default function RecordsGrid({
                     ref={parentRef}
                 >
                     <RecordsTable
-                        records={records}
+                        records={displayRecords}
                         columns={visibleColumns}
                         virtualizer={virtualizer}
                         sort={preferences.sort}

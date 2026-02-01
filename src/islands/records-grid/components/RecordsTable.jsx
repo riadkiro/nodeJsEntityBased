@@ -16,6 +16,12 @@ export default function RecordsTable({
 }) {
     const virtualRows = virtualizer.getVirtualItems()
 
+    console.log('[RecordsTable] Rendering with:', {
+        recordsCount: records.length,
+        virtualRowsCount: virtualRows.length,
+        firstRecordTitle: records[0]?.title || records[0]?.referenceTitle
+    })
+
     return (
         <table className="table-hover whitespace-nowrap dataTable-table w-full">
             <thead className="sticky top-0 bg-white dark:bg-[#1b2e4b] z-10">

@@ -116,19 +116,6 @@ export default function RecordsToolbar({
             </div>
             {/* Icons group - RIGHT */}
             <div className="flex items-center gap-2">
-                {/* View switcher - Kanban */}
-                <a
-                    href={`/account/${accountNumber}/test-progressive/${entitySlug}?viewType=kanban`}
-                    className="p-2 rounded-lg border transition-all border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50"
-                    title="Vue Kanban"
-                >
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                        <rect x="3" y="3" width="5" height="18" rx="1" stroke="currentColor" strokeWidth="1.5" />
-                        <rect x="9.5" y="3" width="5" height="12" rx="1" stroke="currentColor" strokeWidth="1.5" />
-                        <rect x="16" y="3" width="5" height="15" rx="1" stroke="currentColor" strokeWidth="1.5" />
-                    </svg>
-                </a>
-
                 {/* Sort button */}
                 {(() => {
                     const isSortActive = preferences.sort?.field !== 'createdAt' || preferences.sort?.direction !== 'desc'
@@ -137,9 +124,9 @@ export default function RecordsToolbar({
                             ref={sortBtnRef}
                             type="button"
                             onClick={() => { setSortPopover(!sortPopover); setDisplayPopover(false); setColumnsPopover(false) }}
-                            className={`p-2 rounded-lg border transition-all ${sortPopover || isSortActive
-                                ? 'border-primary bg-primary/10 text-primary'
-                                : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50'}`}
+                            className={`block rounded-full p-2 transition-all ${sortPopover || isSortActive
+                                ? 'bg-primary/20 text-primary'
+                                : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60'}`}
                             title="Trier"
                         >
                             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -155,9 +142,9 @@ export default function RecordsToolbar({
                     ref={displayBtnRef}
                     type="button"
                     onClick={() => { setDisplayPopover(!displayPopover); setSortPopover(false); setColumnsPopover(false) }}
-                    className={`p-2 rounded-lg border transition-all ${displayPopover
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50'}`}
+                    className={`block rounded-full p-2 transition-all ${displayPopover
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60'}`}
                     title="Mode d'affichage"
                 >
                     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -172,9 +159,9 @@ export default function RecordsToolbar({
                     ref={columnsBtnRef}
                     type="button"
                     onClick={() => { setColumnsPopover(!columnsPopover); setDisplayPopover(false); setSortPopover(false) }}
-                    className={`p-2 rounded-lg border transition-all ${columnsPopover
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary hover:border-primary/50'}`}
+                    className={`block rounded-full p-2 transition-all ${columnsPopover
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60'}`}
                     title="Colonnes visibles"
                 >
                     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -196,7 +183,7 @@ export default function RecordsToolbar({
                     />
                     <div
                         ref={sortPanelRef}
-                        className="fixed bg-white dark:bg-[#1b2e4b] rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 w-72"
+                        className="fixed rounded-xl shadow-xl p-4 w-72 bg-white dark:bg-[#0e1726] border border-gray-100 dark:border-white/10"
                         style={{
                             zIndex: 9999,
                             top: getPosition(sortBtnRef).top,
@@ -204,7 +191,7 @@ export default function RecordsToolbar({
                             animation: 'popoverSlide 0.15s ease-out'
                         }}
                     >
-                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Trier par</div>
+                        <div className="text-xs font-medium text-gray-500 dark:text-white-dark mb-2">Trier par</div>
                         <div className="flex gap-2">
                             {/* Column selector */}
                             <select
@@ -213,7 +200,7 @@ export default function RecordsToolbar({
                                     ...preferences.sort,
                                     field: e.target.value
                                 })}
-                                className="flex-1 px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                className="flex-1 px-2 py-1.5 text-xs border border-gray-200 dark:border-white/10 rounded-lg bg-white dark:bg-[#1b2e4b] text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
                             >
                                 <option value="createdAt">Date de création</option>
                                 <option value="title">Titre</option>
@@ -228,11 +215,11 @@ export default function RecordsToolbar({
                                     ...preferences.sort,
                                     direction: preferences.sort?.direction === 'asc' ? 'desc' : 'asc'
                                 })}
-                                className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                                className="p-1.5 border border-gray-200 dark:border-white/10 rounded-lg bg-white dark:bg-[#1b2e4b] hover:bg-gray-50 dark:hover:bg-[#253b5c] transition-all"
                                 title={preferences.sort?.direction === 'asc' ? 'Croissant' : 'Décroissant'}
                             >
                                 <svg
-                                    className={`h-4 w-4 text-gray-600 dark:text-gray-300 transition-transform ${preferences.sort?.direction === 'asc' ? 'rotate-180' : ''}`}
+                                    className={`h-4 w-4 text-gray-600 dark:text-white transition-transform ${preferences.sort?.direction === 'asc' ? 'rotate-180' : ''}`}
                                     viewBox="0 0 24 24"
                                     fill="none"
                                 >
@@ -243,10 +230,10 @@ export default function RecordsToolbar({
                             {/* Reset sort */}
                             <button
                                 onClick={() => onPreferencesChange('sort', { field: 'createdAt', direction: 'desc' })}
-                                className="p-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 hover:bg-red-50 hover:border-red-300 hover:text-red-500 dark:hover:bg-red-900/20 transition-all"
+                                className="p-1.5 border border-gray-200 dark:border-white/10 rounded-lg bg-white dark:bg-[#1b2e4b] hover:bg-red-50 hover:border-red-300 hover:text-red-500 dark:hover:bg-red-900/20 transition-all"
                                 title="Réinitialiser le tri"
                             >
-                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                                <svg className="h-4 w-4 text-gray-600 dark:text-white" viewBox="0 0 24 24" fill="none">
                                     <path d="M4.06189 13C4.02104 12.6724 4 12.3387 4 12C4 7.58172 7.58172 4 12 4C14.5006 4 16.7332 5.14727 18.2002 6.94416M19.9381 11C19.979 11.3276 20 11.6613 20 12C20 16.4183 16.4183 20 12 20C9.49944 20 7.26681 18.8527 5.79984 17.0558" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                     <path d="M15 7H19V3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                     <path d="M9 17H5V21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -268,7 +255,7 @@ export default function RecordsToolbar({
                     />
                     <div
                         ref={displayPanelRef}
-                        className="fixed bg-white dark:bg-[#1b2e4b] rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 w-72"
+                        className="fixed rounded-xl shadow-xl p-4 w-72 bg-white dark:bg-[#0e1726] border border-gray-100 dark:border-white/10"
                         style={{
                             zIndex: 9999,
                             top: getPosition(displayBtnRef).top,
@@ -278,7 +265,7 @@ export default function RecordsToolbar({
                     >
                         {/* Density */}
                         <div className="mb-4">
-                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Densité</div>
+                            <div className="text-xs font-medium text-gray-500 dark:text-white-dark mb-2">Densité</div>
                             <div className="flex gap-1">
                                 {['compact', 'normal', 'comfortable'].map(d => (
                                     <button
@@ -286,7 +273,7 @@ export default function RecordsToolbar({
                                         onClick={() => onPreferencesChange('density', d)}
                                         className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${preferences.density === d
                                             ? 'bg-primary text-white'
-                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
+                                            : 'bg-gray-100 dark:bg-dark/40 text-gray-600 dark:text-white-dark/70 hover:bg-gray-200 dark:hover:bg-dark/60'
                                             }`}
                                     >
                                         {d === 'compact' ? 'Compact' : d === 'normal' ? 'Normal' : 'Confort'}
@@ -297,7 +284,7 @@ export default function RecordsToolbar({
 
                         {/* Page Size */}
                         <div>
-                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Lignes par page</div>
+                            <div className="text-xs font-medium text-gray-500 dark:text-white-dark mb-2">Lignes par page</div>
                             <div className="flex gap-1">
                                 {[10, 25, 50, 100].map(size => (
                                     <button
@@ -305,7 +292,7 @@ export default function RecordsToolbar({
                                         onClick={() => onPreferencesChange('pageSize', size)}
                                         className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${preferences.pageSize === size
                                             ? 'bg-primary text-white'
-                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
+                                            : 'bg-gray-100 dark:bg-dark/40 text-gray-600 dark:text-white-dark/70 hover:bg-gray-200 dark:hover:bg-dark/60'
                                             }`}
                                     >
                                         {size}
@@ -328,7 +315,7 @@ export default function RecordsToolbar({
                     />
                     <div
                         ref={columnsPanelRef}
-                        className="fixed bg-white dark:bg-[#1b2e4b] rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 w-64"
+                        className="fixed rounded-xl shadow-xl p-4 w-64 bg-white dark:bg-[#0e1726] border border-gray-100 dark:border-white/10"
                         style={{
                             zIndex: 9999,
                             top: getPosition(columnsBtnRef).top,
@@ -336,7 +323,7 @@ export default function RecordsToolbar({
                             animation: 'popoverSlide 0.15s ease-out'
                         }}
                     >
-                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Colonnes visibles</div>
+                        <div className="text-xs font-medium text-gray-500 dark:text-white-dark mb-2">Colonnes visibles</div>
 
                         {/* Search */}
                         <div className="relative mb-2">
@@ -345,7 +332,7 @@ export default function RecordsToolbar({
                                 value={columnSearch}
                                 onChange={(e) => setColumnSearch(e.target.value)}
                                 placeholder="Filtrer..."
-                                className="w-full px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                className="w-full px-3 py-1.5 text-xs border border-gray-200 dark:border-white/10 rounded-lg bg-white dark:bg-[#1b2e4b] text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
                             />
                         </div>
 

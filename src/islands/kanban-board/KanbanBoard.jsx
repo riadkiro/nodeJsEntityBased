@@ -30,6 +30,58 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
     const saveTimeoutRef = useRef(null)
     const scrollContainerRef = useRef(null)
 
+    // Drag-to-scroll state
+    const isDraggingToScroll = useRef(false)
+    const startX = useRef(0)
+    const scrollLeft = useRef(0)
+
+    // Drag-to-scroll handlers
+    const handleMouseDown = useCallback((e) => {
+        // Don't scroll when dragging a card
+        if (activeId) return
+        // Only left click and not on interactive elements
+        if (e.button !== 0) return
+        const target = e.target
+        if (target.closest('button, a, input, [data-draggable], [draggable="true"], .kanban-card')) return
+
+        const container = scrollContainerRef.current
+        if (!container) return
+
+        isDraggingToScroll.current = true
+        startX.current = e.pageX - container.offsetLeft
+        scrollLeft.current = container.scrollLeft
+        container.style.cursor = 'grabbing'
+    }, [activeId])
+
+    const handleMouseMove = useCallback((e) => {
+        // Stop scroll if a card drag started
+        if (activeId) {
+            isDraggingToScroll.current = false
+            return
+        }
+        if (!isDraggingToScroll.current) return
+        e.preventDefault()
+
+        const container = scrollContainerRef.current
+        if (!container) return
+
+        const x = e.pageX - container.offsetLeft
+        const walk = (x - startX.current) * 1.5 // Multiplier for scroll speed
+        container.scrollLeft = scrollLeft.current - walk
+    }, [activeId])
+
+    const handleMouseUp = useCallback(() => {
+        isDraggingToScroll.current = false
+        const container = scrollContainerRef.current
+        if (container) container.style.cursor = 'grab'
+    }, [])
+
+    const handleMouseLeave = useCallback(() => {
+        isDraggingToScroll.current = false
+        const container = scrollContainerRef.current
+        if (container) container.style.cursor = 'grab'
+    }, [])
+
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -255,6 +307,10 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
     return (
         <div
             ref={scrollContainerRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
             style={{
                 height: '100%',
                 width: '100%',

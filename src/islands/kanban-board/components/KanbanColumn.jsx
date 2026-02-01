@@ -40,7 +40,7 @@ export default function KanbanColumn({ column, records, recordIds }) {
             <div className="px-3 py-2 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                     <span
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold uppercase tracking-wide"
+                        className="inline-flex items-center gap-1.5 px-2 py-0 rounded text-xs font-semibold uppercase tracking-wide"
                         style={{ backgroundColor: column.color, color: '#fff' }}
                     >
                         {column.icon && <iconify-icon icon={column.icon} width="12"></iconify-icon>}

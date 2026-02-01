@@ -42,7 +42,7 @@ export default function KanbanCard({ record, isDragging = false }) {
         <div
             ref={setNodeRef}
             style={style}
-            className={`cursor-move bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md hover:border-primary/30 transition-all dark:bg-[#1a2a3f] dark:border-gray-700 group ${(isDragging || dragging) ? 'shadow-lg ring-2 ring-primary/30' : ''}`}
+            className={`kanban-card cursor-move rounded-lg shadow-sm transition-all group bg-white-light/40 hover:bg-white-light/90 border border-gray-100 dark:border-0 dark:bg-dark/40 dark:hover:bg-dark/60 ${(isDragging || dragging) ? 'shadow-lg ring-2 ring-primary/30' : ''}`}
             data-dnd="card"
             {...attributes}
             {...listeners}
@@ -50,13 +50,13 @@ export default function KanbanCard({ record, isDragging = false }) {
             {/* Content */}
             <div className="p-3">
                 {/* Title */}
-                <div className="text-sm font-semibold text-gray-800 dark:text-white leading-5 line-clamp-2 mb-2">
+                <div className="text-sm font-semibold text-gray-800 dark:text-white-dark leading-5 line-clamp-2 mb-2">
                     {title}
                 </div>
 
                 {/* Description */}
                 {description && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">
+                    <p className="text-xs text-gray-500 dark:text-white-dark/70 line-clamp-2 mb-2">
                         {description}
                     </p>
                 )}
@@ -76,7 +76,7 @@ export default function KanbanCard({ record, isDragging = false }) {
                             </span>
                         ))
                     ) : (
-                        <span className="text-[10px] text-gray-400 dark:text-gray-500 italic flex items-center gap-1">
+                        <span className="text-[10px] text-gray-400 dark:text-white-dark/50 italic flex items-center gap-1">
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                 <path d="M4.172 3.172C3 4.343 3 6.229 3 10v4c0 3.771 0 5.657 1.172 6.828C5.343 22 7.229 22 11 22h2c3.771 0 5.657 0 6.828-1.172C21 19.657 21 17.771 21 14v-1.22c0-1.835 0-2.752-.379-3.55-.378-.798-1.07-1.39-2.455-2.576l-1.5-1.282c-1.97-1.687-2.955-2.531-4.136-2.605-.17-.01-.343-.01-.56 0-1.18.074-2.166.918-4.136 2.605L6.334 6.654" />
                             </svg>
@@ -84,14 +84,14 @@ export default function KanbanCard({ record, isDragging = false }) {
                         </span>
                     )}
                     {tags.length > 2 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 dark:bg-gray-700">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 dark:bg-dark/60 dark:text-white-dark/70">
                             +{tags.length - 2}
                         </span>
                     )}
                 </div>
 
                 {/* Meta icons row */}
-                <div className="flex items-center gap-3 text-xs text-gray-400">
+                <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-white-dark/50">
                     {record.attachments?.length > 0 && (
                         <span className="flex items-center gap-1">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -110,8 +110,8 @@ export default function KanbanCard({ record, isDragging = false }) {
             </div>
 
             {/* Footer */}
-            <div className="px-3 py-2 border-t border-gray-50 dark:border-gray-700 flex items-center justify-between">
-                <div className="flex items-center gap-1 text-[11px] text-gray-400">
+            <div className="px-3 py-2 border-t border-gray-100 dark:border-0 flex items-center justify-between">
+                <div className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-white-dark/50">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                         <rect x="3" y="4" width="18" height="18" rx="2" />
                         <path d="M3 10H21" />

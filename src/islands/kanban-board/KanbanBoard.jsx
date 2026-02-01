@@ -39,6 +39,97 @@ export default function KanbanBoard({
     // Debounce ref for saving preferences
     const saveTimeoutRef = useRef(null)
 
+    // Ref for horizontal scroll container
+    const scrollContainerRef = useRef(null)
+
+    // Drag-to-pan refs
+    const isPanningRef = useRef(false)
+    const panStartRef = useRef({ x: 0, scrollLeft: 0 })
+
+    // Wheel-to-horizontal scroll conversion
+    useEffect(() => {
+        if (loading) return
+
+        const container = scrollContainerRef.current
+        if (!container) {
+            console.error('[KanbanBoard] scrollContainerRef still null after loading=false')
+            return
+        }
+
+        const handleWheel = (e) => {
+            if (e.shiftKey) return
+            if (e.deltaY !== 0) {
+                e.preventDefault()
+                container.scrollLeft += e.deltaY
+            }
+        }
+
+        container.addEventListener('wheel', handleWheel, { passive: false })
+
+        return () => {
+            container.removeEventListener('wheel', handleWheel)
+        }
+    }, [loading])
+
+    // Drag-to-pan on scroll container (left click)
+    useEffect(() => {
+        if (loading) return
+
+        const container = scrollContainerRef.current
+        if (!container) return
+
+        const isIgnored = (target) => {
+            if (!target) return true
+            return !!target.closest(
+                '[data-dnd="card"],[data-dnd="handle"],button,a,input,select,textarea,[data-drag-handle]'
+            )
+        }
+
+        const onPointerDown = (e) => {
+            if (e.button !== 0) return
+            if (activeId) return
+            if (isIgnored(e.target)) return
+            if (container.scrollWidth <= container.clientWidth) return
+
+            isPanningRef.current = true
+            panStartRef.current = { x: e.clientX, scrollLeft: container.scrollLeft }
+            container.style.cursor = 'grabbing'
+            document.body.classList.add('is-panning')
+
+            try { container.setPointerCapture(e.pointerId) } catch { }
+            e.preventDefault()
+        }
+
+        const onPointerMove = (e) => {
+            if (!isPanningRef.current) return
+            const dx = e.clientX - panStartRef.current.x
+            container.scrollLeft = panStartRef.current.scrollLeft - dx
+            e.preventDefault()
+        }
+
+        const endPan = (e) => {
+            if (!isPanningRef.current) return
+            isPanningRef.current = false
+            container.style.cursor = 'grab'
+            document.body.classList.remove('is-panning')
+            try { container.releasePointerCapture(e.pointerId) } catch { }
+            e.preventDefault()
+        }
+
+        document.addEventListener('pointerdown', onPointerDown, true)
+        document.addEventListener('pointermove', onPointerMove, true)
+        document.addEventListener('pointerup', endPan, true)
+        document.addEventListener('pointercancel', endPan, true)
+
+        return () => {
+            document.removeEventListener('pointerdown', onPointerDown, true)
+            document.removeEventListener('pointermove', onPointerMove, true)
+            document.removeEventListener('pointerup', endPan, true)
+            document.removeEventListener('pointercancel', endPan, true)
+            document.body.classList.remove('is-panning')
+        }
+    }, [loading, activeId])
+
     // DnD sensors
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -362,38 +453,57 @@ export default function KanbanBoard({
     }
 
     return (
-        <div className="relative pt-5">
-            <div className="perfect-scrollbar -mx-2 h-full">
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCorners}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onDragCancel={handleDragCancel}
-                >
-                    <div className="flex flex-nowrap items-start gap-5 overflow-x-auto px-2 pb-16 cursor-grab">
-                        {columns.map(column => (
-                            <KanbanColumn
-                                key={column.id}
-                                column={column}
-                                records={recordsByColumn[column.id] || []}
-                                onAddRecord={() => handleAddRecord(column.id)}
-                                onEditRecord={handleEditRecord}
-                                onDeleteRecord={handleDeleteRecord}
-                            />
-                        ))}
-                    </div>
+        <div
+            ref={scrollContainerRef}
+            style={{
+                height: '100%',
+                width: '100%',
+                minWidth: 0,
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                overscrollBehaviorX: 'contain',
+                cursor: 'grab',
+                userSelect: 'none',
+                WebkitUserSelect: 'none'
+            }}
+        >
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragCancel={handleDragCancel}
+            >
+                <div style={{
+                    display: 'flex',
+                    flexWrap: 'nowrap',
+                    alignItems: 'flex-start',
+                    gap: '1.25rem',
+                    padding: '0.5rem',
+                    width: 'max-content',
+                    minHeight: '100%'
+                }}>
+                    {columns.map(column => (
+                        <KanbanColumn
+                            key={column.id}
+                            column={column}
+                            records={recordsByColumn[column.id] || []}
+                            onAddRecord={() => handleAddRecord(column.id)}
+                            onEditRecord={handleEditRecord}
+                            onDeleteRecord={handleDeleteRecord}
+                        />
+                    ))}
+                </div>
 
-                    <DragOverlay>
-                        {activeRecord && (
-                            <KanbanCard
-                                record={activeRecord}
-                                isDragging
-                            />
-                        )}
-                    </DragOverlay>
-                </DndContext>
-            </div>
+                <DragOverlay>
+                    {activeRecord && (
+                        <KanbanCard
+                            record={activeRecord}
+                            isDragging
+                        />
+                    )}
+                </DragOverlay>
+            </DndContext>
         </div>
     )
 }

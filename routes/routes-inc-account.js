@@ -177,7 +177,7 @@ router.get("/test-progressive/:entityName", async (req, res) => {
                 total: totalRecords,
                 pages: Math.ceil(totalRecords / (limit || 25))
             },
-            layout: "layout-app",
+            layout: "layout-app-progressive",
             account_number: req.account_number,
         });
     } catch (error) {

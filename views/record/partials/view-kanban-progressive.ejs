@@ -6,20 +6,40 @@
   const viewId = (typeof view !== 'undefined' && view._id) ? view._id.toString() : entity._id.toString();
 %>
 
-<div 
-    data-island="kanban-board"
-    data-account-number="<%= account_number %>"
-    data-entity-id="<%= entity._id %>"
-    data-view-id="<%= viewId %>"
-    data-entity-name="<%= entity.name %>"
-    data-entity-slug="<%= entity.slug %>"
-    data-kanban-field-id="<%= (view.settings && view.settings.kanbanField) || 'status' %>"
->
-    <!-- Loading placeholder -->
-    <div class="flex items-center justify-center h-64">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+<div class="flex flex-col h-[calc(100vh_-_120px)]">
+    <ul class="mb-4 flex space-x-2 rtl:space-x-reverse flex-shrink-0">
+        <li>
+            <a href="/account/<%= account_number %>/dashboard" class="text-primary hover:underline">Dashboard</a>
+        </li>
+        <li class="before:content-['/'] ltr:before:mr-1 rtl:before:ml-1">
+            <span><%= entity.name %></span>
+        </li>
+    </ul>
+    
+    <div 
+        class="flex-1 min-h-0 min-w-0"
+        data-island="kanban-board"
+        data-account-number="<%= account_number %>"
+        data-entity-id="<%= entity._id %>"
+        data-view-id="<%= viewId %>"
+        data-entity-name="<%= entity.name %>"
+        data-entity-slug="<%= entity.slug %>"
+        data-kanban-field-id="<%= (view.settings && view.settings.kanbanField) || 'status' %>"
+    >
+        <!-- Loading placeholder -->
+        <div class="flex items-center justify-center h-64">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
     </div>
 </div>
+
+<style>
+.is-panning, .is-panning * {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    cursor: grabbing !important;
+}
+</style>
 
 <!-- Load built asset (run 'npm run build' if missing) -->
 <script type="module" src="/dist/kanbanBoard.js"></script>

@@ -48,6 +48,7 @@ export default function KanbanCard({
             style={style}
             {...attributes}
             {...listeners}
+            data-dnd="card"
             className={`cursor-move space-y-3 rounded-lg bg-gray-100 p-4 shadow-sm border border-transparent hover:border-primary transition-all dark:bg-[#121c2c] group max-w-[197px] w-full mx-auto ${isDragging ? 'shadow-lg ring-2 ring-primary' : ''}`}
         >
             {/* Title */}

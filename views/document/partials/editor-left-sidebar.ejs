@@ -4,8 +4,8 @@
       x-init="Sortable.create($el, { group: { name: 'elements', pull: 'clone', put: false }, sort: false, draggable: '.sortable-source', fallbackOnBody: true })"
     >
       <button 
-        class="w-10 h-10 rounded transition-colors flex items-center justify-center" 
-        :class="activeTab === 'text' ? 'bg-primary/20 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'"
+        class="w-10 h-10 rounded-full transition-colors flex items-center justify-center" 
+        :class="activeTab === 'text' ? 'bg-primary/20 text-primary' : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'"
         title="Texte et Contenu"
         @click="activeTab = activeTab === 'text' ? null : 'text'"
       >
@@ -14,26 +14,26 @@
 
       <!-- Combined Image & Gallery Tool -->
       <button 
-        class="w-10 h-10 rounded transition-colors flex items-center justify-center" 
-        :class="activeTab === 'gallery' ? 'bg-primary/20 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'"
+        class="w-10 h-10 rounded-full transition-colors flex items-center justify-center" 
+        :class="activeTab === 'gallery' ? 'bg-primary/20 text-primary' : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'"
         title="Médiathèque"
         @click="activeTab = activeTab === 'gallery' ? null : 'gallery'"
       >
         <iconify-icon icon="solar:gallery-bold-duotone" width="24"></iconify-icon>
       </button>
       <div class="h-px w-8 bg-gray-200 dark:bg-gray-700"></div>
-      <button class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center" title="Layout 2 colonnes">
+      <button class="w-10 h-10 rounded-full bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 flex items-center justify-center text-gray-400" title="Layout 2 colonnes">
         <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="24"></iconify-icon>
       </button>
-      <button class="w-10 h-10 rounded hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center" title="Layout 3 colonnes">
+      <button class="w-10 h-10 rounded-full bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 flex items-center justify-center text-gray-400" title="Layout 3 colonnes">
         <iconify-icon icon="solar:widget-4-bold-duotone" width="24"></iconify-icon>
       </button>
       <div class="h-px w-8 bg-gray-200 dark:bg-gray-700"></div>
       
       <!-- Dynamic Content Button -->
       <button 
-        class="w-10 h-10 rounded transition-colors flex items-center justify-center" 
-        :class="activeTab === 'dynamic-nav' ? 'bg-primary/20 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'"
+        class="w-10 h-10 rounded-full transition-colors flex items-center justify-center" 
+        :class="activeTab === 'dynamic-nav' ? 'bg-primary/20 text-primary' : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'"
         title="Contenu Dynamique"
         @click="activeTab = activeTab === 'dynamic-nav' ? null : 'dynamic-nav'"
       >

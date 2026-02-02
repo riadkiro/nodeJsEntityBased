@@ -88,26 +88,26 @@
           <!-- Formatting Buttons -->
           <div class="flex items-center gap-0.5">
             <button @click="formatDoc('bold')"
-              :class="isBold === true ? 'text-primary bg-primary/10' : isBold === null ? 'text-gray-300' : 'text-gray-400'"
-              class="w-8 h-8 flex items-center justify-center rounded hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all text-sm"
+              :class="isBold === true ? 'text-primary bg-primary/10' : isBold === null ? 'text-gray-300 dark:text-white-dark/50' : 'text-gray-400 dark:text-white-dark/70'"
+              class="w-8 h-8 flex items-center justify-center rounded-full hover:text-primary hover:bg-white-light/90 dark:hover:bg-dark/60 transition-all text-sm"
               title="Gras">
               <span class="font-bold">B</span>
             </button>
             <button @click="formatDoc('italic')"
-              :class="isItalic === true ? 'text-primary bg-primary/10' : isItalic === null ? 'text-gray-300' : 'text-gray-400'"
-              class="w-8 h-8 flex items-center justify-center rounded hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all text-sm"
+              :class="isItalic === true ? 'text-primary bg-primary/10' : isItalic === null ? 'text-gray-300 dark:text-white-dark/50' : 'text-gray-400 dark:text-white-dark/70'"
+              class="w-8 h-8 flex items-center justify-center rounded-full hover:text-primary hover:bg-white-light/90 dark:hover:bg-dark/60 transition-all text-sm"
               title="Italique">
               <span class="italic">I</span>
             </button>
             <button @click="formatDoc('underline')"
-              :class="isUnderline === true ? 'text-primary bg-primary/10' : isUnderline === null ? 'text-gray-300' : 'text-gray-400'"
-              class="w-8 h-8 flex items-center justify-center rounded hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all text-sm"
+              :class="isUnderline === true ? 'text-primary bg-primary/10' : isUnderline === null ? 'text-gray-300 dark:text-white-dark/50' : 'text-gray-400 dark:text-white-dark/70'"
+              class="w-8 h-8 flex items-center justify-center rounded-full hover:text-primary hover:bg-white-light/90 dark:hover:bg-dark/60 transition-all text-sm"
               title="Souligné">
               <span class="underline">U</span>
             </button>
             <button @click="formatDoc('strikethrough')"
-              :class="isStrikethrough === true ? 'text-primary bg-primary/10' : isStrikethrough === null ? 'text-gray-300' : 'text-gray-400'"
-              class="w-8 h-8 flex items-center justify-center rounded hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all text-sm"
+              :class="isStrikethrough === true ? 'text-primary bg-primary/10' : isStrikethrough === null ? 'text-gray-300 dark:text-white-dark/50' : 'text-gray-400 dark:text-white-dark/70'"
+              class="w-8 h-8 flex items-center justify-center rounded-full hover:text-primary hover:bg-white-light/90 dark:hover:bg-dark/60 transition-all text-sm"
               title="Barré">
               <span class="line-through">S</span>
             </button>
@@ -120,20 +120,20 @@
           <!-- Alignment Tools -->
           <div class="flex items-center gap-0.5">
             <button @click="formatDoc('justifyLeft')"
-              :class="currentAlignment === 'left' ? 'text-primary bg-primary/10' : 'text-gray-400'"
-              class="w-8 h-8 flex items-center justify-center rounded hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+              :class="currentAlignment === 'left' ? 'text-primary bg-primary/10' : 'text-gray-400 dark:text-white-dark/70'"
+              class="w-8 h-8 flex items-center justify-center rounded-full hover:text-primary hover:bg-white-light/90 dark:hover:bg-dark/60 transition-all"
               title="Aligner à gauche">
               <iconify-icon icon="tabler:align-left" width="18"></iconify-icon>
             </button>
             <button @click="formatDoc('justifyCenter')"
-              :class="currentAlignment === 'center' ? 'text-primary bg-primary/10' : 'text-gray-400'"
-              class="w-8 h-8 flex items-center justify-center rounded hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+              :class="currentAlignment === 'center' ? 'text-primary bg-primary/10' : 'text-gray-400 dark:text-white-dark/70'"
+              class="w-8 h-8 flex items-center justify-center rounded-full hover:text-primary hover:bg-white-light/90 dark:hover:bg-dark/60 transition-all"
               title="Aligner au centre">
               <iconify-icon icon="tabler:align-center" width="18"></iconify-icon>
             </button>
             <button @click="formatDoc('justifyRight')"
-              :class="currentAlignment === 'right' ? 'text-primary bg-primary/10' : 'text-gray-400'"
-              class="w-8 h-8 flex items-center justify-center rounded hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+              :class="currentAlignment === 'right' ? 'text-primary bg-primary/10' : 'text-gray-400 dark:text-white-dark/70'"
+              class="w-8 h-8 flex items-center justify-center rounded-full hover:text-primary hover:bg-white-light/90 dark:hover:bg-dark/60 transition-all"
               title="Aligner à droite">
               <iconify-icon icon="tabler:align-right" width="18"></iconify-icon>
             </button>
@@ -144,7 +144,7 @@
           <!-- Spacing Dropdown Menu -->
           <div class="relative" x-data="{ showSpacing: false }">
             <button @click="showSpacing = !showSpacing"
-              class="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+              class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 dark:text-white-dark/70 hover:text-primary hover:bg-white-light/90 dark:hover:bg-dark/60 transition-all"
               title="Espacement">
               <iconify-icon icon="tabler:letter-spacing" width="18"></iconify-icon>
             </button>
@@ -154,11 +154,11 @@
               x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95"
               x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-75"
               x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
-              class="absolute top-full mt-2 left-0 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-4 z-50">
+              class="absolute top-full mt-2 left-0 w-56 bg-white dark:bg-[#0e1726] rounded-lg shadow-xl border border-gray-200 dark:border-white/10 p-4 z-50">
 
               <!-- Letter Spacing -->
               <div class="mb-4">
-                <label class="text-xs text-gray-700 dark:text-gray-300 font-medium mb-2 block">Espacement des
+                <label class="text-xs text-gray-700 dark:text-white-dark font-medium mb-2 block">Espacement des
                   lettres</label>
                 <div class="flex items-center gap-3">
                   <input type="range" x-model.number="currentLetterSpacing"
@@ -171,7 +171,7 @@
 
               <!-- Line Height -->
               <div>
-                <label class="text-xs text-gray-700 dark:text-gray-300 font-medium mb-2 block">Interligne</label>
+                <label class="text-xs text-gray-700 dark:text-white-dark font-medium mb-2 block">Interligne</label>
                 <div class="flex items-center gap-3">
                   <input type="range" x-model.number="currentLineHeight" @input="setLineHeight($event.target.value)"
                     min="0.5" max="3" step="0.1"
@@ -189,20 +189,20 @@
           <!-- List/Action Items -->
           <div class="flex items-center gap-0.5">
             <button @click="formatDoc('insertUnorderedList')"
-              class="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
+              class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 dark:text-white-dark/70 hover:text-primary hover:bg-white-light/90 dark:hover:bg-dark/60 transition-all">
               <iconify-icon icon="tabler:list-details" width="18"></iconify-icon>
             </button>
             <button
-              class="px-2 py-1 text-[11px] font-bold text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors uppercase tracking-tight">Effets</button>
+              class="px-2 py-1 text-[11px] font-bold text-gray-400 dark:text-white-dark/70 hover:text-primary hover:bg-white-light/90 dark:hover:bg-dark/60 rounded-full transition-colors uppercase tracking-tight">Effets</button>
             <button
-              class="px-2 py-1 text-[11px] font-bold text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors uppercase tracking-tight">Animer</button>
+              class="px-2 py-1 text-[11px] font-bold text-gray-400 dark:text-white-dark/70 hover:text-primary hover:bg-white-light/90 dark:hover:bg-dark/60 rounded-full transition-colors uppercase tracking-tight">Animer</button>
           </div>
 
           <div class="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
 
           <!-- Paint Roller -->
           <button @click="formatDoc('removeFormat')"
-            class="w-8 h-8 flex items-center justify-center rounded-lg text-primary bg-primary/10 hover:bg-primary/20 transition-all"
+            class="w-8 h-8 flex items-center justify-center rounded-full text-primary bg-primary/10 hover:bg-primary/20 transition-all"
             title="Copier style">
             <iconify-icon icon="tabler:paint" width="18"></iconify-icon>
           </button>

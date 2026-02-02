@@ -6,8 +6,10 @@
   "scripts": {
     "server": "nodemon server.js",
     "client": "vite build --watch",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "vite build",
+    "tailwind": "npx @tailwindcss/cli -i ./public/themes/default/assets/css/tailwind.css -o ./public/themes/default/assets/css/style.css",
+    "tailwind:watch": "npx @tailwindcss/cli -i ./public/themes/default/assets/css/tailwind.css -o ./public/themes/default/assets/css/style.css --watch",
+    "dev": "concurrently \"npm run server\" \"npm run client\" \"npm run tailwind:watch\"",
+    "build": "vite build && npm run tailwind",
     "build:watch": "vite build --watch"
   },
   "keywords": [],

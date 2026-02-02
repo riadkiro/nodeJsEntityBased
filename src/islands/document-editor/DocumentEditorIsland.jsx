@@ -75,6 +75,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const [activeTab, setActiveTab] = useState(null) // text, gallery, dynamic-nav
     const [openSections, setOpenSections] = useState({ info: true, margins: false, pages: true })
     const [isGlobalSelection, setIsGlobalSelection] = useState(false)
+    const [pasteMode, setPasteMode] = useState('match') // keep, match, plain
 
     // Formatting state (for toolbar display)
     const [currentFont, setCurrentFont] = useState('Arial')
@@ -219,15 +220,23 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         e.preventDefault()
 
         const clipboardData = e.clipboardData || window.clipboardData
-        let content = clipboardData.getData('text/html')
+        let content = ''
 
-        if (!content) {
+        // Plain text mode - always use text/plain
+        if (pasteMode === 'plain') {
             content = clipboardData.getData('text/plain')
-            // Convert line breaks to <br>
             content = content.replace(/\n/g, '<br>')
         } else {
-            // Clean Word HTML
-            content = cleanWordHtml(content)
+            // Try HTML first
+            content = clipboardData.getData('text/html')
+            if (content) {
+                // Clean with selected mode
+                content = cleanWordHtml(content, pasteMode)
+            } else {
+                // Fallback to plain text
+                content = clipboardData.getData('text/plain')
+                content = content.replace(/\n/g, '<br>')
+            }
         }
 
         // Insert at cursor using execCommand
@@ -242,7 +251,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         })
 
         triggerSave()
-    }, [triggerSave])
+    }, [pasteMode, triggerSave])
 
     // ========== TOKEN INSERTION ==========
     const insertVariableToken = useCallback((variablePath, fieldMetadata = {}) => {
@@ -479,6 +488,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                 lastSaved={lastSaved}
                 triggerSave={triggerSave}
                 handlePdfExport={handlePdfExport}
+                // Paste mode props
+                pasteMode={pasteMode}
+                setPasteMode={setPasteMode}
                 // Formatting props
                 currentFont={currentFont}
                 currentFontSize={currentFontSize}

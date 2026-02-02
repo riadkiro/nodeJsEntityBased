@@ -11,6 +11,9 @@ export default function EditorHeader({
     lastSaved,
     triggerSave,
     handlePdfExport,
+    // Paste mode props
+    pasteMode,
+    setPasteMode,
     // Formatting props
     currentFont,
     currentFontSize,
@@ -253,6 +256,43 @@ export default function EditorHeader({
                 >
                     <iconify-icon icon="tabler:list-numbers" width="18"></iconify-icon>
                 </button>
+
+                {/* Separator */}
+                <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+                {/* Paste Mode */}
+                <div className="relative group">
+                    <button
+                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 flex items-center gap-1"
+                        title="Mode de collage"
+                    >
+                        <iconify-icon icon="tabler:clipboard-text" width="18"></iconify-icon>
+                        <iconify-icon icon="tabler:chevron-down" width="12"></iconify-icon>
+                    </button>
+                    <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover:block z-50 min-w-[140px]">
+                        <button
+                            onClick={() => setPasteMode('keep')}
+                            className={`w-full px-3 py-1.5 text-xs text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 ${pasteMode === 'keep' ? 'text-primary font-medium' : 'text-gray-600 dark:text-gray-300'}`}
+                        >
+                            <iconify-icon icon="tabler:text-wrap-disabled" width="14"></iconify-icon>
+                            Coller source
+                        </button>
+                        <button
+                            onClick={() => setPasteMode('match')}
+                            className={`w-full px-3 py-1.5 text-xs text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 ${pasteMode === 'match' ? 'text-primary font-medium' : 'text-gray-600 dark:text-gray-300'}`}
+                        >
+                            <iconify-icon icon="tabler:wand" width="14"></iconify-icon>
+                            Adapter style
+                        </button>
+                        <button
+                            onClick={() => setPasteMode('plain')}
+                            className={`w-full px-3 py-1.5 text-xs text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 ${pasteMode === 'plain' ? 'text-primary font-medium' : 'text-gray-600 dark:text-gray-300'}`}
+                        >
+                            <iconify-icon icon="tabler:txt" width="14"></iconify-icon>
+                            Texte brut
+                        </button>
+                    </div>
+                </div>
             </div>
         </header>
     )

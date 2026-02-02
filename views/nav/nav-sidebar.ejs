@@ -190,6 +190,59 @@
           </div>
         </h2>
 
+        <!-- Quick Apps: grid (4 x 2) - quick access to main apps -->
+        <li class="menu nav-item">
+          <div class="nav-link px-0 py-3">
+            <div class="grid grid-cols-3 gap-2">
+              <a href="/account/<%= account_number %>/page-builder/list" class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Page Builder" title="Page Builder">
+                <iconify-icon icon="solar:widget-5-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
+                <span class="sr-only">Page Builder</span>
+              </a>
+
+              <a href="/account/<%= account_number %>/documents/new" class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Document Editor" title="Document Editor">
+                <iconify-icon icon="solar:document-text-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
+                <span class="sr-only">Document Editor</span>
+              </a>
+
+              <a href="/account/<%= account_number %>/documents" class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Studio" title="Studio">
+                <iconify-icon icon="solar:gallery-add-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
+                <span class="sr-only">Studio</span>
+              </a>
+
+              <a href="/account/<%= account_number %>/space/list" class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Spaces" title="Spaces">
+                <iconify-icon icon="solar:layers-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
+                <span class="sr-only">Spaces</span>
+              </a>
+
+              <a href="/account/<%= account_number %>/crm" class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg_white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="CRM" title="CRM">
+                <iconify-icon icon="solar:user-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
+                <span class="sr-only">CRM</span>
+              </a>
+
+              <a href="/account/<%= account_number %>/mailbox/1" class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Mailbox" title="Mailbox">
+                <iconify-icon icon="solar:mailbox-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
+                <span class="sr-only">Mailbox</span>
+              </a>
+
+              <a href="/account/<%= account_number %>/documents/templates" class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg_white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Templates" title="Templates">
+                <iconify-icon icon="solar:gallery-add-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
+                <span class="sr-only">Templates</span>
+              </a>
+
+              <a href="/account/<%= account_number %>/tasks" class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Tasks" title="Tasks">
+                <iconify-icon icon="solar:clipboard-list-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
+                <span class="sr-only">Tasks</span>
+              </a>
+
+              <a href="/account/<%= account_number %>/settings" class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg_white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40">
+                <iconify-icon icon="solar:settings-minimalistic-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
+                <span class="sr-only">Réglages</span>
+              </a>
+            </div>
+            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 text-center">Applications</div>
+          </div>
+        </li>
+
         <!-- 📦 Collections -->
         <li class="menu nav-item">
           <div class="nav-link group flex items-center justify-between -mx-4 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"

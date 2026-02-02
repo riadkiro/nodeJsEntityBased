@@ -9,6 +9,7 @@
  * - No re-render of contenteditable on state changes
  */
 import React, { useEffect, useRef, useCallback } from 'react'
+import { useImageResize } from '../hooks/useImageResize'
 
 export default function EditorPage({
     page,
@@ -42,6 +43,15 @@ export default function EditorPage({
             contentRef.current.innerHTML = initialContentRef.current || ''
         }
     }, [])
+
+    // Image resize functionality for edition mode
+    const handleContentChange = useCallback(() => {
+        if (handlePageInput) {
+            handlePageInput({ target: contentRef.current }, pageIndex)
+        }
+    }, [handlePageInput, pageIndex])
+
+    useImageResize(contentRef, handleContentChange)
 
     // Handle edition mode drop from sidebar
     const handleEditionDrop = useCallback((e) => {

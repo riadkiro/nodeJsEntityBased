@@ -2,3 +2,29 @@
   resize: horizontal;
   overflow-x: auto;
 }
+
+/* Image Resize Handles for Document Editor */
+.image-resize-overlay {
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
+}
+
+.image-resize-overlay .resize-handle {
+  transition: transform 0.1s ease;
+}
+
+.image-resize-overlay .resize-handle:hover {
+  transform: scale(1.2);
+  background: #2563eb;
+}
+
+/* Selected image in contenteditable */
+[contenteditable] img {
+  cursor: pointer;
+  transition: outline 0.15s ease;
+}
+
+[contenteditable] img:hover {
+  outline: 2px dashed rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+  cursor: pointer;
+}

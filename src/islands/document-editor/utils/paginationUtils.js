@@ -9,11 +9,14 @@ const MAX_PULL_ITERATIONS = 50
 
 /**
  * Check if HTML content is effectively empty
+ * (handles nbsp, zwsp, caret markers, empty wrappers)
  */
 function isEffectivelyEmpty(html) {
     const cleaned = (html || '')
         .replace(/&nbsp;/g, ' ')
         .replace(/\u00A0/g, ' ')
+        .replace(/\u200B/g, '') // zero-width space (caret markers etc.)
+        .replace(/<span[^>]*data-caret-marker[^>]*>.*?<\/span>/gi, '')
         .replace(/<br\s*\/?>/gi, '')
         .replace(/<\/?p[^>]*>/gi, '')
         .replace(/<\/?div[^>]*>/gi, '')
@@ -52,16 +55,13 @@ function getAvailableSpacePx(pageEl) {
 
     const rects = range.getClientRects()
     if (!rects || rects.length === 0) {
-        // no visible rects -> treat as empty
         return Math.max(0, pageRect.height - pb)
     }
 
     // Find the lowest rect (last render position)
     let maxBottom = 0
     for (let i = 0; i < rects.length; i++) {
-        if (rects[i].bottom > maxBottom) {
-            maxBottom = rects[i].bottom
-        }
+        if (rects[i].bottom > maxBottom) maxBottom = rects[i].bottom
     }
 
     const available = (pageRect.bottom - pb) - maxBottom
@@ -75,22 +75,37 @@ function getAvailableSpacePx(pageEl) {
 export function checkOverflow(element, pageIndex, doc, setDoc, pageRefs) {
     if (!element) return
 
-    // Check for overflow
+    console.log('[checkOverflow] Page', pageIndex, 'scrollHeight:', element.scrollHeight, 'clientHeight:', element.clientHeight, 'overflow:', element.scrollHeight > element.clientHeight)
+
     if (element.scrollHeight > element.clientHeight) {
-        var overflowContent = extractOverflow(element)
+        const overflowContent = extractOverflow(element)
+        console.log('[checkOverflow] Extracted content:', overflowContent ? overflowContent.substring(0, 100) + '...' : '(empty)')
 
         if (overflowContent) {
-            // Sync current page first
+            // Get or create next page ref for DOM injection
+            let nextPageRef = pageRefs.current[pageIndex + 1]
+
+            // If next page exists, inject content directly into DOM (uncontrolled contenteditable)
+            if (nextPageRef) {
+                console.log('[checkOverflow] Injecting into existing page', pageIndex + 1)
+                nextPageRef.innerHTML = overflowContent + nextPageRef.innerHTML
+            }
+
             setDoc(prevDoc => {
+                // Guard against stale index/ref mismatches
+                if (pageRefs.current[pageIndex] !== element) return prevDoc
+
                 const newDoc = { ...prevDoc, pages: [...prevDoc.pages] }
 
+                // Guard: pageIndex must still exist
+                if (!newDoc.pages[pageIndex]) return prevDoc
+
                 // Sync current page from DOM
-                const current = { ...newDoc.pages[pageIndex] }
-                current.content = element.innerHTML
+                const current = { ...newDoc.pages[pageIndex], content: element.innerHTML }
                 newDoc.pages[pageIndex] = current
 
                 if (pageIndex === newDoc.pages.length - 1) {
-                    // Create new page
+                    // Create new page with overflow content
                     newDoc.pages.push({
                         content: overflowContent,
                         elements: [],
@@ -100,16 +115,16 @@ export function checkOverflow(element, pageIndex, doc, setDoc, pageRefs) {
                         order: newDoc.pages.length
                     })
                 } else {
-                    // Prepend to next page
-                    const nextPage = { ...newDoc.pages[pageIndex + 1] }
-                    nextPage.content = overflowContent + (nextPage.content || '')
-                    newDoc.pages[pageIndex + 1] = nextPage
+                    // Sync next page from DOM (we already injected content)
+                    const nextRef = pageRefs.current[pageIndex + 1]
+                    if (nextRef) {
+                        newDoc.pages[pageIndex + 1] = { ...newDoc.pages[pageIndex + 1], content: nextRef.innerHTML }
+                    }
                 }
 
                 return newDoc
             })
 
-            // Check next page for overflow after DOM updates
             requestAnimationFrame(() => {
                 const nextPageRef = pageRefs.current[pageIndex + 1]
                 if (nextPageRef) {
@@ -125,18 +140,16 @@ export function checkOverflow(element, pageIndex, doc, setDoc, pageRefs) {
  * Removes or splits nodes from end until content fits
  */
 export function extractOverflow(element) {
-    var overflowParts = []
+    const overflowParts = []
 
-    // Work backwards through child nodes
     while (element.scrollHeight > element.clientHeight && element.childNodes.length > 0) {
-        var lastNode = element.lastChild
-
+        const lastNode = element.lastChild
         if (!lastNode) break
 
         // If text node, try to split it
-        if (lastNode.nodeType === 3) { // TEXT_NODE
-            var words = lastNode.textContent.split(' ')
-            var extractedWords = []
+        if (lastNode.nodeType === 3) {
+            const words = lastNode.textContent.split(' ')
+            const extractedWords = []
 
             while (element.scrollHeight > element.clientHeight && words.length > 1) {
                 extractedWords.unshift(words.pop())
@@ -152,11 +165,8 @@ export function extractOverflow(element) {
 
         // If still overflowing, remove the whole node
         if (element.scrollHeight > element.clientHeight) {
-            if (lastNode.nodeType === 1) { // ELEMENT_NODE
-                overflowParts.unshift(lastNode.outerHTML)
-            } else if (lastNode.nodeType === 3) {
-                overflowParts.unshift(lastNode.textContent)
-            }
+            if (lastNode.nodeType === 1) overflowParts.unshift(lastNode.outerHTML)
+            else if (lastNode.nodeType === 3) overflowParts.unshift(lastNode.textContent)
             element.removeChild(lastNode)
         }
     }
@@ -181,7 +191,6 @@ function pullTextChunkFromNextPage(element, nextPageRef) {
     const first = nextPageRef.firstChild
     if (!first || first.nodeType !== 1) return false
 
-    // Find the first text node (deep - inside spans)
     const textNode = findFirstTextNode(first)
     if (!textNode || !textNode.textContent) return false
 
@@ -191,9 +200,6 @@ function pullTextChunkFromNextPage(element, nextPageRef) {
     const words = trimmed.split(/\s+/)
     if (words.length < 2) return false
 
-    // Clone the full node (preserves spans/styles)
-    const testClone = first.cloneNode(true)
-
     // Binary search: how many words can we take?
     let lo = 1, hi = words.length - 1, best = 0
 
@@ -201,12 +207,12 @@ function pullTextChunkFromNextPage(element, nextPageRef) {
         const mid = (lo + hi) >> 1
         const candidateWords = words.slice(0, mid).join(' ')
 
-        // Update the cloned text node
+        const testClone = first.cloneNode(true)
         const cloneTextNode = findFirstTextNode(testClone)
         if (cloneTextNode) cloneTextNode.textContent = candidateWords
 
         element.appendChild(testClone)
-        const fits = element.scrollHeight <= element.clientHeight
+        const fits = element.scrollHeight <= element.clientHeight + 1
         element.removeChild(testClone)
 
         if (fits) {
@@ -219,14 +225,10 @@ function pullTextChunkFromNextPage(element, nextPageRef) {
 
     if (best <= 0) return false
 
-    console.log('[PullChunk] Pulled', best, 'of', words.length, 'words from next page')
-
     // Commit: add a clone with the chunk that fits
     const commitClone = first.cloneNode(true)
     const commitTextNode = findFirstTextNode(commitClone)
-    if (commitTextNode) {
-        commitTextNode.textContent = words.slice(0, best).join(' ')
-    }
+    if (commitTextNode) commitTextNode.textContent = words.slice(0, best).join(' ')
     element.appendChild(commitClone)
 
     // Remove chunk from original text node
@@ -242,60 +244,35 @@ function pullTextChunkFromNextPage(element, nextPageRef) {
 
 /**
  * Check if page has underflow (can pull content from next page)
- * DOM-first: pull nodes from nextPageRef into element, then sync both pages from DOM.
  */
 export function checkUnderflow(element, pageIndex, doc, setDoc, pageRefs) {
-    console.log('[Underflow] Check started for page', pageIndex)
+    if (!element || !doc?.pages) return
 
-    if (!element || !doc?.pages) {
-        console.log('[Underflow] Early return: no element or doc.pages')
-        return
-    }
-
-    // Edition mode only (current page)
     const currentPage = doc.pages[pageIndex]
-    if (!currentPage || currentPage.mode !== 'edition') {
-        console.log('[Underflow] Early return: not edition mode', currentPage?.mode)
-        return
-    }
+    if (!currentPage || currentPage.mode !== 'edition') return
 
-    // last page => nothing to pull
-    if (pageIndex >= doc.pages.length - 1) {
-        console.log('[Underflow] Early return: last page, nothing to pull')
-        return
-    }
+    if (pageIndex >= doc.pages.length - 1) return
 
-    // next page must be edition too
     const nextPage = doc.pages[pageIndex + 1]
-    if (nextPage && nextPage.mode !== 'edition') {
-        console.log('[Underflow] Early return: next page not edition', nextPage?.mode)
-        return
-    }
+    if (nextPage && nextPage.mode !== 'edition') return
 
-    // Use Range-based measurement for true available space (Word-like)
     const availableSpace = getAvailableSpacePx(element)
-    console.log('[Underflow] Available space (Range-based):', availableSpace, 'threshold:', UNDERFLOW_THRESHOLD_PX)
+    if (availableSpace <= UNDERFLOW_THRESHOLD_PX) return
 
-    if (availableSpace <= UNDERFLOW_THRESHOLD_PX) {
-        console.log('[Underflow] Not enough space, skipping')
-        return
-    }
-
-    console.log('[Underflow] Calling tryPullFromNextPage')
     tryPullFromNextPage(element, pageIndex, doc, setDoc, pageRefs)
 }
 
 /**
  * Pull as much as possible (node-by-node) from next page to current page.
  * Uses real DOM of both pages, then syncs BOTH page contents in state.
+ *
+ * IMPORTANT FIXES:
+ * - Guard against stale index/ref mismatches before mutating state
+ * - Delete next page ONLY if DOM is empty at time of sync
  */
 export function tryPullFromNextPage(element, pageIndex, doc, setDoc, pageRefs) {
     const nextPageRef = pageRefs.current[pageIndex + 1]
-    console.log('[TryPull] nextPageRef exists:', !!nextPageRef)
     if (!nextPageRef) return
-
-    console.log('[TryPull] nextPageRef.innerHTML.length:', nextPageRef.innerHTML.length)
-    console.log('[TryPull] nextPageRef.innerHTML preview:', nextPageRef.innerHTML.substring(0, 100))
 
     let iterations = 0
     let movedAny = false
@@ -303,76 +280,170 @@ export function tryPullFromNextPage(element, pageIndex, doc, setDoc, pageRefs) {
     while (iterations < MAX_PULL_ITERATIONS) {
         iterations++
 
-        // Use Range-based measurement (Word-like)
         const availableSpace = getAvailableSpacePx(element)
-        console.log('[TryPull] Iteration', iterations, 'availableSpace (Range-based):', availableSpace)
-
         if (availableSpace <= UNDERFLOW_THRESHOLD_PX) break
 
         const firstNode = nextPageRef.firstChild
-        console.log('[TryPull] firstNode exists:', !!firstNode, firstNode?.nodeName)
         if (!firstNode) break
 
-        // Move candidate: clone first, test fit
+        // Try whole node
         const clone = firstNode.cloneNode(true)
         element.appendChild(clone)
 
-        if (element.scrollHeight <= element.clientHeight) {
-            // Commit: remove the real node from next page DOM
-            console.log('[TryPull] Moved node successfully')
+        const fits = element.scrollHeight <= element.clientHeight + 1
+
+        if (fits) {
+            // Commit move: remove real node from next page
             nextPageRef.removeChild(firstNode)
             movedAny = true
             continue
         } else {
-            // Rollback the clone
-            console.log('[TryPull] Node too big, trying Word-like partial pull')
+            // Rollback clone
             element.removeChild(clone)
 
-            // Word-like fallback: pull partial text from next page
+            // Try partial pull
             const pulled = pullTextChunkFromNextPage(element, nextPageRef)
-            if (pulled) {
-                movedAny = true
-            }
+            if (pulled) movedAny = true
             break
         }
     }
 
-    console.log('[TryPull] movedAny:', movedAny)
     if (!movedAny) return
 
-    // Sync BOTH pages from DOM into React state
-    setDoc(prevDoc => {
-        const newDoc = { ...prevDoc, pages: [...prevDoc.pages] }
+    // Snapshot DOM *now* (source of truth)
+    const currentHtmlSnapshot = element.innerHTML
+    const nextHtmlSnapshot = nextPageRef.innerHTML
 
-        // Guard: pages could have changed
+    setDoc(prevDoc => {
+        // CRITICAL: avoid deleting/writing wrong page if refs shifted
+        if (pageRefs.current[pageIndex] !== element) return prevDoc
+        if (pageRefs.current[pageIndex + 1] !== nextPageRef) return prevDoc
+
+        const newDoc = { ...prevDoc, pages: [...prevDoc.pages] }
         if (!newDoc.pages[pageIndex]) return prevDoc
 
-        // Sync CURRENT page from DOM
-        const current = { ...newDoc.pages[pageIndex] }
-        current.content = element.innerHTML
-        newDoc.pages[pageIndex] = current
+        // Sync CURRENT page from snapshot
+        newDoc.pages[pageIndex] = { ...newDoc.pages[pageIndex], content: currentHtmlSnapshot }
 
-        // If next page removed already, stop
+        // Guard: next index still exists
         if (pageIndex + 1 >= newDoc.pages.length) return newDoc
 
-        // Sync NEXT page from DOM
-        const next = { ...newDoc.pages[pageIndex + 1] }
-        next.content = nextPageRef.innerHTML
+        // Sync NEXT page from snapshot
+        const nextPageState = { ...newDoc.pages[pageIndex + 1], content: nextHtmlSnapshot }
 
         const nextIsEmpty =
-            isEffectivelyEmpty(next.content) &&
-            (!next.elements || next.elements.length === 0) &&
-            (!next.rows || next.rows.length === 0)
+            isEffectivelyEmpty(nextPageState.content) &&
+            (!nextPageState.elements || nextPageState.elements.length === 0) &&
+            (!nextPageState.rows || nextPageState.rows.length === 0)
 
         if (nextIsEmpty) {
-            newDoc.pages.splice(pageIndex + 1, 1)
+            // Never delete the only page
+            if (newDoc.pages.length > 1) newDoc.pages.splice(pageIndex + 1, 1)
         } else {
-            newDoc.pages[pageIndex + 1] = next
+            newDoc.pages[pageIndex + 1] = nextPageState
         }
 
         return newDoc
     })
+}
 
-    // NOTE: Don't call checkUnderflow recursively here with stale doc!
-    // The reflow orchestrator in DocumentEditorIsland handles cascading checks
+/**
+ * Pull content from curEl (next page) into prevEl (previous page).
+ * Returns { movedAny: boolean, nextIsEmpty: boolean }
+ * This is the DOM-only version used during Backspace merge.
+ */
+export function pullFromNextPageInto(prevEl, curEl) {
+    if (!prevEl || !curEl) return { movedAny: false, nextIsEmpty: false }
+
+    let movedAny = false
+    let iterations = 0
+
+    while (iterations < MAX_PULL_ITERATIONS) {
+        iterations++
+
+        const availableSpace = getAvailableSpacePx(prevEl)
+        if (availableSpace <= UNDERFLOW_THRESHOLD_PX) break
+
+        const firstNode = curEl.firstChild
+        if (!firstNode) break
+
+        // Try whole node
+        const clone = firstNode.cloneNode(true)
+        prevEl.appendChild(clone)
+
+        const fits = prevEl.scrollHeight <= prevEl.clientHeight + 1
+
+        if (fits) {
+            curEl.removeChild(firstNode)
+            movedAny = true
+            continue
+        } else {
+            prevEl.removeChild(clone)
+
+            // Try partial text pull
+            const pulled = pullTextChunkBetweenElements(prevEl, curEl)
+            if (pulled) movedAny = true
+            break
+        }
+    }
+
+    const nextIsEmpty = isEffectivelyEmpty(curEl.innerHTML)
+    return { movedAny, nextIsEmpty }
+}
+
+/**
+ * Pull partial text from curEl's first text node into prevEl.
+ * Returns true if anything was pulled.
+ */
+function pullTextChunkBetweenElements(prevEl, curEl) {
+    const first = curEl.firstChild
+    if (!first || first.nodeType !== 1) return false
+
+    const textNode = findFirstTextNode(first)
+    if (!textNode || !textNode.textContent) return false
+
+    const trimmed = textNode.textContent.trim()
+    const words = trimmed.split(/\s+/)
+    if (words.length < 2) return false
+
+    // Binary search for how many words fit
+    let lo = 1, hi = words.length - 1, best = 0
+
+    while (lo <= hi) {
+        const mid = (lo + hi) >> 1
+        const candidateWords = words.slice(0, mid).join(' ')
+
+        const testClone = first.cloneNode(true)
+        const cloneTextNode = findFirstTextNode(testClone)
+        if (cloneTextNode) cloneTextNode.textContent = candidateWords
+
+        prevEl.appendChild(testClone)
+        const fits = prevEl.scrollHeight <= prevEl.clientHeight + 1
+        prevEl.removeChild(testClone)
+
+        if (fits) {
+            best = mid
+            lo = mid + 1
+        } else {
+            hi = mid - 1
+        }
+    }
+
+    if (best <= 0) return false
+
+    // Commit: add clone with the chunk that fits
+    const commitClone = first.cloneNode(true)
+    const commitTextNode = findFirstTextNode(commitClone)
+    if (commitTextNode) commitTextNode.textContent = words.slice(0, best).join(' ')
+    prevEl.appendChild(commitClone)
+
+    // Remove chunk from original text node
+    textNode.textContent = words.slice(best).join(' ')
+
+    // If original node is now empty, remove it
+    if (isEffectivelyEmpty(first.innerHTML || first.textContent)) {
+        curEl.removeChild(first)
+    }
+
+    return true
 }

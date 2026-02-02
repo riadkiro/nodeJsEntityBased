@@ -11,7 +11,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { saveDocument, exportPdf, uploadImage } from './services/documentApi'
 import { cleanWordHtml } from './utils/cleanWordHtml'
 import { parseWordHtml, hasBase64Images } from './utils/parseWordHtml'
-import { checkOverflow, checkUnderflow } from './utils/paginationUtils'
+import { checkOverflow, checkUnderflow, pullFromNextPageInto } from './utils/paginationUtils'
 import { formatDoc, detectCurrentStyles, applyFontSize, applyLineSpacing, applyLetterSpacing, FONT_FAMILIES, FONT_SIZES } from './utils/formatUtils'
 
 // Native keyboard detection - NO external library, CANNOT fail
@@ -37,124 +37,6 @@ function isSelectionCoversAll(editorRootEl) {
         range.compareBoundaryPoints(Range.START_TO_START, docRange) === 0 &&
         range.compareBoundaryPoints(Range.END_TO_END, docRange) === 0
     )
-}
-
-// ========== WORD-LIKE CARET/MERGE HELPERS ==========
-function isCaretAtStart(el) {
-    const sel = window.getSelection()
-    if (!sel || sel.rangeCount === 0) return false
-    if (!el.contains(sel.anchorNode)) return false
-
-    const range = sel.getRangeAt(0)
-    if (!range.collapsed) return false
-
-    // Create range from start of el to caret
-    const pre = range.cloneRange()
-    pre.selectNodeContents(el)
-    pre.setEnd(range.startContainer, range.startOffset)
-
-    // If text before caret is "empty", caret is at start
-    const text = pre.toString().replace(/\u00A0/g, ' ').trim()
-    return text.length === 0
-}
-
-function isCaretAtEnd(el) {
-    const sel = window.getSelection()
-    if (!sel || sel.rangeCount === 0) return false
-    if (!el.contains(sel.anchorNode)) return false
-
-    const range = sel.getRangeAt(0)
-    if (!range.collapsed) return false
-
-    // Create range from caret to end of el
-    const post = range.cloneRange()
-    post.selectNodeContents(el)
-    post.setStart(range.endContainer, range.endOffset)
-
-    // If text after caret is "empty", caret is at end
-    const text = post.toString().replace(/\u00A0/g, ' ').trim()
-    return text.length === 0
-}
-
-function placeCaretAtEnd(el) {
-    el.focus()
-    const range = document.createRange()
-    range.selectNodeContents(el)
-    range.collapse(false)
-    const sel = window.getSelection()
-    sel.removeAllRanges()
-    sel.addRange(range)
-}
-
-// Scroll the caret into view (for page merge)
-function scrollCaretIntoView() {
-    const sel = window.getSelection()
-    if (!sel || sel.rangeCount === 0) return
-    const r = sel.getRangeAt(0)
-    const rect = r.getBoundingClientRect()
-    if (!rect || rect.height === 0) return
-
-    // Scroll viewport if needed
-    const margin = 80
-    if (rect.bottom > window.innerHeight - margin) {
-        window.scrollBy({
-            top: rect.bottom - window.innerHeight + margin,
-            left: 0,
-            behavior: 'instant'
-        })
-    }
-}
-
-// Place caret at end AND scroll to reveal it
-function placeCaretAtEndAndReveal(el) {
-    el.focus()
-    const range = document.createRange()
-    range.selectNodeContents(el)
-    range.collapse(false)
-
-    const sel = window.getSelection()
-    sel.removeAllRanges()
-    sel.addRange(range)
-
-    // Scroll to show the caret
-    requestAnimationFrame(() => {
-        // Scroll internal if element is scrollable
-        if (el.scrollHeight > el.clientHeight) {
-            el.scrollTop = el.scrollHeight
-        }
-        scrollCaretIntoView()
-    })
-}
-
-function placeCaretAtStart(el) {
-    el.focus()
-    const range = document.createRange()
-    range.selectNodeContents(el)
-    range.collapse(true)
-    const sel = window.getSelection()
-    sel.removeAllRanges()
-    sel.addRange(range)
-}
-
-// Move all children from one element to another (safe merge, no innerHTML)
-function moveAllChildren(fromEl, toEl) {
-    while (fromEl.firstChild) {
-        toEl.appendChild(fromEl.firstChild) // Real move, not clone
-    }
-}
-
-// Check if DOM element is effectively empty (only whitespace, <br>, empty tags)
-function isDomEffectivelyEmpty(el) {
-    const html = (el?.innerHTML || '')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/\u00A0/g, ' ')
-        .replace(/<br\s*\/?>/gi, '')
-        .replace(/<\/?p[^>]*>/gi, '')
-        .replace(/<\/?div[^>]*>/gi, '')
-        .replace(/<span[^>]*>|<\/span>/gi, '')
-        .replace(/\s+/g, '')
-        .trim()
-    return html.length === 0
 }
 
 // Components
@@ -244,31 +126,11 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const editorRootRef = useRef(null)
     const docRef = useRef(doc) // Always current doc for callbacks
     const isMergingRef = useRef(false) // Prevents race conditions during merge
-    const pendingCaretRef = useRef(null) // { pageIndex, pos: 'end'|'start' } for post-merge caret
 
     // Keep docRef in sync
     useEffect(() => {
         docRef.current = doc
     }, [doc])
-
-    // Apply pending caret after page merge (when page count changes)
-    useEffect(() => {
-        const pending = pendingCaretRef.current
-        if (!pending) return
-
-        requestAnimationFrame(() => {
-            const el = pageRefs.current[pending.pageIndex]
-            if (!el) return
-
-            if (pending.pos === 'end') {
-                placeCaretAtEndAndReveal(el)
-            } else {
-                placeCaretAtStart(el)
-            }
-
-            pendingCaretRef.current = null
-        })
-    }, [doc.pages.length])
 
     // ========== AUTOSAVE ==========
     const triggerSave = useCallback(() => {
@@ -402,12 +264,6 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
     // ========== PAGE INPUT HANDLING ==========
     const handlePageInput = useCallback((e, pageIndex) => {
-        // Block input events during merge to prevent race conditions
-        if (isMergingRef.current) {
-            console.log('📝 INPUT blocked during merge')
-            return
-        }
-
         console.log('📝 INPUT triggered on page', pageIndex)
         saveSelection()
 
@@ -505,9 +361,6 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
     // Global keyboard handler - handles document-wide shortcuts
     const handleGlobalKeyDown = useCallback((e) => {
-        // Block during merge to prevent conflicts
-        if (isMergingRef.current) return
-
         const key = e.key?.toLowerCase()
 
         // Ctrl+A => Select all pages
@@ -538,98 +391,170 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         }
     }, [triggerSave, clearDocumentKeepFirstPage])
 
+    // ========== CARET HELPERS ==========
+    function isCaretAtStart(el) {
+        const sel = window.getSelection()
+        if (!sel || sel.rangeCount === 0) return false
+        if (!el.contains(sel.anchorNode)) return false
+
+        const range = sel.getRangeAt(0)
+        if (!range.collapsed) return false
+
+        const pre = range.cloneRange()
+        pre.selectNodeContents(el)
+        pre.setEnd(range.startContainer, range.startOffset)
+
+        const text = pre.toString().replace(/\u00A0/g, ' ').trim()
+        return text.length === 0
+    }
+
+    function isCaretAtEnd(el) {
+        const sel = window.getSelection()
+        if (!sel || sel.rangeCount === 0) return false
+        if (!el.contains(sel.anchorNode)) return false
+
+        const range = sel.getRangeAt(0)
+        if (!range.collapsed) return false
+
+        const post = range.cloneRange()
+        post.selectNodeContents(el)
+        post.setStart(range.endContainer, range.endOffset)
+
+        const text = post.toString().replace(/\u00A0/g, ' ').trim()
+        return text.length === 0
+    }
+
+    // ========== CARET MARKER HELPERS ==========
+    function insertCaretMarker() {
+        const sel = window.getSelection()
+        if (!sel || sel.rangeCount === 0) return null
+        const range = sel.getRangeAt(0)
+        if (!range.collapsed) return null
+
+        const marker = document.createElement('span')
+        marker.setAttribute('data-caret-marker', '1')
+        marker.style.display = 'inline-block'
+        marker.style.width = '0'
+        marker.style.height = '0'
+        marker.appendChild(document.createTextNode('\u200B'))
+
+        range.insertNode(marker)
+        range.setStartAfter(marker)
+        range.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(range)
+        return marker
+    }
+
+    function restoreCaretFromMarker(rootEl) {
+        if (!rootEl) return false
+        const marker = rootEl.querySelector('[data-caret-marker="1"]')
+        if (!marker) return false
+
+        const sel = window.getSelection()
+        const range = document.createRange()
+        range.setStartAfter(marker)
+        range.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(range)
+        marker.remove()
+        return true
+    }
+
+    function revealCaret(el) {
+        requestAnimationFrame(() => {
+            const sel = window.getSelection()
+            if (!sel || sel.rangeCount === 0) return
+            const rect = sel.getRangeAt(0).getBoundingClientRect()
+            const margin = 120
+            if (rect.bottom > window.innerHeight - margin) {
+                window.scrollBy({ top: rect.bottom - window.innerHeight + margin, behavior: 'instant' })
+            }
+        })
+    }
+
+    function placeCaretAtEnd(el) {
+        el.focus()
+        const range = document.createRange()
+        range.selectNodeContents(el)
+        range.collapse(false)
+        const sel = window.getSelection()
+        sel.removeAllRanges()
+        sel.addRange(range)
+    }
+
+    function placeCaretAtStart(el) {
+        el.focus()
+        const range = document.createRange()
+        range.selectNodeContents(el)
+        range.collapse(true)
+        const sel = window.getSelection()
+        sel.removeAllRanges()
+        sel.addRange(range)
+    }
+
     // Per-page keyboard handler for formatting shortcuts AND page boundary behavior
     const handleKeyDown = useCallback((e, pageIndex, contentRef) => {
         const el = pageRefs.current[pageIndex]
+        if (!el) return
 
-        // Backspace at start of page => merge into previous (SAFE: move nodes, not innerHTML)
-        if (e.key === 'Backspace' && pageIndex > 0 && el && isCaretAtStart(el)) {
+        // ✅ Backspace at start of page => merge into previous (Word-like)
+        if (e.key === 'Backspace' && pageIndex > 0 && isCaretAtStart(el)) {
             e.preventDefault()
-            console.log('[Merge] Backspace at start, merging page', pageIndex, 'into', pageIndex - 1)
+            console.log('[Merge] Backspace at start, merging page', pageIndex + 1, 'into', pageIndex)
 
             const prevEl = pageRefs.current[pageIndex - 1]
             const curEl = el
-            if (prevEl && curEl) {
-                // 1) Block reflow/input handlers during merge
-                isMergingRef.current = true
+            if (!prevEl || !curEl) return
 
-                // 2) Set pending caret for after render
-                pendingCaretRef.current = { pageIndex: pageIndex - 1, pos: 'end' }
+            isMergingRef.current = true
 
-                // 3) Move DOM nodes (safe, no innerHTML race)
-                console.log('[Merge] Moving', curEl.childNodes.length, 'nodes from page', pageIndex)
-                moveAllChildren(curEl, prevEl)
+            // 1) Place caret at end of prev page + insert marker (junction point)
+            placeCaretAtEnd(prevEl)
+            insertCaretMarker()
 
-                // 4) Sync state from DOM (source of truth)
-                setDoc(prevDoc => {
-                    const pages = [...prevDoc.pages]
-                    const prevPage = { ...pages[pageIndex - 1] }
+            // 2) Pull content from current page into previous (Word-like)
+            const { movedAny, nextIsEmpty } = pullFromNextPageInto(prevEl, curEl)
 
-                    // Sync from DOM
-                    prevPage.content = prevEl.innerHTML
-                    pages[pageIndex - 1] = prevPage
+            // 3) Sync state + delete page only if truly empty
+            setDoc(prevDoc => {
+                const pages = [...prevDoc.pages]
+                pages[pageIndex - 1] = { ...pages[pageIndex - 1], content: prevEl.innerHTML }
+                pages[pageIndex] = { ...pages[pageIndex], content: curEl.innerHTML }
 
-                    // Remove current page (now empty)
+                // If current page is now empty => remove it
+                if (nextIsEmpty && pages.length > 1) {
                     pages.splice(pageIndex, 1)
+                }
+                return { ...prevDoc, pages }
+            })
 
-                    // Let React handle ref reassignment on next render
+            // 4) After render: restore caret EXACT, reveal, reflow
+            requestAnimationFrame(() => {
+                isMergingRef.current = false
+                restoreCaretFromMarker(prevEl)   // ✅ caret at junction (not at top)
+                revealCaret(prevEl)              // ✅ show bottom if scrolled
+                reflowDocument()                 // ✅ cascade underflow/overflow
+            })
 
-                    return { ...prevDoc, pages }
-                })
-
-                // 5) Reflow after paint, then re-enable handlers
-                requestAnimationFrame(() => {
-                    isMergingRef.current = false
-                    reflowDocument()
-                })
-                triggerSave()
-            }
+            triggerSave()
             return
         }
 
-        // Delete at end of page => merge next page into current (SAFE: move nodes)
-        if (e.key === 'Delete' && el && isCaretAtEnd(el)) {
+        // ✅ Enter at end of page => move to start of next page (if next page exists)
+        if (e.key === 'Enter' && !e.shiftKey && pageIndex < docRef.current.pages.length - 1 && isCaretAtEnd(el)) {
+            e.preventDefault()
+            console.log('[Navigate] Enter at end, moving to page', pageIndex + 2)
+
             const nextEl = pageRefs.current[pageIndex + 1]
             if (nextEl) {
-                e.preventDefault()
-                console.log('[Merge] Delete at end, merging page', pageIndex + 1, 'into', pageIndex)
-
-                // 1) Block reflow/input handlers during merge
-                isMergingRef.current = true
-
-                // 2) Move DOM nodes from next page (safe, no innerHTML race)
-                console.log('[Merge] Moving', nextEl.childNodes.length, 'nodes from next page')
-                moveAllChildren(nextEl, el)
-
-                // 3) Sync state and remove next page
-                setDoc(prevDoc => {
-                    const pages = [...prevDoc.pages]
-                    const curPage = { ...pages[pageIndex] }
-
-                    // Sync from DOM
-                    curPage.content = el.innerHTML
-                    pages[pageIndex] = curPage
-
-                    // Remove next page
-                    pages.splice(pageIndex + 1, 1)
-
-                    // Let React handle ref reassignment on next render
-
-                    return { ...prevDoc, pages }
-                })
-
-                // 4) Reflow after paint, then re-enable handlers
-                requestAnimationFrame(() => {
-                    isMergingRef.current = false
-                    reflowDocument()
-                })
-                triggerSave()
+                placeCaretAtStart(nextEl)
+                revealCaret(nextEl)
             }
             return
         }
 
-        // ========== FORMATTING SHORTCUTS (require modifier) ==========
-        // Only process modifier shortcuts
+        // Only process modifier shortcuts from here
         if (!isMod(e)) return
 
         const key = e.key?.toLowerCase()
@@ -670,7 +595,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             triggerSave()
             return
         }
-    }, [triggerSave])
+    }, [triggerSave, reflowDocument])
 
     // ========== TOKEN INSERTION ==========
     const insertVariableToken = useCallback((variablePath, fieldMetadata = {}) => {

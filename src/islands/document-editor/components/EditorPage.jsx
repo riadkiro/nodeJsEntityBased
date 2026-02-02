@@ -85,12 +85,13 @@ export default function EditorPage({
                     ref={contentRef}
                     contentEditable
                     suppressContentEditableWarning
-                    className="outline-none min-h-full"
+                    className="outline-none min-h-full text-black"
                     style={{
                         padding: `${top}px ${right}px ${bottom}px ${left}px`,
                         minHeight: `${height}px`,
                         maxHeight: `${height}px`,
-                        overflow: 'hidden'
+                        overflow: 'hidden',
+                        color: '#000000' // Force black text regardless of dark mode
                     }}
                     onInput={(e) => handlePageInput(e, pageIndex)}
                     onPaste={(e) => handlePaste(e, pageIndex)}

@@ -27,7 +27,7 @@ const createDefaultDoc = () => ({
     orientation: 'portrait',
     status: 'draft',
     dimensions: { width: 794, height: 1123 },
-    margins: { top: 40, bottom: 40, left: 40, right: 40 },
+    margins: { top: 72, bottom: 72, left: 72, right: 72 },
     pages: [{
         content: '',
         elements: [],

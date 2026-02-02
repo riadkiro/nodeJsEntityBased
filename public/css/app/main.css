@@ -5,19 +5,23 @@ body {
   background-color: var(--white-smoke);
   margin: 0px;
 }
+
 hr {
   border: 1px solid var(--border-color);
 }
+
 ul {
   list-style: none;
   padding: 0px;
 }
+
 .left-bar {
   background: var(--primary-color);
   width: 48px;
   height: 100vh;
   border-right: 1px solid var(--border-color);
 }
+
 .top-bar {
   background: white;
   height: 50px;
@@ -53,6 +57,7 @@ ul {
   margin: 7px;
   color: var(--left-bar-el-color);
 }
+
 .bar-element.active {
   color: var(--primary-color);
   border: 1px solid #0202020d;
@@ -60,7 +65,7 @@ ul {
   background: var(--left-bar-el-color);
 }
 
-.bar-element > a {
+.bar-element>a {
   color: inherit;
 }
 
@@ -77,7 +82,7 @@ ul {
   color: #7ac7d9;
 }
 
-.branding > span {
+.branding>span {
   font-weight: 400;
   font-size: 21px;
   color: #43454c;
@@ -121,17 +126,21 @@ li.sidebar-el {
 .card-01-left {
   width: 10%;
 }
+
 .card-01-middle {
   width: 85%;
 }
+
 .card-01-right {
   display: flex;
   width: 5%;
   justify-content: center;
 }
+
 .card-01-tags {
   flex-wrap: wrap;
 }
+
 .left-zone-toolbar {
   height: 55px;
   padding: 10px;
@@ -143,7 +152,7 @@ li.sidebar-el {
   margin-right: 20px;
 }
 
-.left-zone-toolbar > .search > input {
+.left-zone-toolbar>.search>input {
   border: 1px solid #ededed;
   border-radius: 55px;
   width: 100%;
@@ -151,9 +160,11 @@ li.sidebar-el {
   height: 22px;
   font-size: 11px;
 }
+
 .border-grey {
   border: 1px solid #f1f1f1;
 }
+
 .circle {
   border: 1px solid #f1f1f1;
   border-radius: 50%;
@@ -184,9 +195,11 @@ li.sidebar-el {
   font-weight: 600;
   margin-bottom: 2px;
 }
+
 .card-01-middle-content {
   font-size: 11px;
 }
+
 li.card-tag {
   padding: 0 6px;
   border-left: 1px solid #f1f1f1;
@@ -233,6 +246,7 @@ li.card-tag {
 .wz-name {
   font-weight: 600;
 }
+
 .activity-box {
   max-width: calc(70% - 40px);
   background: white;
@@ -257,7 +271,7 @@ li.card-tag {
   padding-bottom: 5px;
 }
 
-.sent > .activity-box {
+.sent>.activity-box {
   background: #bbbbbb1f;
   border: 1px solid #ebebeb;
 }
@@ -271,11 +285,13 @@ li.left-zone-item.active {
 .a4-content {
   margin: 1.5cm;
 }
+
 .A4 {
   width: 21cm;
   min-height: 29cm;
   background: white;
 }
+
 .document-container {
   display: flex;
   padding: 20px;
@@ -290,44 +306,100 @@ li.left-zone-item.active {
 
 @media print {
   #a4-container {
-    font-size: 12pt; /* Taille de police pour l'impression */
+    font-size: 12pt;
+    /* Taille de police pour l'impression */
   }
 }
 
 .zoom-in {
-  transform: scale(1.2); /* Échelle de 120% pour le zoom */
+  transform: scale(1.2);
+  /* Échelle de 120% pour le zoom */
 }
 
 .zoom-out {
-  transform: scale(0.8); /* Échelle de 80% pour le dézoom */
+  transform: scale(0.8);
+  /* Échelle de 80% pour le dézoom */
 }
 
-/*Scroll*/
-.scrollable {
-  overflow: scroll; /* Set the overflow property to auto */
-  scrollbar-width: thin; /* Set the width of the scrollbar */
+/* --- Scrollbar Styling --- */
+* {
+  scrollbar-width: thin !important;
+  scrollbar-color: #cbd5e1 transparent !important;
 }
 
-/* Set the scrollbar width and color */
+.dark * {
+  scrollbar-color: #334155 transparent !important;
+}
+
+/* Global Webkit Scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-  background-color: #f5f5f5;
+  width: 5px !important;
+  height: 5px !important;
 }
 
-/* Set the thumb color */
-::-webkit-scrollbar-thumb {
-  background-color: #888;
-  border-radius: 5px;
-}
-
-/* Set the track color */
 ::-webkit-scrollbar-track {
-  background-color: #f5f5f5;
+  background: transparent !important;
 }
+
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1 !important;
+  border-radius: 20px !important;
+  border: 1px solid transparent !important;
+  background-clip: content-box !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8 !important;
+}
+
+/* Dark mode support */
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #475569 !important;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b !important;
+}
+
+/* Perfect Scrollbar Overrides (for consistency) */
+.ps__rail-y,
+.ps__rail-x {
+  background-color: transparent !important;
+  opacity: 1 !important;
+  width: 6px !important;
+}
+
+.ps__thumb-y,
+.ps__thumb-x {
+  background-color: #cbd5e1 !important;
+  border-radius: 20px !important;
+  width: 4px !important;
+  right: 1px !important;
+}
+
+.ps__rail-y:hover>.ps__thumb-y,
+.ps__rail-y:focus>.ps__thumb-y,
+.ps__rail-y.ps--clicking .ps__thumb-y {
+  background-color: #94a3b8 !important;
+  width: 5px !important;
+}
+
+/* Dark Mode for Perfect Scrollbar */
+.dark .ps__thumb-y,
+.dark .ps__thumb-x {
+  background-color: #475569 !important;
+}
+
+.dark .ps__rail-y:hover>.ps__thumb-y,
+.dark .ps__rail-y:focus>.ps__thumb-y,
+.dark .ps__rail-y.ps--clicking .ps__thumb-y {
+  background-color: #64748b !important;
+}
+
 
 .scroll-disabled {
-  overflow: hidden; /* Disable scrolling */
+  overflow: hidden;
+  /* Disable scrolling */
 }
 
 /*Document tools bar*/
@@ -337,7 +409,7 @@ li.left-zone-item.active {
   padding: 5px 20px;
 }
 
-.tools > .right > .icones > li > i {
+.tools>.right>.icones>li>i {
   font-size: 19px;
 }
 
@@ -361,12 +433,14 @@ ul.icones {
   justify-content: center;
   align-items: center;
 }
+
 .modal-content {
   width: 500px;
   height: 400px;
   background: white;
   position: relative;
 }
+
 .close-modal {
   position: absolute;
   right: -10px;
@@ -384,6 +458,7 @@ ul.icones {
   font-weight: 600;
   cursor: pointer;
 }
+
 .w700h500 {
   width: 700px;
   height: 500px;
@@ -404,6 +479,7 @@ button {
   background-color: #7ac7d9;
   color: white;
 }
+
 .btn-validate {
   padding: 5px 10px;
   border: 1px solid #f1f1f1;
@@ -424,12 +500,13 @@ li.listing-el {
   flex-direction: row-reverse;
   padding: 10px;
 }
+
 .card-02-middle-title {
   font-weight: 700;
   padding: 7px 0;
 }
 
-.card-02-left > .el-img {
+.card-02-left>.el-img {
   background: #efefef;
   margin-right: 14px;
   display: flex;
@@ -438,7 +515,7 @@ li.listing-el {
   border-radius: 6px;
 }
 
-.card-02-left > .el-img > i {
+.card-02-left>.el-img>i {
   color: #cdcdcd;
 }
 
@@ -456,24 +533,31 @@ li.listing-el {
 .w-5prct {
   width: 5%;
 }
+
 .w-10prct {
   width: 10%;
 }
+
 .w-20prct {
   width: 20%;
 }
+
 .w-50prct {
   width: 50%;
 }
+
 .w-70prct {
   width: 70%;
 }
+
 .w-80prct {
   width: 80%;
 }
+
 .w-85prct {
   width: 85%;
 }
+
 .m-auto {
   margin: auto;
 }

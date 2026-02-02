@@ -72,7 +72,7 @@ router.get('/new', async (req, res) => {
         }
     }
 
-    res.render('document/document-editor', {
+    res.render('document/document-editor-react', {
         title: 'Nouveau Document',
         document: documentData,
         isNew: true,
@@ -104,6 +104,33 @@ router.get('/:id/edit', async (req, res) => {
         });
     } catch (error) {
         console.error('[Documents] Error loading document:', error);
+        res.status(500).send('Erreur lors du chargement du document');
+    }
+});
+
+// GET - React Editor (test route)
+router.get('/:id/edit-react', async (req, res) => {
+    try {
+        const Document = await tenantCollection(req, 'Document');
+        if (!Document) {
+            return res.status(500).send('Erreur de connexion base de données');
+        }
+
+        const document = await Document.findById(req.params.id);
+
+        if (!document) {
+            return res.status(404).send('Document non trouvé');
+        }
+
+        res.render('document/document-editor-react', {
+            title: `Éditer - ${document.name}`,
+            document,
+            isNew: false,
+            account_number: req.account_number,
+            layout: 'layout-app' // Same layout as Alpine.js editor
+        });
+    } catch (error) {
+        console.error('[Documents] Error loading document (React):', error);
         res.status(500).send('Erreur lors du chargement du document');
     }
 });

@@ -1,0 +1,59 @@
+<!-- 
+    Document Editor React Island
+    This view integrates into layout-app with sidebar, navbar, dark/light mode
+-->
+
+<style>
+    /* Template token styling */
+    .template-token {
+        display: inline-block;
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        color: #92400e;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.875em;
+        font-weight: 500;
+        border: 1px solid #fcd34d;
+        cursor: default;
+        user-select: none;
+        vertical-align: baseline;
+    }
+    .dark .template-token {
+        background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+        color: #fef3c7;
+        border-color: #b45309;
+    }
+    
+    /* Override padding for full-height editor */
+    .animate__animated.p-6 {
+        padding: 0 !important;
+    }
+    
+    /* Print styles */
+    @media print {
+        .sidebar, header, nav, .mode-switcher, [data-print-hide] {
+            display: none !important;
+        }
+        .main-content {
+            margin-left: 0 !important;
+        }
+        .bg-white.shadow-2xl {
+            box-shadow: none !important;
+            margin: 0 auto !important;
+            border: none !important;
+            page-break-after: always;
+        }
+    }
+</style>
+
+<!-- Document Editor React Island Mount Point -->
+<div 
+    data-island="document-editor"
+    data-document='<%- JSON.stringify(document || {}).replace(/</g, "\\u003C").replace(/>/g, "\\u003E") %>'
+    data-account-number="<%= account_number %>"
+    data-is-new="<%= isNew ? 'true' : 'false' %>"
+    class="h-[calc(100vh-80px)] -m-6"
+></div>
+
+<!-- React Island Script -->
+<script type="module" src="/dist/documentEditor.js"></script>

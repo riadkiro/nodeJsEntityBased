@@ -1,0 +1,556 @@
+/**
+ * DocumentEditorIsland - Main Component
+ * 1:1 parity with Alpine.js documentEditor()
+ * 
+ * CRITICAL: contenteditable areas are UNCONTROLLED
+ * - Content is accessed via refs, NOT state
+ * - Selection/Range stored in refs to survive re-renders
+ * - Autosave timeout stored in ref
+ */
+import React, { useState, useRef, useCallback, useEffect } from 'react'
+import { saveDocument, exportPdf } from './services/documentApi'
+import { cleanWordHtml } from './utils/cleanWordHtml'
+import { checkOverflow, checkUnderflow } from './utils/paginationUtils'
+import { formatDoc, detectCurrentStyles, applyFontSize, applyLineSpacing, applyLetterSpacing, FONT_FAMILIES, FONT_SIZES } from './utils/formatUtils'
+
+// Components
+import EditorHeader from './components/EditorHeader'
+import LeftSidebar from './components/LeftSidebar'
+import RightSidebar from './components/RightSidebar'
+import CanvasContainer from './components/CanvasContainer'
+
+// Default document structure
+const createDefaultDoc = () => ({
+    _id: null,
+    name: 'Document sans titre',
+    format: 'A4',
+    orientation: 'portrait',
+    status: 'draft',
+    dimensions: { width: 794, height: 1123 },
+    margins: { top: 40, bottom: 40, left: 40, right: 40 },
+    pages: [{
+        content: '',
+        elements: [],
+        rows: [],
+        mode: 'edition',
+        background: '#ffffff',
+        order: 0
+    }],
+    collections: [],
+    contentBlocks: []
+})
+
+// Merge initial document with defaults to ensure all properties exist
+const mergeWithDefaults = (initialDoc) => {
+    if (!initialDoc) return createDefaultDoc()
+
+    const defaults = createDefaultDoc()
+    return {
+        ...defaults,
+        ...initialDoc,
+        // Ensure nested objects have defaults
+        dimensions: initialDoc.dimensions || defaults.dimensions,
+        margins: initialDoc.margins || defaults.margins,
+        // Ensure pages array exists and has at least one page
+        pages: (initialDoc.pages && initialDoc.pages.length > 0)
+            ? initialDoc.pages.map(page => ({
+                content: page.content || '',
+                elements: page.elements || [],
+                rows: page.rows || [],
+                mode: page.mode || 'edition',
+                background: page.background || '#ffffff',
+                order: page.order || 0
+            }))
+            : defaults.pages
+    }
+}
+
+export default function DocumentEditorIsland({ accountNumber, initialDocument, isNew }) {
+    // ========== STATE (UI only, NOT contenteditable content) ==========
+    const [doc, setDoc] = useState(() => mergeWithDefaults(initialDocument))
+    const [selectedPageIndex, setSelectedPageIndex] = useState(0)
+    const [selectedRow, setSelectedRow] = useState(null)
+    const [lastSaved, setLastSaved] = useState(null)
+    const [editorMode, setEditorMode] = useState('edition') // edition, layout, designer
+    const [activeTab, setActiveTab] = useState(null) // text, gallery, dynamic-nav
+    const [openSections, setOpenSections] = useState({ info: true, margins: false, pages: true })
+    const [isGlobalSelection, setIsGlobalSelection] = useState(false)
+
+    // Formatting state (for toolbar display)
+    const [currentFont, setCurrentFont] = useState('Arial')
+    const [currentFontSize, setCurrentFontSize] = useState(16)
+    const [isBold, setIsBold] = useState(false)
+    const [isItalic, setIsItalic] = useState(false)
+    const [isUnderline, setIsUnderline] = useState(false)
+    const [isStrikethrough, setIsStrikethrough] = useState(false)
+    const [currentAlignment, setCurrentAlignment] = useState('left')
+    const [currentLineHeight, setCurrentLineHeight] = useState(1.5)
+    const [currentLetterSpacing, setCurrentLetterSpacing] = useState(0)
+
+    // HTML Editor Modal
+    const [editingHtml, setEditingHtml] = useState(false)
+    const [editingHtmlContent, setEditingHtmlContent] = useState('')
+    const [editingElementIndex, setEditingElementIndex] = useState(null)
+
+    // ========== REFS (Critical for stability) ==========
+    const saveTimeoutRef = useRef(null)
+    const savedRangeRef = useRef(null)
+    const pageRefs = useRef({})
+    const canvasRef = useRef(null)
+    const docRef = useRef(doc) // Always current doc for callbacks
+
+    // Keep docRef in sync
+    useEffect(() => {
+        docRef.current = doc
+    }, [doc])
+
+    // ========== AUTOSAVE ==========
+    const triggerSave = useCallback(() => {
+        // Clear existing timeout
+        clearTimeout(saveTimeoutRef.current)
+
+        // Set new timeout (1 second debounce)
+        saveTimeoutRef.current = setTimeout(async () => {
+            // Read current content from page refs
+            const currentDoc = { ...docRef.current }
+            currentDoc.pages = currentDoc.pages.map((page, i) => {
+                const pageRef = pageRefs.current[i]
+                if (pageRef && page.mode === 'edition') {
+                    return { ...page, content: pageRef.innerHTML }
+                }
+                return page
+            })
+
+            const result = await saveDocument(currentDoc, accountNumber)
+            if (result.success && result.document) {
+                // Update URL if this was a new document
+                if (!docRef.current._id && result.document._id) {
+                    const newUrl = `/account/${accountNumber}/documents/${result.document._id}/edit-react`
+                    window.history.replaceState({}, '', newUrl)
+                }
+                setDoc(prev => ({ ...prev, _id: result.document._id }))
+                setLastSaved(new Date())
+            }
+        }, 1000)
+    }, [accountNumber])
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => clearTimeout(saveTimeoutRef.current)
+    }, [])
+
+    // ========== SELECTION HANDLING ==========
+    const saveSelection = useCallback(() => {
+        const sel = window.getSelection()
+        if (sel && sel.rangeCount > 0) {
+            savedRangeRef.current = sel.getRangeAt(0).cloneRange()
+        }
+    }, [])
+
+    const restoreSelection = useCallback(() => {
+        const range = savedRangeRef.current
+        if (range) {
+            const sel = window.getSelection()
+            sel.removeAllRanges()
+            sel.addRange(range)
+        }
+    }, [])
+
+    // ========== FORMATTING ==========
+    const handleFormat = useCallback((command, value = null) => {
+        restoreSelection()
+        formatDoc(command, value)
+        triggerSave()
+        updateFormattingState()
+    }, [restoreSelection, triggerSave])
+
+    const updateFormattingState = useCallback(() => {
+        const styles = detectCurrentStyles()
+        setCurrentFont(styles.fontFamily)
+        setCurrentFontSize(styles.fontSize)
+        setIsBold(styles.isBold)
+        setIsItalic(styles.isItalic)
+        setIsUnderline(styles.isUnderline)
+        setIsStrikethrough(styles.isStrikethrough)
+        setCurrentAlignment(styles.alignment)
+        setCurrentLineHeight(styles.lineHeight)
+        setCurrentLetterSpacing(styles.letterSpacing)
+    }, [])
+
+    const handleFontSizeChange = useCallback((size) => {
+        restoreSelection()
+        applyFontSize(size)
+        setCurrentFontSize(size)
+        triggerSave()
+    }, [restoreSelection, triggerSave])
+
+    const handleLineSpacingChange = useCallback((value) => {
+        restoreSelection()
+        applyLineSpacing(value)
+        setCurrentLineHeight(value)
+        triggerSave()
+    }, [restoreSelection, triggerSave])
+
+    const handleLetterSpacingChange = useCallback((value) => {
+        restoreSelection()
+        applyLetterSpacing(value)
+        setCurrentLetterSpacing(value)
+        triggerSave()
+    }, [restoreSelection, triggerSave])
+
+    // ========== PAGE INPUT HANDLING ==========
+    const handlePageInput = useCallback((e, pageIndex) => {
+        saveSelection()
+
+        // Defer pagination check to after paint
+        requestAnimationFrame(() => {
+            const pageRef = pageRefs.current[pageIndex]
+            if (pageRef) {
+                checkOverflow(pageRef, pageIndex, docRef.current, setDoc, pageRefs)
+                checkUnderflow(pageRef, pageIndex, docRef.current, setDoc, pageRefs)
+            }
+        })
+
+        triggerSave()
+    }, [saveSelection, triggerSave])
+
+    // ========== PASTE HANDLING ==========
+    const handlePaste = useCallback((e, pageIndex) => {
+        e.preventDefault()
+
+        const clipboardData = e.clipboardData || window.clipboardData
+        let content = clipboardData.getData('text/html')
+
+        if (!content) {
+            content = clipboardData.getData('text/plain')
+            // Convert line breaks to <br>
+            content = content.replace(/\n/g, '<br>')
+        } else {
+            // Clean Word HTML
+            content = cleanWordHtml(content)
+        }
+
+        // Insert at cursor using execCommand
+        document.execCommand('insertHTML', false, content)
+
+        // Trigger save and pagination check
+        requestAnimationFrame(() => {
+            const pageRef = pageRefs.current[pageIndex]
+            if (pageRef) {
+                checkOverflow(pageRef, pageIndex, docRef.current, setDoc, pageRefs)
+            }
+        })
+
+        triggerSave()
+    }, [triggerSave])
+
+    // ========== TOKEN INSERTION ==========
+    const insertVariableToken = useCallback((variablePath, fieldMetadata = {}) => {
+        const range = savedRangeRef.current
+        if (!range) {
+            console.warn('No saved range for token insertion')
+            return
+        }
+
+        // Restore selection
+        const sel = window.getSelection()
+        sel.removeAllRanges()
+        sel.addRange(range)
+
+        // Delete any selected content
+        if (!range.collapsed) {
+            range.deleteContents()
+        }
+
+        // Create token span
+        const token = document.createElement('span')
+        token.className = 'template-token'
+        token.contentEditable = 'false'
+        token.dataset.token = JSON.stringify({
+            path: variablePath,
+            fieldId: fieldMetadata.fieldId || null,
+            type: fieldMetadata.type || 'text',
+            label: fieldMetadata.label || variablePath
+        })
+        token.textContent = fieldMetadata.label || `{{${variablePath}}}`
+
+        // Insert token
+        range.insertNode(token)
+
+        // Add space after token
+        const space = document.createTextNode('\u00A0')
+        if (token.nextSibling) {
+            token.parentNode.insertBefore(space, token.nextSibling)
+        } else {
+            token.parentNode.appendChild(space)
+        }
+
+        // Move cursor after space
+        range.setStartAfter(space)
+        range.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(range)
+
+        triggerSave()
+    }, [triggerSave])
+
+    // ========== GLOBAL SELECTION ==========
+    const handleGlobalSelection = useCallback(() => {
+        setIsGlobalSelection(true)
+    }, [])
+
+    const handleGlobalCopy = useCallback((e) => {
+        if (!isGlobalSelection) return
+
+        const fullHtml = docRef.current.pages
+            .map(page => page.content || '')
+            .join('<div style="page-break-after: always;"></div>')
+
+        const fullText = docRef.current.pages
+            .map(page => {
+                const div = document.createElement('div')
+                div.innerHTML = page.content || ''
+                return div.textContent
+            })
+            .join('\n\n')
+
+        e.clipboardData.setData('text/html', fullHtml)
+        e.clipboardData.setData('text/plain', fullText)
+        e.preventDefault()
+    }, [isGlobalSelection])
+
+    // ========== GLOBAL KEYBOARD HANDLERS ==========
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            // Ctrl+A for global selection
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                if (editorMode === 'edition') {
+                    e.preventDefault()
+                    handleGlobalSelection()
+                }
+            }
+
+            // Delete/Backspace with global selection
+            if (isGlobalSelection && (e.key === 'Delete' || e.key === 'Backspace')) {
+                e.preventDefault()
+                setDoc(prev => ({
+                    ...prev,
+                    pages: prev.pages.map(page => ({ ...page, content: '' }))
+                }))
+                setIsGlobalSelection(false)
+                triggerSave()
+            }
+        }
+
+        const handleCopy = (e) => {
+            if (isGlobalSelection) {
+                handleGlobalCopy(e)
+            }
+        }
+
+        const handleClick = () => {
+            if (isGlobalSelection) {
+                setIsGlobalSelection(false)
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown)
+        window.addEventListener('copy', handleCopy)
+        window.addEventListener('click', handleClick)
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown)
+            window.removeEventListener('copy', handleCopy)
+            window.removeEventListener('click', handleClick)
+        }
+    }, [editorMode, isGlobalSelection, handleGlobalSelection, handleGlobalCopy, triggerSave])
+
+    // ========== PAGE MANAGEMENT ==========
+    const addPage = useCallback(() => {
+        setDoc(prev => ({
+            ...prev,
+            pages: [...prev.pages, {
+                content: '',
+                elements: [],
+                rows: [],
+                mode: 'edition',
+                background: '#ffffff',
+                order: prev.pages.length
+            }]
+        }))
+        triggerSave()
+    }, [triggerSave])
+
+    const duplicatePage = useCallback((index) => {
+        setDoc(prev => {
+            const pages = [...prev.pages]
+            const duplicate = { ...pages[index], order: pages.length }
+            pages.splice(index + 1, 0, duplicate)
+            return { ...prev, pages }
+        })
+        triggerSave()
+    }, [triggerSave])
+
+    const deletePage = useCallback((index) => {
+        if (doc.pages.length <= 1) return
+        setDoc(prev => {
+            const pages = prev.pages.filter((_, i) => i !== index)
+            return { ...prev, pages }
+        })
+        if (selectedPageIndex >= index && selectedPageIndex > 0) {
+            setSelectedPageIndex(prev => prev - 1)
+        }
+        triggerSave()
+    }, [doc.pages.length, selectedPageIndex, triggerSave])
+
+    const setPageMode = useCallback((index, mode) => {
+        // Sync content before mode change
+        const pageRef = pageRefs.current[index]
+        if (pageRef) {
+            setDoc(prev => {
+                const pages = [...prev.pages]
+                pages[index] = { ...pages[index], content: pageRef.innerHTML, mode }
+                return { ...prev, pages }
+            })
+        } else {
+            setDoc(prev => {
+                const pages = [...prev.pages]
+                pages[index] = { ...pages[index], mode }
+                return { ...prev, pages }
+            })
+        }
+        triggerSave()
+    }, [triggerSave])
+
+    // ========== PDF EXPORT ==========
+    const handlePdfExport = useCallback(async () => {
+        if (!doc._id) {
+            console.warn('Document must be saved before PDF export')
+            return
+        }
+
+        // Get canvas HTML and clean it
+        const canvas = canvasRef.current
+        if (!canvas) return
+
+        // Clone and clean for print
+        const clone = canvas.cloneNode(true)
+
+        // Remove controls
+        clone.querySelectorAll('[data-print-hide]').forEach(el => el.remove())
+        clone.querySelectorAll('button').forEach(el => el.remove())
+        clone.querySelectorAll('.mode-switcher').forEach(el => el.remove())
+
+        const html = clone.innerHTML
+
+        await exportPdf(doc._id, doc.name, html, accountNumber)
+    }, [doc._id, doc.name, accountNumber])
+
+    // ========== DIMENSION UPDATES ==========
+    const updateDimensions = useCallback(() => {
+        const dimensions = {
+            A4: { portrait: { width: 794, height: 1123 }, landscape: { width: 1123, height: 794 } },
+            A5: { portrait: { width: 559, height: 794 }, landscape: { width: 794, height: 559 } },
+            A3: { portrait: { width: 1123, height: 1587 }, landscape: { width: 1587, height: 1123 } },
+            Letter: { portrait: { width: 816, height: 1056 }, landscape: { width: 1056, height: 816 } },
+            Legal: { portrait: { width: 816, height: 1344 }, landscape: { width: 1344, height: 816 } }
+        }
+        const dim = dimensions[doc.format]?.[doc.orientation] || dimensions.A4.portrait
+        setDoc(prev => ({ ...prev, dimensions: dim }))
+        triggerSave()
+    }, [doc.format, doc.orientation, triggerSave])
+
+    // Update selection state on mouse events
+    const handleMouseUp = useCallback(() => {
+        saveSelection()
+        updateFormattingState()
+    }, [saveSelection, updateFormattingState])
+
+    // ========== RENDER ==========
+    return (
+        <div
+            className="flex flex-col h-screen bg-gray-100 dark:bg-gray-950"
+            onMouseUp={handleMouseUp}
+        >
+            {/* Header with Toolbar */}
+            <EditorHeader
+                doc={doc}
+                setDoc={setDoc}
+                lastSaved={lastSaved}
+                triggerSave={triggerSave}
+                handlePdfExport={handlePdfExport}
+                // Formatting props
+                currentFont={currentFont}
+                currentFontSize={currentFontSize}
+                isBold={isBold}
+                isItalic={isItalic}
+                isUnderline={isUnderline}
+                isStrikethrough={isStrikethrough}
+                currentAlignment={currentAlignment}
+                currentLineHeight={currentLineHeight}
+                currentLetterSpacing={currentLetterSpacing}
+                handleFormat={handleFormat}
+                handleFontSizeChange={handleFontSizeChange}
+                handleLineSpacingChange={handleLineSpacingChange}
+                handleLetterSpacingChange={handleLetterSpacingChange}
+                FONT_FAMILIES={FONT_FAMILIES}
+                FONT_SIZES={FONT_SIZES}
+            />
+
+            {/* Main Content */}
+            <div className="flex-1 flex overflow-hidden">
+                {/* Left Sidebar */}
+                <LeftSidebar
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    insertVariableToken={insertVariableToken}
+                />
+
+                {/* Canvas */}
+                <CanvasContainer
+                    ref={canvasRef}
+                    doc={doc}
+                    setDoc={setDoc}
+                    pageRefs={pageRefs}
+                    selectedPageIndex={selectedPageIndex}
+                    setSelectedPageIndex={setSelectedPageIndex}
+                    editorMode={editorMode}
+                    isGlobalSelection={isGlobalSelection}
+                    handlePageInput={handlePageInput}
+                    handlePaste={handlePaste}
+                    setPageMode={setPageMode}
+                    addPage={addPage}
+                />
+
+                {/* Right Sidebar */}
+                <RightSidebar
+                    doc={doc}
+                    setDoc={setDoc}
+                    openSections={openSections}
+                    setOpenSections={setOpenSections}
+                    selectedPageIndex={selectedPageIndex}
+                    setSelectedPageIndex={setSelectedPageIndex}
+                    updateDimensions={updateDimensions}
+                    addPage={addPage}
+                    duplicatePage={duplicatePage}
+                    deletePage={deletePage}
+                    triggerSave={triggerSave}
+                />
+            </div>
+
+            {/* Global Selection Overlay */}
+            {isGlobalSelection && (
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                    [contenteditable="true"] {
+                        background: rgba(59, 130, 246, 0.1) !important;
+                    }
+                    [contenteditable="true"] * {
+                        background: rgba(59, 130, 246, 0.2) !important;
+                        color: inherit !important;
+                    }
+                ` }} />
+            )}
+        </div>
+    )
+}

@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 
 const AccountSchema = new mongoose.Schema({
   name: { type: String },
+  icon: { type: String, default: 'solar:settings-bold-duotone' },
+  logo: { type: String },
   users: [{ type: String }],
   account_number: { type: String },
   status: {

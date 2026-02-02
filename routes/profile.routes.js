@@ -48,12 +48,27 @@ router.post("/update", async (req, res) => {
 router.get("/account-settings", async (req, res) => {
     try {
         const Account = require("../models/account.model");
-        const account = await Account.findOne({ account_number: req.account_number });
+        let account = await Account.findOne({ account_number: req.account_number });
+
+        // If account doesn't exist in Account collection, create a fallback from user's accounts
+        if (!account && req.user && req.user.accounts) {
+            const userAccount = req.user.accounts.find(a => a.account_number === req.account_number);
+            if (userAccount) {
+                // Create account object with available info
+                account = {
+                    name: userAccount.name || '',
+                    account_number: req.account_number,
+                    status: 'active',
+                    users: [req.user.email],
+                    created_on: req.user.created_on || new Date()
+                };
+            }
+        }
 
         res.render("account/account-settings", {
             account_number: req.account_number,
             user: req.user,
-            account: account,
+            account: account || { name: '', status: 'active', account_number: req.account_number },
             layout: "layout-app",
         });
     } catch (error) {

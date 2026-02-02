@@ -34,6 +34,36 @@
                     </div>
                     
                     <div class="mb-5">
+                        <label class="block text-sm font-medium mb-2">Icône du compte</label>
+                        <div class="flex items-center gap-4">
+                            <div class="p-3 bg-primary/10 text-primary rounded-lg">
+                                <iconify-icon :icon="accountIcon" width="32" height="32"></iconify-icon>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex flex-wrap gap-2 mb-2">
+                                    <template x-for="icon in popularIcons" :key="icon">
+                                        <button 
+                                            type="button" 
+                                            class="p-2 rounded-lg border transition-all"
+                                            :class="accountIcon === icon ? 'border-primary bg-primary/10' : 'border-gray-200 dark:border-gray-700 hover:border-primary'"
+                                            @click="accountIcon = icon"
+                                        >
+                                            <iconify-icon :icon="icon" width="20" height="20"></iconify-icon>
+                                        </button>
+                                    </template>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    x-model="accountIcon"
+                                    class="form-input text-sm"
+                                    placeholder="Nom de l'icône (ex: solar:home-bold)"
+                                >
+                                <p class="text-xs text-gray-500 mt-1">Utilisez les icônes <a href="https://icon-sets.iconify.design/" target="_blank" class="text-primary hover:underline">Iconify</a></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-5">
                         <label class="block text-sm font-medium mb-2">Numéro de compte</label>
                         <div class="flex items-center gap-2">
                             <input 
@@ -164,9 +194,22 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('accountSettings', () => ({
         accountName: '<%= typeof account !== "undefined" && account ? account.name || "" : "" %>',
+        accountIcon: '<%= typeof account !== "undefined" && account ? account.icon || "solar:settings-bold-duotone" : "solar:settings-bold-duotone" %>',
         accountStatus: '<%= typeof account !== "undefined" && account ? account.status || "active" : "active" %>',
         isSaving: false,
         saveSuccess: false,
+        popularIcons: [
+            'solar:settings-bold-duotone',
+            'solar:home-bold-duotone',
+            'solar:buildings-bold-duotone',
+            'solar:case-bold-duotone',
+            'solar:shop-bold-duotone',
+            'solar:cart-large-bold-duotone',
+            'solar:code-bold-duotone',
+            'solar:heart-bold-duotone',
+            'solar:star-bold-duotone',
+            'solar:rocket-bold-duotone'
+        ],
         stats: {
             users: '<%= typeof account !== "undefined" && account && account.users ? account.users.length : 0 %>',
             collections: '-',
@@ -186,6 +229,7 @@ document.addEventListener('alpine:init', () => {
                     },
                     body: JSON.stringify({
                         name: this.accountName,
+                        icon: this.accountIcon,
                         status: this.accountStatus
                     })
                 });

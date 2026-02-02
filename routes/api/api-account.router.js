@@ -56,24 +56,28 @@ const User = require('../../models/user.model');
 // Update Account Info
 router.post('/account/update', async (req, res) => {
     try {
-        const { name, status } = req.body;
+        const { name, icon, status } = req.body;
         const account_number = req.account_number;
 
-        // Update the Account document
+        // Update the Account document (or create if doesn't exist with upsert)
         const account = await Account.findOneAndUpdate(
             { account_number: account_number },
             {
-                name: name,
-                status: status
+                $set: {
+                    name: name,
+                    icon: icon || 'solar:settings-bold-duotone',
+                    status: status
+                },
+                $setOnInsert: {
+                    account_number: account_number,
+                    users: req.user ? [req.user.email] : [],
+                    created_on: new Date()
+                }
             },
-            { new: true }
+            { new: true, upsert: true }
         );
 
-        if (!account) {
-            return res.status(404).json({ success: false, message: 'Account not found' });
-        }
-
-        // Also update the account name in the user's accounts array
+        // Also update the account name and icon in the user's accounts array
         if (req.user && req.user._id) {
             await User.updateOne(
                 {
@@ -81,7 +85,10 @@ router.post('/account/update', async (req, res) => {
                     'accounts.account_number': account_number
                 },
                 {
-                    $set: { 'accounts.$.name': name }
+                    $set: {
+                        'accounts.$.name': name,
+                        'accounts.$.icon': icon || 'solar:settings-bold-duotone'
+                    }
                 }
             );
         }

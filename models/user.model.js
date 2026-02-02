@@ -14,6 +14,7 @@ const UserSchema = new mongoose.Schema({
     {
       account_number: { type: String },
       name: { type: String },
+      icon: { type: String },
     },
   ],
   preferences: {

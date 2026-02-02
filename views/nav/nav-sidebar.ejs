@@ -169,8 +169,24 @@
         <h2
           class="-mx-4 mb-2 flex items-center justify-between bg-white-light/30 py-3 px-4 font-extrabold uppercase text-[12px] tracking-wider dark:bg-dark dark:bg-opacity-[0.08]">
           <div class="flex items-center gap-2">
-            <iconify-icon icon="solar:settings-bold-duotone" width="18" height="18"></iconify-icon>
-            <span>Admin</span>
+            <% 
+              // Get current account info from user's accounts array
+              let currentAccountName = 'Admin';
+              let currentAccountIcon = 'solar:settings-bold-duotone';
+              if (typeof user !== 'undefined' && user && user.accounts) {
+                const currentAccount = user.accounts.find(a => a.account_number === account_number);
+                if (currentAccount) {
+                  if (currentAccount.name) {
+                    currentAccountName = currentAccount.name;
+                  }
+                  if (currentAccount.icon) {
+                    currentAccountIcon = currentAccount.icon;
+                  }
+                }
+              }
+            %>
+            <iconify-icon icon="<%= currentAccountIcon %>" width="18" height="18"></iconify-icon>
+            <span><%= currentAccountName %></span>
           </div>
         </h2>
 

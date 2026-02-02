@@ -6,6 +6,14 @@ body {
   margin: 0px;
 }
 
+.main-container {
+  background-color: #fcfcfc;
+}
+
+.dark .main-container {
+  background-color: #060818;
+}
+
 hr {
   border: 1px solid var(--border-color);
 }

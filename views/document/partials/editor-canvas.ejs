@@ -10,31 +10,31 @@
             </div>
 
             <!-- Page Mode Switcher (Always Visible) -->
-            <div class="absolute -mt-10 left-0 flex bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm rounded-t-lg overflow-hidden z-30">
+            <div class="absolute -mt-12 left-0 flex items-center gap-1 bg-white/80 dark:bg-[#0e1726]/80 backdrop-blur-md border border-gray-200/50 dark:border-white/10 shadow-lg rounded-xl p-1 z-30 transition-all">
                <button 
                   @click.stop="setPageMode(index, 'edition')"
-                  :class="page.mode === 'edition' ? 'bg-primary text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
-                  class="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors"
+                  :class="page.mode === 'edition' ? 'bg-primary text-white shadow-md' : 'text-gray-500 dark:text-white-dark hover:bg-gray-100 dark:hover:bg-white/5'"
+                  class="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all"
                   title="Mode Édition"
                 >
                   <iconify-icon icon="solar:pen-bold-duotone" width="14"></iconify-icon>
                   <span>Édition</span>
                 </button>
-                <div class="w-px bg-gray-200 dark:bg-gray-700"></div>
+                
                  <button 
                   @click.stop="setPageMode(index, 'layout')"
-                  :class="page.mode === 'layout' ? 'bg-primary text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
-                  class="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors"
+                  :class="page.mode === 'layout' ? 'bg-primary text-white shadow-md' : 'text-gray-500 dark:text-white-dark hover:bg-gray-100 dark:hover:bg-white/5'"
+                  class="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all"
                   title="Mode Layout"
                 >
                   <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="14"></iconify-icon>
                   <span>Layout</span>
                 </button>
-                <div class="w-px bg-gray-200 dark:bg-gray-700"></div>
+                
                  <button 
                   @click.stop="setPageMode(index, 'designer')"
-                  :class="page.mode === 'designer' ? 'bg-primary text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
-                  class="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors"
+                  :class="page.mode === 'designer' ? 'bg-primary text-white shadow-md' : 'text-gray-500 dark:text-white-dark hover:bg-gray-100 dark:hover:bg-white/5'"
+                  class="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all"
                   title="Mode Designer"
                 >
                   <iconify-icon icon="solar:palette-2-broken" width="14"></iconify-icon>

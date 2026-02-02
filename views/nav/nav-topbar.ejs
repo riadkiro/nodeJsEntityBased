@@ -790,40 +790,53 @@
       @click.outside="open = false"
     >
       <a href="javascript:;" class="group relative" @click="toggle()">
-        <span
-          ><img
-            class="h-9 w-9 rounded-full object-cover saturate-50 group-hover:saturate-100"
-            src="/themes/default/assets/images/user-profile.jpeg"
-            alt="image"
-        /></span>
+        <span>
+          <% if (user && user.avatar) { %>
+            <img
+              class="h-9 w-9 rounded-full object-cover saturate-50 group-hover:saturate-100"
+              src="<%= user.avatar %>"
+              alt="avatar"
+            />
+          <% } else { %>
+            <div class="h-9 w-9 rounded-full bg-primary/20 text-primary flex items-center justify-center font-semibold text-sm saturate-50 group-hover:saturate-100">
+              <%= user && user.email ? user.email.charAt(0).toUpperCase() : 'U' %>
+            </div>
+          <% } %>
+        </span>
       </a>
       <ul
         x-cloak
         x-show="open"
         x-transition
         x-transition.duration.300ms
-        class="top-11 w-[230px] !py-0 font-semibold text-dark ltr:right-0 rtl:left-0 dark:text-white-dark dark:text-white-light/90"
+        class="top-11 w-[280px] !py-0 font-semibold text-dark ltr:right-0 rtl:left-0 dark:text-white-dark dark:text-white-light/90"
       >
         <li>
           <div class="flex items-center px-4 py-4">
             <div class="flex-none">
-              <img
-                class="h-10 w-10 rounded-md object-cover"
-                src="/themes/default/assets/images/user-profile.jpeg"
-                alt="image"
-              />
+              <% if (user && user.avatar) { %>
+                <img
+                  class="h-10 w-10 rounded-md object-cover"
+                  src="<%= user.avatar %>"
+                  alt="avatar"
+                />
+              <% } else { %>
+                <div class="h-10 w-10 rounded-md bg-primary/20 text-primary flex items-center justify-center font-bold text-lg">
+                  <%= user && user.email ? user.email.charAt(0).toUpperCase() : 'U' %>
+                </div>
+              <% } %>
             </div>
-            <div class="ltr:pl-4 rtl:pr-4">
-              <h4 class="text-base">
-                John Doe<span
+            <div class="ltr:pl-4 rtl:pr-4 truncate">
+              <h4 class="text-base truncate">
+                <%= user && user.name ? user.name : (user && user.email ? user.email.split('@')[0] : 'User') %><span
                   class="rounded bg-success-light px-1 text-xs text-success ltr:ml-2 rtl:ml-2"
                   >Pro</span
                 >
               </h4>
               <a
-                class="text-black/60 hover:text-primary dark:text-dark-light/60 dark:hover:text-white"
+                class="text-black/60 hover:text-primary dark:text-dark-light/60 dark:hover:text-white text-xs truncate block"
                 href="javascript:;"
-                >johndoe@gmail.com</a
+                ><%= user && user.email ? user.email : '' %></a
               >
             </div>
           </div>
@@ -931,6 +944,53 @@
               </g>
             </svg>
             Lock Screen</a
+          >
+        </li>
+        <% if (user && user.accounts && user.accounts.length > 1) { %>
+        <li class="border-t border-white-light dark:border-white-light/10">
+          <div class="px-4 py-2">
+            <span class="text-xs text-gray-500 uppercase tracking-wider">Changer de compte</span>
+          </div>
+        </li>
+        <% user.accounts.forEach(function(acc) { %>
+          <% if (acc.account_number !== account_number) { %>
+          <li>
+            <a
+              href="/account/<%= acc.account_number %>/dashboard"
+              class="dark:hover:text-white flex items-center"
+              @click="toggle"
+            >
+              <div class="h-6 w-6 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-semibold ltr:mr-2 rtl:ml-2">
+                <%= acc.name ? acc.name.charAt(0).toUpperCase() : '#' %>
+              </div>
+              <span class="truncate"><%= acc.name || 'Compte #' + acc.account_number %></span>
+            </a>
+          </li>
+          <% } %>
+        <% }); %>
+        <% } %>
+        <li class="<%= user && user.accounts && user.accounts.length > 1 ? '' : 'border-t border-white-light dark:border-white-light/10' %>">
+          <a
+            href="/user/accounts"
+            class="dark:hover:text-white flex items-center"
+            @click="toggle"
+          >
+            <svg
+              class="h-4.5 w-4.5 ltr:mr-2 rtl:ml-2"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 6V18M6 12H18"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            Ajouter un compte</a
           >
         </li>
         <li class="border-t border-white-light dark:border-white-light/10">

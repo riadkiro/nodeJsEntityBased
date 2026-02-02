@@ -44,4 +44,22 @@ router.post("/update", async (req, res) => {
     }
 });
 
+// Account Settings Page
+router.get("/account-settings", async (req, res) => {
+    try {
+        const Account = require("../models/account.model");
+        const account = await Account.findOne({ account_number: req.account_number });
+
+        res.render("account/account-settings", {
+            account_number: req.account_number,
+            user: req.user,
+            account: account,
+            layout: "layout-app",
+        });
+    } catch (error) {
+        console.error("Account settings page error:", error);
+        res.status(500).send("Error loading account settings page");
+    }
+});
+
 module.exports = router;

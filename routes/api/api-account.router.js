@@ -49,4 +49,80 @@ router.post('/view/config', viewController.saveConfig);
 router.post('/record/update-status', recordController.updateStatus);
 router.post('/record/update-classification', recordController.updateClassification);
 
+// Account Settings API
+const Account = require('../../models/account.model');
+const User = require('../../models/user.model');
+
+// Update Account Info
+router.post('/account/update', async (req, res) => {
+    try {
+        const { name, status } = req.body;
+        const account_number = req.account_number;
+
+        // Update the Account document
+        const account = await Account.findOneAndUpdate(
+            { account_number: account_number },
+            {
+                name: name,
+                status: status
+            },
+            { new: true }
+        );
+
+        if (!account) {
+            return res.status(404).json({ success: false, message: 'Account not found' });
+        }
+
+        // Also update the account name in the user's accounts array
+        if (req.user && req.user._id) {
+            await User.updateOne(
+                {
+                    _id: req.user._id,
+                    'accounts.account_number': account_number
+                },
+                {
+                    $set: { 'accounts.$.name': name }
+                }
+            );
+        }
+
+        res.json({ success: true, message: 'Account updated successfully', account });
+    } catch (error) {
+        console.error('Account update error:', error);
+        res.status(500).json({ success: false, message: 'Error updating account' });
+    }
+});
+
+// Get Account Stats
+router.get('/account/stats', async (req, res) => {
+    try {
+        const tenantCollection = require('../../middleware/tenant').tenantCollection;
+        const account_number = req.account_number;
+
+        // Get account info
+        const account = await Account.findOne({ account_number: account_number });
+
+        // Get collections count
+        const EntityModel = await tenantCollection(req, 'Entity');
+        const collectionsCount = await EntityModel.countDocuments();
+
+        // Get records count
+        const RecordModel = await tenantCollection(req, 'Record');
+        const recordsCount = await RecordModel.countDocuments();
+
+        res.json({
+            success: true,
+            stats: {
+                users: account?.users?.length || 0,
+                collections: collectionsCount,
+                records: recordsCount,
+                createdAt: account?.created_on ? new Date(account.created_on).toLocaleDateString('fr-FR') : '-'
+            }
+        });
+    } catch (error) {
+        console.error('Account stats error:', error);
+        res.status(500).json({ success: false, message: 'Error fetching account stats' });
+    }
+});
+
 module.exports = router;

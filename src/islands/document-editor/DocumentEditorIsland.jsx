@@ -451,6 +451,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         const marker = rootEl.querySelector('[data-caret-marker="1"]')
         if (!marker) return false
 
+        // Scroll to marker position BEFORE removing it
+        marker.scrollIntoView({ block: 'center', behavior: 'instant' })
+
         const sel = window.getSelection()
         const range = document.createRange()
         range.setStartAfter(marker)
@@ -464,11 +467,26 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     function revealCaret(el) {
         requestAnimationFrame(() => {
             const sel = window.getSelection()
-            if (!sel || sel.rangeCount === 0) return
+            if (!sel || sel.rangeCount === 0) {
+                console.log('[revealCaret] No selection found')
+                return
+            }
             const rect = sel.getRangeAt(0).getBoundingClientRect()
             const margin = 120
+
+            console.log('[revealCaret] rect.top:', rect.top, 'rect.bottom:', rect.bottom, 'viewport:', window.innerHeight, 'margin:', margin)
+
+            // If caret is below viewport, scroll down
             if (rect.bottom > window.innerHeight - margin) {
+                console.log('[revealCaret] Scrolling DOWN by', rect.bottom - window.innerHeight + margin)
                 window.scrollBy({ top: rect.bottom - window.innerHeight + margin, behavior: 'instant' })
+            }
+            // If caret is above viewport, scroll up
+            else if (rect.top < margin) {
+                console.log('[revealCaret] Scrolling UP by', rect.top - margin)
+                window.scrollBy({ top: rect.top - margin, behavior: 'instant' })
+            } else {
+                console.log('[revealCaret] Caret already visible, no scroll needed')
             }
         })
     }

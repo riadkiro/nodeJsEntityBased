@@ -120,3 +120,83 @@ const handleColumnReorder = useCallback((fromId, toId) => {
 - **pointer-events: auto** sur les éléments cliquables à l'intérieur (liens, boutons)
 - **onDragEnter** est plus fiable que onDragOver pour détecter l'entrée
 - **stopPropagation()** sur onDrop pour éviter les conflits avec les parents
+
+## Uncontrolled Contenteditable (CRITICAL)
+
+### Le Pattern
+Les `contenteditable` dans ce projet sont **UNCONTROLLED** :
+- Le contenu initial est défini une seule fois via `dangerouslySetInnerHTML` ou `ref.current.innerHTML`
+- React ne re-rend PAS le contenu quand le state change (pour préserver le curseur et la sélection)
+- Le DOM est la source de vérité, le state est une synchronisation
+
+### Le Piège de l'Injection
+```jsx
+// ❌ MAUVAIS - setDoc ne met pas à jour le DOM d'un contenteditable uncontrolled
+setDoc(prev => {
+    const pages = [...prev.pages]
+    pages[1].content = newContent  // ← State mis à jour
+    return { ...prev, pages }
+})
+// Le DOM de la page 1 n'est PAS modifié ! L'utilisateur ne voit rien.
+```
+
+### Solution : DOM-First, puis Sync State
+```jsx
+// ✅ BON - D'abord modifier le DOM, puis synchroniser le state
+// 1) Injection directe dans le DOM
+const nextPageRef = pageRefs.current[pageIndex + 1]
+if (nextPageRef) {
+    nextPageRef.innerHTML = overflowContent + nextPageRef.innerHTML
+}
+
+// 2) Synchroniser le state depuis le DOM
+setDoc(prev => {
+    const pages = [...prev.pages]
+    pages[pageIndex + 1] = { 
+        ...pages[pageIndex + 1], 
+        content: nextPageRef.innerHTML  // ← Lire depuis DOM
+    }
+    return { ...prev, pages }
+})
+```
+
+### Règle d'Or Contenteditable
+> Pour modifier le contenu visible d'un contenteditable uncontrolled:
+> 1. **D'abord** modifier le DOM directement (`element.innerHTML`, `insertNode`, etc.)
+> 2. **Ensuite** synchroniser le state en LISANT le DOM (`content: element.innerHTML`)
+> 
+> **JAMAIS** l'inverse (state → DOM), car React ne re-rend pas les contenteditables.
+
+### Cas d'usage
+- **Overflow/Underflow pagination** : Déplacer des nodes entre pages
+- **Merge de pages** (Backspace) : Fusionner le contenu DOM avant de supprimer la page
+- **Paste** : Insérer via `document.execCommand('insertHTML')` puis sync state
+- **Formatage** : `document.execCommand('bold')` etc. puis sync state
+
+## DOM Element Timing (CRITICAL)
+
+### Le Problème
+Quand on veut utiliser la **position** d'un élément DOM (pour scroll, mesure, etc.), il faut le faire **AVANT** de supprimer l'élément.
+
+```jsx
+// ❌ MAUVAIS - L'élément est supprimé avant de lire sa position
+marker.remove()
+const rect = selection.getRangeAt(0).getBoundingClientRect()
+window.scrollTo(rect.top)  // ← rect.top = 0 ! L'élément n'existe plus
+```
+
+### Solution : Lire/Agir AVANT de supprimer
+```jsx
+// ✅ BON - Scroll vers le marker AVANT de le supprimer
+marker.scrollIntoView({ block: 'center', behavior: 'instant' })
+marker.remove()
+```
+
+### Règle d'Or DOM Timing
+> Si tu as besoin d'**utiliser** un élément DOM (sa position, sa taille, son contenu), fais-le **AVANT** toute modification destructive (remove, innerHTML = '', etc.).
+
+### Cas d'usage
+- **Caret marker** : Scroll vers le marker avant de le supprimer
+- **Mesure de hauteur** : Lire `scrollHeight` avant de modifier le contenu
+- **Position pour drag & drop** : Capturer `getBoundingClientRect()` avant manipulation
+- **Animation de sortie** : Capturer position initiale avant de changer les classes

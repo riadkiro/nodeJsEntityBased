@@ -1,9 +1,9 @@
 <div :class="{'dark text-white-dark' : $store.app.semidark}">
   <nav x-data="{ sidebar }"
-    class="sidebar fixed top-0 bottom-0 z-50 col-span-1 grid h-full min-h-screen w-[298px] grid-cols-12 shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] transition-all duration-300">
+    class="sidebar fixed top-0 bottom-0 z-50 col-span-1 grid h-full min-h-screen w-[248px] grid-cols-12 shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] transition-all duration-300">
     <div
-      class="col-span-2 flex h-screen flex-col items-center gap-y-6 pt-12">
-      <div class="text-white">
+      class="col-span-2 bg-primary dark:bg-transparent flex h-screen flex-col items-center gap-y-6 pt-12">
+      <div class="dark:text-primary text-white">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path fill-rule="evenodd" clip-rule="evenodd"
             d="M17.5 2.75C17.9142 2.75 18.25 3.08579 18.25 3.5V5.75H20.5C20.9142 5.75 21.25 6.08579 21.25 6.5C21.25 6.91421 20.9142 7.25 20.5 7.25H18.25V9.5C18.25 9.91421 17.9142 10.25 17.5 10.25C17.0858 10.25 16.75 9.91421 16.75 9.5V7.25H14.5C14.0858 7.25 13.75 6.91421 13.75 6.5C13.75 6.08579 14.0858 5.75 14.5 5.75H16.75V3.5C16.75 3.08579 17.0858 2.75 17.5 2.75Z"
@@ -19,7 +19,7 @@
             fill="currentColor" />
         </svg>
       </div>
-      <div class="text-white">
+      <div class="dark:text-primary text-white">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path opacity="0.5"
             d="M6.22209 4.60105C6.66665 4.304 7.13344 4.04636 7.6171 3.82976C8.98898 3.21539 9.67491 2.9082 10.5875 3.4994C11.5 4.09061 11.5 5.06041 11.5 7.00001V8.50001C11.5 10.3856 11.5 11.3284 12.0858 11.9142C12.6716 12.5 13.6144 12.5 15.5 12.5H17C18.9396 12.5 19.9094 12.5 20.5006 13.4125C21.0918 14.3251 20.7846 15.011 20.1702 16.3829C19.9536 16.8666 19.696 17.3334 19.399 17.7779C18.3551 19.3402 16.8714 20.5578 15.1355 21.2769C13.3996 21.9959 11.4895 22.184 9.64665 21.8175C7.80383 21.4509 6.11109 20.5461 4.78249 19.2175C3.45389 17.8889 2.5491 16.1962 2.18254 14.3534C1.81598 12.5105 2.00412 10.6004 2.72315 8.86451C3.44218 7.12861 4.65982 5.64492 6.22209 4.60105Z"
@@ -29,7 +29,7 @@
             fill="currentColor" />
         </svg>
       </div>
-      <div class="text-white">
+      <div class="dark:text-primary text-white">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
             d="M8.42229 20.6181C10.1779 21.5395 11.0557 22.0001 12 22.0001V12.0001L2.63802 7.07275C2.62423 7.09491 2.6107 7.11727 2.5974 7.13986C2 8.15436 2 9.41678 2 11.9416V12.0586C2 14.5834 2 15.8459 2.5974 16.8604C3.19479 17.8749 4.27063 18.4395 6.42229 19.5686L8.42229 20.6181Z"
@@ -42,7 +42,7 @@
             fill="currentColor" />
         </svg>
       </div>
-      <div class="text-white">
+      <div class="dark:text-primary text-white">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path opacity="0.5"
             d="M14 4H10C6.22876 4 4.34315 4 3.17157 5.17157C2 6.34315 2 8.22876 2 12C2 15.7712 2 17.6569 3.17157 18.8284C4.34315 20 6.22876 20 10 20H14C17.7712 20 19.6569 20 20.8284 18.8284C22 17.6569 22 15.7712 22 12C22 8.22876 22 6.34315 20.8284 5.17157C19.6569 4 17.7712 4 14 4Z"
@@ -65,7 +65,7 @@
         </svg>
       </div>
 
-      <div class="text-white">
+      <div class="dark:text-primary text-white">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path opacity="0.5"
             d="M2 6.94975C2 6.06722 2 5.62595 2.06935 5.25839C2.37464 3.64031 3.64031 2.37464 5.25839 2.06935C5.62595 2 6.06722 2 6.94975 2C7.33642 2 7.52976 2 7.71557 2.01738C8.51665 2.09229 9.27652 2.40704 9.89594 2.92051C10.0396 3.03961 10.1763 3.17633 10.4497 3.44975L11 4C11.8158 4.81578 12.2237 5.22367 12.7121 5.49543C12.9804 5.64471 13.2651 5.7626 13.5604 5.84678C14.0979 6 14.6747 6 15.8284 6H16.2021C18.8345 6 20.1506 6 21.0062 6.76946C21.0849 6.84024 21.1598 6.91514 21.2305 6.99383C22 7.84935 22 9.16554 22 11.7979V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V6.94975Z"
@@ -78,7 +78,7 @@
             fill="currentColor" />
         </svg>
       </div>
-      <div class="text-white">
+      <div class="dark:text-primary text-white">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
             d="M15.5 7.5C15.5 9.433 13.933 11 12 11C10.067 11 8.5 9.433 8.5 7.5C8.5 5.567 10.067 4 12 4C13.933 4 15.5 5.567 15.5 7.5Z"
@@ -100,7 +100,7 @@
             fill="currentColor" />
         </svg>
       </div>
-      <div class="text-white">
+      <div class="dark:text-primary text-white">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
             d="M12 4C12 2.89543 12.8954 2 14 2C15.1046 2 16 2.89543 16 4C16 5.10457 15.1046 6 14 6C12.8954 6 12 5.10457 12 4Z"
@@ -1338,10 +1338,19 @@
                 } catch (e) { alert("Erreur: " + e.message); }
               },
 
-              async createItem(type) {
+              async createItem(type, viewType = 'list') {
                 this.creationType = type;
+                this.pendingViewType = viewType;
                 this.creationName = '';
-                this.creationIcon = this.getIcon(type); // Default icon
+                
+                // Set default icon based on type and viewType
+                let icon = this.getIcon(type);
+                if (type === 'entity') {
+                    if (viewType === 'list') icon = 'solar:list-bold';
+                    if (viewType === 'note') icon = 'solar:notes-bold-duotone';
+                    if (viewType === 'dashboard') icon = 'solar:pie-chart-3-line-duotone';
+                }
+                this.creationIcon = icon;
                 this.creationColor = '';
 
                 // Initialize picker state
@@ -1542,7 +1551,7 @@
 
         <!-- POPUP MENU -->
         <div x-show="$store.sidebar.showMenu" @click.outside="$store.sidebar.showMenu = false" x-transition @click.stop
-          style="min-width: 298px; margin-left: 298px; top: 56px;"
+          style="min-width: 248px; margin-left: 248px; top: 56px; border-left:0px;"
           class="sidebar bg-white dark:bg-[#0e1726] p-4 fixed w-60 z-[100] rounded-md shadow border border-gray-200 dark:border-white/10">
 
           <!-- Mode MAIN -->
@@ -1563,14 +1572,6 @@
                     <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Dossier</span>
                   </div>
                 </li>
-                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="createItem('environment')">
-                  <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:layers-minimalistic-line-duotone" width="18"
-                      height="18"></iconify-icon>
-                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Environnement</span>
-                  </div>
-                </li>
 
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
                   @click="menuMode = 'data'">
@@ -1584,42 +1585,25 @@
                 </li>
 
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="menuMode = 'data'; pendingViewType = 'list'">
-                  <div class="flex items-center justify-between w-full">
-                    <div class="flex items-center gap-2">
-                      <iconify-icon icon="solar:list-bold" width="18" height="18"></iconify-icon>
-                      <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Liste</span>
-                    </div>
-                    <iconify-icon icon="solar:alt-arrow-right-linear" width="16"></iconify-icon>
-                  </div>
-                </li>
-
-                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="menuMode = 'data'; pendingViewType = 'kanban'">
-                  <div class="flex items-center justify-between w-full">
-                    <div class="flex items-center gap-2">
-                      <iconify-icon icon="solar:filter-bold-duotone" width="18" height="18"></iconify-icon>
-                      <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Kanban</span>
-                    </div>
-                    <iconify-icon icon="solar:alt-arrow-right-linear" width="16"></iconify-icon>
-                  </div>
-                </li>
-
-                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                  @click="menuMode = 'data'; pendingViewType = 'checklist'">
-                  <div class="flex items-center justify-between w-full">
-                    <div class="flex items-center gap-2">
-                      <iconify-icon icon="solar:checklist-bold" width="18" height="18"></iconify-icon>
-                      <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Checklist</span>
-                    </div>
-                    <iconify-icon icon="solar:alt-arrow-right-linear" width="16"></iconify-icon>
-                  </div>
-                </li>
-
-                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group">
+                  @click="createItem('entity', 'list')">
                   <div class="flex items-center gap-2">
-                    <iconify-icon icon="solar:pie-chart-3-line-duotone" width="18"
-                      height="18"></iconify-icon>
+                    <iconify-icon icon="solar:list-bold" width="18" height="18"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Liste</span>
+                  </div>
+                </li>
+
+                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
+                  @click="createItem('entity', 'note')">
+                  <div class="flex items-center gap-2">
+                    <iconify-icon icon="solar:notes-bold-duotone" width="18" height="18"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Note</span>
+                  </div>
+                </li>
+
+                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
+                  @click="createItem('entity', 'dashboard')">
+                  <div class="flex items-center gap-2">
+                    <iconify-icon icon="solar:pie-chart-3-line-duotone" width="18" height="18"></iconify-icon>
                     <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Tableau de bord</span>
                   </div>
                 </li>
@@ -1691,7 +1675,7 @@
 
         <!-- POPUP MENU Edit -->
         <div x-show="$store.sidebar.showEditMenu" @click.outside="$store.sidebar.showEditMenu = false" x-transition
-          @click.stop style="min-width: 298px; margin-left: 298px; top: 56px;"
+          @click.stop style="min-width: 248px; margin-left: 248px; top: 56px; border-left:0px;"
           class="sidebar bg-white dark:bg-[#0e1726] p-4 fixed w-60 z-[100] rounded-md shadow border border-gray-200 dark:border-white/10">
           <h2
             class="text-xs font-medium text-gray-500 dark:text-white-dark mb-3 pb-2 border-b border-gray-200 dark:border-white/10">

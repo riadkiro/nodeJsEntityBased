@@ -6,6 +6,14 @@ body {
   margin: 0px;
 }
 
+.main-container {
+  background-color: #fcfcfc;
+}
+
+.dark .main-container {
+  background-color: #060818;
+}
+
 hr {
   border: 1px solid var(--border-color);
 }
@@ -396,6 +404,15 @@ li.left-zone-item.active {
   background-color: #64748b !important;
 }
 
+
+/* Sidebar Popup Menu Background Fix */
+.sidebar.fixed.z-\[100\] {
+  background-color: white !important;
+}
+
+.dark .sidebar.fixed.z-\[100\] {
+  background-color: #0e1726 !important;
+}
 
 .scroll-disabled {
   overflow: hidden;

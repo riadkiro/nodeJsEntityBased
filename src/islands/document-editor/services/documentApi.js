@@ -88,3 +88,35 @@ export async function exportPdf(docId, docName, html, accountNumber) {
         return { success: false, error: error.message }
     }
 }
+
+/**
+ * Upload image from paste (base64) to server
+ * @param {string} accountNumber - Account number
+ * @param {string} docId - Document ID
+ * @param {string} base64Data - Base64 encoded image data URI
+ * @returns {Promise<{success: boolean, url?: string, error?: string}>}
+ */
+export async function uploadImage(accountNumber, docId, base64Data) {
+    console.log('[Upload] Uploading pasted image for doc:', docId)
+
+    try {
+        const response = await fetch(`/account/${accountNumber}/documents/api/${docId}/upload-image`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: base64Data })
+        })
+
+        const data = await response.json()
+
+        if (data.success && data.url) {
+            console.log('[Upload] Image uploaded:', data.url)
+            return { success: true, url: data.url }
+        } else {
+            console.warn('[Upload] Failed:', data.error)
+            return { success: false, error: data.error || 'Upload failed' }
+        }
+    } catch (error) {
+        console.error('[Upload] Error:', error)
+        return { success: false, error: error.message }
+    }
+}

@@ -8,8 +8,9 @@
  * - Autosave timeout stored in ref
  */
 import React, { useState, useRef, useCallback, useEffect } from 'react'
-import { saveDocument, exportPdf } from './services/documentApi'
+import { saveDocument, exportPdf, uploadImage } from './services/documentApi'
 import { cleanWordHtml } from './utils/cleanWordHtml'
+import { parseWordHtml, hasBase64Images } from './utils/parseWordHtml'
 import { checkOverflow, checkUnderflow } from './utils/paginationUtils'
 import { formatDoc, detectCurrentStyles, applyFontSize, applyLineSpacing, applyLetterSpacing, FONT_FAMILIES, FONT_SIZES } from './utils/formatUtils'
 
@@ -216,7 +217,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     }, [saveSelection, triggerSave])
 
     // ========== PASTE HANDLING ==========
-    const handlePaste = useCallback((e, pageIndex) => {
+    const handlePaste = useCallback(async (e, pageIndex) => {
         e.preventDefault()
 
         const clipboardData = e.clipboardData || window.clipboardData
@@ -230,8 +231,19 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             // Try HTML first
             content = clipboardData.getData('text/html')
             if (content) {
-                // Clean with selected mode
-                content = cleanWordHtml(content, pasteMode)
+                // Check if document is saved (needed for image upload)
+                const canUploadImages = !!doc._id && hasBase64Images(content)
+
+                if (canUploadImages) {
+                    // Use parser with image upload
+                    content = await parseWordHtml(content, async (base64) => {
+                        const result = await uploadImage(accountNumber, doc._id, base64)
+                        return result.success ? result.url : base64
+                    })
+                } else {
+                    // Use standard cleaning (no image upload for new docs)
+                    content = cleanWordHtml(content, pasteMode)
+                }
             } else {
                 // Fallback to plain text
                 content = clipboardData.getData('text/plain')
@@ -251,7 +263,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         })
 
         triggerSave()
-    }, [pasteMode, triggerSave])
+    }, [pasteMode, triggerSave, doc._id, accountNumber])
 
     // ========== TOKEN INSERTION ==========
     const insertVariableToken = useCallback((variablePath, fieldMetadata = {}) => {

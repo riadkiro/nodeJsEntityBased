@@ -218,6 +218,55 @@ router.put('/api/:id', async (req, res) => {
     }
 });
 
+// POST - Upload pasted image (base64)
+router.post('/api/:id/upload-image', async (req, res) => {
+    try {
+        const { image } = req.body;
+
+        if (!image || !image.startsWith('data:image')) {
+            return res.status(400).json({ success: false, error: 'Image base64 invalide' });
+        }
+
+        const docId = req.params.id;
+        const fs = require('fs');
+        const path = require('path');
+        const crypto = require('crypto');
+
+        // Extract image type and data
+        const matches = image.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
+        if (!matches) {
+            return res.status(400).json({ success: false, error: 'Format image invalide' });
+        }
+
+        const imageType = matches[1].replace('+xml', ''); // svg+xml -> svg
+        const imageData = matches[2];
+        const buffer = Buffer.from(imageData, 'base64');
+
+        // Create upload directory
+        const uploadDir = path.join(__dirname, '../public/uploads/documents', docId);
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        // Generate unique filename
+        const hash = crypto.createHash('md5').update(imageData).digest('hex').substring(0, 8);
+        const filename = `img_${Date.now()}_${hash}.${imageType === 'jpeg' ? 'jpg' : imageType}`;
+        const filepath = path.join(uploadDir, filename);
+
+        // Write file
+        fs.writeFileSync(filepath, buffer);
+
+        // Return public URL
+        const url = `/uploads/documents/${docId}/${filename}`;
+        console.log('[Documents] Image uploaded:', url);
+
+        res.json({ success: true, url });
+    } catch (error) {
+        console.error('[Documents] Error uploading image:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // DELETE - Supprimer un document
 router.delete('/api/:id', async (req, res) => {
     try {

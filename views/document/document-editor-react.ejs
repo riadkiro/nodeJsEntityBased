@@ -49,7 +49,7 @@
 <!-- Document Editor React Island Mount Point -->
 <div 
     data-island="document-editor"
-    data-document='<%- JSON.stringify(document || {}).replace(/</g, "\\u003C").replace(/>/g, "\\u003E") %>'
+    data-document='<%- JSON.stringify(document || {}).replace(/\\/g, "\\\\").replace(/</g, "\\u003C").replace(/>/g, "\\u003E").replace(/'/g, "\\u0027") %>'
     data-account-number="<%= account_number %>"
     data-is-new="<%= isNew ? 'true' : 'false' %>"
     class="h-[calc(100vh-80px)] -m-6"

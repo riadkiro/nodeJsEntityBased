@@ -16,6 +16,7 @@ const CanvasContainer = forwardRef(function CanvasContainer({
     isGlobalSelection,
     handlePageInput,
     handlePaste,
+    handleKeyDown,
     setPageMode,
     addPage
 }, ref) {
@@ -81,6 +82,7 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                                 onSelect={() => setSelectedPageIndex(pageIndex)}
                                 handlePageInput={handlePageInput}
                                 handlePaste={handlePaste}
+                                handleKeyDown={handleKeyDown}
                                 isGlobalSelection={isGlobalSelection}
                             />
                         </div>

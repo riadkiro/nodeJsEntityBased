@@ -20,6 +20,7 @@ export default function EditorPage({
     onSelect,
     handlePageInput,
     handlePaste,
+    handleKeyDown,
     isGlobalSelection
 }) {
     const contentRef = useRef(null)
@@ -95,6 +96,7 @@ export default function EditorPage({
                     }}
                     onInput={(e) => handlePageInput(e, pageIndex)}
                     onPaste={(e) => handlePaste(e, pageIndex)}
+                    onKeyDown={(e) => handleKeyDown?.(e, pageIndex, contentRef)}
                     onDrop={handleEditionDrop}
                     onDragOver={handleDragOver}
                 />

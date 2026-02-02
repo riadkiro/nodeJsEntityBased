@@ -14,6 +14,31 @@ import { parseWordHtml, hasBase64Images } from './utils/parseWordHtml'
 import { checkOverflow, checkUnderflow } from './utils/paginationUtils'
 import { formatDoc, detectCurrentStyles, applyFontSize, applyLineSpacing, applyLetterSpacing, FONT_FAMILIES, FONT_SIZES } from './utils/formatUtils'
 
+// Native keyboard detection - NO external library, CANNOT fail
+const isMod = (e) => e.ctrlKey || e.metaKey
+
+// ========== WORD-LIKE SELECTION HELPERS ==========
+function selectAllDocument(editorRootEl) {
+    const sel = window.getSelection()
+    if (!sel || !editorRootEl) return
+    const range = document.createRange()
+    range.selectNodeContents(editorRootEl)
+    sel.removeAllRanges()
+    sel.addRange(range)
+}
+
+function isSelectionCoversAll(editorRootEl) {
+    const sel = window.getSelection()
+    if (!sel || sel.rangeCount === 0 || !editorRootEl) return false
+    const range = sel.getRangeAt(0)
+    const docRange = document.createRange()
+    docRange.selectNodeContents(editorRootEl)
+    return (
+        range.compareBoundaryPoints(Range.START_TO_START, docRange) === 0 &&
+        range.compareBoundaryPoints(Range.END_TO_END, docRange) === 0
+    )
+}
+
 // Components
 import EditorHeader from './components/EditorHeader'
 import LeftSidebar from './components/LeftSidebar'
@@ -98,7 +123,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const saveTimeoutRef = useRef(null)
     const savedRangeRef = useRef(null)
     const pageRefs = useRef({})
-    const canvasRef = useRef(null)
+    const editorRootRef = useRef(null)
     const docRef = useRef(doc) // Always current doc for callbacks
 
     // Keep docRef in sync
@@ -200,21 +225,52 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         triggerSave()
     }, [restoreSelection, triggerSave])
 
+    // ========== REFLOW ORCHESTRATOR (Word-like) ==========
+    // After each input, reflow entire document: overflow forward, then underflow backward
+    const reflowDocument = useCallback(() => {
+        requestAnimationFrame(() => {
+            const d = docRef.current
+            if (!d?.pages?.length) return
+
+            console.log('[Reflow] Starting overflow pass for', d.pages.length, 'pages')
+
+            // 1) Overflow forward pass (push content forward)
+            for (let i = 0; i < d.pages.length; i++) {
+                const el = pageRefs.current[i]
+                if (el) {
+                    console.log('[Reflow] Checking overflow for page', i, 'scrollHeight:', el.scrollHeight, 'clientHeight:', el.clientHeight)
+                    checkOverflow(el, i, docRef.current, setDoc, pageRefs)
+                }
+            }
+
+            // 2) Underflow backward pass (pull content back) - after a frame to let overflow settle
+            requestAnimationFrame(() => {
+                const d2 = docRef.current
+                if (!d2?.pages?.length) return
+
+                console.log('[Reflow] Starting underflow pass for', d2.pages.length, 'pages')
+
+                for (let i = 0; i < d2.pages.length - 1; i++) {
+                    const el = pageRefs.current[i]
+                    if (el) {
+                        console.log('[Reflow] Checking underflow for page', i)
+                        checkUnderflow(el, i, docRef.current, setDoc, pageRefs)
+                    }
+                }
+            })
+        })
+    }, [])
+
     // ========== PAGE INPUT HANDLING ==========
     const handlePageInput = useCallback((e, pageIndex) => {
+        console.log('📝 INPUT triggered on page', pageIndex)
         saveSelection()
 
-        // Defer pagination check to after paint
-        requestAnimationFrame(() => {
-            const pageRef = pageRefs.current[pageIndex]
-            if (pageRef) {
-                checkOverflow(pageRef, pageIndex, docRef.current, setDoc, pageRefs)
-                checkUnderflow(pageRef, pageIndex, docRef.current, setDoc, pageRefs)
-            }
-        })
+        // Trigger full document reflow (Word-like)
+        reflowDocument()
 
         triggerSave()
-    }, [saveSelection, triggerSave])
+    }, [saveSelection, triggerSave, reflowDocument])
 
     // ========== PASTE HANDLING ==========
     const handlePaste = useCallback(async (e, pageIndex) => {
@@ -264,6 +320,120 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
         triggerSave()
     }, [pasteMode, triggerSave, doc._id, accountNumber])
+
+    // ========== KEYBOARD HANDLING ==========
+    // Word-like: Ctrl+A selects all pages, Delete clears but keeps page 1
+
+    // Clear document but keep first page (Word-like)
+    const clearDocumentKeepFirstPage = useCallback(() => {
+        // 1) Clear DOM immediately (avoid visual lag)
+        Object.values(pageRefs.current || {}).forEach((el, idx) => {
+            if (el) el.innerHTML = ''
+        })
+
+        // 2) Clear state (keep only page 0)
+        setDoc(prev => {
+            const first = prev.pages?.[0] ? { ...prev.pages[0] } : null
+            const page0 = first || {
+                content: '',
+                elements: [],
+                rows: [],
+                mode: 'edition',
+                background: '#ffffff',
+                order: 0,
+            }
+            page0.content = ''
+            page0.elements = []
+            page0.rows = []
+
+            return { ...prev, pages: [page0] }
+        })
+
+        // 3) Focus first page
+        requestAnimationFrame(() => {
+            const el = pageRefs.current?.[0]
+            if (el) el.focus()
+        })
+
+        triggerSave()
+    }, [triggerSave])
+
+    // Global keyboard handler - handles document-wide shortcuts
+    const handleGlobalKeyDown = useCallback((e) => {
+        const key = e.key?.toLowerCase()
+
+        // Ctrl+A => Select all pages
+        if (isMod(e) && key === 'a' && !e.shiftKey && !e.altKey) {
+            e.preventDefault()
+            selectAllDocument(editorRootRef.current)
+            return
+        }
+
+        // Delete/Backspace when entire document is selected => Word-like clear
+        if ((e.key === 'Backspace' || e.key === 'Delete') && isSelectionCoversAll(editorRootRef.current)) {
+            e.preventDefault()
+            clearDocumentKeepFirstPage()
+            return
+        }
+
+        // Ctrl+S - Save
+        if (isMod(e) && key === 's' && !e.shiftKey && !e.altKey) {
+            e.preventDefault()
+            triggerSave()
+            return
+        }
+
+        // Ctrl+P - Print
+        if (isMod(e) && key === 'p' && !e.shiftKey && !e.altKey) {
+            e.preventDefault()
+            return
+        }
+    }, [triggerSave, clearDocumentKeepFirstPage])
+
+    // Per-page keyboard handler for formatting shortcuts
+    const handleKeyDown = useCallback((e, pageIndex, contentRef) => {
+        // Only process modifier shortcuts
+        if (!isMod(e)) return
+
+        const key = e.key?.toLowerCase()
+        if (!key) return
+
+        // Ctrl+B - Bold
+        if (key === 'b' && !e.shiftKey && !e.altKey) {
+            e.preventDefault()
+            formatDoc('bold')
+            setIsBold(prev => !prev)
+            triggerSave()
+            return
+        }
+
+        // Ctrl+I - Italic
+        if (key === 'i' && !e.shiftKey && !e.altKey) {
+            e.preventDefault()
+            formatDoc('italic')
+            setIsItalic(prev => !prev)
+            triggerSave()
+            return
+        }
+
+        // Ctrl+U - Underline
+        if (key === 'u' && !e.shiftKey && !e.altKey) {
+            e.preventDefault()
+            formatDoc('underline')
+            setIsUnderline(prev => !prev)
+            triggerSave()
+            return
+        }
+
+        // Ctrl+Shift+S - Strikethrough
+        if (key === 's' && e.shiftKey && !e.altKey) {
+            e.preventDefault()
+            formatDoc('strikeThrough')
+            setIsStrikethrough(prev => !prev)
+            triggerSave()
+            return
+        }
+    }, [triggerSave])
 
     // ========== TOKEN INSERTION ==========
     const insertVariableToken = useCallback((variablePath, fieldMetadata = {}) => {
@@ -492,6 +662,8 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         <div
             className="flex flex-col h-screen bg-gray-100 dark:bg-gray-950"
             onMouseUp={handleMouseUp}
+            onKeyDown={handleGlobalKeyDown}
+            tabIndex={-1}
         >
             {/* Header with Toolbar */}
             <EditorHeader
@@ -532,7 +704,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
                 {/* Canvas */}
                 <CanvasContainer
-                    ref={canvasRef}
+                    ref={editorRootRef}
                     doc={doc}
                     setDoc={setDoc}
                     pageRefs={pageRefs}
@@ -542,6 +714,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     isGlobalSelection={isGlobalSelection}
                     handlePageInput={handlePageInput}
                     handlePaste={handlePaste}
+                    handleKeyDown={handleKeyDown}
                     setPageMode={setPageMode}
                     addPage={addPage}
                 />
@@ -578,3 +751,4 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         </div>
     )
 }
+

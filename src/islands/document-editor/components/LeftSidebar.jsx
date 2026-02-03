@@ -21,8 +21,8 @@ export default function LeftSidebar({
                 {/* Text Tool */}
                 <button
                     className={`w-10 h-10 rounded-full transition-colors flex items-center justify-center ${activeTab === 'text'
-                            ? 'bg-primary/20 text-primary'
-                            : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
                         }`}
                     title="Texte et Contenu"
                     onClick={() => toggleTab('text')}
@@ -33,8 +33,8 @@ export default function LeftSidebar({
                 {/* Gallery Tool */}
                 <button
                     className={`w-10 h-10 rounded-full transition-colors flex items-center justify-center ${activeTab === 'gallery'
-                            ? 'bg-primary/20 text-primary'
-                            : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
                         }`}
                     title="Médiathèque"
                     onClick={() => toggleTab('gallery')}
@@ -63,8 +63,8 @@ export default function LeftSidebar({
                 {/* Dynamic Content */}
                 <button
                     className={`w-10 h-10 rounded-full transition-colors flex items-center justify-center ${activeTab === 'dynamic-nav'
-                            ? 'bg-primary/20 text-primary'
-                            : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
                         }`}
                     title="Contenu Dynamique"
                     onClick={() => toggleTab('dynamic-nav')}
@@ -92,7 +92,7 @@ export default function LeftSidebar({
                     </div>
 
                     {/* Panel Body */}
-                    <div className="flex-1 overflow-auto p-4">
+                    <div className="flex-1 overflow-auto p-4 bg-white dark:bg-gray-900" style={{ scrollbarColor: '#64748b transparent', scrollbarWidth: 'thin' }}>
                         {activeTab === 'text' && (
                             <TextPanel />
                         )}

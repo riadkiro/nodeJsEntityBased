@@ -53,7 +53,7 @@ export default function RightSidebar({
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white mt-1">Propriétés</h2>
             </div>
 
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-auto bg-white dark:bg-gray-900" style={{ scrollbarColor: '#64748b transparent', scrollbarWidth: 'thin' }}>
                 {/* Section: Information */}
                 <div className="border-b dark:border-gray-700">
                     <button
@@ -242,8 +242,8 @@ export default function RightSidebar({
                                     <div
                                         key={index}
                                         className={`group/page flex items-center gap-3 p-2 rounded-lg transition-all cursor-pointer relative ${selectedPageIndex === index
-                                                ? 'bg-primary/5 ring-1 ring-primary/20 shadow-sm'
-                                                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                                            ? 'bg-primary/5 ring-1 ring-primary/20 shadow-sm'
+                                            : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                                             }`}
                                         onClick={() => setSelectedPageIndex(index)}
                                     >

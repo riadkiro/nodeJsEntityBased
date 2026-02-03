@@ -3,7 +3,7 @@
  * Scrollable container with page components, page mode switcher, page labels
  * 1:1 parity with editor-canvas.ejs
  */
-import React, { forwardRef } from 'react'
+import React, { forwardRef, useState, useEffect } from 'react'
 import EditorPage from './EditorPage'
 
 const CanvasContainer = forwardRef(function CanvasContainer({
@@ -20,14 +20,33 @@ const CanvasContainer = forwardRef(function CanvasContainer({
     setPageMode,
     addPage
 }, ref) {
+    // Detect dark mode from document
+    const [isDark, setIsDark] = useState(false)
+
+    useEffect(() => {
+        const checkDarkMode = () => {
+            setIsDark(document.documentElement.classList.contains('dark'))
+        }
+        checkDarkMode()
+
+        // Watch for dark mode changes
+        const observer = new MutationObserver(checkDarkMode)
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+        return () => observer.disconnect()
+    }, [])
+
     return (
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 dark:bg-gray-800 overflow-hidden">
             {/* Canvas Area */}
             <div
                 ref={ref}
-                className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-950 p-8"
+                className="flex-1 overflow-auto p-8"
+                style={{
+                    scrollbarColor: '#64748b transparent',
+                    scrollbarWidth: 'thin',
+                }}
             >
-                <div className="flex flex-col items-center gap-8 dark:bg-gray-800">
+                <div className="flex flex-col items-center gap-8" style={{ backgroundColor: isDark ? '#1f2937' : 'transparent' }}>
                     {doc.pages.map((page, pageIndex) => (
                         <div key={pageIndex} className="relative">
                             {/* Page Label */}

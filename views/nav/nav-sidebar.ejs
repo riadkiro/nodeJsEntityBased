@@ -574,7 +574,7 @@
                               <li
                                 x-show="(!subChild.children || subChild.children.length === 0) && dragOverFolderId !== subChild.id"
                                 class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors cursor-pointer add-placeholder"
-                                :data-parent-id="subChild.id" @click.stop="openCreateMenu($event, subChild)">
+                                :data-parent-id="subChild.id" @click.stop="openEditMenu($event, subChild.type, subChild)">
                                 <iconify-icon icon="solar:add-square-linear" class="ml-2 text-primary" width="16"
                                   height="16"></iconify-icon>
                                 <span class="ml-2 text-sm text-primary py-1">Ajouter</span>
@@ -584,7 +584,7 @@
                         </template>
                         <li x-show="(!child.children || child.children.length === 0) && dragOverFolderId !== child.id"
                           class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors cursor-pointer add-placeholder"
-                          :data-parent-id="child.id" @click.stop="openCreateMenu($event, child)">
+                          :data-parent-id="child.id" @click.stop="openEditMenu($event, child.type, child)">
                           <iconify-icon icon="solar:add-square-linear" class="ml-2 text-primary" width="16"
                             height="16"></iconify-icon>
                           <span class="ml-2 text-sm text-primary py-1">Ajouter</span>

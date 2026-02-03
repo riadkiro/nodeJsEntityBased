@@ -1,0 +1,123 @@
+<%# Tenant - Workflows List %>
+<div class="panel p-6">
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <a href="/account/<%= account_number %>/integrations" class="text-sm text-gray-500 hover:text-primary mb-2 inline-block">
+                ← Retour aux intégrations
+            </a>
+            <h1 class="text-2xl font-semibold dark:text-white">Workflows</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Automatisez vos actions avec des workflows</p>
+        </div>
+        <a href="/account/<%= account_number %>/workflows/new" class="btn btn-primary">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Nouveau workflow
+        </a>
+    </div>
+
+    <% if (workflows.length === 0) { %>
+        <div class="flex flex-col items-center justify-center py-16 text-center">
+            <svg class="w-16 h-16 text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            <p class="text-gray-500 dark:text-gray-400 mb-4">Aucun workflow configuré</p>
+            <a href="/account/<%= account_number %>/workflows/new" class="btn btn-primary">
+                Créer votre premier workflow
+            </a>
+        </div>
+    <% } else { %>
+        <div class="table-responsive">
+            <table class="table-hover">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Trigger</th>
+                        <th>Steps</th>
+                        <th>Status</th>
+                        <th>Dernière exécution</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% workflows.forEach(workflow => { %>
+                        <tr>
+                            <td>
+                                <a href="/account/<%= account_number %>/workflows/<%= workflow._id %>" class="font-semibold text-primary hover:underline">
+                                    <%= workflow.name %>
+                                </a>
+                                <% if (workflow.description) { %>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><%= workflow.description %></p>
+                                <% } %>
+                            </td>
+                            <td>
+                                <span class="badge badge-outline-info"><%= workflow.trigger?.type || 'Non défini' %></span>
+                            </td>
+                            <td>
+                                <span class="badge badge-outline-secondary"><%= workflow.steps?.length || 0 %> step(s)</span>
+                            </td>
+                            <td>
+                                <% if (workflow.enabled) { %>
+                                    <span class="badge bg-success">Actif</span>
+                                <% } else { %>
+                                    <span class="badge bg-dark">Inactif</span>
+                                <% } %>
+                            </td>
+                            <td>
+                                <% if (workflow.recentJobs && workflow.recentJobs.length > 0) { %>
+                                    <% const lastJob = workflow.recentJobs[0]; %>
+                                    <span class="text-xs">
+                                        <% if (lastJob.status === 'completed') { %>
+                                            <span class="text-success">✓</span>
+                                        <% } else if (lastJob.status === 'failed') { %>
+                                            <span class="text-danger">✗</span>
+                                        <% } else { %>
+                                            <span class="text-warning">⏳</span>
+                                        <% } %>
+                                        <%= new Date(lastJob.createdAt).toLocaleString('fr-FR') %>
+                                    </span>
+                                <% } else { %>
+                                    <span class="text-gray-400">-</span>
+                                <% } %>
+                            </td>
+                            <td class="text-center">
+                                <div class="flex items-center justify-center gap-2">
+                                    <button 
+                                        class="btn btn-sm <%= workflow.enabled ? 'btn-outline-warning' : 'btn-outline-success' %>"
+                                        onclick="toggleWorkflow('<%= workflow._id %>')"
+                                        title="<%= workflow.enabled ? 'Désactiver' : 'Activer' %>"
+                                    >
+                                        <%= workflow.enabled ? 'Désactiver' : 'Activer' %>
+                                    </button>
+                                    <a href="/account/<%= account_number %>/workflows/<%= workflow._id %>" class="btn btn-sm btn-outline-primary">
+                                        Modifier
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    <% } %>
+</div>
+
+<script>
+async function toggleWorkflow(id) {
+    try {
+        const response = await fetch(`/account/<%= account_number %>/workflows/${id}/toggle`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        });
+        const result = await response.json();
+        if (result.success) {
+            window.location.reload();
+        } else {
+            alert(result.error);
+        }
+    } catch (error) {
+        alert(error.message);
+    }
+}
+</script>

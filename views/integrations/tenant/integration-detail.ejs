@@ -52,26 +52,69 @@
                     <% if (connection?.lastError) { %>
                         <p class="text-xs text-danger mt-1">Error: <%= connection.lastError %></p>
                     <% } %>
+                    <% if (connection?.oauthMeta) { %>
+                        <div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                            <% if (connection.oauthMeta.grantedScopes?.length) { %>
+                                <p class="text-xs text-gray-500">
+                                    Scopes: <span class="text-gray-700 dark:text-gray-300"><%= connection.oauthMeta.grantedScopes.join(', ') %></span>
+                                </p>
+                            <% } %>
+                            <% if (connection.oauthMeta.tokenExpiresAt) { %>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Token expires: <span class="<%= new Date(connection.oauthMeta.tokenExpiresAt) < new Date() ? 'text-danger' : 'text-gray-700 dark:text-gray-300' %>">
+                                        <%= new Date(connection.oauthMeta.tokenExpiresAt).toLocaleString() %>
+                                    </span>
+                                </p>
+                            <% } %>
+                            <% if (connection.oauthMeta.lastRefreshedAt) { %>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Last refreshed: <%= new Date(connection.oauthMeta.lastRefreshedAt).toLocaleString() %>
+                                </p>
+                            <% } %>
+                        </div>
+                    <% } %>
                 </div>
                 <div class="flex gap-2">
                     <button onclick="testConnection()" class="btn btn-sm btn-outline-success">Test Connection</button>
+                    <% if (['oauth2', 'oidc'].includes(provider.authType) && connection?.oauthMeta) { %>
+                        <button onclick="refreshToken()" class="btn btn-sm btn-outline-info">Refresh Token</button>
+                    <% } %>
                     <button onclick="disconnect()" class="btn btn-sm btn-outline-danger">Disconnect</button>
                 </div>
             </div>
         <% } else { %>
-            <form id="connectForm" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium dark:text-gray-300 mb-1">
-                        <%= provider.authType === 'bearer' ? 'Bearer Token' : 'API Key' %>
-                    </label>
-                    <input type="password" name="token" required
-                           placeholder="Enter your <%= provider.authType === 'bearer' ? 'token' : 'API key' %>"
-                           class="form-input w-full dark:bg-gray-900 dark:border-gray-700">
+            <% if (['oauth2', 'oidc'].includes(provider.authType)) { %>
+                <!-- OAuth Connect Button -->
+                <div class="text-center py-6">
+                    <a href="/account/<%= account_number %>/integrations/<%= provider.key %>/oauth/connect" 
+                       class="btn btn-primary btn-lg px-8">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                        Connect with <%= provider.name %>
+                    </a>
+                    <% if (provider.oauth?.scopes?.length) { %>
+                        <p class="text-xs text-gray-500 mt-4">
+                            Scopes requested: <%= provider.oauth.scopes.join(', ') %>
+                        </p>
+                    <% } %>
                 </div>
-                <div class="flex gap-2">
-                    <button type="submit" class="btn btn-primary">Connect</button>
-                </div>
-            </form>
+            <% } else { %>
+                <!-- API Key / Bearer Token Form -->
+                <form id="connectForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium dark:text-gray-300 mb-1">
+                            <%= provider.authType === 'bearer' ? 'Bearer Token' : 'API Key' %>
+                        </label>
+                        <input type="password" name="token" required
+                               placeholder="Enter your <%= provider.authType === 'bearer' ? 'token' : 'API key' %>"
+                               class="form-input w-full dark:bg-gray-900 dark:border-gray-700">
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="btn btn-primary">Connect</button>
+                    </div>
+                </form>
+            <% } %>
         <% } %>
     </div>
 
@@ -196,6 +239,20 @@ async function testConnection() {
     
     if (result.success) {
         setTimeout(() => location.reload(), 1500);
+    }
+}
+
+async function refreshToken() {
+    const res = await fetch(`/account/${accountNumber}/integrations/${providerKey}/oauth/refresh`, {
+        method: 'POST'
+    });
+    
+    const result = await res.json();
+    if (result.success) {
+        showModal('Token Refreshed', { success: true, expiresAt: result.expiresAt });
+        setTimeout(() => location.reload(), 1500);
+    } else {
+        showModal('Refresh Failed', result);
     }
 }
 

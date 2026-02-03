@@ -1,8 +1,16 @@
 <%# Tenant - Integrations List %>
 <div class="panel p-6">
-    <div class="mb-6">
-        <h1 class="text-2xl font-semibold dark:text-white">Integrations</h1>
-        <p class="text-gray-500 dark:text-gray-400 mt-1">Connect your workspace to external services</p>
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold dark:text-white">Integrations</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Connect your workspace to external services</p>
+        </div>
+        <a href="/account/<%= account_number %>/workflows" class="btn btn-outline-primary">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            Workflows
+        </a>
     </div>
 
     <% if (integrations && integrations.length > 0) { %>

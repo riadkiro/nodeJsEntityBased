@@ -37,7 +37,9 @@ router.use("/profile", require("./profile.routes.js"));
 // Integration Engine
 router.use("/integrations/admin", require("../src/integrations/routes/admin.providers.routes.js"));
 router.use("/integrations/admin", require("../src/integrations/routes/admin.actions.routes.js"));
+router.use("/integrations", require("../src/integrations/routes/oauth.routes.js"));
 router.use("/integrations", require("../src/integrations/routes/tenant.integrations.routes.js"));
+router.use("/workflows", require("../src/integrations/routes/workflows.routes.js"));
 
 // Tasks Page
 router.get("/tasks", (req, res) => {

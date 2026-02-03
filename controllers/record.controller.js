@@ -3,6 +3,7 @@ const Entity = require("../models/entity.model");
 const Record = require("../models/record.model");
 const FieldTemplate = require("../models/field-template.model");
 const tenantCollection = require("../middleware/tenant").tenantCollection;
+const WorkflowTriggers = require("../src/integrations/services/WorkflowTriggers");
 
 module.exports = {
     list: async (req, res) => {
@@ -185,6 +186,18 @@ module.exports = {
                 });
 
                 await newRecord.save();
+
+                // Emit workflow trigger (async, non-blocking)
+                const WorkflowJobSchema = require("../src/integrations/models/WorkflowJob.model").schema;
+                const WorkflowJobModel = req.tenantDbConnection.models.WorkflowJob ||
+                    req.tenantDbConnection.model('WorkflowJob', WorkflowJobSchema);
+                WorkflowTriggers.emitRecordCreated({
+                    WorkflowJobModel,
+                    workspaceId: req.account_number,
+                    entityId: entity._id.toString(),
+                    record: newRecord.toObject()
+                }).catch(err => console.error('[Workflow Trigger Error]', err));
+
                 return res.json({ success: true, _id: newRecord._id });
             }
 
@@ -253,6 +266,18 @@ module.exports = {
             });
 
             await newRecord.save();
+
+            // Emit workflow trigger (async, non-blocking)
+            const WorkflowJobSchema = require("../src/integrations/models/WorkflowJob.model").schema;
+            const WorkflowJobModel = req.tenantDbConnection.models.WorkflowJob ||
+                req.tenantDbConnection.model('WorkflowJob', WorkflowJobSchema);
+            WorkflowTriggers.emitRecordCreated({
+                WorkflowJobModel,
+                workspaceId: req.account_number,
+                entityId: entity._id.toString(),
+                record: newRecord.toObject()
+            }).catch(err => console.error('[Workflow Trigger Error]', err));
+
             res.redirect(`/account/${req.account_number}/record/${entity.slug}/edit/${newRecord._id}?success=true`);
         } catch (error) {
             console.error(error);
@@ -368,12 +393,24 @@ module.exports = {
             if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
                 return res.status(400).send("Invalid Record ID");
             }
-            await RecordModel.findByIdAndUpdate(req.params.id, {
+            const updatedRecord = await RecordModel.findByIdAndUpdate(req.params.id, {
                 ...standard,
                 customFields: customFieldsArray,
                 classificationValues: classificationValuesArray,
                 updatedBy: req.user._id
-            });
+            }, { new: true });
+
+            // Emit workflow trigger (async, non-blocking)
+            const WorkflowJobSchema = require("../src/integrations/models/WorkflowJob.model").schema;
+            const WorkflowJobModel = req.tenantDbConnection.models.WorkflowJob ||
+                req.tenantDbConnection.model('WorkflowJob', WorkflowJobSchema);
+            WorkflowTriggers.emitRecordUpdated({
+                WorkflowJobModel,
+                workspaceId: req.account_number,
+                entityId: entity._id.toString(),
+                record: updatedRecord.toObject(),
+                changes: { ...standard, customFields: customFieldsArray }
+            }).catch(err => console.error('[Workflow Trigger Error]', err));
 
             res.redirect(`/account/${req.account_number}/record/${entity.slug}/edit/${req.params.id}?success=true`);
         } catch (error) {

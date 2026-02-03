@@ -34,7 +34,7 @@ const IntegrationProviderSchema = new mongoose.Schema(
         // Authentication type
         authType: {
             type: String,
-            enum: ["api_key", "bearer", "none"],
+            enum: ["api_key", "bearer", "oauth2", "oidc", "none"],
             default: "none"
         },
         // How to inject authentication into requests
@@ -54,6 +54,22 @@ const IntegrationProviderSchema = new mongoose.Schema(
                 type: String,
                 default: "{{token}}"
             }
+        },
+        // OAuth2/OIDC configuration (public config, no secrets)
+        oauth: {
+            authorizeUrl: String,
+            tokenUrl: String,
+            scopes: [String],
+            pkce: { type: Boolean, default: false },
+            extraParams: { type: Map, of: String }
+        },
+        // Encrypted OAuth app credentials (clientId + clientSecret)
+        // Structure: { v: 1, iv, authTag, ciphertext } via SecretVault
+        oauthClientSecrets: {
+            v: { type: Number },
+            iv: String,
+            authTag: String,
+            ciphertext: String
         },
         // Default headers sent with every request
         defaultHeaders: {

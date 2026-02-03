@@ -52,6 +52,16 @@ const IntegrationLogSchema = new mongoose.Schema(
             bodyPreview: String,  // max 2KB
             bodySize: Number
         },
+        // Workflow tracking (optional, for workflow executions)
+        workflowId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Workflow"
+        },
+        workflowJobId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "WorkflowJob"
+        },
+        stepId: String,
         // Error details if failed
         errorMessage: String
     },

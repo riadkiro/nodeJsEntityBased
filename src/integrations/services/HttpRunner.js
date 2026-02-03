@@ -108,15 +108,28 @@ async function execute({ provider, action, input = {}, secrets = {} }) {
 
 /**
  * Inject authentication into request
+ * Supports: api_key, bearer, oauth2, oidc
  */
 function injectAuth(provider, secrets, headers, query) {
-    if (provider.authType === 'none' || !secrets.token) {
+    if (provider.authType === 'none') {
+        return;
+    }
+
+    // Get token based on auth type
+    let token;
+    if (['oauth2', 'oidc'].includes(provider.authType)) {
+        token = secrets.access_token;
+    } else {
+        token = secrets.token;
+    }
+
+    if (!token) {
         return;
     }
 
     const injection = provider.authInjection || {};
     const format = injection.format || '{{token}}';
-    const value = format.replace('{{token}}', secrets.token);
+    const value = format.replace('{{token}}', token);
     const name = injection.name || 'Authorization';
 
     if (injection.mode === 'query') {
@@ -125,6 +138,74 @@ function injectAuth(provider, secrets, headers, query) {
         // Default to header
         headers[name] = value;
     }
+}
+
+/**
+ * Execute with OAuth auto-refresh on 401
+ * @param {object} options - Execute options
+ * @param {object} refreshContext - Context for refresh (provider, connection, ConnectionModel)
+ * @returns {Promise<object>} - Execution result
+ */
+async function executeWithRefresh(options, refreshContext = null) {
+    const result = await execute(options);
+
+    // Check if we should attempt refresh
+    if (
+        !result.success &&
+        result.errorType === 'auth' &&
+        result.httpStatus === 401 &&
+        refreshContext &&
+        !options._isRetry
+    ) {
+        const { provider, connection, ConnectionModel } = refreshContext;
+
+        // Only attempt refresh for OAuth providers with refresh token
+        if (['oauth2', 'oidc'].includes(provider.authType) && options.secrets.refresh_token) {
+            try {
+                console.log('[HttpRunner] Attempting OAuth token refresh');
+                const OAuthService = require('./OAuthService');
+                const SecretVault = require('./SecretVault');
+
+                // Refresh token
+                const tokenResponse = await OAuthService.refreshAccessToken(
+                    provider,
+                    options.secrets.refresh_token
+                );
+
+                // Process new tokens
+                const { secrets: newSecrets, oauthMeta } = OAuthService.processTokenResponse(
+                    tokenResponse,
+                    options.secrets.refresh_token
+                );
+
+                // Save to database
+                const encryptedSecrets = SecretVault.encrypt(newSecrets);
+                await ConnectionModel.updateOne(
+                    { _id: connection._id },
+                    { secrets: encryptedSecrets, oauthMeta, lastError: null }
+                );
+
+                console.log('[HttpRunner] Token refreshed, retrying request');
+
+                // Retry with new token
+                return execute({ ...options, secrets: newSecrets, _isRetry: true });
+
+            } catch (refreshError) {
+                console.error('[HttpRunner] Token refresh failed:', refreshError.message);
+
+                // Update connection status
+                await ConnectionModel.updateOne(
+                    { _id: connection._id },
+                    { status: 'error', lastError: 'oauth_refresh_failed' }
+                );
+
+                // Return original error
+                return result;
+            }
+        }
+    }
+
+    return result;
 }
 
 /**
@@ -219,5 +300,6 @@ function buildRequestMeta(config, response, latencyMs) {
 }
 
 module.exports = {
-    execute
+    execute,
+    executeWithRefresh
 };

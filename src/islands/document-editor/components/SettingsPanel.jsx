@@ -56,31 +56,28 @@ export default function SettingsPanel({
             />
 
             {/* Panel */}
-            <div className="absolute left-16 top-0 z-50 w-80 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-lg shadow-2xl max-h-[calc(100vh-100px)] overflow-hidden flex flex-col">
+            <div className="absolute top-0 bottom-0 z-50 bg-white dark:bg-gray-900 border-r dark:border-gray-800 shadow-2xl overflow-hidden flex flex-col" style={{ width: '204px', marginLeft: '65px' }}>
                 {/* Header */}
-                <div className="p-4 border-b dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 flex items-center justify-between">
-                    <div>
-                        <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Document Settings</h3>
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mt-1">Propriétés</h2>
-                    </div>
+                <div className="p-4 border-b dark:border-gray-800 flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-gray-200">Propriétés</h3>
                     <button
                         onClick={onClose}
-                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400"
                     >
-                        <iconify-icon icon="tabler:x" width="18"></iconify-icon>
+                        <iconify-icon icon="tabler:x" width="16"></iconify-icon>
                     </button>
                 </div>
 
                 <div className="flex-1 overflow-auto" style={{ scrollbarColor: '#64748b transparent', scrollbarWidth: 'thin' }}>
                     {/* Section: Information */}
-                    <div className="border-b dark:border-gray-700">
+                    <div className="border-b dark:border-gray-800">
                         <button
                             onClick={() => toggleSection('info')}
                             className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                         >
                             <div className="flex items-center gap-3">
                                 <iconify-icon icon="tabler:info-circle" width="20" className="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
-                                <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Général</span>
+                                <span className="text-sm font-bold text-gray-200">Général</span>
                             </div>
                             <iconify-icon
                                 icon={openSections.info ? 'tabler:chevron-up' : 'tabler:chevron-down'}
@@ -92,21 +89,27 @@ export default function SettingsPanel({
                         {openSections.info && (
                             <div className="px-4 pb-4 space-y-4">
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Nom du document</label>
+                                    <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                        <iconify-icon icon="tabler:file-text" width="14"></iconify-icon>
+                                        Nom du document
+                                    </label>
                                     <input
                                         type="text"
                                         value={doc.name}
                                         onChange={(e) => handleChange('name', e.target.value)}
-                                        className="form-input bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-sm focus:ring-primary/20 w-full"
+                                        className="form-input bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-800 text-sm focus:ring-primary/20 w-full"
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Format</label>
+                                        <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                            <iconify-icon icon="tabler:dimensions" width="14"></iconify-icon>
+                                            Format
+                                        </label>
                                         <select
                                             value={doc.format}
                                             onChange={handleFormatChange}
-                                            className="form-select w-full text-xs py-1.5 focus:ring-primary/20 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                                            className="form-select w-full text-xs py-1.5 focus:ring-primary/20 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800"
                                         >
                                             <option value="A4">A4</option>
                                             <option value="A5">A5</option>
@@ -116,11 +119,14 @@ export default function SettingsPanel({
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Orientation</label>
+                                        <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                            <iconify-icon icon="tabler:rotate" width="14"></iconify-icon>
+                                            Orientation
+                                        </label>
                                         <select
                                             value={doc.orientation}
                                             onChange={handleOrientationChange}
-                                            className="form-select w-full text-xs py-1.5 focus:ring-primary/20 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                                            className="form-select w-full text-xs py-1.5 focus:ring-primary/20 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800"
                                         >
                                             <option value="portrait">Portrait</option>
                                             <option value="landscape">Paysage</option>
@@ -128,11 +134,14 @@ export default function SettingsPanel({
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Statut</label>
+                                    <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                        <iconify-icon icon="tabler:flag" width="14"></iconify-icon>
+                                        Statut
+                                    </label>
                                     <select
                                         value={doc.status}
                                         onChange={(e) => handleChange('status', e.target.value)}
-                                        className="form-select w-full text-xs py-1.5 focus:ring-primary/20 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                                        className="form-select w-full text-xs py-1.5 focus:ring-primary/20 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800"
                                     >
                                         <option value="draft">Brouillon</option>
                                         <option value="published">Publié</option>
@@ -143,14 +152,14 @@ export default function SettingsPanel({
                     </div>
 
                     {/* Section: Margins */}
-                    <div className="border-b dark:border-gray-700">
+                    <div className="border-b dark:border-gray-800">
                         <button
                             onClick={() => toggleSection('margins')}
                             className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                         >
                             <div className="flex items-center gap-3">
                                 <iconify-icon icon="tabler:layout-padding-left" width="20" className="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
-                                <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Marges de page</span>
+                                <span className="text-sm font-bold text-gray-200">Marges de page</span>
                             </div>
                             <iconify-icon
                                 icon={openSections.margins ? 'tabler:chevron-up' : 'tabler:chevron-down'}
@@ -163,7 +172,7 @@ export default function SettingsPanel({
                             <div className="px-4 pb-4">
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 block mb-1">Haut</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Haut</label>
                                         <div className="relative">
                                             <input
                                                 type="number"
@@ -177,7 +186,7 @@ export default function SettingsPanel({
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 block mb-1">Bas</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Bas</label>
                                         <div className="relative">
                                             <input
                                                 type="number"
@@ -191,7 +200,7 @@ export default function SettingsPanel({
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 block mb-1">Gauche</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Gauche</label>
                                         <div className="relative">
                                             <input
                                                 type="number"
@@ -205,7 +214,7 @@ export default function SettingsPanel({
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 block mb-1">Droite</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Droite</label>
                                         <div className="relative">
                                             <input
                                                 type="number"
@@ -224,7 +233,7 @@ export default function SettingsPanel({
                     </div>
 
                     {/* Section: Pages */}
-                    <div className="border-b dark:border-gray-700">
+                    <div className="border-b dark:border-gray-800">
                         <div
                             onClick={() => toggleSection('pages')}
                             className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group cursor-pointer"
@@ -232,7 +241,7 @@ export default function SettingsPanel({
                             <div className="flex items-center gap-3">
                                 <iconify-icon icon="tabler:files" width="20" className="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-gray-700 dark:text-gray-200">Pages</span>
+                                    <span className="text-sm font-bold text-gray-200">Pages</span>
                                     <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                                         {doc.pages.length}
                                     </span>
@@ -270,7 +279,7 @@ export default function SettingsPanel({
                                                 <span className="text-[10px] font-bold text-gray-400">{index + 1}</span>
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className={`text-xs font-bold truncate ${selectedPageIndex === index ? 'text-primary' : 'text-gray-700 dark:text-gray-200'
+                                                <p className={`text-xs font-bold truncate ${selectedPageIndex === index ? 'text-primary' : 'text-gray-200'
                                                     }`}>
                                                     Page {index + 1}
                                                 </p>

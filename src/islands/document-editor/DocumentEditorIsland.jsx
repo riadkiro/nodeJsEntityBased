@@ -885,22 +885,20 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     insertVariableToken={insertVariableToken}
                     isSettingsOpen={isSettingsOpen}
                     onSettingsToggle={() => setIsSettingsOpen(!isSettingsOpen)}
-                />
-
-                {/* Settings Panel Popup */}
-                <SettingsPanel
-                    isOpen={isSettingsOpen}
-                    onClose={() => setIsSettingsOpen(false)}
-                    doc={doc}
-                    setDoc={setDoc}
-                    openSections={openSections}
-                    setOpenSections={setOpenSections}
-                    selectedPageIndex={selectedPageIndex}
-                    setSelectedPageIndex={setSelectedPageIndex}
-                    updateDimensions={updateDimensions}
-                    addPage={addPage}
-                    duplicatePage={duplicatePage}
-                    deletePage={deletePage}
+                    settingsPanelProps={{
+                        isOpen: isSettingsOpen,
+                        onClose: () => setIsSettingsOpen(false),
+                        doc,
+                        setDoc,
+                        openSections,
+                        setOpenSections,
+                        selectedPageIndex,
+                        setSelectedPageIndex,
+                        updateDimensions,
+                        addPage,
+                        duplicatePage,
+                        deletePage
+                    }}
                 />
 
                 {/* Canvas */}

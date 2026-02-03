@@ -41,7 +41,7 @@ export default function AIChatSidebar() {
                         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mb-4">
                             <iconify-icon icon="tabler:message-chatbot" width="32" className="text-primary"></iconify-icon>
                         </div>
-                        <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-2">
+                        <h3 className="text-sm font-bold text-gray-200 mb-2">
                             Comment puis-je vous aider ?
                         </h3>
                         <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
@@ -75,7 +75,7 @@ export default function AIChatSidebar() {
                                 <div
                                     className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm ${msg.role === 'user'
                                         ? 'bg-primary text-white rounded-br-md'
-                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-bl-md'
+                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-200 rounded-bl-md'
                                         }`}
                                 >
                                     {msg.content}

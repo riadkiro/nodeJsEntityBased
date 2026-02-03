@@ -4,13 +4,15 @@
  * 1:1 parity with editor-left-sidebar.ejs
  */
 import React from 'react'
+import SettingsPanel from './SettingsPanel'
 
 export default function LeftSidebar({
     activeTab,
     setActiveTab,
     insertVariableToken,
     isSettingsOpen,
-    onSettingsToggle
+    onSettingsToggle,
+    settingsPanelProps
 }) {
     const toggleTab = (tab) => {
         setActiveTab(activeTab === tab ? null : tab)
@@ -95,7 +97,7 @@ export default function LeftSidebar({
                 <div className="absolute top-0 bottom-0 bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col z-20 shadow-xl" style={{ width: '204px', marginLeft: '65px' }}>
                     {/* Panel Header */}
                     <div className="p-4 border-b dark:border-gray-800 flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                        <h3 className="text-sm font-semibold text-gray-200">
                             {activeTab === 'text' && 'Texte et Contenu'}
                             {activeTab === 'gallery' && 'Médiathèque'}
                             {activeTab === 'dynamic-nav' && 'Contenu Dynamique'}
@@ -122,6 +124,8 @@ export default function LeftSidebar({
                     </div>
                 </div>
             )}
+            {/* Settings Panel - rendered here to share relative positioning context */}
+            {settingsPanelProps && <SettingsPanel {...settingsPanelProps} />}
         </div>
     )
 }
@@ -136,7 +140,7 @@ function TextPanel() {
 
             <div className="space-y-2">
                 <div
-                    className="sortable-source p-3 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-move hover:border-primary hover:bg-primary/5 transition-colors"
+                    className="sortable-source px-3 py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-move hover:border-primary hover:bg-primary/5 transition-colors"
                     data-element-type="heading"
                 >
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
@@ -146,7 +150,7 @@ function TextPanel() {
                 </div>
 
                 <div
-                    className="sortable-source p-3 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-move hover:border-primary hover:bg-primary/5 transition-colors"
+                    className="sortable-source px-3 py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-move hover:border-primary hover:bg-primary/5 transition-colors"
                     data-element-type="paragraph"
                 >
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
@@ -156,7 +160,7 @@ function TextPanel() {
                 </div>
 
                 <div
-                    className="sortable-source p-3 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-move hover:border-primary hover:bg-primary/5 transition-colors"
+                    className="sortable-source px-3 py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-move hover:border-primary hover:bg-primary/5 transition-colors"
                     data-element-type="divider"
                 >
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">

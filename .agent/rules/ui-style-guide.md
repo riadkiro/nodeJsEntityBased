@@ -87,5 +87,6 @@ focus:outline-none focus:ring-1 focus:ring-primary/50
 ## Couleurs Primaires
 - Primary : `#4361ee` (utilisé via classe `primary`)
 - Text gray subtle : `text-gray-500`
-- Border default : `border-gray-200 dark:border-gray-700`
+- Border default : `border-gray-200 dark:border-gray-800` ⚠️ **Toujours utiliser `dark:border-gray-800`** au lieu de `dark:border-gray-700` pour la cohérence
 - Background dark panel : `#1b2e4b`
+

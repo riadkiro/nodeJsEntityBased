@@ -199,6 +199,17 @@ function TextPanel() {
 
 // Gallery Panel Component
 function GalleryPanel() {
+    const demoImages = [
+        '/images/blog_1st.png',
+        '/images/blog_2nd.png',
+        '/images/blog_4th.png',
+        '/images/blog_5th.png',
+        '/images/blog_6th.png',
+        '/images/blog_7th.png',
+        '/images/test.png',
+        '/images/test2.png'
+    ]
+
     return (
         <div className="space-y-4">
             <p className="text-xs text-gray-500">
@@ -206,11 +217,40 @@ function GalleryPanel() {
             </p>
 
             <button className="w-full p-3 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors">
-                <div className="flex items-center justify-center gap-2 text-gray-500">
+                <div className="flex items-center justify-between gap-2 text-gray-500">
                     <iconify-icon icon="tabler:upload" width="20"></iconify-icon>
-                    <span className="text-sm">Importer une image</span>
+                    <span className="text-sm">Importer</span>
                 </div>
             </button>
+
+            {/* Demo Images Grid */}
+            <div className="grid grid-cols-4 gap-2 mt-4">
+                {demoImages.map((imageSrc, index) => (
+                    <div
+                        key={index}
+                        draggable="true"
+                        onDragStart={(e) => {
+                            const html = `<img src="${imageSrc}" style="max-width: 100%; height: auto; display: block;" /><br><br>`
+                            e.dataTransfer.setData('text/html', html)
+                            e.dataTransfer.effectAllowed = 'copy'
+                        }}
+                        className="relative group cursor-move rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-primary transition-colors aspect-video"
+                    >
+                        <img
+                            src={imageSrc}
+                            alt={`Demo ${index + 1}`}
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                            <iconify-icon
+                                icon="tabler:grip-horizontal"
+                                width="20"
+                                className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            ></iconify-icon>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     )
 }

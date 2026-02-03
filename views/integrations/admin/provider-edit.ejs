@@ -65,13 +65,15 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium dark:text-gray-300 mb-1">Auth Type</label>
-                    <select name="authType" class="form-select w-full dark:bg-gray-900 dark:border-gray-700">
+                    <select name="authType" id="authTypeSelect" class="form-select w-full dark:bg-gray-900 dark:border-gray-700" onchange="toggleOAuthSection()">
                         <option value="none" <%= provider?.authType === 'none' ? 'selected' : '' %>>None</option>
                         <option value="api_key" <%= provider?.authType === 'api_key' ? 'selected' : '' %>>API Key</option>
                         <option value="bearer" <%= provider?.authType === 'bearer' ? 'selected' : '' %>>Bearer Token</option>
+                        <option value="oauth2" <%= provider?.authType === 'oauth2' ? 'selected' : '' %>>OAuth2</option>
+                        <option value="oidc" <%= provider?.authType === 'oidc' ? 'selected' : '' %>>OpenID Connect (OIDC)</option>
                     </select>
                 </div>
-                <div>
+                <div id="authInjectionSection">
                     <label class="block text-sm font-medium dark:text-gray-300 mb-1">Injection Mode</label>
                     <select name="authInjection.mode" class="form-select w-full dark:bg-gray-900 dark:border-gray-700">
                         <option value="header" <%= provider?.authInjection?.mode === 'header' ? 'selected' : '' %>>Header</option>
@@ -79,7 +81,7 @@
                     </select>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-4 mt-4">
+            <div class="grid grid-cols-2 gap-4 mt-4" id="authInjectionDetails">
                 <div>
                     <label class="block text-sm font-medium dark:text-gray-300 mb-1">Header/Param Name</label>
                     <input type="text" name="authInjection.name" 
@@ -93,6 +95,71 @@
                            placeholder="Bearer {{token}} or {{token}}"
                            class="form-input w-full dark:bg-gray-900 dark:border-gray-700">
                 </div>
+            </div>
+        </div>
+
+        <!-- OAuth2/OIDC Configuration Section -->
+        <div id="oauthConfigSection" class="border-t border-gray-200 dark:border-gray-700 pt-6" style="display: none;">
+            <h3 class="text-lg font-medium dark:text-white mb-4">OAuth Configuration</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium dark:text-gray-300 mb-1">Authorize URL</label>
+                    <input type="url" name="oauth.authorizeUrl" 
+                           value="<%= provider?.oauth?.authorizeUrl || '' %>"
+                           placeholder="https://accounts.google.com/o/oauth2/v2/auth"
+                           class="form-input w-full dark:bg-gray-900 dark:border-gray-700">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium dark:text-gray-300 mb-1">Token URL</label>
+                    <input type="url" name="oauth.tokenUrl" 
+                           value="<%= provider?.oauth?.tokenUrl || '' %>"
+                           placeholder="https://oauth2.googleapis.com/token"
+                           class="form-input w-full dark:bg-gray-900 dark:border-gray-700">
+                </div>
+            </div>
+            <div class="mt-4">
+                <label class="block text-sm font-medium dark:text-gray-300 mb-1">Scopes (one per line)</label>
+                <textarea name="oauth.scopes" rows="3" 
+                          class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-700"
+                          placeholder="openid&#10;email&#10;profile"><%= (provider?.oauth?.scopes || []).join('\n') %></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mt-4">
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" name="oauth.pkce" id="oauthPkce" 
+                           class="form-checkbox dark:bg-gray-900"
+                           <%= provider?.oauth?.pkce ? 'checked' : '' %>>
+                    <label for="oauthPkce" class="text-sm font-medium dark:text-gray-300">Enable PKCE (S256)</label>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium dark:text-gray-300 mb-1">Extra Params (JSON)</label>
+                    <input type="text" name="oauth.extraParams" 
+                           value="<%= JSON.stringify(provider?.oauth?.extraParams || {}) %>"
+                           placeholder='{"access_type": "offline"}'
+                           class="form-input w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-700">
+                </div>
+            </div>
+            
+            <!-- OAuth Client Credentials -->
+            <div class="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <h4 class="text-sm font-medium dark:text-white mb-3">OAuth Client Credentials</h4>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">These are stored encrypted and never exposed to tenants.</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium dark:text-gray-300 mb-1">Client ID</label>
+                        <input type="text" name="oauth.clientId" 
+                               value=""
+                               placeholder="<%= provider?.oauthClientSecrets ? '••••••••' : 'Enter Client ID' %>"
+                               class="form-input w-full dark:bg-gray-900 dark:border-gray-700">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium dark:text-gray-300 mb-1">Client Secret</label>
+                        <input type="password" name="oauth.clientSecret" 
+                               value=""
+                               placeholder="<%= provider?.oauthClientSecrets ? '••••••••' : 'Enter Client Secret' %>"
+                               class="form-input w-full dark:bg-gray-900 dark:border-gray-700">
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Leave blank to keep existing credentials.</p>
             </div>
         </div>
 
@@ -167,9 +234,28 @@ const accountNumber = '<%= account_number %>';
 const providerKey = '<%= provider?.key || '' %>';
 const isNew = <%= isNew %>;
 
+// Toggle OAuth config section based on authType
+function toggleOAuthSection() {
+    const authType = document.getElementById('authTypeSelect').value;
+    const oauthSection = document.getElementById('oauthConfigSection');
+    const authInjectionSection = document.getElementById('authInjectionSection');
+    const authInjectionDetails = document.getElementById('authInjectionDetails');
+    
+    const isOAuth = ['oauth2', 'oidc'].includes(authType);
+    
+    oauthSection.style.display = isOAuth ? 'block' : 'none';
+    authInjectionSection.style.display = isOAuth ? 'none' : 'block';
+    authInjectionDetails.style.display = isOAuth ? 'none' : 'grid';
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', toggleOAuthSection);
+
 document.getElementById('providerForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
+    
+    const authType = formData.get('authType');
     
     const data = {
         key: formData.get('key'),
@@ -177,7 +263,7 @@ document.getElementById('providerForm').addEventListener('submit', async (e) => 
         category: formData.get('category'),
         logo: formData.get('logo'),
         baseUrl: formData.get('baseUrl'),
-        authType: formData.get('authType'),
+        authType,
         authInjection: {
             mode: formData.get('authInjection.mode'),
             name: formData.get('authInjection.name'),
@@ -185,6 +271,36 @@ document.getElementById('providerForm').addEventListener('submit', async (e) => 
         },
         testActionId: formData.get('testActionId') || null
     };
+    
+    // Add OAuth config if authType is oauth2 or oidc
+    if (['oauth2', 'oidc'].includes(authType)) {
+        const scopesText = formData.get('oauth.scopes') || '';
+        const scopes = scopesText.split('\n').map(s => s.trim()).filter(s => s);
+        
+        let extraParams = {};
+        try {
+            const extraParamsStr = formData.get('oauth.extraParams') || '{}';
+            extraParams = JSON.parse(extraParamsStr);
+        } catch {
+            alert('Invalid JSON in Extra Params');
+            return;
+        }
+        
+        data.oauth = {
+            authorizeUrl: formData.get('oauth.authorizeUrl'),
+            tokenUrl: formData.get('oauth.tokenUrl'),
+            scopes,
+            pkce: document.getElementById('oauthPkce').checked,
+            extraParams
+        };
+        
+        // OAuth client credentials (only if provided)
+        const clientId = formData.get('oauth.clientId');
+        const clientSecret = formData.get('oauth.clientSecret');
+        if (clientId && clientSecret) {
+            data.oauthClientCredentials = { clientId, clientSecret };
+        }
+    }
     
     try {
         data.defaultHeaders = JSON.parse(formData.get('defaultHeaders') || '{}');

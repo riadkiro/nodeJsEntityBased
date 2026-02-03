@@ -98,6 +98,8 @@ router.post('/providers', async (req, res) => {
             authType,
             authInjection,
             defaultHeaders,
+            oauth,
+            oauthClientCredentials,
             status
         } = req.body;
 
@@ -118,7 +120,7 @@ router.post('/providers', async (req, res) => {
             });
         }
 
-        const provider = await IntegrationProvider.create({
+        const providerData = {
             key,
             name,
             logo,
@@ -128,7 +130,29 @@ router.post('/providers', async (req, res) => {
             authInjection: authInjection || {},
             defaultHeaders: defaultHeaders || {},
             status: status || 'draft'
-        });
+        };
+
+        // Add OAuth configuration if provided
+        if (oauth && ['oauth2', 'oidc'].includes(authType)) {
+            providerData.oauth = {
+                authorizeUrl: oauth.authorizeUrl,
+                tokenUrl: oauth.tokenUrl,
+                scopes: oauth.scopes || [],
+                pkce: oauth.pkce || false,
+                extraParams: oauth.extraParams || {}
+            };
+
+            // Encrypt OAuth client credentials if provided
+            if (oauthClientCredentials?.clientId && oauthClientCredentials?.clientSecret) {
+                const SecretVault = require('../services/SecretVault');
+                providerData.oauthClientSecrets = SecretVault.encrypt({
+                    clientId: oauthClientCredentials.clientId,
+                    clientSecret: oauthClientCredentials.clientSecret
+                });
+            }
+        }
+
+        const provider = await IntegrationProvider.create(providerData);
 
         res.status(201).json({ success: true, provider });
     } catch (error) {
@@ -151,21 +175,49 @@ router.put('/providers/:key', async (req, res) => {
             authType,
             authInjection,
             defaultHeaders,
-            testActionId
+            testActionId,
+            oauth,
+            oauthClientCredentials
         } = req.body;
+
+        const updateData = {
+            name,
+            logo,
+            category,
+            baseUrl,
+            authType,
+            authInjection,
+            defaultHeaders,
+            testActionId
+        };
+
+        // Add OAuth configuration if provided
+        if (oauth && ['oauth2', 'oidc'].includes(authType)) {
+            updateData.oauth = {
+                authorizeUrl: oauth.authorizeUrl,
+                tokenUrl: oauth.tokenUrl,
+                scopes: oauth.scopes || [],
+                pkce: oauth.pkce || false,
+                extraParams: oauth.extraParams || {}
+            };
+
+            // Encrypt OAuth client credentials if provided (only update if new values)
+            if (oauthClientCredentials?.clientId && oauthClientCredentials?.clientSecret) {
+                const SecretVault = require('../services/SecretVault');
+                updateData.oauthClientSecrets = SecretVault.encrypt({
+                    clientId: oauthClientCredentials.clientId,
+                    clientSecret: oauthClientCredentials.clientSecret
+                });
+            }
+        } else if (!['oauth2', 'oidc'].includes(authType)) {
+            // Clear OAuth config if switching away from OAuth
+            updateData.oauth = null;
+            updateData.oauthClientSecrets = null;
+        }
 
         const provider = await IntegrationProvider.findOneAndUpdate(
             { key: req.params.key },
-            {
-                name,
-                logo,
-                category,
-                baseUrl,
-                authType,
-                authInjection,
-                defaultHeaders,
-                testActionId
-            },
+            updateData,
             { new: true }
         );
 

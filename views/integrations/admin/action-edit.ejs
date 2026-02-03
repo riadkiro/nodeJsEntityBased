@@ -185,13 +185,26 @@ document.getElementById('actionForm').addEventListener('submit', async (e) => {
 });
 
 async function testAction() {
-    const token = prompt('Enter API token/key for testing:');
-    if (!token) return;
+    const providerAuthType = '<%= provider.authType %>';
+    let testCredentials = {};
+    
+    if (['oauth2', 'oidc'].includes(providerAuthType)) {
+        // For OAuth providers, we can't test from admin without a connection
+        // Inform user they need to test via a connected tenant
+        const proceed = confirm('OAuth providers require an active tenant connection to test.\\n\\nClick OK to test using the encrypted provider credentials (for basic validation only).\\nFor full OAuth testing, connect as a tenant first.');
+        if (!proceed) return;
+        // Send empty - backend will use provider's oauthClientSecrets for validation
+        testCredentials = { useProviderCredentials: true };
+    } else {
+        const token = prompt('Enter API token/key for testing:');
+        if (!token) return;
+        testCredentials = { token };
+    }
     
     const res = await fetch(`/account/${accountNumber}/integrations/admin/actions/${actionId}/test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ testCredentials: { token } })
+        body: JSON.stringify({ testCredentials })
     });
     
     const result = await res.json();

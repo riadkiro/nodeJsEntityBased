@@ -197,8 +197,16 @@ function TextPanel() {
     )
 }
 
-// Gallery Panel Component
+// Gallery Panel Component with Integration Engine Search
 function GalleryPanel() {
+    const [searchQuery, setSearchQuery] = React.useState('')
+    const [photos, setPhotos] = React.useState([])
+    const [loading, setLoading] = React.useState(false)
+    const [page, setPage] = React.useState(1)
+    const [hasMore, setHasMore] = React.useState(false)
+    const [searched, setSearched] = React.useState(false)
+    const [error, setError] = React.useState(null)
+
     const demoImages = [
         '/images/blog_1st.png',
         '/images/blog_2nd.png',
@@ -210,47 +218,244 @@ function GalleryPanel() {
         '/images/test2.png'
     ]
 
+    // Get account number from URL
+    const getAccountNumber = () => {
+        const match = window.location.pathname.match(/\/account\/([^/]+)/)
+        return match ? match[1] : null
+    }
+
+    const searchPhotos = async (query, pageNum = 1, append = false) => {
+        if (!query.trim()) return
+
+        setLoading(true)
+        setError(null)
+
+        try {
+            const accountNumber = getAccountNumber()
+            if (!accountNumber) {
+                throw new Error('Account number not found')
+            }
+
+            // Call Integration Engine action
+            const response = await fetch(`/account/${accountNumber}/integrations/unsplash/actions/search-photos/execute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    input: {
+                        query,
+                        per_page: 8,
+                        page: pageNum
+                    }
+                })
+            })
+
+            const result = await response.json()
+
+            if (result.success && result.data) {
+                // Transform Unsplash response (mapped via responseMapping: photos, total, totalPages)
+                const rawPhotos = result.data.photos || result.data.results || []
+                const newPhotos = rawPhotos.map(photo => ({
+                    id: photo.id,
+                    url: photo.urls?.regular || photo.urls?.small,
+                    thumb: photo.urls?.thumb || photo.urls?.small,
+                    alt: photo.alt_description || photo.description || 'Photo',
+                    author: photo.user?.name || 'Unknown'
+                }))
+
+                if (append) {
+                    setPhotos(prev => [...prev, ...newPhotos])
+                } else {
+                    setPhotos(newPhotos)
+                }
+
+                const totalPages = result.data.totalPages || result.data.total_pages || 1
+                setHasMore(pageNum < totalPages)
+                setPage(pageNum)
+                setSearched(true)
+            } else {
+                setError(result.error || 'Erreur lors de la recherche')
+            }
+        } catch (err) {
+            console.error('Search error:', err)
+            setError(err.message || 'Erreur de connexion')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleSearch = (e) => {
+        e.preventDefault()
+        searchPhotos(searchQuery, 1, false)
+    }
+
+    const loadMore = () => {
+        searchPhotos(searchQuery, page + 1, true)
+    }
+
+    const clearSearch = () => {
+        setSearchQuery('')
+        setPhotos([])
+        setSearched(false)
+        setPage(1)
+        setHasMore(false)
+        setError(null)
+    }
+
     return (
         <div className="space-y-4">
-            <p className="text-xs text-gray-500">
-                Glissez une image sur la page.
-            </p>
-
-            <button className="w-full p-3 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors">
-                <div className="flex items-center justify-between gap-2 text-gray-500">
-                    <iconify-icon icon="tabler:upload" width="20"></iconify-icon>
-                    <span className="text-sm">Importer</span>
-                </div>
-            </button>
-
-            {/* Demo Images Grid */}
-            <div className="grid grid-cols-4 gap-2 mt-4">
-                {demoImages.map((imageSrc, index) => (
-                    <div
-                        key={index}
-                        draggable="true"
-                        onDragStart={(e) => {
-                            const html = `<img src="${imageSrc}" style="max-width: 100%; height: auto; display: block;" /><br><br>`
-                            e.dataTransfer.setData('text/html', html)
-                            e.dataTransfer.effectAllowed = 'copy'
-                        }}
-                        className="relative group cursor-move rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-primary transition-colors aspect-video"
+            {/* Search Input */}
+            <form onSubmit={handleSearch} className="relative">
+                <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Rechercher des photos..."
+                    className="form-input w-full pr-8 text-sm dark:bg-gray-800 dark:border-gray-700"
+                />
+                {searchQuery && (
+                    <button
+                        type="button"
+                        onClick={clearSearch}
+                        className="absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
-                        <img
-                            src={imageSrc}
-                            alt={`Demo ${index + 1}`}
-                            className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                            <iconify-icon
-                                icon="tabler:grip-horizontal"
-                                width="20"
-                                className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                            ></iconify-icon>
-                        </div>
+                        <iconify-icon icon="tabler:x" width="14"></iconify-icon>
+                    </button>
+                )}
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary"
+                >
+                    <iconify-icon icon="tabler:search" width="16"></iconify-icon>
+                </button>
+            </form>
+
+            {/* Error */}
+            {error && (
+                <div className="text-xs text-danger bg-danger/10 p-2 rounded">
+                    {error}
+                </div>
+            )}
+
+            {/* Loading */}
+            {loading && !photos.length && (
+                <div className="flex items-center justify-center py-8">
+                    <iconify-icon icon="tabler:loader-2" width="24" className="animate-spin text-primary"></iconify-icon>
+                </div>
+            )}
+
+            {/* Unsplash Results */}
+            {searched && photos.length > 0 && (
+                <>
+                    <p className="text-xs text-gray-500">
+                        Résultats Unsplash — Glissez une image sur la page.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                        {photos.map((photo) => (
+                            <div
+                                key={photo.id}
+                                draggable="true"
+                                onDragStart={(e) => {
+                                    const html = `<img src="${photo.url}" alt="${photo.alt}" style="max-width: 100%; height: auto; display: block;" /><br><br>`
+                                    e.dataTransfer.setData('text/html', html)
+                                    e.dataTransfer.effectAllowed = 'copy'
+                                }}
+                                className="relative group cursor-move rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-primary transition-colors aspect-video"
+                                title={`Photo par ${photo.author}`}
+                            >
+                                <img
+                                    src={photo.thumb}
+                                    alt={photo.alt}
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                    <iconify-icon
+                                        icon="tabler:grip-horizontal"
+                                        width="20"
+                                        className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg"
+                                    ></iconify-icon>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                ))}
-            </div>
+
+                    {/* Load More Button */}
+                    {hasMore && (
+                        <button
+                            onClick={loadMore}
+                            disabled={loading}
+                            className="w-full py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors flex items-center justify-center gap-2"
+                        >
+                            {loading ? (
+                                <>
+                                    <iconify-icon icon="tabler:loader-2" width="16" className="animate-spin"></iconify-icon>
+                                    Chargement...
+                                </>
+                            ) : (
+                                <>
+                                    <iconify-icon icon="tabler:chevron-down" width="16"></iconify-icon>
+                                    Charger plus
+                                </>
+                            )}
+                        </button>
+                    )}
+                </>
+            )}
+
+            {/* No Results */}
+            {searched && photos.length === 0 && !loading && (
+                <div className="text-center py-6 text-gray-500">
+                    <iconify-icon icon="tabler:photo-off" width="32" className="mb-2"></iconify-icon>
+                    <p className="text-sm">Aucun résultat trouvé</p>
+                </div>
+            )}
+
+            {/* Demo Images (shown when no search) */}
+            {!searched && (
+                <>
+                    <p className="text-xs text-gray-500">
+                        Glissez une image sur la page.
+                    </p>
+
+                    <button className="w-full p-3 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors">
+                        <div className="flex items-center justify-between gap-2 text-gray-500">
+                            <iconify-icon icon="tabler:upload" width="20"></iconify-icon>
+                            <span className="text-sm">Importer</span>
+                        </div>
+                    </button>
+
+                    {/* Demo Images Grid */}
+                    <div className="grid grid-cols-4 gap-2 mt-4">
+                        {demoImages.map((imageSrc, index) => (
+                            <div
+                                key={index}
+                                draggable="true"
+                                onDragStart={(e) => {
+                                    const html = `<img src="${imageSrc}" style="max-width: 100%; height: auto; display: block;" /><br><br>`
+                                    e.dataTransfer.setData('text/html', html)
+                                    e.dataTransfer.effectAllowed = 'copy'
+                                }}
+                                className="relative group cursor-move rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-primary transition-colors aspect-video"
+                            >
+                                <img
+                                    src={imageSrc}
+                                    alt={`Demo ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                    <iconify-icon
+                                        icon="tabler:grip-horizontal"
+                                        width="20"
+                                        className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                    ></iconify-icon>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
         </div>
     )
 }

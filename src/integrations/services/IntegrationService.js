@@ -146,7 +146,7 @@ async function testConnection({
  * @param {Model} options.LogModel
  * @param {string} options.workspaceId
  * @param {string} options.providerKey
- * @param {string} options.actionId - MongoDB _id
+ * @param {string} options.actionId - MongoDB _id or actionKey
  * @param {object} options.input - User input
  * @returns {Promise<object>} - Execution result
  */
@@ -166,8 +166,19 @@ async function executeAction({
         return { success: false, error: 'Provider not found' };
     }
 
-    // Get action
-    const action = await ActionModel.findById(actionId);
+    // Get action - support both ObjectId and actionKey
+    const mongoose = require('mongoose');
+    const isObjectId = mongoose.Types.ObjectId.isValid(actionId) &&
+        (typeof actionId === 'string' && actionId.length === 24);
+
+    let action;
+    if (isObjectId) {
+        action = await ActionModel.findById(actionId);
+    } else {
+        // Treat as actionKey
+        action = await ActionModel.findOne({ providerKey, actionKey: actionId });
+    }
+
     if (!action) {
         return { success: false, error: 'Action not found' };
     }

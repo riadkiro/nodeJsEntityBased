@@ -1,0 +1,233 @@
+<%# Tenant - Integration Detail %>
+<div class="max-w-4xl mx-auto">
+    <div class="panel p-6 mb-6">
+        <a href="/account/<%= account_number %>/integrations" class="text-sm text-gray-500 hover:text-primary mb-4 inline-block">
+            ← Back to Integrations
+        </a>
+        
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <% if (provider.logo) { %>
+                    <img src="<%= provider.logo %>" alt="<%= provider.name %>" class="w-16 h-16 rounded-lg">
+                <% } else { %>
+                    <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                <% } %>
+                <div>
+                    <h1 class="text-2xl font-semibold dark:text-white"><%= provider.name %></h1>
+                    <span class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                        <%= provider.category || 'Other' %>
+                    </span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <% if (isConnected) { %>
+                    <span class="px-3 py-1 rounded-full bg-success/20 text-success flex items-center gap-2">
+                        <span class="w-2 h-2 bg-success rounded-full"></span>
+                        Connected
+                    </span>
+                <% } else { %>
+                    <span class="px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">
+                        Not connected
+                    </span>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection Form -->
+    <div class="panel p-6 mb-6">
+        <h2 class="text-lg font-medium dark:text-white mb-4">Connection</h2>
+        
+        <% if (isConnected) { %>
+            <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-4">
+                <div>
+                    <p class="text-sm dark:text-gray-300">Connected since: <strong><%= connection?.connectedAt ? new Date(connection.connectedAt).toLocaleDateString() : 'N/A' %></strong></p>
+                    <% if (connection?.lastTestAt) { %>
+                        <p class="text-xs text-gray-500 mt-1">Last tested: <%= new Date(connection.lastTestAt).toLocaleString() %></p>
+                    <% } %>
+                    <% if (connection?.lastError) { %>
+                        <p class="text-xs text-danger mt-1">Error: <%= connection.lastError %></p>
+                    <% } %>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="testConnection()" class="btn btn-sm btn-outline-success">Test Connection</button>
+                    <button onclick="disconnect()" class="btn btn-sm btn-outline-danger">Disconnect</button>
+                </div>
+            </div>
+        <% } else { %>
+            <form id="connectForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium dark:text-gray-300 mb-1">
+                        <%= provider.authType === 'bearer' ? 'Bearer Token' : 'API Key' %>
+                    </label>
+                    <input type="password" name="token" required
+                           placeholder="Enter your <%= provider.authType === 'bearer' ? 'token' : 'API key' %>"
+                           class="form-input w-full dark:bg-gray-900 dark:border-gray-700">
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary">Connect</button>
+                </div>
+            </form>
+        <% } %>
+    </div>
+
+    <% if (isConnected && actions && actions.length > 0) { %>
+    <!-- Available Actions -->
+    <div class="panel p-6 mb-6">
+        <h2 class="text-lg font-medium dark:text-white mb-4">Available Actions</h2>
+        <div class="space-y-2">
+            <% actions.forEach(action => { %>
+                <div class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded">
+                    <div>
+                        <span class="font-medium dark:text-white"><%= action.name %></span>
+                        <% if (action.description) { %>
+                            <p class="text-xs text-gray-500 mt-1"><%= action.description %></p>
+                        <% } %>
+                    </div>
+                    <button onclick="executeAction('<%= action._id %>', '<%= action.name %>')" 
+                            class="btn btn-sm btn-outline-primary">
+                        Execute
+                    </button>
+                </div>
+            <% }) %>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- Logs -->
+    <div class="panel p-6">
+        <h2 class="text-lg font-medium dark:text-white mb-4">Execution Logs</h2>
+        
+        <% if (logs && logs.length > 0) { %>
+            <div class="overflow-x-auto">
+                <table class="table-auto w-full text-sm">
+                    <thead>
+                        <tr class="text-left border-b border-gray-200 dark:border-gray-700">
+                            <th class="pb-2 font-medium dark:text-gray-300">Time</th>
+                            <th class="pb-2 font-medium dark:text-gray-300">Action</th>
+                            <th class="pb-2 font-medium dark:text-gray-300">Status</th>
+                            <th class="pb-2 font-medium dark:text-gray-300">HTTP</th>
+                            <th class="pb-2 font-medium dark:text-gray-300">Latency</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% logs.forEach(log => { %>
+                            <tr class="border-b border-gray-100 dark:border-gray-800">
+                                <td class="py-2 text-gray-500 dark:text-gray-400 text-xs">
+                                    <%= new Date(log.createdAt).toLocaleString() %>
+                                </td>
+                                <td class="py-2 dark:text-white"><%= log.actionKey %></td>
+                                <td class="py-2">
+                                    <span class="text-xs px-2 py-1 rounded <%= log.status === 'success' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger' %>">
+                                        <%= log.status %>
+                                    </span>
+                                </td>
+                                <td class="py-2 text-gray-600 dark:text-gray-400"><%= log.httpStatus || '-' %></td>
+                                <td class="py-2 text-gray-500 dark:text-gray-400"><%= log.latencyMs %>ms</td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } else { %>
+            <p class="text-gray-500 dark:text-gray-400 text-center py-4">No execution logs yet.</p>
+        <% } %>
+    </div>
+
+    <!-- Result Modal -->
+    <div id="resultModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 id="modalTitle" class="font-medium dark:text-white">Result</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div class="p-4 overflow-auto max-h-[60vh]">
+                <pre id="modalContent" class="text-xs bg-gray-100 dark:bg-gray-800 p-3 rounded overflow-auto"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const accountNumber = '<%= account_number %>';
+const providerKey = '<%= provider.key %>';
+
+document.getElementById('connectForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    const res = await fetch(`/account/${accountNumber}/integrations/${providerKey}/connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: formData.get('token') })
+    });
+    
+    const result = await res.json();
+    if (result.success) {
+        location.reload();
+    } else {
+        alert(result.error || 'Failed to connect');
+    }
+});
+
+async function disconnect() {
+    if (!confirm('Disconnect from this integration?')) return;
+    
+    const res = await fetch(`/account/${accountNumber}/integrations/${providerKey}/disconnect`, {
+        method: 'POST'
+    });
+    
+    if ((await res.json()).success) {
+        location.reload();
+    }
+}
+
+async function testConnection() {
+    const res = await fetch(`/account/${accountNumber}/integrations/${providerKey}/test`, {
+        method: 'POST'
+    });
+    
+    const result = await res.json();
+    showModal('Test Result', result);
+    
+    if (result.success) {
+        setTimeout(() => location.reload(), 1500);
+    }
+}
+
+async function executeAction(actionId, actionName) {
+    const inputStr = prompt('Enter input (JSON) or leave empty:', '{}');
+    if (inputStr === null) return;
+    
+    let input;
+    try {
+        input = JSON.parse(inputStr);
+    } catch {
+        alert('Invalid JSON');
+        return;
+    }
+    
+    const res = await fetch(`/account/${accountNumber}/integrations/${providerKey}/actions/${actionId}/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input })
+    });
+    
+    const result = await res.json();
+    showModal(`${actionName} Result`, result);
+}
+
+function showModal(title, content) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalContent').textContent = JSON.stringify(content, null, 2);
+    document.getElementById('resultModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('resultModal').classList.add('hidden');
+}
+</script>

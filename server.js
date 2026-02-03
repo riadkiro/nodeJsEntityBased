@@ -1,3 +1,6 @@
+//Charger les variables d'environnement
+require('dotenv').config();
+
 //Initialiser les modules qu'on va utiliser
 const express = require("express");
 const expressLayouts = require("express-ejs-layouts");

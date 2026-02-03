@@ -1,0 +1,231 @@
+<%# Admin - Provider Edit/Create %>
+<div class="panel p-6 max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <a href="/account/<%= account_number %>/integrations/admin/providers" class="text-sm text-gray-500 hover:text-primary mb-1 inline-block">
+                ← Back to Providers
+            </a>
+            <h1 class="text-2xl font-semibold dark:text-white">
+                <%= isNew ? 'New Provider' : 'Edit Provider' %>
+            </h1>
+        </div>
+        <% if (!isNew) { %>
+            <div class="flex gap-2">
+                <% if (provider.status === 'draft') { %>
+                    <button onclick="publishProvider()" class="btn btn-success btn-sm">Publish</button>
+                <% } else { %>
+                    <button onclick="unpublishProvider()" class="btn btn-outline-warning btn-sm">Unpublish</button>
+                <% } %>
+                <button onclick="deleteProvider()" class="btn btn-outline-danger btn-sm">Delete</button>
+            </div>
+        <% } %>
+    </div>
+
+    <form id="providerForm" class="space-y-6">
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium dark:text-gray-300 mb-1">Key (slug)</label>
+                <input type="text" name="key" value="<%= provider?.key || '' %>" 
+                       placeholder="my-provider" pattern="[a-z0-9-]+"
+                       class="form-input w-full dark:bg-gray-900 dark:border-gray-700" 
+                       <%= isNew ? '' : 'readonly' %> required>
+                <p class="text-xs text-gray-500 mt-1">Lowercase letters, numbers, hyphens only</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium dark:text-gray-300 mb-1">Name</label>
+                <input type="text" name="name" value="<%= provider?.name || '' %>" 
+                       class="form-input w-full dark:bg-gray-900 dark:border-gray-700" required>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium dark:text-gray-300 mb-1">Category</label>
+                <input type="text" name="category" value="<%= provider?.category || '' %>" 
+                       placeholder="e.g., Media, CRM, Marketing"
+                       class="form-input w-full dark:bg-gray-900 dark:border-gray-700">
+            </div>
+            <div>
+                <label class="block text-sm font-medium dark:text-gray-300 mb-1">Logo URL</label>
+                <input type="url" name="logo" value="<%= provider?.logo || '' %>" 
+                       placeholder="https://..."
+                       class="form-input w-full dark:bg-gray-900 dark:border-gray-700">
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium dark:text-gray-300 mb-1">Base URL</label>
+            <input type="url" name="baseUrl" value="<%= provider?.baseUrl || '' %>" 
+                   placeholder="https://api.example.com"
+                   class="form-input w-full dark:bg-gray-900 dark:border-gray-700" required>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 class="text-lg font-medium dark:text-white mb-4">Authentication</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium dark:text-gray-300 mb-1">Auth Type</label>
+                    <select name="authType" class="form-select w-full dark:bg-gray-900 dark:border-gray-700">
+                        <option value="none" <%= provider?.authType === 'none' ? 'selected' : '' %>>None</option>
+                        <option value="api_key" <%= provider?.authType === 'api_key' ? 'selected' : '' %>>API Key</option>
+                        <option value="bearer" <%= provider?.authType === 'bearer' ? 'selected' : '' %>>Bearer Token</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium dark:text-gray-300 mb-1">Injection Mode</label>
+                    <select name="authInjection.mode" class="form-select w-full dark:bg-gray-900 dark:border-gray-700">
+                        <option value="header" <%= provider?.authInjection?.mode === 'header' ? 'selected' : '' %>>Header</option>
+                        <option value="query" <%= provider?.authInjection?.mode === 'query' ? 'selected' : '' %>>Query Parameter</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mt-4">
+                <div>
+                    <label class="block text-sm font-medium dark:text-gray-300 mb-1">Header/Param Name</label>
+                    <input type="text" name="authInjection.name" 
+                           value="<%= provider?.authInjection?.name || 'Authorization' %>"
+                           class="form-input w-full dark:bg-gray-900 dark:border-gray-700">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium dark:text-gray-300 mb-1">Format</label>
+                    <input type="text" name="authInjection.format" 
+                           value="<%= provider?.authInjection?.format || 'Bearer {{token}}' %>"
+                           placeholder="Bearer {{token}} or {{token}}"
+                           class="form-input w-full dark:bg-gray-900 dark:border-gray-700">
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 class="text-lg font-medium dark:text-white mb-4">Default Headers (JSON)</h3>
+            <textarea name="defaultHeaders" rows="4" 
+                      class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-700"
+                      placeholder='{"Content-Type": "application/json"}'><%= JSON.stringify(provider?.defaultHeaders || {}, null, 2) %></textarea>
+        </div>
+
+        <% if (!isNew && typeof actions !== 'undefined') { %>
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 class="text-lg font-medium dark:text-white mb-4">Test Action</h3>
+            <select name="testActionId" class="form-select w-full dark:bg-gray-900 dark:border-gray-700">
+                <option value="">-- Select an action for connection test --</option>
+                <% actions.forEach(action => { %>
+                    <option value="<%= action._id %>" <%= provider?.testActionId?.toString() === action._id.toString() ? 'selected' : '' %>>
+                        <%= action.name %> (<%= action.actionKey %>)
+                    </option>
+                <% }) %>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">This action will be used when tenants test their connection</p>
+        </div>
+        <% } %>
+
+        <div class="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <a href="/account/<%= account_number %>/integrations/admin/providers" class="btn btn-outline-dark">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <%= isNew ? 'Create Provider' : 'Save Changes' %>
+            </button>
+        </div>
+    </form>
+
+    <% if (!isNew && typeof actions !== 'undefined') { %>
+    <div class="border-t border-gray-200 dark:border-gray-700 mt-8 pt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium dark:text-white">Actions</h3>
+            <a href="/account/<%= account_number %>/integrations/admin/providers/<%= provider.key %>/actions/new" 
+               class="btn btn-sm btn-outline-primary">
+                + Add Action
+            </a>
+        </div>
+        <% if (actions.length > 0) { %>
+            <div class="space-y-2">
+                <% actions.forEach(action => { %>
+                    <a href="/account/<%= account_number %>/integrations/admin/actions/<%= action._id %>"
+                       class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded hover:border-primary transition-colors">
+                        <div>
+                            <span class="font-medium dark:text-white"><%= action.name %></span>
+                            <span class="text-xs text-gray-500 ml-2">(<%= action.actionKey %>)</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800">
+                                <%= action.http.method %> <%= action.http.path %>
+                            </span>
+                            <span class="text-xs px-2 py-1 rounded <%= action.isPublished ? 'bg-success/20 text-success' : 'bg-gray-100 dark:bg-gray-800 text-gray-500' %>">
+                                <%= action.isPublished ? 'Published' : 'Draft' %>
+                            </span>
+                        </div>
+                    </a>
+                <% }) %>
+            </div>
+        <% } else { %>
+            <p class="text-gray-500 dark:text-gray-400 text-center py-4">No actions yet. Create your first action.</p>
+        <% } %>
+    </div>
+    <% } %>
+</div>
+
+<script>
+const accountNumber = '<%= account_number %>';
+const providerKey = '<%= provider?.key || '' %>';
+const isNew = <%= isNew %>;
+
+document.getElementById('providerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    const data = {
+        key: formData.get('key'),
+        name: formData.get('name'),
+        category: formData.get('category'),
+        logo: formData.get('logo'),
+        baseUrl: formData.get('baseUrl'),
+        authType: formData.get('authType'),
+        authInjection: {
+            mode: formData.get('authInjection.mode'),
+            name: formData.get('authInjection.name'),
+            format: formData.get('authInjection.format')
+        },
+        testActionId: formData.get('testActionId') || null
+    };
+    
+    try {
+        data.defaultHeaders = JSON.parse(formData.get('defaultHeaders') || '{}');
+    } catch {
+        alert('Invalid JSON in Default Headers');
+        return;
+    }
+    
+    const url = isNew 
+        ? `/account/${accountNumber}/integrations/admin/providers`
+        : `/account/${accountNumber}/integrations/admin/providers/${providerKey}`;
+    
+    const res = await fetch(url, {
+        method: isNew ? 'POST' : 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    
+    const result = await res.json();
+    if (result.success) {
+        window.location.href = `/account/${accountNumber}/integrations/admin/providers/${result.provider.key}`;
+    } else {
+        alert(result.error || 'Failed to save');
+    }
+});
+
+async function publishProvider() {
+    const res = await fetch(`/account/${accountNumber}/integrations/admin/providers/${providerKey}/publish`, { method: 'POST' });
+    if ((await res.json()).success) location.reload();
+}
+
+async function unpublishProvider() {
+    const res = await fetch(`/account/${accountNumber}/integrations/admin/providers/${providerKey}/unpublish`, { method: 'POST' });
+    if ((await res.json()).success) location.reload();
+}
+
+async function deleteProvider() {
+    if (!confirm('Delete this provider and all its actions?')) return;
+    const res = await fetch(`/account/${accountNumber}/integrations/admin/providers/${providerKey}`, { method: 'DELETE' });
+    if ((await res.json()).success) {
+        window.location.href = `/account/${accountNumber}/integrations/admin/providers`;
+    }
+}
+</script>

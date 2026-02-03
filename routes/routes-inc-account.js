@@ -34,6 +34,11 @@ router.use("/", require("./datatable.routes.js"));
 // Profile Page
 router.use("/profile", require("./profile.routes.js"));
 
+// Integration Engine
+router.use("/integrations/admin", require("../src/integrations/routes/admin.providers.routes.js"));
+router.use("/integrations/admin", require("../src/integrations/routes/admin.actions.routes.js"));
+router.use("/integrations", require("../src/integrations/routes/tenant.integrations.routes.js"));
+
 // Tasks Page
 router.get("/tasks", (req, res) => {
     res.render("record/record-tasks", {

@@ -1,0 +1,209 @@
+<%# Admin - Action Edit/Create %>
+<div class="panel p-6 max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <a href="/account/<%= account_number %>/integrations/admin/providers/<%= provider.key %>" class="text-sm text-gray-500 hover:text-primary mb-1 inline-block">
+                ← Back to <%= provider.name %>
+            </a>
+            <h1 class="text-2xl font-semibold dark:text-white">
+                <%= isNew ? 'New Action' : 'Edit Action' %>
+            </h1>
+        </div>
+        <% if (!isNew) { %>
+            <button onclick="deleteAction()" class="btn btn-outline-danger btn-sm">Delete</button>
+        <% } %>
+    </div>
+
+    <form id="actionForm" class="space-y-6">
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium dark:text-gray-300 mb-1">Action Key</label>
+                <input type="text" name="actionKey" value="<%= action?.actionKey || '' %>" 
+                       placeholder="search-photos" pattern="[a-z0-9-]+"
+                       class="form-input w-full dark:bg-gray-900 dark:border-gray-700" 
+                       <%= isNew ? '' : 'readonly' %> required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium dark:text-gray-300 mb-1">Name</label>
+                <input type="text" name="name" value="<%= action?.name || '' %>" 
+                       class="form-input w-full dark:bg-gray-900 dark:border-gray-700" required>
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium dark:text-gray-300 mb-1">Description</label>
+            <textarea name="description" rows="2"
+                      class="form-textarea w-full dark:bg-gray-900 dark:border-gray-700"><%= action?.description || '' %></textarea>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 class="text-lg font-medium dark:text-white mb-4">HTTP Configuration</h3>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium dark:text-gray-300 mb-1">Method</label>
+                    <select name="http.method" class="form-select w-full dark:bg-gray-900 dark:border-gray-700">
+                        <% ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].forEach(m => { %>
+                            <option value="<%= m %>" <%= action?.http?.method === m ? 'selected' : '' %>><%= m %></option>
+                        <% }) %>
+                    </select>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium dark:text-gray-300 mb-1">Path</label>
+                    <input type="text" name="http.path" value="<%= action?.http?.path || '/' %>" 
+                           placeholder="/search/photos"
+                           class="form-input w-full dark:bg-gray-900 dark:border-gray-700" required>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 class="text-lg font-medium dark:text-white mb-4">Request Template</h3>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium dark:text-gray-300 mb-1">Query Parameters (JSON)</label>
+                <textarea name="requestTemplate.query" rows="3"
+                          class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-700"
+                          placeholder='{"query": "{{input.query}}", "per_page": 10}'><%= JSON.stringify(action?.requestTemplate?.query || {}, null, 2) %></textarea>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium dark:text-gray-300 mb-1">Headers (JSON)</label>
+                <textarea name="requestTemplate.headers" rows="3"
+                          class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-700"
+                          placeholder='{"X-Custom": "value"}'><%= JSON.stringify(action?.requestTemplate?.headers || {}, null, 2) %></textarea>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium dark:text-gray-300 mb-1">Body (JSON) - for POST/PUT/PATCH</label>
+                <textarea name="requestTemplate.body" rows="4"
+                          class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-700"
+                          placeholder='{"name": "{{input.name}}"}'><%= JSON.stringify(action?.requestTemplate?.body || {}, null, 2) %></textarea>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 class="text-lg font-medium dark:text-white mb-4">Response Mapping (JSON)</h3>
+            <textarea name="responseMapping" rows="3"
+                      class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-700"
+                      placeholder='{"photos": "results", "total": "total"}'><%= JSON.stringify(action?.responseMapping || {}, null, 2) %></textarea>
+            <p class="text-xs text-gray-500 mt-1">Map response paths to output keys. Example: {"items": "data.results"}</p>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 class="text-lg font-medium dark:text-white mb-4">Test Configuration</h3>
+            <div>
+                <label class="block text-sm font-medium dark:text-gray-300 mb-1">Test Payload (JSON)</label>
+                <textarea name="testPayload" rows="3"
+                          class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-700"
+                          placeholder='{"query": "mountains"}'><%= JSON.stringify(action?.testPayload || {}, null, 2) %></textarea>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4 border-t border-gray-200 dark:border-gray-700 pt-6">
+            <label class="flex items-center gap-2">
+                <input type="checkbox" name="isPublished" <%= action?.isPublished ? 'checked' : '' %> 
+                       class="form-checkbox rounded dark:bg-gray-900">
+                <span class="dark:text-white">Published</span>
+            </label>
+        </div>
+
+        <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+            <% if (!isNew) { %>
+                <button type="button" onclick="testAction()" class="btn btn-outline-success">
+                    🧪 Test Action
+                </button>
+            <% } else { %>
+                <div></div>
+            <% } %>
+            <div class="flex gap-3">
+                <a href="/account/<%= account_number %>/integrations/admin/providers/<%= provider.key %>" class="btn btn-outline-dark">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    <%= isNew ? 'Create Action' : 'Save Changes' %>
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <% if (!isNew) { %>
+    <div id="testResults" class="hidden mt-6 p-4 rounded border border-gray-200 dark:border-gray-700">
+        <h4 class="font-medium dark:text-white mb-2">Test Results</h4>
+        <pre id="testOutput" class="text-xs bg-gray-900 text-green-400 p-3 rounded overflow-auto max-h-64"></pre>
+    </div>
+    <% } %>
+</div>
+
+<script>
+const accountNumber = '<%= account_number %>';
+const providerKey = '<%= provider.key %>';
+const actionId = '<%= action?._id || '' %>';
+const isNew = <%= isNew %>;
+
+document.getElementById('actionForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    const data = {
+        actionKey: formData.get('actionKey'),
+        name: formData.get('name'),
+        description: formData.get('description'),
+        http: {
+            method: formData.get('http.method'),
+            path: formData.get('http.path')
+        },
+        isPublished: formData.get('isPublished') === 'on'
+    };
+    
+    try {
+        data.requestTemplate = {
+            query: JSON.parse(formData.get('requestTemplate.query') || '{}'),
+            headers: JSON.parse(formData.get('requestTemplate.headers') || '{}'),
+            body: JSON.parse(formData.get('requestTemplate.body') || '{}')
+        };
+        data.responseMapping = JSON.parse(formData.get('responseMapping') || '{}');
+        data.testPayload = JSON.parse(formData.get('testPayload') || '{}');
+    } catch {
+        alert('Invalid JSON in one of the fields');
+        return;
+    }
+    
+    const url = isNew 
+        ? `/account/${accountNumber}/integrations/admin/providers/${providerKey}/actions`
+        : `/account/${accountNumber}/integrations/admin/actions/${actionId}`;
+    
+    const res = await fetch(url, {
+        method: isNew ? 'POST' : 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    
+    const result = await res.json();
+    if (result.success) {
+        window.location.href = `/account/${accountNumber}/integrations/admin/providers/${providerKey}`;
+    } else {
+        alert(result.error || 'Failed to save');
+    }
+});
+
+async function testAction() {
+    const token = prompt('Enter API token/key for testing:');
+    if (!token) return;
+    
+    const res = await fetch(`/account/${accountNumber}/integrations/admin/actions/${actionId}/test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ testCredentials: { token } })
+    });
+    
+    const result = await res.json();
+    document.getElementById('testResults').classList.remove('hidden');
+    document.getElementById('testOutput').textContent = JSON.stringify(result, null, 2);
+}
+
+async function deleteAction() {
+    if (!confirm('Delete this action?')) return;
+    const res = await fetch(`/account/${accountNumber}/integrations/admin/actions/${actionId}`, { method: 'DELETE' });
+    if ((await res.json()).success) {
+        window.location.href = `/account/${accountNumber}/integrations/admin/providers/${providerKey}`;
+    }
+}
+</script>

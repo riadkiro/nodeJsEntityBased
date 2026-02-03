@@ -8,7 +8,9 @@ import React from 'react'
 export default function LeftSidebar({
     activeTab,
     setActiveTab,
-    insertVariableToken
+    insertVariableToken,
+    isSettingsOpen,
+    onSettingsToggle
 }) {
     const toggleTab = (tab) => {
         setActiveTab(activeTab === tab ? null : tab)
@@ -70,6 +72,21 @@ export default function LeftSidebar({
                     onClick={() => toggleTab('dynamic-nav')}
                 >
                     <iconify-icon icon="solar:database-bold-duotone" width="24"></iconify-icon>
+                </button>
+
+                {/* Spacer to push settings to bottom */}
+                <div className="flex-1"></div>
+
+                {/* Settings Button */}
+                <button
+                    className={`w-10 h-10 rounded-full transition-colors flex items-center justify-center ${isSettingsOpen
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                        }`}
+                    title="Paramètres du document"
+                    onClick={onSettingsToggle}
+                >
+                    <iconify-icon icon="solar:settings-bold-duotone" width="24"></iconify-icon>
                 </button>
             </div>
 

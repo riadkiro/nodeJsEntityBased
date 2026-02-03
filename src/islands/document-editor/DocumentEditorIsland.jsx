@@ -42,8 +42,9 @@ function isSelectionCoversAll(editorRootEl) {
 // Components
 import EditorHeader from './components/EditorHeader'
 import LeftSidebar from './components/LeftSidebar'
-import RightSidebar from './components/RightSidebar'
 import CanvasContainer from './components/CanvasContainer'
+import AIChatSidebar from './components/AIChatSidebar'
+import SettingsPanel from './components/SettingsPanel'
 
 // Default document structure
 const createDefaultDoc = () => ({
@@ -102,6 +103,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const [openSections, setOpenSections] = useState({ info: true, margins: false, pages: true })
     const [isGlobalSelection, setIsGlobalSelection] = useState(false)
     const [pasteMode, setPasteMode] = useState('match') // keep, match, plain
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false) // Settings popup state
 
     // Formatting state (for toolbar display)
     const [currentFont, setCurrentFont] = useState('Arial')
@@ -840,10 +842,11 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     // ========== RENDER ==========
     return (
         <div
-            className="flex flex-col h-screen bg-gray-100 dark:bg-gray-950"
+            className="flex flex-col bg-gray-100 dark:bg-gray-950"
             onMouseUp={handleMouseUp}
             onKeyDown={handleGlobalKeyDown}
             tabIndex={-1}
+            style={{ height: 'calc(100vh - 58px)' }}
         >
             {/* Header with Toolbar */}
             <EditorHeader
@@ -880,6 +883,24 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
                     insertVariableToken={insertVariableToken}
+                    isSettingsOpen={isSettingsOpen}
+                    onSettingsToggle={() => setIsSettingsOpen(!isSettingsOpen)}
+                />
+
+                {/* Settings Panel Popup */}
+                <SettingsPanel
+                    isOpen={isSettingsOpen}
+                    onClose={() => setIsSettingsOpen(false)}
+                    doc={doc}
+                    setDoc={setDoc}
+                    openSections={openSections}
+                    setOpenSections={setOpenSections}
+                    selectedPageIndex={selectedPageIndex}
+                    setSelectedPageIndex={setSelectedPageIndex}
+                    updateDimensions={updateDimensions}
+                    addPage={addPage}
+                    duplicatePage={duplicatePage}
+                    deletePage={deletePage}
                 />
 
                 {/* Canvas */}
@@ -899,20 +920,8 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     addPage={addPage}
                 />
 
-                {/* Right Sidebar */}
-                <RightSidebar
-                    doc={doc}
-                    setDoc={setDoc}
-                    openSections={openSections}
-                    setOpenSections={setOpenSections}
-                    selectedPageIndex={selectedPageIndex}
-                    setSelectedPageIndex={setSelectedPageIndex}
-                    updateDimensions={updateDimensions}
-                    addPage={addPage}
-                    duplicatePage={duplicatePage}
-                    deletePage={deletePage}
-                    triggerSave={triggerSave}
-                />
+                {/* AI Chat Sidebar */}
+                <AIChatSidebar />
             </div>
 
             {/* Global Selection Overlay */}

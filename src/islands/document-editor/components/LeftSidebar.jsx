@@ -17,7 +17,7 @@ export default function LeftSidebar({
     }
 
     return (
-        <>
+        <div className="relative flex">
             {/* Toolbar (Left) */}
             <div className="w-16 bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col items-center py-4 gap-4">
                 {/* Text Tool */}
@@ -92,7 +92,7 @@ export default function LeftSidebar({
 
             {/* Panel Content */}
             {activeTab && (
-                <div className="w-64 bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col">
+                <div className="absolute top-0 bottom-0 bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col z-20 shadow-xl" style={{ width: '204px', marginLeft: '65px' }}>
                     {/* Panel Header */}
                     <div className="p-4 border-b dark:border-gray-800 flex items-center justify-between">
                         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
@@ -122,7 +122,7 @@ export default function LeftSidebar({
                     </div>
                 </div>
             )}
-        </>
+        </div>
     )
 }
 

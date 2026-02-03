@@ -142,6 +142,12 @@ function TextPanel() {
                 <div
                     className="sortable-source px-3 py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-move hover:border-primary hover:bg-primary/5 transition-colors"
                     data-element-type="heading"
+                    draggable="true"
+                    onDragStart={(e) => {
+                        e.dataTransfer.setData('text/html', '<h1>Titre</h1><br><br>')
+                        e.dataTransfer.setData('text/plain', 'Titre')
+                        e.dataTransfer.effectAllowed = 'copy'
+                    }}
                 >
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                         <iconify-icon icon="tabler:heading" width="20"></iconify-icon>
@@ -152,6 +158,12 @@ function TextPanel() {
                 <div
                     className="sortable-source px-3 py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-move hover:border-primary hover:bg-primary/5 transition-colors"
                     data-element-type="paragraph"
+                    draggable="true"
+                    onDragStart={(e) => {
+                        e.dataTransfer.setData('text/html', '<p>Paragraphe de texte...</p><br><br>')
+                        e.dataTransfer.setData('text/plain', 'Paragraphe de texte...')
+                        e.dataTransfer.effectAllowed = 'copy'
+                    }}
                 >
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                         <iconify-icon icon="tabler:text-size" width="20"></iconify-icon>
@@ -162,6 +174,18 @@ function TextPanel() {
                 <div
                     className="sortable-source px-3 py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-move hover:border-primary hover:bg-primary/5 transition-colors"
                     data-element-type="divider"
+                    draggable="true"
+                    onDragStart={(e) => {
+                        // Container 100% width qui réagit aux alignements, avec élément resizable à l'intérieur
+                        const html = `<div class="doc-separator-container" style="width: 100%; display: block; margin: 16px 0;" tabindex="0">
+                            <div class="doc-separator-line" style="border-top: 2px solid #e5e7eb; display: inline-block; position: relative; min-height: 8px; width: 100%; cursor: pointer;">
+                                <div class="doc-resize-handle" style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 8px; height: 20px; background: #3b82f6; border-radius: 4px; cursor: ew-resize; opacity: 0; transition: opacity 0.2s;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'" onmousedown="(function(e){e.preventDefault();e.stopPropagation();const line=e.target.parentElement;const startX=e.clientX;const startW=line.offsetWidth;const onMouseMove=function(ev){const dx=ev.clientX-startX;const newW=Math.max(50,startW+dx);line.style.width=newW+'px';};const onMouseUp=function(){document.removeEventListener('mousemove',onMouseMove);document.removeEventListener('mouseup',onMouseUp);};document.addEventListener('mousemove',onMouseMove);document.addEventListener('mouseup',onMouseUp);})(event)"></div>
+                            </div>
+                        </div><br><br>`
+                        e.dataTransfer.setData('text/html', html)
+                        e.dataTransfer.setData('text/plain', '---')
+                        e.dataTransfer.effectAllowed = 'copy'
+                    }}
                 >
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                         <iconify-icon icon="tabler:separator-horizontal" width="20"></iconify-icon>

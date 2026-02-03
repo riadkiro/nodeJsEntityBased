@@ -11,6 +11,33 @@
  */
 export function formatDoc(command, value = null) {
     document.execCommand(command, false, value)
+
+    // Apply text-align to separator containers when alignment commands are used
+    const alignmentCommands = {
+        'justifyLeft': 'left',
+        'justifyCenter': 'center',
+        'justifyRight': 'right',
+        'justifyFull': 'justify'
+    }
+
+    if (alignmentCommands[command]) {
+        const alignment = alignmentCommands[command]
+        const sel = window.getSelection()
+
+        if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0)
+            let node = range.commonAncestorContainer
+
+            // Find closest separator container
+            while (node && node !== document.body) {
+                if (node.nodeType === Node.ELEMENT_NODE && node.classList && node.classList.contains('doc-separator-container')) {
+                    node.style.textAlign = alignment
+                    break
+                }
+                node = node.parentNode
+            }
+        }
+    }
 }
 
 /**

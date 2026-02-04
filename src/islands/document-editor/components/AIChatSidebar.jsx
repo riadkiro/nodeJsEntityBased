@@ -34,31 +34,46 @@ TYPES D'ACTIONS:
 
 RÈGLES STRICTES:
 1. matchText DOIT être EXACTEMENT copié du document (sensible à la casse et aux espaces)
-2. Maximum 10 actions par réponse
-3. Trie les actions par ordre d'importance (fautes graves en premier)
-4. Confidence: 0.9+ pour fautes évidentes, 0.7-0.9 pour améliorations
-5. NE PAS ajouter de texte en dehors du bloc \`\`\`actions
-6. Chaque action doit avoir un id unique (1, 2, 3...)
+2. RECHERCHE EXHAUSTIVE: Parcours TOUT le document et trouve CHAQUE occurrence d'une faute
+   - Si "Résiliatione" apparaît 3 fois, crée 3 actions séparées avec le matchText EXACT de chaque occurrence
+   - Ne rate aucune occurrence!
+3. RESPECT DE LA CASSE dans les corrections:
+   - Si le mot original commence par une majuscule -> correction avec majuscule
+   - "Resiliation" -> "Résiliation" (garde la majuscule)
+   - "resiliation" -> "résiliation" (garde la minuscule)
+4. Maximum 10 actions par réponse
+5. Trie les actions par ordre d'apparition dans le document
+6. Confidence: 0.9+ pour fautes évidentes, 0.7-0.9 pour améliorations
+7. NE PAS ajouter de texte en dehors du bloc \`\`\`actions
+8. Chaque action doit avoir un id unique (1, 2, 3...)
 
 EXEMPLE DE RÉPONSE VALIDE:
 \`\`\`actions
 {
-  "message": "J'ai trouvé 2 fautes d'orthographe à corriger.",
+  "message": "J'ai trouvé 3 fautes d'orthographe à corriger.",
   "actions": [
     {
       "id": "1",
       "type": "replace_between_anchors",
-      "description": "Corriger 'teh' en 'the'",
-      "target": { "pageIndex": 0, "matchText": "teh" },
-      "patch": { "replacement": "the" },
+      "description": "Corriger 'Résiliatione' dans le titre",
+      "target": { "pageIndex": 0, "matchText": "Résiliatione" },
+      "patch": { "replacement": "Résiliation" },
       "confidence": 0.95
     },
     {
       "id": "2", 
       "type": "replace_between_anchors",
-      "description": "Corriger 'recieve' en 'receive'",
-      "target": { "pageIndex": 0, "matchText": "recieve" },
-      "patch": { "replacement": "receive" },
+      "description": "Corriger 'résiliatione' dans le sous-titre",
+      "target": { "pageIndex": 0, "matchText": "résiliatione" },
+      "patch": { "replacement": "résiliation" },
+      "confidence": 0.95
+    },
+    {
+      "id": "3", 
+      "type": "replace_between_anchors",
+      "description": "Corriger 'Résiliatione' dans le paragraphe",
+      "target": { "pageIndex": 0, "matchText": "Résiliatione" },
+      "patch": { "replacement": "Résiliation" },
       "confidence": 0.95
     }
   ]
@@ -106,7 +121,7 @@ export default function AIChatSidebar({
     const [messages, setMessages] = useState([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState(null)
-    const [mode, setMode] = useState('assistant') // 'assistant' | 'agent'
+    const [mode, setMode] = useState('agent') // 'assistant' | 'agent' - agent by default
     const [model, setModel] = useState('gpt-4o-mini')
 
     // Multi-actions state
@@ -141,6 +156,12 @@ export default function AIChatSidebar({
     // Clear all highlights
     const clearHighlights = useCallback(() => {
         document.querySelectorAll('.ai-highlight').forEach(mark => {
+            // Remove preview span BEFORE getting textContent
+            const previewSpan = mark.querySelector('.ai-preview-new')
+            if (previewSpan) {
+                previewSpan.remove()
+            }
+
             const parent = mark.parentNode
             if (parent) {
                 parent.replaceChild(document.createTextNode(mark.textContent), mark)
@@ -155,6 +176,16 @@ export default function AIChatSidebar({
 
         // Clear existing highlights first (inline to avoid circular deps)
         document.querySelectorAll('.ai-highlight').forEach(mark => {
+            // Remove event listeners
+            mark.onmouseenter = null
+            mark.onmouseleave = null
+
+            // IMPORTANT: Remove preview span BEFORE getting textContent
+            const previewSpan = mark.querySelector('.ai-preview-new')
+            if (previewSpan) {
+                previewSpan.remove()
+            }
+
             const parent = mark.parentNode
             if (parent) {
                 parent.replaceChild(document.createTextNode(mark.textContent), mark)
@@ -174,56 +205,68 @@ export default function AIChatSidebar({
 
             const matchText = action.target.matchText
 
-            // Walk through text nodes
-            const walker = document.createTreeWalker(
-                pageEl,
-                NodeFilter.SHOW_TEXT,
-                null,
-                false
-            )
+            // Find ALL occurrences using a different approach
+            const highlightAllOccurrences = () => {
+                const walker = document.createTreeWalker(
+                    pageEl,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                )
 
-            while (walker.nextNode()) {
-                const node = walker.currentNode
-                const content = node.textContent
+                const nodesToHighlight = []
 
-                // Try exact match first, then case-insensitive
-                let idx = content.indexOf(matchText)
-                let actualMatchText = matchText
+                while (walker.nextNode()) {
+                    const node = walker.currentNode
+                    const content = node.textContent
 
-                if (idx === -1) {
-                    idx = content.toLowerCase().indexOf(matchText.toLowerCase())
+                    // Try exact match first, then case-insensitive
+                    let idx = content.indexOf(matchText)
+                    let actualMatchText = matchText
+
+                    if (idx === -1) {
+                        idx = content.toLowerCase().indexOf(matchText.toLowerCase())
+                        if (idx !== -1) {
+                            actualMatchText = content.substring(idx, idx + matchText.length)
+                        }
+                    }
+
                     if (idx !== -1) {
-                        actualMatchText = content.substring(idx, idx + matchText.length)
+                        nodesToHighlight.push({ node, idx, length: actualMatchText.length })
                     }
                 }
 
-                if (idx !== -1) {
-                    // Split the text node and wrap the match
-                    const range = document.createRange()
-                    range.setStart(node, idx)
-                    range.setEnd(node, idx + actualMatchText.length)
-
-                    const highlight = document.createElement('mark')
-                    highlight.className = 'ai-highlight'
-                    highlight.dataset.actionId = action.id
-                    highlight.style.cssText = `
-                        background: linear-gradient(to bottom, #fef08a 0%, #fde047 100%);
-                        padding: 1px 2px;
-                        border-radius: 2px;
-                        cursor: pointer;
-                        transition: all 0.2s ease;
-                        display: inline;
-                    `
-
+                // Process in reverse order to not mess up indices
+                nodesToHighlight.reverse().forEach(({ node, idx, length }) => {
                     try {
+                        const range = document.createRange()
+                        range.setStart(node, idx)
+                        range.setEnd(node, idx + length)
+
+                        const highlight = document.createElement('mark')
+                        highlight.className = 'ai-highlight'
+                        highlight.dataset.actionId = action.id
+                        highlight.style.cssText = `
+                            background: linear-gradient(to bottom, #fef08a 0%, #fde047 100%);
+                            padding: 1px 2px;
+                            border-radius: 2px;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            display: inline;
+                        `
+
+                        // Add hover events on the highlight itself
+                        highlight.onmouseenter = () => setHoveredActionId(action.id)
+                        highlight.onmouseleave = () => setHoveredActionId(null)
+
                         range.surroundContents(highlight)
                     } catch (e) {
-                        // Range spans multiple nodes, can't wrap
-                        console.warn('Cannot highlight:', matchText)
+                        console.warn('Cannot highlight occurrence:', matchText)
                     }
-                    break // Only highlight first occurrence
-                }
+                })
             }
+
+            highlightAllOccurrences()
         })
     }, [pendingActions, actionStatus, pageRefs])
 
@@ -244,21 +287,87 @@ export default function AIChatSidebar({
         }
     }, [pendingActions, actionStatus, highlightMatches, clearHighlights])
 
-    // Update highlight emphasis on hover
+    // Update highlight emphasis on hover - show strikethrough + new text
     useEffect(() => {
         document.querySelectorAll('.ai-highlight').forEach(mark => {
             const actionId = mark.dataset.actionId
-            if (actionId === hoveredActionId) {
-                mark.style.background = 'linear-gradient(to bottom, #facc15 0%, #eab308 100%)'
-                mark.style.transform = 'scale(1.02)'
-                mark.style.boxShadow = '0 2px 8px rgba(234, 179, 8, 0.4)'
+            const isHovered = actionId === hoveredActionId
+
+            // Find the corresponding action to get replacement text
+            const action = pendingActions.find(a => a.id === actionId)
+            const replacement = action?.patch?.replacement
+
+            // Remove any existing preview
+            const existingPreview = mark.querySelector('.ai-preview-new')
+            if (existingPreview) {
+                existingPreview.remove()
+            }
+
+            if (isHovered && replacement) {
+                // Style the original text as strikethrough
+                mark.style.cssText = `
+                    background: linear-gradient(to bottom, #fecaca 0%, #fca5a5 100%);
+                    padding: 1px 2px;
+                    border-radius: 2px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    display: inline;
+                    text-decoration: line-through;
+                    text-decoration-color: #dc2626;
+                    color: #991b1b;
+                `
+
+                // Add the new text preview next to it
+                const preview = document.createElement('span')
+                preview.className = 'ai-preview-new'
+                preview.textContent = ` ${replacement}`
+                preview.style.cssText = `
+                    color: #16a34a !important;
+                    font-weight: 600;
+                    background: linear-gradient(to bottom, #dcfce7 0%, #bbf7d0 100%);
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    margin-left: 4px;
+                    text-decoration: none !important;
+                    display: inline-block;
+                    font-style: normal;
+                    border: 1px solid #86efac;
+                    cursor: pointer;
+                `
+
+                // Click on preview to apply correction
+                preview.onclick = (e) => {
+                    e.stopPropagation()
+                    if (applyPatch && actionStatus[action.id] === 'pending') {
+                        const result = applyPatch(action)
+                        if (result.success) {
+                            setActionStatus(prev => ({ ...prev, [action.id]: 'applied' }))
+                            setMessages(prev => [...prev, {
+                                role: 'system',
+                                content: `✅ ${action.description}`
+                            }])
+                        } else {
+                            setActionStatus(prev => ({ ...prev, [action.id]: 'failed' }))
+                        }
+                    }
+                }
+
+                mark.appendChild(preview)
+
             } else {
-                mark.style.background = 'linear-gradient(to bottom, #fef08a 0%, #fde047 100%)'
-                mark.style.transform = 'scale(1)'
-                mark.style.boxShadow = 'none'
+                // Reset to normal highlight style
+                mark.style.cssText = `
+                    background: linear-gradient(to bottom, #fef08a 0%, #fde047 100%);
+                    padding: 1px 2px;
+                    border-radius: 2px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    display: inline;
+                    text-decoration: none;
+                `
             }
         })
-    }, [hoveredActionId])
+    }, [hoveredActionId, pendingActions, applyPatch, actionStatus])
 
     // Scroll to highlighted text when hovering action
     const scrollToHighlight = useCallback((actionId) => {

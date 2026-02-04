@@ -1014,7 +1014,29 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                         return { success: false, message: `Page ${pageIndex + 1} non trouvée` }
                     }
 
-                    // Helper to find and replace in text nodes
+                    // FIRST: Check if text is in an ai-highlight mark and replace the whole mark
+                    const highlightMarks = pageEl.querySelectorAll('.ai-highlight')
+                    for (const mark of highlightMarks) {
+                        // Get original text (excluding the preview span)
+                        const previewSpan = mark.querySelector('.ai-preview-new')
+                        let markText = mark.textContent
+                        if (previewSpan) {
+                            markText = markText.replace(previewSpan.textContent, '')
+                        }
+
+                        // Check if this mark contains the text we're looking for
+                        if (markText === matchText ||
+                            markText.toLowerCase() === matchText.toLowerCase() ||
+                            markText.trim().toLowerCase() === matchText.trim().toLowerCase()) {
+                            // Replace the mark with the replacement text
+                            const textNode = document.createTextNode(replacement)
+                            mark.parentNode.replaceChild(textNode, mark)
+                            triggerSave()
+                            return { success: true, message: 'Texte remplacé' }
+                        }
+                    }
+
+                    // FALLBACK: Helper to find and replace in regular text nodes
                     const findAndReplace = (searchText, caseSensitive = true) => {
                         const walker = document.createTreeWalker(
                             pageEl,
@@ -1025,6 +1047,10 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
                         while (walker.nextNode()) {
                             const node = walker.currentNode
+                            // Skip text nodes inside ai-highlight marks
+                            if (node.parentElement?.classList?.contains('ai-highlight')) continue
+                            if (node.parentElement?.classList?.contains('ai-preview-new')) continue
+
                             const content = node.textContent
 
                             let idx = caseSensitive

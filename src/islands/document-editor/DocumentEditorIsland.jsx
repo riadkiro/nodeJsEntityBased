@@ -1287,6 +1287,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     getDocumentSnapshot={getDocumentSnapshot}
                     getSelectionText={getSelectionText}
                     applyPatch={applyPatch}
+                    pageRefs={pageRefs}
                 />
             </div>
 

@@ -98,7 +98,8 @@ export default function AIChatSidebar({
     accountNumber,
     getDocumentSnapshot,
     getSelectionText,
-    applyPatch
+    applyPatch,
+    pageRefs // Reference to page elements for highlighting
 }) {
     // ========== STATE ==========
     const [message, setMessage] = useState('')
@@ -112,6 +113,7 @@ export default function AIChatSidebar({
     const [pendingActions, setPendingActions] = useState([]) // Array of actions
     const [actionStatus, setActionStatus] = useState({}) // { [id]: 'pending' | 'applied' | 'ignored' | 'failed' }
     const [isApplying, setIsApplying] = useState(false)
+    const [hoveredActionId, setHoveredActionId] = useState(null) // For highlight emphasis
 
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const messagesEndRef = useRef(null)
@@ -134,6 +136,137 @@ export default function AIChatSidebar({
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages, pendingActions])
+
+    // ========== DOCUMENT HIGHLIGHTING ==========
+    // Clear all highlights
+    const clearHighlights = useCallback(() => {
+        document.querySelectorAll('.ai-highlight').forEach(mark => {
+            const parent = mark.parentNode
+            if (parent) {
+                parent.replaceChild(document.createTextNode(mark.textContent), mark)
+                parent.normalize() // Merge adjacent text nodes
+            }
+        })
+    }, [])
+
+    // Highlight matching text in document when actions are proposed
+    const highlightMatches = useCallback(() => {
+        if (!pageRefs?.current) return
+
+        // Clear existing highlights first (inline to avoid circular deps)
+        document.querySelectorAll('.ai-highlight').forEach(mark => {
+            const parent = mark.parentNode
+            if (parent) {
+                parent.replaceChild(document.createTextNode(mark.textContent), mark)
+                parent.normalize()
+            }
+        })
+
+        // Only highlight pending actions
+        const actionsToHighlight = pendingActions.filter(a =>
+            actionStatus[a.id] === 'pending' && a.target?.matchText
+        )
+
+        actionsToHighlight.forEach(action => {
+            const pageIndex = action.target?.pageIndex || 0
+            const pageEl = pageRefs.current[pageIndex]
+            if (!pageEl) return
+
+            const matchText = action.target.matchText
+
+            // Walk through text nodes
+            const walker = document.createTreeWalker(
+                pageEl,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            )
+
+            while (walker.nextNode()) {
+                const node = walker.currentNode
+                const content = node.textContent
+
+                // Try exact match first, then case-insensitive
+                let idx = content.indexOf(matchText)
+                let actualMatchText = matchText
+
+                if (idx === -1) {
+                    idx = content.toLowerCase().indexOf(matchText.toLowerCase())
+                    if (idx !== -1) {
+                        actualMatchText = content.substring(idx, idx + matchText.length)
+                    }
+                }
+
+                if (idx !== -1) {
+                    // Split the text node and wrap the match
+                    const range = document.createRange()
+                    range.setStart(node, idx)
+                    range.setEnd(node, idx + actualMatchText.length)
+
+                    const highlight = document.createElement('mark')
+                    highlight.className = 'ai-highlight'
+                    highlight.dataset.actionId = action.id
+                    highlight.style.cssText = `
+                        background: linear-gradient(to bottom, #fef08a 0%, #fde047 100%);
+                        padding: 1px 2px;
+                        border-radius: 2px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        display: inline;
+                    `
+
+                    try {
+                        range.surroundContents(highlight)
+                    } catch (e) {
+                        // Range spans multiple nodes, can't wrap
+                        console.warn('Cannot highlight:', matchText)
+                    }
+                    break // Only highlight first occurrence
+                }
+            }
+        })
+    }, [pendingActions, actionStatus, pageRefs])
+
+    // Apply highlights when actions change
+    useEffect(() => {
+        if (pendingActions.length > 0) {
+            // Small delay to ensure DOM is ready
+            requestAnimationFrame(() => {
+                highlightMatches()
+            })
+        } else {
+            clearHighlights()
+        }
+
+        // Cleanup on unmount or when actions cleared
+        return () => {
+            clearHighlights()
+        }
+    }, [pendingActions, actionStatus, highlightMatches, clearHighlights])
+
+    // Update highlight emphasis on hover
+    useEffect(() => {
+        document.querySelectorAll('.ai-highlight').forEach(mark => {
+            const actionId = mark.dataset.actionId
+            if (actionId === hoveredActionId) {
+                mark.style.background = 'linear-gradient(to bottom, #facc15 0%, #eab308 100%)'
+                mark.style.transform = 'scale(1.02)'
+                mark.style.boxShadow = '0 2px 8px rgba(234, 179, 8, 0.4)'
+            } else {
+                mark.style.background = 'linear-gradient(to bottom, #fef08a 0%, #fde047 100%)'
+                mark.style.transform = 'scale(1)'
+                mark.style.boxShadow = 'none'
+            }
+        })
+    }, [hoveredActionId])
+
+    // Scroll to highlighted text when hovering action
+    const scrollToHighlight = useCallback((actionId) => {
+        const highlight = document.querySelector(`.ai-highlight[data-action-id="${actionId}"]`)
+        if (highlight) {
+            highlight.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+    }, [])
 
     // ========== API CALL ==========
     const callOpenAI = async (conversationHistory, isAgent = false) => {
@@ -566,11 +699,18 @@ export default function AIChatSidebar({
                                     return (
                                         <div
                                             key={action.id}
-                                            className={`p-3 rounded-xl border transition-all ${isApplied ? 'bg-success/10 border-success/30 opacity-60' :
-                                                    isFailed ? 'bg-danger/10 border-danger/30' :
-                                                        isIgnored ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-50' :
-                                                            'bg-amber-500/10 border-amber-500/30'
+                                            className={`p-3 rounded-xl border transition-all cursor-pointer ${isApplied ? 'bg-success/10 border-success/30 opacity-60' :
+                                                isFailed ? 'bg-danger/10 border-danger/30' :
+                                                    isIgnored ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-50' :
+                                                        hoveredActionId === action.id
+                                                            ? 'bg-amber-500/20 border-amber-500/50 shadow-md'
+                                                            : 'bg-amber-500/10 border-amber-500/30'
                                                 }`}
+                                            onMouseEnter={() => {
+                                                setHoveredActionId(action.id)
+                                                scrollToHighlight(action.id)
+                                            }}
+                                            onMouseLeave={() => setHoveredActionId(null)}
                                         >
                                             {/* Status indicator */}
                                             <div className="flex items-center justify-between mb-2">
@@ -579,8 +719,8 @@ export default function AIChatSidebar({
                                                 </p>
                                                 {action.confidence && (
                                                     <span className={`text-[10px] px-1.5 py-0.5 rounded ${action.confidence >= 0.9 ? 'bg-success/20 text-success' :
-                                                            action.confidence >= 0.7 ? 'bg-amber-500/20 text-amber-600' :
-                                                                'bg-gray-200 text-gray-500'
+                                                        action.confidence >= 0.7 ? 'bg-amber-500/20 text-amber-600' :
+                                                            'bg-gray-200 text-gray-500'
                                                         }`}>
                                                         {Math.round(action.confidence * 100)}%
                                                     </span>

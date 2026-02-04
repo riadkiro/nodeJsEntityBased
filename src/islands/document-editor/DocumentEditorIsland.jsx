@@ -1069,6 +1069,12 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                             range.collapse(true)
                             sel.removeAllRanges()
                             sel.addRange(range)
+
+                            // Check for overflow and create new pages if needed
+                            requestAnimationFrame(() => {
+                                checkOverflow(pageEl, selectedPageIndex, docRef.current, setDoc, pageRefs)
+                            })
+
                             triggerSave()
                             return { success: true, message: 'Contenu inséré à la position du curseur' }
                         }
@@ -1080,6 +1086,11 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     while (wrapper.firstChild) {
                         pageEl.appendChild(wrapper.firstChild)
                     }
+
+                    // Check for overflow and create new pages if needed
+                    requestAnimationFrame(() => {
+                        checkOverflow(pageEl, selectedPageIndex, docRef.current, setDoc, pageRefs)
+                    })
 
                     triggerSave()
                     return { success: true, message: 'Contenu inséré dans le document' }

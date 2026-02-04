@@ -919,7 +919,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                 />
 
                 {/* AI Chat Sidebar */}
-                <AIChatSidebar />
+                <AIChatSidebar accountNumber={accountNumber} />
             </div>
 
             {/* Global Selection Overlay */}

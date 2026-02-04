@@ -1002,8 +1002,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
                 case 'replace_between_anchors': {
                     // Find text between two anchors and replace it
-                    const { pageIndex = selectedPageIndex, anchorStart, anchorEnd, matchText } = target
+                    const { pageIndex = selectedPageIndex, anchorStart, anchorEnd, matchText, before: beforeHint, after: afterHint } = target
                     const { replacement } = patch
+                    const actionId = action?.id // Get action ID for highlight-based replacement
 
                     if (!matchText || replacement === undefined) {
                         return { success: false, message: 'Texte à remplacer ou remplacement manquant' }
@@ -1012,6 +1013,55 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     const pageEl = pageRefs.current[pageIndex]
                     if (!pageEl) {
                         return { success: false, message: `Page ${pageIndex + 1} non trouvée` }
+                    }
+
+                    // MOST RELIABLE: Find highlight by action.id (the highlight is already correctly placed)
+                    if (actionId) {
+                        const exactHighlight = pageEl.querySelector(`.ai-highlight[data-action-id="${actionId}"]`)
+                        if (exactHighlight) {
+                            // Remove preview span if any
+                            const preview = exactHighlight.querySelector('.ai-preview-new')
+                            if (preview) preview.remove()
+
+                            // Replace the highlight with the replacement text
+                            const textNode = document.createTextNode(replacement)
+                            exactHighlight.parentNode.replaceChild(textNode, exactHighlight)
+                            // Normalize parent to merge adjacent text nodes
+                            exactHighlight.parentNode?.normalize?.()
+                            triggerSave()
+                            return { success: true, message: 'Texte remplacé' }
+                        }
+                    }
+
+                    // Helper: Find best occurrence using before/after locators
+                    const findBestOccurrence = (text, searchText, beforeHint, afterHint) => {
+                        const hits = []
+                        let start = 0
+                        while (true) {
+                            let idx = text.indexOf(searchText, start)
+                            if (idx === -1) {
+                                idx = text.toLowerCase().indexOf(searchText.toLowerCase(), start)
+                                if (idx === -1) break
+                            }
+                            const actualText = text.substring(idx, idx + searchText.length)
+                            const before = text.slice(Math.max(0, idx - 30), idx)
+                            const after = text.slice(idx + searchText.length, idx + searchText.length + 30)
+                            hits.push({ idx, before, after, actualText })
+                            start = idx + searchText.length
+                        }
+                        if (!hits.length) return null
+                        if (!beforeHint && !afterHint) return hits[0]
+
+                        let best = hits[0], bestScore = -1
+                        for (const h of hits) {
+                            const score =
+                                (beforeHint && h.before.includes(beforeHint) ? 2 : 0) +
+                                (afterHint && h.after.includes(afterHint) ? 2 : 0) +
+                                (beforeHint && h.before.toLowerCase().includes(beforeHint.toLowerCase()) ? 1 : 0) +
+                                (afterHint && h.after.toLowerCase().includes(afterHint.toLowerCase()) ? 1 : 0)
+                            if (score > bestScore) { best = h; bestScore = score }
+                        }
+                        return best
                     }
 
                     // FIRST: Check if text is in an ai-highlight mark and replace the whole mark
@@ -1036,7 +1086,54 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                         }
                     }
 
-                    // FALLBACK: Helper to find and replace in regular text nodes
+                    // LOCATOR-BASED REPLACEMENT: Use before/after to find the exact occurrence
+                    if (beforeHint || afterHint) {
+                        const walker = document.createTreeWalker(
+                            pageEl,
+                            NodeFilter.SHOW_TEXT,
+                            null,
+                            false
+                        )
+
+                        let bestNode = null
+                        let bestOcc = null
+                        let bestScore = -1
+
+                        while (walker.nextNode()) {
+                            const node = walker.currentNode
+                            if (node.parentElement?.classList?.contains('ai-highlight')) continue
+                            if (node.parentElement?.classList?.contains('ai-preview-new')) continue
+
+                            const content = node.textContent
+                            const occ = findBestOccurrence(content, matchText, beforeHint, afterHint)
+
+                            if (occ) {
+                                const score =
+                                    (beforeHint && occ.before.includes(beforeHint) ? 2 : 0) +
+                                    (afterHint && occ.after.includes(afterHint) ? 2 : 0)
+
+                                if (score > bestScore || bestNode === null) {
+                                    bestNode = node
+                                    bestOcc = occ
+                                    bestScore = score
+                                }
+                                if (score >= 4) break // Perfect match
+                            }
+                        }
+
+                        if (bestNode && bestOcc) {
+                            const content = bestNode.textContent
+                            const newContent =
+                                content.substring(0, bestOcc.idx) +
+                                replacement +
+                                content.substring(bestOcc.idx + bestOcc.actualText.length)
+                            bestNode.textContent = newContent
+                            triggerSave()
+                            return { success: true, message: 'Texte remplacé' }
+                        }
+                    }
+
+                    // FALLBACK: Helper to find and replace in regular text nodes (first match)
                     const findAndReplace = (searchText, caseSensitive = true) => {
                         const walker = document.createTreeWalker(
                             pageEl,

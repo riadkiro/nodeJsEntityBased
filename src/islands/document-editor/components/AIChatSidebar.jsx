@@ -21,7 +21,12 @@ Tu DOIS répondre UNIQUEMENT avec un bloc JSON \`\`\`actions contenant:
       "id": "1",
       "type": "replace_between_anchors",
       "description": "Description de la correction",
-      "target": { "pageIndex": 0, "matchText": "texte EXACT à remplacer" },
+      "target": { 
+        "pageIndex": 0, 
+        "matchText": "texte EXACT à remplacer",
+        "before": "10-25 chars avant",
+        "after": "10-25 chars après"
+      },
       "patch": { "replacement": "nouveau texte" },
       "confidence": 0.9
     }
@@ -33,14 +38,22 @@ TYPES D'ACTIONS:
 - insert_content: Insère du contenu (pour document vide)
 
 RÈGLES STRICTES:
-1. matchText DOIT être EXACTEMENT copié du document (sensible à la casse et aux espaces)
+
+1. LOCATOR OBLIGATOIRE (CRITIQUE):
+   Pour CHAQUE action replace_between_anchors, tu DOIS inclure:
+   - target.matchText = texte EXACT à remplacer
+   - target.before = 10-25 caractères JUSTE AVANT matchText (copiés exactement)
+   - target.after = 10-25 caractères JUSTE APRÈS matchText (copiés exactement)
+   Cela permet d'identifier QUELLE occurrence modifier si le mot apparaît plusieurs fois.
+
 2. RECHERCHE EXHAUSTIVE: Parcours TOUT le document et trouve CHAQUE occurrence d'une faute
-   - Si "Résiliatione" apparaît 3 fois, crée 3 actions séparées avec le matchText EXACT de chaque occurrence
+   - Si "Resiliation" apparaît 3 fois, crée 3 actions avec des locators différents
    - Ne rate aucune occurrence!
+
 3. RESPECT DE LA CASSE dans les corrections:
-   - Si le mot original commence par une majuscule -> correction avec majuscule
    - "Resiliation" -> "Résiliation" (garde la majuscule)
    - "resiliation" -> "résiliation" (garde la minuscule)
+
 4. Maximum 10 actions par réponse
 5. Trie les actions par ordre d'apparition dans le document
 6. Confidence: 0.9+ pour fautes évidentes, 0.7-0.9 pour améliorations
@@ -55,24 +68,26 @@ EXEMPLE DE RÉPONSE VALIDE:
     {
       "id": "1",
       "type": "replace_between_anchors",
-      "description": "Corriger 'Résiliatione' dans le titre",
-      "target": { "pageIndex": 0, "matchText": "Résiliatione" },
+      "description": "Corriger 'Resiliation' dans le titre",
+      "target": { 
+        "pageIndex": 0, 
+        "matchText": "Resiliation",
+        "before": "Lettre de ",
+        "after": " [Votre Prénom"
+      },
       "patch": { "replacement": "Résiliation" },
       "confidence": 0.95
     },
     {
       "id": "2", 
       "type": "replace_between_anchors",
-      "description": "Corriger 'résiliatione' dans le sous-titre",
-      "target": { "pageIndex": 0, "matchText": "résiliatione" },
-      "patch": { "replacement": "résiliation" },
-      "confidence": 0.95
-    },
-    {
-      "id": "3", 
-      "type": "replace_between_anchors",
-      "description": "Corriger 'Résiliatione' dans le paragraphe",
-      "target": { "pageIndex": 0, "matchText": "Résiliatione" },
+      "description": "Corriger 'Resiliation' dans l'objet",
+      "target": { 
+        "pageIndex": 0, 
+        "matchText": "Resiliation",
+        "before": "Objet : ",
+        "after": " de mon abonnement"
+      },
       "patch": { "replacement": "Résiliation" },
       "confidence": 0.95
     }
@@ -198,15 +213,52 @@ export default function AIChatSidebar({
             actionStatus[a.id] === 'pending' && a.target?.matchText
         )
 
+        // Helper: Find the best occurrence in text using before/after locators
+        const findBestOccurrence = (text, matchText, beforeHint, afterHint) => {
+            const hits = []
+            let start = 0
+            while (true) {
+                let idx = text.indexOf(matchText, start)
+                if (idx === -1) {
+                    // Try case-insensitive
+                    idx = text.toLowerCase().indexOf(matchText.toLowerCase(), start)
+                    if (idx === -1) break
+                }
+                const actualText = text.substring(idx, idx + matchText.length)
+                const before = text.slice(Math.max(0, idx - 30), idx)
+                const after = text.slice(idx + matchText.length, idx + matchText.length + 30)
+                hits.push({ idx, before, after, actualText })
+                start = idx + matchText.length
+            }
+
+            if (!hits.length) return null
+            if (!beforeHint && !afterHint) return hits[0] // fallback to first
+
+            // Score each hit by how well it matches before/after hints
+            let best = hits[0], bestScore = -1
+            for (const h of hits) {
+                const score =
+                    (beforeHint && h.before.includes(beforeHint) ? 2 : 0) +
+                    (afterHint && h.after.includes(afterHint) ? 2 : 0) +
+                    (beforeHint && h.before.toLowerCase().includes(beforeHint.toLowerCase()) ? 1 : 0) +
+                    (afterHint && h.after.toLowerCase().includes(afterHint.toLowerCase()) ? 1 : 0)
+                if (score > bestScore) { best = h; bestScore = score }
+            }
+
+            return best
+        }
+
         actionsToHighlight.forEach(action => {
             const pageIndex = action.target?.pageIndex || 0
             const pageEl = pageRefs.current[pageIndex]
             if (!pageEl) return
 
             const matchText = action.target.matchText
+            const beforeHint = action.target.before
+            const afterHint = action.target.after
 
-            // Find ALL occurrences using a different approach
-            const highlightAllOccurrences = () => {
+            // Find the best matching occurrence for this action
+            const highlightBestMatch = () => {
                 const walker = document.createTreeWalker(
                     pageEl,
                     NodeFilter.SHOW_TEXT,
@@ -214,66 +266,71 @@ export default function AIChatSidebar({
                     false
                 )
 
-                const nodesToHighlight = []
+                let bestNode = null
+                let bestOcc = null
+                let bestScore = -1
 
+                // First pass: find all text nodes and score occurrences
                 while (walker.nextNode()) {
                     const node = walker.currentNode
                     const content = node.textContent
 
-                    // Try exact match first, then case-insensitive
-                    let idx = content.indexOf(matchText)
-                    let actualMatchText = matchText
+                    const occ = findBestOccurrence(content, matchText, beforeHint, afterHint)
+                    if (occ) {
+                        // Calculate score for this occurrence
+                        const score =
+                            (beforeHint && occ.before.includes(beforeHint) ? 2 : 0) +
+                            (afterHint && occ.after.includes(afterHint) ? 2 : 0)
 
-                    if (idx === -1) {
-                        idx = content.toLowerCase().indexOf(matchText.toLowerCase())
-                        if (idx !== -1) {
-                            actualMatchText = content.substring(idx, idx + matchText.length)
+                        if (score > bestScore || bestNode === null) {
+                            bestNode = node
+                            bestOcc = occ
+                            bestScore = score
                         }
-                    }
 
-                    if (idx !== -1) {
-                        nodesToHighlight.push({ node, idx, length: actualMatchText.length })
+                        // Perfect match found
+                        if (score >= 4) break
                     }
                 }
 
-                // Process in reverse order to not mess up indices
-                nodesToHighlight.reverse().forEach(({ node, idx, length }) => {
-                    try {
-                        const range = document.createRange()
-                        range.setStart(node, idx)
-                        range.setEnd(node, idx + length)
+                if (!bestNode || !bestOcc) return false
 
-                        const highlight = document.createElement('mark')
-                        highlight.className = 'ai-highlight'
-                        highlight.dataset.actionId = action.id
-                        highlight.style.cssText = `
-                            background: linear-gradient(to bottom, #fef08a 0%, #fde047 100%);
-                            padding: 1px 2px;
-                            border-radius: 2px;
-                            cursor: pointer;
-                            transition: all 0.2s ease;
-                            display: inline;
-                        `
+                try {
+                    const range = document.createRange()
+                    range.setStart(bestNode, bestOcc.idx)
+                    range.setEnd(bestNode, bestOcc.idx + bestOcc.actualText.length)
 
-                        // Add hover events on the highlight itself
-                        highlight.onmouseenter = () => {
-                            setHoveredActionId(action.id)
-                            // Scroll to the corresponding card in sidebar
-                            const card = document.querySelector(`[data-action-card-id="${action.id}"]`)
-                            if (card) {
-                                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-                            }
+                    const highlight = document.createElement('mark')
+                    highlight.className = 'ai-highlight'
+                    highlight.dataset.actionId = action.id
+                    highlight.style.cssText = `
+                        background: linear-gradient(to bottom, #fef08a 0%, #fde047 100%);
+                        padding: 1px 2px;
+                        border-radius: 2px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        display: inline;
+                    `
+
+                    // Add hover events
+                    highlight.onmouseenter = () => {
+                        setHoveredActionId(action.id)
+                        const card = document.querySelector(`[data-action-card-id="${action.id}"]`)
+                        if (card) {
+                            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
                         }
-                        highlight.onmouseleave = () => setHoveredActionId(null)
-
-                        range.surroundContents(highlight)
-                    } catch (e) {
-                        console.warn('Cannot highlight occurrence:', matchText)
                     }
-                })
+                    highlight.onmouseleave = () => setHoveredActionId(null)
+
+                    range.surroundContents(highlight)
+                    return true
+                } catch (e) {
+                    console.warn('Cannot highlight occurrence:', matchText, e)
+                    return false
+                }
             }
 
-            highlightAllOccurrences()
+            highlightBestMatch()
         })
     }, [pendingActions, actionStatus, pageRefs])
 
@@ -298,7 +355,7 @@ export default function AIChatSidebar({
     useEffect(() => {
         document.querySelectorAll('.ai-highlight').forEach(mark => {
             const actionId = mark.dataset.actionId
-            const isHovered = actionId === hoveredActionId
+            const isHovered = actionId === hoveredActionId // 1 action = 1 highlight now
 
             // Find the corresponding action to get replacement text
             const action = pendingActions.find(a => a.id === actionId)

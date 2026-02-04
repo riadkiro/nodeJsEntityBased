@@ -14,9 +14,8 @@ const injectAISelectionStyles = () => {
     const style = document.createElement('style')
     style.id = 'ai-selection-styles'
     style.textContent = `
-        /* Selection lock highlight - applies to any selected block or element */
-        .selection-locked,
-        [data-loc^="sel-"] {
+        /* Selection lock highlight - applies ONLY when .selection-locked class is present */
+        .selection-locked {
             background: rgba(245, 158, 11, 0.15);
             border-left: 3px solid rgba(245, 158, 11, 0.8);
             padding-left: 8px;
@@ -24,8 +23,7 @@ const injectAISelectionStyles = () => {
         }
         
         /* Highlights inside locked selection should remain visible but muted */
-        .selection-locked .ai-highlight,
-        [data-loc^="sel-"] .ai-highlight {
+        .selection-locked .ai-highlight {
             background: rgba(254, 240, 138, 0.5) !important;
         }
 

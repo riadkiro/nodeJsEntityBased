@@ -326,10 +326,16 @@ export default function AIChatSidebar({
                     action.target?.ref?.startsWith('sel-')
                 )
 
-                // Only change scope, but DON'T clear refs if there are pending actions
+                // Change scope
                 setScope('page')
                 setLockedSelection(null)
 
+                // Always remove the visual highlight class
+                document.querySelectorAll('.selection-locked').forEach(el => {
+                    el.classList.remove('selection-locked')
+                })
+
+                // Only remove refs if NO pending actions need them
                 if (!hasPendingSelectionActions) {
                     clearSelectionLock()
                 }

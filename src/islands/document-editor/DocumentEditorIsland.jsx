@@ -857,31 +857,68 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     } = {}) => {
         let snapshot = ''
         let selection = ''
+        let selectionRefs = []
 
-        // Get selected text if requested
-        if (includeSelection) {
+        // Check if there are locked selection blocks with refs
+        const lockedBlocks = document.querySelectorAll('[data-loc^="sel-"]')
+        if (lockedBlocks.length > 0) {
+            // Collect all refs and text from locked blocks
+            selectionRefs = Array.from(lockedBlocks).map(el => el.getAttribute('data-loc'))
+            selection = Array.from(lockedBlocks).map(el => el.textContent.trim()).join('\n\n')
+        } else if (includeSelection) {
+            // Get selected text if no locked selection
             const sel = window.getSelection()
             if (sel && sel.toString().trim()) {
                 selection = sel.toString().trim()
             }
         }
 
-        // Build page content with headers
+        // Assign data-loc refs to block elements in a page
+        const assignRefs = (pageEl, pageIndex) => {
+            const blocks = pageEl.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote')
+            let blockCounter = 0
+            blocks.forEach(block => {
+                if (!block.textContent.trim()) return
+                if (block.getAttribute('data-loc')) return
+                const ref = `loc-p${pageIndex}-${blockCounter++}`
+                block.setAttribute('data-loc', ref)
+            })
+        }
+
+        // Build page content with refs
         const pageContents = []
-        const pages = [] // Individual page texts for scope=page
+        const pages = []
+        const pagesWithRefs = [] // Store page content with refs for page mode
         const totalPages = doc.pages.length
 
         for (let i = 0; i < totalPages; i++) {
             const pageRef = pageRefs.current[i]
+            if (!pageRef) continue
+
+            // Add refs to this page's elements
+            assignRefs(pageRef, i)
+
             const text = pageRef?.innerText?.trim() || ''
-            pages.push(text) // Store each page's text
+            pages.push(text)
+
+            // Build content with refs and HTML for this page
+            const refBlocks = Array.from(pageRef.querySelectorAll('[data-loc]'))
+                .map(el => {
+                    const ref = el.getAttribute('data-loc')
+                    const html = el.innerHTML.trim()
+                    if (!html) return null
+                    return `[${ref}]\n${html}`
+                })
+                .filter(Boolean)
+                .join('\n\n')
+            pagesWithRefs.push(refBlocks || text)
 
             const isFirstPage = i < includeFirstPages
             const isActivePage = i === selectedPageIndex && includeActivePage
 
             if (isFirstPage || isActivePage) {
                 if (text) {
-                    pageContents.push(`=== Page ${i + 1}/${totalPages} ===\n${text}`)
+                    pageContents.push(`=== Page ${i + 1}/${totalPages} ===\n${refBlocks || text}`)
                 }
             }
         }
@@ -896,9 +933,11 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         return {
             snapshot,
             selection,
+            selectionRefs,
             activePageIndex: selectedPageIndex,
             totalPages: doc.pages.length,
-            pages // Add individual pages for scope support
+            pages,
+            pagesWithRefs
         }
     }, [doc.pages.length, selectedPageIndex])
 
@@ -954,6 +993,99 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
                     triggerSave()
                     return { success: true, message: 'Texte remplacé' }
+                }
+
+                case 'replace_ref': {
+                    // Replace content of element identified by data-loc ref
+                    const { ref, pageIndex = selectedPageIndex } = target
+                    const { replacement } = patch
+
+                    if (!ref) {
+                        return { success: false, message: 'Référence manquante' }
+                    }
+
+                    // Find element by data-loc attribute
+                    const refEl = document.querySelector(`[data-loc="${ref}"]`)
+                    if (!refEl) {
+                        return { success: false, message: `Élément avec ref "${ref}" non trouvé` }
+                    }
+
+                    // Replace the innerHTML to preserve HTML structure in replacement
+                    // The replacement should be the translated/reformulated TEXT, 
+                    // but we want to preserve the block structure of the original element
+                    refEl.innerHTML = replacement || ''
+
+                    // Remove the data-loc and selection-locked class after applying
+                    refEl.removeAttribute('data-loc')
+                    refEl.classList.remove('selection-locked')
+
+                    triggerSave()
+                    return { success: true, message: 'Contenu remplacé' }
+                }
+
+                case 'replace_text': {
+                    // Replace specific text within an element identified by ref
+                    const { ref, matchText, pageIndex = selectedPageIndex } = target
+                    const { replacement } = patch
+                    const actionId = action?.id
+
+                    if (!ref || !matchText) {
+                        return { success: false, message: 'Référence ou texte à remplacer manquant' }
+                    }
+
+                    // First try to find by highlight with action ID (if available)
+                    if (actionId) {
+                        const exactHighlight = document.querySelector(`.ai-highlight[data-action-id="${actionId}"]`)
+                        if (exactHighlight) {
+                            const textNode = document.createTextNode(replacement || '')
+                            exactHighlight.parentNode.replaceChild(textNode, exactHighlight)
+                            exactHighlight.parentNode?.normalize?.()
+                            triggerSave()
+                            return { success: true, message: 'Texte corrigé' }
+                        }
+                    }
+
+                    // Find element by data-loc ref
+                    const refEl = document.querySelector(`[data-loc="${ref}"]`)
+                    if (!refEl) {
+                        return { success: false, message: `Élément avec ref "${ref}" non trouvé` }
+                    }
+
+                    // Find and replace the text within this element
+                    const walker = document.createTreeWalker(
+                        refEl,
+                        NodeFilter.SHOW_TEXT,
+                        null,
+                        false
+                    )
+
+                    let found = false
+                    while (walker.nextNode()) {
+                        const node = walker.currentNode
+                        // Skip highlight elements
+                        if (node.parentElement?.classList?.contains('ai-highlight')) continue
+
+                        let idx = node.textContent.indexOf(matchText)
+                        if (idx === -1) {
+                            // Try case-insensitive
+                            idx = node.textContent.toLowerCase().indexOf(matchText.toLowerCase())
+                        }
+
+                        if (idx !== -1) {
+                            const before = node.textContent.substring(0, idx)
+                            const after = node.textContent.substring(idx + matchText.length)
+                            node.textContent = before + replacement + after
+                            found = true
+                            break
+                        }
+                    }
+
+                    if (!found) {
+                        return { success: false, message: `Texte "${matchText}" non trouvé dans l'élément` }
+                    }
+
+                    triggerSave()
+                    return { success: true, message: 'Texte corrigé' }
                 }
 
                 case 'insert_after_anchor': {

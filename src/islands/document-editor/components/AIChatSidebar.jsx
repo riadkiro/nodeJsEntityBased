@@ -6,89 +6,111 @@
  */
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 
-// ========== AGENT SYSTEM PROMPT - MULTI-ACTIONS ==========
-const AGENT_SYSTEM_PROMPT = `Tu es un agent d'analyse et correction de documents.
+// ========== AGENT SYSTEM PROMPT - REFERENCE-BASED LOCATOR SYSTEM ==========
+const AGENT_SYSTEM_PROMPT = `Tu es un agent intelligent de manipulation de documents.
 
 OBJECTIF:
-Analyser le document et proposer TOUTES les corrections nécessaires en une seule réponse.
+Analyser le message de l'utilisateur, DÉTECTER SON INTENTION, et proposer les actions appropriées.
+Tu reçois le contenu avec des RÉFÉRENCES (data-loc) pour cibler précisément chaque élément.
+
+INTENTIONS POSSIBLES (détecte automatiquement):
+- CORRIGER: "corrige", "orthographe", "fautes", "grammaire" → corrections orthographiques
+- REFORMULER: "reformule", "réécris", "améliore le style", "rephrase" → réécrire avec meilleur style
+- TRADUIRE: "traduis", "translate", "en anglais", "en espagnol", "in english" → traduction
+- RÉSUMER: "résume", "summarize", "raccourcis", "condensé" → version courte
+- DÉVELOPPER: "développe", "expand", "enrichis", "détaille", "plus long" → ajouter du contenu
+- SIMPLIFIER: "simplifie", "plus simple", "vulgarise" → langage plus accessible
+- FORMALISER: "formalise", "plus formel", "professionnel" → ton plus professionnel
 
 FORMAT DE RÉPONSE OBLIGATOIRE:
 Tu DOIS répondre UNIQUEMENT avec un bloc JSON \`\`\`actions contenant:
 {
-  "message": "Résumé court des corrections proposées",
+  "message": "Description de ce que tu proposes",
+  "intent": "corriger|reformuler|traduire|resumer|developper|simplifier|formaliser",
   "actions": [
     {
       "id": "1",
-      "type": "replace_between_anchors",
-      "description": "Description de la correction",
-      "target": { 
-        "pageIndex": 0, 
-        "matchText": "texte EXACT à remplacer",
-        "before": "10-25 chars avant",
-        "after": "10-25 chars après"
-      },
-      "patch": { "replacement": "nouveau texte" },
+      "type": "replace_ref",
+      "description": "Description de l'action",
+      "target": { "ref": "loc-xxx", "pageIndex": 0 },
+      "patch": { "replacement": "nouveau contenu" },
       "confidence": 0.9
     }
   ]
 }
 
 TYPES D'ACTIONS:
-- replace_between_anchors: Remplace matchText par replacement
+- replace_ref: Remplace le CONTENU de l'élément ciblé par ref (PRÉFÉRÉ - plus fiable)
+- replace_text: Remplace un texte DANS l'élément ref (pour corrections ponctuelles)
 - insert_content: Insère du contenu (pour document vide)
 
-RÈGLES STRICTES:
+SYSTÈME DE RÉFÉRENCES (CRITIQUE):
+- Chaque élément du document a un attribut data-loc="loc-xxx"
+- Tu DOIS utiliser ces refs exactement comme reçues
+- Pour replace_ref: remplace tout le contenu de l'élément
+- Pour replace_text: utilise target.ref + target.matchText pour cibler un mot précis
 
-1. LOCATOR OBLIGATOIRE (CRITIQUE):
-   Pour CHAQUE action replace_between_anchors, tu DOIS inclure:
-   - target.matchText = texte EXACT à remplacer
-   - target.before = 10-25 caractères JUSTE AVANT matchText (copiés exactement)
-   - target.after = 10-25 caractères JUSTE APRÈS matchText (copiés exactement)
-   Cela permet d'identifier QUELLE occurrence modifier si le mot apparaît plusieurs fois.
+RÈGLES PAR INTENTION:
 
-2. RECHERCHE EXHAUSTIVE: Parcours TOUT le document et trouve CHAQUE occurrence d'une faute
-   - Si "Resiliation" apparaît 3 fois, crée 3 actions avec des locators différents
-   - Ne rate aucune occurrence!
+📝 CORRIGER (orthographe/grammaire):
+- Utilise replace_text avec ref + matchText
+- target: { ref: "loc-xxx", matchText: "fote" }
+- patch: { replacement: "faute" }
+- Confidence: 0.95
 
-3. RESPECT DE LA CASSE dans les corrections:
-   - "Resiliation" -> "Résiliation" (garde la majuscule)
-   - "resiliation" -> "résiliation" (garde la minuscule)
+🔄 REFORMULER / 🌍 TRADUIRE / 📋 RÉSUMER / ✨ SIMPLIFIER / 👔 FORMALISER:
+- Utilise replace_ref pour remplacer tout le contenu
+- target: { ref: "loc-xxx" } ou { ref: "sel-xxx" } pour sélection
+- patch: { replacement: "Nouveau contenu HTML" }
+- ⚠️ PRÉSERVE LE HTML: Si le contenu reçu contient des balises HTML (<strong>, <em>, <a>, <br>, etc.), garde-les EXACTEMENT dans le replacement
+- Traduis/modifie UNIQUEMENT le texte, pas les balises
+- Confidence: 0.85
 
-4. Maximum 10 actions par réponse
-5. Trie les actions par ordre d'apparition dans le document
-6. Confidence: 0.9+ pour fautes évidentes, 0.7-0.9 pour améliorations
-7. NE PAS ajouter de texte en dehors du bloc \`\`\`actions
-8. Chaque action doit avoir un id unique (1, 2, 3...)
+RÈGLES TECHNIQUES:
+1. Les refs sont OBLIGATOIRES - pas de texte sans ref
+2. Maximum 5 actions par réponse
+3. Chaque action a un id unique (1, 2, 3...)
+4. NE PAS ajouter de texte en dehors du bloc \`\`\`actions
+5. Si ref commence par "sel-", c'est une SÉLECTION spécifique de l'utilisateur
 
-EXEMPLE DE RÉPONSE VALIDE:
+EXEMPLE - REFORMULATION:
 \`\`\`actions
 {
-  "message": "J'ai trouvé 3 fautes d'orthographe à corriger.",
+  "message": "Voici le paragraphe reformulé.",
+  "intent": "reformuler",
   "actions": [
     {
       "id": "1",
-      "type": "replace_between_anchors",
-      "description": "Corriger 'Resiliation' dans le titre",
-      "target": { 
-        "pageIndex": 0, 
-        "matchText": "Resiliation",
-        "before": "Lettre de ",
-        "after": " [Votre Prénom"
-      },
+      "type": "replace_ref",
+      "description": "Reformuler le paragraphe sélectionné",
+      "target": { "ref": "sel-a1b2c3", "pageIndex": 0 },
+      "patch": { "replacement": "Je me permets de vous contacter afin de solliciter la résiliation de mon contrat." },
+      "confidence": 0.85
+    }
+  ]
+}
+\`\`\`
+
+EXEMPLE - CORRECTION ORTHOGRAPHE:
+\`\`\`actions
+{
+  "message": "J'ai trouvé 2 fautes.",
+  "intent": "corriger",
+  "actions": [
+    {
+      "id": "1",
+      "type": "replace_text",
+      "description": "Corriger 'Resiliation'",
+      "target": { "ref": "loc-p1", "matchText": "Resiliation", "pageIndex": 0 },
       "patch": { "replacement": "Résiliation" },
       "confidence": 0.95
     },
     {
-      "id": "2", 
-      "type": "replace_between_anchors",
-      "description": "Corriger 'Resiliation' dans l'objet",
-      "target": { 
-        "pageIndex": 0, 
-        "matchText": "Resiliation",
-        "before": "Objet : ",
-        "after": " de mon abonnement"
-      },
-      "patch": { "replacement": "Résiliation" },
+      "id": "2",
+      "type": "replace_text",
+      "description": "Corriger 'infomation'",
+      "target": { "ref": "loc-p3", "matchText": "infomation", "pageIndex": 0 },
+      "patch": { "replacement": "information" },
       "confidence": 0.95
     }
   ]
@@ -152,6 +174,7 @@ export default function AIChatSidebar({
     const [actionStatus, setActionStatus] = useState({}) // { [id]: 'pending' | 'applied' | 'ignored' | 'failed' }
     const [isApplying, setIsApplying] = useState(false)
     const [hoveredActionId, setHoveredActionId] = useState(null) // For highlight emphasis
+    const [previewOriginals, setPreviewOriginals] = useState({}) // { [ref]: originalHTML } - store original content for preview
 
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const messagesEndRef = useRef(null)
@@ -194,60 +217,83 @@ export default function AIChatSidebar({
         return () => document.removeEventListener('selectionchange', handleSelectionChange)
     }, [getSelectionText, scope, lockedSelection])
 
-    // Clear selection lock - unwrap the locked span (keep content, remove wrapper)
+    // Clear selection lock - remove refs and styling from locked blocks
     const clearSelectionLock = useCallback(() => {
         // Remove overlay indicators (if any)
         document.querySelectorAll('.ai-selection-indicator').forEach(el => el.remove())
 
-        // Unwrap all locked spans - keep their content, remove the wrapper
-        document.querySelectorAll('span.ai-selection-locked').forEach(span => {
-            const parent = span.parentNode
-            if (parent) {
-                // Move all children out before the span
-                while (span.firstChild) {
-                    parent.insertBefore(span.firstChild, span)
-                }
-                // Remove the now-empty span
-                span.remove()
-                // Normalize to merge adjacent text nodes
-                parent.normalize()
+        // Get refs that are still needed by pending actions
+        const pendingRefs = new Set()
+        pendingActions.forEach(action => {
+            if (actionStatus[action.id] === 'pending' && action.target?.ref) {
+                pendingRefs.add(action.target.ref)
+            }
+        })
+
+        // Remove selection-locked class and data-loc from locked elements
+        // BUT keep data-loc if it's needed by a pending action
+        document.querySelectorAll('.selection-locked, [data-loc^="sel-"]').forEach(el => {
+            el.classList.remove('selection-locked')
+            const ref = el.getAttribute('data-loc')
+            if (ref && !pendingRefs.has(ref)) {
+                el.removeAttribute('data-loc')
             }
         })
 
         lockedElementRef.current = null
-    }, [])
+    }, [pendingActions, actionStatus])
 
-    // Handle input focus - lock selection and switch scope
+    // Handle input focus - lock selection and add refs to selected blocks
     const handleInputFocus = useCallback(() => {
         const selText = getSelectionText?.()
         if (selText && selText.length > 0) {
             setLockedSelection(selText)
             setScope('selection')
 
-            // Wrap the selected text with a highlight span
             const sel = window.getSelection()
             if (sel && sel.rangeCount > 0) {
                 const range = sel.getRangeAt(0)
-                try {
-                    // Check if selection is not collapsed (has content)
-                    if (!range.collapsed) {
-                        // Create wrapper span for the selection
-                        const wrapper = document.createElement('span')
-                        wrapper.className = 'ai-selection-locked'
+                if (!range.collapsed) {
+                    // Generate unique base ref for this selection
+                    const selRefBase = 'sel-' + Math.random().toString(36).substring(2, 8)
 
-                        // Wrap the selection contents
-                        range.surroundContents(wrapper)
+                    // Find all block elements that intersect with the selection
+                    const container = range.commonAncestorContainer
+                    const root = container.nodeType === Node.ELEMENT_NODE
+                        ? container
+                        : container.parentElement
 
-                        // Store reference for cleanup
-                        lockedElementRef.current = wrapper
+                    // Get all blocks within the common ancestor
+                    const blockSelector = 'p, h1, h2, h3, h4, h5, h6, li, blockquote'
+                    let blocks = []
 
-                        // Clear browser selection to avoid confusion
-                        sel.removeAllRanges()
+                    // If the root itself is a block, include it
+                    if (root.matches?.(blockSelector)) {
+                        blocks = [root]
+                    } else {
+                        blocks = Array.from(root.querySelectorAll(blockSelector))
                     }
-                } catch (e) {
-                    // surroundContents can fail if selection spans partial nodes
-                    // In that case, fall back to just storing the text without visual highlight
-                    console.warn('Could not wrap selection:', e.message)
+
+                    // Filter to only blocks that intersect with the selection
+                    const selectedBlocks = blocks.filter(block => {
+                        if (!block.textContent.trim()) return false
+                        return range.intersectsNode(block)
+                    })
+
+                    // Add refs to each selected block
+                    selectedBlocks.forEach((block, index) => {
+                        const ref = selectedBlocks.length === 1
+                            ? selRefBase
+                            : `${selRefBase}-${index}`
+                        block.setAttribute('data-loc', ref)
+                        block.classList.add('selection-locked')
+                    })
+
+                    // Store refs for cleanup
+                    lockedElementRef.current = selectedBlocks
+
+                    // Clear browser selection
+                    sel.removeAllRanges()
                 }
             }
         }
@@ -274,9 +320,19 @@ export default function AIChatSidebar({
 
             // If click is outside sidebar, revert to page scope
             if (!isClickInSidebar) {
+                // Check if there are pending actions that target selection refs
+                const hasPendingSelectionActions = pendingActions.some(action =>
+                    actionStatus[action.id] === 'pending' &&
+                    action.target?.ref?.startsWith('sel-')
+                )
+
+                // Only change scope, but DON'T clear refs if there are pending actions
                 setScope('page')
                 setLockedSelection(null)
-                clearSelectionLock()
+
+                if (!hasPendingSelectionActions) {
+                    clearSelectionLock()
+                }
             }
         }
 
@@ -289,7 +345,7 @@ export default function AIChatSidebar({
             clearTimeout(timeoutId)
             document.removeEventListener('mousedown', handleDocumentClick)
         }
-    }, [scope, lockedSelection])
+    }, [scope, lockedSelection, pendingActions, actionStatus, clearSelectionLock])
 
     // ========== DOCUMENT HIGHLIGHTING ==========
     // Clear all highlights
@@ -563,7 +619,63 @@ export default function AIChatSidebar({
         if (highlight) {
             highlight.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }
-    }, [])
+        // Also scroll to replace_ref elements
+        const action = pendingActions.find(a => a.id === actionId)
+        if (action?.type === 'replace_ref' && action.target?.ref) {
+            const refEl = document.querySelector(`[data-loc="${action.target.ref}"]`)
+            if (refEl) {
+                refEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }
+        }
+    }, [pendingActions])
+
+    // Capture original content for replace_ref actions when they arrive
+    useEffect(() => {
+        const replaceRefActions = pendingActions.filter(a =>
+            a.type === 'replace_ref' && actionStatus[a.id] === 'pending'
+        )
+
+        replaceRefActions.forEach(action => {
+            const ref = action.target?.ref
+            if (!ref || previewOriginals[ref]) return // Skip if already stored
+
+            const refEl = document.querySelector(`[data-loc="${ref}"]`)
+            if (refEl) {
+                setPreviewOriginals(prev => ({
+                    ...prev,
+                    [ref]: refEl.innerHTML
+                }))
+            }
+        })
+    }, [pendingActions, actionStatus])
+
+    // Handle hover preview - swap content when hovering a card
+    useEffect(() => {
+        if (!hoveredActionId) {
+            // Restore all previewed content when not hovering
+            Object.entries(previewOriginals).forEach(([ref, originalHTML]) => {
+                const refEl = document.querySelector(`[data-loc="${ref}"]`)
+                if (refEl && refEl.classList.contains('ai-preview-active')) {
+                    refEl.innerHTML = originalHTML
+                    refEl.classList.remove('ai-preview-active')
+                }
+            })
+            return
+        }
+
+        const action = pendingActions.find(a => a.id === hoveredActionId)
+        if (!action || action.type !== 'replace_ref' || actionStatus[action.id] !== 'pending') return
+
+        const ref = action.target?.ref
+        if (!ref || !previewOriginals[ref]) return
+
+        const refEl = document.querySelector(`[data-loc="${ref}"]`)
+        if (!refEl) return
+
+        // Show the new content as preview
+        refEl.innerHTML = action.patch?.replacement || ''
+        refEl.classList.add('ai-preview-active')
+    }, [hoveredActionId, pendingActions, actionStatus, previewOriginals])
 
     // ========== API CALL ==========
     const callOpenAI = async (conversationHistory, isAgent = false) => {
@@ -673,7 +785,7 @@ export default function AIChatSidebar({
             let documentIsEmpty = false
             if (mode === 'agent' && getDocumentSnapshot) {
                 setIsAnalyzing(true)
-                const { snapshot, selection, activePageIndex, totalPages, pages } = getDocumentSnapshot()
+                const { snapshot, selection, selectionRefs, activePageIndex, totalPages, pages, pagesWithRefs } = getDocumentSnapshot()
 
                 // Determine content based on scope
                 let contentToAnalyze = ''
@@ -683,11 +795,21 @@ export default function AIChatSidebar({
                 const selectionText = lockedSelection || selection
 
                 if (scope === 'selection' && selectionText && selectionText.trim()) {
-                    contentToAnalyze = selectionText
-                    scopeLabel = 'SÉLECTION'
-                } else if (scope === 'page' && pages && pages[selectedPageIndex]) {
-                    contentToAnalyze = pages[selectedPageIndex]
-                    scopeLabel = `PAGE ${selectedPageIndex + 1}/${totalPages}`
+                    // For selection scope, include the refs if available
+                    if (selectionRefs && selectionRefs.length > 0) {
+                        // Get each block's HTML content with its ref (to preserve formatting)
+                        const lockedBlocks = document.querySelectorAll('[data-loc^="sel-"]')
+                        contentToAnalyze = Array.from(lockedBlocks)
+                            .map(el => `[${el.getAttribute('data-loc')}]\n${el.innerHTML.trim()}`)
+                            .join('\n\n')
+                    } else {
+                        contentToAnalyze = selectionText
+                    }
+                    scopeLabel = 'SÉLECTION (HTML - PRÉSERVE LA STRUCTURE)'
+                } else if (scope === 'page' && pagesWithRefs && pagesWithRefs[selectedPageIndex]) {
+                    // Use pagesWithRefs which includes refs and HTML
+                    contentToAnalyze = pagesWithRefs[selectedPageIndex]
+                    scopeLabel = `PAGE ${selectedPageIndex + 1}/${totalPages} (HTML - PRÉSERVE LA STRUCTURE)`
                 } else {
                     contentToAnalyze = snapshot
                     scopeLabel = `DOCUMENT COMPLET - ${totalPages} pages`
@@ -760,29 +882,73 @@ export default function AIChatSidebar({
         setIsApplying(true)
 
         try {
-            const result = applyPatch(action)
+            const ref = action.target?.ref
 
-            if (result.success) {
+            // For replace_ref, handle the preview state
+            if (action.type === 'replace_ref' && ref && previewOriginals[ref]) {
+                // Content might already be showing (if hovered), apply it permanently
+                const refEl = document.querySelector(`[data-loc="${ref}"]`)
+                if (refEl) {
+                    refEl.innerHTML = action.patch?.replacement || ''
+                    refEl.removeAttribute('data-loc')
+                    refEl.classList.remove('selection-locked', 'ai-preview-active')
+                }
+
+                // Clean up preview state
+                setPreviewOriginals(prev => {
+                    const next = { ...prev }
+                    delete next[ref]
+                    return next
+                })
+
                 setActionStatus(prev => ({ ...prev, [action.id]: 'applied' }))
                 setMessages(prev => [...prev, {
                     role: 'system',
                     content: `✅ ${action.description}`
                 }])
             } else {
-                setActionStatus(prev => ({ ...prev, [action.id]: 'failed' }))
-                setMessages(prev => [...prev, {
-                    role: 'system',
-                    content: `❌ Échec: ${result.message}`
-                }])
+                // Standard apply for replace_text and other types
+                const result = applyPatch(action)
+
+                if (result.success) {
+                    setActionStatus(prev => ({ ...prev, [action.id]: 'applied' }))
+                    setMessages(prev => [...prev, {
+                        role: 'system',
+                        content: `✅ ${action.description}`
+                    }])
+                } else {
+                    setActionStatus(prev => ({ ...prev, [action.id]: 'failed' }))
+                    setMessages(prev => [...prev, {
+                        role: 'system',
+                        content: `❌ Échec: ${result.message}`
+                    }])
+                }
             }
         } finally {
             setIsApplying(false)
         }
-    }, [applyPatch, actionStatus, isApplying])
+    }, [applyPatch, actionStatus, isApplying, previewOriginals])
 
     const handleIgnoreAction = useCallback((action) => {
+        const ref = action.target?.ref
+
+        // For replace_ref, restore original content if we have it stored
+        if (action.type === 'replace_ref' && ref && previewOriginals[ref]) {
+            const refEl = document.querySelector(`[data-loc="${ref}"]`)
+            if (refEl) {
+                refEl.innerHTML = previewOriginals[ref]
+                refEl.classList.remove('ai-preview-active')
+            }
+            // Clean up preview state
+            setPreviewOriginals(prev => {
+                const next = { ...prev }
+                delete next[ref]
+                return next
+            })
+        }
+
         setActionStatus(prev => ({ ...prev, [action.id]: 'ignored' }))
-    }, [])
+    }, [previewOriginals])
 
     const handleApplyAll = useCallback(async () => {
         if (!applyPatch || isApplying) return
@@ -1087,12 +1253,33 @@ export default function AIChatSidebar({
                                                 )}
                                             </div>
 
-                                            {/* Show old -> new preview INLINE */}
+                                            {/* Show old -> new preview INLINE for replace_text */}
                                             {action.target?.matchText && action.patch?.replacement && (
                                                 <div className="text-[10px] mb-1.5 flex items-center gap-1.5 font-mono flex-wrap">
                                                     <span className="text-danger line-through">{action.target.matchText}</span>
                                                     <span className="text-gray-400">→</span>
                                                     <span className="text-success">{action.patch.replacement}</span>
+                                                </div>
+                                            )}
+
+                                            {/* Preview for replace_ref (translations/reformulations) - show on hover */}
+                                            {action.type === 'replace_ref' && action.patch?.replacement && isPending && hoveredActionId === action.id && (
+                                                <div className="mt-2 p-2 bg-success/10 rounded-lg border border-success/20">
+                                                    <div className="text-[9px] text-success font-medium mb-1 flex items-center gap-1">
+                                                        <iconify-icon icon="tabler:arrow-right" width="10"></iconify-icon>
+                                                        Nouveau contenu
+                                                    </div>
+                                                    <div
+                                                        className="text-[10px] text-gray-600 dark:text-gray-300 leading-relaxed"
+                                                        style={{
+                                                            display: '-webkit-box',
+                                                            WebkitLineClamp: 2,
+                                                            WebkitBoxOrient: 'vertical',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis'
+                                                        }}
+                                                        dangerouslySetInnerHTML={{ __html: action.patch.replacement }}
+                                                    />
                                                 </div>
                                             )}
 

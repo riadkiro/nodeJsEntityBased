@@ -7,24 +7,35 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import DocumentEditorIsland from './DocumentEditorIsland'
 
-// Inject CSS for AI selection locking to prevent spelling highlights from changing the locked element's style
+// Inject CSS for selection locking
 const injectAISelectionStyles = () => {
     if (document.getElementById('ai-selection-styles')) return
 
     const style = document.createElement('style')
     style.id = 'ai-selection-styles'
     style.textContent = `
-        /* Selection lock highlight - wraps the selected text directly */
-        span.ai-selection-locked {
-            background: rgba(245, 158, 11, 0.2);
-            border-bottom: 2px dashed rgba(245, 158, 11, 0.6);
-            padding: 1px 0;
-            border-radius: 2px;
+        /* Selection lock highlight - applies to any selected block or element */
+        .selection-locked,
+        [data-loc^="sel-"] {
+            background: rgba(245, 158, 11, 0.15);
+            border-left: 3px solid rgba(245, 158, 11, 0.8);
+            padding-left: 8px;
+            margin-left: -11px;
         }
         
-        /* AI spelling highlights inside locked selection should remain visible but muted */
-        span.ai-selection-locked .ai-highlight {
+        /* Highlights inside locked selection should remain visible but muted */
+        .selection-locked .ai-highlight,
+        [data-loc^="sel-"] .ai-highlight {
             background: rgba(254, 240, 138, 0.5) !important;
+        }
+
+        /* Preview active - showing new AI content */
+        .ai-preview-active {
+            border-left: 3px solid rgba(34, 197, 94, 0.8) !important;
+            padding-left: 8px;
+            margin-left: -11px;
+            background: rgba(34, 197, 94, 0.12) !important;
+            transition: all 0.15s ease;
         }
     `
     document.head.appendChild(style)

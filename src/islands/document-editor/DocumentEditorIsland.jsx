@@ -839,6 +839,261 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         updateFormattingState()
     }, [saveSelection, updateFormattingState])
 
+    // ========== AI AGENT FUNCTIONS ==========
+    /**
+     * Get a snapshot of the document content for AI analysis
+     * @param {Object} options - Configuration options
+     * @param {number} options.maxChars - Maximum characters to return (default: 6000)
+     * @param {boolean} options.includeActivePage - Include active page content (default: true)
+     * @param {number} options.includeFirstPages - Number of first pages to include (default: 2)
+     * @param {boolean} options.includeSelection - Include selected text separately (default: true)
+     * @returns {Object} { snapshot: string, selection: string, activePageIndex: number }
+     */
+    const getDocumentSnapshot = useCallback(({
+        maxChars = 6000,
+        includeActivePage = true,
+        includeFirstPages = 2,
+        includeSelection = true
+    } = {}) => {
+        let snapshot = ''
+        let selection = ''
+
+        // Get selected text if requested
+        if (includeSelection) {
+            const sel = window.getSelection()
+            if (sel && sel.toString().trim()) {
+                selection = sel.toString().trim()
+            }
+        }
+
+        // Build page content with headers
+        const pageContents = []
+        const totalPages = doc.pages.length
+
+        for (let i = 0; i < totalPages; i++) {
+            const pageRef = pageRefs.current[i]
+            if (!pageRef) continue
+
+            const isFirstPage = i < includeFirstPages
+            const isActivePage = i === selectedPageIndex && includeActivePage
+
+            if (isFirstPage || isActivePage) {
+                const text = pageRef.innerText || ''
+                if (text.trim()) {
+                    pageContents.push(`=== Page ${i + 1}/${totalPages} ===\n${text.trim()}`)
+                }
+            }
+        }
+
+        snapshot = pageContents.join('\n\n')
+
+        // Truncate if needed
+        if (snapshot.length > maxChars) {
+            snapshot = snapshot.substring(0, maxChars) + '\n\n[... truncated ...]'
+        }
+
+        return {
+            snapshot,
+            selection,
+            activePageIndex: selectedPageIndex,
+            totalPages: doc.pages.length
+        }
+    }, [doc.pages.length, selectedPageIndex])
+
+    /**
+     * Get currently selected text in the editor
+     * @returns {string} Selected text or empty string
+     */
+    const getSelectionText = useCallback(() => {
+        const sel = window.getSelection()
+        if (!sel || !sel.toString().trim()) return ''
+
+        // Check if selection is within our editor
+        const range = sel.getRangeAt(0)
+        const container = range.commonAncestorContainer
+        const isInEditor = Object.values(pageRefs.current).some(
+            pageEl => pageEl && pageEl.contains(container)
+        )
+
+        return isInEditor ? sel.toString().trim() : ''
+    }, [])
+
+    /**
+     * Apply a patch action from the AI agent
+     * @param {Object} action - The action to apply
+     * @returns {Object} { success: boolean, message: string }
+     */
+    const applyPatch = useCallback((action) => {
+        const { type, target = {}, patch = {} } = action
+
+        try {
+            switch (type) {
+                case 'replace_selection': {
+                    // Replace currently selected text
+                    const sel = window.getSelection()
+                    if (!sel || sel.rangeCount === 0) {
+                        return { success: false, message: 'Aucune sélection active' }
+                    }
+
+                    const range = sel.getRangeAt(0)
+                    if (range.collapsed) {
+                        return { success: false, message: 'Aucun texte sélectionné' }
+                    }
+
+                    range.deleteContents()
+                    const textNode = document.createTextNode(patch.replacement || '')
+                    range.insertNode(textNode)
+
+                    // Move cursor after inserted text
+                    range.setStartAfter(textNode)
+                    range.collapse(true)
+                    sel.removeAllRanges()
+                    sel.addRange(range)
+
+                    triggerSave()
+                    return { success: true, message: 'Texte remplacé' }
+                }
+
+                case 'insert_after_anchor': {
+                    // Find anchor text and insert content after it
+                    const { pageIndex = selectedPageIndex, anchorBefore } = target
+                    const { content } = patch
+
+                    if (!anchorBefore || !content) {
+                        return { success: false, message: 'Ancre ou contenu manquant' }
+                    }
+
+                    const pageEl = pageRefs.current[pageIndex]
+                    if (!pageEl) {
+                        return { success: false, message: `Page ${pageIndex + 1} non trouvée` }
+                    }
+
+                    // Find the anchor in text nodes
+                    const walker = document.createTreeWalker(
+                        pageEl,
+                        NodeFilter.SHOW_TEXT,
+                        null,
+                        false
+                    )
+
+                    let found = false
+                    while (walker.nextNode()) {
+                        const node = walker.currentNode
+                        const idx = node.textContent.indexOf(anchorBefore)
+                        if (idx !== -1) {
+                            // Split the text node and insert content
+                            const afterIdx = idx + anchorBefore.length
+                            const before = node.textContent.substring(0, afterIdx)
+                            const after = node.textContent.substring(afterIdx)
+
+                            node.textContent = before + content + after
+                            found = true
+                            break
+                        }
+                    }
+
+                    if (!found) {
+                        return { success: false, message: `Ancre "${anchorBefore}" non trouvée` }
+                    }
+
+                    triggerSave()
+                    return { success: true, message: 'Contenu inséré' }
+                }
+
+                case 'replace_between_anchors': {
+                    // Find text between two anchors and replace it
+                    const { pageIndex = selectedPageIndex, anchorStart, anchorEnd, matchText } = target
+                    const { replacement } = patch
+
+                    if (!matchText || replacement === undefined) {
+                        return { success: false, message: 'Texte à remplacer ou remplacement manquant' }
+                    }
+
+                    const pageEl = pageRefs.current[pageIndex]
+                    if (!pageEl) {
+                        return { success: false, message: `Page ${pageIndex + 1} non trouvée` }
+                    }
+
+                    // Walk through text nodes
+                    const walker = document.createTreeWalker(
+                        pageEl,
+                        NodeFilter.SHOW_TEXT,
+                        null,
+                        false
+                    )
+
+                    let found = false
+                    while (walker.nextNode()) {
+                        const node = walker.currentNode
+                        const idx = node.textContent.indexOf(matchText)
+                        if (idx !== -1) {
+                            node.textContent = node.textContent.replace(matchText, replacement)
+                            found = true
+                            break
+                        }
+                    }
+
+                    if (!found) {
+                        return { success: false, message: `Texte "${matchText.substring(0, 30)}..." non trouvé` }
+                    }
+
+                    triggerSave()
+                    return { success: true, message: 'Texte remplacé' }
+                }
+
+                case 'insert_content': {
+                    // Insert content at cursor position or at the end of active page
+                    const { content } = patch
+
+                    if (!content) {
+                        return { success: false, message: 'Contenu à insérer manquant' }
+                    }
+
+                    const pageEl = pageRefs.current[selectedPageIndex]
+                    if (!pageEl) {
+                        return { success: false, message: `Page ${selectedPageIndex + 1} non trouvée` }
+                    }
+
+                    // Check if there's a selection/cursor
+                    const sel = window.getSelection()
+                    if (sel && sel.rangeCount > 0) {
+                        const range = sel.getRangeAt(0)
+                        const container = range.commonAncestorContainer
+
+                        // If cursor is in our page, insert there
+                        if (pageEl.contains(container)) {
+                            range.deleteContents()
+                            const textNode = document.createTextNode(content)
+                            range.insertNode(textNode)
+                            range.setStartAfter(textNode)
+                            range.collapse(true)
+                            sel.removeAllRanges()
+                            sel.addRange(range)
+                            triggerSave()
+                            return { success: true, message: 'Contenu inséré à la position du curseur' }
+                        }
+                    }
+
+                    // Otherwise append to the page
+                    const wrapper = document.createElement('div')
+                    wrapper.innerHTML = content.replace(/\n/g, '<br>')
+                    while (wrapper.firstChild) {
+                        pageEl.appendChild(wrapper.firstChild)
+                    }
+
+                    triggerSave()
+                    return { success: true, message: 'Contenu inséré dans le document' }
+                }
+
+                default:
+                    return { success: false, message: `Type d'action inconnu: ${type}` }
+            }
+        } catch (err) {
+            console.error('applyPatch error:', err)
+            return { success: false, message: `Erreur: ${err.message}` }
+        }
+    }, [selectedPageIndex, triggerSave])
+
     // ========== RENDER ==========
     return (
         <div
@@ -919,7 +1174,12 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                 />
 
                 {/* AI Chat Sidebar */}
-                <AIChatSidebar accountNumber={accountNumber} />
+                <AIChatSidebar
+                    accountNumber={accountNumber}
+                    getDocumentSnapshot={getDocumentSnapshot}
+                    getSelectionText={getSelectionText}
+                    applyPatch={applyPatch}
+                />
             </div>
 
             {/* Global Selection Overlay */}

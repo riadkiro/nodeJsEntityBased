@@ -1,144 +1,298 @@
 /**
  * AIChatSidebar Component
  * AI Assistant chat interface for the document editor
+ * Supports: Assistant mode (simple chat) and Agent mode (document-aware with actions)
  * Uses OpenAI via Integration Engine
  */
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 
-export default function AIChatSidebar({ accountNumber }) {
+// Agent system prompt - conversational with action proposals
+const AGENT_SYSTEM_PROMPT = `Tu es un assistant d'écriture intelligent qui peut analyser et modifier des documents.
+
+COMPORTEMENT:
+1. Quand l'utilisateur pose une question sur le document, analyse-le et réponds naturellement
+2. Si tu identifies des corrections ou améliorations possibles, propose-les UNE PAR UNE
+3. Pour chaque proposition, demande confirmation: "Voulez-vous que je [action] ?"
+4. Attends la confirmation avant de proposer l'action suivante
+
+FORMAT DE PROPOSITION:
+Quand tu proposes une modification, inclus ce bloc JSON à la fin de ton message:
+\`\`\`action
+{
+  "type": "replace_between_anchors",
+  "description": "Corriger [description courte]",
+  "target": { "pageIndex": 0, "matchText": "texte exact à remplacer" },
+  "patch": { "replacement": "nouveau texte" }
+}
+\`\`\`
+
+TYPES D'ACTIONS:
+- replace_between_anchors: Remplace matchText par replacement
+- insert_after_anchor: Insère content après anchorBefore
+
+RÈGLES:
+- matchText doit être le texte EXACT du document
+- Propose une seule action à la fois
+- Sois conversationnel et amical
+- Explique pourquoi tu proposes la correction`
+
+export default function AIChatSidebar({
+    accountNumber,
+    getDocumentSnapshot,
+    getSelectionText,
+    applyPatch
+}) {
+    // ========== STATE ==========
     const [message, setMessage] = useState('')
     const [messages, setMessages] = useState([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState(null)
+    const [mode, setMode] = useState('assistant') // 'assistant' | 'agent'
+    const [pendingAction, setPendingAction] = useState(null)
+    const [isAnalyzing, setIsAnalyzing] = useState(false)
     const messagesEndRef = useRef(null)
 
     // Get account number from URL if not passed as prop
-    const getAccountNumber = () => {
+    const getAccountNumber = useCallback(() => {
         if (accountNumber) return accountNumber
         const match = window.location.pathname.match(/\/account\/([^/]+)/)
         return match ? match[1] : null
-    }
+    }, [accountNumber])
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [messages])
+    }, [messages, pendingAction])
 
-    // Send message to OpenAI via Integration Engine
-    const sendMessage = async (userMessage) => {
+    // ========== API CALL ==========
+    const callOpenAI = async (conversationHistory, isAgent = false) => {
         const accNum = getAccountNumber()
-        if (!accNum) {
-            setError('Numéro de compte introuvable')
-            return
+        if (!accNum) throw new Error('Numéro de compte introuvable')
+
+        const response = await fetch(`/account/${accNum}/integrations/openai/actions/chat-completion/execute`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                input: {
+                    model: 'gpt-4o-mini',
+                    messages: conversationHistory,
+                    temperature: isAgent ? 0.3 : 0.7,
+                    max_tokens: 1500
+                }
+            })
+        })
+
+        const result = await response.json()
+
+        if (!result.success) {
+            const errorMsg = result.error || 'Erreur API'
+            if (errorMsg.includes('Not connected') || errorMsg.includes('connection')) {
+                throw new Error('OpenAI non connecté. Configurez votre clé API dans Intégrations.')
+            }
+            throw new Error(errorMsg)
         }
 
+        return result.data?.content || result.data?.choices?.[0]?.message?.content || ''
+    }
+
+    // ========== PARSE ACTION FROM RESPONSE ==========
+    const parseActionFromResponse = (content) => {
+        // Try multiple patterns to find action JSON
+        const patterns = [
+            /```action\s*([\s\S]*?)```/,      // ```action ... ```
+            /```json\s*([\s\S]*?)```/,         // ```json ... ```
+            /\{[\s\S]*"type"\s*:\s*"[^"]+_anchor[^"]*"[\s\S]*\}/  // Raw JSON with type
+        ]
+
+        for (const pattern of patterns) {
+            const match = content.match(pattern)
+            if (match) {
+                const jsonStr = match[1] || match[0]
+                const text = content.replace(pattern, '').trim()
+
+                try {
+                    const action = JSON.parse(jsonStr.trim())
+                    // Validate action structure
+                    if (action.type && (action.target || action.patch)) {
+                        action.id = Date.now().toString()
+                        console.log('✅ Action parsed:', action)
+                        return { text, action }
+                    }
+                } catch (e) {
+                    console.warn('JSON parse attempt failed:', e.message)
+                }
+            }
+        }
+
+        console.log('ℹ️ No action found in response')
+        return { text: content, action: null }
+    }
+
+    // ========== SEND MESSAGE ==========
+    const sendMessage = async (userMessage) => {
         setIsLoading(true)
         setError(null)
+        setPendingAction(null)
 
-        // Add user message to chat
         const userMsg = { role: 'user', content: userMessage }
         setMessages(prev => [...prev, userMsg])
 
         try {
-            // Build conversation history for context
+            let systemPrompt = 'Tu es un assistant d\'écriture professionnel. Tu aides l\'utilisateur à rédiger, corriger et améliorer ses documents. Réponds de manière concise et utile en français.'
+            let contextMessage = ''
+
+            // In agent mode, ALWAYS include document context
+            let documentIsEmpty = false
+            if (mode === 'agent' && getDocumentSnapshot) {
+                setIsAnalyzing(true)
+                const { snapshot, selection, activePageIndex, totalPages } = getDocumentSnapshot()
+
+                documentIsEmpty = !snapshot.trim()
+
+                if (snapshot.trim()) {
+                    systemPrompt = AGENT_SYSTEM_PROMPT
+                    contextMessage = `\n\n[CONTEXTE - Document actuel (${totalPages} pages, page active: ${activePageIndex + 1})]\n${snapshot}`
+                    if (selection) {
+                        contextMessage += `\n\n[TEXTE SÉLECTIONNÉ]\n${selection}`
+                    }
+                } else {
+                    // Document is empty - use a simpler generation prompt
+                    systemPrompt = `Tu es un assistant d'écriture professionnel. 
+Le document est actuellement VIDE. 
+Si l'utilisateur demande de générer du contenu (texte, paragraphe, introduction, etc.), génère-le directement.
+Si tu génères du contenu qui peut être inséré dans le document, ajoute ce bloc à la fin:
+\`\`\`action
+{
+  "type": "insert_content",
+  "description": "Insérer ce contenu dans le document",
+  "patch": { "content": "le contenu à insérer" }
+}
+\`\`\`
+Réponds en français.`
+                }
+                setIsAnalyzing(false)
+            }
+
             const conversationHistory = [
-                {
-                    role: 'system',
-                    content: 'Tu es un assistant d\'écriture professionnel. Tu aides l\'utilisateur à rédiger, corriger et améliorer ses documents. Réponds de manière concise et utile en français.'
-                },
-                ...messages.map(m => ({ role: m.role, content: m.content })),
-                userMsg
+                { role: 'system', content: systemPrompt },
+                ...messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
+                { role: 'user', content: userMessage + contextMessage }
             ]
 
-            // Call Integration Engine to execute OpenAI action
-            const response = await fetch(`/account/${accNum}/integrations/openai/actions/chat-completion/execute`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    input: {
-                        model: 'gpt-4o-mini',
-                        messages: conversationHistory,
-                        temperature: 0.7,
-                        max_tokens: 1000
+            const content = await callOpenAI(conversationHistory, mode === 'agent')
+
+            // Parse action if in agent mode
+            if (mode === 'agent') {
+                let { text, action } = parseActionFromResponse(content)
+
+                // If document is empty and no action but response looks like content to insert
+                if (!action && documentIsEmpty && text.length > 50) {
+                    // Check if the response is NOT a question or clarification
+                    const isQuestion = /\?$|voulez-vous|souhaitez-vous|pouvez-vous|avez-vous|puis-je|quel|quelle/i.test(text.trim())
+                    const isError = /pas trouvé|introuvable|erreur|impossible|désolé/i.test(text)
+
+                    if (!isQuestion && !isError) {
+                        // Create an insert action automatically
+                        action = {
+                            id: Date.now().toString(),
+                            type: 'insert_content',
+                            description: 'Insérer ce contenu dans le document',
+                            patch: { content: text }
+                        }
+                        text = "J'ai généré ce contenu pour vous. Voulez-vous l'insérer dans le document ?"
                     }
-                })
-            })
-
-            const result = await response.json()
-
-            if (result.success && result.data) {
-                // Extract content from mapped response
-                const assistantContent = result.data.content || result.data.choices?.[0]?.message?.content || 'Pas de réponse'
-
-                setMessages(prev => [...prev, {
-                    role: 'assistant',
-                    content: assistantContent
-                }])
-            } else {
-                // Handle error
-                const errorMsg = result.error || 'Erreur lors de la communication avec l\'IA'
-                setError(errorMsg)
-
-                // Check if it's a connection error
-                if (errorMsg.includes('Not connected') || errorMsg.includes('connection')) {
-                    setError('OpenAI non connecté. Allez dans Intégrations > OpenAI pour configurer votre clé API.')
                 }
+
+                setMessages(prev => [...prev, { role: 'assistant', content: text }])
+                if (action) {
+                    setPendingAction(action)
+                }
+            } else {
+                setMessages(prev => [...prev, { role: 'assistant', content }])
             }
         } catch (err) {
             console.error('AI Chat error:', err)
-            setError('Erreur de connexion au service IA')
+            setError(err.message)
         } finally {
             setIsLoading(false)
+            setIsAnalyzing(false)
         }
     }
 
+    // ========== ACTION HANDLERS ==========
+    const handleApplyAction = useCallback(() => {
+        if (!pendingAction || !applyPatch) return
+
+        const result = applyPatch(pendingAction)
+
+        if (result.success) {
+            setMessages(prev => [...prev, {
+                role: 'system',
+                content: `✅ ${result.message}`
+            }])
+            setPendingAction(null)
+        } else {
+            setError(`Échec: ${result.message}`)
+        }
+    }, [pendingAction, applyPatch])
+
+    const handleRejectAction = useCallback(() => {
+        setMessages(prev => [...prev, {
+            role: 'system',
+            content: '❌ Action annulée'
+        }])
+        setPendingAction(null)
+    }, [])
+
+    // ========== FORM HANDLERS ==========
     const handleSubmit = (e) => {
         e.preventDefault()
         if (!message.trim() || isLoading) return
-
         sendMessage(message.trim())
         setMessage('')
     }
 
-    // Quick action handlers
     const handleQuickAction = (action) => {
         const prompts = {
-            'improve': 'Améliore le style et la clarté du texte suivant :',
-            'correct': 'Corrige les fautes d\'orthographe et de grammaire du texte suivant :',
-            'summarize': 'Résume le contenu suivant de manière concise :'
+            'improve': 'Améliore le style et la clarté du texte',
+            'correct': 'Corrige les fautes d\'orthographe et de grammaire',
+            'summarize': 'Résume le contenu du document'
         }
-
-        // Get selected text if any
-        const selection = window.getSelection()
-        const selectedText = selection?.toString()?.trim()
-
-        if (selectedText) {
-            sendMessage(`${prompts[action]}\n\n"${selectedText}"`)
-        } else {
-            sendMessage(prompts[action] + ' (Sélectionnez du texte dans le document puis réessayez)')
-        }
+        sendMessage(prompts[action])
     }
 
     const clearChat = () => {
         setMessages([])
+        setPendingAction(null)
         setError(null)
     }
 
+    // ========== RENDER ==========
     return (
         <div className="w-80 bg-white dark:bg-gray-900 border-l dark:border-gray-800 flex flex-col h-full">
             {/* Header */}
             <div className="p-4 border-b dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/20">
-                            <iconify-icon icon="tabler:sparkles" width="22" className="text-white"></iconify-icon>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${mode === 'agent'
+                            ? 'bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/20'
+                            : 'bg-gradient-to-br from-primary to-primary/60 shadow-primary/20'
+                            }`}>
+                            <iconify-icon
+                                icon={mode === 'agent' ? "tabler:robot" : "tabler:sparkles"}
+                                width="22"
+                                className="text-white"
+                            ></iconify-icon>
                         </div>
                         <div>
-                            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Assistant</h3>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                                {mode === 'agent' ? 'Agent' : 'Assistant'}
+                            </h3>
                             <h2 className="text-lg font-bold text-gray-900 dark:text-white">IA</h2>
                         </div>
                     </div>
+                    {/* Clear Chat */}
                     {messages.length > 0 && (
                         <button
                             onClick={clearChat}
@@ -166,31 +320,42 @@ export default function AIChatSidebar({ accountNumber }) {
                 {messages.length === 0 ? (
                     // Empty State
                     <div className="h-full flex flex-col items-center justify-center text-center px-4">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mb-4">
-                            <iconify-icon icon="tabler:message-chatbot" width="32" className="text-primary"></iconify-icon>
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${mode === 'agent'
+                            ? 'bg-gradient-to-br from-amber-500/10 to-orange-500/5'
+                            : 'bg-gradient-to-br from-primary/10 to-primary/5'
+                            }`}>
+                            <iconify-icon
+                                icon={mode === 'agent' ? "tabler:robot" : "tabler:message-chatbot"}
+                                width="32"
+                                className={mode === 'agent' ? "text-amber-500" : "text-primary"}
+                            ></iconify-icon>
                         </div>
-                        <h3 className="text-sm font-bold text-gray-200 mb-2">
-                            Comment puis-je vous aider ?
+                        <h3 className="text-sm font-bold text-gray-600 dark:text-gray-300 mb-2">
+                            {mode === 'agent'
+                                ? 'Mode Agent activé'
+                                : 'Comment puis-je vous aider ?'}
                         </h3>
                         <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
-                            Posez une question sur votre document ou demandez-moi de vous aider à rédiger, corriger ou améliorer votre contenu.
+                            {mode === 'agent'
+                                ? 'Posez une question sur votre document. L\'agent analysera le contenu et proposera des modifications.'
+                                : 'Posez une question ou demandez-moi de vous aider à rédiger.'}
                         </p>
 
                         {/* Quick Actions */}
                         <div className="mt-6 space-y-2 w-full">
-                            <button
-                                onClick={() => handleQuickAction('improve')}
-                                className="w-full px-4 py-2.5 text-xs text-left text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-3 group"
-                            >
-                                <iconify-icon icon="tabler:wand" width="16" className="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
-                                Améliorer le style
-                            </button>
                             <button
                                 onClick={() => handleQuickAction('correct')}
                                 className="w-full px-4 py-2.5 text-xs text-left text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-3 group"
                             >
                                 <iconify-icon icon="tabler:language" width="16" className="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
                                 Corriger l'orthographe
+                            </button>
+                            <button
+                                onClick={() => handleQuickAction('improve')}
+                                className="w-full px-4 py-2.5 text-xs text-left text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-3 group"
+                            >
+                                <iconify-icon icon="tabler:wand" width="16" className="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
+                                Améliorer le style
                             </button>
                             <button
                                 onClick={() => handleQuickAction('summarize')}
@@ -212,25 +377,64 @@ export default function AIChatSidebar({ accountNumber }) {
                                 <div
                                     className={`max-w-[85%] px-4 py-2.5 text-sm leading-relaxed ${msg.role === 'user'
                                         ? 'dark:bg-gray-800 bg-gray-100 dark:text-white rounded-xl'
-                                        : 'bg-[#1e3a5f] text-gray-300 rounded-2xl rounded-bl-sm'
+                                        : msg.role === 'system'
+                                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 text-xs rounded-lg'
+                                            : 'bg-[#1e3a5f] text-gray-300 rounded-2xl rounded-bl-sm'
                                         }`}
                                 >
-                                    {msg.role === 'assistant' ? (
-                                        <div className="whitespace-pre-wrap">{msg.content}</div>
-                                    ) : (
-                                        msg.content
-                                    )}
+                                    <div className="whitespace-pre-wrap">{msg.content}</div>
                                 </div>
                             </div>
                         ))}
 
-                        {/* Loading indicator */}
-                        {isLoading && (
+                        {/* Pending Action Card */}
+                        {pendingAction && (
+                            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                                <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mb-2">
+                                    📝 Action proposée
+                                </p>
+                                <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">
+                                    {pendingAction.description}
+                                </p>
+                                {pendingAction.target?.matchText && pendingAction.patch?.replacement && (
+                                    <div className="text-[11px] mb-3 p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg space-y-1">
+                                        <div className="text-danger line-through">{pendingAction.target.matchText}</div>
+                                        <div className="text-success">{pendingAction.patch.replacement}</div>
+                                    </div>
+                                )}
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={handleApplyAction}
+                                        className="flex-1 py-2 text-xs bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors flex items-center justify-center gap-1 font-medium"
+                                    >
+                                        <iconify-icon icon="tabler:check" width="14"></iconify-icon>
+                                        Appliquer
+                                    </button>
+                                    <button
+                                        onClick={handleRejectAction}
+                                        className="flex-1 py-2 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-1"
+                                    >
+                                        <iconify-icon icon="tabler:x" width="14"></iconify-icon>
+                                        Refuser
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Loading / Analyzing indicators */}
+                        {(isLoading || isAnalyzing) && (
                             <div className="flex justify-start">
-                                <div className="max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-sm bg-[#1e3a5f]">
+                                <div className={`max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-sm ${mode === 'agent' ? 'bg-amber-500/10' : 'bg-[#1e3a5f]'
+                                    }`}>
                                     <div className="flex items-center gap-2">
-                                        <iconify-icon icon="tabler:loader-2" width="16" className="animate-spin text-primary"></iconify-icon>
-                                        <span className="text-sm text-gray-400">Réflexion en cours...</span>
+                                        <iconify-icon
+                                            icon="tabler:loader-2"
+                                            width="16"
+                                            className={`animate-spin ${mode === 'agent' ? 'text-amber-500' : 'text-primary'}`}
+                                        ></iconify-icon>
+                                        <span className={`text-sm ${mode === 'agent' ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}`}>
+                                            {isAnalyzing ? 'Analyse du document...' : 'Réflexion...'}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -253,7 +457,7 @@ export default function AIChatSidebar({ accountNumber }) {
                                 handleSubmit(e)
                             }
                         }}
-                        placeholder="Posez une question..."
+                        placeholder={mode === 'agent' ? "Demandez une analyse..." : "Posez une question..."}
                         className="w-full px-4 py-3 pr-12 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl resize-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 focus:outline-none transition-all text-gray-900 dark:text-gray-300"
                         rows="2"
                         disabled={isLoading}
@@ -270,9 +474,21 @@ export default function AIChatSidebar({ accountNumber }) {
                         )}
                     </button>
                 </form>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2 text-center">
-                    Entrée pour envoyer • Shift+Entrée pour nouvelle ligne
-                </p>
+
+                {/* Mode Selector */}
+                <div className="mt-3 flex items-center justify-between">
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                        Entrée pour envoyer
+                    </p>
+                    <select
+                        value={mode}
+                        onChange={(e) => setMode(e.target.value)}
+                        className="text-[11px] px-2 py-1 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-md text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary/30 cursor-pointer"
+                    >
+                        <option value="assistant">💬 Assistant</option>
+                        <option value="agent">🤖 Agent</option>
+                    </select>
+                </div>
             </div>
         </div>
     )

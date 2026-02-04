@@ -122,7 +122,7 @@ export default function AIChatSidebar({
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState(null)
     const [mode, setMode] = useState('agent') // 'assistant' | 'agent' - agent by default
-    const [model, setModel] = useState('gpt-4o-mini')
+    const [model, setModel] = useState('gpt-4o')
 
     // Multi-actions state
     const [pendingActions, setPendingActions] = useState([]) // Array of actions
@@ -256,7 +256,14 @@ export default function AIChatSidebar({
                         `
 
                         // Add hover events on the highlight itself
-                        highlight.onmouseenter = () => setHoveredActionId(action.id)
+                        highlight.onmouseenter = () => {
+                            setHoveredActionId(action.id)
+                            // Scroll to the corresponding card in sidebar
+                            const card = document.querySelector(`[data-action-card-id="${action.id}"]`)
+                            if (card) {
+                                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                            }
+                        }
                         highlight.onmouseleave = () => setHoveredActionId(null)
 
                         range.surroundContents(highlight)
@@ -775,7 +782,7 @@ export default function AIChatSidebar({
                             <div className="space-y-2">
                                 {/* Header with Apply All / Ignore All */}
                                 {pendingCount > 1 && (
-                                    <div className="flex items-center justify-between p-2 bg-amber-500/5 rounded-lg border border-amber-500/20">
+                                    <div className="flex items-center justify-between p-2 bg-amber-500/5 rounded-lg border dark:border-gray-800 border-gray-800">
                                         <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
                                             {pendingCount} correction(s) en attente
                                         </span>
@@ -808,12 +815,13 @@ export default function AIChatSidebar({
                                     return (
                                         <div
                                             key={action.id}
-                                            className={`p-3 rounded-xl border transition-all cursor-pointer ${isApplied ? 'bg-success/10 border-success/30 opacity-60' :
-                                                isFailed ? 'bg-danger/10 border-danger/30' :
+                                            data-action-card-id={action.id}
+                                            className={`p-2 rounded-lg border transition-all cursor-pointer ${isApplied ? 'bg-success/10 border-success/20 opacity-60' :
+                                                isFailed ? 'bg-danger/10 border-danger/20' :
                                                     isIgnored ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-50' :
                                                         hoveredActionId === action.id
-                                                            ? 'bg-amber-500/20 border-amber-500/50 shadow-md'
-                                                            : 'bg-amber-500/10 border-amber-500/30'
+                                                            ? 'bg-amber-500/15 border-amber-500/40'
+                                                            : 'bg-amber-500/5 dark:border-gray-800 border-gray-800'
                                                 }`}
                                             onMouseEnter={() => {
                                                 setHoveredActionId(action.id)
@@ -821,13 +829,13 @@ export default function AIChatSidebar({
                                             }}
                                             onMouseLeave={() => setHoveredActionId(null)}
                                         >
-                                            {/* Status indicator */}
-                                            <div className="flex items-center justify-between mb-2">
-                                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                            {/* Header: description + confidence */}
+                                            <div className="flex items-center justify-between gap-2 mb-1">
+                                                <p className="text-[11px] font-medium text-gray-700 dark:text-gray-300 truncate">
                                                     {action.description}
                                                 </p>
                                                 {action.confidence && (
-                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${action.confidence >= 0.9 ? 'bg-success/20 text-success' :
+                                                    <span className={`text-[9px] px-1 py-0.5 rounded flex-shrink-0 ${action.confidence >= 0.9 ? 'bg-success/20 text-success' :
                                                         action.confidence >= 0.7 ? 'bg-amber-500/20 text-amber-600' :
                                                             'bg-gray-200 text-gray-500'
                                                         }`}>
@@ -836,11 +844,12 @@ export default function AIChatSidebar({
                                                 )}
                                             </div>
 
-                                            {/* Show old -> new preview */}
+                                            {/* Show old -> new preview INLINE */}
                                             {action.target?.matchText && action.patch?.replacement && (
-                                                <div className="text-[11px] mb-3 p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg space-y-1 font-mono">
-                                                    <div className="text-danger line-through">{action.target.matchText}</div>
-                                                    <div className="text-success">{action.patch.replacement}</div>
+                                                <div className="text-[10px] mb-1.5 flex items-center gap-1.5 font-mono flex-wrap">
+                                                    <span className="text-danger line-through">{action.target.matchText}</span>
+                                                    <span className="text-gray-400">→</span>
+                                                    <span className="text-success">{action.patch.replacement}</span>
                                                 </div>
                                             )}
 

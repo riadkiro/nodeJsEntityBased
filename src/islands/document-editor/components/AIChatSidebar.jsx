@@ -129,7 +129,8 @@ export default function AIChatSidebar({
     getDocumentSnapshot,
     getSelectionText,
     applyPatch,
-    pageRefs // Reference to page elements for highlighting
+    pageRefs, // Reference to page elements for highlighting
+    selectedPageIndex = 0 // Current page index for "page" scope
 }) {
     // ========== STATE ==========
     const [message, setMessage] = useState('')
@@ -138,6 +139,13 @@ export default function AIChatSidebar({
     const [error, setError] = useState(null)
     const [mode, setMode] = useState('agent') // 'assistant' | 'agent' - agent by default
     const [model, setModel] = useState('gpt-4o')
+
+    // Scope: what to analyze - 'selection' | 'page' | 'document'
+    const [scope, setScope] = useState('page') // Default to page
+    const [hasSelection, setHasSelection] = useState(false)
+    const [lockedSelection, setLockedSelection] = useState(null) // Store selection text when focusing input
+    const inputRef = useRef(null)
+    const lockedElementRef = useRef(null) // Store the locked element for selection mode
 
     // Multi-actions state
     const [pendingActions, setPendingActions] = useState([]) // Array of actions
@@ -166,6 +174,122 @@ export default function AIChatSidebar({
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages, pendingActions])
+
+    // Track selection state (but don't auto-switch scope)
+    useEffect(() => {
+        const handleSelectionChange = () => {
+            const selText = getSelectionText?.()
+            const hasText = selText && selText.length > 0
+            setHasSelection(hasText)
+
+            // If selection is cleared while in selection scope, revert to page
+            // Note: This only fires when there's no lockedSelection - if we have a locked
+            // selection, we keep the indicator visible until user clicks outside or changes scope
+            if (!hasText && scope === 'selection' && !lockedSelection) {
+                setScope('page')
+            }
+        }
+
+        document.addEventListener('selectionchange', handleSelectionChange)
+        return () => document.removeEventListener('selectionchange', handleSelectionChange)
+    }, [getSelectionText, scope, lockedSelection])
+
+    // Clear selection lock - unwrap the locked span (keep content, remove wrapper)
+    const clearSelectionLock = useCallback(() => {
+        // Remove overlay indicators (if any)
+        document.querySelectorAll('.ai-selection-indicator').forEach(el => el.remove())
+
+        // Unwrap all locked spans - keep their content, remove the wrapper
+        document.querySelectorAll('span.ai-selection-locked').forEach(span => {
+            const parent = span.parentNode
+            if (parent) {
+                // Move all children out before the span
+                while (span.firstChild) {
+                    parent.insertBefore(span.firstChild, span)
+                }
+                // Remove the now-empty span
+                span.remove()
+                // Normalize to merge adjacent text nodes
+                parent.normalize()
+            }
+        })
+
+        lockedElementRef.current = null
+    }, [])
+
+    // Handle input focus - lock selection and switch scope
+    const handleInputFocus = useCallback(() => {
+        const selText = getSelectionText?.()
+        if (selText && selText.length > 0) {
+            setLockedSelection(selText)
+            setScope('selection')
+
+            // Wrap the selected text with a highlight span
+            const sel = window.getSelection()
+            if (sel && sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0)
+                try {
+                    // Check if selection is not collapsed (has content)
+                    if (!range.collapsed) {
+                        // Create wrapper span for the selection
+                        const wrapper = document.createElement('span')
+                        wrapper.className = 'ai-selection-locked'
+
+                        // Wrap the selection contents
+                        range.surroundContents(wrapper)
+
+                        // Store reference for cleanup
+                        lockedElementRef.current = wrapper
+
+                        // Clear browser selection to avoid confusion
+                        sel.removeAllRanges()
+                    }
+                } catch (e) {
+                    // surroundContents can fail if selection spans partial nodes
+                    // In that case, fall back to just storing the text without visual highlight
+                    console.warn('Could not wrap selection:', e.message)
+                }
+            }
+        }
+    }, [getSelectionText])
+
+    // Handle scope change - clear locked selection if switching away from selection
+    const handleScopeChange = useCallback((newScope) => {
+        setScope(newScope)
+        if (newScope !== 'selection') {
+            setLockedSelection(null)
+            // Remove selection indicators and locked class
+            clearSelectionLock()
+        }
+    }, [clearSelectionLock])
+
+    // Detect clicks outside the chat sidebar to revert to page scope
+    useEffect(() => {
+        if (scope !== 'selection' || !lockedSelection) return
+
+        const handleDocumentClick = (e) => {
+            // Check if click is inside the sidebar (contains the chat input)
+            const sidebar = e.target.closest('.ai-chat-sidebar')
+            const isClickInSidebar = sidebar !== null
+
+            // If click is outside sidebar, revert to page scope
+            if (!isClickInSidebar) {
+                setScope('page')
+                setLockedSelection(null)
+                clearSelectionLock()
+            }
+        }
+
+        // Add listener with a small delay to avoid catching the initial focus click
+        const timeoutId = setTimeout(() => {
+            document.addEventListener('mousedown', handleDocumentClick)
+        }, 100)
+
+        return () => {
+            clearTimeout(timeoutId)
+            document.removeEventListener('mousedown', handleDocumentClick)
+        }
+    }, [scope, lockedSelection])
 
     // ========== DOCUMENT HIGHLIGHTING ==========
     // Clear all highlights
@@ -535,6 +659,9 @@ export default function AIChatSidebar({
         setPendingActions([])
         setActionStatus({})
 
+        // NOTE: Do NOT clear selection indicator here - keep it visible while in selection mode
+        // The indicator will be cleared when exiting selection mode (clicking outside or changing scope)
+
         const userMsg = { role: 'user', content: userMessage }
         setMessages(prev => [...prev, userMsg])
 
@@ -542,20 +669,35 @@ export default function AIChatSidebar({
             let systemPrompt = 'Tu es un assistant d\'écriture professionnel. Tu aides l\'utilisateur à rédiger, corriger et améliorer ses documents. Réponds de manière concise et utile en français.'
             let contextMessage = ''
 
-            // In agent mode, ALWAYS include document context
+            // In agent mode, ALWAYS include document context based on scope
             let documentIsEmpty = false
             if (mode === 'agent' && getDocumentSnapshot) {
                 setIsAnalyzing(true)
-                const { snapshot, selection, activePageIndex, totalPages } = getDocumentSnapshot()
+                const { snapshot, selection, activePageIndex, totalPages, pages } = getDocumentSnapshot()
 
-                documentIsEmpty = !snapshot.trim()
+                // Determine content based on scope
+                let contentToAnalyze = ''
+                let scopeLabel = ''
 
-                if (snapshot.trim()) {
+                // Use locked selection (from focus) or fresh selection
+                const selectionText = lockedSelection || selection
+
+                if (scope === 'selection' && selectionText && selectionText.trim()) {
+                    contentToAnalyze = selectionText
+                    scopeLabel = 'SÉLECTION'
+                } else if (scope === 'page' && pages && pages[selectedPageIndex]) {
+                    contentToAnalyze = pages[selectedPageIndex]
+                    scopeLabel = `PAGE ${selectedPageIndex + 1}/${totalPages}`
+                } else {
+                    contentToAnalyze = snapshot
+                    scopeLabel = `DOCUMENT COMPLET - ${totalPages} pages`
+                }
+
+                documentIsEmpty = !contentToAnalyze.trim()
+
+                if (contentToAnalyze.trim()) {
                     systemPrompt = AGENT_SYSTEM_PROMPT
-                    contextMessage = `\n\n[DOCUMENT - ${totalPages} pages, page active: ${activePageIndex + 1}]\n${snapshot}`
-                    if (selection) {
-                        contextMessage += `\n\n[SÉLECTION]\n${selection}`
-                    }
+                    contextMessage = `\n\n[${scopeLabel}]\n${contentToAnalyze}`
                 } else {
                     systemPrompt = EMPTY_DOC_PROMPT
                 }
@@ -715,7 +857,7 @@ export default function AIChatSidebar({
 
     // ========== RENDER ==========
     return (
-        <div className="w-80 bg-white dark:bg-gray-900 border-l dark:border-gray-800 flex flex-col h-full">
+        <div className="ai-chat-sidebar w-80 bg-white dark:bg-gray-900 border-l dark:border-gray-800 flex flex-col h-full">
             {/* Header */}
             <div className="p-4 border-b dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
                 <div className="flex items-center justify-between">
@@ -756,6 +898,50 @@ export default function AIChatSidebar({
                     <div className="flex items-start gap-2">
                         <iconify-icon icon="tabler:alert-circle" width="18" className="text-danger shrink-0 mt-0.5"></iconify-icon>
                         <p className="text-xs text-danger">{error}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Scope Selector - Only in Agent mode */}
+            {mode === 'agent' && (
+                <div className="px-4 py-2 border-b dark:border-gray-800">
+                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+                        <button
+                            onClick={() => handleScopeChange('selection')}
+                            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${scope === 'selection'
+                                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                } ${!hasSelection && !lockedSelection && scope !== 'selection' ? 'opacity-50' : ''}`}
+                            title="Analyser uniquement la sélection"
+                        >
+                            <iconify-icon icon="tabler:text-wrap" width="12"></iconify-icon>
+                            <span>Sélection</span>
+                            {(hasSelection || lockedSelection) && scope === 'selection' && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                            )}
+                        </button>
+                        <button
+                            onClick={() => handleScopeChange('page')}
+                            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${scope === 'page'
+                                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                }`}
+                            title="Analyser la page en cours"
+                        >
+                            <iconify-icon icon="tabler:file-text" width="12"></iconify-icon>
+                            <span>Page</span>
+                        </button>
+                        <button
+                            onClick={() => handleScopeChange('document')}
+                            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${scope === 'document'
+                                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                }`}
+                            title="Analyser tout le document"
+                        >
+                            <iconify-icon icon="tabler:files" width="12"></iconify-icon>
+                            <span>Tout</span>
+                        </button>
                     </div>
                 </div>
             )}
@@ -984,8 +1170,10 @@ export default function AIChatSidebar({
             <div className="p-4 border-t dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30">
                 <form onSubmit={handleSubmit} className="relative">
                     <textarea
+                        ref={inputRef}
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
+                        onFocus={handleInputFocus}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault()

@@ -868,19 +868,20 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
         // Build page content with headers
         const pageContents = []
+        const pages = [] // Individual page texts for scope=page
         const totalPages = doc.pages.length
 
         for (let i = 0; i < totalPages; i++) {
             const pageRef = pageRefs.current[i]
-            if (!pageRef) continue
+            const text = pageRef?.innerText?.trim() || ''
+            pages.push(text) // Store each page's text
 
             const isFirstPage = i < includeFirstPages
             const isActivePage = i === selectedPageIndex && includeActivePage
 
             if (isFirstPage || isActivePage) {
-                const text = pageRef.innerText || ''
-                if (text.trim()) {
-                    pageContents.push(`=== Page ${i + 1}/${totalPages} ===\n${text.trim()}`)
+                if (text) {
+                    pageContents.push(`=== Page ${i + 1}/${totalPages} ===\n${text}`)
                 }
             }
         }
@@ -896,7 +897,8 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             snapshot,
             selection,
             activePageIndex: selectedPageIndex,
-            totalPages: doc.pages.length
+            totalPages: doc.pages.length,
+            pages // Add individual pages for scope support
         }
     }, [doc.pages.length, selectedPageIndex])
 
@@ -1411,6 +1413,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     getSelectionText={getSelectionText}
                     applyPatch={applyPatch}
                     pageRefs={pageRefs}
+                    selectedPageIndex={selectedPageIndex}
                 />
             </div>
 

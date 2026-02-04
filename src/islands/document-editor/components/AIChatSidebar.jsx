@@ -203,16 +203,16 @@ export default function AIChatSidebar({ accountNumber }) {
                     </div>
                 ) : (
                     // Messages List
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         {messages.map((msg, index) => (
                             <div
                                 key={index}
                                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                             >
                                 <div
-                                    className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm ${msg.role === 'user'
-                                        ? 'bg-primary text-white rounded-br-md'
-                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-bl-md'
+                                    className={`max-w-[85%] px-4 py-2.5 text-sm leading-relaxed ${msg.role === 'user'
+                                        ? 'dark:bg-gray-800 bg-gray-100 dark:text-white rounded-xl'
+                                        : 'bg-[#1e3a5f] text-gray-300 rounded-2xl rounded-bl-sm'
                                         }`}
                                 >
                                     {msg.role === 'assistant' ? (
@@ -227,10 +227,10 @@ export default function AIChatSidebar({ accountNumber }) {
                         {/* Loading indicator */}
                         {isLoading && (
                             <div className="flex justify-start">
-                                <div className="max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-md bg-gray-100 dark:bg-gray-800">
+                                <div className="max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-sm bg-[#1e3a5f]">
                                     <div className="flex items-center gap-2">
                                         <iconify-icon icon="tabler:loader-2" width="16" className="animate-spin text-primary"></iconify-icon>
-                                        <span className="text-sm text-gray-500">Réflexion en cours...</span>
+                                        <span className="text-sm text-gray-400">Réflexion en cours...</span>
                                     </div>
                                 </div>
                             </div>
@@ -254,7 +254,7 @@ export default function AIChatSidebar({ accountNumber }) {
                             }
                         }}
                         placeholder="Posez une question..."
-                        className="w-full px-4 py-3 pr-12 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl resize-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 focus:outline-none transition-all text-gray-900 dark:text-gray-100"
+                        className="w-full px-4 py-3 pr-12 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl resize-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 focus:outline-none transition-all text-gray-900 dark:text-gray-300"
                         rows="2"
                         disabled={isLoading}
                     />

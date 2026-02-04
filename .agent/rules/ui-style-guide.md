@@ -7,10 +7,40 @@
 - **Fermeture intuitive** : ESC + clic extérieur
 - **Dark mode** : Toujours supporter via classes `dark:`
 
+## ⚠️ RÈGLES DARK MODE STRICTES (NE JAMAIS DÉROGER)
+
+### Borders en Dark Mode
+**TOUJOURS** utiliser `dark:border-gray-800` — **JAMAIS** `dark:border-gray-700`
+```css
+/* ✅ CORRECT */
+border border-gray-200 dark:border-gray-800
+
+/* ❌ INCORRECT - NE JAMAIS UTILISER */
+border border-gray-200 dark:border-gray-700
+```
+
+### Textes en Dark Mode
+**TOUJOURS** utiliser `dark:text-gray-300` pour le texte principal — **JAMAIS** `dark:text-gray-100` ou `dark:text-gray-200`
+```css
+/* ✅ CORRECT */
+text-gray-700 dark:text-gray-300
+text-gray-600 dark:text-gray-300
+
+/* ❌ INCORRECT - NE JAMAIS UTILISER */
+text-gray-700 dark:text-gray-100
+text-gray-700 dark:text-gray-200
+```
+
+### Exceptions autorisées
+- `dark:text-white` : Pour les titres principaux (h1, h2)
+- `dark:text-gray-400` / `dark:text-gray-500` : Pour les textes secondaires, labels, placeholders
+
+---
+
 ## Boutons Icônes
 ```css
 /* Base */
-p-2 rounded-lg border border-gray-200 dark:border-gray-700 
+p-2 rounded-lg border border-gray-200 dark:border-gray-800 
 text-gray-500 transition-all
 
 /* Hover */
@@ -23,7 +53,7 @@ border-primary bg-primary/10 text-primary
 ## Popovers Flottants
 - Rendu via `createPortal(document.body)` pour éviter conflits z-index
 - Background : `bg-white dark:bg-[#1b2e4b]`
-- Border : `border border-gray-200 dark:border-gray-700`
+- Border : `border border-gray-200 dark:border-gray-800`
 - Shadow : `shadow-xl`
 - Rounded : `rounded-xl`
 - Padding : `p-4`
@@ -65,7 +95,7 @@ text-xs text-gray-700 dark:text-gray-300
 ## Input de Recherche dans Popover
 ```css
 w-full px-3 py-1.5 text-xs 
-border border-gray-200 dark:border-gray-700 
+border border-gray-200 dark:border-gray-800 
 rounded-lg bg-white dark:bg-gray-800 
 focus:outline-none focus:ring-1 focus:ring-primary/50
 ```
@@ -87,6 +117,7 @@ focus:outline-none focus:ring-1 focus:ring-primary/50
 ## Couleurs Primaires
 - Primary : `#4361ee` (utilisé via classe `primary`)
 - Text gray subtle : `text-gray-500`
-- Border default : `border-gray-200 dark:border-gray-800` ⚠️ **Toujours utiliser `dark:border-gray-800`** au lieu de `dark:border-gray-700` pour la cohérence
+- Border default : `border-gray-200 dark:border-gray-800`
 - Background dark panel : `#1b2e4b`
+
 

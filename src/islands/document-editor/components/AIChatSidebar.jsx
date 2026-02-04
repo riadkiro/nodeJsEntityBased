@@ -1,48 +1,98 @@
 /**
  * AIChatSidebar Component
  * AI Assistant chat interface for the document editor
- * Supports: Assistant mode (simple chat) and Agent mode (document-aware with actions)
+ * Supports: Assistant mode (simple chat) and Agent mode (document-aware with MULTI-ACTIONS)
  * Uses OpenAI via Integration Engine
  */
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 
-// Agent system prompt - conversational with action proposals
-const AGENT_SYSTEM_PROMPT = `Tu es un assistant d'écriture intelligent qui analyse et modifie des documents.
+// ========== AGENT SYSTEM PROMPT - MULTI-ACTIONS ==========
+const AGENT_SYSTEM_PROMPT = `Tu es un agent d'analyse et correction de documents.
 
-COMPORTEMENT:
-1. Analyse le document et identifie les corrections/améliorations possibles
-2. Propose-les UNE PAR UNE avec le bloc action JSON correspondant
-3. Demande confirmation: "Voulez-vous que je [action] ?"
+OBJECTIF:
+Analyser le document et proposer TOUTES les corrections nécessaires en une seule réponse.
 
-RÈGLE CRITIQUE:
-⚠️ Si tu proposes une correction, tu DOIS TOUJOURS inclure le bloc \`\`\`action avec le JSON complet.
-Sans ce bloc, l'utilisateur ne pourra PAS appliquer la correction.
-
-FORMAT DE PROPOSITION (OBLIGATOIRE):
-\`\`\`action
+FORMAT DE RÉPONSE OBLIGATOIRE:
+Tu DOIS répondre UNIQUEMENT avec un bloc JSON \`\`\`actions contenant:
 {
-  "type": "replace_between_anchors",
-  "description": "Corriger [description]",
-  "target": { "pageIndex": 0, "matchText": "texte EXACT à remplacer" },
-  "patch": { "replacement": "nouveau texte corrigé" }
+  "message": "Résumé court des corrections proposées",
+  "actions": [
+    {
+      "id": "1",
+      "type": "replace_between_anchors",
+      "description": "Description de la correction",
+      "target": { "pageIndex": 0, "matchText": "texte EXACT à remplacer" },
+      "patch": { "replacement": "nouveau texte" },
+      "confidence": 0.9
+    }
+  ]
+}
+
+TYPES D'ACTIONS:
+- replace_between_anchors: Remplace matchText par replacement
+- insert_content: Insère du contenu (pour document vide)
+
+RÈGLES STRICTES:
+1. matchText DOIT être EXACTEMENT copié du document (sensible à la casse et aux espaces)
+2. Maximum 10 actions par réponse
+3. Trie les actions par ordre d'importance (fautes graves en premier)
+4. Confidence: 0.9+ pour fautes évidentes, 0.7-0.9 pour améliorations
+5. NE PAS ajouter de texte en dehors du bloc \`\`\`actions
+6. Chaque action doit avoir un id unique (1, 2, 3...)
+
+EXEMPLE DE RÉPONSE VALIDE:
+\`\`\`actions
+{
+  "message": "J'ai trouvé 2 fautes d'orthographe à corriger.",
+  "actions": [
+    {
+      "id": "1",
+      "type": "replace_between_anchors",
+      "description": "Corriger 'teh' en 'the'",
+      "target": { "pageIndex": 0, "matchText": "teh" },
+      "patch": { "replacement": "the" },
+      "confidence": 0.95
+    },
+    {
+      "id": "2", 
+      "type": "replace_between_anchors",
+      "description": "Corriger 'recieve' en 'receive'",
+      "target": { "pageIndex": 0, "matchText": "recieve" },
+      "patch": { "replacement": "receive" },
+      "confidence": 0.95
+    }
+  ]
+}
+\`\`\``
+
+// ========== EMPTY DOC PROMPT ==========
+const EMPTY_DOC_PROMPT = `Tu es un générateur de documents professionnels.
+Le document est actuellement VIDE.
+
+Génère du contenu HTML structuré et retourne-le dans ce format:
+\`\`\`actions
+{
+  "message": "Voici le contenu généré",
+  "actions": [
+    {
+      "id": "1",
+      "type": "insert_content",
+      "description": "Insérer le document généré",
+      "target": {},
+      "patch": { "content": "<h1>Titre</h1><p>Contenu...</p>" },
+      "confidence": 1.0
+    }
+  ]
 }
 \`\`\`
 
-EXEMPLE CORRECT:
-"Le titre contient une faute: 'denettoyage' devrait être 'de nettoyage'. Voulez-vous que je corrige ?
-\`\`\`action
-{
-  "type": "replace_between_anchors",
-  "description": "Corriger la faute de frappe dans le titre",
-  "target": { "pageIndex": 0, "matchText": "denettoyage" },
-  "patch": { "replacement": "de nettoyage" }
-}
-\`\`\`"
+FORMAT HTML:
+- Titres: <h1>, <h2>, <h3>
+- Paragraphes: <p>
+- Listes: <ul><li> ou <ol><li>
+- Mise en forme: <strong>, <em>, <u>
 
-RÈGLES:
-- matchText = texte EXACT copié du document (sensible à la casse)
-- Une seule action par message
-- Sois conversationnel et amical`
+Le champ "content" contient UNIQUEMENT le HTML, aucun texte d'explication.`
 
 export default function AIChatSidebar({
     accountNumber,
@@ -56,8 +106,13 @@ export default function AIChatSidebar({
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState(null)
     const [mode, setMode] = useState('assistant') // 'assistant' | 'agent'
-    const [model, setModel] = useState('gpt-4o-mini') // AI model selection
-    const [pendingAction, setPendingAction] = useState(null)
+    const [model, setModel] = useState('gpt-4o-mini')
+
+    // Multi-actions state
+    const [pendingActions, setPendingActions] = useState([]) // Array of actions
+    const [actionStatus, setActionStatus] = useState({}) // { [id]: 'pending' | 'applied' | 'ignored' | 'failed' }
+    const [isApplying, setIsApplying] = useState(false)
+
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const messagesEndRef = useRef(null)
 
@@ -78,7 +133,7 @@ export default function AIChatSidebar({
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [messages, pendingAction])
+    }, [messages, pendingActions])
 
     // ========== API CALL ==========
     const callOpenAI = async (conversationHistory, isAgent = false) => {
@@ -93,8 +148,8 @@ export default function AIChatSidebar({
                 input: {
                     model: model,
                     messages: conversationHistory,
-                    temperature: isAgent ? 0.3 : 0.7,
-                    max_tokens: 2000
+                    temperature: isAgent ? 0.2 : 0.7,
+                    max_tokens: 3000
                 }
             })
         })
@@ -112,44 +167,67 @@ export default function AIChatSidebar({
         return result.data?.content || result.data?.choices?.[0]?.message?.content || ''
     }
 
-    // ========== PARSE ACTION FROM RESPONSE ==========
-    const parseActionFromResponse = (content) => {
-        // Try multiple patterns to find action JSON
-        const patterns = [
-            /```action\s*([\s\S]*?)```/,      // ```action ... ```
-            /```json\s*([\s\S]*?)```/,         // ```json ... ```
-            /\{[\s\S]*"type"\s*:\s*"[^"]+_anchor[^"]*"[\s\S]*\}/  // Raw JSON with type
-        ]
+    // ========== PARSE MULTI-ACTIONS FROM RESPONSE ==========
+    const parseActionsFromResponse = (content) => {
+        console.log('📥 Parsing response:', content.substring(0, 200))
 
-        for (const pattern of patterns) {
-            const match = content.match(pattern)
-            if (match) {
-                const jsonStr = match[1] || match[0]
-                const text = content.replace(pattern, '').trim()
+        // Try to find ```actions block
+        const actionsMatch = content.match(/```actions\s*([\s\S]*?)```/)
 
-                try {
-                    const action = JSON.parse(jsonStr.trim())
-                    // Validate action structure
-                    if (action.type && (action.target || action.patch)) {
-                        action.id = Date.now().toString()
-                        console.log('✅ Action parsed:', action)
-                        return { text, action }
+        if (actionsMatch) {
+            try {
+                const jsonStr = actionsMatch[1].trim()
+                const parsed = JSON.parse(jsonStr)
+
+                // Validate structure
+                if (parsed.actions && Array.isArray(parsed.actions)) {
+                    // Ensure each action has an id
+                    const actions = parsed.actions.map((action, index) => ({
+                        ...action,
+                        id: action.id || `${Date.now()}_${index}`
+                    }))
+
+                    console.log('✅ Parsed', actions.length, 'actions')
+                    return {
+                        messageText: parsed.message || 'Actions proposées',
+                        actions
                     }
-                } catch (e) {
-                    console.warn('JSON parse attempt failed:', e.message)
                 }
+            } catch (e) {
+                console.warn('❌ JSON parse failed:', e.message)
             }
         }
 
-        console.log('ℹ️ No action found in response')
-        return { text: content, action: null }
+        // Fallback: try single action format (backward compatibility)
+        const singleActionMatch = content.match(/```action\s*([\s\S]*?)```/)
+        if (singleActionMatch) {
+            try {
+                const action = JSON.parse(singleActionMatch[1].trim())
+                if (action.type) {
+                    action.id = action.id || Date.now().toString()
+                    const text = content.replace(/```action\s*[\s\S]*?```/, '').trim()
+                    console.log('✅ Single action parsed (legacy)')
+                    return {
+                        messageText: text || action.description || 'Action proposée',
+                        actions: [action]
+                    }
+                }
+            } catch (e) {
+                console.warn('❌ Legacy action parse failed:', e.message)
+            }
+        }
+
+        // No actions found
+        console.log('ℹ️ No actions found in response')
+        return { messageText: content, actions: [] }
     }
 
     // ========== SEND MESSAGE ==========
     const sendMessage = async (userMessage) => {
         setIsLoading(true)
         setError(null)
-        setPendingAction(null)
+        setPendingActions([])
+        setActionStatus({})
 
         const userMsg = { role: 'user', content: userMessage }
         setMessages(prev => [...prev, userMsg])
@@ -168,37 +246,12 @@ export default function AIChatSidebar({
 
                 if (snapshot.trim()) {
                     systemPrompt = AGENT_SYSTEM_PROMPT
-                    contextMessage = `\n\n[CONTEXTE - Document actuel (${totalPages} pages, page active: ${activePageIndex + 1})]\n${snapshot}`
+                    contextMessage = `\n\n[DOCUMENT - ${totalPages} pages, page active: ${activePageIndex + 1}]\n${snapshot}`
                     if (selection) {
-                        contextMessage += `\n\n[TEXTE SÉLECTIONNÉ]\n${selection}`
+                        contextMessage += `\n\n[SÉLECTION]\n${selection}`
                     }
                 } else {
-                    // Document is empty - use a strict generation prompt
-                    systemPrompt = `Tu es un générateur de documents professionnels.
-Le document est actuellement VIDE.
-
-RÈGLES STRICTES:
-1. Génère UNIQUEMENT du HTML structuré style Word
-2. Le champ "content" doit contenir UNIQUEMENT le HTML du document
-3. PAS de commentaires, PAS d'explications, PAS de texte avant/après
-4. PAS de markdown (\`\`\`html), juste le HTML brut
-
-FORMAT HTML:
-- Titres: <h1>, <h2>, <h3>
-- Paragraphes: <p>
-- Listes: <ul><li> ou <ol><li>
-- Mise en forme: <strong>, <em>, <u>
-
-TOUJOURS répondre avec ce format JSON:
-\`\`\`action
-{
-  "type": "insert_content",
-  "description": "Description courte",
-  "patch": { "content": "<h1>Titre</h1><p>Contenu...</p>" }
-}
-\`\`\`
-
-Le champ "content" contient UNIQUEMENT le HTML, aucun texte d'explication.`
+                    systemPrompt = EMPTY_DOC_PROMPT
                 }
                 setIsAnalyzing(false)
             }
@@ -211,31 +264,33 @@ Le champ "content" contient UNIQUEMENT le HTML, aucun texte d'explication.`
 
             const content = await callOpenAI(conversationHistory, mode === 'agent')
 
-            // Parse action if in agent mode
+            // Parse actions if in agent mode
             if (mode === 'agent') {
-                let { text, action } = parseActionFromResponse(content)
+                const { messageText, actions } = parseActionsFromResponse(content)
 
-                // If document is empty and no action but response looks like content to insert
-                if (!action && documentIsEmpty && text.length > 50) {
-                    // Check if the response is NOT a question or clarification
-                    const isQuestion = /\?$|voulez-vous|souhaitez-vous|pouvez-vous|avez-vous|puis-je|quel|quelle/i.test(text.trim())
-                    const isError = /pas trouvé|introuvable|erreur|impossible|désolé/i.test(text)
-
-                    if (!isQuestion && !isError) {
-                        // Create an insert action automatically
-                        action = {
+                // Handle empty document case: auto-create insert action if needed
+                if (actions.length === 0 && documentIsEmpty && messageText.length > 50) {
+                    const isQuestion = /\?$|voulez-vous|souhaitez-vous/i.test(messageText.trim())
+                    if (!isQuestion) {
+                        actions.push({
                             id: Date.now().toString(),
                             type: 'insert_content',
                             description: 'Insérer ce contenu dans le document',
-                            patch: { content: text }
-                        }
-                        text = "J'ai généré ce contenu pour vous. Voulez-vous l'insérer dans le document ?"
+                            target: {},
+                            patch: { content: messageText },
+                            confidence: 0.8
+                        })
                     }
                 }
 
-                setMessages(prev => [...prev, { role: 'assistant', content: text }])
-                if (action) {
-                    setPendingAction(action)
+                setMessages(prev => [...prev, { role: 'assistant', content: messageText }])
+
+                if (actions.length > 0) {
+                    setPendingActions(actions)
+                    // Initialize all as pending
+                    const initialStatus = {}
+                    actions.forEach(a => { initialStatus[a.id] = 'pending' })
+                    setActionStatus(initialStatus)
                 }
             } else {
                 setMessages(prev => [...prev, { role: 'assistant', content }])
@@ -250,29 +305,79 @@ Le champ "content" contient UNIQUEMENT le HTML, aucun texte d'explication.`
     }
 
     // ========== ACTION HANDLERS ==========
-    const handleApplyAction = useCallback(() => {
-        if (!pendingAction || !applyPatch) return
+    const handleApplyAction = useCallback(async (action) => {
+        if (!applyPatch || isApplying) return
+        if (actionStatus[action.id] !== 'pending') return
 
-        const result = applyPatch(pendingAction)
+        setIsApplying(true)
 
-        if (result.success) {
-            setMessages(prev => [...prev, {
-                role: 'system',
-                content: `✅ ${result.message}`
-            }])
-            setPendingAction(null)
-        } else {
-            setError(`Échec: ${result.message}`)
+        try {
+            const result = applyPatch(action)
+
+            if (result.success) {
+                setActionStatus(prev => ({ ...prev, [action.id]: 'applied' }))
+                setMessages(prev => [...prev, {
+                    role: 'system',
+                    content: `✅ ${action.description}`
+                }])
+            } else {
+                setActionStatus(prev => ({ ...prev, [action.id]: 'failed' }))
+                setMessages(prev => [...prev, {
+                    role: 'system',
+                    content: `❌ Échec: ${result.message}`
+                }])
+            }
+        } finally {
+            setIsApplying(false)
         }
-    }, [pendingAction, applyPatch])
+    }, [applyPatch, actionStatus, isApplying])
 
-    const handleRejectAction = useCallback(() => {
+    const handleIgnoreAction = useCallback((action) => {
+        setActionStatus(prev => ({ ...prev, [action.id]: 'ignored' }))
+    }, [])
+
+    const handleApplyAll = useCallback(async () => {
+        if (!applyPatch || isApplying) return
+
+        setIsApplying(true)
+
+        const pendingToApply = pendingActions.filter(a => actionStatus[a.id] === 'pending')
+
+        for (const action of pendingToApply) {
+            try {
+                const result = applyPatch(action)
+
+                if (result.success) {
+                    setActionStatus(prev => ({ ...prev, [action.id]: 'applied' }))
+                } else {
+                    setActionStatus(prev => ({ ...prev, [action.id]: 'failed' }))
+                }
+            } catch (e) {
+                setActionStatus(prev => ({ ...prev, [action.id]: 'failed' }))
+            }
+
+            // Small delay between actions for visual feedback
+            await new Promise(r => setTimeout(r, 100))
+        }
+
+        const appliedCount = pendingToApply.filter(a => actionStatus[a.id] !== 'failed').length
         setMessages(prev => [...prev, {
             role: 'system',
-            content: '❌ Action annulée'
+            content: `✅ ${appliedCount} correction(s) appliquée(s)`
         }])
-        setPendingAction(null)
-    }, [])
+
+        setIsApplying(false)
+    }, [applyPatch, pendingActions, actionStatus, isApplying])
+
+    const handleIgnoreAll = useCallback(() => {
+        const newStatus = { ...actionStatus }
+        pendingActions.forEach(a => {
+            if (newStatus[a.id] === 'pending') {
+                newStatus[a.id] = 'ignored'
+            }
+        })
+        setActionStatus(newStatus)
+    }, [pendingActions, actionStatus])
 
     // ========== FORM HANDLERS ==========
     const handleSubmit = (e) => {
@@ -285,17 +390,22 @@ Le champ "content" contient UNIQUEMENT le HTML, aucun texte d'explication.`
     const handleQuickAction = (action) => {
         const prompts = {
             'improve': 'Améliore le style et la clarté du texte',
-            'correct': 'Corrige les fautes d\'orthographe et de grammaire',
-            'summarize': 'Résume le contenu du document'
+            'correct': 'Analyse et corrige toutes les fautes d\'orthographe et de grammaire',
+            'summarize': 'Résume le contenu du document',
+            'analyze': 'Analyse le document et propose toutes les corrections nécessaires'
         }
         sendMessage(prompts[action])
     }
 
     const clearChat = () => {
         setMessages([])
-        setPendingAction(null)
+        setPendingActions([])
+        setActionStatus({})
         setError(null)
     }
+
+    // Count pending actions
+    const pendingCount = Object.values(actionStatus).filter(s => s === 'pending').length
 
     // ========== RENDER ==========
     return (
@@ -366,12 +476,21 @@ Le champ "content" contient UNIQUEMENT le HTML, aucun texte d'explication.`
                         </h3>
                         <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
                             {mode === 'agent'
-                                ? 'Posez une question sur votre document. L\'agent analysera le contenu et proposera des modifications.'
+                                ? 'L\'agent analysera le document et proposera TOUTES les corrections en une fois.'
                                 : 'Posez une question ou demandez-moi de vous aider à rédiger.'}
                         </p>
 
                         {/* Quick Actions */}
                         <div className="mt-6 space-y-2 w-full">
+                            {mode === 'agent' && (
+                                <button
+                                    onClick={() => handleQuickAction('analyze')}
+                                    className="w-full px-4 py-2.5 text-xs text-left text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors flex items-center gap-3 group font-medium"
+                                >
+                                    <iconify-icon icon="tabler:scan" width="16"></iconify-icon>
+                                    Analyser et corriger
+                                </button>
+                            )}
                             <button
                                 onClick={() => handleQuickAction('correct')}
                                 className="w-full px-4 py-2.5 text-xs text-left text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-3 group"
@@ -385,13 +504,6 @@ Le champ "content" contient UNIQUEMENT le HTML, aucun texte d'explication.`
                             >
                                 <iconify-icon icon="tabler:wand" width="16" className="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
                                 Améliorer le style
-                            </button>
-                            <button
-                                onClick={() => handleQuickAction('summarize')}
-                                className="w-full px-4 py-2.5 text-xs text-left text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-3 group"
-                            >
-                                <iconify-icon icon="tabler:file-text" width="16" className="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
-                                Résumer le document
                             </button>
                         </div>
                     </div>
@@ -416,37 +528,116 @@ Le champ "content" contient UNIQUEMENT le HTML, aucun texte d'explication.`
                             </div>
                         ))}
 
-                        {/* Pending Action Card */}
-                        {pendingAction && (
-                            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-                                <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mb-2">
-                                    📝 Action proposée
-                                </p>
-                                <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">
-                                    {pendingAction.description}
-                                </p>
-                                {pendingAction.target?.matchText && pendingAction.patch?.replacement && (
-                                    <div className="text-[11px] mb-3 p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg space-y-1">
-                                        <div className="text-danger line-through">{pendingAction.target.matchText}</div>
-                                        <div className="text-success">{pendingAction.patch.replacement}</div>
+                        {/* Multi-Actions Cards */}
+                        {pendingActions.length > 0 && (
+                            <div className="space-y-2">
+                                {/* Header with Apply All / Ignore All */}
+                                {pendingCount > 1 && (
+                                    <div className="flex items-center justify-between p-2 bg-amber-500/5 rounded-lg border border-amber-500/20">
+                                        <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                                            {pendingCount} correction(s) en attente
+                                        </span>
+                                        <div className="flex gap-1">
+                                            <button
+                                                onClick={handleApplyAll}
+                                                disabled={isApplying}
+                                                className="px-2 py-1 text-[10px] bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50 font-medium"
+                                            >
+                                                Tout appliquer
+                                            </button>
+                                            <button
+                                                onClick={handleIgnoreAll}
+                                                className="px-2 py-1 text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-300"
+                                            >
+                                                Tout ignorer
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={handleApplyAction}
-                                        className="flex-1 py-2 text-xs bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors flex items-center justify-center gap-1 font-medium"
-                                    >
-                                        <iconify-icon icon="tabler:check" width="14"></iconify-icon>
-                                        Appliquer
-                                    </button>
-                                    <button
-                                        onClick={handleRejectAction}
-                                        className="flex-1 py-2 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-1"
-                                    >
-                                        <iconify-icon icon="tabler:x" width="14"></iconify-icon>
-                                        Refuser
-                                    </button>
-                                </div>
+
+                                {/* Individual Action Cards */}
+                                {pendingActions.map((action) => {
+                                    const status = actionStatus[action.id]
+                                    const isPending = status === 'pending'
+                                    const isApplied = status === 'applied'
+                                    const isFailed = status === 'failed'
+                                    const isIgnored = status === 'ignored'
+
+                                    return (
+                                        <div
+                                            key={action.id}
+                                            className={`p-3 rounded-xl border transition-all ${isApplied ? 'bg-success/10 border-success/30 opacity-60' :
+                                                    isFailed ? 'bg-danger/10 border-danger/30' :
+                                                        isIgnored ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-50' :
+                                                            'bg-amber-500/10 border-amber-500/30'
+                                                }`}
+                                        >
+                                            {/* Status indicator */}
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                                    {action.description}
+                                                </p>
+                                                {action.confidence && (
+                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${action.confidence >= 0.9 ? 'bg-success/20 text-success' :
+                                                            action.confidence >= 0.7 ? 'bg-amber-500/20 text-amber-600' :
+                                                                'bg-gray-200 text-gray-500'
+                                                        }`}>
+                                                        {Math.round(action.confidence * 100)}%
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Show old -> new preview */}
+                                            {action.target?.matchText && action.patch?.replacement && (
+                                                <div className="text-[11px] mb-3 p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg space-y-1 font-mono">
+                                                    <div className="text-danger line-through">{action.target.matchText}</div>
+                                                    <div className="text-success">{action.patch.replacement}</div>
+                                                </div>
+                                            )}
+
+                                            {/* Status badges */}
+                                            {isApplied && (
+                                                <div className="text-xs text-success flex items-center gap-1">
+                                                    <iconify-icon icon="tabler:check" width="14"></iconify-icon>
+                                                    Appliqué
+                                                </div>
+                                            )}
+                                            {isFailed && (
+                                                <div className="text-xs text-danger flex items-center gap-1">
+                                                    <iconify-icon icon="tabler:x" width="14"></iconify-icon>
+                                                    Échec - texte non trouvé
+                                                </div>
+                                            )}
+                                            {isIgnored && (
+                                                <div className="text-xs text-gray-400 flex items-center gap-1">
+                                                    <iconify-icon icon="tabler:minus" width="14"></iconify-icon>
+                                                    Ignoré
+                                                </div>
+                                            )}
+
+                                            {/* Action buttons */}
+                                            {isPending && (
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleApplyAction(action)}
+                                                        disabled={isApplying}
+                                                        className="flex-1 py-1.5 text-xs bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors flex items-center justify-center gap-1 font-medium disabled:opacity-50"
+                                                    >
+                                                        <iconify-icon icon="tabler:check" width="14"></iconify-icon>
+                                                        Appliquer
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleIgnoreAction(action)}
+                                                        className="flex-1 py-1.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-1"
+                                                    >
+                                                        <iconify-icon icon="tabler:x" width="14"></iconify-icon>
+                                                        Ignorer
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
                             </div>
                         )}
 

@@ -1014,31 +1014,59 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                         return { success: false, message: `Page ${pageIndex + 1} non trouvée` }
                     }
 
-                    // Walk through text nodes
-                    const walker = document.createTreeWalker(
-                        pageEl,
-                        NodeFilter.SHOW_TEXT,
-                        null,
-                        false
-                    )
+                    // Helper to find and replace in text nodes
+                    const findAndReplace = (searchText, caseSensitive = true) => {
+                        const walker = document.createTreeWalker(
+                            pageEl,
+                            NodeFilter.SHOW_TEXT,
+                            null,
+                            false
+                        )
 
-                    let found = false
-                    while (walker.nextNode()) {
-                        const node = walker.currentNode
-                        const idx = node.textContent.indexOf(matchText)
-                        if (idx !== -1) {
-                            node.textContent = node.textContent.replace(matchText, replacement)
-                            found = true
-                            break
+                        while (walker.nextNode()) {
+                            const node = walker.currentNode
+                            const content = node.textContent
+
+                            let idx = caseSensitive
+                                ? content.indexOf(searchText)
+                                : content.toLowerCase().indexOf(searchText.toLowerCase())
+
+                            if (idx !== -1) {
+                                // Get the actual text to replace (for case-insensitive)
+                                const actualText = caseSensitive
+                                    ? searchText
+                                    : content.substring(idx, idx + searchText.length)
+                                node.textContent = content.replace(actualText, replacement)
+                                return true
+                            }
                         }
+                        return false
                     }
 
-                    if (!found) {
-                        return { success: false, message: `Texte "${matchText.substring(0, 30)}..." non trouvé` }
+                    // Try exact match first
+                    if (findAndReplace(matchText, true)) {
+                        triggerSave()
+                        return { success: true, message: 'Texte remplacé' }
                     }
 
-                    triggerSave()
-                    return { success: true, message: 'Texte remplacé' }
+                    // Try case-insensitive match
+                    if (findAndReplace(matchText, false)) {
+                        triggerSave()
+                        return { success: true, message: 'Texte remplacé (correspondance approchée)' }
+                    }
+
+                    // Try with trimmed spaces
+                    if (findAndReplace(matchText.trim(), false)) {
+                        triggerSave()
+                        return { success: true, message: 'Texte remplacé (correspondance approchée)' }
+                    }
+
+                    // Not found - provide helpful error
+                    const pageText = pageEl.textContent.substring(0, 200)
+                    console.log('[applyPatch] Text not found. Looking for:', matchText)
+                    console.log('[applyPatch] Page content preview:', pageText)
+
+                    return { success: false, message: `Texte "${matchText.substring(0, 20)}..." non trouvé sur la page ${pageIndex + 1}` }
                 }
 
                 case 'insert_content': {
@@ -1114,6 +1142,75 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             tabIndex={-1}
             style={{ height: 'calc(100vh - 58px)' }}
         >
+            {/* Word-like HTML styles for contenteditable - only applies if no inline style */}
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                /* Default styles only - won't override inline styles from Word */
+                [contenteditable="true"] h1:not([style]) {
+                    font-size: 2em;
+                    font-weight: bold;
+                    margin-top: 0.67em;
+                    margin-bottom: 0.67em;
+                    line-height: 1.2;
+                }
+                [contenteditable="true"] h2:not([style]) {
+                    font-size: 1.5em;
+                    font-weight: bold;
+                    margin-top: 0.83em;
+                    margin-bottom: 0.83em;
+                    line-height: 1.3;
+                }
+                [contenteditable="true"] h3:not([style]) {
+                    font-size: 1.17em;
+                    font-weight: bold;
+                    margin-top: 1em;
+                    margin-bottom: 1em;
+                    line-height: 1.4;
+                }
+                [contenteditable="true"] p:not([style]) {
+                    margin-top: 0;
+                    margin-bottom: 1em;
+                    line-height: 1.6;
+                }
+                [contenteditable="true"] ul:not([style]),
+                [contenteditable="true"] ol:not([style]) {
+                    margin-top: 0;
+                    margin-bottom: 1em;
+                    padding-left: 2em;
+                }
+                [contenteditable="true"] li:not([style]) {
+                    margin-bottom: 0.5em;
+                    line-height: 1.5;
+                }
+                [contenteditable="true"] ul li {
+                    list-style-type: disc;
+                }
+                [contenteditable="true"] ol li {
+                    list-style-type: decimal;
+                }
+                [contenteditable="true"] strong:not([style]),
+                [contenteditable="true"] b:not([style]) {
+                    font-weight: bold;
+                }
+                [contenteditable="true"] em:not([style]),
+                [contenteditable="true"] i:not([style]) {
+                    font-style: italic;
+                }
+                [contenteditable="true"] u:not([style]) {
+                    text-decoration: underline;
+                }
+                [contenteditable="true"] a:not([style]) {
+                    color: #2563eb;
+                    text-decoration: underline;
+                }
+                [contenteditable="true"] blockquote:not([style]) {
+                    margin: 1em 0;
+                    padding-left: 1em;
+                    border-left: 4px solid #d1d5db;
+                    color: #6b7280;
+                    font-style: italic;
+                }
+            ` }} />
             {/* Header with Toolbar */}
             <EditorHeader
                 doc={doc}

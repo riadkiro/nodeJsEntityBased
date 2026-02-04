@@ -7,34 +7,42 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 
 // Agent system prompt - conversational with action proposals
-const AGENT_SYSTEM_PROMPT = `Tu es un assistant d'écriture intelligent qui peut analyser et modifier des documents.
+const AGENT_SYSTEM_PROMPT = `Tu es un assistant d'écriture intelligent qui analyse et modifie des documents.
 
 COMPORTEMENT:
-1. Quand l'utilisateur pose une question sur le document, analyse-le et réponds naturellement
-2. Si tu identifies des corrections ou améliorations possibles, propose-les UNE PAR UNE
-3. Pour chaque proposition, demande confirmation: "Voulez-vous que je [action] ?"
-4. Attends la confirmation avant de proposer l'action suivante
+1. Analyse le document et identifie les corrections/améliorations possibles
+2. Propose-les UNE PAR UNE avec le bloc action JSON correspondant
+3. Demande confirmation: "Voulez-vous que je [action] ?"
 
-FORMAT DE PROPOSITION:
-Quand tu proposes une modification, inclus ce bloc JSON à la fin de ton message:
+RÈGLE CRITIQUE:
+⚠️ Si tu proposes une correction, tu DOIS TOUJOURS inclure le bloc \`\`\`action avec le JSON complet.
+Sans ce bloc, l'utilisateur ne pourra PAS appliquer la correction.
+
+FORMAT DE PROPOSITION (OBLIGATOIRE):
 \`\`\`action
 {
   "type": "replace_between_anchors",
-  "description": "Corriger [description courte]",
-  "target": { "pageIndex": 0, "matchText": "texte exact à remplacer" },
-  "patch": { "replacement": "nouveau texte" }
+  "description": "Corriger [description]",
+  "target": { "pageIndex": 0, "matchText": "texte EXACT à remplacer" },
+  "patch": { "replacement": "nouveau texte corrigé" }
 }
 \`\`\`
 
-TYPES D'ACTIONS:
-- replace_between_anchors: Remplace matchText par replacement
-- insert_after_anchor: Insère content après anchorBefore
+EXEMPLE CORRECT:
+"Le titre contient une faute: 'denettoyage' devrait être 'de nettoyage'. Voulez-vous que je corrige ?
+\`\`\`action
+{
+  "type": "replace_between_anchors",
+  "description": "Corriger la faute de frappe dans le titre",
+  "target": { "pageIndex": 0, "matchText": "denettoyage" },
+  "patch": { "replacement": "de nettoyage" }
+}
+\`\`\`"
 
 RÈGLES:
-- matchText doit être le texte EXACT du document
-- Propose une seule action à la fois
-- Sois conversationnel et amical
-- Explique pourquoi tu proposes la correction`
+- matchText = texte EXACT copié du document (sensible à la casse)
+- Une seule action par message
+- Sois conversationnel et amical`
 
 export default function AIChatSidebar({
     accountNumber,
@@ -48,9 +56,17 @@ export default function AIChatSidebar({
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState(null)
     const [mode, setMode] = useState('assistant') // 'assistant' | 'agent'
+    const [model, setModel] = useState('gpt-4o-mini') // AI model selection
     const [pendingAction, setPendingAction] = useState(null)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const messagesEndRef = useRef(null)
+
+    // Available models
+    const MODELS = [
+        { id: 'gpt-4o', name: 'GPT-4o', description: 'Plus intelligent' },
+        { id: 'gpt-4o-mini', name: 'GPT-4o Mini', description: 'Rapide' },
+        { id: 'gpt-3.5-turbo', name: 'GPT-3.5', description: 'Économique' }
+    ]
 
     // Get account number from URL if not passed as prop
     const getAccountNumber = useCallback(() => {
@@ -75,10 +91,10 @@ export default function AIChatSidebar({
             credentials: 'include',
             body: JSON.stringify({
                 input: {
-                    model: 'gpt-4o-mini',
+                    model: model,
                     messages: conversationHistory,
                     temperature: isAgent ? 0.3 : 0.7,
-                    max_tokens: 1500
+                    max_tokens: 2000
                 }
             })
         })
@@ -157,19 +173,32 @@ export default function AIChatSidebar({
                         contextMessage += `\n\n[TEXTE SÉLECTIONNÉ]\n${selection}`
                     }
                 } else {
-                    // Document is empty - use a simpler generation prompt
-                    systemPrompt = `Tu es un assistant d'écriture professionnel. 
-Le document est actuellement VIDE. 
-Si l'utilisateur demande de générer du contenu (texte, paragraphe, introduction, etc.), génère-le directement.
-Si tu génères du contenu qui peut être inséré dans le document, ajoute ce bloc à la fin:
+                    // Document is empty - use a strict generation prompt
+                    systemPrompt = `Tu es un générateur de documents professionnels.
+Le document est actuellement VIDE.
+
+RÈGLES STRICTES:
+1. Génère UNIQUEMENT du HTML structuré style Word
+2. Le champ "content" doit contenir UNIQUEMENT le HTML du document
+3. PAS de commentaires, PAS d'explications, PAS de texte avant/après
+4. PAS de markdown (\`\`\`html), juste le HTML brut
+
+FORMAT HTML:
+- Titres: <h1>, <h2>, <h3>
+- Paragraphes: <p>
+- Listes: <ul><li> ou <ol><li>
+- Mise en forme: <strong>, <em>, <u>
+
+TOUJOURS répondre avec ce format JSON:
 \`\`\`action
 {
   "type": "insert_content",
-  "description": "Insérer ce contenu dans le document",
-  "patch": { "content": "le contenu à insérer" }
+  "description": "Description courte",
+  "patch": { "content": "<h1>Titre</h1><p>Contenu...</p>" }
 }
 \`\`\`
-Réponds en français.`
+
+Le champ "content" contient UNIQUEMENT le HTML, aucun texte d'explication.`
                 }
                 setIsAnalyzing(false)
             }
@@ -475,11 +504,18 @@ Réponds en français.`
                     </button>
                 </form>
 
-                {/* Mode Selector */}
-                <div className="mt-3 flex items-center justify-between">
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500">
-                        Entrée pour envoyer
-                    </p>
+                {/* Model & Mode Selectors */}
+                <div className="mt-3 flex items-center justify-between gap-2">
+                    <select
+                        value={model}
+                        onChange={(e) => setModel(e.target.value)}
+                        className="text-[11px] px-2 py-1 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-md text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary/30 cursor-pointer"
+                        title="Modèle IA"
+                    >
+                        {MODELS.map(m => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                        ))}
+                    </select>
                     <select
                         value={mode}
                         onChange={(e) => setMode(e.target.value)}

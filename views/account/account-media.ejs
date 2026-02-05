@@ -1,0 +1,218 @@
+<div>
+  <%- include("../nav/nav-breadcrumb") %>
+  <div class="pt-5">
+    <!-- Header -->
+    <div class="mb-6 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+      <h5 class="text-lg font-semibold dark:text-white-light">Bibliothèque Média</h5>
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="relative">
+          <input type="text" placeholder="Rechercher..." class="form-input w-auto pr-10 dark:bg-[#1b2e4b] dark:border-[#1b2e4b] focus:border-primary" />
+          <div class="absolute inset-y-0 right-3 flex items-center">
+            <svg class="h-4 w-4 text-[#888ea8]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5" opacity="0.5"/>
+              <path d="M20 20L17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary gap-2">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Importer
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="mb-6 flex flex-wrap gap-3">
+      <button class="btn btn-sm btn-primary">Tous</button>
+      <button class="btn btn-sm btn-outline-primary">Images</button>
+      <button class="btn btn-sm btn-outline-primary">Vidéos</button>
+      <button class="btn btn-sm btn-outline-primary">Documents</button>
+      <button class="btn btn-sm btn-outline-primary">Audio</button>
+    </div>
+
+    <!-- Upload Zone -->
+    <div class="panel mb-6 border-2 border-dashed border-[#e0e6ed] dark:border-[#1b2e4b] bg-white-light/30 dark:bg-[#1b2e4b]/30">
+      <div class="flex flex-col items-center justify-center py-10">
+        <svg class="mb-4 h-16 w-16 text-[#888ea8]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path opacity="0.5" d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12 15V9M12 9L15 11.5M12 9L9 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <p class="text-lg font-semibold dark:text-white-light">Glissez-déposez vos fichiers ici</p>
+        <p class="mt-1 text-sm text-[#888ea8]">ou cliquez pour sélectionner</p>
+        <button class="btn btn-outline-primary mt-4">Parcourir</button>
+      </div>
+    </div>
+
+    <!-- Media Grid -->
+    <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <!-- Media Card 1 -->
+      <div class="panel group h-full overflow-hidden p-0">
+        <div class="relative aspect-square bg-[#ebedf2] dark:bg-[#1b2e4b]">
+          <img src="https://picsum.photos/seed/media1/400/400" alt="Media" class="h-full w-full object-cover" />
+          <div class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-all duration-300 group-hover:opacity-100">
+            <div class="flex gap-2">
+              <button class="btn btn-sm btn-primary rounded-full p-2">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" stroke="currentColor" stroke-width="1.5"/><path d="M2 12C2 13.6394 2.42496 14.1915 3.27489 15.2957C4.97196 17.5004 7.81811 20 12 20C16.1819 20 19.028 17.5004 20.7251 15.2957C21.575 14.1915 22 13.6394 22 12C22 10.3606 21.575 9.80853 20.7251 8.70433C19.028 6.49956 16.1819 4 12 4C7.81811 4 4.97196 6.49956 3.27489 8.70433C2.42496 9.80853 2 10.3606 2 12Z" stroke="currentColor" stroke-width="1.5"/></svg>
+              </button>
+              <button class="btn btn-sm btn-danger rounded-full p-2">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M20.5 6H3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M18.8334 8.5L18.3735 15.3991C18.1965 18.054 18.108 19.3815 17.243 20.1907C16.378 21 15.0476 21 12.3868 21H11.6134C8.9526 21 7.6222 21 6.75719 20.1907C5.89218 19.3815 5.80368 18.054 5.62669 15.3991L5.16675 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path opacity="0.5" d="M9.5 11L10 16M14.5 11L14 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path opacity="0.5" d="M6.5 6C6.55588 6 6.58382 6 6.60915 5.99936C7.43259 5.97849 8.15902 5.45491 8.43922 4.68032C8.44784 4.65649 8.45667 4.62999 8.47434 4.57697L8.57143 4.28571C8.65431 4.03708 8.69575 3.91276 8.75071 3.8072C8.97001 3.38607 9.37574 3.09364 9.84461 3.01877C9.96213 3 10.0932 3 10.3553 3H13.6447C13.9068 3 14.0379 3 14.1554 3.01877C14.6243 3.09364 15.03 3.38607 15.2493 3.8072C15.3043 3.91276 15.3457 4.03708 15.4286 4.28571L15.5257 4.57697C15.5433 4.62992 15.5522 4.65651 15.5608 4.68032C15.841 5.45491 16.5674 5.97849 17.3909 5.99936C17.4162 6 17.4441 6 17.5 6" stroke="currentColor" stroke-width="1.5"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="p-3">
+          <h6 class="truncate font-semibold dark:text-white-light">image-01.jpg</h6>
+          <p class="text-xs text-[#888ea8]">2.4 MB • 25 Jan 2026</p>
+        </div>
+      </div>
+
+      <!-- Media Card 2 -->
+      <div class="panel group h-full overflow-hidden p-0">
+        <div class="relative aspect-square bg-[#ebedf2] dark:bg-[#1b2e4b]">
+          <img src="https://picsum.photos/seed/media2/400/400" alt="Media" class="h-full w-full object-cover" />
+          <div class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-all duration-300 group-hover:opacity-100">
+            <div class="flex gap-2">
+              <button class="btn btn-sm btn-primary rounded-full p-2">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" stroke="currentColor" stroke-width="1.5"/><path d="M2 12C2 13.6394 2.42496 14.1915 3.27489 15.2957C4.97196 17.5004 7.81811 20 12 20C16.1819 20 19.028 17.5004 20.7251 15.2957C21.575 14.1915 22 13.6394 22 12C22 10.3606 21.575 9.80853 20.7251 8.70433C19.028 6.49956 16.1819 4 12 4C7.81811 4 4.97196 6.49956 3.27489 8.70433C2.42496 9.80853 2 10.3606 2 12Z" stroke="currentColor" stroke-width="1.5"/></svg>
+              </button>
+              <button class="btn btn-sm btn-danger rounded-full p-2">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M20.5 6H3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M18.8334 8.5L18.3735 15.3991C18.1965 18.054 18.108 19.3815 17.243 20.1907C16.378 21 15.0476 21 12.3868 21H11.6134C8.9526 21 7.6222 21 6.75719 20.1907C5.89218 19.3815 5.80368 18.054 5.62669 15.3991L5.16675 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path opacity="0.5" d="M9.5 11L10 16M14.5 11L14 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path opacity="0.5" d="M6.5 6C6.55588 6 6.58382 6 6.60915 5.99936C7.43259 5.97849 8.15902 5.45491 8.43922 4.68032C8.44784 4.65649 8.45667 4.62999 8.47434 4.57697L8.57143 4.28571C8.65431 4.03708 8.69575 3.91276 8.75071 3.8072C8.97001 3.38607 9.37574 3.09364 9.84461 3.01877C9.96213 3 10.0932 3 10.3553 3H13.6447C13.9068 3 14.0379 3 14.1554 3.01877C14.6243 3.09364 15.03 3.38607 15.2493 3.8072C15.3043 3.91276 15.3457 4.03708 15.4286 4.28571L15.5257 4.57697C15.5433 4.62992 15.5522 4.65651 15.5608 4.68032C15.841 5.45491 16.5674 5.97849 17.3909 5.99936C17.4162 6 17.4441 6 17.5 6" stroke="currentColor" stroke-width="1.5"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="p-3">
+          <h6 class="truncate font-semibold dark:text-white-light">photo-design.png</h6>
+          <p class="text-xs text-[#888ea8]">1.8 MB • 24 Jan 2026</p>
+        </div>
+      </div>
+
+      <!-- Media Card 3 -->
+      <div class="panel group h-full overflow-hidden p-0">
+        <div class="relative aspect-square bg-[#ebedf2] dark:bg-[#1b2e4b]">
+          <img src="https://picsum.photos/seed/media3/400/400" alt="Media" class="h-full w-full object-cover" />
+          <div class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-all duration-300 group-hover:opacity-100">
+            <div class="flex gap-2">
+              <button class="btn btn-sm btn-primary rounded-full p-2">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" stroke="currentColor" stroke-width="1.5"/><path d="M2 12C2 13.6394 2.42496 14.1915 3.27489 15.2957C4.97196 17.5004 7.81811 20 12 20C16.1819 20 19.028 17.5004 20.7251 15.2957C21.575 14.1915 22 13.6394 22 12C22 10.3606 21.575 9.80853 20.7251 8.70433C19.028 6.49956 16.1819 4 12 4C7.81811 4 4.97196 6.49956 3.27489 8.70433C2.42496 9.80853 2 10.3606 2 12Z" stroke="currentColor" stroke-width="1.5"/></svg>
+              </button>
+              <button class="btn btn-sm btn-danger rounded-full p-2">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M20.5 6H3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M18.8334 8.5L18.3735 15.3991C18.1965 18.054 18.108 19.3815 17.243 20.1907C16.378 21 15.0476 21 12.3868 21H11.6134C8.9526 21 7.6222 21 6.75719 20.1907C5.89218 19.3815 5.80368 18.054 5.62669 15.3991L5.16675 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path opacity="0.5" d="M9.5 11L10 16M14.5 11L14 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path opacity="0.5" d="M6.5 6C6.55588 6 6.58382 6 6.60915 5.99936C7.43259 5.97849 8.15902 5.45491 8.43922 4.68032C8.44784 4.65649 8.45667 4.62999 8.47434 4.57697L8.57143 4.28571C8.65431 4.03708 8.69575 3.91276 8.75071 3.8072C8.97001 3.38607 9.37574 3.09364 9.84461 3.01877C9.96213 3 10.0932 3 10.3553 3H13.6447C13.9068 3 14.0379 3 14.1554 3.01877C14.6243 3.09364 15.03 3.38607 15.2493 3.8072C15.3043 3.91276 15.3457 4.03708 15.4286 4.28571L15.5257 4.57697C15.5433 4.62992 15.5522 4.65651 15.5608 4.68032C15.841 5.45491 16.5674 5.97849 17.3909 5.99936C17.4162 6 17.4441 6 17.5 6" stroke="currentColor" stroke-width="1.5"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="p-3">
+          <h6 class="truncate font-semibold dark:text-white-light">banner-web.jpg</h6>
+          <p class="text-xs text-[#888ea8]">3.1 MB • 23 Jan 2026</p>
+        </div>
+      </div>
+
+      <!-- Media Card 4 - Video -->
+      <div class="panel group h-full overflow-hidden p-0">
+        <div class="relative aspect-square bg-[#ebedf2] dark:bg-[#1b2e4b]">
+          <img src="https://picsum.photos/seed/media4/400/400" alt="Media" class="h-full w-full object-cover" />
+          <div class="absolute left-2 top-2">
+            <span class="badge bg-danger">Vidéo</span>
+          </div>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 dark:bg-dark/80">
+              <svg class="h-6 w-6 text-primary" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7z"/></svg>
+            </div>
+          </div>
+          <div class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-all duration-300 group-hover:opacity-100">
+            <div class="flex gap-2">
+              <button class="btn btn-sm btn-primary rounded-full p-2">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" stroke="currentColor" stroke-width="1.5"/><path d="M2 12C2 13.6394 2.42496 14.1915 3.27489 15.2957C4.97196 17.5004 7.81811 20 12 20C16.1819 20 19.028 17.5004 20.7251 15.2957C21.575 14.1915 22 13.6394 22 12C22 10.3606 21.575 9.80853 20.7251 8.70433C19.028 6.49956 16.1819 4 12 4C7.81811 4 4.97196 6.49956 3.27489 8.70433C2.42496 9.80853 2 10.3606 2 12Z" stroke="currentColor" stroke-width="1.5"/></svg>
+              </button>
+              <button class="btn btn-sm btn-danger rounded-full p-2">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M20.5 6H3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M18.8334 8.5L18.3735 15.3991C18.1965 18.054 18.108 19.3815 17.243 20.1907C16.378 21 15.0476 21 12.3868 21H11.6134C8.9526 21 7.6222 21 6.75719 20.1907C5.89218 19.3815 5.80368 18.054 5.62669 15.3991L5.16675 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path opacity="0.5" d="M9.5 11L10 16M14.5 11L14 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path opacity="0.5" d="M6.5 6C6.55588 6 6.58382 6 6.60915 5.99936C7.43259 5.97849 8.15902 5.45491 8.43922 4.68032C8.44784 4.65649 8.45667 4.62999 8.47434 4.57697L8.57143 4.28571C8.65431 4.03708 8.69575 3.91276 8.75071 3.8072C8.97001 3.38607 9.37574 3.09364 9.84461 3.01877C9.96213 3 10.0932 3 10.3553 3H13.6447C13.9068 3 14.0379 3 14.1554 3.01877C14.6243 3.09364 15.03 3.38607 15.2493 3.8072C15.3043 3.91276 15.3457 4.03708 15.4286 4.28571L15.5257 4.57697C15.5433 4.62992 15.5522 4.65651 15.5608 4.68032C15.841 5.45491 16.5674 5.97849 17.3909 5.99936C17.4162 6 17.4441 6 17.5 6" stroke="currentColor" stroke-width="1.5"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="p-3">
+          <h6 class="truncate font-semibold dark:text-white-light">promo-video.mp4</h6>
+          <p class="text-xs text-[#888ea8]">45.2 MB • 22 Jan 2026</p>
+        </div>
+      </div>
+
+      <!-- Media Card 5 - Document -->
+      <div class="panel group h-full overflow-hidden p-0">
+        <div class="relative aspect-square bg-[#ebedf2] dark:bg-[#1b2e4b] flex items-center justify-center">
+          <div class="absolute left-2 top-2">
+            <span class="badge bg-warning">PDF</span>
+          </div>
+          <svg class="h-20 w-20 text-danger" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/>
+            <path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <div class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-all duration-300 group-hover:opacity-100">
+            <div class="flex gap-2">
+              <button class="btn btn-sm btn-primary rounded-full p-2">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M12 15V3M12 15L8 11M12 15L16 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17V18C2 19.8856 2 20.8284 2.58579 21.4142C3.17157 22 4.11438 22 6 22H18C19.8856 22 20.8284 22 21.4142 21.4142C22 20.8284 22 19.8856 22 18V17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+              <button class="btn btn-sm btn-danger rounded-full p-2">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M20.5 6H3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M18.8334 8.5L18.3735 15.3991C18.1965 18.054 18.108 19.3815 17.243 20.1907C16.378 21 15.0476 21 12.3868 21H11.6134C8.9526 21 7.6222 21 6.75719 20.1907C5.89218 19.3815 5.80368 18.054 5.62669 15.3991L5.16675 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path opacity="0.5" d="M9.5 11L10 16M14.5 11L14 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path opacity="0.5" d="M6.5 6C6.55588 6 6.58382 6 6.60915 5.99936C7.43259 5.97849 8.15902 5.45491 8.43922 4.68032C8.44784 4.65649 8.45667 4.62999 8.47434 4.57697L8.57143 4.28571C8.65431 4.03708 8.69575 3.91276 8.75071 3.8072C8.97001 3.38607 9.37574 3.09364 9.84461 3.01877C9.96213 3 10.0932 3 10.3553 3H13.6447C13.9068 3 14.0379 3 14.1554 3.01877C14.6243 3.09364 15.03 3.38607 15.2493 3.8072C15.3043 3.91276 15.3457 4.03708 15.4286 4.28571L15.5257 4.57697C15.5433 4.62992 15.5522 4.65651 15.5608 4.68032C15.841 5.45491 16.5674 5.97849 17.3909 5.99936C17.4162 6 17.4441 6 17.5 6" stroke="currentColor" stroke-width="1.5"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="p-3">
+          <h6 class="truncate font-semibold dark:text-white-light">rapport-2026.pdf</h6>
+          <p class="text-xs text-[#888ea8]">856 KB • 21 Jan 2026</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="panel">
+        <div class="flex items-center gap-4">
+          <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" stroke-width="1.5"/><circle opacity="0.5" cx="16" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M2 12.5L3.75159 10.9675C4.66286 10.1702 6.03628 10.2159 6.89249 11.0721L11.1822 15.3618C11.8694 16.0491 12.9512 16.1428 13.7464 15.5839L14.0446 15.3744C15.1888 14.5702 16.7369 14.6634 17.7765 15.599L21 18.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <p class="text-2xl font-bold dark:text-white-light">248</p>
+            <p class="text-sm text-[#888ea8]">Images</p>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="flex items-center gap-4">
+          <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-danger/10 text-danger">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" stroke-width="1.5"/><path d="M10 9L10 15L15 12L10 9Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <p class="text-2xl font-bold dark:text-white-light">32</p>
+            <p class="text-sm text-[#888ea8]">Vidéos</p>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="flex items-center gap-4">
+          <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-warning/10 text-warning">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <p class="text-2xl font-bold dark:text-white-light">87</p>
+            <p class="text-sm text-[#888ea8]">Documents</p>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="flex items-center gap-4">
+          <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-success/10 text-success">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none"><path d="M21 21H3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 17V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 17V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M16 17V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <p class="text-2xl font-bold dark:text-white-light">1.2 GB</p>
+            <p class="text-sm text-[#888ea8]">Espace utilisé</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -69,6 +69,24 @@ router.get("/chat", (req, res) => {
     });
 });
 
+// Media Page
+router.get("/media", (req, res) => {
+    res.render("account/account-media", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
+// Team Page
+router.get("/team", (req, res) => {
+    res.render("account/account-team", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
 // Notes Page
 router.get("/notes", (req, res) => {
     res.render("record/record-notes", {

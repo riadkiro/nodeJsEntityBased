@@ -1,0 +1,36 @@
+<!-- Page Home -->
+<style>
+    .home-bg-wrapper {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url('/images/bg-01.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        z-index: -1;
+    }
+    .home-bg-wrapper::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.3);
+    }
+</style>
+
+<div class="home-bg-wrapper"></div>
+
+<div class="min-h-[calc(100vh-200px)] flex items-center justify-center relative z-10">
+    <div class="text-center">
+        <div class="mb-6">
+            <iconify-icon icon="solar:home-2-bold-duotone" class="text-7xl text-white/50"></iconify-icon>
+        </div>
+        <h1 class="text-2xl font-semibold text-white mb-2">Bienvenue !</h1>
+        <p class="text-white/70">Votre espace de travail est prêt.</p>
+    </div>
+</div>

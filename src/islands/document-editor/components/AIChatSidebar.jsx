@@ -177,6 +177,7 @@ export default function AIChatSidebar({
     const [previewOriginals, setPreviewOriginals] = useState({}) // { [ref]: originalHTML } - store original content for preview
 
     const [isAnalyzing, setIsAnalyzing] = useState(false)
+    const [batchProgress, setBatchProgress] = useState(null) // { current: 1, total: 3, startPage: 1, endPage: 2, totalPages: 6 }
     const messagesEndRef = useRef(null)
 
     // Available models
@@ -816,6 +817,203 @@ export default function AIChatSidebar({
                     // Use pagesWithRefs which includes refs and HTML
                     contentToAnalyze = pagesWithRefs[selectedPageIndex]
                     scopeLabel = `PAGE ${selectedPageIndex + 1}/${totalPages} (HTML - PRÉSERVE LA STRUCTURE)`
+                } else if (scope === 'document' && pagesWithRefs && pagesWithRefs.length > 2) {
+                    // Detect if this is a SUMMARY/ANALYSIS request (needs full document context)
+                    const isSummaryRequest = /r[eé]sum|synth[eè]s|summarize|summary|analyse globale|vue d'ensemble|overview/i.test(userMessage)
+
+                    setIsAnalyzing(false)
+
+                    // Build batches of 2 pages
+                    const batches = []
+                    for (let i = 0; i < pagesWithRefs.length; i += 2) {
+                        batches.push({
+                            pages: pagesWithRefs.slice(i, Math.min(i + 2, pagesWithRefs.length)),
+                            startPage: i,
+                            endPage: Math.min(i + 2, pagesWithRefs.length)
+                        })
+                    }
+
+                    if (isSummaryRequest) {
+                        // ========== SUMMARY MODE: Batch summaries → Merge → Insert ==========
+                        const partialSummaries = []
+
+                        for (let batchIdx = 0; batchIdx < batches.length; batchIdx++) {
+                            const batch = batches[batchIdx]
+
+                            // Update progress - Phase 1: Lecture
+                            setBatchProgress({
+                                current: batchIdx + 1,
+                                total: batches.length + 1, // +1 for merge step
+                                startPage: batch.startPage + 1,
+                                endPage: batch.endPage,
+                                totalPages: pagesWithRefs.length,
+                                phase: 'Lecture'
+                            })
+
+                            // Build context for this batch - ask for PARTIAL summary only
+                            const batchContent = batch.pages.map((pageContent, idx) => {
+                                const pageNum = batch.startPage + idx + 1
+                                return `=== PAGE ${pageNum}/${totalPages} ===\n${pageContent}`
+                            }).join('\n\n')
+
+                            const summaryPrompt = `Tu es un assistant de résumé. Extrais les points clés des pages suivantes en 2-3 phrases maximum. 
+Ne formate pas, donne juste les idées principales de manière concise.
+
+${batchContent}`
+
+                            const batchConversationHistory = [
+                                { role: 'system', content: 'Tu extrais les points clés d\'un document. Sois très concis (2-3 phrases max).' },
+                                { role: 'user', content: summaryPrompt }
+                            ]
+
+                            try {
+                                const batchResponse = await callOpenAI(batchConversationHistory, false)
+                                if (batchResponse && batchResponse.trim()) {
+                                    partialSummaries.push({
+                                        pages: `${batch.startPage + 1}-${batch.endPage}`,
+                                        summary: batchResponse.trim()
+                                    })
+                                }
+                            } catch (batchErr) {
+                                console.error(`[Summary Batch ${batchIdx + 1}] Error:`, batchErr)
+                            }
+                        }
+
+                        // Phase 2: Merge all partial summaries into one
+                        setBatchProgress({
+                            current: batches.length + 1,
+                            total: batches.length + 1,
+                            startPage: 1,
+                            endPage: pagesWithRefs.length,
+                            totalPages: pagesWithRefs.length,
+                            phase: 'Synthèse finale'
+                        })
+
+                        // Build merge prompt
+                        const mergeInput = partialSummaries
+                            .map(ps => `[Pages ${ps.pages}]: ${ps.summary}`)
+                            .join('\n\n')
+
+                        const mergePrompt = `Voici des résumés partiels d'un document de ${totalPages} pages. 
+Fusionne-les en UN SEUL résumé cohérent et structuré.
+Format: utilise des paragraphes HTML (<p>, <strong> si besoin) pour une mise en forme propre.
+Longueur cible: 1 paragraphe par tranche de 5 pages environ.
+
+${mergeInput}
+
+Résumé final (HTML):`
+
+                        const mergeHistory = [
+                            { role: 'system', content: 'Tu es un assistant de synthèse. Tu fusionne des résumés partiels en un résumé global cohérent et bien structuré.' },
+                            { role: 'user', content: mergePrompt }
+                        ]
+
+                        try {
+                            let finalSummary = await callOpenAI(mergeHistory, false)
+
+                            // Clean up markdown code blocks if present
+                            finalSummary = finalSummary
+                                .replace(/^```html\s*/i, '')
+                                .replace(/^```\s*/gm, '')
+                                .replace(/```$/gm, '')
+                                .trim()
+
+                            // Clear progress
+                            setBatchProgress(null)
+
+                            // Create insert action to add summary at cursor
+                            const insertAction = {
+                                id: `summary_${Date.now()}`,
+                                type: 'insert_content',
+                                description: `Résumé du document (${totalPages} pages)`,
+                                target: {},
+                                patch: { content: finalSummary },
+                                confidence: 1.0
+                            }
+
+                            setMessages(prev => [...prev, {
+                                role: 'assistant',
+                                content: `📄 Résumé généré pour ${totalPages} pages. Cliquez "Appliquer" pour l'insérer à la position du curseur.`
+                            }])
+
+                            setPendingActions([insertAction])
+                            setActionStatus({ [insertAction.id]: 'pending' })
+
+                        } catch (mergeErr) {
+                            console.error('[Summary Merge] Error:', mergeErr)
+                            setError('Erreur lors de la synthèse finale')
+                            setBatchProgress(null)
+                        }
+
+                        setIsLoading(false)
+                        return // Exit early, summary handled
+                    }
+
+                    // ========== CORRECTION MODE: Standard batching with actions ==========
+                    const allActions = []
+                    let lastMessage = ''
+
+                    for (let batchIdx = 0; batchIdx < batches.length; batchIdx++) {
+                        const batch = batches[batchIdx]
+
+                        // Update progress
+                        setBatchProgress({
+                            current: batchIdx + 1,
+                            total: batches.length,
+                            startPage: batch.startPage + 1,
+                            endPage: batch.endPage,
+                            totalPages: pagesWithRefs.length
+                        })
+
+                        // Build context for this batch
+                        const batchContent = batch.pages.map((pageContent, idx) => {
+                            const pageNum = batch.startPage + idx + 1
+                            return `=== PAGE ${pageNum}/${totalPages} ===\n${pageContent}`
+                        }).join('\n\n')
+
+                        const batchContextMessage = `\n\n[DOCUMENT - Pages ${batch.startPage + 1}-${batch.endPage} sur ${totalPages} (HTML - PRÉSERVE LA STRUCTURE)]\n${batchContent}`
+
+                        const batchConversationHistory = [
+                            { role: 'system', content: AGENT_SYSTEM_PROMPT },
+                            ...messages.slice(-5).map(m => ({ role: m.role, content: m.content })),
+                            { role: 'user', content: userMessage + batchContextMessage }
+                        ]
+
+                        try {
+                            const batchResponse = await callOpenAI(batchConversationHistory, true)
+                            const { messageText, actions } = parseActionsFromResponse(batchResponse)
+
+                            // Accumulate actions with unique IDs
+                            actions.forEach((action, actionIdx) => {
+                                action.id = `batch${batchIdx}_${action.id || actionIdx}`
+                                allActions.push(action)
+                            })
+
+                            if (messageText) lastMessage = messageText
+                        } catch (batchErr) {
+                            console.error(`[AI Batch ${batchIdx + 1}] Error:`, batchErr)
+                        }
+                    }
+
+                    // Clear progress
+                    setBatchProgress(null)
+
+                    // Show final message with all actions
+                    const finalMessage = allActions.length > 0
+                        ? `${lastMessage || 'Analyse terminée.'} (${allActions.length} actions sur ${totalPages} pages)`
+                        : lastMessage || 'Aucune correction trouvée.'
+
+                    setMessages(prev => [...prev, { role: 'assistant', content: finalMessage }])
+
+                    if (allActions.length > 0) {
+                        setPendingActions(allActions)
+                        const initialStatus = {}
+                        allActions.forEach(a => { initialStatus[a.id] = 'pending' })
+                        setActionStatus(initialStatus)
+                    }
+
+                    setIsLoading(false)
+                    return // Exit early, batching handled everything
                 } else {
                     contentToAnalyze = snapshot
                     scopeLabel = `DOCUMENT COMPLET - ${totalPages} pages`
@@ -874,6 +1072,7 @@ export default function AIChatSidebar({
         } catch (err) {
             console.error('AI Chat error:', err)
             setError(err.message)
+            setBatchProgress(null) // Clear progress on error
         } finally {
             setIsLoading(false)
             setIsAnalyzing(false)
@@ -1336,19 +1535,40 @@ export default function AIChatSidebar({
                         )}
 
                         {/* Loading / Analyzing indicators */}
-                        {(isLoading || isAnalyzing) && (
+                        {(isLoading || isAnalyzing || batchProgress) && (
                             <div className="flex justify-start">
                                 <div className={`max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-sm ${mode === 'agent' ? 'bg-amber-500/10' : 'bg-[#1e3a5f]'
                                     }`}>
-                                    <div className="flex items-center gap-2">
-                                        <iconify-icon
-                                            icon="tabler:loader-2"
-                                            width="16"
-                                            className={`animate-spin ${mode === 'agent' ? 'text-amber-500' : 'text-primary'}`}
-                                        ></iconify-icon>
-                                        <span className={`text-sm ${mode === 'agent' ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}`}>
-                                            {isAnalyzing ? 'Analyse du document...' : 'Réflexion...'}
-                                        </span>
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <iconify-icon
+                                                icon="tabler:loader-2"
+                                                width="16"
+                                                className={`animate-spin ${mode === 'agent' ? 'text-amber-500' : 'text-primary'}`}
+                                            ></iconify-icon>
+                                            <span className={`text-sm ${mode === 'agent' ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}`}>
+                                                {batchProgress
+                                                    ? batchProgress.phase
+                                                        ? `${batchProgress.phase} - Pages ${batchProgress.startPage}-${batchProgress.endPage} sur ${batchProgress.totalPages}...`
+                                                        : `Pages ${batchProgress.startPage}-${batchProgress.endPage} sur ${batchProgress.totalPages}...`
+                                                    : isAnalyzing
+                                                        ? 'Analyse du document...'
+                                                        : 'Réflexion...'}
+                                            </span>
+                                        </div>
+                                        {batchProgress && (
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-amber-500 rounded-full transition-all duration-300"
+                                                        style={{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }}
+                                                    ></div>
+                                                </div>
+                                                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                                    {batchProgress.current}/{batchProgress.total}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

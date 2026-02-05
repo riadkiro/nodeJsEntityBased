@@ -2,6 +2,16 @@ const express = require("express");
 const router = express.Router();
 
 router.use("/dashboard", require("./account.router.js"));
+
+// Home Page
+router.get("/home", (req, res) => {
+    res.render("home/home", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
 router.use("/entity", require("./entity.router.js"));
 router.use("/field-template", require("./field-template.router.js"));
 router.use("/field-type", require("./field-type.router.js")); // Admin: Types de champs

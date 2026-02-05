@@ -1347,13 +1347,13 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
                         // If cursor is in our page, insert there
                         if (pageEl.contains(container)) {
-                            range.deleteContents()
-                            const textNode = document.createTextNode(content)
-                            range.insertNode(textNode)
-                            range.setStartAfter(textNode)
-                            range.collapse(true)
-                            sel.removeAllRanges()
-                            sel.addRange(range)
+                            // Delete any selected content first
+                            if (!range.collapsed) {
+                                range.deleteContents()
+                            }
+
+                            // Use insertHTML command to properly render HTML content
+                            document.execCommand('insertHTML', false, content)
 
                             // Check for overflow and create new pages if needed
                             requestAnimationFrame(() => {

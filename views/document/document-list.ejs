@@ -123,85 +123,276 @@
         </div>
       </div>
 
-      <!-- Grid View -->
+      <!-- Grid View with Time Grouping -->
       <template x-if="viewMode === 'grid'">
-        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-          <template x-for="doc in filteredDocuments()" :key="doc._id">
-            <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="panel p-4 hover:shadow-lg transition-all group relative">
-              <div class="flex items-start justify-between mb-3">
-                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                </div>
-                <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
-              </div>
-              <h4 class="font-semibold dark:text-white-light mb-1 truncate" x-text="doc.name"></h4>
-              <p class="text-xs text-[#888ea8]" x-text="formatDate(doc.updatedAt)"></p>
-              <!-- Collaborators with hover -->
-              <div class="absolute bottom-3 right-3 flex"
-                   x-data="{ 
-                     count: (filteredDocuments().indexOf(doc) % 3) + 1,
-                     names: ['Marie L.', 'Jean D.', 'Sophie M.', 'Pierre B.', 'Emma R.'],
-                     groupHover: false,
-                     activeAvatar: null
-                   }"
-                   @mouseenter="groupHover = true"
-                   @mouseleave="groupHover = false; activeAvatar = null"
-                   :class="groupHover ? 'gap-1' : '-space-x-2'">
-                <template x-for="i in count" :key="i">
-                  <div class="relative" @mouseenter="activeAvatar = i" @mouseleave="activeAvatar = null">
-                    <img :src="'/assets/images/profile-' + (((filteredDocuments().indexOf(doc) * 3 + i) % 35) + 1) + '.jpeg'" 
-                         class="w-6 h-6 rounded-full object-cover border-2 border-white dark:border-[#1b2e4b] transition-transform duration-200 cursor-pointer"
-                         :style="groupHover ? 'transform: scale(1.2); z-index: ' + (50 + i) : ''"
-                         alt="Collaborateur"/>
-                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-dark text-white text-[9px] rounded whitespace-nowrap pointer-events-none transition-opacity duration-150"
-                         :class="activeAvatar === i ? 'opacity-100' : 'opacity-0'"
-                         style="z-index: 60;"
-                         x-text="names[(filteredDocuments().indexOf(doc) + i) % 5]">
+        <div class="space-y-6">
+          <!-- Today -->
+          <template x-if="getDocumentsByPeriod('today').length > 0">
+            <div>
+              <h3 class="text-sm font-semibold text-[#888ea8] mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M12 8V12L14.5 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Aujourd'hui
+                <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="getDocumentsByPeriod('today').length"></span>
+              </h3>
+              <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+                <template x-for="doc in getDocumentsByPeriod('today')" :key="doc._id">
+                  <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="panel p-4 hover:shadow-lg transition-all group relative">
+                    <div class="flex items-start justify-between mb-3">
+                      <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                      </div>
+                      <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
                     </div>
-                  </div>
+                    <h4 class="font-semibold dark:text-white-light mb-1 truncate" x-text="doc.name"></h4>
+                    <p class="text-xs text-[#888ea8]" x-text="formatDate(doc.updatedAt)"></p>
+                    <div class="absolute bottom-3 right-3 flex" x-data="{ count: (getDocumentsByPeriod('today').indexOf(doc) % 3) + 1, names: ['Marie L.', 'Jean D.', 'Sophie M.', 'Pierre B.', 'Emma R.'], groupHover: false, activeAvatar: null }" @mouseenter="groupHover = true" @mouseleave="groupHover = false; activeAvatar = null" :class="groupHover ? 'gap-1' : '-space-x-2'">
+                      <template x-for="i in count" :key="i">
+                        <div class="relative" @mouseenter="activeAvatar = i" @mouseleave="activeAvatar = null">
+                          <img :src="'/assets/images/profile-' + (((getDocumentsByPeriod('today').indexOf(doc) * 3 + i) % 35) + 1) + '.jpeg'" class="w-6 h-6 rounded-full object-cover border-2 border-white dark:border-[#1b2e4b] transition-transform duration-200 cursor-pointer" :style="groupHover ? 'transform: scale(1.2); z-index: ' + (50 + i) : ''" alt="Collaborateur"/>
+                          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-dark text-white text-[9px] rounded whitespace-nowrap pointer-events-none transition-opacity duration-150" :class="activeAvatar === i ? 'opacity-100' : 'opacity-0'" style="z-index: 60;" x-text="names[(getDocumentsByPeriod('today').indexOf(doc) + i) % 5]"></div>
+                        </div>
+                      </template>
+                    </div>
+                  </a>
                 </template>
               </div>
-            </a>
+            </div>
+          </template>
+
+          <!-- Yesterday -->
+          <template x-if="getDocumentsByPeriod('yesterday').length > 0">
+            <div>
+              <h3 class="text-sm font-semibold text-[#888ea8] mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M7 12L10.5 15.5L17 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Hier
+                <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="getDocumentsByPeriod('yesterday').length"></span>
+              </h3>
+              <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+                <template x-for="doc in getDocumentsByPeriod('yesterday')" :key="doc._id">
+                  <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="panel p-4 hover:shadow-lg transition-all group relative">
+                    <div class="flex items-start justify-between mb-3">
+                      <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                      </div>
+                      <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
+                    </div>
+                    <h4 class="font-semibold dark:text-white-light mb-1 truncate" x-text="doc.name"></h4>
+                    <p class="text-xs text-[#888ea8]" x-text="formatDate(doc.updatedAt)"></p>
+                    <div class="absolute bottom-3 right-3 flex -space-x-2">
+                      <template x-for="i in Math.min((getDocumentsByPeriod('yesterday').indexOf(doc) % 3) + 1, 3)" :key="i">
+                        <img :src="'/assets/images/profile-' + (((getDocumentsByPeriod('yesterday').indexOf(doc) * 3 + i) % 35) + 1) + '.jpeg'" class="w-6 h-6 rounded-full object-cover border-2 border-white dark:border-[#1b2e4b]" alt="Collaborateur"/>
+                      </template>
+                    </div>
+                  </a>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- This Week -->
+          <template x-if="getDocumentsByPeriod('week').length > 0">
+            <div>
+              <h3 class="text-sm font-semibold text-[#888ea8] mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M7 4V2.5M17 4V2.5M2.5 9H21.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                Cette semaine
+                <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="getDocumentsByPeriod('week').length"></span>
+              </h3>
+              <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+                <template x-for="doc in getDocumentsByPeriod('week')" :key="doc._id">
+                  <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="panel p-4 hover:shadow-lg transition-all group relative">
+                    <div class="flex items-start justify-between mb-3">
+                      <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                      </div>
+                      <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
+                    </div>
+                    <h4 class="font-semibold dark:text-white-light mb-1 truncate" x-text="doc.name"></h4>
+                    <p class="text-xs text-[#888ea8]" x-text="formatDate(doc.updatedAt)"></p>
+                    <div class="absolute bottom-3 right-3 flex -space-x-2">
+                      <template x-for="i in Math.min((getDocumentsByPeriod('week').indexOf(doc) % 3) + 1, 3)" :key="i">
+                        <img :src="'/assets/images/profile-' + (((getDocumentsByPeriod('week').indexOf(doc) * 3 + i) % 35) + 1) + '.jpeg'" class="w-6 h-6 rounded-full object-cover border-2 border-white dark:border-[#1b2e4b]" alt="Collaborateur"/>
+                      </template>
+                    </div>
+                  </a>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- By Month -->
+          <template x-for="month in getMonthGroups()" :key="month.key">
+            <div>
+              <h3 class="text-sm font-semibold text-[#888ea8] mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M7 4V2.5M17 4V2.5M2.5 9H21.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <span x-text="month.label"></span>
+                <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="month.docs.length"></span>
+              </h3>
+              <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+                <template x-for="doc in month.docs" :key="doc._id">
+                  <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="panel p-4 hover:shadow-lg transition-all group relative">
+                    <div class="flex items-start justify-between mb-3">
+                      <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                      </div>
+                      <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
+                    </div>
+                    <h4 class="font-semibold dark:text-white-light mb-1 truncate" x-text="doc.name"></h4>
+                    <p class="text-xs text-[#888ea8]" x-text="formatDate(doc.updatedAt)"></p>
+                    <div class="absolute bottom-3 right-3 flex -space-x-2">
+                      <template x-for="i in Math.min((month.docs.indexOf(doc) % 3) + 1, 3)" :key="i">
+                        <img :src="'/assets/images/profile-' + (((month.docs.indexOf(doc) * 3 + i) % 35) + 1) + '.jpeg'" class="w-6 h-6 rounded-full object-cover border-2 border-white dark:border-[#1b2e4b]" alt="Collaborateur"/>
+                      </template>
+                    </div>
+                  </a>
+                </template>
+              </div>
+            </div>
           </template>
         </div>
       </template>
 
-      <!-- List View -->
+      <!-- List View with Time Grouping -->
       <template x-if="viewMode === 'list'">
-        <div class="panel">
-          <table class="w-full">
-            <thead>
-              <tr class="border-b border-[#e0e6ed] dark:border-[#1b2e4b]">
-                <th class="p-4 text-left font-semibold dark:text-white-light">Nom</th>
-                <th class="p-4 text-left font-semibold dark:text-white-light hidden md:table-cell">Statut</th>
-                <th class="p-4 text-left font-semibold dark:text-white-light hidden lg:table-cell">Format</th>
-                <th class="p-4 text-left font-semibold dark:text-white-light hidden sm:table-cell">Modifié</th>
-                <th class="p-4 text-right font-semibold dark:text-white-light">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="doc in filteredDocuments()" :key="doc._id">
-                <tr class="border-b border-[#e0e6ed] dark:border-[#1b2e4b] hover:bg-[#f8f9fa] dark:hover:bg-[#1b2e4b]/50">
-                  <td class="p-4">
-                    <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="flex items-center gap-3 hover:text-primary">
-                      <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary flex-shrink-0">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                      </div>
-                      <span class="font-semibold dark:text-white-light truncate" x-text="doc.name"></span>
-                    </a>
-                  </td>
-                  <td class="p-4 hidden md:table-cell">
-                    <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
-                  </td>
-                  <td class="p-4 text-[#888ea8] text-sm hidden lg:table-cell" x-text="doc.format || 'A4'"></td>
-                  <td class="p-4 text-[#888ea8] text-sm hidden sm:table-cell" x-text="formatDate(doc.updatedAt)"></td>
-                  <td class="p-4 text-right">
-                    <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="btn btn-sm btn-outline-primary">Modifier</a>
-                  </td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
+        <div class="space-y-4">
+          <!-- Today -->
+          <template x-if="getDocumentsByPeriod('today').length > 0">
+            <div class="panel p-0">
+              <div class="py-2 px-4 border-b border-[#e0e6ed] dark:border-[#1b2e4b] bg-[#f8f9fa] dark:bg-[#1b2e4b]/30">
+                <h3 class="text-sm font-semibold text-[#888ea8] flex items-center gap-2">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M12 8V12L14.5 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Aujourd'hui
+                  <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="getDocumentsByPeriod('today').length"></span>
+                </h3>
+              </div>
+              <table class="w-full">
+                <tbody>
+                  <template x-for="doc in getDocumentsByPeriod('today')" :key="doc._id">
+                    <tr class="border-b border-[#e0e6ed] dark:border-[#1b2e4b] hover:bg-[#f8f9fa] dark:hover:bg-[#1b2e4b]/50">
+                      <td class="py-2 px-4">
+                        <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="flex items-center gap-3 hover:text-primary">
+                          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary flex-shrink-0">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                          </div>
+                          <span class="font-medium dark:text-white-light truncate text-sm" x-text="doc.name"></span>
+                        </a>
+                      </td>
+                      <td class="py-2 px-4 hidden md:table-cell">
+                        <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
+                      </td>
+                      <td class="py-2 px-4 text-right">
+                        <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="px-3 py-1 text-xs border border-primary text-primary rounded hover:bg-primary hover:text-white transition-colors">Modifier</a>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </template>
+
+          <!-- Yesterday -->
+          <template x-if="getDocumentsByPeriod('yesterday').length > 0">
+            <div class="panel p-0">
+              <div class="py-2 px-4 border-b border-[#e0e6ed] dark:border-[#1b2e4b] bg-[#f8f9fa] dark:bg-[#1b2e4b]/30">
+                <h3 class="text-sm font-semibold text-[#888ea8] flex items-center gap-2">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M7 12L10.5 15.5L17 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Hier
+                  <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="getDocumentsByPeriod('yesterday').length"></span>
+                </h3>
+              </div>
+              <table class="w-full">
+                <tbody>
+                  <template x-for="doc in getDocumentsByPeriod('yesterday')" :key="doc._id">
+                    <tr class="border-b border-[#e0e6ed] dark:border-[#1b2e4b] hover:bg-[#f8f9fa] dark:hover:bg-[#1b2e4b]/50">
+                      <td class="py-2 px-4">
+                        <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="flex items-center gap-3 hover:text-primary">
+                          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary flex-shrink-0">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                          </div>
+                          <span class="font-medium dark:text-white-light truncate text-sm" x-text="doc.name"></span>
+                        </a>
+                      </td>
+                      <td class="py-2 px-4 hidden md:table-cell">
+                        <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
+                      </td>
+                      <td class="py-2 px-4 text-right">
+                        <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="px-3 py-1 text-xs border border-primary text-primary rounded hover:bg-primary hover:text-white transition-colors">Modifier</a>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </template>
+
+          <!-- This Week -->
+          <template x-if="getDocumentsByPeriod('week').length > 0">
+            <div class="panel p-0">
+              <div class="py-2 px-4 border-b border-[#e0e6ed] dark:border-[#1b2e4b] bg-[#f8f9fa] dark:bg-[#1b2e4b]/30">
+                <h3 class="text-sm font-semibold text-[#888ea8] flex items-center gap-2">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M7 4V2.5M17 4V2.5M2.5 9H21.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  Cette semaine
+                  <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="getDocumentsByPeriod('week').length"></span>
+                </h3>
+              </div>
+              <table class="w-full">
+                <tbody>
+                  <template x-for="doc in getDocumentsByPeriod('week')" :key="doc._id">
+                    <tr class="border-b border-[#e0e6ed] dark:border-[#1b2e4b] hover:bg-[#f8f9fa] dark:hover:bg-[#1b2e4b]/50">
+                      <td class="py-2 px-4">
+                        <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="flex items-center gap-3 hover:text-primary">
+                          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary flex-shrink-0">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                          </div>
+                          <span class="font-medium dark:text-white-light truncate text-sm" x-text="doc.name"></span>
+                        </a>
+                      </td>
+                      <td class="py-2 px-4 hidden md:table-cell">
+                        <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
+                      </td>
+                      <td class="py-2 px-4 text-right">
+                        <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="px-3 py-1 text-xs border border-primary text-primary rounded hover:bg-primary hover:text-white transition-colors">Modifier</a>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </template>
+
+          <!-- By Month -->
+          <template x-for="month in getMonthGroups()" :key="month.key">
+            <div class="panel p-0">
+              <div class="py-2 px-4 border-b border-[#e0e6ed] dark:border-[#1b2e4b] bg-[#f8f9fa] dark:bg-[#1b2e4b]/30">
+                <h3 class="text-sm font-semibold text-[#888ea8] flex items-center gap-2">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M7 4V2.5M17 4V2.5M2.5 9H21.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  <span x-text="month.label"></span>
+                  <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="month.docs.length"></span>
+                </h3>
+              </div>
+              <table class="w-full">
+                <tbody>
+                  <template x-for="doc in month.docs" :key="doc._id">
+                    <tr class="border-b border-[#e0e6ed] dark:border-[#1b2e4b] hover:bg-[#f8f9fa] dark:hover:bg-[#1b2e4b]/50">
+                      <td class="py-2 px-4">
+                        <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="flex items-center gap-3 hover:text-primary">
+                          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary flex-shrink-0">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                          </div>
+                          <span class="font-medium dark:text-white-light truncate text-sm" x-text="doc.name"></span>
+                        </a>
+                      </td>
+                      <td class="py-2 px-4 hidden md:table-cell">
+                        <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
+                      </td>
+                      <td class="py-2 px-4 text-right">
+                        <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="px-3 py-1 text-xs border border-primary text-primary rounded hover:bg-primary hover:text-white transition-colors">Modifier</a>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </template>
         </div>
       </template>
     </div>
@@ -394,6 +585,68 @@ document.addEventListener('alpine:init', () => {
     
     toggleFav(doc) {
       doc.isFav = !doc.isFav;
+    },
+    
+    getDocumentsByPeriod(period) {
+      const docs = this.filteredDocuments();
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const weekStart = new Date(today);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Monday
+      
+      return docs.filter(doc => {
+        const docDate = new Date(doc.updatedAt);
+        const docDay = new Date(docDate.getFullYear(), docDate.getMonth(), docDate.getDate());
+        
+        if (period === 'today') {
+          return docDay.getTime() === today.getTime();
+        } else if (period === 'yesterday') {
+          return docDay.getTime() === yesterday.getTime();
+        } else if (period === 'week') {
+          return docDay >= weekStart && docDay < yesterday;
+        }
+        return false;
+      }).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    },
+    
+    getMonthGroups() {
+      const docs = this.filteredDocuments();
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekStart = new Date(today);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+      
+      // Filter docs older than this week
+      const olderDocs = docs.filter(doc => {
+        const docDate = new Date(doc.updatedAt);
+        const docDay = new Date(docDate.getFullYear(), docDate.getMonth(), docDate.getDate());
+        return docDay < weekStart;
+      });
+      
+      // Group by month
+      const months = {};
+      const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+      
+      olderDocs.forEach(doc => {
+        const date = new Date(doc.updatedAt);
+        const key = `${date.getFullYear()}-${date.getMonth()}`;
+        const label = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+        
+        if (!months[key]) {
+          months[key] = { key, label, docs: [], sortKey: date.getFullYear() * 12 + date.getMonth() };
+        }
+        months[key].docs.push(doc);
+      });
+      
+      // Sort months descending and docs within each month
+      return Object.values(months)
+        .sort((a, b) => b.sortKey - a.sortKey)
+        .map(m => ({
+          ...m,
+          docs: m.docs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+        }));
     }
   }));
 });

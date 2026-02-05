@@ -55,6 +55,7 @@ app.use(
   (req, res, next) => {
     req.account_number = req.params.account_id;
     res.locals.account_number = req.account_number;
+    res.locals.path = req.originalUrl;
     next();
   },
   connectToTenantDb,

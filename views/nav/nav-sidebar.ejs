@@ -2,7 +2,8 @@
   <nav x-data="{ sidebar }"
     class="sidebar fixed top-0 bottom-0 z-50 col-span-1 grid h-full min-h-screen w-[248px] grid-cols-12 shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] transition-all duration-300">
     <div
-      class="col-span-2 bg-primary dark:bg-transparent flex h-screen flex-col items-center justify-start gap-y-3 pt-2 pb-4 overflow-y-auto">
+      :class="$store.app.sidebar ? 'col-span-12' : 'col-span-2'"
+      class="h-full bg-primary dark:bg-transparent flex flex-col items-center justify-between pt-2 pb-4">
       <!-- Toggle button - Grid when closed, Arrow when open -->
       <a href="javascript:;"
         class="sidebar-toggle-btn flex-none flex flex-col items-center gap-1 rounded-lg p-2 hover:bg-white/10 dark:hover:bg-dark/40 text-white dark:text-primary transition-all duration-300"
@@ -22,7 +23,9 @@
         <span x-show="$store.app.sidebar" x-cloak style="font-size: 9px; line-height: 1.1;">Menu</span>
       </a>
 
-      <!-- Dashboard -->
+      <!-- MIDDLE: Grouped icons -->
+      <div class="flex flex-col items-center gap-y-3">
+        <!-- Dashboard -->
       <a href="/account/<%= account_number %>/dashboard" class="flex flex-col items-center gap-1 text-white dark:text-primary hover:bg-white/10 dark:hover:bg-dark/40 rounded-lg p-2 transition-all">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path opacity="0.5"
@@ -116,8 +119,9 @@
         </svg>
         <span x-show="$store.app.sidebar" x-cloak style="font-size: 9px; line-height: 1.1;">Équipe</span>
       </div>
+      </div>
 
-      <!-- Réglages -->
+      <!-- BOTTOM: Réglages -->
       <div class="flex flex-col items-center gap-1 text-white dark:text-primary hover:bg-white/10 dark:hover:bg-dark/40 rounded-lg p-2 cursor-pointer transition-all">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path

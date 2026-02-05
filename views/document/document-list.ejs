@@ -152,6 +152,34 @@
               <h6 class="text-xs font-medium truncate dark:text-white-light" x-text="doc.name"></h6>
               <p class="text-[10px] text-[#888ea8] mt-0.5" x-text="formatDate(doc.updatedAt)"></p>
               
+              <!-- Collaborators Avatars -->
+              <div class="absolute bottom-2 right-2 flex" 
+                   x-data="{ 
+                     groupHover: false, 
+                     activeAvatar: null,
+                     count: (filteredDocuments().indexOf(doc) % 3) + 1,
+                     names: ['Marie L.', 'Jean D.', 'Sophie M.', 'Pierre B.', 'Emma R.']
+                   }" 
+                   @mouseenter="groupHover = true" 
+                   @mouseleave="groupHover = false; activeAvatar = null" 
+                   @click.stop
+                   :class="groupHover ? 'gap-1' : '-space-x-2'">
+                <template x-for="i in count" :key="i">
+                  <div class="relative" @mouseenter="activeAvatar = i" @mouseleave="activeAvatar = null">
+                    <img :src="'/assets/images/profile-' + (((filteredDocuments().indexOf(doc) * 3 + i) % 35) + 1) + '.jpeg'" 
+                         class="w-5 h-5 rounded-full object-cover border border-white dark:border-[#1b2e4b] shadow-sm cursor-pointer transition-transform duration-200"
+                         :style="groupHover ? 'transform: scale(1.3); z-index: ' + (50 + i) : ''"
+                         alt="Collaborateur"/>
+                    <!-- Individual tooltip -->
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-dark text-white text-[9px] rounded whitespace-nowrap pointer-events-none transition-opacity duration-150"
+                         :class="activeAvatar === i ? 'opacity-100' : 'opacity-0'"
+                         style="z-index: 60;"
+                         x-text="names[(filteredDocuments().indexOf(doc) + i) % 5]">
+                    </div>
+                  </div>
+                </template>
+              </div>
+              
               <!-- Status dot -->
               <span class="absolute top-2 right-2 h-2 w-2 rounded-full"
                     :class="{'bg-warning': doc.status === 'draft', 'bg-success': doc.status === 'published', 'bg-[#888ea8]': doc.status === 'archived'}"></span>
@@ -191,7 +219,18 @@
                       <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary flex-shrink-0">
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
                       </div>
-                      <span class="font-semibold dark:text-white-light" x-text="doc.name"></span>
+                      <div class="flex-1 min-w-0">
+                        <span class="font-semibold dark:text-white-light block truncate" x-text="doc.name"></span>
+                      </div>
+                      <!-- Creator Avatar in list with tooltip -->
+                      <div class="relative group/avatar flex-shrink-0">
+                        <img :src="'/assets/images/profile-' + ((filteredDocuments().indexOf(doc) % 35) + 1) + '.jpeg'" 
+                             class="w-7 h-7 rounded-full object-cover border-2 border-white dark:border-[#1b2e4b] shadow-sm transition-transform duration-200 hover:scale-125 cursor-pointer"
+                             alt="Créateur"/>
+                        <div class="absolute bottom-full right-0 mb-1 px-2 py-1 bg-dark text-white text-xs rounded whitespace-nowrap opacity-0 group-hover/avatar:opacity-100 transition-opacity pointer-events-none z-20">
+                          Jean Dupont
+                        </div>
+                      </div>
                     </a>
                   </td>
                   <td class="p-4 hidden md:table-cell">

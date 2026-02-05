@@ -204,7 +204,7 @@
             },
 
             // sidebar
-            sidebar: false,
+            sidebar: Alpine.$persist(false),
             toggleSidebar() {
                 this.sidebar = !this.sidebar;
             },

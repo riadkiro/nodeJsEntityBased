@@ -59,10 +59,10 @@ body {
   display: flex !important;
   width: 100% !important;
   /* Full width instead of 2/12 */
-  justify-content: center !important;
-  /* Center icons horizontally */
+  justify-content: flex-start !important;
+  /* Keep icons at top vertically */
   align-items: center !important;
-  /* Center icons vertically */
+  /* Center icons horizontally */
 }
 
 /* Hide col-span-10 (logo + hamburger) when sidebar is collapsed */

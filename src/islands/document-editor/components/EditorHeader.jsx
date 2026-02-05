@@ -8,6 +8,7 @@ import React from 'react'
 export default function EditorHeader({
     doc,
     setDoc,
+    accountNumber,
     lastSaved,
     triggerSave,
     handlePdfExport,
@@ -51,7 +52,7 @@ export default function EditorHeader({
             <div className="flex items-center px-4 py-2 border-b dark:border-gray-800">
                 {/* Back Button */}
                 <a
-                    href={`/account/${doc.accountNumber || ''}/documents`}
+                    href={`/account/${accountNumber}/documents`}
                     className="mr-3 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                 >
                     <iconify-icon icon="tabler:arrow-left" width="20"></iconify-icon>

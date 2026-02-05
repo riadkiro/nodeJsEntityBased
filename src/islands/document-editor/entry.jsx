@@ -52,11 +52,15 @@ function mountIslands() {
         container.dataset.mounted = '1'
 
         // Read props from data attributes
-        // Parse document JSON from data-document attribute
+        // Parse document JSON from data-document attribute (base64 encoded with UTF-8)
         let initialDocument = null
         try {
             if (container.dataset.document) {
-                initialDocument = JSON.parse(container.dataset.document)
+                // Decode base64 to binary, then use TextDecoder for proper UTF-8 handling
+                const binaryString = atob(container.dataset.document)
+                const bytes = Uint8Array.from(binaryString, char => char.charCodeAt(0))
+                const jsonString = new TextDecoder('utf-8').decode(bytes)
+                initialDocument = JSON.parse(jsonString)
             }
         } catch (e) {
             console.error('[DocumentEditor Island] Failed to parse document data:', e)

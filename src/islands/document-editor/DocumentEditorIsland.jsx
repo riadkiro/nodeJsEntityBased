@@ -143,13 +143,35 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         saveTimeoutRef.current = setTimeout(async () => {
             // Read current content from page refs
             const currentDoc = { ...docRef.current }
+
+            // Safety check: verify all edition pages have valid refs
+            // This prevents saving empty content when DOM refs aren't available
+            let hasInvalidRef = false
             currentDoc.pages = currentDoc.pages.map((page, i) => {
                 const pageRef = pageRefs.current[i]
-                if (pageRef && page.mode === 'edition') {
-                    return { ...page, content: pageRef.innerHTML }
+                if (page.mode === 'edition') {
+                    if (pageRef) {
+                        return { ...page, content: pageRef.innerHTML }
+                    } else {
+                        // CRITICAL: pageRef is null but page is in edition mode
+                        // If state content is also empty, we might lose data
+                        console.warn(`[triggerSave] Page ${i} has no ref, using state content:`, page.content?.substring(0, 50))
+                        if (!page.content && i === 0) {
+                            // For page 0 with no ref and no content, this is likely a timing issue
+                            // Skip save to prevent data loss
+                            hasInvalidRef = true
+                        }
+                        return page
+                    }
                 }
                 return page
             })
+
+            // Abort save if we detected a potentially dangerous state
+            if (hasInvalidRef) {
+                console.warn('[triggerSave] Aborting save: detected edition pages without valid refs')
+                return
+            }
 
             const result = await saveDocument(currentDoc, accountNumber)
             if (result.success && result.document) {
@@ -1472,6 +1494,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             <EditorHeader
                 doc={doc}
                 setDoc={setDoc}
+                accountNumber={accountNumber}
                 lastSaved={lastSaved}
                 triggerSave={triggerSave}
                 handlePdfExport={handlePdfExport}

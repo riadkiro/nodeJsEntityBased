@@ -1,3 +1,16 @@
+<!-- Styles for Equal Height Panels -->
+<style>
+  /* When a parent container is flex column, the direct child panel should stretch */
+  [style*="flex-direction: column"] > .panel {
+    flex: 1;
+  }
+  
+  /* Gap between consecutive blocks in a column (stacked panels) */
+  [data-sortable-column] > div + div {
+    margin-top: 1.5rem; /* 24px, same as gap-6 */
+  }
+</style>
+
 <!-- Canvas Area (WYSIWYG) -->
 <div class="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-6">
   <div class="max-w-7xl mx-auto">
@@ -196,7 +209,7 @@
                         builderState.mode === 'edit' && builderState.selectedBlockId === blockId && 'ring-2 ring-primary ring-offset-2',
                         builderState.mode === 'edit' && builderState.hoveredBlockId === blockId && builderState.selectedBlockId !== blockId && 'ring-1 ring-gray-300 dark:ring-gray-600',
                         builderState.mode === 'edit' && 'cursor-pointer transition-all duration-150',
-                        row.equalHeight && 'flex-1 flex flex-col [&>.panel]:flex-1 [&>.panel]:h-full'
+                        row.equalHeight && 'flex-1'
                       ]">
                       
                       <!-- Block Action Popover (on selection) - positioned inside top-right -->
@@ -230,7 +243,7 @@
                       </div>
 
                       <!-- Block Content (template-based for proper styling) -->
-                      <div x-data="{ block: pageConfig.blocks[blockId] }">
+                      <div x-data="{ block: pageConfig.blocks[blockId] }" class="h-full" :style="row.equalHeight && 'display: flex; flex-direction: column;'">
                         
                         <!-- Panel Block -->
                         <template x-if="block && block.type === 'panel'">

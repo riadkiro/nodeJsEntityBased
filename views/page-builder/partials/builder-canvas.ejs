@@ -9,6 +9,11 @@
   [data-sortable-column] > div + div {
     margin-top: 1.5rem; /* 24px, same as gap-6 */
   }
+  
+  /* Dark mode: ensure panels are visible against the dark canvas */
+  .dark [data-sortable-column] .panel {
+    border: 1px solid #374151; /* gray-700 */
+  }
 </style>
 
 <!-- Canvas Area (WYSIWYG) -->
@@ -528,21 +533,24 @@
 
                         <!-- Focus Card Block (Cockpit) -->
                         <template x-if="block && block.type === 'focus-card'">
-                          <div class="panel h-full bg-gradient-to-br from-primary to-primary/80 text-white" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
-                            <div class="mb-2 text-xs uppercase opacity-75" x-text="block.title || 'Prochain'"></div>
+                          <div class="panel h-full" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                            <div class="mb-4 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Prochain Patient'"></h5>
+                              <span class="badge bg-primary/10 text-primary">En attente</span>
+                            </div>
                             <div class="flex items-center gap-4">
-                              <div class="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold">JD</div>
+                              <div class="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold">JD</div>
                               <div>
-                                <div class="text-xl font-bold">Jean Dupont</div>
-                                <div class="opacity-75 text-sm">Consultation • Salle 3</div>
-                                <div class="text-xs mt-1 opacity-60">Arrivé il y a 15 min</div>
+                                <div class="text-xl font-bold dark:text-white">Jean Dupont</div>
+                                <div class="text-gray-500 dark:text-gray-400 text-sm">Consultation • Salle 3</div>
+                                <div class="text-xs mt-1 text-gray-400">Arrivé il y a 15 min</div>
                               </div>
                             </div>
                             <div class="mt-4 flex gap-2">
-                              <button class="btn bg-white/20 hover:bg-white/30 text-white btn-sm flex-1">
+                              <button class="btn btn-primary btn-sm flex-1">
                                 <iconify-icon icon="solar:phone-bold" width="14" class="mr-1"></iconify-icon>Appeler
                               </button>
-                              <button class="btn bg-white/20 hover:bg-white/30 text-white btn-sm flex-1">
+                              <button class="btn btn-outline-primary btn-sm flex-1">
                                 <iconify-icon icon="solar:document-bold" width="14" class="mr-1"></iconify-icon>Dossier
                               </button>
                             </div>

@@ -179,6 +179,29 @@ document.addEventListener('alpine:init', () => {
         }
       },
       
+      deleteColumn(rowId, colIndex) {
+        const tabId = this.builderState.activeTab;
+        const row = this.pageConfig.layout[tabId].find(r => r.id === rowId);
+        if (!row || row.columns.length <= 1) return;
+        
+        // Get the width of the column being deleted
+        const deletedWidth = row.columns[colIndex].width;
+        
+        // Remove the column
+        row.columns.splice(colIndex, 1);
+        
+        // Distribute the freed width to remaining columns
+        const extraPerColumn = Math.floor(deletedWidth / row.columns.length);
+        let remainder = deletedWidth % row.columns.length;
+        
+        row.columns.forEach((col, idx) => {
+          col.width += extraPerColumn;
+          if (idx < remainder) {
+            col.width += 1;
+          }
+        });
+      },
+      
       setRowLayout(rowId, numColumns) {
         const tabId = this.builderState.activeTab;
         const row = this.pageConfig.layout[tabId].find(r => r.id === rowId);

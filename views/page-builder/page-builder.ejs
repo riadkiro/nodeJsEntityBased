@@ -79,6 +79,7 @@
     layout: { 
       default: [{
         id: 'row_default_1',
+        equalHeight: true,
         columns: [{ width: 12, blocks: [] }]
       }]
     },
@@ -151,6 +152,7 @@ document.addEventListener('alpine:init', () => {
         const rowId = 'row_' + Date.now();
         this.pageConfig.layout[tabId].push({
           id: rowId,
+          equalHeight: true,
           columns: [{ width: 12, blocks: [] }]
         });
       },
@@ -344,37 +346,37 @@ document.addEventListener('alpine:init', () => {
           // Cockpit widgets
           'work-queue': {
             title: 'Salle d\'attente',
-            props: { height: 400, compact: false, showIcons: true, showBadges: true },
+            props: { compact: false, showIcons: true, showBadges: true },
             data: { source: 'consultations', query: '', sort: 'scheduled_at:asc', limit: 20 },
             actions: { header: ['refresh'], row: ['call', 'done', 'urgent'] }
           },
           'comms-dock': {
             title: 'Communications',
-            props: { height: 350, compact: false, showIcons: true, showBadges: true },
+            props: { compact: false, showIcons: true, showBadges: true },
             data: { source: 'messages', query: '', sort: 'createdAt:desc', limit: 50 },
             actions: { header: ['refresh'], row: ['reply'], quick: ['next_patient', 'come_here', 'prescription', 'lab_request', 'followup', 'flag_urgent'] }
           },
           'activity-feed': {
             title: 'Activités',
-            props: { height: 300, compact: true, showIcons: true, showBadges: false },
+            props: { compact: true, showIcons: true, showBadges: false },
             data: { source: 'activities', query: '', sort: 'createdAt:desc', limit: 30 },
             actions: { header: ['refresh'], row: [] }
           },
           'focus-card': {
             title: 'Prochain Patient',
-            props: { height: 200, compact: false, showIcons: true, showBadges: true },
+            props: { compact: false, showIcons: true, showBadges: true },
             data: { source: 'consultations', query: 'status:waiting', sort: 'scheduled_at:asc', limit: 1 },
             actions: { header: [], row: ['call', 'view'] }
           },
           'urgency-radar': {
             title: 'Radar Urgences',
-            props: { height: 250, compact: false, showIcons: true, showBadges: true },
+            props: { compact: false, showIcons: true, showBadges: true },
             data: { source: 'consultations', query: 'priority:urgent', sort: 'createdAt:desc', limit: 10 },
             actions: { header: ['refresh'], row: ['call', 'done'] }
           },
           'kpi-cards': {
             title: 'Statistiques du jour',
-            props: { height: 150, compact: false, showIcons: true, showBadges: false },
+            props: { compact: false, showIcons: true, showBadges: false },
             data: { source: 'stats', query: 'today', sort: '', limit: 0 },
             actions: { header: [], row: [] }
           }

@@ -173,6 +173,9 @@
 
           <!-- Row Grid -->
           <div 
+            x-data="{ rowHover: false }"
+            @mouseenter="rowHover = true"
+            @mouseleave="rowHover = false"
             :class="[
               'grid gap-6',
               builderState.mode === 'edit' && 'min-h-[100px]',
@@ -184,12 +187,29 @@
             <template x-for="(column, colIndex) in row.columns" :key="colIndex">
               <div 
                 :style="`grid-column: span ${column.width}`"
-                class="relative transition-all duration-200"
+                class="relative transition-all duration-200 group/col"
                 :class="[
                   builderState.mode === 'edit' && column.blocks.length === 0 && 'border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-400 dark:hover:border-gray-500',
                   builderState.mode === 'edit' && column.blocks.length === 0 && !row.equalHeight && 'h-[90px]',
                   row.equalHeight && 'flex flex-col h-full'
                 ]">
+                
+                <!-- Resize Handle (visible on row hover) -->
+                <div 
+                  x-cloak
+                  x-show="builderState.mode === 'edit' && rowHover"
+                  x-transition:enter="transition ease-out duration-150"
+                  x-transition:enter-start="opacity-0"
+                  x-transition:enter-end="opacity-100"
+                  x-transition:leave="transition ease-in duration-100"
+                  x-transition:leave-start="opacity-100"
+                  x-transition:leave-end="opacity-0"
+                  @mousedown="startResize(row.id, colIndex, $event)"
+                  style="position: absolute; right: 0; top: 50%; transform: translate(50%, -50%); cursor: col-resize; z-index: 50; display: flex; align-items: center;"
+                  class="text-gray-400 dark:text-gray-500 hover:text-primary">
+                  <iconify-icon icon="solar:alt-arrow-left-bold" width="12"></iconify-icon>
+                  <iconify-icon icon="solar:alt-arrow-right-bold" width="12" style="margin-left: -4px;"></iconify-icon>
+                </div>
                 
                 
                 <!-- Blocks in Column -->

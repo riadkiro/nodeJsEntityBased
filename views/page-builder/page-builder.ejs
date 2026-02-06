@@ -233,6 +233,121 @@ document.addEventListener('alpine:init', () => {
         row.equalHeight = !row.equalHeight;
       },
       
+      // Column Resize State
+      resizeState: {
+        active: false,
+        rowId: null,
+        colIndex: null,
+        startX: 0,
+        startWidths: []
+      },
+      
+      startResize(rowId, colIndex, event) {
+        event.preventDefault();
+        const tabId = this.builderState.activeTab;
+        const row = this.pageConfig.layout[tabId].find(r => r.id === rowId);
+        if (!row) return;
+        
+        this.resizeState = {
+          active: true,
+          rowId: rowId,
+          colIndex: colIndex,
+          startX: event.clientX,
+          startWidths: row.columns.map(c => c.width)
+        };
+        
+        // Add document-level listeners
+        document.addEventListener('mousemove', this._doResize = (e) => this.doResize(e));
+        document.addEventListener('mouseup', this._endResize = () => this.endResize());
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      },
+      
+      doResize(event) {
+        if (!this.resizeState.active) return;
+        
+        const tabId = this.builderState.activeTab;
+        const row = this.pageConfig.layout[tabId].find(r => r.id === this.resizeState.rowId);
+        if (!row) return;
+        
+        // Get the grid container width
+        const gridContainer = document.querySelector('[style*="grid-template-columns: repeat(12"]');
+        if (!gridContainer) return;
+        
+        const gridWidth = gridContainer.offsetWidth;
+        const colUnitWidth = gridWidth / 12; // Width of one grid unit
+        
+        // Calculate delta in grid units
+        const deltaX = event.clientX - this.resizeState.startX;
+        const deltaUnits = Math.round(deltaX / colUnitWidth);
+        
+        if (deltaUnits === 0) return;
+        
+        const colIndex = this.resizeState.colIndex;
+        const isLastColumn = colIndex === row.columns.length - 1;
+        const leftWidth = this.resizeState.startWidths[colIndex];
+        
+        if (isLastColumn) {
+          // Last column: shrinking creates a new empty column
+          let newLeftWidth = leftWidth + deltaUnits;
+          
+          // Enforce min width of 1
+          if (newLeftWidth < 1) newLeftWidth = 1;
+          
+          // Calculate remaining space
+          const totalUsed = row.columns.reduce((sum, col, idx) => 
+            sum + (idx === colIndex ? newLeftWidth : col.width), 0);
+          const remaining = 12 - totalUsed;
+          
+          if (remaining > 0) {
+            // Create or update the new column
+            if (row.columns.length === this.resizeState.startWidths.length) {
+              // Add new empty column
+              row.columns.push({ width: remaining, blocks: [] });
+              this.resizeState.startWidths.push(0); // Track the new column
+            } else {
+              // Update existing new column width
+              row.columns[colIndex + 1].width = remaining;
+            }
+            row.columns[colIndex].width = newLeftWidth;
+          } else if (remaining <= 0) {
+            // Remove the new column if no space
+            if (row.columns.length > this.resizeState.startWidths.length) {
+              row.columns.pop();
+            }
+            row.columns[colIndex].width = leftWidth; // Reset to original
+          }
+        } else {
+          // Normal resize between two columns
+          const rightWidth = this.resizeState.startWidths[colIndex + 1];
+          
+          let newLeftWidth = leftWidth + deltaUnits;
+          let newRightWidth = rightWidth - deltaUnits;
+          
+          // Enforce min width of 1 for each column
+          if (newLeftWidth < 1) {
+            newLeftWidth = 1;
+            newRightWidth = leftWidth + rightWidth - 1;
+          }
+          if (newRightWidth < 1) {
+            newRightWidth = 1;
+            newLeftWidth = leftWidth + rightWidth - 1;
+          }
+          
+          // Apply new widths
+          row.columns[colIndex].width = newLeftWidth;
+          row.columns[colIndex + 1].width = newRightWidth;
+        }
+      },
+      
+      endResize() {
+        this.resizeState.active = false;
+        document.removeEventListener('mousemove', this._doResize);
+        document.removeEventListener('mouseup', this._endResize);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      },
+      
       initSortableColumn(el, rowId, columnIndex) {
         const self = this;
         

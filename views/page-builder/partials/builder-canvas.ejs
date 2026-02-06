@@ -193,26 +193,39 @@
                       @mouseleave="builderState.hoveredBlockId = null"
                       class="relative"
                       :class="[
-                        builderState.mode === 'edit' && builderState.hoveredBlockId === blockId && 'ring-1 ring-gray-300 dark:ring-gray-600',
+                        builderState.mode === 'edit' && builderState.selectedBlockId === blockId && 'ring-2 ring-primary ring-offset-2',
+                        builderState.mode === 'edit' && builderState.hoveredBlockId === blockId && builderState.selectedBlockId !== blockId && 'ring-1 ring-gray-300 dark:ring-gray-600',
                         builderState.mode === 'edit' && 'cursor-pointer transition-all duration-150',
                         row.equalHeight && 'flex-1 flex flex-col [&>.panel]:flex-1 [&>.panel]:h-full'
                       ]">
                       
-                      <!-- Block Popover (on selection) -->
+                      <!-- Block Action Popover (on selection) - positioned inside top-right -->
                       <div 
                         x-show="builderState.mode === 'edit' && builderState.selectedBlockId === blockId"
-                        class="absolute -top-10 right-0 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-1 flex gap-1 z-30">
+                        x-transition:enter="transition ease-out duration-100"
+                        x-transition:enter-start="opacity-0 scale-95"
+                        x-transition:enter-end="opacity-100 scale-100"
+                        class="absolute top-2 right-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-1 flex gap-1 z-50 border border-gray-200 dark:border-gray-700">
+                        <!-- Options Button -->
                         <button 
-                          @click.stop="openDrawer('block-settings')"
-                          title="Settings" 
-                          class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                          ⚙️
+                          @click.stop="builderState.propertyPanelOpen = true"
+                          title="Options" 
+                          class="w-8 h-8 flex items-center justify-center rounded hover:bg-primary/10 hover:text-primary transition-colors">
+                          <iconify-icon icon="solar:settings-bold-duotone" width="18"></iconify-icon>
                         </button>
-                        <button title="Duplicate" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                          📋
+                        <!-- Duplicate Button -->
+                        <button 
+                          @click.stop="duplicateBlock(blockId)"
+                          title="Dupliquer" 
+                          class="w-8 h-8 flex items-center justify-center rounded hover:bg-info/10 hover:text-info transition-colors">
+                          <iconify-icon icon="solar:copy-bold-duotone" width="18"></iconify-icon>
                         </button>
-                        <button title="Delete" class="w-7 h-7 flex items-center justify-center rounded hover:bg-danger/10 hover:text-danger">
-                          🗑️
+                        <!-- Delete Button -->
+                        <button 
+                          @click.stop="deleteBlock(blockId)"
+                          title="Supprimer" 
+                          class="w-8 h-8 flex items-center justify-center rounded hover:bg-danger/10 hover:text-danger transition-colors">
+                          <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="18"></iconify-icon>
                         </button>
                       </div>
 

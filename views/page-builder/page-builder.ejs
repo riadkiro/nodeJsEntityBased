@@ -417,6 +417,35 @@ document.addEventListener('alpine:init', () => {
         this.builderState.selectedBlockId = null;
       },
       
+      duplicateBlock(blockId) {
+        if (!blockId) return;
+        
+        const originalBlock = this.pageConfig.blocks[blockId];
+        if (!originalBlock) return;
+        
+        // Create new block with unique ID
+        const newBlockId = originalBlock.type + '_' + Date.now();
+        
+        // Deep clone the block
+        this.pageConfig.blocks[newBlockId] = JSON.parse(JSON.stringify(originalBlock));
+        this.pageConfig.blocks[newBlockId].title = (originalBlock.title || originalBlock.type) + ' (copie)';
+        
+        // Find the column containing the original block and insert after it
+        const tabId = this.builderState.activeTab;
+        const rows = this.pageConfig.layout[tabId];
+        for (const row of rows) {
+          for (const col of row.columns) {
+            const idx = col.blocks.indexOf(blockId);
+            if (idx !== -1) {
+              col.blocks.splice(idx + 1, 0, newBlockId);
+              // Select the new block
+              this.selectBlock(newBlockId);
+              return;
+            }
+          }
+        }
+      },
+      
       async saveConfig() {
         try {
           const url = this.configId 

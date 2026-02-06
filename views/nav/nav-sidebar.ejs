@@ -548,6 +548,16 @@
             <li x-data="{ hovered: false }">
               <div class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
                 @mouseenter="hovered = true" @mouseleave="hovered = false">
+                <iconify-icon icon="solar:monitor-smartphone-bold-duotone" class="ml-2" width="16" height="16" style="color: #10b981"></iconify-icon>
+                <a href="/account/<%= account_number %>/page-builder/cockpit/new" 
+                  class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors flex-1"
+                  :class="window.location.pathname.includes('/cockpit') ? '!text-primary font-bold' : ''">Cockpit Builder</a>
+                <span class="text-xs bg-success/20 text-success px-1.5 py-0.5 rounded mr-2">New</span>
+              </div>
+            </li>
+            <li x-data="{ hovered: false }">
+              <div class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
+                @mouseenter="hovered = true" @mouseleave="hovered = false">
                 <iconify-icon icon="solar:clipboard-list-bold-duotone" class="ml-2" width="16" height="16"></iconify-icon>
                 <a href="/account/<%= account_number %>/tasks" class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors flex-1">Tasks</a>
               </div>

@@ -181,9 +181,8 @@
                 :style="`grid-column: span ${column.width}`"
                 class="relative transition-all duration-200"
                 :class="[
-                  builderState.mode === 'edit' && 'border-2 border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg hover:border-gray-400 dark:hover:border-gray-500',
+                  builderState.mode === 'edit' && column.blocks.length === 0 && 'border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-400 dark:hover:border-gray-500',
                   builderState.mode === 'edit' && column.blocks.length === 0 && !row.equalHeight && 'h-[90px]',
-                  builderState.mode === 'edit' && column.blocks.length > 0 && !row.equalHeight && 'min-h-[64px]',
                   row.equalHeight && 'flex flex-col h-full'
                 ]">
                 

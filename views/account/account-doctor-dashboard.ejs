@@ -350,102 +350,145 @@
         </style>
       </div>
 
-      <!-- Comms Dock - Communication Center (1/4 = 25%) -->
-      <div class="panel h-full flex flex-col p-0">
-        <div class="flex items-center justify-between border-b border-[#e0e6ed] p-5 dark:border-[#1b2e4b]">
+
+      <!-- Communication Panel (2/4 = 50%) -->
+      <div class="panel h-full p-0 lg:col-span-2">
+        <!-- Unified Header -->
+        <div class="flex items-center justify-between border-b border-[#e0e6ed] px-5 py-4 dark:border-[#1b2e4b]">
           <h5 class="text-lg font-semibold dark:text-white-light">Coordination — Secrétariat</h5>
-          <span class="badge bg-success text-white rounded-full px-3 text-xs">2 en ligne</span>
+          <!-- Filter Avatars with online indicator -->
+          <div class="flex items-center gap-3">
+            <span class="px-2 py-0.5 text-[10px] font-medium rounded-full bg-success/20 text-success">2 en ligne</span>
+            <div class="flex items-center gap-1">
+              <!-- All team filter -->
+              <div class="flex items-center gap-1.5 rounded-full transition-all duration-200" :class="comms.filter === 'all' || !comms.filter ? 'bg-primary/20 pr-3' : ''">
+                <button 
+                  @click="comms.filter = 'all'" 
+                  :class="comms.filter === 'all' || !comms.filter ? '' : 'opacity-60 hover:opacity-100'"
+                  class="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-[11px] font-bold transition-all duration-200"
+                  title="Toute l'équipe">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                </button>
+                <span x-show="comms.filter === 'all' || !comms.filter" class="text-xs text-primary font-medium">Équipe</span>
+              </div>
+              <!-- Fatima -->
+              <div class="flex items-center gap-1.5 rounded-full transition-all duration-200" :class="comms.filter === 'fatima' ? 'bg-success/20 pr-3' : ''">
+                <button 
+                  @click="comms.filter = 'fatima'" 
+                  :class="comms.filter === 'fatima' ? '' : 'opacity-60 hover:opacity-100'"
+                  class="relative h-7 w-7 shrink-0 rounded-full text-white text-[11px] font-bold transition-all duration-200 flex items-center justify-center shadow-sm"
+                  style="background: linear-gradient(135deg, #00ab55 0%, #059669 100%);"
+                  title="Fatima">
+                  F
+                  <span class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-success border-2 border-[#0e1726]"></span>
+                </button>
+                <span x-show="comms.filter === 'fatima'" class="text-xs text-success font-medium">Fatima</span>
+              </div>
+              <!-- Sarah -->
+              <div class="flex items-center gap-1.5 rounded-full transition-all duration-200" :class="comms.filter === 'sarah' ? 'bg-info/20 pr-3' : ''">
+                <button 
+                  @click="comms.filter = 'sarah'" 
+                  :class="comms.filter === 'sarah' ? '' : 'opacity-60 hover:opacity-100'"
+                  class="relative h-7 w-7 shrink-0 rounded-full text-white text-[11px] font-bold transition-all duration-200 flex items-center justify-center shadow-sm"
+                  style="background: linear-gradient(135deg, #2196f3 0%, #0284c7 100%);"
+                  title="Sarah">
+                  S
+                  <span class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-success border-2 border-[#0e1726]"></span>
+                </button>
+                <span x-show="comms.filter === 'sarah'" class="text-xs text-info font-medium">Sarah</span>
+              </div>
+            </div>
+          </div>
         </div>
         
-        <div class="p-5 flex flex-col flex-1">
-          <!-- Quick Actions Grid -->
-          <div class="grid grid-cols-2 gap-2 flex-1">
-            <button @click="sendQuickAction('next_patient')" class="btn btn-sm btn-outline-primary text-xs py-3 flex items-center justify-center gap-1.5">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-              Patient suivant
-            </button>
-            <button @click="sendQuickAction('rdv_3m')" class="btn btn-sm btn-outline-info text-xs py-3 flex items-center justify-center gap-1.5">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-              RDV 3 mois
-            </button>
-            <button @click="sendQuickAction('rdv_6m')" class="btn btn-sm btn-outline-info text-xs py-3 flex items-center justify-center gap-1.5">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-              RDV 6 mois
-            </button>
-            <button @click="sendQuickAction('control_15d')" class="btn btn-sm btn-outline-warning text-xs py-3 flex items-center justify-center gap-1.5">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-              Contrôle 15j
-            </button>
-            <button @click="sendQuickAction('come_now')" class="btn btn-sm btn-outline-danger text-xs py-3 flex items-center justify-center gap-1.5 col-span-2">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-              Viens maintenant !
-            </button>
-          </div>
+        <div class="grid h-[calc(100%-60px)] lg:grid-cols-3 gap-0">
           
-          <!-- Input Section at bottom -->
-          <div class="mt-4 pt-4 border-t border-[#e0e6ed] dark:border-[#1b2e4b]">
-            <select x-model="comms.recipient" class="form-select text-xs py-2 mb-2">
-              <option>À: Toute l'équipe</option>
-              <option>À: Sarah</option>
-              <option>À: Fatima</option>
-            </select>
-            <div class="flex gap-2">
-              <input 
-                x-model="comms.newMessage" 
-                @keydown.enter="sendMessage()" 
-                placeholder="Message..." 
-                class="form-input text-sm py-2" 
-              />
-              <button @click="sendMessage()" class="btn btn-primary px-4 shrink-0">
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Activity Log - WhatsApp Style Chat (1/4 = 25%) -->
-      <div class="panel h-full flex flex-col p-0">
-        <div class="flex items-center justify-between border-b border-[#e0e6ed] p-5 dark:border-[#1b2e4b]">
-          <h5 class="text-lg font-semibold dark:text-white-light">Activité Équipe</h5>
-        </div>
-        <div x-ref="chatMessages" class="p-5 overflow-y-auto flex-1 space-y-3" style="max-height: 440px;">
-          <template x-for="activity in activities" :key="activity.id">
-            <!-- WhatsApp-style message bubble -->
-            <div class="flex gap-2" :class="activity.author === 'Dr' ? 'justify-end' : 'justify-start'">
-              <!-- Avatar for left messages (Secrétariat/Système) -->
-              <div x-show="activity.author !== 'Dr'" 
-                   class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-                   :class="'bg-' + activity.type + '/20 text-' + activity.type">
-                <span x-text="activity.icon"></span>
+          <!-- Comms Dock - Quick Actions (1/3) -->
+          <div class="flex flex-col border-r border-[#e0e6ed] dark:border-[#1b2e4b] lg:col-span-1">
+            <div class="p-5 flex flex-col flex-1">
+              <!-- Quick Actions Grid -->
+              <div class="grid grid-cols-2 gap-2 flex-1">
+                <button @click="sendQuickAction('next_patient')" class="rounded-lg px-3 py-2 text-xs bg-primary/10 text-primary hover:bg-primary/20 transition flex items-center justify-center gap-1.5">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  Patient suivant
+                </button>
+                <button @click="sendQuickAction('rdv_3m')" class="rounded-lg px-3 py-2 text-xs text-info hover:bg-[#2196f3]/20 transition flex items-center justify-center gap-1.5" style="background: rgba(33, 150, 243, 0.1);">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  RDV 3 mois
+                </button>
+                <button @click="sendQuickAction('rdv_6m')" class="rounded-lg px-3 py-2 text-xs text-info hover:bg-[#2196f3]/20 transition flex items-center justify-center gap-1.5" style="background: rgba(33, 150, 243, 0.1);">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  RDV 6 mois
+                </button>
+                <button @click="sendQuickAction('control_15d')" class="rounded-lg px-3 py-2 text-xs text-warning hover:bg-[#e2a03f]/20 transition flex items-center justify-center gap-1.5" style="background: rgba(226, 160, 63, 0.1);">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  Contrôle 15j
+                </button>
+                <button @click="sendQuickAction('come_now')" class="rounded-lg px-3 py-2 text-xs bg-danger/10 text-danger hover:bg-danger/20 transition flex items-center justify-center gap-1.5 col-span-2">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  Viens maintenant !
+                </button>
               </div>
               
-              <!-- Message bubble -->
-              <div class="max-w-[75%]">
-                <!-- Author name (only for non-Dr messages) -->
-                <div x-show="activity.author !== 'Dr'" class="text-xs text-white-dark mb-1 px-1" x-text="activity.author"></div>
-                
-                <!-- Bubble content -->
-                <div class="rounded-lg px-3 py-2" 
-                     :class="activity.author === 'Dr' ? ('bg-' + activity.type + '/20 text-' + activity.type) : 'bg-dark text-white-light'">
-                  <div class="text-sm" x-text="activity.title"></div>
-                  <div class="flex items-center justify-between gap-3 mt-1">
-                    <span x-show="activity.badge" 
-                          class="badge text-[10px] px-2 py-0.5 bg-danger" 
-                          x-text="activity.badge">
-                    </span>
-                    <span class="text-[10px] opacity-70 ml-auto" x-text="activity.time"></span>
-                  </div>
+              <!-- Input Section at bottom -->
+              <div class="mt-4 pt-4 border-t border-[#e0e6ed] dark:border-[#1b2e4b]">
+                <div class="flex gap-2">
+                  <input 
+                    x-model="comms.newMessage" 
+                    @keydown.enter="sendMessage()" 
+                    placeholder="Message..." 
+                    class="form-input text-sm py-2" 
+                  />
+                  <button @click="sendMessage()" class="btn btn-primary px-4 shrink-0">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                  </button>
                 </div>
               </div>
-              
-              <!-- Avatar for right messages (Dr) -->
-              <div x-show="activity.author === 'Dr'" 
-                   class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">
-                Dr
-              </div>
             </div>
-          </template>
+          </div>
+
+          <!-- Activity Log - WhatsApp Style Chat (2/3) -->
+          <div class="flex flex-col lg:col-span-2">
+            <div x-ref="chatMessages" class="p-5 overflow-y-auto flex-1 space-y-3" style="max-height: 440px;">
+              <template x-for="activity in activities" :key="activity.id">
+                <!-- WhatsApp-style message bubble -->
+                <div class="flex gap-2" :class="activity.author === 'Dr' ? 'justify-end' : 'justify-start'">
+                  <!-- Avatar for left messages (Secrétariat/Système) -->
+                  <div x-show="activity.author !== 'Dr'" 
+                       class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                       :class="'bg-' + activity.type + '/20 text-' + activity.type">
+                    <span x-text="activity.icon"></span>
+                  </div>
+                  
+                  <!-- Message bubble -->
+                  <div class="max-w-[75%]">
+                    <!-- Author name (only for non-Dr messages) -->
+                    <div x-show="activity.author !== 'Dr'" class="text-xs text-white-dark mb-1 px-1" x-text="activity.author"></div>
+                    
+                    <!-- Bubble content -->
+                    <div class="rounded-lg px-3 py-2" 
+                         :class="activity.author === 'Dr' ? ('bg-' + activity.type + '/20 text-' + activity.type) : 'bg-dark text-white-light'">
+                      <div class="text-sm" x-text="activity.title"></div>
+                      <div class="flex items-center justify-between gap-3 mt-1">
+                        <span x-show="activity.badge" 
+                              class="badge text-[10px] px-2 py-0.5 bg-danger" 
+                              x-text="activity.badge">
+                        </span>
+                        <span class="text-[10px] opacity-70 ml-auto" x-text="activity.time"></span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Avatar for right messages (Dr) -->
+                  <div x-show="activity.author === 'Dr'" 
+                       class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">
+                    Dr
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+          
         </div>
       </div>
     </div>
@@ -1045,7 +1088,8 @@ document.addEventListener('alpine:init', () => {
         { id: 3, from: 'Fatima', text: 'Ordonnance envoyée à la pharmacie', context: 'Patient: Saidi', time: '10:12', received: true }
       ],
       newMessage: '',
-      recipient: 'À: Sarah',
+      recipient: 'team',
+      filter: 'all',
       secretaries: [
         { id: 1, name: 'Sarah', online: true, avatar: 'S', color: 'success' },
         { id: 2, name: 'Fatima', online: true, avatar: 'F', color: 'info' }

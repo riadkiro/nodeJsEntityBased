@@ -1,0 +1,1146 @@
+<style>
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+</style>
+<div x-data="doctorDashboard" @keydown.escape="patientDrawerOpen = false">
+  <%- include("../nav/nav-breadcrumb") %>
+  
+  <div class="pt-5">
+    <!-- ROW 1: Main Status Cards -->
+    <div class="mb-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      
+      <!-- Card A: Today Status (Live) -->
+      <div class="panel h-full">
+        <div class="mb-5 flex items-center justify-between dark:text-white-light">
+          <h5 class="text-lg font-semibold">Aujourd'hui</h5>
+          <span class="badge bg-primary/10 text-primary rounded-full px-3 py-1 text-xs">Clinique A</span>
+        </div>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-white-dark">Patients du jour</span>
+            <span class="text-2xl font-bold text-primary">18</span>
+          </div>
+          <div class="grid grid-cols-3 gap-4 text-center">
+            <div class="rounded-lg bg-success/10 p-3">
+              <div class="text-xl font-bold text-success">7</div>
+              <div class="text-xs text-white-dark">Vus</div>
+            </div>
+            <div class="rounded-lg bg-warning/10 p-3">
+              <div class="text-xl font-bold text-warning">11</div>
+              <div class="text-xs text-white-dark">Restants</div>
+            </div>
+            <div class="rounded-lg bg-danger/10 p-3">
+              <div class="text-xl font-bold text-danger">+12m</div>
+              <div class="text-xs text-white-dark">Retard</div>
+            </div>
+          </div>
+          <!-- Progress bar -->
+          <div class="mt-4">
+            <div class="mb-2 flex justify-between text-xs">
+              <span class="text-white-dark">Progression journée</span>
+              <span class="text-success">39%</span>
+            </div>
+            <div class="h-5 w-full overflow-hidden rounded-full bg-dark-light p-1 shadow-3xl dark:bg-dark-light/10 dark:shadow-none">
+              <div class="relative h-full w-full rounded-full bg-gradient-to-r from-[#00ab55] to-[#4361ee] before:absolute before:inset-y-0 before:m-auto before:h-2 before:w-2 before:rounded-full before:bg-white ltr:before:right-0.5 rtl:before:left-0.5" style="width: 39%"></div>
+            </div>
+          </div>
+          <!-- CTA Buttons -->
+          <div class="mt-4 flex gap-2">
+            <button class="btn btn-primary btn-sm flex-1">
+              <svg class="h-4 w-4 ltr:mr-1 rtl:ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Nouveau Patient
+            </button>
+            <button class="btn btn-outline-primary btn-sm flex-1">
+              <svg class="h-4 w-4 ltr:mr-1 rtl:ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              RDV
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Card B: Urgency Radar -->
+      <div class="panel h-full">
+        <div class="mb-5 flex items-center justify-between dark:text-white-light">
+          <h5 class="text-lg font-semibold">Radar Urgences</h5>
+          <span class="relative flex h-3 w-3">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-danger opacity-75"></span>
+            <span class="relative inline-flex h-3 w-3 rounded-full bg-danger"></span>
+          </span>
+        </div>
+        <div class="space-y-4">
+          <div class="flex items-center gap-3 rounded-lg p-3" style="border: 1px solid rgba(231, 81, 90, 0.3); background: rgba(231, 81, 90, 0.1);">
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-danger text-white">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </div>
+            <div>
+              <div class="font-semibold text-danger">3 Cas Urgents</div>
+              <div class="text-xs text-white-dark">Nécessitent attention immédiate</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 rounded-lg p-3" style="border: 1px solid rgba(226, 160, 63, 0.3); background: rgba(226, 160, 63, 0.1);">
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-warning text-white">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            </div>
+            <div>
+              <div class="font-semibold text-warning">1 Résultat Critique</div>
+              <div class="text-xs text-white-dark">Labo à consulter</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 rounded-lg p-3" style="border: 1px solid rgba(33, 150, 243, 0.3); background: rgba(33, 150, 243, 0.1);">
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-info text-white">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+            <div>
+              <div class="font-semibold text-info">2 Approbations</div>
+              <div class="text-xs text-white-dark">En attente de signature</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Card C: Next Patient (Focus Card) -->
+      <div class="panel h-full overflow-hidden" style="background: linear-gradient(135deg, #4361ee 0%, #2196f3 100%);">
+        <div class="relative z-10">
+          <div class="mb-4 flex items-center justify-between text-white/90">
+            <h5 class="text-lg font-semibold text-white">Prochain Patient</h5>
+            <span class="rounded-full bg-white/20 px-3 py-1 text-xs">09:40</span>
+          </div>
+          <div class="mb-4 flex items-center gap-4">
+            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-2xl font-bold text-white">SA</div>
+            <div class="text-white">
+              <div class="text-xl font-bold">Sara El Amrani</div>
+              <div class="text-sm text-white/80">Douleur thoracique</div>
+            </div>
+          </div>
+          <div class="mb-4 flex gap-4 text-sm text-white/80">
+            <div class="flex items-center gap-1">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <span>Attente: 23 min</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              <span>Contrôle</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="btn bg-white text-primary btn-sm font-semibold hover:bg-white/90">
+              Démarrer Consultation
+            </button>
+            <button class="btn btn-outline-white btn-sm border-white/50 text-white hover:bg-white/20">
+              Voir Dossier
+            </button>
+            <button class="btn btn-outline-white btn-sm border-white/50 text-white hover:bg-white/20">
+              Ordonnance
+            </button>
+            <button class="btn btn-outline-white btn-sm border-white/50 text-white hover:bg-white/20">
+              Demander Labo
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 2: Waiting Room + Communication Dock (50/25/25) -->
+    <div class="mb-6 grid gap-6 lg:grid-cols-4">
+      
+      <!-- Salle d'Attente - Compact Timeline (2/4 = 50%) -->
+      <div class="panel h-full p-0 lg:col-span-2">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-[#e0e6ed] p-5 dark:border-[#1b2e4b]">
+          <h5 class="text-lg font-semibold dark:text-white-light">Salle d'Attente</h5>
+          <div class="flex items-center gap-2">
+            <div class="flex gap-1">
+              <button class="btn btn-sm btn-primary">Tous</button>
+              <button class="btn btn-sm btn-outline-primary">En attente</button>
+              <button class="btn btn-sm btn-outline-danger">Urgent</button>
+              <button class="btn btn-sm btn-outline-warning">Retard</button>
+              <button class="btn btn-sm btn-outline-success">Traité</button>
+            </div>
+            <span class="badge bg-dark text-white rounded-full px-3">8 patients</span>
+          </div>
+        </div>
+        
+        <div class="p-5">
+          <!-- Container avec hauteur fixe et scroll permanent -->
+          <div class="overflow-y-auto space-y-1" style="max-height: 400px;">
+            <!-- Patients terminés (vus) -->
+            <div class="flex items-center gap-3 py-2 px-3 rounded hover:bg-white-light/5 transition cursor-pointer opacity-60">
+              <span class="w-14 text-sm text-white-dark shrink-0">08:00</span>
+              <div class="flex items-center gap-3 flex-1">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-success/20 text-success shrink-0">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <div class="flex-1">
+                  <div class="font-medium dark:text-white-light text-sm">M. Saidi</div>
+                  <div class="text-xs text-white-dark">Consultation générale</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-3 py-2 px-3 rounded hover:bg-white-light/5 transition cursor-pointer opacity-60">
+              <span class="w-14 text-sm text-white-dark shrink-0">09:00</span>
+              <div class="flex items-center gap-3 flex-1">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-success/20 text-success shrink-0">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <div class="flex-1">
+                  <div class="font-medium dark:text-white-light text-sm">A. Hassan</div>
+                  <div class="text-xs text-white-dark">Suivi diabète</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Patient en cours - avec animation subtile -->
+            <div class="flex items-center gap-3 py-2 px-3 rounded transition cursor-pointer" 
+                 style="background: rgba(67, 97, 238, 0.1); animation: subtle-glow 2s ease-in-out infinite;"
+                 @click="openPatientDrawer({
+                   initials: 'SE',
+                   name: 'S. El Amrani',
+                   age: 45,
+                   gender: 'Femme',
+                   vitals: { tension: '140/90', temperature: '38.2°C', pulse: '72 bpm', spo2: '98%' },
+                   allergies: ['Pénicilline', 'Aspir ine'],
+                   lastVisit: { date: '15 Janvier 2026 - Consultation générale', prescription: 'Prescription: Amoxicilline 500mg, 3x/jour' }
+                 })">
+              <span class="w-14 text-sm text-primary font-bold shrink-0">09:40</span>
+              <div class="flex items-center gap-3 flex-1">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary font-bold shrink-0">SE</div>
+                <div class="flex-1">
+                  <div class="font-semibold dark:text-white-light text-sm">
+                    S. El Amrani
+                    <span class="text-primary text-xs ml-2">• En cours</span>
+                  </div>
+                  <div class="text-xs text-white-dark">Douleur thoracique aiguë</div>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-primary rounded-full p-1.5 shrink-0">
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            </div>
+            
+            <!-- Patient suivant - légère animation -->
+            <div class="flex items-center gap-3 py-2 px-3 rounded hover:bg-primary/5 transition cursor-pointer" style="animation: subtle-fade 3s ease-in-out infinite;">
+              <span class="w-14 text-sm text-white-dark shrink-0">10:30</span>
+              <div class="flex items-center gap-3 flex-1">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-info/20 text-info font-bold shrink-0">KB</div>
+                <div class="flex-1">
+                  <div class="font-semibold dark:text-white-light text-sm">
+                    K. Benjelloun
+                    <span class="text-info text-xs ml-2">• Suivant</span>
+                  </div>
+                  <div class="text-xs text-white-dark">Suivi tension artérielle - Contrôle</div>
+                </div>
+              </div>
+              <div class="flex gap-1 shrink-0">
+                <button class="btn btn-sm btn-outline-success rounded-full p-1.5">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </button>
+                <button class="btn btn-sm btn-primary rounded-full p-1.5">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Autres patients -->
+            <div class="flex items-center gap-3 py-2 px-3 rounded hover:bg-primary/5 transition cursor-pointer">
+              <span class="w-14 text-sm text-white-dark shrink-0">11:00</span>
+              <div class="flex items-center gap-3 flex-1">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-warning/20 text-warning font-bold shrink-0">LH</div>
+                <div class="flex-1">
+                  <div class="font-semibold dark:text-white-light text-sm">
+                    L. Hamdani
+                    <span class="text-warning text-xs ml-2">• Nouveau</span>
+                  </div>
+                  <div class="text-xs text-white-dark">Première visite - Bilan général</div>
+                </div>
+              </div>
+              <div class="flex gap-1 shrink-0">
+                <button class="btn btn-sm btn-outline-success rounded-full p-1.5">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </button>
+                <button class="btn btn-sm btn-primary rounded-full p-1.5">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-3 py-2 px-3 rounded hover:bg-primary/5 transition cursor-pointer" style="background: rgba(226, 160, 63, 0.05);">
+              <span class="w-14 text-sm text-white-dark shrink-0">14:00</span>
+              <div class="flex items-center gap-3 flex-1">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-warning/20 text-warning shrink-0">🏥</div>
+                <div class="flex-1">
+                  <div class="font-semibold dark:text-white-light text-sm">
+                    Opération - Clinique Badr
+                    <span class="text-warning text-xs ml-2">• Externe</span>
+                  </div>
+                  <div class="text-xs text-white-dark">Chirurgie mineure</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-3 py-2 px-3 rounded hover:bg-primary/5 transition cursor-pointer">
+              <span class="w-14 text-sm text-white-dark shrink-0">16:00</span>
+              <div class="flex items-center gap-3 flex-1">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/20 text-secondary font-bold shrink-0">FZ</div>
+                <div class="flex-1">
+                  <div class="font-semibold dark:text-white-light text-sm">
+                    F. Zahra
+                    <span class="text-secondary text-xs ml-2">• Téléconsult.</span>
+                  </div>
+                  <div class="text-xs text-white-dark">Suivi - Résultats analyses</div>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-primary rounded-full p-1.5 shrink-0">
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            </div>
+            
+            <div class="flex items-center gap-3 py-2 px-3 rounded hover:bg-primary/5 transition cursor-pointer">
+              <span class="w-14 text-sm text-white-dark shrink-0">17:00</span>
+              <div class="flex items-center gap-3 flex-1">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/20 text-purple-500 font-bold shrink-0">MA</div>
+                <div class="flex-1">
+                  <div class="font-semibold dark:text-white-light text-sm">
+                    M. Alami
+                    <span class="text-purple-500 text-xs ml-2">• Consultation</span>
+                  </div>
+                  <div class="text-xs text-white-dark">Résultats analyses</div>
+                </div>
+              </div>
+              <div class="flex gap-1 shrink-0">
+                <button class="btn btn-sm btn-outline-success rounded-full p-1.5">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </button>
+                <button class="btn btn-sm btn-primary rounded-full p-1.5">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 
+          STYLE REFERENCE: Doctor Dashboard Waiting Room
+          Design Pattern: Compact Timeline with Status Badges
+          
+          Colors:
+          - Background hover: rgba(67, 97, 238, 0.1) for active
+          - Border: border-[#e0e6ed] dark:border-[#1b2e4b]
+          - Text: text-white-dark for secondary info
+          
+          Layout:
+          - Time on left (w-14, shrink-0)
+          - Avatar (h-8 w-8 rounded-full)
+          - Status badge INLINE with name (before name)
+          - Motif on second line (text-xs)
+          - Actions on right (shrink-0)
+          
+          Animations:
+          - subtle-glow: for current patient (opacity 1→0.95)
+          - subtle-fade: for next patient (opacity 1→0.92)
+        -->
+        <style>
+          @keyframes subtle-fade {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.92; }
+          }
+          @keyframes subtle-glow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.95; }
+          }
+        </style>
+      </div>
+
+      <!-- Comms Dock - Communication Center (1/4 = 25%) -->
+      <div class="panel h-full flex flex-col p-0">
+        <div class="flex items-center justify-between border-b border-[#e0e6ed] p-5 dark:border-[#1b2e4b]">
+          <h5 class="text-lg font-semibold dark:text-white-light">Coordination — Secrétariat</h5>
+          <span class="badge bg-success text-white rounded-full px-3 text-xs">2 en ligne</span>
+        </div>
+        
+        <div class="p-5 flex flex-col flex-1">
+          <!-- Quick Actions Grid -->
+          <div class="mb-4 grid grid-cols-2 gap-2">
+            <button @click="sendQuickAction('call')" class="btn btn-sm btn-outline-success text-xs py-2 flex items-center justify-center gap-1">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              Appeler
+            </button>
+            <button @click="sendQuickAction('prescription')" class="btn btn-sm btn-outline-primary text-xs py-2 flex items-center justify-center gap-1">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              Ordonnance
+            </button>
+            <button @click="sendQuickAction('lab')" class="btn btn-sm btn-outline-info text-xs py-2 flex items-center justify-center gap-1">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path></svg>
+              Labo
+            </button>
+            <button @click="sendQuickAction('rdv')" class="btn btn-sm btn-outline-warning text-xs py-2 flex items-center justify-center gap-1">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              RDV
+            </button>
+            <button @click="sendQuickAction('print')" class="btn btn-sm btn-outline-secondary text-xs py-2 flex items-center justify-center gap-1">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+              Imprimer
+            </button>
+            <button @click="sendQuickAction('urgent')" class="btn btn-sm btn-outline-danger text-xs py-2 flex items-center justify-center gap-1">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              Urgence
+            </button>
+          </div>
+          
+          <!-- Messages Area -->
+          <div class="flex-1 overflow-y-auto mb-3 space-y-2" style="max-height: 180px;">
+            <template x-for="msg in comms.messages" :key="msg.id">
+              <div class="flex gap-2" :class="msg.received ? '' : 'justify-end'">
+                <div x-show="msg.received" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold" :class="'bg-' + (msg.from === 'Sarah' ? 'success' : 'info') + '/20 text-' + (msg.from === 'Sarah' ? 'success' : 'info')" x-text="msg.from[0]"></div>
+                <div class="max-w-[75%]">
+                  <div x-show="msg.context" class="text-[10px] text-primary mb-0.5" x-text="msg.context"></div>
+                  <div class="rounded-lg px-3 py-1.5 text-xs" :class="msg.received ? 'bg-dark text-white-light' : 'bg-primary text-white'">
+                    <div x-text="msg.text"></div>
+                    <div class="text-[10px] mt-0.5 opacity-70" x-text="msg.time"></div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+          
+          <!-- Input Section -->
+          <div class="mt-auto">
+            <select x-model="comms.recipient" class="form-select text-xs py-1 mb-2">
+              <option>À: Sarah</option>
+              <option>À: Fatima</option>
+              <option>À: Toute l'équipe</option>
+            </select>
+            <div class="flex gap-2">
+              <textarea x-model="comms.newMessage" placeholder="Message..." rows="2" class="form-textarea text-xs resize-none"></textarea>
+              <button @click="sendMessage()" class="btn btn-primary px-3 shrink-0">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Feed - Team Timeline (1/4 = 25%) -->
+      <div class="panel h-full">
+        <div class="mb-5 flex items-center justify-between dark:text-white-light">
+          <h5 class="text-lg font-semibold">Activité Équipe</h5>
+        </div>
+        <div class="overflow-y-auto space-y-3" style="max-height: 400px;">
+          <template x-for="activity in activities" :key="activity.id">
+            <div class="flex gap-3">
+              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold" :class="'bg-' + activity.type + '/20 text-' + activity.type" x-text="activity.icon"></div>
+              <div class="flex-1">
+                <div class="text-sm font-medium dark:text-white-light mb-0.5" x-text="activity.title"></div>
+                <div class="text-xs text-white-dark" x-text="activity.author + ' • ' + activity.time"></div>
+                <span x-show="activity.badge" class="badge text-xs mt-1" :class="'bg-' + activity.type" x-text="activity.badge"></span>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 3: Clinical Activity (moved down) -->
+    <div class="mb-6">
+
+      <!-- Clinical Activity Log (1/3) -->
+      <div class="panel h-full">
+        <div class="-mx-5 mb-5 flex items-start justify-between border-b border-[#e0e6ed] p-5 pt-0 dark:border-[#1b2e4b] dark:text-white-light">
+          <h5 class="text-lg font-semibold">Activité Clinique</h5>
+        </div>
+        <div class="perfect-scrollbar relative -mr-3 h-[360px] pr-3">
+          <div class="space-y-7">
+            <div class="flex">
+              <div class="relative z-10 before:absolute before:top-10 before:left-4 before:h-[calc(100%-24px)] before:w-[2px] before:bg-white-dark/30 ltr:mr-2 rtl:ml-2">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-success text-white shadow shadow-success">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                </div>
+              </div>
+              <div>
+                <h5 class="font-semibold dark:text-white-light">Ordonnance envoyée pharmacie</h5>
+                <p class="text-xs text-white-dark">Il y a 5 min</p>
+              </div>
+            </div>
+            <div class="flex">
+              <div class="relative z-10 before:absolute before:top-10 before:left-4 before:h-[calc(100%-24px)] before:w-[2px] before:bg-white-dark/30 ltr:mr-2 rtl:ml-2">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-warning text-white">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                </div>
+              </div>
+              <div>
+                <h5 class="font-semibold dark:text-white-light">Résultat labo reçu <span class="text-warning">(Critique)</span></h5>
+                <p class="text-xs text-white-dark">Il y a 12 min</p>
+              </div>
+            </div>
+            <div class="flex">
+              <div class="relative z-10 before:absolute before:top-10 before:left-4 before:h-[calc(100%-24px)] before:w-[2px] before:bg-white-dark/30 ltr:mr-2 rtl:ml-2">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
+                </div>
+              </div>
+              <div>
+                <h5 class="font-semibold dark:text-white-light">Patient en consultation</h5>
+                <p class="text-xs text-white-dark">Il y a 18 min</p>
+              </div>
+            </div>
+            <div class="flex">
+              <div class="relative z-10 before:absolute before:top-10 before:left-4 before:h-[calc(100%-24px)] before:w-[2px] before:bg-white-dark/30 ltr:mr-2 rtl:ml-2">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-info text-white">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line></svg>
+                </div>
+              </div>
+              <div>
+                <h5 class="font-semibold dark:text-white-light">Chirurgie confirmée Clinique Badr</h5>
+                <p class="text-xs text-white-dark">Il y a 45 min</p>
+              </div>
+            </div>
+            <div class="flex">
+              <div class="relative z-10 before:absolute before:top-10 before:left-4 before:h-[calc(100%-24px)] before:w-[2px] before:bg-white-dark/30 ltr:mr-2 rtl:ml-2">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-danger text-white">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </div>
+              </div>
+              <div>
+                <h5 class="font-semibold dark:text-white-light">Urgence signalée</h5>
+                <p class="text-xs text-white-dark">Il y a 1h</p>
+              </div>
+            </div>
+            <div class="flex">
+              <div class="ltr:mr-2 rtl:ml-2">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-white">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                </div>
+              </div>
+              <div>
+                <h5 class="font-semibold dark:text-white-light">Facture générée</h5>
+                <p class="text-xs text-white-dark">Il y a 2h</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 3: Timeline + Stats + Tasks -->
+    <div class="mb-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+      
+      <!-- Consultations d'Aujourd'hui -->
+      <div class="panel h-full">
+        <div class="mb-5 flex items-center justify-between dark:text-white-light">
+          <h5 class="text-lg font-semibold">Consultations</h5>
+          <span class="badge bg-primary rounded-full">Aujourd'hui</span>
+        </div>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="flex h-8 w-8 items-center justify-center rounded-full bg-success/20 text-success">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </span>
+              <span class="text-sm dark:text-white-light">Terminées</span>
+            </div>
+            <span class="text-xl font-bold text-success">7</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </span>
+              <span class="text-sm dark:text-white-light">En cours</span>
+            </div>
+            <span class="text-xl font-bold text-primary">1</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="flex h-8 w-8 items-center justify-center rounded-full bg-warning/20 text-warning">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              </span>
+              <span class="text-sm dark:text-white-light">En attente</span>
+            </div>
+            <span class="text-xl font-bold text-warning">5</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="flex h-8 w-8 items-center justify-center rounded-full bg-danger/20 text-danger">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+              </span>
+              <span class="text-sm dark:text-white-light">Urgents</span>
+            </div>
+            <span class="text-xl font-bold text-danger">2</span>
+          </div>
+          <div class="mt-4 pt-4 border-t border-[#e0e6ed] dark:border-[#1b2e4b]">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-white-dark">Total programmé</span>
+              <span class="text-xl font-bold dark:text-white-light">15</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Quick Insights -->
+      <div class="panel h-full">
+        <div class="mb-5 flex items-center justify-between dark:text-white-light">
+          <h5 class="text-lg font-semibold">Statistiques Rapides</h5>
+        </div>
+        <div class="space-y-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-2xl font-bold text-primary">62</div>
+              <div class="text-xs text-white-dark">Patients cette semaine</div>
+            </div>
+            <div class="h-10 w-20">
+              <svg viewBox="0 0 80 40" class="w-full h-full"><path d="M0 35 L15 28 L30 32 L45 20 L60 25 L80 10" fill="none" stroke="#4361ee" stroke-width="2"/></svg>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-2xl font-bold text-warning">12%</div>
+              <div class="text-xs text-white-dark">Taux absence</div>
+            </div>
+            <div class="h-10 w-20">
+              <svg viewBox="0 0 80 40" class="w-full h-full"><path d="M0 20 L15 25 L30 15 L45 22 L60 18 L80 25" fill="none" stroke="#e2a03f" stroke-width="2"/></svg>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-2xl font-bold text-success">17 min</div>
+              <div class="text-xs text-white-dark">Durée moyenne consultation</div>
+            </div>
+            <div class="h-10 w-20">
+              <svg viewBox="0 0 80 40" class="w-full h-full"><path d="M0 30 L15 25 L30 28 L45 22 L60 20 L80 18" fill="none" stroke="#00ab55" stroke-width="2"/></svg>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-2xl font-bold text-info">Respiratoire</div>
+              <div class="text-xs text-white-dark">Motif le plus fréquent</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Alerts & Tasks -->
+      <div class="panel h-full">
+        <div class="mb-5 flex items-center justify-between dark:text-white-light">
+          <h5 class="text-lg font-semibold">Tâches & Alertes</h5>
+        </div>
+        <div class="space-y-3">
+          <label class="flex items-center gap-3 cursor-pointer rounded-lg border border-[#e0e6ed] dark:border-[#1b2e4b] p-3 hover:bg-primary/5">
+            <input type="checkbox" class="form-checkbox rounded-full">
+            <div class="flex-1">
+              <div class="font-medium dark:text-white-light">Consulter résultats labo</div>
+              <div class="text-xs text-white-dark">2 résultats en attente</div>
+            </div>
+            <span class="badge bg-warning/10 text-warning rounded-full">2</span>
+          </label>
+          <label class="flex items-center gap-3 cursor-pointer rounded-lg border border-[#e0e6ed] dark:border-[#1b2e4b] p-3 hover:bg-primary/5">
+            <input type="checkbox" class="form-checkbox rounded-full">
+            <div class="flex-1">
+              <div class="font-medium dark:text-white-light">Signer certificat médical</div>
+              <div class="text-xs text-white-dark">M. Bennani</div>
+            </div>
+            <span class="badge bg-info/10 text-info rounded-full">1</span>
+          </label>
+          <label class="flex items-center gap-3 cursor-pointer rounded-lg border border-[#e0e6ed] dark:border-[#1b2e4b] p-3 hover:bg-primary/5">
+            <input type="checkbox" class="form-checkbox rounded-full">
+            <div class="flex-1">
+              <div class="font-medium dark:text-white-light">Rappels de suivi</div>
+              <div class="text-xs text-white-dark">Patients à recontacter</div>
+            </div>
+            <span class="badge bg-primary/10 text-primary rounded-full">3</span>
+          </label>
+          <label class="flex items-center gap-3 cursor-pointer rounded-lg border border-[#e0e6ed] dark:border-[#1b2e4b] p-3 hover:bg-primary/5">
+            <input type="checkbox" class="form-checkbox rounded-full">
+            <div class="flex-1">
+              <div class="font-medium dark:text-white-light">Rappeler patient</div>
+              <div class="text-xs text-white-dark">Mme El Fassi</div>
+            </div>
+            <span class="badge bg-danger/10 text-danger rounded-full">1</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 4: Medical Stats (Pixel Perfect Template) -->
+    <div class="mb-6 grid gap-6 sm:grid-cols-3 xl:grid-cols-5">
+      <!-- Top Médicaments Prescrits -->
+      <div class="panel h-full sm:col-span-3 xl:col-span-2">
+        <div class="mb-5 flex items-start justify-between">
+          <h5 class="text-lg font-semibold dark:text-white-light">
+            Top Médicaments Prescrits
+          </h5>
+        </div>
+        <div class="flex flex-col space-y-5">
+          <div class="flex items-center">
+            <div class="h-9 w-9">
+              <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary dark:bg-primary dark:text-white-light">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 12.5L9.5 7.5L14.5 12.5L19.5 7.5" stroke-linecap="round" stroke-linejoin="round"/><path opacity="0.5" d="M4.5 17.5L9.5 12.5L14.5 17.5L19.5 12.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div class="w-full flex-initial px-3">
+              <div class="w-summary-info mb-1 flex justify-between font-semibold text-white-dark">
+                <h6>Amoxicilline 500mg</h6>
+                <p class="text-xs ltr:ml-auto rtl:mr-auto">45%</p>
+              </div>
+              <div>
+                <div class="h-5 w-full overflow-hidden rounded-full bg-dark-light p-1 shadow-3xl dark:bg-dark-light/10 dark:shadow-none">
+                  <div class="relative h-full w-full rounded-full bg-gradient-to-r from-[#4361ee] to-[#805dca] before:absolute before:inset-y-0 before:m-auto before:h-2 before:w-2 before:rounded-full before:bg-white ltr:before:right-0.5 rtl:before:left-0.5" style="width: 45%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center">
+            <div class="h-9 w-9">
+              <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-danger/10 text-danger dark:bg-danger dark:text-white-light">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10" opacity="0.5"/><path d="M12 8V12L15 15"/></svg>
+              </div>
+            </div>
+            <div class="w-full flex-initial px-3">
+              <div class="w-summary-info mb-1 flex justify-between font-semibold text-white-dark">
+                <h6>Doliprane 1000mg</h6>
+                <p class="text-xs ltr:ml-auto rtl:mr-auto">32%</p>
+              </div>
+              <div>
+                <div class="h-5 w-full overflow-hidden rounded-full bg-dark-light p-1 shadow-3xl dark:bg-dark-light/10 dark:shadow-none">
+                  <div class="relative h-full w-full rounded-full bg-gradient-to-r from-[#e7515a] to-[#f3727a] before:absolute before:inset-y-0 before:m-auto before:h-2 before:w-2 before:rounded-full before:bg-white ltr:before:right-0.5 rtl:before:left-0.5" style="width: 32%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center">
+            <div class="h-9 w-9">
+              <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-success/10 text-success dark:bg-success dark:text-white-light">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L12 22" opacity="0.5"/><path d="M2 12H22"/></svg>
+              </div>
+            </div>
+            <div class="w-full flex-initial px-3">
+              <div class="w-summary-info mb-1 flex justify-between font-semibold text-white-dark">
+                <h6>Augmentin 1g</h6>
+                <p class="text-xs ltr:ml-auto rtl:mr-auto">18%</p>
+              </div>
+              <div>
+                <div class="h-5 w-full overflow-hidden rounded-full bg-dark-light p-1 shadow-3xl dark:bg-dark-light/10 dark:shadow-none">
+                  <div class="relative h-full w-full rounded-full bg-gradient-to-r from-[#00ab55] to-[#00e676] before:absolute before:inset-y-0 before:m-auto before:h-2 before:w-2 before:rounded-full before:bg-white ltr:before:right-0.5 rtl:before:left-0.5" style="width: 18%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Consultations / Jour (7 derniers jours) -->
+      <div class="panel h-full p-0">
+        <div class="flex p-5">
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary dark:bg-primary dark:text-white-light">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="6" r="4"/><path opacity="0.5" d="M18 9C19.6569 9 21 7.88071 21 6.5C21 5.11929 19.6569 4 18 4"/><path opacity="0.5" d="M6 9C4.34315 9 3 7.88071 3 6.5C3 5.11929 4.34315 4 6 4"/><ellipse cx="12" cy="17" rx="6" ry="4"/></svg>
+          </div>
+          <div class="font-semibold ltr:ml-3 rtl:mr-3">
+            <p class="text-xl dark:text-white-light">98</p>
+            <h5 class="text-xs text-[#506690]">Consultations / 7j</h5>
+          </div>
+        </div>
+        <div class="h-40">
+          <div x-ref="consultationsChart" class="absolute bottom-0 w-full"></div>
+        </div>
+      </div>
+
+      <!-- Temps Moyen Consultation -->
+      <div class="panel h-full p-0">
+        <div class="flex p-5">
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-warning/10 text-warning dark:bg-warning dark:text-white-light">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14" opacity="0.5"/></svg>
+          </div>
+          <div class="font-semibold ltr:ml-3 rtl:mr-3">
+            <p class="text-xl dark:text-white-light">17 min</p>
+            <h5 class="text-xs text-[#506690]">Temps Moyen / 7j</h5>
+          </div>
+        </div>
+        <div class="h-40">
+          <div x-ref="avgTimeChart" class="absolute bottom-0 w-full"></div>
+        </div>
+      </div>
+
+      <!-- Vue Mensuelle -->
+      <div class="panel h-full p-0">
+        <div class="flex p-5">
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-success/10 text-success dark:bg-success dark:text-white-light">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6" opacity="0.5"/><line x1="8" y1="2" x2="8" y2="6" opacity="0.5"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div class="font-semibold ltr:ml-3 rtl:mr-3">
+            <p class="text-xl dark:text-white-light">248</p>
+            <h5 class="text-xs text-[#506690]">Ce Mois</h5>
+          </div>
+        </div>
+        <div class="h-40">
+          <div x-ref="monthlyChart" class="absolute bottom-0 w-full"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 5: Planning du Jour - Card Style -->
+    <div class="mb-6">
+      <div class="panel h-full p-0">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-[#e0e6ed] p-5 dark:border-[#1b2e4b]">
+          <h5 class="text-lg font-semibold dark:text-white-light">Planning du Jour</h5>
+          <div class="flex items-center gap-2">
+            <div class="flex gap-1">
+              <button class="btn btn-sm btn-primary">Tous</button>
+              <button class="btn btn-sm btn-outline-primary">Matin</button>
+              <button class="btn btn-sm btn-outline-primary">Après-midi</button>
+            </div>
+            <span class="badge bg-dark text-white rounded-full px-3">15 RDV</span>
+          </div>
+        </div>
+        <div class="relative h-[350px] p-5 overflow-y-auto hide-scrollbar">
+          <div class="space-y-2">
+            <!-- Patient 1 - Terminé -->
+            <div class="flex items-center justify-between rounded-lg border border-[#e0e6ed] dark:border-[#1b2e4b] p-3 opacity-60 cursor-pointer">
+              <div class="flex items-center gap-4">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-success/20 text-success font-bold">MS</div>
+                <div>
+                  <div class="font-semibold dark:text-white-light line-through">M. Saidi</div>
+                  <div class="flex items-center gap-2 text-xs text-white-dark">
+                    <span class="rounded bg-success px-2 py-0.5 text-white">Terminé</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-1 text-center">
+                <div class="text-sm text-white-dark">Consultation générale</div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-medium text-success">✓ 08:00</div>
+              </div>
+            </div>
+            
+            <!-- Patient 2 - Terminé -->
+            <div class="flex items-center justify-between rounded-lg border border-[#e0e6ed] dark:border-[#1b2e4b] p-3 opacity-60 cursor-pointer">
+              <div class="flex items-center gap-4">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-success/20 text-success font-bold">AH</div>
+                <div>
+                  <div class="font-semibold dark:text-white-light line-through">A. Hassan</div>
+                  <div class="flex items-center gap-2 text-xs text-white-dark">
+                    <span class="rounded bg-success px-2 py-0.5 text-white">Terminé</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-1 text-center">
+                <div class="text-sm text-white-dark">Suivi diabète</div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-medium text-success">✓ 09:00</div>
+              </div>
+            </div>
+            
+            <!-- Patient 3 - En cours -->
+            <div class="flex items-center justify-between rounded-lg p-3 transition cursor-pointer" style="border: 1px solid rgba(67, 97, 238, 0.5); background: rgba(67, 97, 238, 0.1);" @click="openDrawer('patient3')">
+              <div class="flex items-center gap-4">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary font-bold animate-pulse">SE</div>
+                <div>
+                  <div class="font-semibold dark:text-white-light">S. El Amrani</div>
+                  <div class="flex items-center gap-2 text-xs text-white-dark">
+                    <span class="rounded bg-primary px-2 py-0.5 text-white">En cours</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-1 text-center">
+                <div class="text-sm text-white-dark">Douleur thoracique</div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-medium text-primary">→ 09:40</div>
+              </div>
+              <div class="flex gap-2 ml-4">
+                <button class="btn btn-sm btn-primary rounded-full p-2"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+              </div>
+            </div>
+            
+            <!-- Patient 4 - En attente -->
+            <div class="flex items-center justify-between rounded-lg border border-[#e0e6ed] dark:border-[#1b2e4b] p-3 transition hover:bg-primary/5 cursor-pointer">
+              <div class="flex items-center gap-4">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-info/20 text-info font-bold">KB</div>
+                <div>
+                  <div class="font-semibold dark:text-white-light">K. Benjelloun</div>
+                  <div class="flex items-center gap-2 text-xs text-white-dark">
+                    <span class="rounded bg-info px-2 py-0.5 text-white">Contrôle</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-1 text-center">
+                <div class="text-sm text-white-dark">Suivi tension artérielle</div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-medium">10:30</div>
+              </div>
+              <div class="flex gap-2 ml-4">
+                <button class="btn btn-sm btn-outline-success rounded-full p-2"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button>
+                <button class="btn btn-sm btn-primary rounded-full p-2"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+              </div>
+            </div>
+            
+            <!-- Patient 5 - En attente -->
+            <div class="flex items-center justify-between rounded-lg border border-[#e0e6ed] dark:border-[#1b2e4b] p-3 transition hover:bg-primary/5 cursor-pointer">
+              <div class="flex items-center gap-4">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-warning/20 text-warning font-bold">LH</div>
+                <div>
+                  <div class="font-semibold dark:text-white-light">L. Hamdani</div>
+                  <div class="flex items-center gap-2 text-xs text-white-dark">
+                    <span class="rounded bg-warning px-2 py-0.5 text-white">Nouveau</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-1 text-center">
+                <div class="text-sm text-white-dark">Première visite</div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-medium">11:00</div>
+              </div>
+              <div class="flex gap-2 ml-4">
+                <button class="btn btn-sm btn-outline-success rounded-full p-2"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button>
+                <button class="btn btn-sm btn-primary rounded-full p-2"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+              </div>
+            </div>
+            
+            <!-- Opération - Externe -->
+            <div class="flex items-center justify-between rounded-lg p-3 transition cursor-pointer" style="border: 1px solid rgba(226, 160, 63, 0.3); background: rgba(226, 160, 63, 0.05);">
+              <div class="flex items-center gap-4">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-warning/20 text-warning font-bold">🏥</div>
+                <div>
+                  <div class="font-semibold dark:text-white-light">Opération - Clinique Badr</div>
+                  <div class="flex items-center gap-2 text-xs text-white-dark">
+                    <span class="rounded bg-warning px-2 py-0.5 text-white">Externe</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-1 text-center">
+                <div class="text-sm text-white-dark">Chirurgie mineure</div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-medium text-warning">14:00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Assistant Floating Widget -->
+  <div class="fixed bottom-6 right-6 z-50" x-data="{ open: false }">
+    <div x-show="open" x-transition class="mb-4 w-72 rounded-xl bg-white dark:bg-[#0e1726] shadow-2xl border border-[#e0e6ed] dark:border-[#1b2e4b] p-4">
+      <div class="mb-3 flex items-center gap-2">
+        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary text-white">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/><circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/></svg>
+        </div>
+        <span class="font-semibold dark:text-white-light">Assistant IA</span>
+      </div>
+      <div class="space-y-2">
+        <button class="w-full rounded-lg bg-primary/10 p-2 text-left text-sm text-primary hover:bg-primary/20 transition">
+          📋 Résumer cas urgents du jour
+        </button>
+        <button class="w-full rounded-lg bg-primary/10 p-2 text-left text-sm text-primary hover:bg-primary/20 transition">
+          📝 Préparer notes consultation
+        </button>
+        <button class="w-full rounded-lg bg-primary/10 p-2 text-left text-sm text-primary hover:bg-primary/20 transition">
+          💊 Générer brouillon ordonnance
+        </button>
+      </div>
+    </div>
+    <button @click="open = !open" class="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-primary to-secondary text-white shadow-lg hover:shadow-xl transition-all hover:scale-110">
+      <svg x-show="!open" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/><circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/></svg>
+      <svg x-show="open" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  </div>
+
+  <!-- Patient Details Drawer -->
+  <div x-show="patientDrawerOpen" 
+       x-transition:enter="transition ease-out duration-300"
+       x-transition:enter-start="translate-x-full"
+       x-transition:enter-end="translate-x-0"
+       x-transition:leave="transition ease-in duration-300"
+       x-transition:leave-start="translate-x-0"
+       x-transition:leave-end="translate-x-full"
+       class="fixed inset-y-0 right-0 z-50 w-96 bg-white dark:bg-[#0e1726] shadow-2xl border-l border-[#e0e6ed] dark:border-[#1b2e4b] overflow-y-auto">
+    <template x-if="selectedPatient">
+      <div class="p-6">
+        <div class="mb-6 flex items-center justify-between">
+          <h3 class="text-xl font-bold dark:text-white-light">Dossier Patient</h3>
+          <button @click="closePatientDrawer()" class="rounded-full p-2 hover:bg-dark-light dark:hover:bg-dark">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        
+        <div class="mb-6 text-center">
+          <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/20 text-2xl font-bold text-primary" 
+               x-text="selectedPatient.initials"></div>
+          <h4 class="text-lg font-semibold dark:text-white-light" x-text="selectedPatient.name"></h4>
+          <p class="text-sm text-white-dark" x-text="selectedPatient.age + ' ans • ' + selectedPatient.gender"></p>
+        </div>
+
+        <div class="mb-6 grid grid-cols-2 gap-4">
+          <div class="rounded-lg bg-danger/10 p-3 text-center">
+            <div class="text-lg font-bold text-danger" x-text="selectedPatient.vitals.tension"></div>
+            <div class="text-xs text-white-dark">Tension</div>
+          </div>
+          <div class="rounded-lg bg-warning/10 p-3 text-center">
+            <div class="text-lg font-bold text-warning" x-text="selectedPatient.vitals.temperature"></div>
+            <div class="text-xs text-white-dark">Température</div>
+          </div>
+          <div class="rounded-lg bg-info/10 p-3 text-center">
+            <div class="text-lg font-bold text-info" x-text="selectedPatient.vitals.pulse"></div>
+            <div class="text-xs text-white-dark">Pouls</div>
+          </div>
+          <div class="rounded-lg bg-success/10 p-3 text-center">
+            <div class="text-lg font-bold text-success" x-text="selectedPatient.vitals.spo2"></div>
+            <div class="text-xs text-white-dark">SpO2</div>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <h5 class="mb-3 font-semibold dark:text-white-light">Allergies</h5>
+          <div class="flex flex-wrap gap-2">
+            <template x-for="allergy in selectedPatient.allergies" :key="allergy">
+              <span class="badge rounded-full text-xs px-3 py-1"
+                    :class="allergy === 'Pénicilline' ? 'bg-danger/10 text-danger' : 'bg-warning/10 text-warning'"
+                    x-text="allergy"></span>
+            </template>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <h5 class="mb-3 font-semibold dark:text-white-light">Dernière visite</h5>
+          <p class="text-sm text-white-dark" x-text="selectedPatient.lastVisit.date"></p>
+          <p class="mt-2 text-sm" x-text="selectedPatient.lastVisit.prescription"></p>
+        </div>
+
+        <div class="space-y-2">
+          <button class="btn btn-primary w-full">Démarrer Consultation</button>
+          <button class="btn btn-outline-primary w-full">Nouvelle Ordonnance</button>
+          <button class="btn btn-outline-info w-full">Demander Analyses</button>
+        </div>
+      </div>
+    </template>
+  </div>
+  <div x-show="patientDrawerOpen" @click="closePatientDrawer()" class="fixed inset-0 z-40 bg-black/50"></div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('doctorDashboard', () => ({
+    patientDrawerOpen: false,
+    selectedPatient: null,
+    
+    // Comms Dock state
+    comms: {
+      messages: [
+        { id: 1, from: 'Sarah', text: 'Patient El Amrani est arrivé, salle 2', context: 'Patient: El Amrani', time: '10:05', received: true },
+        { id: 2, from: 'Dr', text: 'Merci, prépare le dossier', time: '10:06', received: false },
+        { id: 3, from: 'Fatima', text: 'Ordonnance envoyée à la pharmacie', context: 'Patient: Saidi', time: '10:12', received: true }
+      ],
+      newMessage: '',
+      recipient: 'À: Sarah',
+      secretaries: [
+        { id: 1, name: 'Sarah', online: true, avatar: 'S', color: 'success' },
+        { id: 2, name: 'Fatima', online: true, avatar: 'F', color: 'info' }
+      ]
+    },
+    
+    // Activity feed
+    activities: [
+      { id: 1, type: 'success', icon: '✓', title: 'Ordonnance envoyée pharmacie', author: 'Sarah', time: 'il y a 5 min' },
+      { id: 2, type: 'danger', icon: '!', title: 'Résultat labo critique reçu', author: 'Système', time: 'il y a 12 min', badge: 'URGENT' },
+      { id: 3, type: 'info', icon: 'i', title: 'RDV replanifié à 14:20', author: 'Fatima', time: 'il y a 25 min' },
+      { id: 4, type: 'warning', icon: '◷', title: 'Patient en retard signalé', author: 'Sarah', time: 'il y a 45 min' }
+    ],
+    
+    openPatientDrawer(patient) {
+      this.selectedPatient = patient;
+      this.patientDrawerOpen = true;
+    },
+    closePatientDrawer() {
+      this.patientDrawerOpen = false;
+      setTimeout(() => { this.selectedPatient = null; }, 300);
+    },
+    
+    sendQuickAction(action) {
+      const actions = {
+        call: 'Appeler patient suivant',
+        prescription: 'Préparer ordonnance',
+        lab: 'Demander résultats labo',
+        rdv: 'Programmer RDV',
+        print: 'Imprimer document',
+        urgent: 'Signaler urgence'
+      };
+      // Add to activity feed
+      this.activities.unshift({
+        id: Date.now(),
+        type: action === 'urgent' ? 'danger' : 'info',
+        icon: '→',
+        title: actions[action],
+        author: 'Dr',
+        time: 'à l\'instant'
+      });
+    },
+    
+    sendMessage() {
+      if (!this.comms.newMessage.trim()) return;
+      this.comms.messages.push({
+        id: Date.now(),
+        from: 'Dr',
+        text: this.comms.newMessage,
+        time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        received: false
+      });
+      this.comms.newMessage = '';
+    },
+    
+    init() {
+      // Wait for ApexCharts to be loaded (loaded with defer)
+      const initCharts = () => {
+        if (typeof ApexCharts === 'undefined') {
+          setTimeout(initCharts, 100);
+          return;
+        }
+        
+        const isDark = document.querySelector('.dark') !== null;
+      
+      // Consultations Chart (blue)
+      const consultationsChart = new ApexCharts(this.$refs.consultationsChart, {
+        series: [{ data: [12, 18, 14, 16, 12, 15, 11] }],
+        chart: { height: 160, type: 'area', fontFamily: 'Nunito, sans-serif', sparkline: { enabled: true } },
+        stroke: { curve: 'smooth', width: 2 },
+        colors: ['#4361ee'],
+        grid: { padding: { top: 5 } },
+        yaxis: { show: false },
+        tooltip: { x: { show: false }, y: { title: { formatter: () => '' } } },
+        fill: isDark ? { type: 'gradient', gradient: { type: 'vertical', shadeIntensity: 1, inverseColors: false, opacityFrom: 0.3, opacityTo: 0.05, stops: [100, 100] } } : {}
+      });
+      consultationsChart.render();
+
+      // Avg Time Chart (orange)
+      const avgTimeChart = new ApexCharts(this.$refs.avgTimeChart, {
+        series: [{ data: [15, 18, 16, 14, 19, 17, 15] }],
+        chart: { height: 160, type: 'area', fontFamily: 'Nunito, sans-serif', sparkline: { enabled: true } },
+        stroke: { curve: 'smooth', width: 2 },
+        colors: ['#e2a03f'],
+        grid: { padding: { top: 5 } },
+        yaxis: { show: false },
+        tooltip: { x: { show: false }, y: { title: { formatter: () => '' } } },
+        fill: isDark ? { type: 'gradient', gradient: { type: 'vertical', shadeIntensity: 1, inverseColors: false, opacityFrom: 0.3, opacityTo: 0.05, stops: [100, 100] } } : {}
+      });
+      avgTimeChart.render();
+
+      // Monthly Chart (green)
+      const monthlyChart = new ApexCharts(this.$refs.monthlyChart, {
+        series: [{ data: [45, 52, 48, 55, 62, 58, 65, 72] }],
+        chart: { height: 160, type: 'area', fontFamily: 'Nunito, sans-serif', sparkline: { enabled: true } },
+        stroke: { curve: 'smooth', width: 2 },
+        colors: ['#00ab55'],
+        grid: { padding: { top: 5 } },
+        yaxis: { show: false },
+        tooltip: { x: { show: false }, y: { title: { formatter: () => '' } } },
+        fill: isDark ? { type: 'gradient', gradient: { type: 'vertical', shadeIntensity: 1, inverseColors: false, opacityFrom: 0.3, opacityTo: 0.05, stops: [100, 100] } } : {}
+      });
+      monthlyChart.render();
+      };
+      initCharts();
+    }
+  }));
+});
+</script>

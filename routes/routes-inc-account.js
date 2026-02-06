@@ -78,6 +78,15 @@ router.get("/media", (req, res) => {
     });
 });
 
+// Doctor Clinical Command Center
+router.get("/doctor", (req, res) => {
+    res.render("account/account-doctor-dashboard", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
 // Team Page
 router.get("/team", (req, res) => {
     res.render("account/account-team", {

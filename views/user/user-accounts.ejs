@@ -82,6 +82,22 @@
                         <% } %>
                     </div>
 
+                    <!-- Create New Account Button -->
+                    <div class="mt-4">
+                        <button @click="$refs.createModal.showModal()" 
+                                class="flex items-center w-full p-4 border-2 border-dashed rounded-xl border-white-light dark:border-[#1b2e4b] hover:border-primary hover:bg-primary/5 dark:hover:border-primary transition-all group">
+                            <div class="bg-success/10 text-success rounded-full p-3 mr-4 group-hover:bg-success group-hover:text-white transition-colors">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg text-black dark:text-white-light group-hover:text-primary transition-colors">Create New Account</h4>
+                                <p class="text-xs text-gray-500">Add a new workspace</p>
+                            </div>
+                        </button>
+                    </div>
+
                     <div class="mt-8 text-center bg-gray-50 dark:bg-[#0e1726]/50 p-4 rounded-xl">
                         <p class="text-sm text-gray-500 mb-2">Want to switch user?</p>
                         <a href="/auth/logout" class="btn btn-outline-danger btn-sm w-full">
@@ -94,6 +110,47 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- Create Account Modal -->
+                <dialog x-ref="createModal" class="modal rounded-xl bg-white dark:bg-[#0e1726] p-0 backdrop:bg-black/50 max-w-md w-full">
+                    <form method="POST" action="/user/accounts/create" class="p-6">
+                        <h3 class="text-xl font-bold mb-4 dark:text-white-light">Create New Account</h3>
+                        
+                        <div class="mb-4">
+                            <label for="accountName" class="block text-sm font-semibold mb-2 dark:text-white-light">Account Name *</label>
+                            <input type="text" 
+                                   id="accountName" 
+                                   name="name" 
+                                   required
+                                   placeholder="My New Workspace"
+                                   class="form-input w-full" />
+                        </div>
+
+                        <div class="mb-6">
+                            <label for="accountIcon" class="block text-sm font-semibold mb-2 dark:text-white-light">Icon (optional)</label>
+                            <input type="text" 
+                                   id="accountIcon" 
+                                   name="icon" 
+                                   placeholder="solar:settings-bold-duotone"
+                                   class="form-input w-full" />
+                            <p class="text-xs text-gray-500 mt-1">Default: solar:settings-bold-duotone</p>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button type="button" 
+                                    @click="$refs.createModal.close()"
+                                    class="btn btn-outline-dark flex-1">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary flex-1">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-2">
+                                    <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                Create Account
+                            </button>
+                        </div>
+                    </form>
+                </dialog>
             </div>
             <!-- end main content section -->
         </div>

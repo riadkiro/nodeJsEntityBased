@@ -1,0 +1,51 @@
+<!-- KPI Cards Widget -->
+<div class="panel h-full">
+  <div class="mb-5 flex items-center justify-between dark:text-white-light">
+    <h5 class="text-lg font-semibold"><%= widget.title %></h5>
+    <% if (widget.badge) { %>
+      <span class="badge bg-primary/10 text-primary rounded-full px-3 py-1 text-xs"><%= widget.badge %></span>
+    <% } %>
+  </div>
+  <div class="space-y-4">
+    <div class="flex items-center justify-between">
+      <span class="text-white-dark">Patients du jour</span>
+      <span class="text-2xl font-bold text-primary" x-text="kpis.totalToday">0</span>
+    </div>
+    <div class="grid grid-cols-3 gap-4 text-center">
+      <div class="rounded-lg bg-success/10 p-3">
+        <div class="text-xl font-bold text-success" x-text="kpis.seen">0</div>
+        <div class="text-xs text-white-dark">Vus</div>
+      </div>
+      <div class="rounded-lg bg-warning/10 p-3">
+        <div class="text-xl font-bold text-warning" x-text="kpis.remaining">0</div>
+        <div class="text-xs text-white-dark">Restants</div>
+      </div>
+      <div class="rounded-lg bg-danger/10 p-3">
+        <div class="text-xl font-bold text-danger" x-text="kpis.delay">+0m</div>
+        <div class="text-xs text-white-dark">Retard</div>
+      </div>
+    </div>
+    <!-- Progress bar -->
+    <div class="mt-4">
+      <div class="mb-2 flex justify-between text-xs">
+        <span class="text-white-dark">Progression journée</span>
+        <span class="text-success" x-text="kpis.progress + '%'">0%</span>
+      </div>
+      <div class="h-5 w-full overflow-hidden rounded-full bg-dark-light p-1 shadow-3xl dark:bg-dark-light/10 dark:shadow-none">
+        <div class="relative h-full rounded-full bg-gradient-to-r from-[#00ab55] to-[#4361ee] before:absolute before:inset-y-0 before:m-auto before:h-2 before:w-2 before:rounded-full before:bg-white ltr:before:right-0.5 rtl:before:left-0.5" 
+             :style="'width:' + kpis.progress + '%'"></div>
+      </div>
+    </div>
+    <!-- CTA Buttons -->
+    <div class="mt-4 flex gap-2">
+      <button class="btn btn-primary btn-sm flex-1">
+        <svg class="h-4 w-4 ltr:mr-1 rtl:ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Nouveau Patient
+      </button>
+      <button class="btn btn-outline-primary btn-sm flex-1">
+        <svg class="h-4 w-4 ltr:mr-1 rtl:ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        RDV
+      </button>
+    </div>
+  </div>
+</div>

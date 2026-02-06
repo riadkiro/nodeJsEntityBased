@@ -1,0 +1,85 @@
+<!-- Comms Dock Widget (Chat + Quick Actions) -->
+<div class="panel h-full p-0 flex flex-col">
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#e0e6ed] p-4 dark:border-[#1b2e4b]">
+    <h5 class="text-base font-semibold dark:text-white-light"><%= widget.title %></h5>
+    <div class="flex gap-1">
+      <template x-for="sec in comms.secretaries" :key="sec.id">
+        <button class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
+                :class="sec.online ? 'bg-' + sec.color + '/20 text-' + sec.color : 'bg-gray-200 text-gray-500'"
+                :title="sec.name"
+                @click="comms.recipient = sec.id"
+                x-text="sec.initial">?</button>
+      </template>
+    </div>
+  </div>
+  
+  <!-- Quick Actions Grid -->
+  <div class="p-3 border-b border-[#e0e6ed] dark:border-[#1b2e4b]">
+    <div class="grid grid-cols-3 gap-2">
+      <% config.actions.forEach(action => { %>
+        <button class="btn btn-sm btn-<%= action.color %>/10 text-<%= action.color %> hover:bg-<%= action.color %>/20 flex flex-col items-center gap-1 py-2 px-1"
+                @click="executeQuickAction('<%= action.key %>')"
+                title="<%= action.label %>">
+          <span class="iconify h-4 w-4" data-icon="<%= action.icon %>"></span>
+          <span class="text-xs truncate w-full text-center"><%= action.label %></span>
+        </button>
+      <% }); %>
+    </div>
+  </div>
+  
+  <!-- Messages -->
+  <div class="flex-1 overflow-y-auto p-3 space-y-2 hide-scrollbar" 
+       style="max-height: <%= (widget.maxHeight || 400) - 180 %>px;"
+       x-ref="chatMessages">
+    <template x-for="msg in comms.messages" :key="msg.id">
+      <div class="flex items-start gap-2"
+           :class="msg.author === 'Dr' ? 'flex-row-reverse' : ''">
+        <!-- Avatar -->
+        <div class="flex h-6 w-6 items-center justify-center rounded-full shrink-0 text-xs font-bold"
+             :class="{
+               'bg-primary text-white': msg.author === 'Dr',
+               'bg-success/20 text-success': msg.type === 'success',
+               'bg-warning/20 text-warning': msg.type === 'warning',
+               'bg-info/20 text-info': msg.author !== 'Dr' && msg.type !== 'success' && msg.type !== 'warning'
+             }">
+          <span x-text="msg.author === 'Dr' ? 'Dr' : (msg.icon || msg.author[0])">?</span>
+        </div>
+        
+        <!-- Message Bubble -->
+        <div class="flex-1 min-w-0">
+          <div class="rounded-lg p-2 text-sm"
+               :class="msg.author === 'Dr' ? 'bg-primary/10 text-primary' : 'bg-white-light/10'">
+            <div class="flex items-center gap-2 mb-0.5">
+              <span class="font-semibold text-xs" x-text="msg.author">Author</span>
+              <template x-if="msg.badge">
+                <span class="badge badge-xs bg-danger text-white" x-text="msg.badge">Badge</span>
+              </template>
+            </div>
+            <p x-text="msg.text" class="break-words">Message</p>
+          </div>
+          <div class="text-xs text-white-dark mt-0.5" x-text="msg.time">time</div>
+        </div>
+      </div>
+    </template>
+    
+    <!-- Empty State -->
+    <div x-show="comms.messages.length === 0" class="text-center text-white-dark py-6">
+      <p class="text-sm">Aucun message</p>
+    </div>
+  </div>
+  
+  <!-- Input -->
+  <div class="p-3 border-t border-[#e0e6ed] dark:border-[#1b2e4b]">
+    <div class="flex gap-2">
+      <input type="text" 
+             class="form-input flex-1 text-sm py-2"
+             placeholder="Écrire un message..."
+             x-model="comms.newMessage"
+             @keydown.enter="sendMessage()">
+      <button class="btn btn-primary btn-sm px-3" @click="sendMessage()">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+      </button>
+    </div>
+  </div>
+</div>

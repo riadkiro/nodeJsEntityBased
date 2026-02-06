@@ -1,0 +1,100 @@
+<!-- Waiting Room Queue Widget -->
+<div class="panel h-full p-0">
+  <div class="flex flex-wrap items-center justify-between gap-4 border-b border-[#e0e6ed] p-5 dark:border-[#1b2e4b]">
+    <h5 class="text-lg font-semibold dark:text-white-light"><%= widget.title %></h5>
+    <div class="flex items-center gap-2">
+      <div class="flex gap-1">
+        <button class="btn btn-sm" :class="filter === 'all' ? 'btn-primary' : 'btn-outline-primary'" @click="setFilter('all')">Tous</button>
+        <button class="btn btn-sm" :class="filter === 'waiting' ? 'btn-primary' : 'btn-outline-primary'" @click="setFilter('waiting')">En attente</button>
+        <button class="btn btn-sm" :class="filter === 'urgent' ? 'btn-danger' : 'btn-outline-danger'" @click="setFilter('urgent')">Urgent</button>
+        <button class="btn btn-sm" :class="filter === 'done' ? 'btn-success' : 'btn-outline-success'" @click="setFilter('done')">Traité</button>
+      </div>
+      <span class="badge bg-dark text-white rounded-full px-3" x-text="filteredWaitingRoom.length + ' patients'">0 patients</span>
+    </div>
+  </div>
+  
+  <div class="p-5">
+    <div class="overflow-y-auto space-y-1 hide-scrollbar" style="max-height: <%= widget.maxHeight || 400 %>px;">
+      <template x-for="consultation in filteredWaitingRoom" :key="consultation.id">
+        <div class="flex items-center gap-3 py-2 px-3 rounded transition cursor-pointer"
+             :class="{
+               'opacity-60 hover:bg-white-light/5': consultation.status === 'done',
+               'hover:bg-primary/5': consultation.status === 'waiting',
+               'bg-primary/10': consultation.status === 'in_progress',
+               'ring-2 ring-primary/50': selectedContext?.id === consultation.id
+             }"
+             :style="consultation.status === 'in_progress' ? 'animation: subtle-glow 2s ease-in-out infinite' : ''"
+             @click="selectContext(consultation.context)">
+          
+          <!-- Time -->
+          <span class="w-14 text-sm shrink-0"
+                :class="consultation.status === 'in_progress' ? 'text-primary font-bold' : 'text-white-dark'"
+                x-text="consultation.time">--:--</span>
+          
+          <!-- Patient Info -->
+          <div class="flex items-center gap-3 flex-1">
+            <!-- Status Icon / Avatar -->
+            <div class="flex h-8 w-8 items-center justify-center rounded-full shrink-0 font-bold text-sm"
+                 :class="{
+                   'bg-success/20 text-success': consultation.status === 'done',
+                   'bg-primary/20 text-primary': consultation.status === 'in_progress',
+                   'bg-info/20 text-info': consultation.status === 'waiting' && consultation.priority !== 'urgent',
+                   'bg-danger/20 text-danger': consultation.priority === 'urgent'
+                 }">
+              <template x-if="consultation.status === 'done'">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </template>
+              <template x-if="consultation.status !== 'done'">
+                <span x-text="consultation.initials">--</span>
+              </template>
+            </div>
+            
+            <!-- Name & Motif -->
+            <div class="flex-1 min-w-0">
+              <div class="font-medium dark:text-white-light text-sm flex items-center gap-2">
+                <span x-text="consultation.patient" class="truncate">Patient</span>
+                <template x-if="consultation.status === 'in_progress'">
+                  <span class="text-primary text-xs">• En cours</span>
+                </template>
+                <template x-if="consultation.priority === 'urgent' && consultation.status !== 'done'">
+                  <span class="text-danger text-xs font-bold">URGENT</span>
+                </template>
+              </div>
+              <div class="text-xs text-white-dark truncate" x-text="consultation.motif">Motif</div>
+            </div>
+          </div>
+          
+          <!-- Actions -->
+          <div class="flex gap-1 shrink-0" x-show="consultation.status !== 'done'">
+            <!-- Call Patient -->
+            <button class="btn btn-sm btn-outline-success rounded-full p-1.5"
+                    @click.stop="transitionConsultation(consultation.id, 'in_progress')"
+                    x-show="consultation.status === 'waiting'"
+                    title="Appeler">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            </button>
+            <!-- Mark Done -->
+            <button class="btn btn-sm btn-primary rounded-full p-1.5"
+                    @click.stop="transitionConsultation(consultation.id, 'done')"
+                    x-show="consultation.status === 'in_progress'"
+                    title="Terminer">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </button>
+            <!-- Next -->
+            <button class="btn btn-sm btn-primary rounded-full p-1.5"
+                    @click.stop="selectContext(consultation.context)"
+                    title="Sélectionner">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+        </div>
+      </template>
+      
+      <!-- Empty State -->
+      <div x-show="filteredWaitingRoom.length === 0" class="text-center text-white-dark py-8">
+        <svg class="h-12 w-12 mx-auto mb-3 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><path d="M8 15h8"></path><circle cx="9" cy="10" r="1"></circle><circle cx="15" cy="10" r="1"></circle></svg>
+        <p>Aucun patient dans cette catégorie</p>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,213 @@
+{
+    "id": "consultation",
+    "name": "Cockpit Consultation",
+    "version": "1.0",
+    "gridCols": 12,
+    "layout": {
+        "rows": [
+            {
+                "id": "row-1",
+                "columns": [
+                    {
+                        "widget": "kpi_today",
+                        "span": 4
+                    },
+                    {
+                        "widget": "urgency_radar",
+                        "span": 4
+                    },
+                    {
+                        "widget": "focus_next",
+                        "span": 4
+                    }
+                ]
+            },
+            {
+                "id": "row-2",
+                "columns": [
+                    {
+                        "widget": "waiting_room",
+                        "span": 6
+                    },
+                    {
+                        "widget": "comms_dock",
+                        "span": 3
+                    },
+                    {
+                        "widget": "activity_feed",
+                        "span": 3
+                    }
+                ]
+            }
+        ]
+    },
+    "widgets": {
+        "kpi_today": {
+            "type": "kpi_cards",
+            "title": "Aujourd'hui",
+            "badge": "Clinique A",
+            "metrics": [
+                "totalToday",
+                "seen",
+                "remaining",
+                "delay"
+            ]
+        },
+        "urgency_radar": {
+            "type": "urgency_panel",
+            "title": "Radar Urgences"
+        },
+        "focus_next": {
+            "type": "focus_card",
+            "title": "Prochain Patient"
+        },
+        "waiting_room": {
+            "type": "patient_queue",
+            "title": "Salle d'Attente",
+            "maxHeight": 400,
+            "filters": [
+                "all",
+                "waiting",
+                "urgent",
+                "delayed",
+                "done"
+            ]
+        },
+        "comms_dock": {
+            "type": "chat_panel",
+            "title": "Coordination — Secrétariat",
+            "maxHeight": 400
+        },
+        "activity_feed": {
+            "type": "activity_timeline",
+            "title": "Activité",
+            "limit": 30,
+            "maxHeight": 400
+        }
+    },
+    "statuses": {
+        "waiting": {
+            "label": "En attente",
+            "color": "info",
+            "icon": "clock"
+        },
+        "in_progress": {
+            "label": "En cours",
+            "color": "primary",
+            "icon": "play"
+        },
+        "done": {
+            "label": "Terminé",
+            "color": "success",
+            "icon": "check"
+        },
+        "blocked": {
+            "label": "Bloqué",
+            "color": "danger",
+            "icon": "alert"
+        }
+    },
+    "priorities": {
+        "normal": {
+            "label": "Normal",
+            "color": "info"
+        },
+        "urgent": {
+            "label": "Urgent",
+            "color": "danger"
+        }
+    },
+    "actions": [
+        {
+            "key": "call_patient",
+            "label": "Suivant",
+            "icon": "solar:phone-calling-bold",
+            "color": "primary",
+            "requiresContext": false,
+            "effects": {
+                "transition": "in_progress",
+                "activity": "Patient appelé"
+            }
+        },
+        {
+            "key": "come_here",
+            "label": "Viens ici",
+            "icon": "solar:users-group-rounded-bold",
+            "color": "success",
+            "requiresContext": true,
+            "input": {
+                "type": "select",
+                "field": "room",
+                "label": "Salle",
+                "options": [
+                    "Salle 1",
+                    "Salle 2",
+                    "Salle 3",
+                    "Salle 4",
+                    "Salle 5"
+                ]
+            },
+            "effects": {
+                "message": "Peux-tu venir {room} ?",
+                "activity": "Demande présence {room}"
+            }
+        },
+        {
+            "key": "prepare_prescription",
+            "label": "Ordonnance",
+            "icon": "solar:document-medicine-bold",
+            "color": "info",
+            "requiresContext": true,
+            "effects": {
+                "request": true,
+                "activity": "Demande préparation ordonnance"
+            }
+        },
+        {
+            "key": "request_lab",
+            "label": "Résultats Labo",
+            "icon": "solar:test-tube-bold",
+            "color": "warning",
+            "requiresContext": true,
+            "effects": {
+                "request": true,
+                "activity": "Demande résultats labo"
+            }
+        },
+        {
+            "key": "schedule_followup",
+            "label": "RDV Suivi",
+            "icon": "solar:calendar-add-bold",
+            "color": "info",
+            "requiresContext": false,
+            "input": {
+                "type": "select",
+                "field": "delay",
+                "label": "Délai",
+                "options": [
+                    "15 jours",
+                    "1 mois",
+                    "3 mois",
+                    "6 mois"
+                ]
+            },
+            "effects": {
+                "request": true,
+                "message": "RDV de suivi dans {delay}",
+                "activity": "Demande RDV suivi {delay}"
+            }
+        },
+        {
+            "key": "flag_urgent",
+            "label": "Urgent",
+            "icon": "solar:danger-triangle-bold",
+            "color": "danger",
+            "requiresContext": true,
+            "effects": {
+                "setPriority": "urgent",
+                "notify": true,
+                "activity": "Marqué URGENT"
+            }
+        }
+    ]
+}

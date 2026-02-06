@@ -410,8 +410,171 @@
                           </div>
                         </template>
 
+                        <!-- Work Queue Block (Cockpit) -->
+                        <template x-if="block && block.type === 'work-queue'">
+                          <div class="panel h-full" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                            <div class="mb-4 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Queue'"></h5>
+                              <div class="flex gap-1">
+                                <span class="badge bg-info/20 text-info rounded-full px-2 text-xs">12 en attente</span>
+                              </div>
+                            </div>
+                            <div class="space-y-2 text-sm">
+                              <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                <div class="flex items-center gap-2">
+                                  <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold">JD</div>
+                                  <div>
+                                    <div class="font-medium">Jean Dupont</div>
+                                    <div class="text-xs text-gray-500">Consultation</div>
+                                  </div>
+                                </div>
+                                <div class="flex gap-1">
+                                  <button class="p-1 hover:bg-primary/10 rounded"><iconify-icon icon="solar:phone-bold" width="14"></iconify-icon></button>
+                                  <button class="p-1 hover:bg-success/10 rounded text-success"><iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon></button>
+                                </div>
+                              </div>
+                              <div class="flex items-center justify-between p-2 bg-warning/10 rounded-lg border-l-2 border-warning">
+                                <div class="flex items-center gap-2">
+                                  <div class="w-8 h-8 rounded-full bg-warning/20 flex items-center justify-center text-xs font-bold">ML</div>
+                                  <div>
+                                    <div class="font-medium">Marie Leblanc <span class="text-warning text-xs">⚡ Urgent</span></div>
+                                    <div class="text-xs text-gray-500">Douleur aiguë</div>
+                                  </div>
+                                </div>
+                                <div class="flex gap-1">
+                                  <button class="p-1 hover:bg-primary/10 rounded"><iconify-icon icon="solar:phone-bold" width="14"></iconify-icon></button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Comms Dock Block (Cockpit) -->
+                        <template x-if="block && block.type === 'comms-dock'">
+                          <div class="panel h-full flex flex-col" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                            <div class="mb-4 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Communications'"></h5>
+                            </div>
+                            <!-- Quick Actions -->
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                              <button class="btn btn-outline-primary btn-sm"><iconify-icon icon="solar:call-medicine-bold" width="14" class="mr-1"></iconify-icon>Suivant</button>
+                              <button class="btn btn-outline-info btn-sm"><iconify-icon icon="solar:map-arrow-right-bold" width="14" class="mr-1"></iconify-icon>Viens ici</button>
+                              <button class="btn btn-outline-success btn-sm"><iconify-icon icon="solar:document-medicine-bold" width="14" class="mr-1"></iconify-icon>Ordonnance</button>
+                              <button class="btn btn-outline-warning btn-sm"><iconify-icon icon="solar:test-tube-bold" width="14" class="mr-1"></iconify-icon>Labo</button>
+                            </div>
+                            <!-- Messages preview -->
+                            <div class="flex-1 overflow-y-auto space-y-2 text-sm bg-gray-50 dark:bg-gray-700/30 rounded-lg p-2">
+                              <div class="bg-white dark:bg-gray-800 p-2 rounded text-xs">
+                                <div class="font-medium text-gray-500">Secrétaire</div>
+                                <div>Le patient Dupont est arrivé</div>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Activity Feed Block (Cockpit) -->
+                        <template x-if="block && block.type === 'activity-feed'">
+                          <div class="panel h-full" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                            <div class="mb-4 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Activités'"></h5>
+                            </div>
+                            <div class="space-y-3 text-sm">
+                              <div class="flex gap-3">
+                                <div class="w-6 h-6 rounded-full bg-success/20 flex items-center justify-center shrink-0">
+                                  <iconify-icon icon="solar:check-circle-bold" width="12" class="text-success"></iconify-icon>
+                                </div>
+                                <div>
+                                  <div class="font-medium">Consultation terminée</div>
+                                  <div class="text-xs text-gray-500">Jean Dupont • il y a 5 min</div>
+                                </div>
+                              </div>
+                              <div class="flex gap-3">
+                                <div class="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                                  <iconify-icon icon="solar:phone-bold" width="12" class="text-primary"></iconify-icon>
+                                </div>
+                                <div>
+                                  <div class="font-medium">Patient appelé</div>
+                                  <div class="text-xs text-gray-500">Marie Leblanc • il y a 10 min</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Focus Card Block (Cockpit) -->
+                        <template x-if="block && block.type === 'focus-card'">
+                          <div class="panel h-full bg-gradient-to-br from-primary to-primary/80 text-white" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                            <div class="mb-2 text-xs uppercase opacity-75" x-text="block.title || 'Prochain'"></div>
+                            <div class="flex items-center gap-4">
+                              <div class="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold">JD</div>
+                              <div>
+                                <div class="text-xl font-bold">Jean Dupont</div>
+                                <div class="opacity-75 text-sm">Consultation • Salle 3</div>
+                                <div class="text-xs mt-1 opacity-60">Arrivé il y a 15 min</div>
+                              </div>
+                            </div>
+                            <div class="mt-4 flex gap-2">
+                              <button class="btn bg-white/20 hover:bg-white/30 text-white btn-sm flex-1">
+                                <iconify-icon icon="solar:phone-bold" width="14" class="mr-1"></iconify-icon>Appeler
+                              </button>
+                              <button class="btn bg-white/20 hover:bg-white/30 text-white btn-sm flex-1">
+                                <iconify-icon icon="solar:document-bold" width="14" class="mr-1"></iconify-icon>Dossier
+                              </button>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Urgency Radar Block (Cockpit) -->
+                        <template x-if="block && block.type === 'urgency-radar'">
+                          <div class="panel h-full border-l-4 border-danger" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                            <div class="mb-4 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white flex items-center gap-2">
+                                <iconify-icon icon="solar:danger-triangle-bold" class="text-danger"></iconify-icon>
+                                <span x-text="block.title || 'Urgences'"></span>
+                              </h5>
+                              <span class="badge bg-danger text-white rounded-full px-2 text-xs">3</span>
+                            </div>
+                            <div class="space-y-2 text-sm">
+                              <div class="p-2 bg-danger/10 rounded-lg flex items-center justify-between">
+                                <div>
+                                  <div class="font-medium text-danger">Marie Leblanc</div>
+                                  <div class="text-xs text-gray-500">Douleur aiguë • 20 min</div>
+                                </div>
+                                <button class="btn btn-danger btn-sm">Traiter</button>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- KPI Cards Block (Cockpit) -->
+                        <template x-if="block && block.type === 'kpi-cards'">
+                          <div class="panel h-full" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                            <div class="mb-4">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Indicateurs'"></h5>
+                            </div>
+                            <div class="grid grid-cols-4 gap-4">
+                              <div class="text-center">
+                                <div class="text-2xl font-bold text-primary">24</div>
+                                <div class="text-xs text-gray-500">Patients</div>
+                              </div>
+                              <div class="text-center">
+                                <div class="text-2xl font-bold text-success">18</div>
+                                <div class="text-xs text-gray-500">Vus</div>
+                              </div>
+                              <div class="text-center">
+                                <div class="text-2xl font-bold text-warning">6</div>
+                                <div class="text-xs text-gray-500">Restants</div>
+                              </div>
+                              <div class="text-center">
+                                <div class="text-2xl font-bold text-danger">2</div>
+                                <div class="text-xs text-gray-500">Urgents</div>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
+
                         <!-- Unknown Block Type -->
-                        <template x-if="block && !['panel', 'text', 'kpi-card', 'statistics', 'expense-tracker', 'progress-list'].includes(block.type)">
+                        <template x-if="block && !['panel', 'text', 'kpi-card', 'statistics', 'expense-tracker', 'progress-list', 'work-queue', 'comms-dock', 'activity-feed', 'focus-card', 'urgency-radar', 'kpi-cards'].includes(block.type)">
                           <div class="panel">
                             <span x-text="'Unknown block type: ' + block.type"></span>
                           </div>

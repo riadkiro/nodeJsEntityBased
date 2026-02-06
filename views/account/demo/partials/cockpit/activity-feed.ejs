@@ -1,0 +1,59 @@
+<!-- Activity Feed Widget -->
+<div class="panel h-full p-0 flex flex-col">
+  <!-- Header -->
+  <div class="flex items-center justify-between border-b border-[#e0e6ed] p-4 dark:border-[#1b2e4b]">
+    <h5 class="text-base font-semibold dark:text-white-light"><%= widget.title %></h5>
+    <span class="badge bg-dark/10 text-dark dark:bg-white/10 dark:text-white rounded-full px-2 py-0.5 text-xs" 
+          x-text="activities.length + ' événements'">0 événements</span>
+  </div>
+  
+  <!-- Activity List -->
+  <div class="flex-1 overflow-y-auto p-4 space-y-3 hide-scrollbar" style="max-height: <%= widget.maxHeight || 400 %>px;">
+    <template x-for="activity in activities.slice(0, <%= widget.limit || 30 %>)" :key="activity.id">
+      <div class="flex items-start gap-3 cursor-pointer hover:bg-white-light/5 rounded p-2 -m-2 transition"
+           @click="activity.context && selectContext(activity.context)">
+        <!-- Icon -->
+        <div class="flex h-8 w-8 items-center justify-center rounded-full shrink-0"
+             :class="{
+               'bg-success/20 text-success': activity.type === 'success',
+               'bg-primary/20 text-primary': activity.type === 'primary',
+               'bg-warning/20 text-warning': activity.type === 'warning',
+               'bg-danger/20 text-danger': activity.type === 'danger',
+               'bg-info/20 text-info': activity.type === 'info' || !activity.type
+             }">
+          <template x-if="activity.type === 'success'">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </template>
+          <template x-if="activity.type === 'primary'">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </template>
+          <template x-if="activity.type === 'warning'">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          </template>
+          <template x-if="activity.type === 'danger'">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+          </template>
+          <template x-if="activity.type === 'info' || !activity.type">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          </template>
+        </div>
+        
+        <!-- Content -->
+        <div class="flex-1 min-w-0">
+          <p class="text-sm dark:text-white-light" x-text="activity.text">Activity text</p>
+          <div class="flex items-center gap-2 mt-0.5">
+            <span class="text-xs text-white-dark" x-text="activity.author">Author</span>
+            <span class="text-xs text-white-dark">•</span>
+            <span class="text-xs text-white-dark" x-text="activity.time">Time</span>
+          </div>
+        </div>
+      </div>
+    </template>
+    
+    <!-- Empty State -->
+    <div x-show="activities.length === 0" class="text-center text-white-dark py-8">
+      <svg class="h-10 w-10 mx-auto mb-3 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      <p class="text-sm">Aucune activité récente</p>
+    </div>
+  </div>
+</div>

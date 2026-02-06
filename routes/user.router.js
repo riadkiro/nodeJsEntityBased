@@ -10,6 +10,9 @@ const userController = require("../controllers/user.controller");
 //Get user accounts
 router.get("/accounts", userController.userAccounts);
 
+// Create new account
+router.post("/accounts/create", userController.createAccount);
+
 //Generated from template
 //list
 router.get("/list", userController.list);

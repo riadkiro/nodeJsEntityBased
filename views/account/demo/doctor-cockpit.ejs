@@ -1,0 +1,303 @@
+<style>
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+  @keyframes subtle-glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(67, 97, 238, 0.2); }
+    50% { box-shadow: 0 0 15px rgba(67, 97, 238, 0.4); }
+  }
+  @keyframes subtle-fade {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+  }
+</style>
+
+<div x-data="doctorCockpit" @keydown.escape="inputModal.open = false">
+  <%- include("../../nav/nav-breadcrumb") %>
+  
+  <div class="pt-5">
+    <%
+      // Widget partial mapping
+      const widgetPartials = {
+        'kpi_cards': 'partials/cockpit/kpi-row',
+        'urgency_panel': 'partials/cockpit/urgency-radar',
+        'focus_card': 'partials/cockpit/focus-next',
+        'patient_queue': 'partials/cockpit/waiting-room',
+        'chat_panel': 'partials/cockpit/comms-dock',
+        'activity_timeline': 'partials/cockpit/activity-feed'
+      };
+
+      // Grid span to Tailwind class mapping
+      const spanClasses = {
+        1: 'lg:col-span-1',
+        2: 'lg:col-span-2',
+        3: 'lg:col-span-3',
+        4: 'lg:col-span-4',
+        5: 'lg:col-span-5',
+        6: 'lg:col-span-6',
+        7: 'lg:col-span-7',
+        8: 'lg:col-span-8',
+        9: 'lg:col-span-9',
+        10: 'lg:col-span-10',
+        11: 'lg:col-span-11',
+        12: 'lg:col-span-12'
+      };
+    %>
+    
+    <% cockpitConfig.layout.rows.forEach(row => { %>
+      <div class="mb-6 grid gap-6 grid-cols-1 lg:grid-cols-12">
+        <% row.columns.forEach(col => { %>
+          <% const widgetConfig = cockpitConfig.widgets[col.widget]; %>
+          <% const spanClass = spanClasses[col.span] || 'lg:col-span-4'; %>
+          <div class="<%= spanClass %>">
+            <% if (widgetConfig && widgetPartials[widgetConfig.type]) { %>
+              <%- include(widgetPartials[widgetConfig.type], { widget: widgetConfig, config: cockpitConfig }) %>
+            <% } else { %>
+              <div class="panel">
+                <p class="text-white-dark">Widget not found: <%= col.widget %></p>
+              </div>
+            <% } %>
+          </div>
+        <% }); %>
+      </div>
+    <% }); %>
+  </div>
+
+  <!-- Input Modal for Quick Actions -->
+  <div x-show="inputModal.open" 
+       x-transition
+       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+       @click.self="inputModal.open = false">
+    <div class="panel w-full max-w-md">
+      <h3 class="text-lg font-semibold mb-4" x-text="inputModal.action?.label || 'Action'"></h3>
+      
+      <template x-if="inputModal.action?.input">
+        <div class="mb-4">
+          <label class="block text-sm font-semibold mb-2" x-text="inputModal.action.input.label"></label>
+          <template x-if="inputModal.action.input.type === 'select'">
+            <select x-model="inputModal.values[inputModal.action.input.field]" class="form-select w-full">
+              <template x-for="opt in inputModal.action.input.options" :key="opt">
+                <option :value="opt" x-text="opt"></option>
+              </template>
+            </select>
+          </template>
+        </div>
+      </template>
+      
+      <div class="flex gap-3">
+        <button @click="inputModal.open = false" class="btn btn-outline-dark flex-1">Annuler</button>
+        <button @click="submitActionInput()" class="btn btn-primary flex-1">Confirmer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Cockpit config injected from server
+  window.__COCKPIT_CONFIG__ = <%- JSON.stringify(cockpitConfig) %>;
+  window.__ACCOUNT_NUMBER__ = '<%= account_number %>';
+
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('doctorCockpit', () => ({
+      // Config
+      config: window.__COCKPIT_CONFIG__,
+      
+      // Data
+      kpis: { totalToday: 0, seen: 0, remaining: 0, avgWait: 0, urgentCount: 0, delay: '', progress: 0 },
+      waitingRoom: [],
+      nextConsultation: null,
+      activities: [],
+      requests: [],
+      
+      // Comms
+      comms: {
+        messages: [],
+        recipient: 'all',
+        newMessage: '',
+        secretaries: []
+      },
+      
+      // UI State
+      selectedContext: null,
+      loading: false,
+      filter: 'all',
+      inputModal: { open: false, action: null, values: {} },
+      
+      // Lifecycle
+      async init() {
+        await this.refresh();
+        // Auto-refresh every 15 seconds
+        setInterval(() => this.refresh(), 15000);
+      },
+      
+      async refresh() {
+        try {
+          const res = await fetch(`/account/${window.__ACCOUNT_NUMBER__}/api/demo/consultation-cockpit`);
+          const data = await res.json();
+          
+          // Safe assignment
+          this.kpis = data.kpis;
+          this.waitingRoom = data.waitingRoom;
+          this.nextConsultation = data.nextConsultation;
+          this.activities = data.activities;
+          this.requests = data.requests || [];
+          this.comms.secretaries = data.secretaries;
+          if (data.messages) this.comms.messages = data.messages;
+        } catch (error) {
+          console.error('Cockpit refresh failed:', error);
+        }
+      },
+      
+      // Filter helpers
+      get filteredWaitingRoom() {
+        if (this.filter === 'all') return this.waitingRoom;
+        if (this.filter === 'waiting') return this.waitingRoom.filter(c => c.status === 'waiting');
+        if (this.filter === 'urgent') return this.waitingRoom.filter(c => c.priority === 'urgent');
+        if (this.filter === 'done') return this.waitingRoom.filter(c => c.status === 'done');
+        if (this.filter === 'delayed') return this.waitingRoom.filter(c => c.delayed);
+        return this.waitingRoom;
+      },
+      
+      setFilter(f) {
+        this.filter = f;
+      },
+      
+      // Transitions
+      async transitionConsultation(id, to) {
+        try {
+          await fetch(`/account/${window.__ACCOUNT_NUMBER__}/api/demo/consultations/${id}/transition`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ to })
+          });
+          await this.refresh();
+        } catch (error) {
+          console.error('Transition failed:', error);
+        }
+      },
+      
+      // Messaging
+      async sendMessage() {
+        if (!this.comms.newMessage.trim()) return;
+        
+        try {
+          await fetch(`/account/${window.__ACCOUNT_NUMBER__}/api/demo/comms/message`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              recipient: this.comms.recipient,
+              text: this.comms.newMessage,
+              context: this.selectedContext
+            })
+          });
+          
+          // Optimistic update
+          this.comms.messages.push({
+            id: Date.now(),
+            author: 'Dr',
+            text: this.comms.newMessage,
+            time: "à l'instant",
+            type: 'primary'
+          });
+          this.comms.newMessage = '';
+          this.$nextTick(() => this.scrollChatToBottom());
+        } catch (error) {
+          console.error('Send message failed:', error);
+        }
+      },
+      
+      // Quick Actions
+      async executeQuickAction(actionKey) {
+        const action = this.config.actions.find(a => a.key === actionKey);
+        if (!action) return;
+        
+        // Check context requirement
+        if (action.requiresContext && !this.selectedContext) {
+          alert('Sélectionnez d\'abord un patient');
+          return;
+        }
+        
+        // Check input requirement
+        if (action.input) {
+          this.inputModal = { 
+            open: true, 
+            action, 
+            values: { [action.input.field]: action.input.options[0] } 
+          };
+          return;
+        }
+        
+        await this._executeAction(action, {});
+      },
+      
+      async submitActionInput() {
+        const { action, values } = this.inputModal;
+        this.inputModal.open = false;
+        await this._executeAction(action, values);
+      },
+      
+      async _executeAction(action, inputValues) {
+        try {
+          await fetch(`/account/${window.__ACCOUNT_NUMBER__}/api/demo/comms/quick-action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              actionKey: action.key, 
+              context: this.selectedContext, 
+              input: inputValues 
+            })
+          });
+          
+          // Apply effects locally
+          if (action.effects.message) {
+            this.comms.newMessage = this.template(action.effects.message, inputValues);
+          }
+          if (action.effects.activity) {
+            this.logActivity(this.template(action.effects.activity, inputValues));
+          }
+          if (action.effects.request) {
+            this.requests.unshift({ action: action.key, time: 'à l\'instant', context: this.selectedContext });
+          }
+          
+          // Refresh for transition effects
+          if (action.effects.transition || action.effects.setPriority) {
+            await this.refresh();
+          }
+        } catch (error) {
+          console.error('Quick action failed:', error);
+        }
+      },
+      
+      // Helpers
+      logActivity(text) {
+        this.activities.unshift({
+          id: Date.now(),
+          author: 'Dr',
+          text,
+          time: "à l'instant",
+          type: 'primary'
+        });
+      },
+      
+      template(str, vars) {
+        return str.replace(/\{(\w+)\}/g, (_, key) => vars[key] || `{${key}}`);
+      },
+      
+      scrollChatToBottom() {
+        const el = this.$refs.chatMessages;
+        if (el) el.scrollTop = el.scrollHeight;
+      },
+      
+      selectContext(ctx) {
+        this.selectedContext = ctx;
+      },
+      
+      // Patient drawer (reuse from main dashboard)
+      patientDrawerOpen: false,
+      selectedPatient: null,
+      openPatientDrawer(patient) {
+        this.selectedPatient = patient;
+        this.patientDrawerOpen = true;
+      }
+    }));
+  });
+</script>

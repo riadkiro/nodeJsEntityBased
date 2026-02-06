@@ -1,0 +1,199 @@
+<!-- Property Panel (Right Side) - Widget Configuration -->
+<div 
+  x-show="builderState.selectedBlockId && builderState.mode === 'edit'"
+  x-transition:enter="transform transition ease-out duration-200"
+  x-transition:enter-start="translate-x-full opacity-0"
+  x-transition:enter-end="translate-x-0 opacity-100"
+  x-transition:leave="transform transition ease-in duration-150"
+  x-transition:leave-start="translate-x-0 opacity-100"
+  x-transition:leave-end="translate-x-full opacity-0"
+  class="w-[320px] bg-white dark:bg-gray-800 border-l dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
+  
+  <!-- Header -->
+  <div class="h-14 border-b dark:border-gray-700 px-4 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-2">
+      <iconify-icon icon="solar:settings-bold-duotone" width="18" class="text-primary"></iconify-icon>
+      <h3 class="font-semibold text-sm">Widget Settings</h3>
+    </div>
+    <button @click="builderState.selectedBlockId = null" class="text-gray-500 hover:text-gray-700 dark:text-gray-400">
+      <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex border-b dark:border-gray-700 shrink-0" x-data="{ tab: 'appearance' }">
+    <button 
+      @click="tab = 'appearance'"
+      :class="tab === 'appearance' ? 'border-primary text-primary' : 'border-transparent text-gray-500'"
+      class="flex-1 py-2 text-xs font-semibold border-b-2 transition-colors">
+      Appearance
+    </button>
+    <button 
+      @click="tab = 'data'"
+      :class="tab === 'data' ? 'border-primary text-primary' : 'border-transparent text-gray-500'"
+      class="flex-1 py-2 text-xs font-semibold border-b-2 transition-colors"
+      x-show="builderMode === 'cockpit'">
+      Data
+    </button>
+    <button 
+      @click="tab = 'actions'"
+      :class="tab === 'actions' ? 'border-primary text-primary' : 'border-transparent text-gray-500'"
+      class="flex-1 py-2 text-xs font-semibold border-b-2 transition-colors"
+      x-show="builderMode === 'cockpit'">
+      Actions
+    </button>
+  </div>
+
+  <!-- Panel Content -->
+  <div class="flex-1 overflow-y-auto p-4" x-data="{ tab: 'appearance' }">
+    <template x-if="builderState.selectedBlockId">
+      <div x-data="{ block: pageConfig.blocks[builderState.selectedBlockId] }">
+        
+        <!-- Appearance Tab -->
+        <div x-show="tab === 'appearance'" class="space-y-4">
+          <!-- Title -->
+          <div>
+            <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Title</label>
+            <input 
+              type="text" 
+              class="form-input w-full text-sm py-2"
+              x-model="block.title"
+              placeholder="Widget title">
+          </div>
+
+          <!-- Height -->
+          <div>
+            <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Height (px)</label>
+            <input 
+              type="number" 
+              class="form-input w-full text-sm py-2"
+              x-model.number="block.props.height"
+              placeholder="Auto">
+          </div>
+
+          <!-- Options -->
+          <div class="space-y-2">
+            <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Options</label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" class="form-checkbox" x-model="block.props.compact">
+              <span class="text-sm">Compact mode</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" class="form-checkbox" x-model="block.props.showIcons">
+              <span class="text-sm">Show icons</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" class="form-checkbox" x-model="block.props.showBadges">
+              <span class="text-sm">Show badges</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Data Tab (Cockpit only) -->
+        <div x-show="tab === 'data'" class="space-y-4">
+          <!-- Source -->
+          <div>
+            <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Data Source</label>
+            <select class="form-select w-full text-sm py-2" x-model="block.data.source">
+              <option value="">Select source...</option>
+              <option value="consultations">Consultations</option>
+              <option value="patients">Patients</option>
+              <option value="activities">Activities</option>
+              <option value="messages">Messages</option>
+            </select>
+          </div>
+
+          <!-- Query / Filter -->
+          <div>
+            <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Filter</label>
+            <select class="form-select w-full text-sm py-2" x-model="block.data.query">
+              <option value="">All records</option>
+              <option value="status:waiting">Status = Waiting</option>
+              <option value="status:in_progress">Status = In Progress</option>
+              <option value="status:done">Status = Done</option>
+              <option value="priority:urgent">Priority = Urgent</option>
+            </select>
+          </div>
+
+          <!-- Sort -->
+          <div>
+            <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Sort by</label>
+            <select class="form-select w-full text-sm py-2" x-model="block.data.sort">
+              <option value="scheduled_at:asc">Scheduled (earliest first)</option>
+              <option value="scheduled_at:desc">Scheduled (latest first)</option>
+              <option value="createdAt:desc">Created (newest first)</option>
+              <option value="priority:desc">Priority (urgent first)</option>
+            </select>
+          </div>
+
+          <!-- Limit -->
+          <div>
+            <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Limit</label>
+            <input 
+              type="number" 
+              class="form-input w-full text-sm py-2"
+              x-model.number="block.data.limit"
+              placeholder="No limit">
+          </div>
+        </div>
+
+        <!-- Actions Tab (Cockpit only) -->
+        <div x-show="tab === 'actions'" class="space-y-4">
+          <!-- Header Actions -->
+          <div>
+            <label class="block text-xs font-semibold mb-2 text-gray-600 dark:text-gray-400">Header Actions</label>
+            <div class="flex flex-wrap gap-1">
+              <template x-for="action in ['refresh', 'add_record', 'export']" :key="action">
+                <button 
+                  @click="toggleAction('header', action)"
+                  :class="block.actions?.header?.includes(action) ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700'"
+                  class="px-2 py-1 text-xs rounded transition-colors">
+                  <span x-text="action.replace('_', ' ')"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- Row Actions -->
+          <div>
+            <label class="block text-xs font-semibold mb-2 text-gray-600 dark:text-gray-400">Row Actions</label>
+            <div class="flex flex-wrap gap-1">
+              <template x-for="action in ['call', 'done', 'urgent', 'assign', 'message', 'view']" :key="action">
+                <button 
+                  @click="toggleAction('row', action)"
+                  :class="block.actions?.row?.includes(action) ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700'"
+                  class="px-2 py-1 text-xs rounded transition-colors">
+                  <span x-text="action"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- Quick Actions (for comms-dock) -->
+          <div x-show="block.type === 'comms-dock'">
+            <label class="block text-xs font-semibold mb-2 text-gray-600 dark:text-gray-400">Quick Actions</label>
+            <div class="grid grid-cols-2 gap-1">
+              <template x-for="action in ['next_patient', 'come_here', 'prescription', 'lab_request', 'followup', 'flag_urgent']" :key="action">
+                <button 
+                  @click="toggleAction('quick', action)"
+                  :class="block.actions?.quick?.includes(action) ? 'bg-success text-white' : 'bg-gray-100 dark:bg-gray-700'"
+                  class="px-2 py-1 text-xs rounded transition-colors text-center">
+                  <span x-text="action.replace(/_/g, ' ')"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </template>
+  </div>
+
+  <!-- Footer -->
+  <div class="border-t dark:border-gray-700 p-3 shrink-0">
+    <button @click="deleteBlock(builderState.selectedBlockId)" class="btn btn-outline-danger btn-sm w-full">
+      <iconify-icon icon="solar:trash-bin-minimalistic-bold" class="mr-1"></iconify-icon>
+      Delete Widget
+    </button>
+  </div>
+</div>

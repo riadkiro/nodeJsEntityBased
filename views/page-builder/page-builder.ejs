@@ -35,97 +35,17 @@
     </div>
   </div>
 
-  <!-- Main Builder Area with Left Sidebar -->
-  <div class="relative flex gap-4" style="height: calc(100vh - 250px);">
+  <!-- Main Builder Area (Icon Bar + Sidebar + Canvas + Property Panel) -->
+  <div class="relative flex" style="height: calc(100vh - 200px);">
     
-    <!-- Icon Sidebar (Always Visible) -->
+    <!-- Left: Icon Sidebar + Expandable Panel -->
     <%- include('partials/builder-sidebar') %>
 
-    <!-- Blocks Sidebar (Slides from Complete Left) -->
-    <div 
-      x-show="builderState.drawerMode === 'blocks'"
-      x-transition:enter="transform transition ease-out duration-500"
-      x-transition:enter-start="-translate-x-full opacity-0"
-      x-transition:enter-end="translate-x-0 opacity-100"
-      x-transition:leave="transform transition ease-in duration-500"
-      x-transition:leave-start="translate-x-0 opacity-100"
-      x-transition:leave-end="-translate-x-full opacity-0"
-      class="fixed top-0 left-0 z-50 w-[248px] h-screen bg-white dark:bg-gray-800 border-r dark:border-gray-700 shadow-xl overflow-y-auto">
-      
-      <!-- Single Header -->
-      <div class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-4 flex items-center justify-between">
-        <h3 class="text-lg font-semibold">Add Blocks</h3>
-        <button @click="builderState.drawerMode = null" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-          <iconify-icon icon="solar:close-circle-bold" width="24"></iconify-icon>
-        </button>
-      </div>
-
-      <!-- Blocks Grid (Direct, no wrapper) -->
-      <div class="p-4">
-        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold mb-3">Drag blocks to canvas</p>
-        
-        <div 
-          class="grid grid-cols-2 gap-2"
-          x-init="
-            Sortable.create($el, {
-              group: { name: 'blocks', pull: 'clone', put: false },
-              animation: 150,
-              sort: false
-            })
-          ">
-          <!-- Panel Block -->
-          <div 
-            data-block-type="panel"
-            class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
-            <iconify-icon icon="solar:widget-5-bold-duotone" width="32" class="text-primary"></iconify-icon>
-            <span class="text-xs font-medium">Panel</span>
-          </div>
-
-          <!-- Text Block -->
-          <div 
-            data-block-type="text"
-            class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
-            <iconify-icon icon="solar:text-bold-duotone" width="32" class="text-success"></iconify-icon>
-            <span class="text-xs font-medium">Text</span>
-          </div>
-
-          <!-- KPI Card Block -->
-          <div 
-            data-block-type="kpi-card"
-            class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
-            <iconify-icon icon="solar:presentation-graph-bold-duotone" width="32" class="text-warning"></iconify-icon>
-            <span class="text-xs font-medium">KPI Card</span>
-          </div>
-
-          <!-- Statistics Block -->
-          <div 
-            data-block-type="statistics"
-            class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
-            <iconify-icon icon="solar:chart-bold-duotone" width="32" class="text-info"></iconify-icon>
-            <span class="text-xs font-medium">Statistics</span>
-          </div>
-
-          <!-- Expense Tracker Block -->
-          <div 
-            data-block-type="expense-tracker"
-            class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
-            <iconify-icon icon="solar:wallet-money-bold-duotone" width="32" class="text-danger"></iconify-icon>
-            <span class="text-xs font-medium">Expenses</span>
-          </div>
-
-          <!-- Progress List Block -->
-          <div 
-            data-block-type="progress-list"
-            class="p-3 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center gap-2 cursor-move hover:border-primary hover:bg-primary/5 transition-colors">
-            <iconify-icon icon="solar:chart-2-bold-duotone" width="32" class="text-secondary"></iconify-icon>
-            <span class="text-xs font-medium">Progress List</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Canvas Area (Full Width) -->
+    <!-- Center: Canvas Area -->
     <%- include('partials/builder-canvas') %>
+
+    <!-- Right: Property Panel -->
+    <%- include('partials/property-panel') %>
   </div>
 </div>
 
@@ -134,9 +54,10 @@
   accountNumber: account_number,
   configId: typeof pageConfig !== 'undefined' ? pageConfig._id : null,
   isNew: typeof pageConfig === 'undefined',
+  builderMode: typeof builderMode !== 'undefined' ? builderMode : 'page',
   config: typeof pageConfig !== 'undefined' ? pageConfig : {
-    name: 'New Page',
-    type: 'dashboard',
+    name: typeof builderMode !== 'undefined' && builderMode === 'cockpit' ? 'New Cockpit' : 'New Page',
+    type: typeof builderMode !== 'undefined' && builderMode === 'cockpit' ? 'cockpit' : 'dashboard',
     schemaVersion: '1.0',
     theme: {
       spacing: 'normal',
@@ -176,6 +97,7 @@ document.addEventListener('alpine:init', () => {
       accountNumber: data.accountNumber,
       configId: data.configId,
       pageConfig: data.config,
+      builderMode: data.builderMode || 'page',
       lastSaved: null,
       
       builderState: {
@@ -184,8 +106,10 @@ document.addEventListener('alpine:init', () => {
         selectedRowId: null,
         hoveredBlockId: null,
         hoveredRowId: null,
-        drawerMode: null,
+        drawerMode: 'blocks',
         drawerContext: null,
+        sidebarOpen: true,
+        propertyPanelOpen: false,
         isDragging: false,
         dragSource: null,
         clipboard: null,
@@ -387,10 +311,12 @@ document.addEventListener('alpine:init', () => {
       
       getBlockDefaults(type) {
         const defaults = {
-          panel: { collapsible: false, icon: '' },
-          text: { content: 'Double-click to edit' },
-          'kpi-card': { label: 'KPI', valueField: '', color: 'primary' },
+          // Generic blocks
+          panel: { props: {}, collapsible: false, icon: '' },
+          text: { props: {}, content: 'Double-click to edit' },
+          'kpi-card': { props: {}, label: 'KPI', valueField: '', color: 'primary' },
           statistics: { 
+            props: {},
             title: 'Statistics',
             stats: [
               { label: 'Total Visits', value: '423,964' },
@@ -398,6 +324,7 @@ document.addEventListener('alpine:init', () => {
             ]
           },
           'expense-tracker': {
+            props: {},
             title: 'Expenses',
             value: 45141,
             currency: '$',
@@ -406,15 +333,88 @@ document.addEventListener('alpine:init', () => {
             trend: 'up'
           },
           'progress-list': {
+            props: {},
             title: 'Visitors by Browser',
             items: [
               { label: 'Chrome', value: 65, color: 'primary', icon: 'chrome' },
               { label: 'Safari', value: 40, color: 'danger', icon: 'safari' },
               { label: 'Others', value: 25, color: 'warning', icon: 'global' }
             ]
+          },
+          // Cockpit widgets
+          'work-queue': {
+            title: 'Salle d\'attente',
+            props: { height: 400, compact: false, showIcons: true, showBadges: true },
+            data: { source: 'consultations', query: '', sort: 'scheduled_at:asc', limit: 20 },
+            actions: { header: ['refresh'], row: ['call', 'done', 'urgent'] }
+          },
+          'comms-dock': {
+            title: 'Communications',
+            props: { height: 350, compact: false, showIcons: true, showBadges: true },
+            data: { source: 'messages', query: '', sort: 'createdAt:desc', limit: 50 },
+            actions: { header: ['refresh'], row: ['reply'], quick: ['next_patient', 'come_here', 'prescription', 'lab_request', 'followup', 'flag_urgent'] }
+          },
+          'activity-feed': {
+            title: 'Activités',
+            props: { height: 300, compact: true, showIcons: true, showBadges: false },
+            data: { source: 'activities', query: '', sort: 'createdAt:desc', limit: 30 },
+            actions: { header: ['refresh'], row: [] }
+          },
+          'focus-card': {
+            title: 'Prochain Patient',
+            props: { height: 200, compact: false, showIcons: true, showBadges: true },
+            data: { source: 'consultations', query: 'status:waiting', sort: 'scheduled_at:asc', limit: 1 },
+            actions: { header: [], row: ['call', 'view'] }
+          },
+          'urgency-radar': {
+            title: 'Radar Urgences',
+            props: { height: 250, compact: false, showIcons: true, showBadges: true },
+            data: { source: 'consultations', query: 'priority:urgent', sort: 'createdAt:desc', limit: 10 },
+            actions: { header: ['refresh'], row: ['call', 'done'] }
+          },
+          'kpi-cards': {
+            title: 'Statistiques du jour',
+            props: { height: 150, compact: false, showIcons: true, showBadges: false },
+            data: { source: 'stats', query: 'today', sort: '', limit: 0 },
+            actions: { header: [], row: [] }
           }
         };
-        return defaults[type] || {};
+        return defaults[type] || { props: {}, data: {}, actions: {} };
+      },
+      
+      toggleAction(category, action) {
+        const block = this.pageConfig.blocks[this.builderState.selectedBlockId];
+        if (!block) return;
+        
+        if (!block.actions) block.actions = {};
+        if (!block.actions[category]) block.actions[category] = [];
+        
+        const idx = block.actions[category].indexOf(action);
+        if (idx === -1) {
+          block.actions[category].push(action);
+        } else {
+          block.actions[category].splice(idx, 1);
+        }
+      },
+      
+      deleteBlock(blockId) {
+        if (!blockId) return;
+        
+        // Remove from blocks
+        delete this.pageConfig.blocks[blockId];
+        
+        // Remove from layout
+        const tabId = this.builderState.activeTab;
+        const rows = this.pageConfig.layout[tabId];
+        rows.forEach(row => {
+          row.columns.forEach(col => {
+            const idx = col.blocks.indexOf(blockId);
+            if (idx !== -1) col.blocks.splice(idx, 1);
+          });
+        });
+        
+        // Deselect
+        this.builderState.selectedBlockId = null;
       },
       
       async saveConfig() {

@@ -45,7 +45,18 @@ router.get('/new', (req, res) => {
     res.render('page-builder/page-builder', {
         layout: 'layout-app',
         user: req.user,
-        account_number: req.account_number
+        account_number: req.account_number,
+        builderMode: 'page'
+    });
+});
+
+// New cockpit builder
+router.get('/cockpit/new', (req, res) => {
+    res.render('page-builder/page-builder', {
+        layout: 'layout-app',
+        user: req.user,
+        account_number: req.account_number,
+        builderMode: 'cockpit'
     });
 });
 

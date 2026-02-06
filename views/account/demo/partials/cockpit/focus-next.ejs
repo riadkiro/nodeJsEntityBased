@@ -1,0 +1,62 @@
+<!-- Focus Next Patient Card -->
+<div class="panel h-full overflow-hidden" style="background: linear-gradient(135deg, #4361ee 0%, #2196f3 100%);">
+  <div class="relative z-10">
+    <!-- Header -->
+    <div class="mb-4 flex items-center justify-between text-white/90">
+      <h5 class="text-lg font-semibold text-white"><%= widget.title %></h5>
+      <span class="rounded-full bg-white/20 px-3 py-1 text-xs" x-text="nextConsultation?.time || '--:--'">--:--</span>
+    </div>
+    
+    <!-- Patient Info -->
+    <template x-if="nextConsultation">
+      <div>
+        <div class="mb-4 flex items-center gap-4">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-2xl font-bold text-white" 
+               x-text="nextConsultation.initials">--</div>
+          <div class="text-white">
+            <div class="text-xl font-bold" x-text="nextConsultation.patient">Patient</div>
+            <div class="text-sm text-white/80" x-text="nextConsultation.motif">Motif</div>
+          </div>
+        </div>
+        <div class="mb-4 flex gap-4 text-sm text-white/80">
+          <div class="flex items-center gap-1">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span>Attente: <span x-text="nextConsultation.waitTime || '?'">?</span></span>
+          </div>
+          <div class="flex items-center gap-1">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <span x-text="nextConsultation.visitType || 'Consultation'">Consultation</span>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="grid grid-cols-2 gap-2">
+          <button class="btn bg-white text-primary btn-sm font-semibold hover:bg-white/90"
+                  @click="transitionConsultation(nextConsultation.id, 'in_progress'); selectContext(nextConsultation.context)">
+            Démarrer Consultation
+          </button>
+          <button class="btn btn-outline-white btn-sm border-white/50 text-white hover:bg-white/20"
+                  @click="selectContext(nextConsultation.context)">
+            Voir Dossier
+          </button>
+          <button class="btn btn-outline-white btn-sm border-white/50 text-white hover:bg-white/20"
+                  @click="selectContext(nextConsultation.context); executeQuickAction('prepare_prescription')">
+            Ordonnance
+          </button>
+          <button class="btn btn-outline-white btn-sm border-white/50 text-white hover:bg-white/20"
+                  @click="selectContext(nextConsultation.context); executeQuickAction('request_lab')">
+            Demander Labo
+          </button>
+        </div>
+      </div>
+    </template>
+    
+    <!-- Empty State -->
+    <template x-if="!nextConsultation">
+      <div class="text-center text-white/80 py-8">
+        <svg class="h-12 w-12 mx-auto mb-3 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        <p>Aucun patient en attente</p>
+      </div>
+    </template>
+  </div>
+</div>

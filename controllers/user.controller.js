@@ -127,6 +127,68 @@ module.exports = {
     }
   },
 
+  createAccount: async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.redirect("/auth/login");
+      }
+
+      const { name, icon } = req.body;
+
+      if (!name || !name.trim()) {
+        return res.redirect("/user/accounts?error=Name is required");
+      }
+
+      const Account = require("../models/account.model");
+
+      // Generate unique account number (5xxx format)
+      let account_number;
+      let attempts = 0;
+      const maxAttempts = 100;
+
+      do {
+        account_number = (5000 + Math.floor(Math.random() * 1000)).toString();
+        const existing = await Account.findOne({ account_number });
+        if (!existing) break;
+        attempts++;
+      } while (attempts < maxAttempts);
+
+      if (attempts >= maxAttempts) {
+        return res.redirect("/user/accounts?error=Could not generate unique account number");
+      }
+
+      // Create the Account document
+      const newAccount = new Account({
+        name: name.trim(),
+        icon: icon?.trim() || 'solar:settings-bold-duotone',
+        users: [req.user._id.toString()],
+        account_number,
+        status: 'active',
+        created_on: new Date()
+      });
+
+      await newAccount.save();
+
+      // Add account to user's accounts array
+      await User.findByIdAndUpdate(req.user._id, {
+        $push: {
+          accounts: {
+            name: name.trim(),
+            account_number,
+            icon: icon?.trim() || 'solar:settings-bold-duotone'
+          }
+        }
+      });
+
+      // Redirect to accounts page
+      res.redirect("/user/accounts");
+
+    } catch (error) {
+      console.error("Error creating account:", error);
+      res.redirect("/user/accounts?error=Failed to create account");
+    }
+  },
+
   savePreferences: async (req, res) => {
     try {
       if (!req.user) {

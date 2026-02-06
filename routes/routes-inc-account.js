@@ -87,6 +87,23 @@ router.get("/doctor", (req, res) => {
     });
 });
 
+// Cockpit Builder v1 - Doctor Consultation
+const { loadCockpitConfig } = require('../utils/cockpit-loader');
+router.get("/doctor/cockpit", async (req, res) => {
+    const cockpitConfig = await loadCockpitConfig('consultation', req.account_number);
+    res.render("account/demo/doctor-cockpit", {
+        layout: "layout-app",
+        cockpitId: 'consultation',
+        cockpitConfig,
+        demo: true,
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
+// Demo API for Cockpit
+router.use("/api/demo", require("./api/api-demo.router.js"));
+
 // Team Page
 router.get("/team", (req, res) => {
     res.render("account/account-team", {

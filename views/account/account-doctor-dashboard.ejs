@@ -359,59 +359,44 @@
         
         <div class="p-5 flex flex-col flex-1">
           <!-- Quick Actions Grid -->
-          <div class="mb-4 grid grid-cols-2 gap-2">
-            <button @click="sendQuickAction('call')" class="btn btn-sm btn-outline-success text-xs py-2 flex items-center justify-center gap-1">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-              Appeler
+          <div class="grid grid-cols-2 gap-2 flex-1">
+            <button @click="sendQuickAction('next_patient')" class="btn btn-sm btn-outline-primary text-xs py-3 flex items-center justify-center gap-1.5">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              Patient suivant
             </button>
-            <button @click="sendQuickAction('prescription')" class="btn btn-sm btn-outline-primary text-xs py-2 flex items-center justify-center gap-1">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-              Ordonnance
+            <button @click="sendQuickAction('rdv_3m')" class="btn btn-sm btn-outline-info text-xs py-3 flex items-center justify-center gap-1.5">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              RDV 3 mois
             </button>
-            <button @click="sendQuickAction('lab')" class="btn btn-sm btn-outline-info text-xs py-2 flex items-center justify-center gap-1">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path></svg>
-              Labo
+            <button @click="sendQuickAction('rdv_6m')" class="btn btn-sm btn-outline-info text-xs py-3 flex items-center justify-center gap-1.5">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              RDV 6 mois
             </button>
-            <button @click="sendQuickAction('rdv')" class="btn btn-sm btn-outline-warning text-xs py-2 flex items-center justify-center gap-1">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-              RDV
+            <button @click="sendQuickAction('control_15d')" class="btn btn-sm btn-outline-warning text-xs py-3 flex items-center justify-center gap-1.5">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              Contrôle 15j
             </button>
-            <button @click="sendQuickAction('print')" class="btn btn-sm btn-outline-secondary text-xs py-2 flex items-center justify-center gap-1">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-              Imprimer
-            </button>
-            <button @click="sendQuickAction('urgent')" class="btn btn-sm btn-outline-danger text-xs py-2 flex items-center justify-center gap-1">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-              Urgence
+            <button @click="sendQuickAction('come_now')" class="btn btn-sm btn-outline-danger text-xs py-3 flex items-center justify-center gap-1.5 col-span-2">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              Viens maintenant !
             </button>
           </div>
           
-          <!-- Messages Area -->
-          <div class="flex-1 overflow-y-auto mb-3 space-y-2" style="max-height: 180px;">
-            <template x-for="msg in comms.messages" :key="msg.id">
-              <div class="flex gap-2" :class="msg.received ? '' : 'justify-end'">
-                <div x-show="msg.received" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold" :class="'bg-' + (msg.from === 'Sarah' ? 'success' : 'info') + '/20 text-' + (msg.from === 'Sarah' ? 'success' : 'info')" x-text="msg.from[0]"></div>
-                <div class="max-w-[75%]">
-                  <div x-show="msg.context" class="text-[10px] text-primary mb-0.5" x-text="msg.context"></div>
-                  <div class="rounded-lg px-3 py-1.5 text-xs" :class="msg.received ? 'bg-dark text-white-light' : 'bg-primary text-white'">
-                    <div x-text="msg.text"></div>
-                    <div class="text-[10px] mt-0.5 opacity-70" x-text="msg.time"></div>
-                  </div>
-                </div>
-              </div>
-            </template>
-          </div>
-          
-          <!-- Input Section -->
-          <div class="mt-auto">
-            <select x-model="comms.recipient" class="form-select text-xs py-1 mb-2">
+          <!-- Input Section at bottom -->
+          <div class="mt-4 pt-4 border-t border-[#e0e6ed] dark:border-[#1b2e4b]">
+            <select x-model="comms.recipient" class="form-select text-xs py-2 mb-2">
+              <option>À: Toute l'équipe</option>
               <option>À: Sarah</option>
               <option>À: Fatima</option>
-              <option>À: Toute l'équipe</option>
             </select>
             <div class="flex gap-2">
-              <textarea x-model="comms.newMessage" placeholder="Message..." rows="2" class="form-textarea text-xs resize-none"></textarea>
-              <button @click="sendMessage()" class="btn btn-primary px-3 shrink-0">
+              <input 
+                x-model="comms.newMessage" 
+                @keydown.enter="sendMessage()" 
+                placeholder="Message..." 
+                class="form-input text-sm py-2" 
+              />
+              <button @click="sendMessage()" class="btn btn-primary px-4 shrink-0">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
               </button>
             </div>
@@ -419,19 +404,45 @@
         </div>
       </div>
 
-      <!-- Activity Feed - Team Timeline (1/4 = 25%) -->
-      <div class="panel h-full">
-        <div class="mb-5 flex items-center justify-between dark:text-white-light">
-          <h5 class="text-lg font-semibold">Activité Équipe</h5>
+      <!-- Activity Log - WhatsApp Style Chat (1/4 = 25%) -->
+      <div class="panel h-full flex flex-col p-0">
+        <div class="flex items-center justify-between border-b border-[#e0e6ed] p-5 dark:border-[#1b2e4b]">
+          <h5 class="text-lg font-semibold dark:text-white-light">Activité Équipe</h5>
         </div>
-        <div class="overflow-y-auto space-y-3" style="max-height: 400px;">
+        <div x-ref="chatMessages" class="p-5 overflow-y-auto flex-1 space-y-3" style="max-height: 440px;">
           <template x-for="activity in activities" :key="activity.id">
-            <div class="flex gap-3">
-              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold" :class="'bg-' + activity.type + '/20 text-' + activity.type" x-text="activity.icon"></div>
-              <div class="flex-1">
-                <div class="text-sm font-medium dark:text-white-light mb-0.5" x-text="activity.title"></div>
-                <div class="text-xs text-white-dark" x-text="activity.author + ' • ' + activity.time"></div>
-                <span x-show="activity.badge" class="badge text-xs mt-1" :class="'bg-' + activity.type" x-text="activity.badge"></span>
+            <!-- WhatsApp-style message bubble -->
+            <div class="flex gap-2" :class="activity.author === 'Dr' ? 'justify-end' : 'justify-start'">
+              <!-- Avatar for left messages (Secrétariat/Système) -->
+              <div x-show="activity.author !== 'Dr'" 
+                   class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                   :class="'bg-' + activity.type + '/20 text-' + activity.type">
+                <span x-text="activity.icon"></span>
+              </div>
+              
+              <!-- Message bubble -->
+              <div class="max-w-[75%]">
+                <!-- Author name (only for non-Dr messages) -->
+                <div x-show="activity.author !== 'Dr'" class="text-xs text-white-dark mb-1 px-1" x-text="activity.author"></div>
+                
+                <!-- Bubble content -->
+                <div class="rounded-lg px-3 py-2" 
+                     :class="activity.author === 'Dr' ? ('bg-' + activity.type + '/20 text-' + activity.type) : 'bg-dark text-white-light'">
+                  <div class="text-sm" x-text="activity.title"></div>
+                  <div class="flex items-center justify-between gap-3 mt-1">
+                    <span x-show="activity.badge" 
+                          class="badge text-[10px] px-2 py-0.5 bg-danger" 
+                          x-text="activity.badge">
+                    </span>
+                    <span class="text-[10px] opacity-70 ml-auto" x-text="activity.time"></span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Avatar for right messages (Dr) -->
+              <div x-show="activity.author === 'Dr'" 
+                   class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">
+                Dr
               </div>
             </div>
           </template>
@@ -1041,12 +1052,12 @@ document.addEventListener('alpine:init', () => {
       ]
     },
     
-    // Activity feed
+    // Activity feed (chat-style log)
     activities: [
-      { id: 1, type: 'success', icon: '✓', title: 'Ordonnance envoyée pharmacie', author: 'Sarah', time: 'il y a 5 min' },
+      { id: 4, type: 'success', icon: '✓', title: 'Sarah a terminé la prise de RDV', author: 'Système', time: 'il y a 25 min' },
+      { id: 3, type: 'info', icon: '→', title: 'Dr a demandé patient suivant', author: 'Dr', time: 'il y a 15 min' },
       { id: 2, type: 'danger', icon: '!', title: 'Résultat labo critique reçu', author: 'Système', time: 'il y a 12 min', badge: 'URGENT' },
-      { id: 3, type: 'info', icon: 'i', title: 'RDV replanifié à 14:20', author: 'Fatima', time: 'il y a 25 min' },
-      { id: 4, type: 'warning', icon: '◷', title: 'Patient en retard signalé', author: 'Sarah', time: 'il y a 45 min' }
+      { id: 1, type: 'success', icon: '✓', title: 'Fatima a terminé l\'ordonnance', author: 'Système', time: 'il y a 5 min' }
     ],
     
     openPatientDrawer(patient) {
@@ -1060,34 +1071,68 @@ document.addEventListener('alpine:init', () => {
     
     sendQuickAction(action) {
       const actions = {
-        call: 'Appeler patient suivant',
-        prescription: 'Préparer ordonnance',
-        lab: 'Demander résultats labo',
-        rdv: 'Programmer RDV',
-        print: 'Imprimer document',
-        urgent: 'Signaler urgence'
+        next_patient: 'Patient suivant',
+        rdv_3m: 'RDV dans 3 mois',
+        rdv_6m: 'RDV dans 6 mois',
+        control_15d: 'Contrôle dans 15 jours',
+        come_now: 'Viens maintenant !'
       };
-      // Add to activity feed
-      this.activities.unshift({
+      
+      const actionTypes = {
+        next_patient: 'primary',
+        rdv_3m: 'info',
+        rdv_6m: 'info',
+        control_15d: 'warning',
+        come_now: 'danger'
+      };
+      
+      const actionText = actions[action];
+      const actionType = actionTypes[action];
+      
+      // Add to activity feed at bottom (newest last)
+      this.activities.push({
         id: Date.now(),
-        type: action === 'urgent' ? 'danger' : 'info',
+        type: actionType,
         icon: '→',
-        title: actions[action],
+        title: `Dr a demandé: ${actionText}`,
         author: 'Dr',
         time: 'à l\'instant'
+      });
+      
+      // Auto-scroll to bottom
+      this.$nextTick(() => {
+        const container = this.$refs.chatMessages;
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
       });
     },
     
     sendMessage() {
       if (!this.comms.newMessage.trim()) return;
-      this.comms.messages.push({
+      
+      const messageText = this.comms.newMessage;
+      const recipient = this.comms.recipient;
+      
+      // Add message to activity log at bottom (newest last)
+      this.activities.push({
         id: Date.now(),
-        from: 'Dr',
-        text: this.comms.newMessage,
-        time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-        received: false
+        type: 'info',
+        icon: '💬',
+        title: `${messageText}`,
+        author: 'Dr',
+        time: 'à l\'instant'
       });
+      
       this.comms.newMessage = '';
+      
+      // Auto-scroll to bottom
+      this.$nextTick(() => {
+        const container = this.$refs.chatMessages;
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+      });
     },
     
     init() {

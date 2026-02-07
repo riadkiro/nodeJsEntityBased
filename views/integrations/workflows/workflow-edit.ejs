@@ -1,312 +1,735 @@
-<%# Tenant - Workflow Edit %>
-<div class="max-w-5xl mx-auto">
-    <div class="panel p-6 mb-6">
-        <a href="/account/<%= account_number %>/workflows" class="text-sm text-gray-500 hover:text-primary mb-4 inline-block">
-            ← Retour aux workflows
-        </a>
-        <h1 class="text-2xl font-semibold dark:text-white">
-            <%= workflow ? 'Modifier le workflow' : 'Nouveau workflow' %>
-        </h1>
+<%# Visual Workflow Builder — Zapier-style %>
+<style>
+  .wf-builder { display: flex; height: calc(100vh - 64px); overflow: hidden; }
+  .wf-canvas { flex: 1; overflow-y: auto; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; background:
+    radial-gradient(circle at 1px 1px, rgba(139,92,246,0.06) 1px, transparent 0);
+    background-size: 24px 24px;
+  }
+  .wf-sidebar { width: 340px; border-left: 1px solid var(--border-color, #e5e7eb); overflow-y: auto; background: var(--bg, #fff); flex-shrink: 0; }
+  .dark .wf-sidebar { border-color: #1b2e4b; background: #0e1726; }
+  .dark .wf-canvas { background: radial-gradient(circle at 1px 1px, rgba(139,92,246,0.04) 1px, transparent 0); background-size: 24px 24px; }
+
+  /* Nodes */
+  .wf-node { width: 420px; border-radius: 12px; background: #fff; border: 1.5px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: all 0.2s; position: relative; }
+  .wf-node:hover { box-shadow: 0 4px 12px rgba(139,92,246,0.12); border-color: #a78bfa; }
+  .wf-node.trigger { border-color: #a78bfa; }
+  .wf-node.action { border-color: #60a5fa; }
+  .dark .wf-node { background: #1b2e4b; border-color: #2a3f5f; }
+  .dark .wf-node:hover { border-color: #8b5cf6; box-shadow: 0 4px 12px rgba(139,92,246,0.2); }
+
+  .wf-node-header { padding: 14px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #f3f4f6; }
+  .dark .wf-node-header { border-color: #2a3f5f; }
+  .wf-node-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .wf-node-body { padding: 16px; }
+  .wf-node-title { font-weight: 600; font-size: 14px; }
+  .wf-node-subtitle { font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .dark .wf-node-subtitle { color: #9ca3af; }
+
+  /* Connector */
+  .wf-connector { display: flex; flex-direction: column; align-items: center; padding: 4px 0; }
+  .wf-connector-line { width: 2px; height: 28px; background: linear-gradient(to bottom, #a78bfa, #60a5fa); border-radius: 1px; }
+  .wf-connector-dot { width: 8px; height: 8px; border-radius: 50%; background: #8b5cf6; border: 2px solid #fff; box-shadow: 0 0 0 2px #8b5cf6; }
+  .dark .wf-connector-dot { border-color: #0e1726; }
+
+  /* Add button */
+  .wf-add-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px dashed #d1d5db; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; background: #fff; color: #9ca3af; margin: 4px 0; }
+  .wf-add-btn:hover { border-color: #8b5cf6; color: #8b5cf6; background: rgba(139,92,246,0.05); transform: scale(1.1); }
+  .dark .wf-add-btn { background: #1b2e4b; border-color: #3b5998; color: #6b7280; }
+  .dark .wf-add-btn:hover { border-color: #8b5cf6; color: #8b5cf6; }
+
+  /* Form elements inside nodes */
+  .wf-select { width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; background: #f9fafb; transition: border-color 0.2s; }
+  .wf-select:focus { outline: none; border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139,92,246,0.1); }
+  .dark .wf-select { background: #0e1726; border-color: #2a3f5f; color: #e5e7eb; }
+  .dark .wf-select:focus { border-color: #8b5cf6; }
+
+  .wf-input { width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; background: #f9fafb; }
+  .wf-input:focus { outline: none; border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139,92,246,0.1); }
+  .dark .wf-input { background: #0e1726; border-color: #2a3f5f; color: #e5e7eb; }
+
+  .wf-textarea { width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 12px; font-family: 'JetBrains Mono', monospace; background: #f9fafb; resize: vertical; }
+  .wf-textarea:focus { outline: none; border-color: #8b5cf6; }
+  .dark .wf-textarea { background: #0e1726; border-color: #2a3f5f; color: #e5e7eb; }
+
+  .wf-label { display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .dark .wf-label { color: #9ca3af; }
+
+  /* Sidebar panels */
+  .wf-sidebar-section { padding: 16px; border-bottom: 1px solid #f3f4f6; }
+  .dark .wf-sidebar-section { border-color: #1b2e4b; }
+  .wf-sidebar-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; margin-bottom: 12px; }
+
+  .wf-var-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-family: monospace; cursor: pointer; transition: all 0.15s; margin: 2px; }
+  .wf-var-chip:hover { transform: scale(1.05); }
+  .wf-var-chip.field { background: #ede9fe; color: #7c3aed; }
+  .wf-var-chip.system { background: #e0f2fe; color: #0284c7; }
+  .wf-var-chip.classification { background: #fef3c7; color: #d97706; }
+  .dark .wf-var-chip.field { background: rgba(139,92,246,0.15); color: #a78bfa; }
+  .dark .wf-var-chip.system { background: rgba(56,189,248,0.15); color: #38bdf8; }
+  .dark .wf-var-chip.classification { background: rgba(245,158,11,0.15); color: #fbbf24; }
+
+  /* Job timeline */
+  .wf-job-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; font-size: 12px; transition: background 0.15s; cursor: pointer; }
+  .wf-job-item:hover { background: #f9fafb; }
+  .dark .wf-job-item:hover { background: #1b2e4b; }
+  .wf-job-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .wf-job-dot.completed { background: #10b981; }
+  .wf-job-dot.failed { background: #ef4444; }
+  .wf-job-dot.queued { background: #f59e0b; animation: pulse 1.5s infinite; }
+
+  /* Toolbar */
+  .wf-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #e5e7eb; background: #fff; }
+  .dark .wf-toolbar { background: #0e1726; border-color: #1b2e4b; }
+
+  /* Animations */
+  @keyframes nodeEnter { from { opacity: 0; transform: translateY(-12px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  .wf-node { animation: nodeEnter 0.3s ease-out; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  /* Badge for unconfigured */
+  .wf-badge-warn { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; background: #fef3c7; color: #d97706; }
+  .dark .wf-badge-warn { background: rgba(245,158,11,0.15); color: #fbbf24; }
+
+  .wf-node-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; }
+  .wf-node:hover .wf-node-actions { opacity: 1; }
+  .wf-node-action-btn { width: 28px; height: 28px; border-radius: 6px; border: none; background: #f3f4f6; color: #6b7280; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .wf-node-action-btn:hover { background: #fee2e2; color: #ef4444; }
+  .dark .wf-node-action-btn { background: #2a3f5f; color: #9ca3af; }
+  .dark .wf-node-action-btn:hover { background: rgba(239,68,68,0.2); color: #f87171; }
+
+  /* Response Modal */
+  .wf-modal-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s; }
+  .wf-modal { background: #fff; border-radius: 16px; width: 600px; max-width: 90vw; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.15); animation: slideUp 0.25s ease-out; }
+  .dark .wf-modal { background: #0e1726; border: 1px solid #1b2e4b; }
+  .wf-modal-header { padding: 16px 20px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; justify-content: space-between; }
+  .dark .wf-modal-header { border-color: #1b2e4b; }
+  .wf-modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+  .wf-modal-pre { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.6; overflow-x: auto; white-space: pre-wrap; word-break: break-word; max-height: 400px; overflow-y: auto; }
+  .dark .wf-modal-pre { background: #1b2e4b; border-color: #2a3f5f; color: #e5e7eb; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Sync toggle */
+  .wf-toggle { position: relative; width: 40px; height: 22px; background: #d1d5db; border-radius: 11px; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+  .wf-toggle.active { background: #8b5cf6; }
+  .wf-toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
+  .wf-toggle.active::after { transform: translateX(18px); }
+</style>
+
+<div x-data="workflowBuilder()" x-init="init()">
+  <!-- Toolbar -->
+  <div class="wf-toolbar">
+    <div class="flex items-center gap-3">
+      <a href="/account/<%= account_number %>/workflows" class="text-gray-400 hover:text-primary transition-colors">
+        <iconify-icon icon="solar:arrow-left-linear" width="20"></iconify-icon>
+      </a>
+      <div>
+        <input x-model="workflowName" type="text" 
+          class="bg-transparent border-none text-lg font-bold dark:text-white focus:outline-none focus:ring-0 p-0"
+          placeholder="Nom du workflow..." style="min-width: 200px;">
+        <div class="text-xs text-gray-500" x-text="workflowId ? 'Modifier le workflow' : 'Nouveau workflow'"></div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <!-- Test Run Button -->
+      <button @click="testRun()" class="btn btn-sm bg-amber-500/10 text-amber-600 border border-amber-500/20 hover:bg-amber-500/20 transition-all" :disabled="!isValid() || testRunLoading">
+        <template x-if="!testRunLoading">
+          <span class="flex items-center"><iconify-icon icon="solar:play-bold" width="14" class="mr-1"></iconify-icon> Test Run</span>
+        </template>
+        <template x-if="testRunLoading">
+          <span class="flex items-center"><iconify-icon icon="solar:refresh-bold" width="14" class="mr-1 animate-spin"></iconify-icon> Exécution...</span>
+        </template>
+      </button>
+      <!-- Save Button -->
+      <button @click="save()" class="btn btn-sm bg-primary text-white border-0 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all min-w-[140px]"
+        :disabled="saving">
+        <template x-if="saving">
+          <span class="flex items-center"><iconify-icon icon="solar:refresh-bold" width="14" class="mr-1 animate-spin"></iconify-icon> Sauvegarde...</span>
+        </template>
+        <template x-if="!saving && saveStatus === 'success'">
+          <span class="flex items-center"><iconify-icon icon="solar:check-circle-bold" width="14" class="mr-1"></iconify-icon> Sauvegardé !</span>
+        </template>
+        <template x-if="!saving && saveStatus === 'error'">
+          <span class="flex items-center"><iconify-icon icon="solar:close-circle-bold" width="14" class="mr-1"></iconify-icon> Erreur</span>
+        </template>
+        <template x-if="!saving && !saveStatus">
+          <span class="flex items-center"><iconify-icon icon="solar:diskette-bold" width="14" class="mr-1"></iconify-icon> Sauvegarder</span>
+        </template>
+      </button>
+    </div>
+  </div>
+
+  <div class="wf-builder">
+    <!-- Canvas -->
+    <div class="wf-canvas">
+      <!-- ═══ TRIGGER NODE ═══ -->
+      <div class="wf-node trigger" @click="selectNode('trigger')">
+        <div class="wf-node-header">
+          <div class="wf-node-icon bg-gradient-to-br from-violet-500 to-purple-600">
+            <iconify-icon icon="solar:bolt-circle-bold" width="20" class="text-white"></iconify-icon>
+          </div>
+          <div class="flex-1">
+            <div class="wf-node-title dark:text-white">Déclencheur</div>
+            <div class="wf-node-subtitle" x-text="getTriggerLabel()"></div>
+          </div>
+          <template x-if="!triggerType">
+            <span class="wf-badge-warn">À configurer</span>
+          </template>
+        </div>
+        <div class="wf-node-body">
+          <div class="mb-3">
+            <label class="wf-label">Type de déclencheur</label>
+            <select x-model="triggerType" @change="onTriggerTypeChange()" class="wf-select">
+              <option value="">— Choisir —</option>
+              <option value="manual.button">🖱️ Bouton (Manuel)</option>
+              <option value="record.created">➕ Enregistrement créé</option>
+              <option value="record.updated">✏️ Enregistrement modifié</option>
+            </select>
+          </div>
+          <template x-if="triggerType">
+            <div>
+              <label class="wf-label">Collection (Entity)</label>
+              <select x-model="triggerEntityId" @change="loadEntityContext()" class="wf-select">
+                <option value="">— Optionnel —</option>
+                <% entities.forEach(e => { %>
+                  <option value="<%= e._id %>"><%= e.name %></option>
+                <% }) %>
+              </select>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- ═══ STEPS ═══ -->
+      <template x-for="(step, index) in steps" :key="step.id">
+        <div>
+          <!-- Connector -->
+          <div class="wf-connector">
+            <div class="wf-connector-line"></div>
+            <div class="wf-connector-dot"></div>
+          </div>
+
+          <!-- Action Node -->
+          <div class="wf-node action" @click="selectNode(step.id)">
+            <div class="wf-node-actions">
+              <button class="wf-node-action-btn" @click.stop="removeStep(index)" title="Supprimer">
+                <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon>
+              </button>
+            </div>
+            <div class="wf-node-header">
+              <div class="wf-node-icon bg-gradient-to-br from-blue-500 to-cyan-600">
+                <iconify-icon icon="solar:settings-bold" width="18" class="text-white"></iconify-icon>
+              </div>
+              <div class="flex-1">
+                <div class="wf-node-title dark:text-white">
+                  <span x-text="getStepTitle(step)"></span>
+                </div>
+                <div class="wf-node-subtitle" x-text="'Step ' + (index + 1)"></div>
+              </div>
+              <template x-if="!step.providerKey || !step.actionId">
+                <span class="wf-badge-warn">À configurer</span>
+              </template>
+            </div>
+            <div class="wf-node-body">
+              <div class="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label class="wf-label">Provider</label>
+                  <select x-model="step.providerKey" @change="onProviderChange(step)" class="wf-select">
+                    <option value="">— Choisir —</option>
+                    <template x-for="p in allProviders" :key="p.key">
+                      <option :value="p.key" x-text="p.name"></option>
+                    </template>
+                  </select>
+                </div>
+                <div>
+                  <label class="wf-label">Action</label>
+                  <select x-model="step.actionId" class="wf-select">
+                    <option value="">— Choisir —</option>
+                    <template x-for="a in getActionsForProvider(step.providerKey)" :key="a._id">
+                      <option :value="a._id" x-text="a.name"></option>
+                    </template>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="wf-label">Input Mapping (JSON)</label>
+                <textarea x-model="step.inputMappingStr" class="wf-textarea" rows="3"
+                  placeholder='{"query": "{{trigger.record.title}}"}'></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Add Step Button -->
+      <div class="wf-connector" x-show="triggerType">
+        <div class="wf-connector-line"></div>
+      </div>
+      <button class="wf-add-btn" @click="addStep()" x-show="triggerType" title="Ajouter une action">
+        <iconify-icon icon="solar:add-circle-bold" width="18"></iconify-icon>
+      </button>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Main Form -->
-        <div class="lg:col-span-2 space-y-6">
-            <div class="panel p-6">
-                <h5 class="text-lg font-semibold mb-5 dark:text-white-light">Configuration</h5>
-                
-                <form id="workflow-form">
-                    <div class="mb-5">
-                        <label for="name" class="block text-sm font-medium mb-2">Nom du workflow *</label>
-                        <input type="text" id="name" name="name" class="form-input" required 
-                            value="<%= workflow?.name || '' %>" placeholder="Ex: Notification client">
-                    </div>
-                    
-                    <div class="mb-5">
-                        <label for="description" class="block text-sm font-medium mb-2">Description</label>
-                        <textarea id="description" name="description" class="form-textarea" rows="2"
-                            placeholder="Décrivez ce que fait ce workflow"><%= workflow?.description || '' %></textarea>
-                    </div>
-                    
-                    <hr class="border-gray-200 dark:border-gray-700 my-6">
-                    
-                    <!-- Trigger -->
-                    <h6 class="text-md font-semibold mb-4 dark:text-white-light">Déclencheur</h6>
-                    
-                    <div class="grid grid-cols-2 gap-4 mb-5">
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Événement *</label>
-                            <select id="trigger-type" name="trigger.type" class="form-select" required>
-                                <option value="">-- Choisir --</option>
-                                <option value="record.created" <%= workflow?.trigger?.type === 'record.created' ? 'selected' : '' %>>Record créé</option>
-                                <option value="record.updated" <%= workflow?.trigger?.type === 'record.updated' ? 'selected' : '' %>>Record modifié</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Entité *</label>
-                            <select id="trigger-entity" name="trigger.entityId" class="form-select" required>
-                                <option value="">-- Choisir --</option>
-                                <% entities.forEach(entity => { %>
-                                    <option value="<%= entity._id %>" 
-                                        <%= workflow?.trigger?.entityId?.toString() === entity._id.toString() ? 'selected' : '' %>>
-                                        <%= entity.name %>
-                                    </option>
-                                <% }) %>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <hr class="border-gray-200 dark:border-gray-700 my-6">
-                    
-                    <!-- Steps -->
-                    <div class="flex items-center justify-between mb-4">
-                        <h6 class="text-md font-semibold dark:text-white-light">Actions</h6>
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addStep()">
-                            + Ajouter une action
-                        </button>
-                    </div>
-                    
-                    <div id="steps-container" class="space-y-4">
-                        <% if (workflow?.steps?.length) { %>
-                            <% workflow.steps.forEach((step, index) => { %>
-                                <div class="step-item panel bg-gray-50 dark:bg-gray-900 p-4" data-step-index="<%= index %>">
-                                    <div class="flex items-center justify-between mb-3">
-                                        <span class="font-semibold text-sm">Step <%= index + 1 %></span>
-                                        <button type="button" class="text-danger hover:text-danger/80" onclick="removeStep(this)">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-4 mb-3">
-                                        <div>
-                                            <label class="block text-xs font-medium mb-1">Provider</label>
-                                            <select name="step-provider" class="form-select form-select-sm" onchange="updateActions(this)">
-                                                <% providers.forEach(p => { %>
-                                                    <option value="<%= p.key %>" <%= step.providerKey === p.key ? 'selected' : '' %>>
-                                                        <%= p.name %>
-                                                    </option>
-                                                <% }) %>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-medium mb-1">Action</label>
-                                            <select name="step-action" class="form-select form-select-sm">
-                                                <% actions.filter(a => a.providerKey === step.providerKey).forEach(a => { %>
-                                                    <option value="<%= a._id %>" <%= step.actionId?.toString() === a._id.toString() ? 'selected' : '' %>>
-                                                        <%= a.name %>
-                                                    </option>
-                                                <% }) %>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-medium mb-1">Input Mapping (JSON)</label>
-                                        <textarea name="step-mapping" class="form-textarea form-textarea-sm font-mono text-xs" rows="3"
-                                            placeholder='{"query": "{{trigger.record.name}}"}'><%= JSON.stringify(step.inputMapping || {}, null, 2) %></textarea>
-                                    </div>
-                                </div>
-                            <% }) %>
-                        <% } %>
-                    </div>
-                    
-                    <div id="no-steps-message" class="text-center py-8 text-gray-500 dark:text-gray-400 <%= workflow?.steps?.length ? 'hidden' : '' %>">
-                        <p>Aucune action configurée</p>
-                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addStep()">
-                            Ajouter votre première action
-                        </button>
-                    </div>
-                    
-                    <hr class="border-gray-200 dark:border-gray-700 my-6">
-                    
-                    <div class="flex items-center justify-between">
-                        <a href="/account/<%= account_number %>/workflows" class="btn btn-outline-dark">
-                            Annuler
-                        </a>
-                        <button type="submit" class="btn btn-primary">
-                            <%= workflow ? 'Enregistrer' : 'Créer le workflow' %>
-                        </button>
-                    </div>
-                </form>
-            </div>
+    <!-- ═══ SIDEBAR ═══ -->
+    <div class="wf-sidebar">
+      <!-- Workflow Info -->
+      <div class="wf-sidebar-section">
+        <div class="wf-sidebar-title">Workflow</div>
+        <div class="mb-3">
+          <label class="wf-label">Description</label>
+          <textarea x-model="workflowDescription" class="wf-textarea" rows="2" placeholder="Description optionnelle..."></textarea>
         </div>
-        
-        <!-- Sidebar -->
-        <div class="space-y-6">
-            <% if (workflow && typeof jobs !== 'undefined' && jobs.length > 0) { %>
-                <div class="panel p-6">
-                    <h5 class="text-lg font-semibold mb-5 dark:text-white-light">Exécutions récentes</h5>
-                    <div class="space-y-3">
-                        <% jobs.slice(0, 10).forEach(job => { %>
-                            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded">
-                                <div>
-                                    <% if (job.status === 'completed') { %>
-                                        <span class="badge bg-success">Succès</span>
-                                    <% } else if (job.status === 'failed') { %>
-                                        <span class="badge bg-danger">Échec</span>
-                                    <% } else if (job.status === 'running') { %>
-                                        <span class="badge bg-warning">En cours</span>
-                                    <% } else { %>
-                                        <span class="badge bg-secondary">En attente</span>
-                                    <% } %>
-                                </div>
-                                <span class="text-xs text-gray-500">
-                                    <%= new Date(job.createdAt).toLocaleString('fr-FR') %>
-                                </span>
-                            </div>
-                        <% }) %>
-                    </div>
-                </div>
-            <% } %>
-            
-            <!-- Help -->
-            <div class="panel p-6">
-                <h5 class="text-lg font-semibold mb-4 dark:text-white-light">Variables disponibles</h5>
-                <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-                    <p><code class="text-xs bg-gray-100 dark:bg-gray-800 px-1 rounded">{{trigger.record}}</code> - Record complet</p>
-                    <p><code class="text-xs bg-gray-100 dark:bg-gray-800 px-1 rounded">{{trigger.record.title}}</code> - Titre</p>
-                    <p><code class="text-xs bg-gray-100 dark:bg-gray-800 px-1 rounded">{{trigger.record._id}}</code> - ID</p>
-                    <p><code class="text-xs bg-gray-100 dark:bg-gray-800 px-1 rounded">{{steps.step1}}</code> - Output step précédent</p>
-                </div>
-            </div>
+        <div>
+          <label class="wf-label">Catégorie</label>
+          <select x-model="workflowCategory" class="wf-select">
+            <option value="automation">🤖 Automation</option>
+            <option value="action">⚡ Action</option>
+            <option value="notification">🔔 Notification</option>
+          </select>
         </div>
+      </div>
+
+      <!-- Available Variables -->
+      <div class="wf-sidebar-section">
+        <div class="wf-sidebar-title">Variables disponibles</div>
+        <template x-if="!triggerEntityId">
+          <p class="text-xs text-gray-500">Sélectionnez une collection pour voir les variables</p>
+        </template>
+
+        <!-- System variables -->
+        <div class="mb-3" x-show="triggerType">
+          <div class="text-[10px] font-semibold text-gray-400 mb-1">SYSTÈME</div>
+          <div class="flex flex-wrap">
+            <span class="wf-var-chip system" @click="copyVariable('{{trigger.record._id}}')" title="Cliquer pour copier">_id</span>
+            <span class="wf-var-chip system" @click="copyVariable('{{trigger.record.title}}')" title="Cliquer pour copier">title</span>
+            <span class="wf-var-chip system" @click="copyVariable('{{trigger.record.createdAt}}')" title="Cliquer pour copier">createdAt</span>
+            <span class="wf-var-chip system" @click="copyVariable('{{actor.email}}')" title="Cliquer pour copier">actor.email</span>
+          </div>
+        </div>
+
+        <!-- Entity fields -->
+        <template x-if="entityContext && entityContext.fields && entityContext.fields.length > 0">
+          <div class="mb-3">
+            <div class="text-[10px] font-semibold text-gray-400 mb-1">CHAMPS</div>
+            <div class="flex flex-wrap">
+              <template x-for="field in entityContext.fields" :key="field._id">
+                <span class="wf-var-chip field" @click="copyVariable(field.variable)" :title="field.variable" x-text="field.name"></span>
+              </template>
+            </div>
+          </div>
+        </template>
+
+        <!-- Classifications -->
+        <template x-if="entityContext && entityContext.classifications && entityContext.classifications.length > 0">
+          <div class="mb-3">
+            <div class="text-[10px] font-semibold text-gray-400 mb-1">CLASSIFICATIONS</div>
+            <div class="flex flex-wrap">
+              <template x-for="cls in entityContext.classifications" :key="cls._id">
+                <span class="wf-var-chip classification" @click="copyVariable(cls.variable)" :title="cls.variable" x-text="cls.name"></span>
+              </template>
+            </div>
+          </div>
+        </template>
+
+        <!-- Step outputs -->
+        <template x-if="steps.length > 0">
+          <div class="mb-3">
+            <div class="text-[10px] font-semibold text-gray-400 mb-1">OUTPUTS DES STEPS</div>
+            <div class="flex flex-wrap">
+              <template x-for="(step, i) in steps" :key="step.id + '-var'">
+                <span class="wf-var-chip system" @click="copyVariable('{{steps.' + step.id + '}}')" :title="'{{steps.' + step.id + '}}'" x-text="'Step ' + (i+1) + ' output'"></span>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Run History -->
+      <div class="wf-sidebar-section">
+        <div class="wf-sidebar-title flex items-center justify-between">
+          <span>Dernières exécutions</span>
+          <template x-if="workflowId">
+            <a :href="'/account/<%= account_number %>/workflows/' + workflowId + '/jobs'" class="text-xs text-primary font-normal">Voir tout</a>
+          </template>
+        </div>
+        <template x-if="jobs.length === 0">
+          <div class="text-center py-4">
+            <iconify-icon icon="solar:history-bold-duotone" width="24" class="text-gray-300 dark:text-gray-600"></iconify-icon>
+            <p class="text-xs text-gray-400 mt-2">Aucune exécution</p>
+          </div>
+        </template>
+        <div class="space-y-1">
+          <template x-for="job in jobs" :key="job._id">
+            <div class="wf-job-item">
+              <div class="wf-job-dot" :class="job.status"></div>
+              <div class="flex-1">
+                <span class="text-xs font-medium dark:text-gray-300" x-text="job.status === 'completed' ? 'Succès' : job.status === 'failed' ? 'Échec' : 'En cours'"></span>
+              </div>
+              <span class="text-xs text-gray-400" x-text="formatDate(job.createdAt)"></span>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="wf-sidebar-section">
+        <div class="wf-sidebar-title">Paramètres</div>
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <div class="text-xs font-medium dark:text-gray-300">Mode synchrone</div>
+            <div class="text-[10px] text-gray-400">Attendre la réponse (pour popups)</div>
+          </div>
+          <div class="wf-toggle" :class="syncMode ? 'active' : ''" @click="syncMode = !syncMode"></div>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-xs font-medium dark:text-gray-300">Anti double-clic</div>
+            <div class="text-[10px] text-gray-400">Cooldown 5s entre exécutions</div>
+          </div>
+          <div class="wf-toggle active"></div>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <!-- ═══ RESPONSE MODAL ═══ -->
+  <template x-if="showModal">
+    <div class="wf-modal-overlay" @click.self="closeResponseModal()">
+      <div class="wf-modal">
+        <div class="wf-modal-header">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center" :class="modalData?.success ? 'bg-green-100 dark:bg-green-500/15' : 'bg-red-100 dark:bg-red-500/15'">
+              <iconify-icon :icon="modalData?.success ? 'solar:check-circle-bold' : 'solar:close-circle-bold'" width="18" :class="modalData?.success ? 'text-green-600' : 'text-red-500'"></iconify-icon>
+            </div>
+            <div>
+              <div class="font-semibold text-sm dark:text-white" x-text="modalData?.success ? 'Exécution réussie' : 'Échec de l\'exécution'"></div>
+              <div class="text-xs text-gray-400" x-text="modalData?.latencyMs ? (modalData.latencyMs + 'ms') : ''"></div>
+            </div>
+          </div>
+          <button @click="closeResponseModal()" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <iconify-icon icon="solar:close-circle-linear" width="18" class="text-gray-400"></iconify-icon>
+          </button>
+        </div>
+        <div class="wf-modal-body">
+          <div class="text-[10px] font-semibold text-gray-400 mb-2 uppercase">Réponse</div>
+          <div class="wf-modal-pre" x-text="modalData?.prettyData || 'Aucune donnée'"></div>
+        </div>
+      </div>
+    </div>
+  </template>
 </div>
 
 <script>
-const allProviders = <%- JSON.stringify(providers) %>;
-const allActions = <%- JSON.stringify(actions) %>;
-let stepCounter = <%= workflow?.steps?.length || 0 %>;
+function workflowBuilder() {
+  return {
+    // Workflow data
+    workflowId: '<%= workflow ? workflow._id : "" %>',
+    workflowName: '<%= workflow ? workflow.name : "" %>',
+    workflowDescription: '<%= workflow ? (workflow.description || "") : "" %>',
+    workflowCategory: '<%= workflow ? (workflow.category || "automation") : "automation" %>',
 
-function addStep() {
-    stepCounter++;
-    const container = document.getElementById('steps-container');
-    const noStepsMsg = document.getElementById('no-steps-message');
-    noStepsMsg.classList.add('hidden');
-    
-    const stepHtml = `
-        <div class="step-item panel bg-gray-50 dark:bg-gray-900 p-4" data-step-index="${stepCounter}">
-            <div class="flex items-center justify-between mb-3">
-                <span class="font-semibold text-sm">Step ${container.children.length + 1}</span>
-                <button type="button" class="text-danger hover:text-danger/80" onclick="removeStep(this)">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            <div class="grid grid-cols-2 gap-4 mb-3">
-                <div>
-                    <label class="block text-xs font-medium mb-1">Provider</label>
-                    <select name="step-provider" class="form-select form-select-sm" onchange="updateActions(this)">
-                        <option value="">-- Choisir --</option>
-                        ${allProviders.map(p => `<option value="${p.key}">${p.name}</option>`).join('')}
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium mb-1">Action</label>
-                    <select name="step-action" class="form-select form-select-sm">
-                        <option value="">-- Choisir provider --</option>
-                    </select>
-                </div>
-            </div>
-            <div>
-                <label class="block text-xs font-medium mb-1">Input Mapping (JSON)</label>
-                <textarea name="step-mapping" class="form-textarea form-textarea-sm font-mono text-xs" rows="3"
-                    placeholder='{"query": "{{trigger.record.title}}"}'>{}</textarea>
-            </div>
-        </div>
-    `;
-    
-    container.insertAdjacentHTML('beforeend', stepHtml);
-}
+    // Trigger
+    triggerType: '<%= workflow ? (workflow.trigger?.type || "") : "" %>',
+    triggerEntityId: '<%= workflow ? (workflow.trigger?.entityId || "") : "" %>',
 
-function removeStep(btn) {
-    const stepItem = btn.closest('.step-item');
-    stepItem.remove();
-    
-    document.querySelectorAll('.step-item').forEach((item, i) => {
-        item.querySelector('.font-semibold').textContent = `Step ${i + 1}`;
-    });
-    
-    if (document.querySelectorAll('.step-item').length === 0) {
-        document.getElementById('no-steps-message').classList.remove('hidden');
-    }
-}
+    // Steps
+    steps: [],
+    stepCounter: 0,
 
-function updateActions(select) {
-    const providerKey = select.value;
-    const actionSelect = select.closest('.grid').querySelector('[name="step-action"]');
-    
-    const filteredActions = allActions.filter(a => a.providerKey === providerKey);
-    actionSelect.innerHTML = filteredActions.length
-        ? filteredActions.map(a => `<option value="${a._id}">${a.name}</option>`).join('')
-        : '<option value="">Aucune action</option>';
-}
+    // Context
+    entityContext: null,
+    allProviders: [],
+    allActions: [],
 
-document.getElementById('workflow-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const name = document.getElementById('name').value;
-    const description = document.getElementById('description').value;
-    const triggerType = document.getElementById('trigger-type').value;
-    const triggerEntity = document.getElementById('trigger-entity').value;
-    
-    const steps = [];
-    document.querySelectorAll('.step-item').forEach((item, index) => {
-        const providerKey = item.querySelector('[name="step-provider"]').value;
-        const actionId = item.querySelector('[name="step-action"]').value;
-        let inputMapping = {};
-        
-        try {
-            inputMapping = JSON.parse(item.querySelector('[name="step-mapping"]').value || '{}');
-        } catch (e) {
-            console.warn('Invalid JSON in step mapping');
+    // Jobs
+    jobs: [],
+
+    // Selected node
+    selectedNode: null,
+
+    // Settings
+    syncMode: <%= workflow && workflow.settings && workflow.settings.async === false ? 'true' : 'false' %>,
+    testRunLoading: false,
+    saving: false,
+    saveStatus: null, // null | 'success' | 'error'
+
+    // Response modal
+    showModal: false,
+    modalData: null,
+
+    async init() {
+      // ⚠️ Load providers FIRST — selects need options before values are set
+      try {
+        const resp = await fetch('/account/<%= account_number %>/workflows/api/providers', { credentials: 'include' });
+        const data = await resp.json();
+        if (data.success) {
+          this.allProviders = data.providers;
+          // Flatten actions
+          this.allActions = data.providers.reduce((acc, p) => [...acc, ...p.actions], []);
         }
-        
-        if (providerKey && actionId) {
-            steps.push({
-                id: `step${index + 1}`,
-                type: 'action',
-                providerKey,
-                actionId,
-                inputMapping
-            });
+      } catch (e) { console.error('Error loading providers:', e); }
+
+      // Now load existing steps (providers are available for select binding)
+      <% if (workflow && workflow.steps) { %>
+        const existingSteps = <%- JSON.stringify(workflow.steps) %>;
+        this.steps = existingSteps.map((s, i) => ({
+          ...s,
+          id: s.id || 'step_' + (i + 1),
+          actionId: s.actionId?.$oid || s.actionId?.toString() || s.actionId || '',
+          inputMappingStr: JSON.stringify(s.inputMapping || {}, null, 2)
+        }));
+        this.stepCounter = this.steps.length;
+      <% } %>
+
+      // Load entity context if entity is set
+      if (this.triggerEntityId) {
+        await this.loadEntityContext();
+      }
+
+      // Load jobs
+      <% if (jobs && jobs.length) { %>
+        this.jobs = <%- JSON.stringify(jobs) %>;
+      <% } %>
+    },
+
+    // ── Trigger ──
+    getTriggerLabel() {
+      const labels = {
+        'manual.button': 'Déclenché manuellement par un bouton',
+        'record.created': 'Quand un enregistrement est créé',
+        'record.updated': 'Quand un enregistrement est modifié'
+      };
+      return labels[this.triggerType] || 'Sélectionnez un type de déclencheur';
+    },
+
+    onTriggerTypeChange() {
+      if (this.triggerType === 'manual.button') {
+        // Entity is optional for manual triggers
+      }
+    },
+
+    async loadEntityContext() {
+      if (!this.triggerEntityId) { this.entityContext = null; return; }
+      try {
+        const resp = await fetch(`/account/<%= account_number %>/workflows/api/entity-context/${this.triggerEntityId}`, { credentials: 'include' });
+        const data = await resp.json();
+        if (data.success) {
+          this.entityContext = data.variables;
         }
-    });
-    
-    const payload = {
-        name,
-        description,
+      } catch (e) {
+        console.error('Error loading entity context:', e);
+      }
+    },
+
+    // ── Steps ──
+    addStep() {
+      this.stepCounter++;
+      this.steps.push({
+        id: 'step_' + this.stepCounter,
+        type: 'action',
+        providerKey: '',
+        actionId: '',
+        inputMappingStr: '{}'
+      });
+    },
+
+    removeStep(index) {
+      this.steps.splice(index, 1);
+    },
+
+    getStepTitle(step) {
+      if (step.providerKey && step.actionId) {
+        const provider = this.allProviders.find(p => p.key === step.providerKey);
+        const action = this.allActions.find(a => a._id === step.actionId);
+        return (provider?.name || step.providerKey) + ' → ' + (action?.name || step.actionId);
+      }
+      return 'Action';
+    },
+
+    onProviderChange(step) {
+      step.actionId = '';
+    },
+
+    getActionsForProvider(providerKey) {
+      if (!providerKey) return [];
+      return this.allActions.filter(a => a.providerKey === providerKey);
+    },
+
+    // ── Variables ──
+    copyVariable(variable) {
+      navigator.clipboard.writeText(variable).then(() => {
+        // Show toast
+        if (window.showMessage) {
+          window.showMessage('Variable copiée : ' + variable, 'success');
+        }
+      });
+    },
+
+    // ── Select Node ──
+    selectNode(nodeId) {
+      this.selectedNode = nodeId;
+    },
+
+    // ── Validation ──
+    isValid() {
+      if (!this.workflowName.trim()) return false;
+      if (!this.triggerType) return false;
+      // record-based triggers require entity
+      if (['record.created', 'record.updated'].includes(this.triggerType) && !this.triggerEntityId) return false;
+      return true;
+    },
+
+    // ── Save ──
+    async save() {
+      if (!this.isValid()) {
+        alert('Veuillez remplir tous les champs requis');
+        return;
+      }
+
+      this.saving = true;
+      this.saveStatus = null;
+
+      // Build steps with parsed inputMapping
+      const stepsPayload = this.steps.map(s => ({
+        id: s.id,
+        type: 'action',
+        providerKey: s.providerKey,
+        actionId: s.actionId,
+        inputMapping: (() => { try { return JSON.parse(s.inputMappingStr || '{}'); } catch { return {}; } })()
+      }));
+
+      const payload = {
+        name: this.workflowName,
+        description: this.workflowDescription,
+        category: this.workflowCategory,
         trigger: {
-            type: triggerType,
-            entityId: triggerEntity
+          type: this.triggerType,
+          ...(this.triggerEntityId ? { entityId: this.triggerEntityId } : {})
         },
-        steps
-    };
-    
-    const workflowId = '<%= workflow?._id || "" %>';
-    const url = workflowId 
-        ? `/account/<%= account_number %>/workflows/${workflowId}`
-        : `/account/<%= account_number %>/workflows`;
-    const method = workflowId ? 'PUT' : 'POST';
-    
-    try {
-        const response = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(payload)
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            window.location.href = `/account/<%= account_number %>/workflows`;
-        } else {
-            alert(result.error);
+        steps: stepsPayload,
+        settings: {
+          idempotencyWindow: 5000,
+          async: !this.syncMode,
+          maxRetries: 0
         }
-    } catch (error) {
-        alert(error.message);
+      };
+
+      try {
+        const method = this.workflowId ? 'PUT' : 'POST';
+        const url = this.workflowId
+          ? `/account/<%= account_number %>/workflows/${this.workflowId}`
+          : '/account/<%= account_number %>/workflows';
+
+        const resp = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        });
+
+        const data = await resp.json();
+        if (data.success) {
+          if (!this.workflowId) {
+            window.location.href = `/account/<%= account_number %>/workflows/${data.workflow._id}`;
+          } else {
+            this.saveStatus = 'success';
+            setTimeout(() => { this.saveStatus = null; }, 2000);
+          }
+        } else {
+          this.saveStatus = 'error';
+          setTimeout(() => { this.saveStatus = null; }, 3000);
+        }
+      } catch (e) {
+        console.error('Save error:', e);
+        this.saveStatus = 'error';
+        setTimeout(() => { this.saveStatus = null; }, 3000);
+      } finally {
+        this.saving = false;
+      }
+    },
+
+    // ── Test Run ──
+    async testRun() {
+      if (!this.workflowId) {
+        alert('Sauvegardez le workflow avant de le tester');
+        return;
+      }
+
+      this.testRunLoading = true;
+
+      try {
+        const resp = await fetch(`/account/<%= account_number %>/workflows/${this.workflowId}/execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            sync: this.syncMode,
+            idempotencyKey: 'test_' + Date.now(),
+            context: {
+              entityId: this.triggerEntityId || null,
+              payload: {},
+              uiContext: { source: 'workflow-builder-test' }
+            }
+          })
+        });
+
+        const data = await resp.json();
+
+        if (this.syncMode && data.result) {
+          // ═══ SYNC: show response in popup ═══
+          this.showResponseModal(data);
+        } else if (data.success) {
+          // ═══ ASYNC: toast + refresh jobs ═══
+          if (window.showMessage) window.showMessage('Exécution démarrée • Job ID: ' + data.jobId, 'info');
+        } else {
+          alert('Erreur: ' + (data.error || 'Unknown'));
+        }
+
+        // Refresh jobs
+        setTimeout(async () => {
+          try {
+            const jobResp = await fetch(`/account/<%= account_number %>/workflows/${this.workflowId}/jobs?limit=10`, { credentials: 'include' });
+            const jobData = await jobResp.json();
+            if (jobData.success) this.jobs = jobData.jobs;
+          } catch (e) {}
+        }, 1000);
+      } catch (e) {
+        console.error('Test run error:', e);
+        alert('Erreur lors du test');
+      } finally {
+        this.testRunLoading = false;
+      }
+    },
+
+    // ── Response Modal ──
+    showResponseModal(data) {
+      let prettyData = '';
+      try {
+        prettyData = JSON.stringify(data.result?.data || data.result, null, 2);
+      } catch (e) {
+        prettyData = String(data.result?.data || 'No data');
+      }
+      this.modalData = {
+        success: data.success,
+        status: data.status,
+        latencyMs: data.result?.latencyMs,
+        prettyData
+      };
+      this.showModal = true;
+    },
+
+    closeResponseModal() {
+      this.showModal = false;
+      this.modalData = null;
+    },
+
+    // ── Utils ──
+    formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) + ' ' + 
+        d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     }
-});
+  };
+}
 </script>

@@ -626,8 +626,28 @@
                           </div>
                         </template>
 
+                        <!-- Action Button Block (Cockpit) -->
+                        <template x-if="block && block.type === 'action-button'">
+                          <div class="panel h-full flex items-center justify-center" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                            <button 
+                              :class="[
+                                'btn flex items-center gap-2 transition-all',
+                                block.variant === 'outline' ? `btn-outline-${block.color || 'primary'}` : `btn-${block.color || 'primary'}`,
+                                block.size === 'lg' ? 'btn-lg text-base px-8 py-3' : block.size === 'sm' ? 'btn-sm text-xs px-3 py-1' : 'px-5 py-2'
+                              ]"
+                              @click.stop="">
+                              <iconify-icon 
+                                x-show="block.icon" 
+                                :icon="block.icon || 'solar:play-bold'" 
+                                :width="block.size === 'lg' ? '20' : block.size === 'sm' ? '14' : '16'">
+                              </iconify-icon>
+                              <span x-text="block.label || 'Action'"></span>
+                            </button>
+                          </div>
+                        </template>
+
                         <!-- Unknown Block Type -->
-                        <template x-if="block && !['panel', 'text', 'kpi-card', 'statistics', 'expense-tracker', 'progress-list', 'work-queue', 'comms-dock', 'activity-feed', 'focus-card', 'urgency-radar', 'kpi-cards'].includes(block.type)">
+                        <template x-if="block && !['panel', 'text', 'kpi-card', 'statistics', 'expense-tracker', 'progress-list', 'work-queue', 'comms-dock', 'activity-feed', 'focus-card', 'urgency-radar', 'kpi-cards', 'action-button'].includes(block.type)">
                           <div class="panel">
                             <span x-text="'Unknown block type: ' + block.type"></span>
                           </div>

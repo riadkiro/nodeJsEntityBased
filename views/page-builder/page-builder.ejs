@@ -517,6 +517,18 @@ document.addEventListener('alpine:init', () => {
             props: { compact: false, showIcons: true, showBadges: false },
             data: { source: 'stats', query: 'today', sort: '', limit: 0 },
             actions: { header: [], row: [] }
+          },
+          'action-button': {
+            title: 'Action Button',
+            label: 'Cliquer ici',
+            icon: 'solar:play-bold',
+            color: 'primary',
+            variant: 'filled',
+            size: 'md',
+            url: '',
+            props: {},
+            data: {},
+            actions: {}
           }
         };
         return defaults[type] || { props: {}, data: {}, actions: {} };

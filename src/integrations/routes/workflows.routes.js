@@ -1,6 +1,6 @@
 /**
  * Workflow Routes
- * CRUD for workflow management
+ * CRUD for workflow management + visual builder APIs
  */
 
 const express = require('express');
@@ -33,6 +33,10 @@ async function loadTenantModels(req, res, next) {
 }
 
 router.use(loadTenantModels);
+
+// ═══════════════════════════════════════════════════════════════
+// STATIC ROUTES (must be before /:id to avoid conflicts)
+// ═══════════════════════════════════════════════════════════════
 
 /**
  * GET /workflows
@@ -72,7 +76,7 @@ router.get('/', async (req, res) => {
 
 /**
  * GET /workflows/new
- * New workflow form
+ * New workflow form (visual builder)
  */
 router.get('/new', async (req, res) => {
     try {
@@ -93,6 +97,7 @@ router.get('/new', async (req, res) => {
             providers,
             actions,
             entities,
+            jobs: [],
             account_number: workspaceId
         });
     } catch (error) {
@@ -102,8 +107,153 @@ router.get('/new', async (req, res) => {
 });
 
 /**
+ * POST /workflows
+ * Create new workflow
+ */
+router.post('/', async (req, res) => {
+    try {
+        const workspaceId = req.account_number;
+        const { name, description, category, trigger, steps, settings } = req.body;
+
+        const workflow = await Workflow.create({
+            workspaceId,
+            name,
+            description,
+            category: category || 'automation',
+            enabled: false,
+            trigger,
+            steps: steps || [],
+            settings: settings || {}
+        });
+
+        res.json({ success: true, workflow });
+    } catch (error) {
+        console.error('[Workflows] Create error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// API ROUTES (before /:id to avoid route conflicts)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * GET /workflows/api/entity-context/:entityId
+ * Returns fields, classifications, and relations for an entity
+ * Used by the workflow builder to show available variables
+ */
+router.get('/api/entity-context/:entityId', async (req, res) => {
+    try {
+        const { entityId } = req.params;
+        const { tenantCollection } = require('../../../middleware/tenant');
+
+        const Entity = await tenantCollection(req, 'Entity');
+        const entity = await Entity.findById(entityId)
+            .populate('fields')
+            .lean();
+
+        if (!entity) {
+            return res.status(404).json({ success: false, error: 'Entity not found' });
+        }
+
+        // Get classifications for this entity
+        const Classification = await tenantCollection(req, 'Classification');
+        const classifications = await Classification.find({ entityId })
+            .select('_id name color values')
+            .lean();
+
+        // Build available variables
+        const variables = {
+            trigger: {
+                record: {
+                    _id: { type: 'ObjectId', label: 'Record ID' },
+                    title: { type: 'String', label: 'Title' },
+                    createdAt: { type: 'Date', label: 'Date de création' },
+                    updatedAt: { type: 'Date', label: 'Date de modification' }
+                }
+            },
+            entity: {
+                _id: entity._id,
+                name: entity.name,
+                slug: entity.slug
+            },
+            fields: (entity.fields || []).map(f => ({
+                _id: f._id,
+                name: f.name,
+                slug: f.slug || f.name,
+                type: f.type,
+                variable: `{{trigger.record.custom_fields.${f.slug || f.name}}}`
+            })),
+            classifications: classifications.map(c => ({
+                _id: c._id,
+                name: c.name,
+                color: c.color,
+                values: c.values || [],
+                variable: `{{trigger.record.classifications.${c.name}}}`
+            }))
+        };
+
+        res.json({ success: true, entity, variables });
+    } catch (error) {
+        console.error('[Workflows] Entity context error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * GET /workflows/api/providers
+ * Returns available providers + actions for the builder
+ */
+router.get('/api/providers', async (req, res) => {
+    try {
+        const providers = await IntegrationProvider.find({ status: 'published' })
+            .select('key name icon category')
+            .lean();
+        const actions = await IntegrationAction.find({ isPublished: true })
+            .select('providerKey actionId name description inputSchema')
+            .lean();
+
+        // Group actions by provider
+        const providerMap = {};
+        for (const p of providers) {
+            providerMap[p.key] = {
+                ...p,
+                actions: actions.filter(a => a.providerKey === p.key)
+            };
+        }
+
+        res.json({ success: true, providers: Object.values(providerMap) });
+    } catch (error) {
+        console.error('[Workflows] Providers error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * GET /workflows/api/jobs/:jobId
+ * Get single job execution detail with step results
+ */
+router.get('/api/jobs/:jobId', async (req, res) => {
+    try {
+        const { jobId } = req.params;
+        const job = await req.JobModel.findById(jobId).lean();
+        if (!job) {
+            return res.status(404).json({ success: false, error: 'Job not found' });
+        }
+        res.json({ success: true, job });
+    } catch (error) {
+        console.error('[Workflows] Job detail error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PARAMETRIC ROUTES (/:id based)
+// ═══════════════════════════════════════════════════════════════
+
+/**
  * GET /workflows/:id
- * Workflow detail / edit form
+ * Workflow detail / edit form (visual builder)
  */
 router.get('/:id', async (req, res) => {
     try {
@@ -145,31 +295,6 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * POST /workflows
- * Create new workflow
- */
-router.post('/', async (req, res) => {
-    try {
-        const workspaceId = req.account_number;
-        const { name, description, trigger, steps } = req.body;
-
-        const workflow = await Workflow.create({
-            workspaceId,
-            name,
-            description,
-            enabled: false,
-            trigger,
-            steps: steps || []
-        });
-
-        res.json({ success: true, workflow });
-    } catch (error) {
-        console.error('[Workflows] Create error:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-/**
  * PUT /workflows/:id
  * Update workflow
  */
@@ -177,11 +302,11 @@ router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const workspaceId = req.account_number;
-        const { name, description, trigger, steps } = req.body;
+        const { name, description, category, trigger, steps, settings } = req.body;
 
         const workflow = await Workflow.findOneAndUpdate(
             { _id: id, workspaceId },
-            { name, description, trigger, steps },
+            { name, description, category, trigger, steps, settings },
             { new: true }
         );
 
@@ -255,6 +380,132 @@ router.get('/:id/jobs', async (req, res) => {
         res.json({ success: true, jobs });
     } catch (error) {
         console.error('[Workflows] Jobs error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * POST /workflows/:id/execute
+ * Execute a workflow — supports both sync and async modes
+ * 
+ * Body: { sync: true|false, idempotencyKey, context }
+ * 
+ * sync=true  → Awaits full execution, returns { success, jobId, result: { stepResults, latencyMs, data } }
+ * sync=false → Fire-and-forget, returns { success, jobId, status: 'queued' }
+ */
+router.post('/:id/execute', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const workspaceId = req.account_number;
+        const { idempotencyKey, context, sync } = req.body;
+
+        const workflow = await Workflow.findOne({ _id: id, workspaceId, enabled: true });
+        if (!workflow) {
+            return res.status(404).json({ success: false, error: 'Workflow not found or disabled' });
+        }
+
+        // Idempotency check — prevent double execution within cooldown window
+        if (idempotencyKey) {
+            const existing = await req.JobModel.findOne({
+                workflowId: id,
+                'triggerData.idempotencyKey': idempotencyKey,
+                createdAt: { $gte: new Date(Date.now() - (workflow.settings?.idempotencyWindow || 5000)) }
+            }).lean();
+            if (existing) {
+                return res.json({ success: true, jobId: existing._id, status: existing.status, deduplicated: true });
+            }
+        }
+
+        // Build execution context
+        const executionContext = {
+            type: workflow.trigger?.type || 'manual.button',
+            tenantId: workspaceId,
+            actorId: req.user?._id?.toString() || null,
+            actorEmail: req.user?.email || null,
+            entityId: workflow.trigger?.entityId?.toString() || context?.entityId || null,
+            recordId: context?.recordId || null,
+            payload: context?.payload || {},
+            idempotencyKey: idempotencyKey || null,
+            uiContext: context?.uiContext || {}
+        };
+
+        // Create job
+        const job = await req.JobModel.create({
+            workspaceId,
+            workflowId: workflow._id,
+            status: 'pending',
+            triggerData: executionContext,
+            stepResults: []
+        });
+
+        // Helper: build process context
+        const getProcessModels = () => {
+            const { tenantDbConnection } = req;
+            const ConnectionSchema = require('../models/IntegrationConnection.model').schema;
+            const LogSchema = require('../models/IntegrationLog.model').schema;
+
+            const ConnectionModel = tenantDbConnection.models.IntegrationConnection ||
+                tenantDbConnection.model('IntegrationConnection', ConnectionSchema);
+            const LogModel = tenantDbConnection.models.IntegrationLog ||
+                tenantDbConnection.model('IntegrationLog', LogSchema);
+
+            return { ConnectionModel, LogModel };
+        };
+
+        // Determine mode: sync or async
+        const isSync = sync === true || sync === 'true';
+
+        if (isSync) {
+            // ═══ SYNC MODE: await result and return it ═══
+            const { processJob } = require('../services/WorkflowService');
+            const { ConnectionModel, LogModel } = getProcessModels();
+
+            const result = await processJob({
+                job,
+                workflow: workflow.toObject(),
+                ConnectionModel,
+                LogModel,
+                JobModel: req.JobModel
+            });
+
+            // Extract the last step's output as the "main" response data
+            const lastStepResult = result.stepResults?.[result.stepResults.length - 1];
+            const responseData = lastStepResult?.result || null;
+
+            return res.json({
+                success: result.success,
+                jobId: job._id,
+                status: result.success ? 'completed' : 'failed',
+                mode: 'sync',
+                result: {
+                    stepResults: result.stepResults,
+                    latencyMs: result.latencyMs,
+                    data: responseData
+                }
+            });
+        } else {
+            // ═══ ASYNC MODE: fire-and-forget ═══
+            setImmediate(async () => {
+                try {
+                    const { processJob } = require('../services/WorkflowService');
+                    const { ConnectionModel, LogModel } = getProcessModels();
+
+                    await processJob({
+                        job,
+                        workflow: workflow.toObject(),
+                        ConnectionModel,
+                        LogModel,
+                        JobModel: req.JobModel
+                    });
+                } catch (err) {
+                    console.error('[Workflows] Background execution error:', err);
+                }
+            });
+
+            return res.json({ success: true, jobId: job._id, status: 'queued', mode: 'async' });
+        }
+    } catch (error) {
+        console.error('[Workflows] Execute error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

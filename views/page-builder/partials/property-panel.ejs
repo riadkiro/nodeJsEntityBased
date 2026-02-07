@@ -72,7 +72,7 @@
           </div>
 
           <!-- Options -->
-          <div class="space-y-2">
+          <div class="space-y-2" x-show="block.type !== 'action-button'">
             <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Options</label>
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" class="form-checkbox" x-model="block.props.compact">
@@ -87,6 +87,100 @@
               <span class="text-sm">Show badges</span>
             </label>
           </div>
+
+          <!-- Action Button Specific Properties -->
+          <template x-if="block.type === 'action-button'">
+            <div class="space-y-4">
+              <!-- Label -->
+              <div>
+                <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Button Label</label>
+                <input 
+                  type="text" 
+                  class="form-input w-full text-sm py-2"
+                  x-model="block.label"
+                  placeholder="Cliquer ici">
+              </div>
+
+              <!-- Icon -->
+              <div>
+                <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Icon (Iconify)</label>
+                <input 
+                  type="text" 
+                  class="form-input w-full text-sm py-2"
+                  x-model="block.icon"
+                  placeholder="solar:play-bold">
+                <div class="mt-1 text-[10px] text-gray-400">Ex: solar:phone-bold, solar:document-bold</div>
+              </div>
+
+              <!-- Color -->
+              <div>
+                <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Color</label>
+                <select class="form-select w-full text-sm py-2" x-model="block.color">
+                  <option value="primary">Primary</option>
+                  <option value="success">Success</option>
+                  <option value="info">Info</option>
+                  <option value="warning">Warning</option>
+                  <option value="danger">Danger</option>
+                  <option value="secondary">Secondary</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </div>
+
+              <!-- Variant -->
+              <div>
+                <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Variant</label>
+                <div class="flex gap-2">
+                  <button 
+                    @click="block.variant = 'filled'"
+                    :class="block.variant === 'filled' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700'"
+                    class="flex-1 px-3 py-1.5 text-xs rounded font-medium transition-colors">
+                    Filled
+                  </button>
+                  <button 
+                    @click="block.variant = 'outline'"
+                    :class="block.variant === 'outline' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700'"
+                    class="flex-1 px-3 py-1.5 text-xs rounded font-medium transition-colors">
+                    Outline
+                  </button>
+                </div>
+              </div>
+
+              <!-- Size -->
+              <div>
+                <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Size</label>
+                <div class="flex gap-2">
+                  <button 
+                    @click="block.size = 'sm'"
+                    :class="block.size === 'sm' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700'"
+                    class="flex-1 px-3 py-1.5 text-xs rounded font-medium transition-colors">
+                    Small
+                  </button>
+                  <button 
+                    @click="block.size = 'md'"
+                    :class="block.size === 'md' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700'"
+                    class="flex-1 px-3 py-1.5 text-xs rounded font-medium transition-colors">
+                    Medium
+                  </button>
+                  <button 
+                    @click="block.size = 'lg'"
+                    :class="block.size === 'lg' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700'"
+                    class="flex-1 px-3 py-1.5 text-xs rounded font-medium transition-colors">
+                    Large
+                  </button>
+                </div>
+              </div>
+
+              <!-- URL -->
+              <div>
+                <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">URL / Action</label>
+                <input 
+                  type="text" 
+                  class="form-input w-full text-sm py-2"
+                  x-model="block.url"
+                  placeholder="https://... or action:name">
+              </div>
+            </div>
+          </template>
         </div>
 
         <!-- Data Tab (Cockpit only) -->

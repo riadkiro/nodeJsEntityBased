@@ -1,123 +1,199 @@
-<%# Tenant - Workflows List %>
-<div class="panel p-6">
-    <div class="mb-6 flex items-center justify-between">
-        <div>
-            <a href="/account/<%= account_number %>/integrations" class="text-sm text-gray-500 hover:text-primary mb-2 inline-block">
-                ← Retour aux intégrations
-            </a>
-            <h1 class="text-2xl font-semibold dark:text-white">Workflows</h1>
-            <p class="text-gray-500 dark:text-gray-400 mt-1">Automatisez vos actions avec des workflows</p>
+<%# Tenant - Workflows List — Premium Card UI %>
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="mb-8 flex items-center justify-between">
+    <div>
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
+          <iconify-icon icon="solar:bolt-circle-bold" width="22" class="text-white"></iconify-icon>
         </div>
-        <a href="/account/<%= account_number %>/workflows/new" class="btn btn-primary">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            Nouveau workflow
-        </a>
+        <h1 class="text-2xl font-bold dark:text-white">Automations</h1>
+      </div>
+      <p class="text-gray-500 dark:text-gray-400 ml-[52px]">Créez et gérez vos workflows automatisés</p>
+    </div>
+    <a href="/account/<%= account_number %>/workflows/new" 
+      class="btn bg-gradient-to-r from-violet-500 to-purple-600 text-white border-0 shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:scale-[1.02] transition-all duration-200">
+      <iconify-icon icon="solar:add-circle-bold" width="18" class="mr-2"></iconify-icon>
+      Nouveau workflow
+    </a>
+  </div>
+
+  <% if (workflows.length === 0) { %>
+    <!-- Empty State -->
+    <div class="panel flex flex-col items-center justify-center py-20 text-center">
+      <div class="w-24 h-24 rounded-full bg-gradient-to-br from-violet-500/10 to-purple-600/10 flex items-center justify-center mb-6">
+        <iconify-icon icon="solar:bolt-circle-bold-duotone" width="48" class="text-violet-500"></iconify-icon>
+      </div>
+      <h3 class="text-lg font-semibold dark:text-white mb-2">Aucun workflow configuré</h3>
+      <p class="text-gray-500 dark:text-gray-400 max-w-md mb-6">
+        Les workflows automatisent vos actions : notifications, mises à jour, appels API, et bien plus. Créez votre premier workflow pour commencer.
+      </p>
+      <a href="/account/<%= account_number %>/workflows/new" 
+        class="btn bg-gradient-to-r from-violet-500 to-purple-600 text-white border-0 shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all">
+        <iconify-icon icon="solar:add-circle-bold" width="18" class="mr-2"></iconify-icon>
+        Créer votre premier workflow
+      </a>
+    </div>
+  <% } else { %>
+    <!-- Stats Bar -->
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <div class="panel p-4 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+          <iconify-icon icon="solar:bolt-circle-bold-duotone" width="20" class="text-violet-500"></iconify-icon>
+        </div>
+        <div>
+          <p class="text-2xl font-bold dark:text-white"><%= workflows.length %></p>
+          <p class="text-xs text-gray-500">Total workflows</p>
+        </div>
+      </div>
+      <div class="panel p-4 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+          <iconify-icon icon="solar:play-circle-bold-duotone" width="20" class="text-success"></iconify-icon>
+        </div>
+        <div>
+          <p class="text-2xl font-bold dark:text-white"><%= workflows.filter(w => w.enabled).length %></p>
+          <p class="text-xs text-gray-500">Actifs</p>
+        </div>
+      </div>
+      <div class="panel p-4 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-info/10 flex items-center justify-center">
+          <iconify-icon icon="solar:history-bold-duotone" width="20" class="text-info"></iconify-icon>
+        </div>
+        <div>
+          <p class="text-2xl font-bold dark:text-white"><%= workflows.reduce((sum, w) => sum + (w.recentJobs?.length || 0), 0) %></p>
+          <p class="text-xs text-gray-500">Exécutions récentes</p>
+        </div>
+      </div>
     </div>
 
-    <% if (workflows.length === 0) { %>
-        <div class="flex flex-col items-center justify-center py-16 text-center">
-            <svg class="w-16 h-16 text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-            <p class="text-gray-500 dark:text-gray-400 mb-4">Aucun workflow configuré</p>
-            <a href="/account/<%= account_number %>/workflows/new" class="btn btn-primary">
-                Créer votre premier workflow
+    <!-- Workflow Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <% workflows.forEach(workflow => { %>
+        <div class="panel p-0 overflow-hidden group hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-gray-900/50 hover:-translate-y-0.5 transition-all duration-300 border border-transparent hover:border-violet-500/20">
+          <!-- Card Header -->
+          <div class="p-5 pb-3">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <% 
+                  const triggerType = workflow.trigger?.type || '';
+                  const triggerIcon = triggerType === 'manual.button' 
+                    ? 'solar:cursor-bold-duotone' 
+                    : triggerType === 'record.created' 
+                      ? 'solar:add-square-bold-duotone' 
+                      : triggerType === 'record.updated'
+                        ? 'solar:pen-new-square-bold-duotone'
+                        : 'solar:bolt-circle-bold-duotone';
+                  const triggerColor = triggerType === 'manual.button' 
+                    ? 'from-violet-500 to-purple-600' 
+                    : triggerType === 'record.created'
+                      ? 'from-emerald-500 to-green-600'
+                      : 'from-blue-500 to-cyan-600';
+                %>
+                <div class="w-9 h-9 rounded-lg bg-gradient-to-br <%= triggerColor %> flex items-center justify-center shadow-sm">
+                  <iconify-icon icon="<%= triggerIcon %>" width="18" class="text-white"></iconify-icon>
+                </div>
+                <div>
+                  <h3 class="font-semibold dark:text-white text-sm leading-tight"><%= workflow.name %></h3>
+                  <% if (workflow.description) { %>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1"><%= workflow.description %></p>
+                  <% } %>
+                </div>
+              </div>
+              <% if (workflow.enabled) { %>
+                <span class="badge bg-success/10 text-success text-[10px] font-semibold px-2 py-0.5">Actif</span>
+              <% } else { %>
+                <span class="badge bg-gray-500/10 text-gray-500 text-[10px] font-semibold px-2 py-0.5">Inactif</span>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Card Info -->
+          <div class="px-5 pb-3">
+            <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+              <div class="flex items-center gap-1">
+                <iconify-icon icon="solar:routing-bold-duotone" width="14"></iconify-icon>
+                <span><%= triggerType.replace('.', ' → ') || 'Non défini' %></span>
+              </div>
+              <div class="flex items-center gap-1">
+                <iconify-icon icon="solar:layers-bold-duotone" width="14"></iconify-icon>
+                <span><%= workflow.steps?.length || 0 %> step<%= (workflow.steps?.length || 0) > 1 ? 's' : '' %></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Last Run -->
+          <div class="px-5 pb-4">
+            <% if (workflow.recentJobs && workflow.recentJobs.length > 0) { %>
+              <% const lastJob = workflow.recentJobs[0]; %>
+              <div class="flex items-center gap-2 text-xs">
+                <% if (lastJob.status === 'completed') { %>
+                  <div class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
+                  <span class="text-success">Succès</span>
+                <% } else if (lastJob.status === 'failed') { %>
+                  <div class="w-1.5 h-1.5 rounded-full bg-danger"></div>
+                  <span class="text-danger">Échec</span>
+                <% } else { %>
+                  <div class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></div>
+                  <span class="text-warning">En cours</span>
+                <% } %>
+                <span class="text-gray-400">·</span>
+                <span class="text-gray-400"><%= new Date(lastJob.createdAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) %></span>
+              </div>
+            <% } else { %>
+              <div class="flex items-center gap-2 text-xs text-gray-400">
+                <div class="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                <span>Jamais exécuté</span>
+              </div>
+            <% } %>
+          </div>
+
+          <!-- Card Actions Footer -->
+          <div class="border-t border-gray-100 dark:border-gray-800 px-5 py-3 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/30">
+            <a href="/account/<%= account_number %>/workflows/<%= workflow._id %>" 
+              class="text-xs font-medium text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
+              <iconify-icon icon="solar:pen-new-square-linear" width="14"></iconify-icon>
+              Modifier
             </a>
+            <div class="flex items-center gap-2">
+              <button 
+                class="text-xs font-medium flex items-center gap-1 transition-colors <%= workflow.enabled ? 'text-warning hover:text-warning/80' : 'text-success hover:text-success/80' %>"
+                onclick="toggleWorkflow('<%= workflow._id %>')">
+                <iconify-icon icon="<%= workflow.enabled ? 'solar:pause-circle-linear' : 'solar:play-circle-linear' %>" width="14"></iconify-icon>
+                <%= workflow.enabled ? 'Pause' : 'Activer' %>
+              </button>
+            </div>
+          </div>
         </div>
-    <% } else { %>
-        <div class="table-responsive">
-            <table class="table-hover">
-                <thead>
-                    <tr>
-                        <th>Nom</th>
-                        <th>Trigger</th>
-                        <th>Steps</th>
-                        <th>Status</th>
-                        <th>Dernière exécution</th>
-                        <th class="text-center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% workflows.forEach(workflow => { %>
-                        <tr>
-                            <td>
-                                <a href="/account/<%= account_number %>/workflows/<%= workflow._id %>" class="font-semibold text-primary hover:underline">
-                                    <%= workflow.name %>
-                                </a>
-                                <% if (workflow.description) { %>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><%= workflow.description %></p>
-                                <% } %>
-                            </td>
-                            <td>
-                                <span class="badge badge-outline-info"><%= workflow.trigger?.type || 'Non défini' %></span>
-                            </td>
-                            <td>
-                                <span class="badge badge-outline-secondary"><%= workflow.steps?.length || 0 %> step(s)</span>
-                            </td>
-                            <td>
-                                <% if (workflow.enabled) { %>
-                                    <span class="badge bg-success">Actif</span>
-                                <% } else { %>
-                                    <span class="badge bg-dark">Inactif</span>
-                                <% } %>
-                            </td>
-                            <td>
-                                <% if (workflow.recentJobs && workflow.recentJobs.length > 0) { %>
-                                    <% const lastJob = workflow.recentJobs[0]; %>
-                                    <span class="text-xs">
-                                        <% if (lastJob.status === 'completed') { %>
-                                            <span class="text-success">✓</span>
-                                        <% } else if (lastJob.status === 'failed') { %>
-                                            <span class="text-danger">✗</span>
-                                        <% } else { %>
-                                            <span class="text-warning">⏳</span>
-                                        <% } %>
-                                        <%= new Date(lastJob.createdAt).toLocaleString('fr-FR') %>
-                                    </span>
-                                <% } else { %>
-                                    <span class="text-gray-400">-</span>
-                                <% } %>
-                            </td>
-                            <td class="text-center">
-                                <div class="flex items-center justify-center gap-2">
-                                    <button 
-                                        class="btn btn-sm <%= workflow.enabled ? 'btn-outline-warning' : 'btn-outline-success' %>"
-                                        onclick="toggleWorkflow('<%= workflow._id %>')"
-                                        title="<%= workflow.enabled ? 'Désactiver' : 'Activer' %>"
-                                    >
-                                        <%= workflow.enabled ? 'Désactiver' : 'Activer' %>
-                                    </button>
-                                    <a href="/account/<%= account_number %>/workflows/<%= workflow._id %>" class="btn btn-sm btn-outline-primary">
-                                        Modifier
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    <% }) %>
-                </tbody>
-            </table>
+      <% }) %>
+
+      <!-- Add New Card -->
+      <a href="/account/<%= account_number %>/workflows/new" 
+        class="panel p-0 overflow-hidden border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-violet-500/40 hover:bg-violet-500/5 transition-all duration-300 flex flex-col items-center justify-center min-h-[200px] group">
+        <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3 group-hover:bg-violet-500/10 transition-colors">
+          <iconify-icon icon="solar:add-circle-bold-duotone" width="24" class="text-gray-400 group-hover:text-violet-500 transition-colors"></iconify-icon>
         </div>
-    <% } %>
+        <span class="text-sm font-medium text-gray-500 group-hover:text-violet-500 transition-colors">Nouveau workflow</span>
+      </a>
+    </div>
+  <% } %>
 </div>
 
 <script>
 async function toggleWorkflow(id) {
-    try {
-        const response = await fetch(`/account/<%= account_number %>/workflows/${id}/toggle`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        });
-        const result = await response.json();
-        if (result.success) {
-            window.location.reload();
-        } else {
-            alert(result.error);
-        }
-    } catch (error) {
-        alert(error.message);
+  try {
+    const response = await fetch(`/account/<%= account_number %>/workflows/${id}/toggle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    });
+    const result = await response.json();
+    if (result.success) {
+      window.location.reload();
+    } else {
+      alert(result.error);
     }
+  } catch (error) {
+    alert(error.message);
+  }
 }
 </script>

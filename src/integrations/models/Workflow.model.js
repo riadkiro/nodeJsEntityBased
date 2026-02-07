@@ -44,6 +44,11 @@ const WorkflowSchema = new mongoose.Schema(
             trim: true
         },
         description: String,
+        category: {
+            type: String,
+            enum: ["automation", "action", "notification"],
+            default: "automation"
+        },
         enabled: {
             type: Boolean,
             default: false
@@ -51,16 +56,22 @@ const WorkflowSchema = new mongoose.Schema(
         trigger: {
             type: {
                 type: String,
-                enum: ["record.created", "record.updated"],
+                enum: ["record.created", "record.updated", "manual.button"],
                 required: true
             },
             entityId: {
                 type: mongoose.Schema.Types.ObjectId,
-                ref: "Entity",
-                required: true
+                ref: "Entity"
+                // Not required — manual.button may not need an entity
             }
         },
-        steps: [WorkflowStepSchema]
+        steps: [WorkflowStepSchema],
+        // Execution settings
+        settings: {
+            idempotencyWindow: { type: Number, default: 5000 }, // ms cooldown between executions
+            async: { type: Boolean, default: true },
+            maxRetries: { type: Number, default: 0 }
+        }
     },
     { timestamps: true }
 );

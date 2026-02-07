@@ -8,6 +8,7 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+const dbConfig = require('../config/db');
 const IntegrationProvider = require('../src/integrations/models/IntegrationProvider.model');
 const IntegrationAction = require('../src/integrations/models/IntegrationAction.model');
 
@@ -145,7 +146,7 @@ const ACTIONS = [
 
 async function seed() {
     try {
-        await mongoose.connect(process.env.DATABASE_URL || 'mongodb://localhost:27017/saas_main');
+        await mongoose.connect(dbConfig.globalDbUri);
         console.log('✅ Connected to MongoDB');
 
         // Upsert provider

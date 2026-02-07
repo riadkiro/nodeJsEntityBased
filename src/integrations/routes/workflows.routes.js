@@ -207,10 +207,10 @@ router.get('/api/entity-context/:entityId', async (req, res) => {
 router.get('/api/providers', async (req, res) => {
     try {
         const providers = await IntegrationProvider.find({ status: 'published' })
-            .select('key name icon category')
+            .select('key name logo icon category')
             .lean();
         const actions = await IntegrationAction.find({ isPublished: true })
-            .select('providerKey actionId name description inputSchema')
+            .select('providerKey actionKey name description inputSchema')
             .lean();
 
         // Group actions by provider

@@ -80,6 +80,16 @@ async function processJob({ job, workflow, ConnectionModel, LogModel, JobModel, 
 
             const stepLatency = Date.now() - stepStartTime;
 
+            // Map internal error codes to valid errorType enum
+            const rawErrorCode = result.error?.code || result.errorType || null;
+            const errorTypeMap = {
+                'MISSING_INPUT': 'validation', 'RECORD_NOT_FOUND': 'validation',
+                'ENTITY_NOT_FOUND': 'validation', 'CLASSIFICATION_NOT_FOUND': 'validation',
+                'OPTION_NOT_FOUND': 'validation', 'INTERNAL_ERROR': 'internal',
+                'UNKNOWN_ACTION': 'internal'
+            };
+            const errorType = errorTypeMap[rawErrorCode] || rawErrorCode;
+
             // Log execution
             await LogModel.create({
                 workspaceId: job.workspaceId,
@@ -87,7 +97,7 @@ async function processJob({ job, workflow, ConnectionModel, LogModel, JobModel, 
                 actionKey: action.actionKey,
                 status: result.success ? 'success' : 'error',
                 httpStatus: result.httpStatus || null,
-                errorType: result.error?.code || result.errorType || null,
+                errorType,
                 latencyMs: stepLatency,
                 requestMeta: { input },
                 responseMeta: { output: result.data },

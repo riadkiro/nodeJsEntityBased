@@ -31,7 +31,7 @@ const IntegrationLogSchema = new mongoose.Schema(
         // Error classification for filtering/analytics
         errorType: {
             type: String,
-            enum: ["auth", "rate_limit", "network", "invalid_config", null],
+            enum: ["auth", "rate_limit", "network", "invalid_config", "internal", "validation", null],
             default: null
         },
         latencyMs: {
@@ -39,18 +39,13 @@ const IntegrationLogSchema = new mongoose.Schema(
         },
         // Request metadata (secrets REDACTED)
         requestMeta: {
-            method: String,
-            url: String,
-            headers: mongoose.Schema.Types.Mixed,  // redacted
-            query: mongoose.Schema.Types.Mixed,    // redacted
-            bodySize: Number
+            type: mongoose.Schema.Types.Mixed,
+            default: {}
         },
         // Response metadata (body truncated to 2KB)
         responseMeta: {
-            status: Number,
-            headers: mongoose.Schema.Types.Mixed,
-            bodyPreview: String,  // max 2KB
-            bodySize: Number
+            type: mongoose.Schema.Types.Mixed,
+            default: {}
         },
         // Workflow tracking (optional, for workflow executions)
         workflowId: {

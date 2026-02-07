@@ -468,7 +468,7 @@ router.post('/:id/execute', async (req, res) => {
                 tenantDbConnection.model('IntegrationLog', LogSchema);
 
             // tenantReq: minimal req-like object for tenantCollection
-            const tenantReq = { tenantDbConnection };
+            const tenantReq = { tenantDbConnection, tenantDbReady: true };
 
             return { ConnectionModel, LogModel, tenantReq };
         };

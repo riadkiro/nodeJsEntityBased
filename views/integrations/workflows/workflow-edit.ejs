@@ -114,6 +114,66 @@
   .wf-toggle.active { background: #8b5cf6; }
   .wf-toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
   .wf-toggle.active::after { transform: translateX(18px); }
+
+  /* ── Internal Action Field Mapping ── */
+  .wf-field-section { margin-top: 10px; }
+  .wf-field-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #8b5cf6; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .wf-field-section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, rgba(139,92,246,0.2), transparent); }
+  .dark .wf-field-section-title { color: #a78bfa; }
+
+  .wf-field-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .wf-field-row .wf-field-label { font-size: 12px; color: #374151; min-width: 90px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dark .wf-field-row .wf-field-label { color: #d1d5db; }
+  .wf-field-row .wf-field-label .wf-required { color: #ef4444; margin-left: 2px; }
+  .wf-field-row .wf-field-input { flex: 1; min-width: 0; }
+  .wf-field-row .wf-field-input input,
+  .wf-field-row .wf-field-input select,
+  .wf-field-row .wf-field-input textarea { width: 100%; padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 12px; background: #f9fafb; transition: border-color 0.2s; }
+  .wf-field-row .wf-field-input input:focus,
+  .wf-field-row .wf-field-input select:focus,
+  .wf-field-row .wf-field-input textarea:focus { outline: none; border-color: #8b5cf6; box-shadow: 0 0 0 2px rgba(139,92,246,0.1); }
+  .dark .wf-field-row .wf-field-input input,
+  .dark .wf-field-row .wf-field-input select,
+  .dark .wf-field-row .wf-field-input textarea { background: #0e1726; border-color: #2a3f5f; color: #e5e7eb; }
+
+  /* Variable button */
+  .wf-var-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e5e7eb; background: #fff; color: #8b5cf6; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; font-size: 11px; font-weight: 700; }
+  .wf-var-btn:hover { background: #ede9fe; border-color: #8b5cf6; }
+  .wf-var-btn.active { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
+  .dark .wf-var-btn { background: #1b2e4b; border-color: #2a3f5f; }
+  .dark .wf-var-btn:hover { background: rgba(139,92,246,0.2); border-color: #8b5cf6; }
+
+  /* Variable chip displayed in field */
+  .wf-var-chip-inline { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-family: 'JetBrains Mono', monospace; background: #ede9fe; color: #7c3aed; border: 1px solid #c4b5fd; cursor: default; width: 100%; }
+  .wf-var-chip-inline .wf-var-chip-remove { cursor: pointer; opacity: 0.6; transition: opacity 0.15s; margin-left: auto; }
+  .wf-var-chip-inline .wf-var-chip-remove:hover { opacity: 1; }
+  .dark .wf-var-chip-inline { background: rgba(139,92,246,0.15); color: #a78bfa; border-color: rgba(139,92,246,0.3); }
+
+  /* Variable picker popover */
+  .wf-var-popover { position: absolute; top: 100%; right: 0; z-index: 50; width: 260px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 8px; margin-top: 4px; max-height: 240px; overflow-y: auto; }
+  .dark .wf-var-popover { background: #1b2e4b; border-color: #2a3f5f; }
+  .wf-var-popover-item { padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 8px; transition: background 0.1s; }
+  .wf-var-popover-item:hover { background: #f3f4f6; }
+  .dark .wf-var-popover-item:hover { background: #2a3f5f; }
+  .wf-var-popover-item code { font-size: 10px; color: #8b5cf6; background: #ede9fe; padding: 1px 5px; border-radius: 4px; }
+  .dark .wf-var-popover-item code { background: rgba(139,92,246,0.15); color: #a78bfa; }
+
+  /* Advanced JSON toggle */
+  .wf-advanced-toggle { display: flex; align-items: center; gap: 6px; padding: 6px 0; margin-top: 8px; border-top: 1px dashed #e5e7eb; cursor: pointer; font-size: 11px; color: #6b7280; transition: color 0.15s; }
+  .wf-advanced-toggle:hover { color: #8b5cf6; }
+  .dark .wf-advanced-toggle { border-color: #2a3f5f; color: #9ca3af; }
+  .dark .wf-advanced-toggle:hover { color: #a78bfa; }
+
+  /* Record ref picker */
+  .wf-record-ref { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; }
+  .wf-record-ref select { flex: 1; }
+  .wf-record-ref input { flex: 1; }
+
+  /* Loading skeleton */
+  .wf-fields-loading { padding: 12px 0; text-align: center; color: #9ca3af; font-size: 12px; }
+  .wf-fields-loading .wf-skeleton { height: 28px; background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; margin-bottom: 8px; }
+  .dark .wf-fields-loading .wf-skeleton { background: linear-gradient(90deg, #1b2e4b 25%, #2a3f5f 50%, #1b2e4b 75%); background-size: 200% 100%; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 </style>
 
 <div x-data="workflowBuilder()" x-init="init()">
@@ -243,7 +303,7 @@
                 </div>
                 <div>
                   <label class="wf-label">Action</label>
-                  <select x-model="step.actionId" class="wf-select">
+                  <select x-model="step.actionId" @change="onActionChange(step)" class="wf-select">
                     <option value="">— Choisir —</option>
                     <template x-for="a in getActionsForProvider(step.providerKey)" :key="a._id">
                       <option :value="a._id" x-text="a.name"></option>
@@ -251,11 +311,254 @@
                   </select>
                 </div>
               </div>
-              <div>
-                <label class="wf-label">Input Mapping (JSON)</label>
-                <textarea x-model="step.inputMappingStr" class="wf-textarea" rows="3"
-                  placeholder='{"query": "{{trigger.record.title}}"}'></textarea>
-              </div>
+
+              <!-- ═══ INTERNAL PROVIDER: Dynamic Field Mapping ═══ -->
+              <template x-if="isInternalProvider(step) && step.actionId">
+
+                <!-- Entity Picker (for create-record / set-status) -->
+                <div>
+                  <template x-if="internalActionNeedsEntity(step)">
+                    <div class="mb-3">
+                      <label class="wf-label">Collection (Entity)</label>
+                      <select x-model="step.uiState.entityId" @change="loadStepEntityFields(step)" class="wf-select">
+                        <option value="">— Choisir l'entity —</option>
+                        <% entities.forEach(e => { %>
+                          <option value="<%= e._id %>"><%= e.name %></option>
+                        <% }) %>
+                      </select>
+                    </div>
+                  </template>
+
+                  <!-- Record Ref Picker (for update/delete/set-status) -->
+                  <template x-if="internalActionNeedsRecord(step)">
+                    <div class="mb-3">
+                      <label class="wf-label">Record source</label>
+                      <div class="wf-record-ref">
+                        <select x-model="step.uiState.recordRef.type" @change="onRecordRefChange(step)" class="wf-select" style="flex:1">
+                          <option value="trigger">📌 Record du trigger</option>
+                          <option value="manual">✏️ ID manuel</option>
+                          <option value="step">🔗 Sortie d'un step</option>
+                        </select>
+                      </div>
+                      <template x-if="step.uiState.recordRef.type === 'manual'">
+                        <input type="text" x-model="step.uiState.recordRef.value" class="wf-input" placeholder="ID du record..." style="font-size:12px">
+                      </template>
+                      <template x-if="step.uiState.recordRef.type === 'step'">
+                        <select x-model="step.uiState.recordRef.value" class="wf-select" style="font-size:12px">
+                          <option value="">— Choisir un step —</option>
+                          <template x-for="(s, si) in steps.filter((s2, i2) => i2 < index)" :key="s.id">
+                            <option :value="s.id" x-text="'Step ' + (si + 1) + ' → ' + getStepTitle(s)"></option>
+                          </template>
+                        </select>
+                      </template>
+                    </div>
+                  </template>
+
+                  <!-- Loading skeleton -->
+                  <template x-if="step._loadingFields">
+                    <div class="wf-fields-loading">
+                      <div class="wf-skeleton"></div>
+                      <div class="wf-skeleton" style="width:80%"></div>
+                      <div class="wf-skeleton" style="width:60%"></div>
+                    </div>
+                  </template>
+
+                  <!-- Dynamic Fields (UI mode) -->
+                  <template x-if="step._entityFields && !step._loadingFields && step.uiState.mode !== 'json'">
+                    <div>
+                      <!-- System Fields -->
+                      <template x-if="internalActionNeedsFields(step)">
+                        <div>
+                          <div class="wf-field-section">
+                            <div class="wf-field-section-title">Champs système</div>
+                            <template x-for="field in step._entityFields.systemFields" :key="field.key">
+                              <div class="wf-field-row">
+                                <div class="wf-field-label">
+                                  <span x-text="field.label"></span>
+                                  <template x-if="field.required"><span class="wf-required">*</span></template>
+                                </div>
+                                <div class="wf-field-input" style="position:relative">
+                                  <template x-if="!getFieldValue(step, field.key)?.isVariable">
+                                    <input :type="field.inputComponent === 'number' ? 'number' : 'text'"
+                                      :value="getFieldValue(step, field.key)?.value || ''"
+                                      @input="setFieldValue(step, field.key, $event.target.value, false)"
+                                      :placeholder="field.placeholder || ''"
+                                      class="wf-input" style="font-size:12px; padding:6px 10px;">
+                                  </template>
+                                  <template x-if="getFieldValue(step, field.key)?.isVariable">
+                                    <div class="wf-var-chip-inline">
+                                      <iconify-icon icon="solar:code-bold" width="12"></iconify-icon>
+                                      <span x-text="getFieldValue(step, field.key)?.value"></span>
+                                      <span class="wf-var-chip-remove" @click="setFieldValue(step, field.key, '', false)">✕</span>
+                                    </div>
+                                  </template>
+                                </div>
+                                <div style="position:relative">
+                                  <button class="wf-var-btn" @click.stop="toggleVarPicker(step.id, field.key)" title="Insérer une variable">≡</button>
+                                  <template x-if="varPickerOpen === step.id + '.' + field.key">
+                                    <div class="wf-var-popover" @click.outside="varPickerOpen = null">
+                                      <div class="wf-var-popover-item" @click="setFieldValue(step, field.key, '{{trigger.recordId}}', true); varPickerOpen=null">
+                                        <span>Record ID</span><code>trigger.recordId</code>
+                                      </div>
+                                      <div class="wf-var-popover-item" @click="setFieldValue(step, field.key, '{{trigger.record.title}}', true); varPickerOpen=null">
+                                        <span>Titre du record</span><code>trigger.record.title</code>
+                                      </div>
+                                      <div class="wf-var-popover-item" @click="setFieldValue(step, field.key, '{{trigger.actorEmail}}', true); varPickerOpen=null">
+                                        <span>Email auteur</span><code>trigger.actorEmail</code>
+                                      </div>
+                                      <template x-for="(s, si) in steps.filter((s2, i2) => i2 < index)" :key="s.id">
+                                        <div class="wf-var-popover-item" @click="setFieldValue(step, field.key, '{{steps.' + s.id + '.content}}', true); varPickerOpen=null">
+                                          <span x-text="'Step ' + (si+1) + ' output'"></span>
+                                          <code x-text="'steps.' + s.id + '.content'"></code>
+                                        </div>
+                                      </template>
+                                    </div>
+                                  </template>
+                                </div>
+                              </div>
+                            </template>
+                          </div>
+
+                          <!-- Custom Fields -->
+                          <template x-if="step._entityFields.customFields.length > 0">
+                            <div class="wf-field-section">
+                              <div class="wf-field-section-title">Champs personnalisés</div>
+                              <template x-for="field in step._entityFields.customFields" :key="field.fieldId">
+                                <div class="wf-field-row">
+                                  <div class="wf-field-label">
+                                    <span x-text="field.label"></span>
+                                    <template x-if="field.required"><span class="wf-required">*</span></template>
+                                  </div>
+                                  <div class="wf-field-input" style="position:relative">
+                                    <template x-if="!getFieldValue(step, field.fieldId)?.isVariable">
+                                      <!-- Render by inputComponent -->
+                                      <template x-if="field.inputComponent === 'select'">
+                                        <select @change="setFieldValue(step, field.fieldId, $event.target.value, false)" class="wf-select" style="font-size:12px; padding:6px 10px;">
+                                          <option value="">— Choisir —</option>
+                                          <template x-for="opt in (field.options || [])" :key="opt.value">
+                                            <option :value="opt.value" x-text="opt.label" :selected="getFieldValue(step, field.fieldId)?.value === opt.value"></option>
+                                          </template>
+                                        </select>
+                                      </template>
+                                      <template x-if="field.inputComponent === 'textarea'">
+                                        <textarea
+                                          :value="getFieldValue(step, field.fieldId)?.value || ''"
+                                          @input="setFieldValue(step, field.fieldId, $event.target.value, false)"
+                                          :placeholder="field.placeholder || ''"
+                                          rows="2" class="wf-textarea" style="font-size:12px; padding:6px 10px;"></textarea>
+                                      </template>
+                                      <template x-if="field.inputComponent === 'checkbox'">
+                                        <label class="flex items-center gap-2" style="font-size:12px;">
+                                          <input type="checkbox"
+                                            :checked="getFieldValue(step, field.fieldId)?.value === true || getFieldValue(step, field.fieldId)?.value === 'true'"
+                                            @change="setFieldValue(step, field.fieldId, $event.target.checked, false)">
+                                          <span x-text="field.label"></span>
+                                        </label>
+                                      </template>
+                                      <template x-if="!['select','textarea','checkbox'].includes(field.inputComponent)">
+                                        <input :type="field.inputComponent === 'number' ? 'number' : field.inputComponent === 'date' ? 'date' : 'text'"
+                                          :value="getFieldValue(step, field.fieldId)?.value || ''"
+                                          @input="setFieldValue(step, field.fieldId, $event.target.value, false)"
+                                          :placeholder="field.placeholder || ''"
+                                          class="wf-input" style="font-size:12px; padding:6px 10px;">
+                                      </template>
+                                    </template>
+                                    <template x-if="getFieldValue(step, field.fieldId)?.isVariable">
+                                      <div class="wf-var-chip-inline">
+                                        <iconify-icon icon="solar:code-bold" width="12"></iconify-icon>
+                                        <span x-text="getFieldValue(step, field.fieldId)?.value"></span>
+                                        <span class="wf-var-chip-remove" @click="setFieldValue(step, field.fieldId, '', false)">✕</span>
+                                      </div>
+                                    </template>
+                                  </div>
+                                  <div style="position:relative">
+                                    <button class="wf-var-btn" @click.stop="toggleVarPicker(step.id, field.fieldId)" title="Insérer une variable">≡</button>
+                                    <template x-if="varPickerOpen === step.id + '.' + field.fieldId">
+                                      <div class="wf-var-popover" @click.outside="varPickerOpen = null">
+                                        <div class="wf-var-popover-item" @click="setFieldValue(step, field.fieldId, '{{trigger.recordId}}', true); varPickerOpen=null">
+                                          <span>Record ID</span><code>trigger.recordId</code>
+                                        </div>
+                                        <div class="wf-var-popover-item" @click="setFieldValue(step, field.fieldId, '{{trigger.record.title}}', true); varPickerOpen=null">
+                                          <span>Titre du record</span><code>trigger.record.title</code>
+                                        </div>
+                                        <template x-for="(s, si) in steps.filter((s2, i2) => i2 < index)" :key="s.id">
+                                          <div class="wf-var-popover-item" @click="setFieldValue(step, field.fieldId, '{{steps.' + s.id + '.content}}', true); varPickerOpen=null">
+                                            <span x-text="'Step ' + (si+1) + ' output'"></span>
+                                            <code x-text="'steps.' + s.id + '.content'"></code>
+                                          </div>
+                                        </template>
+                                      </div>
+                                    </template>
+                                  </div>
+                                </div>
+                              </template>
+                            </div>
+                          </template>
+                        </div>
+                      </template>
+
+                      <!-- Classification picker (set-status) -->
+                      <template x-if="getInternalActionKey(step) === 'set-status' && step._entityFields">
+                        <div class="wf-field-section">
+                          <div class="wf-field-section-title">Classification</div>
+                          <div class="wf-field-row">
+                            <div class="wf-field-label">Classification</div>
+                            <div class="wf-field-input">
+                              <select x-model="step.uiState.fieldValues.classificationId"
+                                @change="step.uiState.fieldValues.optionId = {value:'',isVariable:false}"
+                                class="wf-select" style="font-size:12px">
+                                <option value="">— Choisir —</option>
+                                <template x-for="c in (step._entityFields.classifications || [])" :key="c._id">
+                                  <option :value="c._id" x-text="c.name"></option>
+                                </template>
+                              </select>
+                            </div>
+                          </div>
+                          <template x-if="step.uiState.fieldValues.classificationId?.value">
+                            <div class="wf-field-row">
+                              <div class="wf-field-label">Statut</div>
+                              <div class="wf-field-input">
+                                <select x-model="step.uiState.fieldValues.optionId"
+                                  @change="setFieldValue(step, 'optionId', $event.target.value, false)"
+                                  class="wf-select" style="font-size:12px">
+                                  <option value="">— Choisir —</option>
+                                  <template x-for="v in getClassificationValues(step)" :key="v._id">
+                                    <option :value="v._id" x-text="v.label"></option>
+                                  </template>
+                                </select>
+                              </div>
+                            </div>
+                          </template>
+                        </div>
+                      </template>
+
+                      <!-- Advanced JSON toggle -->
+                      <div class="wf-advanced-toggle" @click="step.uiState.mode = step.uiState.mode === 'json' ? 'ui' : 'json'">
+                        <iconify-icon :icon="step.uiState.mode === 'json' ? 'solar:eye-bold' : 'solar:code-bold'" width="14"></iconify-icon>
+                        <span x-text="step.uiState.mode === 'json' ? 'Mode visuel' : 'Advanced (JSON)'"></span>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- JSON mode (advanced or fallback) -->
+                  <template x-if="step.uiState.mode === 'json' || (!step._entityFields && !step._loadingFields)">
+                    <div>
+                      <label class="wf-label">Input Mapping (JSON)</label>
+                      <textarea x-model="step.inputMappingStr" class="wf-textarea" rows="4"
+                        placeholder='{"entityId": "...", "title": "..."}'></textarea>
+                    </div>
+                  </template>
+                </div>
+              </template>
+
+              <!-- ═══ EXTERNAL PROVIDER: JSON textarea ═══ -->
+              <template x-if="!isInternalProvider(step)">
+                <div>
+                  <label class="wf-label">Input Mapping (JSON)</label>
+                  <textarea x-model="step.inputMappingStr" class="wf-textarea" rows="3"
+                    placeholder='{"query": "{{trigger.record.title}}"}'></textarea>
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -457,6 +760,9 @@ function workflowBuilder() {
     showModal: false,
     modalData: null,
 
+    // Variable picker
+    varPickerOpen: null,
+
     async init() {
       // ⚠️ Load providers FIRST — selects need options before values are set
       try {
@@ -472,13 +778,26 @@ function workflowBuilder() {
       // Now load existing steps (providers are available for select binding)
       <% if (workflow && workflow.steps) { %>
         const existingSteps = <%- JSON.stringify(workflow.steps) %>;
-        this.steps = existingSteps.map((s, i) => ({
-          ...s,
-          id: s.id || 'step_' + (i + 1),
-          actionId: s.actionId?.$oid || s.actionId?.toString() || s.actionId || '',
-          inputMappingStr: JSON.stringify(s.inputMapping || {}, null, 2)
-        }));
+        this.steps = existingSteps.map((s, i) => {
+          const step = {
+            ...s,
+            id: s.id || 'step_' + (i + 1),
+            actionId: s.actionId?.$oid || s.actionId?.toString() || s.actionId || '',
+            inputMappingStr: JSON.stringify(s.inputMapping || {}, null, 2),
+            uiState: s.uiState || this._defaultUiState(),
+            _entityFields: null,
+            _loadingFields: false
+          };
+          return step;
+        });
         this.stepCounter = this.steps.length;
+
+        // Load entity fields for internal steps that have entityId saved
+        for (const step of this.steps) {
+          if (this.isInternalProvider(step) && step.uiState?.entityId) {
+            this.loadStepEntityFields(step);
+          }
+        }
       <% } %>
 
       // Load entity context if entity is set
@@ -522,6 +841,15 @@ function workflowBuilder() {
     },
 
     // ── Steps ──
+    _defaultUiState() {
+      return {
+        mode: 'ui',
+        entityId: '',
+        recordRef: { type: 'trigger', value: '' },
+        fieldValues: {}
+      };
+    },
+
     addStep() {
       this.stepCounter++;
       this.steps.push({
@@ -529,7 +857,10 @@ function workflowBuilder() {
         type: 'action',
         providerKey: '',
         actionId: '',
-        inputMappingStr: '{}'
+        inputMappingStr: '{}',
+        uiState: this._defaultUiState(),
+        _entityFields: null,
+        _loadingFields: false
       });
     },
 
@@ -548,11 +879,154 @@ function workflowBuilder() {
 
     onProviderChange(step) {
       step.actionId = '';
+      step.uiState = this._defaultUiState();
+      step._entityFields = null;
+    },
+
+    onActionChange(step) {
+      // Reset fields when action changes but keep entityId
+      step.uiState.fieldValues = {};
+      step.uiState.recordRef = { type: 'trigger', value: '' };
     },
 
     getActionsForProvider(providerKey) {
       if (!providerKey) return [];
       return this.allActions.filter(a => a.providerKey === providerKey);
+    },
+
+    // ── Internal Provider Helpers ──
+    isInternalProvider(step) {
+      return step.providerKey === 'app';
+    },
+
+    getInternalActionKey(step) {
+      if (!step.actionId) return null;
+      const action = this.allActions.find(a => a._id === step.actionId);
+      return action?.actionKey || null;
+    },
+
+    internalActionNeedsEntity(step) {
+      const key = this.getInternalActionKey(step);
+      return ['create-record', 'update-record', 'set-status'].includes(key);
+    },
+
+    internalActionNeedsRecord(step) {
+      const key = this.getInternalActionKey(step);
+      return ['update-record', 'delete-record', 'set-status'].includes(key);
+    },
+
+    internalActionNeedsFields(step) {
+      const key = this.getInternalActionKey(step);
+      return ['create-record', 'update-record'].includes(key);
+    },
+
+    async loadStepEntityFields(step) {
+      if (!step.uiState.entityId) {
+        step._entityFields = null;
+        return;
+      }
+      step._loadingFields = true;
+      try {
+        const resp = await fetch(`/account/<%= account_number %>/workflows/api/entity-fields/${step.uiState.entityId}`, { credentials: 'include' });
+        const data = await resp.json();
+        if (data.success) {
+          step._entityFields = data;
+          // Auto-rebuild inputMapping when fields load
+          this.syncInputMapping(step);
+        }
+      } catch (e) {
+        console.error('Error loading entity fields:', e);
+      } finally {
+        step._loadingFields = false;
+      }
+    },
+
+    // ── Field Values ──
+    getFieldValue(step, key) {
+      return step.uiState?.fieldValues?.[key] || { value: '', isVariable: false };
+    },
+
+    setFieldValue(step, key, value, isVariable) {
+      if (!step.uiState.fieldValues) step.uiState.fieldValues = {};
+      step.uiState.fieldValues[key] = { value, isVariable };
+      // Auto-sync JSON
+      this.syncInputMapping(step);
+    },
+
+    // ── Variable Picker ──
+    toggleVarPicker(stepId, fieldKey) {
+      const key = stepId + '.' + fieldKey;
+      this.varPickerOpen = this.varPickerOpen === key ? null : key;
+    },
+
+    // ── Record Ref ──
+    onRecordRefChange(step) {
+      step.uiState.recordRef.value = '';
+      this.syncInputMapping(step);
+    },
+
+    // ── Classification ──
+    getClassificationValues(step) {
+      if (!step._entityFields?.classifications || !step.uiState.fieldValues?.classificationId?.value) return [];
+      const cls = step._entityFields.classifications.find(c => c._id === step.uiState.fieldValues.classificationId.value);
+      return cls?.values || [];
+    },
+
+    // ── Build inputMapping from uiState ──
+    syncInputMapping(step) {
+      if (!this.isInternalProvider(step) || step.uiState.mode === 'json') return;
+      const mapping = this.buildInputMapping(step);
+      step.inputMappingStr = JSON.stringify(mapping, null, 2);
+    },
+
+    buildInputMapping(step) {
+      const actionKey = this.getInternalActionKey(step);
+      const fv = step.uiState.fieldValues || {};
+      const mapping = {};
+
+      // EntityId
+      if (step.uiState.entityId) {
+        mapping.entityId = step.uiState.entityId;
+      }
+
+      // RecordId (for update/delete/set-status)
+      if (this.internalActionNeedsRecord(step)) {
+        const ref = step.uiState.recordRef || {};
+        if (ref.type === 'trigger') {
+          mapping.recordId = '{{trigger.recordId}}';
+        } else if (ref.type === 'step' && ref.value) {
+          mapping.recordId = '{{steps.' + ref.value + '.recordId}}';
+        } else if (ref.type === 'manual' && ref.value) {
+          mapping.recordId = ref.value;
+        }
+      }
+
+      // System fields (title, description)
+      if (this.internalActionNeedsFields(step)) {
+        ['title', 'description'].forEach(key => {
+          const val = fv[key];
+          if (val?.value) mapping[key] = val.value;
+        });
+
+        // Custom fields
+        const customFields = {};
+        Object.entries(fv).forEach(([key, val]) => {
+          if (!['title', 'description', 'classificationId', 'optionId'].includes(key) && val?.value) {
+            customFields[key] = val.value;
+          }
+        });
+        if (Object.keys(customFields).length > 0) {
+          mapping.customFields = customFields;
+        }
+      }
+
+      // Set-status fields
+      if (actionKey === 'set-status') {
+        if (fv.classificationId?.value) mapping.classificationId = fv.classificationId.value;
+        if (fv.optionId?.value) mapping.optionId = fv.optionId.value;
+      }
+
+      return mapping;
     },
 
     // ── Variables ──
@@ -589,14 +1063,24 @@ function workflowBuilder() {
       this.saving = true;
       this.saveStatus = null;
 
-      // Build steps with parsed inputMapping
-      const stepsPayload = this.steps.map(s => ({
-        id: s.id,
-        type: 'action',
-        providerKey: s.providerKey,
-        actionId: s.actionId,
-        inputMapping: (() => { try { return JSON.parse(s.inputMappingStr || '{}'); } catch { return {}; } })()
-      }));
+      // Build steps with parsed inputMapping + uiState
+      const stepsPayload = this.steps.map(s => {
+        // For internal provider in UI mode, rebuild from uiState
+        let inputMapping;
+        if (this.isInternalProvider(s) && s.uiState?.mode !== 'json') {
+          inputMapping = this.buildInputMapping(s);
+        } else {
+          try { inputMapping = JSON.parse(s.inputMappingStr || '{}'); } catch { inputMapping = {}; }
+        }
+        return {
+          id: s.id,
+          type: 'action',
+          providerKey: s.providerKey,
+          actionId: s.actionId,
+          inputMapping,
+          uiState: s.uiState || null
+        };
+      });
 
       const payload = {
         name: this.workflowName,

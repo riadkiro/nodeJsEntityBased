@@ -28,6 +28,11 @@ const WorkflowStepSchema = new mongoose.Schema({
     inputMapping: {
         type: mongoose.Schema.Types.Mixed,
         default: {}
+    },
+    // UI state for visual field mapping (persisted for reload)
+    uiState: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
     }
 }, { _id: false });
 

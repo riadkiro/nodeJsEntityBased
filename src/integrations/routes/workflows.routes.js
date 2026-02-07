@@ -148,13 +148,17 @@ router.get('/api/entity-context/:entityId', async (req, res) => {
         const { tenantCollection } = require('../../../middleware/tenant');
 
         const Entity = await tenantCollection(req, 'Entity');
-        const entity = await Entity.findById(entityId)
-            .populate('fields')
-            .lean();
+        const entity = await Entity.findById(entityId).lean();
 
         if (!entity) {
             return res.status(404).json({ success: false, error: 'Entity not found' });
         }
+
+        // Manually load custom fields (populate doesn't work in multi-tenant)
+        const FieldTemplate = await tenantCollection(req, 'FieldTemplate');
+        const fields = entity.customFields && entity.customFields.length > 0
+            ? await FieldTemplate.find({ _id: { $in: entity.customFields } }).lean()
+            : [];
 
         // Get classifications for this entity
         const Classification = await tenantCollection(req, 'Classification');
@@ -177,7 +181,7 @@ router.get('/api/entity-context/:entityId', async (req, res) => {
                 name: entity.name,
                 slug: entity.slug
             },
-            fields: (entity.fields || []).map(f => ({
+            fields: fields.map(f => ({
                 _id: f._id,
                 name: f.name,
                 slug: f.slug || f.name,
@@ -196,6 +200,110 @@ router.get('/api/entity-context/:entityId', async (req, res) => {
         res.json({ success: true, entity, variables });
     } catch (error) {
         console.error('[Workflows] Entity context error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * GET /workflows/api/entity-fields/:entityId
+ * Returns UI-rich field schema for the visual field mapping builder.
+ * Separate from /entity-context (used by sidebar variables).
+ */
+router.get('/api/entity-fields/:entityId', async (req, res) => {
+    try {
+        const { entityId } = req.params;
+        const { tenantCollection } = require('../../../middleware/tenant');
+
+        const Entity = await tenantCollection(req, 'Entity');
+        const entity = await Entity.findById(entityId).lean();
+
+        if (!entity) {
+            return res.status(404).json({ success: false, error: 'Entity not found' });
+        }
+
+        // Manually load custom fields (populate doesn't work in multi-tenant)
+        const FieldTemplate = await tenantCollection(req, 'FieldTemplate');
+        const rawFields = entity.customFields && entity.customFields.length > 0
+            ? await FieldTemplate.find({ _id: { $in: entity.customFields } }).lean()
+            : [];
+
+        // Manually load classifications
+        const Classification = await tenantCollection(req, 'Classification');
+        const rawClassifications = entity.classifications && entity.classifications.length > 0
+            ? await Classification.find({ _id: { $in: entity.classifications } }).lean()
+            : [];
+
+        // ── System fields (always available) ──
+        const systemFields = [
+            { key: 'title', label: 'Titre', inputComponent: 'text', required: true, placeholder: 'Titre du record' },
+            { key: 'description', label: 'Description', inputComponent: 'textarea', required: false, placeholder: 'Description optionnelle' }
+        ];
+
+        // ── Custom fields → derive inputComponent from type ──
+        const typeToComponent = {
+            'string': 'text', 'text': 'textarea', 'number': 'number',
+            'date': 'date', 'boolean': 'checkbox', 'select': 'select',
+            'multiselect': 'multiSelect', 'email': 'text', 'url': 'text',
+            'phone': 'text', 'currency': 'number', 'percentage': 'number',
+            'relation': 'relation'
+        };
+
+        // Convert fieldOverrides Map (from Mongoose) to plain object
+        const fieldOverridesObj = entity.fieldOverrides || {};
+
+        const customFields = rawFields.map(f => {
+            const fid = f._id.toString();
+            const fieldOverride = fieldOverridesObj[fid] || {};
+            const inputComponent = typeToComponent[f.type] || typeToComponent[f.subtype] || 'text';
+
+            // Build options for select fields
+            let options = null;
+            if (['select', 'multiselect'].includes(f.type) && f.type_config?.options) {
+                options = f.type_config.options.map(opt =>
+                    typeof opt === 'string' ? { label: opt, value: opt } : opt
+                );
+            }
+
+            return {
+                fieldId: fid,
+                key: f.name,
+                label: fieldOverride.label || f.label || f.name,
+                type: f.type,
+                inputComponent,
+                placeholder: fieldOverride.placeholder || f.ui?.placeholder || '',
+                helpText: fieldOverride.helpText || f.description || '',
+                required: fieldOverride.required ?? f.required ?? false,
+                defaultValue: fieldOverride.defaultValue ?? f.defaultValue ?? null,
+                options,
+                validation: {
+                    subtype: f.subtype || null,
+                    min: f.type_config?.min ?? null,
+                    max: f.type_config?.max ?? null
+                }
+            };
+        });
+
+        // ── Classifications ──
+        const classifications = rawClassifications.map(c => ({
+            _id: c._id.toString(),
+            name: c.name || 'Classification',
+            color: c.color || null,
+            values: (c.values || []).map(v => ({
+                _id: v._id?.toString(),
+                label: v.label || v.name,
+                color: v.color || null
+            }))
+        }));
+
+        res.json({
+            success: true,
+            entity: { _id: entity._id, name: entity.name, slug: entity.slug },
+            systemFields,
+            customFields,
+            classifications
+        });
+    } catch (error) {
+        console.error('[Workflows] Entity fields error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

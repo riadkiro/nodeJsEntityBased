@@ -467,7 +467,10 @@ router.post('/:id/execute', async (req, res) => {
             const LogModel = tenantDbConnection.models.IntegrationLog ||
                 tenantDbConnection.model('IntegrationLog', LogSchema);
 
-            return { ConnectionModel, LogModel };
+            // tenantReq: minimal req-like object for tenantCollection
+            const tenantReq = { tenantDbConnection };
+
+            return { ConnectionModel, LogModel, tenantReq };
         };
 
         // Determine mode: sync or async
@@ -476,14 +479,15 @@ router.post('/:id/execute', async (req, res) => {
         if (isSync) {
             // ═══ SYNC MODE: await result and return it ═══
             const { processJob } = require('../services/WorkflowService');
-            const { ConnectionModel, LogModel } = getProcessModels();
+            const { ConnectionModel, LogModel, tenantReq } = getProcessModels();
 
             const result = await processJob({
                 job,
                 workflow: workflow.toObject(),
                 ConnectionModel,
                 LogModel,
-                JobModel: req.JobModel
+                JobModel: req.JobModel,
+                tenantReq
             });
 
             // Extract the last step's output as the "main" response data
@@ -506,14 +510,15 @@ router.post('/:id/execute', async (req, res) => {
             setImmediate(async () => {
                 try {
                     const { processJob } = require('../services/WorkflowService');
-                    const { ConnectionModel, LogModel } = getProcessModels();
+                    const { ConnectionModel, LogModel, tenantReq } = getProcessModels();
 
                     await processJob({
                         job,
                         workflow: workflow.toObject(),
                         ConnectionModel,
                         LogModel,
-                        JobModel: req.JobModel
+                        JobModel: req.JobModel,
+                        tenantReq
                     });
                 } catch (err) {
                     console.error('[Workflows] Background execution error:', err);

@@ -6,6 +6,7 @@
 const IntegrationProvider = require('../models/IntegrationProvider.model');
 const IntegrationAction = require('../models/IntegrationAction.model');
 const HttpRunner = require('./HttpRunner');
+const InternalActionRunner = require('./InternalActionRunner');
 const SecretVault = require('./SecretVault');
 const { resolveTemplate } = require('../utils/templateResolver');
 
@@ -17,9 +18,10 @@ const { resolveTemplate } = require('../utils/templateResolver');
  * @param {object} options.ConnectionModel - Tenant IntegrationConnection model
  * @param {object} options.LogModel - Tenant IntegrationLog model
  * @param {object} options.JobModel - Tenant WorkflowJob model
+ * @param {object} options.tenantReq - Req-like object for tenantCollection (tenantDbConnection)
  * @returns {Promise<object>} - Processing result
  */
-async function processJob({ job, workflow, ConnectionModel, LogModel, JobModel }) {
+async function processJob({ job, workflow, ConnectionModel, LogModel, JobModel, tenantReq }) {
     const startTime = Date.now();
     const stepResults = [];
     let lastError = null;
@@ -49,27 +51,32 @@ async function processJob({ job, workflow, ConnectionModel, LogModel, JobModel }
                 throw new Error(`Action "${step.actionId}" not found`);
             }
 
-            // Get connection
-            const connection = await ConnectionModel.findOne({
-                workspaceId: job.workspaceId,
-                providerKey: step.providerKey
-            });
-
-            if (!connection || connection.status !== 'connected') {
-                throw new Error(`Not connected to "${step.providerKey}"`);
-            }
-
-            // Decrypt secrets
-            const secrets = SecretVault.decrypt(connection.secrets);
-
-            // Resolve input mapping
+            // Resolve input mapping with context (trigger data + previous step outputs)
             const input = resolveTemplate(step.inputMapping || {}, context);
 
-            // Execute action with refresh support
-            const result = await HttpRunner.executeWithRefresh(
-                { provider, action, input, secrets },
-                { provider, connection, ConnectionModel }
-            );
+            let result;
+
+            // ═══ ROUTING: Internal vs External ═══
+            if (provider.baseUrl === 'internal://') {
+                // ── Internal Action (Mongoose / DB) ──
+                result = await InternalActionRunner.execute({ action, input, tenantReq });
+            } else {
+                // ── External Action (HTTP) ──
+                const connection = await ConnectionModel.findOne({
+                    workspaceId: job.workspaceId,
+                    providerKey: step.providerKey
+                });
+
+                if (!connection || connection.status !== 'connected') {
+                    throw new Error(`Not connected to "${step.providerKey}"`);
+                }
+
+                const secrets = SecretVault.decrypt(connection.secrets);
+                result = await HttpRunner.executeWithRefresh(
+                    { provider, action, input, secrets },
+                    { provider, connection, ConnectionModel }
+                );
+            }
 
             const stepLatency = Date.now() - stepStartTime;
 
@@ -79,11 +86,11 @@ async function processJob({ job, workflow, ConnectionModel, LogModel, JobModel }
                 providerKey: step.providerKey,
                 actionKey: action.actionKey,
                 status: result.success ? 'success' : 'error',
-                httpStatus: result.httpStatus,
-                errorType: result.errorType,
+                httpStatus: result.httpStatus || null,
+                errorType: result.error?.code || result.errorType || null,
                 latencyMs: stepLatency,
-                requestMeta: result.meta?.requestMeta,
-                responseMeta: result.meta?.responseMeta,
+                requestMeta: { input },
+                responseMeta: { output: result.data },
                 errorMessage: result.errorMessage,
                 workflowId: workflow._id,
                 workflowJobId: job._id,
@@ -94,7 +101,7 @@ async function processJob({ job, workflow, ConnectionModel, LogModel, JobModel }
                 throw new Error(result.errorMessage || 'Step failed');
             }
 
-            // Store step output for next steps
+            // Store step output for next steps (enables {{steps.step_1.recordId}})
             context.steps[step.id] = result.data;
 
             stepResults.push({

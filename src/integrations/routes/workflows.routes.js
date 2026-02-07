@@ -365,19 +365,37 @@ router.post('/:id/toggle', async (req, res) => {
 
 /**
  * GET /workflows/:id/jobs
- * Get workflow execution history
+ * Get workflow execution history — renders page or returns JSON
  */
 router.get('/:id/jobs', async (req, res) => {
     try {
         const { id } = req.params;
+        const workspaceId = req.account_number;
         const limit = parseInt(req.query.limit) || 50;
+
+        const workflow = await Workflow.findOne({ _id: id, workspaceId }).lean();
+        if (!workflow) {
+            return res.status(404).json({ success: false, error: 'Workflow not found' });
+        }
 
         const jobs = await req.JobModel.find({ workflowId: id })
             .sort({ createdAt: -1 })
             .limit(limit)
             .lean();
 
-        res.json({ success: true, jobs });
+        // JSON API request (from fetch)
+        const wantsJson = req.query.limit || req.headers.accept?.includes('application/json');
+        if (wantsJson) {
+            return res.json({ success: true, jobs });
+        }
+
+        // Render page
+        res.render('integrations/workflows/workflow-jobs', {
+            layout: 'layout-app',
+            workflow,
+            jobs,
+            account_number: workspaceId
+        });
     } catch (error) {
         console.error('[Workflows] Jobs error:', error);
         res.status(500).json({ success: false, error: error.message });

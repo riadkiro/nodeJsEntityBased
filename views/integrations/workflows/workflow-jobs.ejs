@@ -1,0 +1,277 @@
+<%# Workflow Jobs / Execution Logs Page %>
+<style>
+  .jobs-container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  .jobs-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .jobs-back { display: flex; align-items: center; gap: 8px; color: var(--text-muted, #6b7280); text-decoration: none; font-size: 13px; transition: color 0.2s; }
+  .jobs-back:hover { color: var(--primary); }
+
+  /* Stats */
+  .jobs-stats { display: flex; gap: 12px; margin-bottom: 24px; }
+  .jobs-stat { flex: 1; padding: 14px 16px; border-radius: 12px; border: 1px solid #e5e7eb; background: #fff; }
+  .dark .jobs-stat { background: #1b2e4b; border-color: #2a3f5f; }
+  .jobs-stat-value { font-size: 22px; font-weight: 700; }
+  .jobs-stat-label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+  /* Table */
+  .jobs-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .jobs-table th { padding: 10px 14px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; text-align: left; border-bottom: 1px solid #e5e7eb; }
+  .dark .jobs-table th { border-color: #2a3f5f; }
+  .jobs-table td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+  .dark .jobs-table td { border-color: #1b2e4b; color: #e5e7eb; }
+  .jobs-table tbody tr { cursor: pointer; transition: background 0.15s; }
+  .jobs-table tbody tr:hover { background: rgba(139,92,246,0.04); }
+  .dark .jobs-table tbody tr:hover { background: rgba(139,92,246,0.08); }
+
+  /* Status badge */
+  .job-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .job-badge.completed { background: rgba(16,185,129,0.1); color: #10b981; }
+  .job-badge.failed { background: rgba(239,68,68,0.1); color: #ef4444; }
+  .job-badge.pending { background: rgba(245,158,11,0.1); color: #f59e0b; }
+  .job-badge.running { background: rgba(59,130,246,0.1); color: #3b82f6; }
+
+  /* Expanded detail */
+  .job-detail { background: #f9fafb; border-radius: 10px; padding: 16px; margin-top: 8px; }
+  .dark .job-detail { background: #0e1726; }
+  .job-detail-title { font-size: 11px; font-weight: 600; text-transform: uppercase; color: #6b7280; margin-bottom: 8px; }
+
+  /* Step item */
+  .step-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+  .step-item:last-child { border-bottom: none; }
+  .dark .step-item { border-color: #2a3f5f; }
+  .step-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .step-dot.success { background: #10b981; }
+  .step-dot.error { background: #ef4444; }
+  .step-dot.pending { background: #f59e0b; }
+  .step-dot.skipped { background: #9ca3af; }
+
+  /* JSON viewer */
+  .json-viewer { background: #1e293b; color: #e2e8f0; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; overflow-x: auto; white-space: pre-wrap; word-break: break-word; max-height: 300px; overflow-y: auto; margin-top: 6px; }
+
+  /* Empty state */
+  .jobs-empty { text-align: center; padding: 60px 20px; }
+  .jobs-empty-icon { color: #d1d5db; margin-bottom: 12px; }
+  .dark .jobs-empty-icon { color: #3b5998; }
+</style>
+
+<div class="jobs-container" x-data="jobsPage()" x-init="init()">
+  <!-- Header -->
+  <div class="jobs-header">
+    <div>
+      <a href="/account/<%= account_number %>/workflows/<%= workflow._id %>" class="jobs-back">
+        <iconify-icon icon="solar:arrow-left-linear" width="16"></iconify-icon>
+        Retour au workflow
+      </a>
+      <h1 class="text-xl font-bold dark:text-white mt-2">
+        <iconify-icon icon="solar:history-bold-duotone" width="24" class="text-primary mr-1" style="vertical-align: -3px;"></iconify-icon>
+        Historique d'exécution
+      </h1>
+      <p class="text-sm text-gray-500 mt-1"><%= workflow.name %></p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button @click="refresh()" class="btn btn-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+        <iconify-icon icon="solar:refresh-bold" width="14" class="mr-1" :class="refreshing ? 'animate-spin' : ''"></iconify-icon>
+        Actualiser
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="jobs-stats">
+    <div class="jobs-stat">
+      <div class="jobs-stat-value dark:text-white" x-text="jobs.length"></div>
+      <div class="jobs-stat-label">Total exécutions</div>
+    </div>
+    <div class="jobs-stat">
+      <div class="jobs-stat-value text-green-500" x-text="jobs.filter(j => j.status === 'completed').length"></div>
+      <div class="jobs-stat-label">Succès</div>
+    </div>
+    <div class="jobs-stat">
+      <div class="jobs-stat-value text-red-500" x-text="jobs.filter(j => j.status === 'failed').length"></div>
+      <div class="jobs-stat-label">Échecs</div>
+    </div>
+    <div class="jobs-stat">
+      <div class="jobs-stat-value text-blue-500" x-text="avgLatency"></div>
+      <div class="jobs-stat-label">Latence moyenne</div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white dark:bg-[#1b2e4b] rounded-xl border border-gray-200 dark:border-[#2a3f5f] overflow-hidden">
+    <template x-if="jobs.length === 0">
+      <div class="jobs-empty">
+        <iconify-icon icon="solar:history-bold-duotone" width="48" class="jobs-empty-icon"></iconify-icon>
+        <p class="text-gray-500 dark:text-gray-400 font-medium">Aucune exécution</p>
+        <p class="text-xs text-gray-400 mt-1">Lancez un Test Run depuis le workflow builder</p>
+      </div>
+    </template>
+
+    <template x-if="jobs.length > 0">
+      <table class="jobs-table">
+        <thead>
+          <tr>
+            <th style="width:40px;"></th>
+            <th>Statut</th>
+            <th>Date</th>
+            <th>Durée</th>
+            <th>Steps</th>
+            <th>Déclencheur</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="(job, idx) in jobs" :key="job._id">
+            <tr>
+              <td colspan="7" style="padding:0;">
+                <!-- Row -->
+                <div class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-[#0e1726] transition-colors" 
+                     style="padding: 12px 14px;" @click="toggleJob(job._id)">
+                  <div style="width:40px; flex-shrink:0;">
+                    <iconify-icon :icon="expandedJob === job._id ? 'solar:alt-arrow-down-bold' : 'solar:alt-arrow-right-bold'" 
+                      width="14" class="text-gray-400"></iconify-icon>
+                  </div>
+                  <div style="flex:1; min-width:80px;">
+                    <span class="job-badge" :class="job.status" x-text="statusLabel(job.status)"></span>
+                  </div>
+                  <div style="flex:1.2; font-size:13px;" class="dark:text-gray-300" x-text="formatDate(job.createdAt)"></div>
+                  <div style="flex:0.8; font-size:13px;" class="dark:text-gray-300" x-text="getDuration(job)"></div>
+                  <div style="flex:0.6; font-size:13px;" class="dark:text-gray-300" x-text="(job.stepResults?.length || 0) + ' step(s)'"></div>
+                  <div style="flex:0.8; font-size:12px;" class="text-gray-400" x-text="job.triggerData?.type || '—'"></div>
+                  <div style="flex:1; font-size:11px; font-family:'JetBrains Mono',monospace;" class="text-gray-400" x-text="job._id.slice(-8)"></div>
+                </div>
+
+                <!-- Expanded detail -->
+                <template x-if="expandedJob === job._id">
+                  <div style="padding: 0 14px 16px 54px;">
+                    <!-- Error message -->
+                    <template x-if="job.lastError">
+                      <div class="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg p-3 mb-3">
+                        <div class="text-xs font-semibold text-red-600 mb-1">Erreur</div>
+                        <div class="text-sm text-red-600" x-text="job.lastError"></div>
+                      </div>
+                    </template>
+
+                    <!-- Step Results -->
+                    <div class="job-detail">
+                      <div class="job-detail-title">Détail des steps</div>
+                      <template x-if="!job.stepResults || job.stepResults.length === 0">
+                        <div class="text-xs text-gray-400 py-2">Aucun résultat de step</div>
+                      </template>
+                      <template x-for="(step, si) in (job.stepResults || [])" :key="step.stepId || si">
+                        <div class="step-item">
+                          <div class="step-dot" :class="step.status"></div>
+                          <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                              <div>
+                                <span class="text-sm font-medium dark:text-gray-200" x-text="step.stepId || ('Step ' + (si + 1))"></span>
+                                <span class="ml-2 text-xs" :class="step.status === 'success' ? 'text-green-500' : step.status === 'error' ? 'text-red-500' : 'text-gray-400'" 
+                                  x-text="step.status"></span>
+                              </div>
+                              <span class="text-xs text-gray-400" x-text="step.latencyMs ? (step.latencyMs + 'ms') : ''"></span>
+                            </div>
+                            <!-- Error -->
+                            <template x-if="step.errorMessage">
+                              <div class="text-xs text-red-500 mt-1" x-text="step.errorMessage"></div>
+                            </template>
+                            <!-- Result data -->
+                            <template x-if="step.result">
+                              <div>
+                                <button @click.stop="toggleStepResult(job._id + '-' + si)" class="text-xs text-primary mt-1 hover:underline">
+                                  <span x-text="expandedStep === (job._id + '-' + si) ? 'Masquer la réponse' : 'Voir la réponse'"></span>
+                                </button>
+                                <template x-if="expandedStep === (job._id + '-' + si)">
+                                  <div class="json-viewer" x-text="prettyJson(step.result)"></div>
+                                </template>
+                              </div>
+                            </template>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+
+                    <!-- Trigger Data -->
+                    <div class="job-detail mt-3">
+                      <div class="job-detail-title">Données du déclencheur</div>
+                      <div class="json-viewer" x-text="prettyJson(job.triggerData)"></div>
+                    </div>
+                  </div>
+                </template>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </template>
+  </div>
+</div>
+
+<script>
+function jobsPage() {
+  return {
+    jobs: [],
+    expandedJob: null,
+    expandedStep: null,
+    refreshing: false,
+
+    init() {
+      this.jobs = <%- JSON.stringify(jobs || []) %>;
+    },
+
+    get avgLatency() {
+      const completed = this.jobs.filter(j => j.status === 'completed' && j.completedAt && j.createdAt);
+      if (completed.length === 0) return '—';
+      const total = completed.reduce((sum, j) => {
+        const dur = new Date(j.completedAt) - new Date(j.createdAt);
+        return sum + dur;
+      }, 0);
+      const avg = Math.round(total / completed.length);
+      return avg > 1000 ? (avg / 1000).toFixed(1) + 's' : avg + 'ms';
+    },
+
+    toggleJob(jobId) {
+      this.expandedJob = this.expandedJob === jobId ? null : jobId;
+      this.expandedStep = null;
+    },
+
+    toggleStepResult(key) {
+      this.expandedStep = this.expandedStep === key ? null : key;
+    },
+
+    statusLabel(status) {
+      const labels = { completed: 'Succès', failed: 'Échec', pending: 'En attente', running: 'En cours' };
+      return labels[status] || status;
+    },
+
+    getDuration(job) {
+      if (!job.completedAt || !job.createdAt) return '—';
+      const ms = new Date(job.completedAt) - new Date(job.createdAt);
+      if (ms > 1000) return (ms / 1000).toFixed(1) + 's';
+      return ms + 'ms';
+    },
+
+    formatDate(dateStr) {
+      if (!dateStr) return '—';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' +
+        d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    },
+
+    prettyJson(data) {
+      try { return JSON.stringify(data, null, 2); }
+      catch { return String(data); }
+    },
+
+    async refresh() {
+      this.refreshing = true;
+      try {
+        const resp = await fetch('/account/<%= account_number %>/workflows/<%= workflow._id %>/jobs?limit=50', {
+          credentials: 'include',
+          headers: { 'Accept': 'application/json' }
+        });
+        const data = await resp.json();
+        if (data.success) this.jobs = data.jobs;
+      } catch (e) { console.error(e); }
+      this.refreshing = false;
+    }
+  };
+}
+</script>

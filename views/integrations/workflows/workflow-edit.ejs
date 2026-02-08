@@ -159,7 +159,7 @@
   .dark .wf-var-popover-item code { background: rgba(139,92,246,0.15); color: #a78bfa; }
 
   /* Advanced JSON toggle */
-  .wf-advanced-toggle { display: flex; align-items: center; gap: 6px; padding: 6px 0; margin-top: 8px; border-top: 1px dashed #e5e7eb; cursor: pointer; font-size: 11px; color: #6b7280; transition: color 0.15s; }
+   .wf-advanced-toggle { display: flex; align-items: center; gap: 6px; padding: 6px 0; margin-top: 8px; border-top: 1px dashed #e5e7eb; cursor: pointer; font-size: 11px; color: #6b7280; transition: color 0.15s; }
   .wf-advanced-toggle:hover { color: #8b5cf6; }
   .dark .wf-advanced-toggle { border-color: #2a3f5f; color: #9ca3af; }
   .dark .wf-advanced-toggle:hover { color: #a78bfa; }
@@ -174,6 +174,41 @@
   .wf-fields-loading .wf-skeleton { height: 28px; background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; margin-bottom: 8px; }
   .dark .wf-fields-loading .wf-skeleton { background: linear-gradient(90deg, #1b2e4b 25%, #2a3f5f 50%, #1b2e4b 75%); background-size: 200% 100%; }
   @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  /* ── Guided Form for External Providers ── */
+  .wf-mode-tabs { display: flex; gap: 0; margin-bottom: 12px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+  .wf-mode-tab { flex: 1; padding: 6px 12px; font-size: 11px; font-weight: 600; text-align: center; cursor: pointer; transition: all 0.15s; background: #f9fafb; color: #6b7280; border: none; }
+  .wf-mode-tab:first-child { border-right: 1px solid #e5e7eb; }
+  .wf-mode-tab.active { background: #8b5cf6; color: #fff; }
+  .wf-mode-tab:hover:not(.active) { background: #f3f4f6; }
+  .dark .wf-mode-tabs { border-color: #2a3f5f; }
+  .dark .wf-mode-tab { background: #0e1726; color: #9ca3af; }
+  .dark .wf-mode-tab:first-child { border-color: #2a3f5f; }
+  .dark .wf-mode-tab.active { background: #8b5cf6; color: #fff; }
+  .dark .wf-mode-tab:hover:not(.active) { background: #1b2e4b; }
+
+  .wf-guided-field { margin-bottom: 10px; }
+  .wf-guided-field .wf-guided-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .wf-guided-field .wf-guided-label span { font-size: 12px; font-weight: 500; color: #374151; }
+  .dark .wf-guided-field .wf-guided-label span { color: #d1d5db; }
+  .wf-guided-field .wf-guided-hint { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+
+  .wf-prompt-area { width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; line-height: 1.5; background: #f9fafb; resize: vertical; min-height: 80px; font-family: inherit; transition: border-color 0.2s; }
+  .wf-prompt-area:focus { outline: none; border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139,92,246,0.1); }
+  .dark .wf-prompt-area { background: #0e1726; border-color: #2a3f5f; color: #e5e7eb; }
+
+  .wf-range-wrap { display: flex; align-items: center; gap: 10px; }
+  .wf-range-wrap input[type=range] { flex: 1; height: 6px; -webkit-appearance: none; appearance: none; background: linear-gradient(to right, #8b5cf6, #60a5fa); border-radius: 3px; outline: none; }
+  .wf-range-wrap input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #8b5cf6; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.15); cursor: pointer; }
+  .dark .wf-range-wrap input[type=range]::-webkit-slider-thumb { border-color: #0e1726; }
+  .wf-range-value { min-width: 36px; text-align: center; font-size: 12px; font-weight: 600; color: #8b5cf6; background: #ede9fe; padding: 2px 8px; border-radius: 6px; }
+  .dark .wf-range-value { background: rgba(139,92,246,0.15); color: #a78bfa; }
+
+  .wf-guided-divider { border: none; border-top: 1px dashed #e5e7eb; margin: 12px 0 10px; }
+  .dark .wf-guided-divider { border-color: #2a3f5f; }
+  .wf-guided-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #8b5cf6; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .wf-guided-section-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, rgba(139,92,246,0.2), transparent); }
+  .dark .wf-guided-section-label { color: #a78bfa; }
 </style>
 
 <div x-data="workflowBuilder()" x-init="init()">
@@ -551,12 +586,116 @@
                 </div>
               </template>
 
-              <!-- ═══ EXTERNAL PROVIDER: JSON textarea ═══ -->
+              <!-- ═══ EXTERNAL PROVIDER: Guided Form or JSON ═══ -->
               <template x-if="!isInternalProvider(step)">
                 <div>
-                  <label class="wf-label">Input Mapping (JSON)</label>
-                  <textarea x-model="step.inputMappingStr" class="wf-textarea" rows="3"
-                    placeholder='{"query": "{{trigger.record.title}}"}'></textarea>
+                  <!-- Mode tabs (only if action has inputSchema) -->
+                  <template x-if="hasGuidedMode(step)">
+                    <div class="wf-mode-tabs">
+                      <button class="wf-mode-tab" :class="step.uiState.mode !== 'json' ? 'active' : ''"
+                        @click="step.uiState.mode = 'ui'; syncExternalMapping(step)">Simple</button>
+                      <button class="wf-mode-tab" :class="step.uiState.mode === 'json' ? 'active' : ''"
+                        @click="syncExternalMapping(step); step.uiState.mode = 'json'">Expert (JSON)</button>
+                    </div>
+                  </template>
+
+                  <!-- ── Guided Mode ── -->
+                  <template x-if="hasGuidedMode(step) && step.uiState.mode !== 'json'">
+                    <div>
+                      <!-- Model selector -->
+                      <template x-if="getModelOptions(step).length > 0">
+                        <div class="wf-guided-field">
+                          <div class="wf-guided-label"><span>Modèle</span></div>
+                          <select class="wf-select" style="font-size:13px"
+                            :value="getExtFieldValue(step, 'model')"
+                            @change="setExtFieldValue(step, 'model', $event.target.value)">
+                            <template x-for="opt in getModelOptions(step)" :key="opt">
+                              <option :value="opt" x-text="opt" :selected="getExtFieldValue(step, 'model') === opt"></option>
+                            </template>
+                          </select>
+                        </div>
+                      </template>
+
+                      <!-- Prompt -->
+                      <div class="wf-guided-field">
+                        <div class="wf-guided-label"><span>Prompt</span></div>
+                        <div style="position:relative">
+                          <textarea class="wf-prompt-area" rows="4"
+                            placeholder="Écrivez votre prompt ici... Utilisez ≡ pour insérer des variables"
+                            :value="getExtFieldValue(step, 'user_prompt')"
+                            @input="setExtFieldValue(step, 'user_prompt', $event.target.value)"></textarea>
+                          <div style="position:absolute; top:8px; right:8px;">
+                            <button class="wf-var-btn" @click.stop="toggleVarPicker(step.id, 'ext_prompt')" title="Insérer une variable">≡</button>
+                            <template x-if="varPickerOpen === step.id + '.ext_prompt'">
+                              <div class="wf-var-popover" @click.outside="varPickerOpen = null" style="right:0; top:32px;">
+                                <div class="wf-var-popover-item" @click="appendExtFieldValue(step, 'user_prompt', '{{trigger.record.title}}'); varPickerOpen=null">
+                                  <span>Titre du record</span><code>trigger.record.title</code>
+                                </div>
+                                <div class="wf-var-popover-item" @click="appendExtFieldValue(step, 'user_prompt', '{{trigger.record.description}}'); varPickerOpen=null">
+                                  <span>Description</span><code>trigger.record.description</code>
+                                </div>
+                                <div class="wf-var-popover-item" @click="appendExtFieldValue(step, 'user_prompt', '{{trigger.actorEmail}}'); varPickerOpen=null">
+                                  <span>Email auteur</span><code>trigger.actorEmail</code>
+                                </div>
+                                <template x-for="(s, si) in steps.filter((s2, i2) => i2 < steps.indexOf(step))" :key="s.id">
+                                  <div class="wf-var-popover-item" @click="appendExtFieldValue(step, 'user_prompt', '{{steps.' + s.id + '.content}}'); varPickerOpen=null">
+                                    <span x-text="'Step ' + (si+1) + ' output'"></span>
+                                    <code x-text="'steps.' + s.id + '.content'"></code>
+                                  </div>
+                                </template>
+                              </div>
+                            </template>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Response format -->
+                      <div class="wf-guided-field">
+                        <div class="wf-guided-label"><span>Format de réponse</span></div>
+                        <select class="wf-select" style="font-size:13px"
+                          :value="getExtFieldValue(step, 'response_format') || 'text'"
+                          @change="setExtFieldValue(step, 'response_format', $event.target.value)">
+                          <option value="text">Texte</option>
+                          <option value="json_object">JSON</option>
+                        </select>
+                      </div>
+
+                      <!-- JSON options (visible only when JSON selected) -->
+                      <template x-if="getExtFieldValue(step, 'response_format') === 'json_object'">
+                        <div>
+                          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; color:#6b7280; margin-bottom:8px;">
+                            <input type="checkbox"
+                              :checked="getExtFieldValue(step, 'json_in_prompt') !== false && getExtFieldValue(step, 'json_in_prompt') !== 'false'"
+                              @change="setExtFieldValue(step, 'json_in_prompt', $event.target.checked)"
+                              style="accent-color:#8b5cf6; width:15px; height:15px;">
+                            <span>Définir la structure JSON dans le prompt</span>
+                          </label>
+
+                          <!-- JSON Schema textarea (when checkbox unchecked) -->
+                          <template x-if="getExtFieldValue(step, 'json_in_prompt') === false || getExtFieldValue(step, 'json_in_prompt') === 'false'">
+                            <div class="wf-guided-field">
+                              <div class="wf-guided-label"><span>Structure JSON attendue</span></div>
+                              <textarea class="wf-prompt-area" rows="6"
+                                style="font-family: 'JetBrains Mono', monospace; font-size: 12px;"
+                                placeholder='{ "result": "string", "score": "number" }'
+                                :value="getExtFieldValue(step, 'json_schema') || getDefaultJsonSchema()"
+                                @input="setExtFieldValue(step, 'json_schema', $event.target.value)"></textarea>
+                              <div class="wf-guided-hint">Structure que l'IA doit respecter. Utilisez des types : string, number, boolean, array, object</div>
+                            </div>
+                          </template>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+
+                  <!-- ── JSON Mode (expert or no schema) ── -->
+                  <template x-if="!hasGuidedMode(step) || step.uiState.mode === 'json'">
+                    <div>
+                      <label class="wf-label">Input Mapping (JSON)</label>
+                      <textarea x-model="step.inputMappingStr" class="wf-textarea" rows="4"
+                        placeholder='{"query": "{{trigger.record.title}}"}' style="font-family: 'JetBrains Mono', monospace;"></textarea>
+                    </div>
+                  </template>
                 </div>
               </template>
             </div>
@@ -793,9 +932,12 @@ function workflowBuilder() {
         this.stepCounter = this.steps.length;
 
         // Load entity fields for internal steps that have entityId saved
+        // Restore external field values for external providers with schema
         for (const step of this.steps) {
           if (this.isInternalProvider(step) && step.uiState?.entityId) {
             this.loadStepEntityFields(step);
+          } else if (!this.isInternalProvider(step)) {
+            this.restoreExtFieldValues(step);
           }
         }
       <% } %>
@@ -846,7 +988,8 @@ function workflowBuilder() {
         mode: 'ui',
         entityId: '',
         recordRef: { type: 'trigger', value: '' },
-        fieldValues: {}
+        fieldValues: {},
+        externalFieldValues: {}
       };
     },
 
@@ -887,6 +1030,12 @@ function workflowBuilder() {
       // Reset fields when action changes but keep entityId
       step.uiState.fieldValues = {};
       step.uiState.recordRef = { type: 'trigger', value: '' };
+      // Initialize external field values with defaults from schema
+      step.uiState.externalFieldValues = {};
+      if (!this.isInternalProvider(step) && this.hasGuidedMode(step)) {
+        this.initExtFieldDefaults(step);
+        this.syncExternalMapping(step);
+      }
     },
 
     getActionsForProvider(providerKey) {
@@ -974,7 +1123,11 @@ function workflowBuilder() {
 
     // ── Build inputMapping from uiState ──
     syncInputMapping(step) {
-      if (!this.isInternalProvider(step) || step.uiState.mode === 'json') return;
+      if (step.uiState.mode === 'json') return;
+      if (!this.isInternalProvider(step)) {
+        this.syncExternalMapping(step);
+        return;
+      }
       const mapping = this.buildInputMapping(step);
       step.inputMappingStr = JSON.stringify(mapping, null, 2);
     },
@@ -1067,8 +1220,10 @@ function workflowBuilder() {
       const stepsPayload = this.steps.map(s => {
         // For internal provider in UI mode, rebuild from uiState
         let inputMapping;
-        if (this.isInternalProvider(s) && s.uiState?.mode !== 'json') {
+        if (s.uiState?.mode !== 'json' && this.isInternalProvider(s)) {
           inputMapping = this.buildInputMapping(s);
+        } else if (s.uiState?.mode !== 'json' && !this.isInternalProvider(s) && this.hasGuidedMode(s)) {
+          inputMapping = this.buildExternalInputMapping(s);
         } else {
           try { inputMapping = JSON.parse(s.inputMappingStr || '{}'); } catch { inputMapping = {}; }
         }
@@ -1205,6 +1360,185 @@ function workflowBuilder() {
     closeResponseModal() {
       this.showModal = false;
       this.modalData = null;
+    },
+
+    // ══════════════════════════════════════════════
+    // ── External Provider Guided Form Helpers ──
+    // ══════════════════════════════════════════════
+
+    /** Resolve inputSchema — handles JSON Schema wrapper (type/properties/required) */
+    getActionSchema(step) {
+      if (!step.actionId) return null;
+      const action = this.allActions.find(a => a._id === step.actionId);
+      if (!action?.inputSchema || Object.keys(action.inputSchema).length === 0) return null;
+      // If it's a proper JSON Schema with "properties", unwrap
+      if (action.inputSchema.properties) return action.inputSchema.properties;
+      return action.inputSchema;
+    },
+
+    hasGuidedMode(step) {
+      return !!this.getActionSchema(step);
+    },
+
+    /** Get model enum values from the schema (for model dropdown) */
+    getModelOptions(step) {
+      const schema = this.getActionSchema(step);
+      if (!schema?.model?.enum) return [];
+      return schema.model.enum;
+    },
+
+    /** Default JSON schema template for the JSON structure field */
+    getDefaultJsonSchema() {
+      return JSON.stringify({
+        result: "string",
+        category: "string",
+        score: "number",
+        keywords: "array"
+      }, null, 2);
+    },
+
+    /** Initialize step.uiState.externalFieldValues with schema defaults */
+    initExtFieldDefaults(step) {
+      const schema = this.getActionSchema(step);
+      if (!schema) return;
+      for (const [key, def] of Object.entries(schema)) {
+        if (def.default !== undefined && !step.uiState.externalFieldValues[key]) {
+          step.uiState.externalFieldValues[key] = def.default;
+        }
+      }
+    },
+
+    getExtFieldValue(step, key) {
+      return step.uiState?.externalFieldValues?.[key] ?? '';
+    },
+
+    setExtFieldValue(step, key, value) {
+      if (!step.uiState.externalFieldValues) step.uiState.externalFieldValues = {};
+      step.uiState.externalFieldValues[key] = value;
+      this.syncExternalMapping(step);
+    },
+
+    /** Append text (variable) to a field instead of replacing */
+    appendExtFieldValue(step, key, text) {
+      const current = this.getExtFieldValue(step, key);
+      this.setExtFieldValue(step, key, current ? current + ' ' + text : text);
+    },
+
+    /**
+     * Build the inputMapping from externalFieldValues.
+     * user_prompt → messages array with role:user (+ system if set)
+     * Other schema fields get their defaults applied.
+     */
+    buildExternalInputMapping(step) {
+      const schema = this.getActionSchema(step);
+      if (!schema) return {};
+
+      const fv = step.uiState.externalFieldValues || {};
+      const mapping = {};
+
+      for (const [key, def] of Object.entries(schema)) {
+        if (key === 'messages' && def.type === 'array') {
+          // Build messages from user_prompt (+ system_prompt if present)
+          const messages = [];
+          if (fv.system_prompt) messages.push({ role: 'system', content: fv.system_prompt });
+          if (fv.user_prompt) messages.push({ role: 'user', content: fv.user_prompt });
+          if (messages.length > 0) mapping.messages = messages;
+          continue;
+        }
+        const val = fv[key];
+        if (val !== undefined && val !== '' && val !== null) {
+          mapping[key] = val;
+        } else if (def.default !== undefined) {
+          mapping[key] = def.default;
+        }
+      }
+      // Handle response_format (not in schema, added by our UI)
+      if (fv.response_format && fv.response_format !== 'text') {
+        if (fv.json_in_prompt === false || fv.json_in_prompt === 'false') {
+          // Structured Outputs: use json_schema with user-defined structure
+          const schemaStr = fv.json_schema || this.getDefaultJsonSchema();
+          try {
+            const parsed = JSON.parse(schemaStr);
+            // Build a proper JSON Schema properties object
+            const properties = {};
+            for (const [k, v] of Object.entries(parsed)) {
+              properties[k] = { type: typeof v === 'string' ? v : 'string' };
+            }
+            mapping.response_format = {
+              type: 'json_schema',
+              json_schema: {
+                name: 'response',
+                strict: true,
+                schema: {
+                  type: 'object',
+                  properties,
+                  required: Object.keys(properties),
+                  additionalProperties: false
+                }
+              }
+            };
+          } catch {
+            mapping.response_format = { type: 'json_object' };
+          }
+        } else {
+          mapping.response_format = { type: 'json_object' };
+        }
+      }
+
+      return mapping;
+    },
+
+    /** Sync externalFieldValues → inputMappingStr */
+    syncExternalMapping(step) {
+      if (this.isInternalProvider(step) || step.uiState.mode === 'json') return;
+      const mapping = this.buildExternalInputMapping(step);
+      step.inputMappingStr = JSON.stringify(mapping, null, 2);
+    },
+
+    /** Restore externalFieldValues from existing inputMapping on load */
+    restoreExtFieldValues(step) {
+      if (this.isInternalProvider(step) || !this.hasGuidedMode(step)) return;
+      if (step.uiState.externalFieldValues && Object.keys(step.uiState.externalFieldValues).length > 0) return;
+
+      try {
+        const mapping = JSON.parse(step.inputMappingStr || '{}');
+        const schema = this.getActionSchema(step);
+        if (!schema) return;
+
+        const fv = {};
+        for (const [key, def] of Object.entries(schema)) {
+          if (key === 'messages' && def.type === 'array' && Array.isArray(mapping.messages)) {
+            const systemMsg = mapping.messages.find(m => m.role === 'system');
+            const userMsg = mapping.messages.find(m => m.role === 'user');
+            if (systemMsg) fv.system_prompt = systemMsg.content;
+            if (userMsg) fv.user_prompt = userMsg.content;
+          } else if (mapping[key] !== undefined) {
+            fv[key] = mapping[key];
+          }
+        }
+        // Restore response_format + json_schema
+        if (mapping.response_format?.type === 'json_schema') {
+          fv.response_format = 'json_object';
+          fv.json_in_prompt = false;
+          // Reverse-parse the schema back to simple format
+          try {
+            const props = mapping.response_format.json_schema?.schema?.properties || {};
+            const simple = {};
+            for (const [k, v] of Object.entries(props)) {
+              simple[k] = v.type || 'string';
+            }
+            fv.json_schema = JSON.stringify(simple, null, 2);
+          } catch { /* leave empty */ }
+        } else if (mapping.response_format?.type === 'json_object') {
+          fv.response_format = 'json_object';
+          fv.json_in_prompt = true;
+        } else if (mapping.response_format?.type) {
+          fv.response_format = mapping.response_format.type;
+        }
+        step.uiState.externalFieldValues = fv;
+      } catch (e) {
+        // If JSON parse fails, leave empty
+      }
     },
 
     // ── Utils ──

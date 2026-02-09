@@ -144,10 +144,20 @@
   .dark .wf-var-btn:hover { background: rgba(139,92,246,0.2); border-color: #8b5cf6; }
 
   /* Variable chip displayed in field */
-  .wf-var-chip-inline { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-family: 'JetBrains Mono', monospace; background: #ede9fe; color: #7c3aed; border: 1px solid #c4b5fd; cursor: default; width: 100%; }
-  .wf-var-chip-inline .wf-var-chip-remove { cursor: pointer; opacity: 0.6; transition: opacity 0.15s; margin-left: auto; }
+  .wf-var-chip-inline { display: inline-flex; align-items: center; gap: 3px; padding: 0 8px; border-radius: 6px; font-size: 11px; font-family: 'JetBrains Mono', monospace; background: #ede9fe; color: #7c3aed; border: 1px solid #c4b5fd; cursor: default; white-space: nowrap; }
+  .wf-var-chip-inline .wf-var-chip-remove { cursor: pointer; opacity: 0.6; transition: opacity 0.15s; margin-left: 2px; font-size: 10px; }
   .wf-var-chip-inline .wf-var-chip-remove:hover { opacity: 1; }
   .dark .wf-var-chip-inline { background: rgba(139,92,246,0.15); color: #a78bfa; border-color: rgba(139,92,246,0.3); }
+
+  /* Tag container for multi-variable composition */
+  .wf-tag-container { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 3px 6px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb; min-height: 34px; cursor: text; transition: border-color 0.2s; }
+  .wf-tag-container:focus-within { border-color: #8b5cf6; box-shadow: 0 0 0 2px rgba(139,92,246,0.1); }
+  .dark .wf-tag-container { background: #0e1726; border-color: #2a3f5f; }
+  .dark .wf-tag-container:focus-within { border-color: #8b5cf6; }
+  .wf-tag-input { font-size: 12px; flex: 1; min-width: 60px; border: none; outline: none; padding: 4px 2px; background: transparent; }
+  .dark .wf-tag-input { color: #e5e7eb; }
+  .wf-tag-text { font-size: 12px; color: #374151; padding: 0 1px; white-space: pre; }
+  .dark .wf-tag-text { color: #d1d5db; }
 
   /* Variable picker popover */
   .wf-var-popover { position: absolute; top: 100%; right: 0; z-index: 50; width: 260px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 8px; margin-top: 4px; max-height: 240px; overflow-y: auto; }
@@ -489,42 +499,37 @@
                                   <template x-if="field.required"><span class="wf-required">*</span></template>
                                 </div>
                                 <div class="wf-field-input" style="position:relative">
-                                  <template x-if="!getFieldValue(step, field.key)?.isVariable">
-                                    <input :type="field.inputComponent === 'number' ? 'number' : 'text'"
-                                      :value="getFieldValue(step, field.key)?.value || ''"
-                                      @input="setFieldValue(step, field.key, $event.target.value, false)"
-                                      :placeholder="field.placeholder || ''"
-                                      class="wf-input" style="font-size:12px; padding:6px 10px;">
-                                  </template>
-                                  <template x-if="getFieldValue(step, field.key)?.isVariable">
-                                    <div class="wf-var-chip-inline">
-                                      <iconify-icon icon="solar:code-bold" width="12"></iconify-icon>
-                                      <span x-text="getFieldValue(step, field.key)?.value"></span>
-                                      <span class="wf-var-chip-remove" @click="setFieldValue(step, field.key, '', false)">✕</span>
-                                    </div>
-                                  </template>
+                                  <div class="wf-tag-container"
+                                    contenteditable="true"
+                                    :id="'editor_' + step.id + '_' + field.key"
+                                    :data-field-key="step.id + '_' + field.key"
+                                    @blur="saveCursorPosition($el)"
+                                    @input="updateContentEditable(step, field.key, $el)"
+                                    x-init="$el.innerHTML = renderFieldHtml(step, field.key)"
+                                    style="padding: 6px 10px; min-height: 38px; cursor: text; display: block; white-space: pre-wrap;">
+                                  </div>
                                 </div>
                                 <div style="position:relative">
                                   <button class="wf-var-btn" @click.stop="toggleVarPicker(step.id, field.key)" title="Insérer une variable">≡</button>
                                   <template x-if="varPickerOpen === step.id + '.' + field.key">
                                     <div class="wf-var-popover" @click.outside="varPickerOpen = null">
-                                      <div class="wf-var-popover-item" @click="setFieldValue(step, field.key, '{{trigger.recordId}}', true); varPickerOpen=null">
+                                      <div class="wf-var-popover-item" @click="appendFieldVariable(step, field.key, '{{trigger.recordId}}'); varPickerOpen=null">
                                         <span>Record ID</span><code>trigger.recordId</code>
                                       </div>
-                                      <div class="wf-var-popover-item" @click="setFieldValue(step, field.key, '{{trigger.record.title}}', true); varPickerOpen=null">
+                                      <div class="wf-var-popover-item" @click="appendFieldVariable(step, field.key, '{{trigger.record.title}}'); varPickerOpen=null">
                                         <span>Titre du record</span><code>trigger.record.title</code>
                                       </div>
-                                      <div class="wf-var-popover-item" @click="setFieldValue(step, field.key, '{{trigger.actorEmail}}', true); varPickerOpen=null">
+                                      <div class="wf-var-popover-item" @click="appendFieldVariable(step, field.key, '{{trigger.actorEmail}}'); varPickerOpen=null">
                                         <span>Email auteur</span><code>trigger.actorEmail</code>
                                       </div>
                                       <template x-for="(s, si) in steps.filter((s2, i2) => i2 < index)" :key="s.id">
                                         <div>
-                                          <div class="wf-var-popover-item" @click="setFieldValue(step, field.key, '{{steps.' + s.id + '.content}}', true); varPickerOpen=null">
+                                          <div class="wf-var-popover-item" @click="appendFieldVariable(step, field.key, '{{steps.' + s.id + '.content}}'); varPickerOpen=null">
                                             <span x-text="'Step ' + (si+1) + ' output'"></span>
                                             <code x-text="'steps.' + s.id + '.content'"></code>
                                           </div>
                                           <template x-for="subKey in getStepJsonKeys(s)" :key="s.id + '-' + subKey">
-                                            <div class="wf-var-popover-item" style="padding-left:24px" @click="setFieldValue(step, field.key, '{{steps.' + s.id + '.content.' + subKey + '}}', true); varPickerOpen=null">
+                                            <div class="wf-var-popover-item" style="padding-left:24px" @click="appendFieldVariable(step, field.key, '{{steps.' + s.id + '.content.' + subKey + '}}'); varPickerOpen=null">
                                               <span x-text="subKey" style="font-size:11px"></span>
                                               <code x-text="'steps.' + s.id + '.content.' + subKey" style="font-size:10px"></code>
                                             </div>
@@ -549,44 +554,35 @@
                                     <template x-if="field.required"><span class="wf-required">*</span></template>
                                   </div>
                                   <div class="wf-field-input" style="position:relative">
-                                    <template x-if="!getFieldValue(step, field.fieldId)?.isVariable">
-                                      <!-- Render by inputComponent -->
-                                      <template x-if="field.inputComponent === 'select'">
-                                        <select @change="setFieldValue(step, field.fieldId, $event.target.value, false)" class="wf-select" style="font-size:12px; padding:6px 10px;">
-                                          <option value="">— Choisir —</option>
-                                          <template x-for="opt in (field.options || [])" :key="opt.value">
-                                            <option :value="opt.value" x-text="opt.label" :selected="getFieldValue(step, field.fieldId)?.value === opt.value"></option>
-                                          </template>
-                                        </select>
-                                      </template>
-                                      <template x-if="field.inputComponent === 'textarea'">
-                                        <textarea
-                                          :value="getFieldValue(step, field.fieldId)?.value || ''"
-                                          @input="setFieldValue(step, field.fieldId, $event.target.value, false)"
-                                          :placeholder="field.placeholder || ''"
-                                          rows="2" class="wf-textarea" style="font-size:12px; padding:6px 10px;"></textarea>
-                                      </template>
-                                      <template x-if="field.inputComponent === 'checkbox'">
-                                        <label class="flex items-center gap-2" style="font-size:12px;">
-                                          <input type="checkbox"
-                                            :checked="getFieldValue(step, field.fieldId)?.value === true || getFieldValue(step, field.fieldId)?.value === 'true'"
-                                            @change="setFieldValue(step, field.fieldId, $event.target.checked, false)">
-                                          <span x-text="field.label"></span>
-                                        </label>
-                                      </template>
-                                      <template x-if="!['select','textarea','checkbox'].includes(field.inputComponent)">
-                                        <input :type="field.inputComponent === 'number' ? 'number' : field.inputComponent === 'date' ? 'date' : 'text'"
-                                          :value="getFieldValue(step, field.fieldId)?.value || ''"
-                                          @input="setFieldValue(step, field.fieldId, $event.target.value, false)"
-                                          :placeholder="field.placeholder || ''"
-                                          class="wf-input" style="font-size:12px; padding:6px 10px;">
-                                      </template>
+                                    <template x-if="['select','checkbox'].includes(field.inputComponent)">
+                                      <div>
+                                        <template x-if="field.inputComponent === 'select'">
+                                          <select @change="setFieldValue(step, field.fieldId, $event.target.value, false)" class="wf-select" style="font-size:12px; padding:6px 10px;">
+                                            <option value="">— Choisir —</option>
+                                            <template x-for="opt in (field.options || [])" :key="opt.value">
+                                              <option :value="opt.value" x-text="opt.label" :selected="getFieldValue(step, field.fieldId)?.value === opt.value"></option>
+                                            </template>
+                                          </select>
+                                        </template>
+                                        <template x-if="field.inputComponent === 'checkbox'">
+                                          <label class="flex items-center gap-2" style="font-size:12px;">
+                                            <input type="checkbox"
+                                              :checked="getFieldValue(step, field.fieldId)?.value === true || getFieldValue(step, field.fieldId)?.value === 'true'"
+                                              @change="setFieldValue(step, field.fieldId, $event.target.checked, false)">
+                                            <span x-text="field.label"></span>
+                                          </label>
+                                        </template>
+                                      </div>
                                     </template>
-                                    <template x-if="getFieldValue(step, field.fieldId)?.isVariable">
-                                      <div class="wf-var-chip-inline">
-                                        <iconify-icon icon="solar:code-bold" width="12"></iconify-icon>
-                                        <span x-text="getFieldValue(step, field.fieldId)?.value"></span>
-                                        <span class="wf-var-chip-remove" @click="setFieldValue(step, field.fieldId, '', false)">✕</span>
+                                    <template x-if="!['select','checkbox'].includes(field.inputComponent)">
+                                      <div class="wf-tag-container"
+                                        contenteditable="true"
+                                        :id="'editor_' + step.id + '_' + field.fieldId"
+                                        :data-field-key="step.id + '_' + field.fieldId"
+                                        @blur="saveCursorPosition($el)"
+                                        @input="updateContentEditable(step, field.fieldId, $el)"
+                                        x-init="$el.innerHTML = renderFieldHtml(step, field.fieldId)"
+                                        style="padding: 6px 10px; min-height: 38px; cursor: text; display: block; white-space: pre-wrap;">
                                       </div>
                                     </template>
                                   </div>
@@ -594,20 +590,20 @@
                                     <button class="wf-var-btn" @click.stop="toggleVarPicker(step.id, field.fieldId)" title="Insérer une variable">≡</button>
                                     <template x-if="varPickerOpen === step.id + '.' + field.fieldId">
                                       <div class="wf-var-popover" @click.outside="varPickerOpen = null">
-                                        <div class="wf-var-popover-item" @click="setFieldValue(step, field.fieldId, '{{trigger.recordId}}', true); varPickerOpen=null">
+                                        <div class="wf-var-popover-item" @click="appendFieldVariable(step, field.fieldId, '{{trigger.recordId}}'); varPickerOpen=null">
                                           <span>Record ID</span><code>trigger.recordId</code>
                                         </div>
-                                        <div class="wf-var-popover-item" @click="setFieldValue(step, field.fieldId, '{{trigger.record.title}}', true); varPickerOpen=null">
+                                        <div class="wf-var-popover-item" @click="appendFieldVariable(step, field.fieldId, '{{trigger.record.title}}'); varPickerOpen=null">
                                           <span>Titre du record</span><code>trigger.record.title</code>
                                         </div>
                                         <template x-for="(s, si) in steps.filter((s2, i2) => i2 < index)" :key="s.id">
                                           <div>
-                                            <div class="wf-var-popover-item" @click="setFieldValue(step, field.fieldId, '{{steps.' + s.id + '.content}}', true); varPickerOpen=null">
+                                            <div class="wf-var-popover-item" @click="appendFieldVariable(step, field.fieldId, '{{steps.' + s.id + '.content}}'); varPickerOpen=null">
                                               <span x-text="'Step ' + (si+1) + ' output'"></span>
                                               <code x-text="'steps.' + s.id + '.content'"></code>
                                             </div>
                                             <template x-for="subKey in getStepJsonKeys(s)" :key="s.id + '-' + subKey">
-                                              <div class="wf-var-popover-item" style="padding-left:24px" @click="setFieldValue(step, field.fieldId, '{{steps.' + s.id + '.content.' + subKey + '}}', true); varPickerOpen=null">
+                                              <div class="wf-var-popover-item" style="padding-left:24px" @click="appendFieldVariable(step, field.fieldId, '{{steps.' + s.id + '.content.' + subKey + '}}'); varPickerOpen=null">
                                                 <span x-text="subKey" style="font-size:11px"></span>
                                                 <code x-text="'steps.' + s.id + '.content.' + subKey" style="font-size:10px"></code>
                                               </div>
@@ -1427,6 +1423,100 @@ function workflowBuilder() {
         const parsed = JSON.parse(schemaStr);
         return Object.keys(parsed);
       } catch { return []; }
+    },
+
+    /** Render field value to HTML for contenteditable: replaces {{...}} with chip spans */
+    renderFieldHtml(step, key) {
+      const fv = this.getFieldValue(step, key);
+      const raw = fv?.value || '';
+      if (!raw) return '';
+      // Replace {{...}} with <span ...>...</span>
+      return raw.replace(/(\{\{[^}]+\}\})/g, (match) => {
+        const varStr = match;
+        const inner = varStr.slice(2, -2).trim();
+        const parts = inner.split('.');
+        const label = parts.length > 2 ? parts.slice(-2).join('.') : inner;
+        // encodeURIComponent to be safe in data-val? No, just simple quote escape usually enough, but let's be cleaner
+        return `<span class="wf-var-chip-inline" contenteditable="false" data-val="${varStr}" title="${inner}"><iconify-icon icon="solar:code-bold" width="10"></iconify-icon> ${label} <span class="wf-var-chip-remove" onclick="this.parentNode.remove(); window.dispatchEvent(new Event('input', {bubbles:true}));">✕</span></span>`;
+      });
+    },
+
+    /** Update model from ContentEditable HTML */
+    updateContentEditable(step, key, el) {
+      // Parse HTML to string
+      let newVal = '';
+      el.childNodes.forEach(node => {
+        if (node.nodeType === 3) { // Text
+          newVal += node.textContent; // .replace(/\u00A0/g, ' '); // Replace NBSP if needed?
+        } else if (node.nodeType === 1) { // Element
+          if (node.hasAttribute('data-val')) {
+            newVal += node.getAttribute('data-val');
+          } else {
+            newVal += node.innerText; // Fallback for other nodes
+          }
+        }
+      });
+      // Update state
+      this.setFieldValue(step, key, newVal, true); // Always treating as "variable mode" if complicated
+    },
+
+    /** Save cursor position for the active editor */
+    saveCursorPosition(el) {
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        this._lastRange = selection.getRangeAt(0);
+        this._lastEditor = el;
+      }
+    },
+
+    /** Insert variable into the last active ContentEditable (or append if none) */
+    insertVariableToEditor(step, key, varStr) {
+      // Construct Chip HTML
+      const inner = varStr.slice(2, -2).trim();
+      const parts = inner.split('.');
+      const label = parts.length > 2 ? parts.slice(-2).join('.') : inner;
+      const chipHtml = `<span class="wf-var-chip-inline" contenteditable="false" data-val="${varStr}" title="${inner}"><iconify-icon icon="solar:code-bold" width="10"></iconify-icon> ${label} <span class="wf-var-chip-remove" onclick="this.parentNode.remove(); window.dispatchEvent(new Event('input', {bubbles:true}));">✕</span></span>&nbsp;`;
+      
+      // Check if we have a valid range for THIS field
+      // Simple heuristic: if _lastEditor matches the field's ref or ID? 
+      // Actually, we can just find the element by ref if we didn't save range properly, but simpler to try _lastRange
+      
+      let inserted = false;
+      if (this._lastRange && this._lastEditor && this._lastEditor.dataset.fieldKey === step.id + '_' + key) {
+        try {
+          // Restore selection
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(this._lastRange);
+          
+          // Execute insert
+          document.execCommand('insertHTML', false, chipHtml);
+          inserted = true;
+          
+          // Trigger input event to sync
+          this.updateContentEditable(step, key, this._lastEditor);
+        } catch (e) { console.error('Insert failed', e); }
+      }
+      
+      if (!inserted) {
+        // Fallback: Append to end
+        // We find the element via ID/ref pattern we will set up
+        const editorId = 'editor_' + step.id + '_' + key;
+        const el = document.getElementById(editorId);
+        if (el) {
+          el.innerHTML += chipHtml;
+          this.updateContentEditable(step, key, el);
+        } else {
+           // Fallback to string append if editor not found (should not happen)
+           this.appendFieldVariable(step, key, varStr);
+        }
+      }
+    },
+    
+    // Legacy append fallback (kept just in case, or we can replace it)
+    appendFieldVariable(step, key, variable) { 
+        // We redirect to insertVariableToEditor now
+        this.insertVariableToEditor(step, key, variable);
     },
 
     // ── Select Node ──

@@ -336,7 +336,7 @@
       
       // Add field to format by clicking on available field tag
       addFieldById(fieldId) {
-        const editor = this.$refs.formatEditor;
+        const editor = this.showEditModal ? this.$refs.formatEditorEdit : this.$refs.formatEditor;
         
         // Sync tokens from current DOM state
         if (editor) {

@@ -44,8 +44,6 @@
     <!-- Center: Canvas Area -->
     <%- include('partials/builder-canvas') %>
 
-    <!-- Right: Property Panel -->
-    <%- include('partials/property-panel') %>
   </div>
 </div>
 
@@ -140,11 +138,24 @@ document.addEventListener('alpine:init', () => {
       selectBlock(blockId) {
         this.builderState.selectedBlockId = blockId;
         this.builderState.selectedRowId = null;
+        if (this.builderState.drawerMode === 'block-settings') {
+          this.builderState.drawerMode = 'blocks';
+        }
+      },
+      
+      openBlockSettings(blockId) {
+        this.builderState.selectedBlockId = blockId;
+        this.builderState.selectedRowId = null;
+        this.builderState.sidebarOpen = true;
+        this.builderState.drawerMode = 'block-settings';
       },
       
       selectRow(rowId) {
         this.builderState.selectedRowId = rowId;
         this.builderState.selectedBlockId = null;
+        if (this.builderState.drawerMode === 'block-settings') {
+          this.builderState.drawerMode = 'blocks';
+        }
       },
       
       addRow() {

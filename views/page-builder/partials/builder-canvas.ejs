@@ -17,7 +17,7 @@
 </style>
 
 <!-- Canvas Area (WYSIWYG) -->
-<div class="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-6">
+<div class="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-6" @click="builderState.selectedBlockId = null; if (builderState.drawerMode === 'block-settings') { builderState.drawerMode = 'blocks'; }">
   <div class="max-w-7xl mx-auto">
     
     <!-- Empty State -->
@@ -245,7 +245,7 @@
                         class="absolute top-2 right-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-1 flex gap-1 z-50 border border-gray-200 dark:border-gray-700">
                         <!-- Options Button -->
                         <button 
-                          @click.stop="builderState.propertyPanelOpen = true"
+                          @click.stop="openBlockSettings(blockId)"
                           title="Options" 
                           class="w-8 h-8 flex items-center justify-center rounded hover:bg-primary/10 hover:text-primary transition-colors">
                           <iconify-icon icon="solar:settings-bold-duotone" width="18"></iconify-icon>

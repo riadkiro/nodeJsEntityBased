@@ -47,7 +47,8 @@
                                     const slotConf = typeConfigSlots[slotName] || {};
                                     const slotVal = recVal[slotName];
                                 %>
-                                    <% if (!slotConf.multiple) { %>
+                                    <% const slotUI = slotConf.ui || (slotConf.multiple ? 'checkbox' : 'select'); %>
+                                    <% if (slotUI === 'select') { %>
                                         <select name="<%= nameAttr %>[<%= slotName %>]" class="form-select text-sm">
                                             <option value="">-- Choisir --</option>
                                             <% slotOpts.forEach(opt => { %>
@@ -57,7 +58,7 @@
                                     <% } else { %>
                                         <div class="flex flex-wrap gap-1">
                                             <% slotOpts.forEach(opt => { 
-                                                const isChecked = Array.isArray(slotVal) && slotVal.includes(opt.value);
+                                                const isChecked = Array.isArray(slotVal) ? slotVal.includes(opt.value) : slotVal === opt.value;
                                             %>
                                                 <label class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs cursor-pointer border <%= isChecked ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-gray-100 border-gray-200' %>">
                                                     <input type="checkbox" name="<%= nameAttr %>[<%= slotName %>][]" value="<%= opt.value %>" class="hidden" <%= isChecked ? 'checked' : '' %>>

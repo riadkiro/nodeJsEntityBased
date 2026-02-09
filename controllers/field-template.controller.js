@@ -108,6 +108,7 @@ module.exports = {
         type_config.allowCustomText = req.body["type_config.allowCustomText"] === 'on' || req.body["type_config.allowCustomText"] === true || req.body["type_config.allowCustomText"] === 'true';
       }
 
+      const ui = {};
       if (req.body["ui.placeholder"]) {
         ui.placeholder = req.body["ui.placeholder"];
       }
@@ -166,21 +167,8 @@ module.exports = {
   },
 
   editForm: async (req, res) => {
-    const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
-    FieldTemplateModel.findById(req.params.id, (err, template) => {
-      if (err || !template) {
-        return res.status(404).render("errors/404", {
-          message: "Modèle introuvable.",
-          account_number: req.account_number,
-          layout: "layout-app",
-        });
-      }
-      res.render("field-template/field-template-edit", {
-        fieldTemplate: template,
-        account_number: req.account_number,
-        layout: "layout-app",
-      });
-    });
+    // Editing is handled inline on the list page
+    res.redirect(`/account/${req.account_number}/field-template/list`);
   },
 
   update: async (req, res) => {
@@ -211,6 +199,7 @@ module.exports = {
         type_config.allowCustomText = req.body["type_config.allowCustomText"] === 'on' || req.body["type_config.allowCustomText"] === true || req.body["type_config.allowCustomText"] === 'true';
       }
 
+      const ui = {};
       if (req.body["ui.placeholder"]) {
         ui.placeholder = req.body["ui.placeholder"];
       }

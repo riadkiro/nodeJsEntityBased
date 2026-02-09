@@ -422,7 +422,7 @@
     <template x-for="slotName in slotNames" :key="slotName">
         <div>
             <label class="block text-xs font-medium text-gray-500 mb-1" x-text="slotName"></label>
-            <template x-if="!getSlotConfig(slotName).multiple">
+            <template x-if="getSlotUI(slotName) === 'select'">
                 <select class="form-select text-sm" @change="setSlotValue(slotName, $event.target.value)">
                     <option value="">-- Choisir --</option>
                     <template x-for="opt in getSlotOptions(slotName)" :key="opt.value">
@@ -430,12 +430,12 @@
                     </template>
                 </select>
             </template>
-            <template x-if="getSlotConfig(slotName).multiple">
+            <template x-if="getSlotUI(slotName) === 'checkbox'">
                 <div class="flex flex-wrap gap-1.5">
                     <template x-for="opt in getSlotOptions(slotName)" :key="opt.value">
                         <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs cursor-pointer border transition-all"
-                               :class="(currentValue[slotName] || []).includes(opt.value) ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-gray-100 border-gray-200 dark:bg-gray-700 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-primary/30'">
-                            <input type="checkbox" class="hidden" :value="opt.value" :checked="(currentValue[slotName] || []).includes(opt.value)" @change="toggleSlotValue(slotName, opt.value)">
+                               :class="isSlotSelected(slotName, opt.value) ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-gray-100 border-gray-200 dark:bg-gray-700 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-primary/30'">
+                            <input type="checkbox" class="hidden" :value="opt.value" :checked="isSlotSelected(slotName, opt.value)" @change="toggleSlotValue(slotName, opt.value)">
                             <span x-text="opt.label"></span>
                         </label>
                     </template>
@@ -636,6 +636,18 @@
             slotNames: [],
 
             init() {
+                // Load config from script tag if configElementId is provided
+                if (config.configElementId) {
+                    try {
+                        const el = document.getElementById(config.configElementId);
+                        if (el) {
+                            const parsed = JSON.parse(el.textContent);
+                            this.options = parsed.options || [];
+                            this.slotsConfig = parsed.slots || {};
+                            this.allowCustomText = parsed.allowCustomText || false;
+                        }
+                    } catch(e) { console.error('Failed to parse recurrence config', e); }
+                }
                 this.slotNames = [...new Set(this.options.map(o => o.slot).filter(Boolean))];
                 const initial = config.initialValue;
                 if (initial && typeof initial === 'object') {
@@ -657,20 +669,38 @@
                 return this.slotsConfig[slotName] || {};
             },
 
+            getSlotUI(slotName) {
+                const conf = this.slotsConfig[slotName] || {};
+                return conf.ui || (conf.multiple ? 'checkbox' : 'select');
+            },
+
+            isSlotSelected(slotName, value) {
+                const v = this.currentValue[slotName];
+                if (Array.isArray(v)) return v.includes(value);
+                return v === value;
+            },
+
             setSlotValue(slotName, value) {
                 this.currentValue[slotName] = value;
                 this.serialize();
             },
 
             toggleSlotValue(slotName, value) {
-                if (!Array.isArray(this.currentValue[slotName])) {
-                    this.currentValue[slotName] = [];
-                }
-                const idx = this.currentValue[slotName].indexOf(value);
-                if (idx === -1) {
-                    this.currentValue[slotName].push(value);
+                const conf = this.slotsConfig[slotName] || {};
+                if (!conf.multiple) {
+                    // Single-select: toggle the clicked value, deselect others
+                    this.currentValue[slotName] = this.currentValue[slotName] === value ? '' : value;
                 } else {
-                    this.currentValue[slotName].splice(idx, 1);
+                    // Multi-select: add/remove from array
+                    if (!Array.isArray(this.currentValue[slotName])) {
+                        this.currentValue[slotName] = [];
+                    }
+                    const idx = this.currentValue[slotName].indexOf(value);
+                    if (idx === -1) {
+                        this.currentValue[slotName].push(value);
+                    } else {
+                        this.currentValue[slotName].splice(idx, 1);
+                    }
                 }
                 this.serialize();
             },

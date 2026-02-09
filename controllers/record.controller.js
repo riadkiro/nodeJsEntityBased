@@ -190,6 +190,7 @@ module.exports = {
                             inputType: cf.inputType || cf.type || 'text',
                             htmlTemplate: cf.htmlTemplate || '',
                             options: cf.options || [],
+                            type_config: cf.type_config || {},
                             ui: cf.ui || {}
                         };
                     });

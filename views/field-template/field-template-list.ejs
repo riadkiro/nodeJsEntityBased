@@ -244,6 +244,17 @@
           slots: field.type_config?.slots || {},
           allowCustomText: field.type_config?.allowCustomText || false
         };
+        // Ensure every slot has a complete config with defaults
+        const slotNames = [...new Set((this.formData.options || []).map(o => o.slot).filter(Boolean))];
+        slotNames.forEach(name => {
+          if (!this.formData.slots[name]) this.formData.slots[name] = {};
+          this.formData.slots[name] = {
+            ui: this.formData.slots[name].ui || 'select',
+            multiple: this.formData.slots[name].multiple || false,
+            required: this.formData.slots[name].required || false,
+            ...this.formData.slots[name]
+          };
+        });
         this.showAdvanced = !!(field.regex || field.htmlTemplate || field.jsTemplate);
         this.showDevMode = !!(field.htmlTemplate || field.jsTemplate);
         this.showFieldModal = true;
@@ -620,7 +631,13 @@
                 <template x-for="slotName in [...new Set(formData.options.map(o => o.slot).filter(Boolean))]" :key="slotName">
                   <div class="flex items-center gap-3 bg-white dark:bg-gray-700 px-3 py-2 rounded border dark:border-gray-600">
                     <span class="text-xs font-mono font-semibold text-primary" x-text="slotName"></span>
-                    <label class="flex items-center gap-1.5 cursor-pointer ml-auto">
+                    <select class="form-select text-xs py-1 w-28 ml-auto" 
+                            @change="if(!formData.slots[slotName]) formData.slots[slotName] = {}; formData.slots[slotName].ui = $event.target.value"
+                            x-effect="$el.value = formData.slots[slotName]?.ui || 'select'">
+                      <option value="select">Select</option>
+                      <option value="checkbox">Checkbox</option>
+                    </select>
+                    <label class="flex items-center gap-1.5 cursor-pointer">
                       <input type="checkbox" class="form-checkbox text-primary" :checked="formData.slots[slotName]?.multiple" @change="if(!formData.slots[slotName]) formData.slots[slotName] = {}; formData.slots[slotName].multiple = $event.target.checked">
                       <span class="text-xs">Multiple</span>
                     </label>

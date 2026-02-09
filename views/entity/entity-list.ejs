@@ -595,6 +595,10 @@
         }
       },
 
+      getRelationEntity(entityId) {
+        return this.allEntities.find(e => e._id === entityId) || null;
+      },
+
       async createCollection() {
         if (!this.newCollection.name) return;
         this.isSubmitting = true;
@@ -1506,6 +1510,25 @@
                         <button type="button" @click="selectedFields.splice(idx, 1)" class="hover:text-red-500">
                           <iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon>
                         </button>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+
+                <!-- Relations (affichées comme champs) -->
+                <div class="p-3 border border-primary/30 rounded-lg" x-show="relations.length > 0">
+                  <div class="text-xs text-primary font-medium mb-2 flex items-center gap-1">
+                    <iconify-icon icon="solar:link-round-bold-duotone" width="14"></iconify-icon>
+                    <span x-text="relations.length + ' relation(s)'"></span>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <template x-for="rel in relations" :key="'rel-field-'+rel.key">
+                      <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-colors"
+                           :style="getRelationEntity(rel.targetEntity)?.color ? 'background-color:' + getRelationEntity(rel.targetEntity).color + '15; border-color:' + getRelationEntity(rel.targetEntity).color + '40; color:' + getRelationEntity(rel.targetEntity).color : ''"
+                           :class="!getRelationEntity(rel.targetEntity)?.color && 'bg-primary/10 border-primary/30 text-primary'">
+                        <iconify-icon :icon="getRelationEntity(rel.targetEntity)?.icon || 'solar:link-round-bold-duotone'" width="12"></iconify-icon>
+                        <span x-text="rel.label || 'Relation'"></span>
+                        <span class="opacity-50 text-[10px]" x-text="rel.cardinality === 'one-to-one' ? '1:1' : rel.cardinality === 'one-to-many' ? '1:N' : 'N:N'"></span>
                       </div>
                     </template>
                   </div>

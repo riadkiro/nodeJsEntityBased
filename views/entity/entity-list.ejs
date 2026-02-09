@@ -59,18 +59,30 @@
   // Global function to remove field tag from contenteditable
   window.removeFieldTag = function(removeBtn) {
     const fieldTag = removeBtn.closest('.field-tag');
-    if (fieldTag) {
-      const editor = fieldTag.closest('[contenteditable]');
-      const tokenIndex = parseInt(fieldTag.getAttribute('data-token-index'));
-      
-      // Remove the element from DOM
-      fieldTag.remove();
-      
-      // Trigger input event to sync tokens
-      if (editor) {
-        editor.dispatchEvent(new Event('input', { bubbles: true }));
+    if (!fieldTag) return;
+    
+    const editor = fieldTag.closest('[contenteditable]');
+    
+    // Remove the element from DOM first
+    fieldTag.remove();
+    
+    if (!editor) return;
+    
+    // Parse remaining tokens from DOM
+    const tokens = [];
+    editor.childNodes.forEach(node => {
+      if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('field-tag')) {
+        tokens.push({ t: 'field', id: node.getAttribute('data-field-id') });
+      } else if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+        tokens.push({ t: 'text', v: node.textContent });
       }
-    }
+    });
+    
+    // Dispatch CustomEvent — Alpine's @token-sync listens for this
+    editor.dispatchEvent(new CustomEvent('token-sync', { 
+      bubbles: false, 
+      detail: { tokens } 
+    }));
   };
 
   document.addEventListener("alpine:init", () => {
@@ -404,7 +416,7 @@
           if (token.t === 'field') {
             const icon = this.getFieldIcon(token.id);
             const label = this.getFieldLabel(token.id);
-            return `<span class="field-tag" data-field-id="${token.id}" data-token-index="${idx}" contenteditable="false"><iconify-icon icon="${icon}" width="12"></iconify-icon> ${label}<span class="field-tag-remove" onclick="window.removeFieldTag(this)"><iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon></span></span>`;
+            return `<span class="field-tag" data-field-id="${token.id}" data-token-index="${idx}" contenteditable="false"><iconify-icon icon="${icon}" width="12"></iconify-icon> ${label}<span class="field-tag-remove"><iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon></span></span>`;
           }
           return token.v || '';
         }).join('');
@@ -693,6 +705,13 @@
             }
             this.step = 1;
             this.showEditModal = true;
+            // Re-render format editor after modal opens and selectedFields are loaded
+            this.$nextTick(() => {
+              const editor = this.$refs.formatEditorEdit || this.$refs.formatEditor;
+              if (editor) {
+                editor.innerHTML = this.renderTokensAsHTML();
+              }
+            });
           }
         } catch (e) {
           console.error('Failed to load entity:', e);
@@ -703,6 +722,20 @@
       async updateCollection() {
         if (!this.newCollection.name || !this.editingId) return;
         this.isSubmitting = true;
+
+        // Sync referenceTitleTokens from the editor DOM before saving
+        const editor = this.$refs.formatEditorEdit || this.$refs.formatEditor;
+        if (editor) {
+          const tokens = [];
+          editor.childNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('field-tag')) {
+              tokens.push({ t: 'field', id: node.getAttribute('data-field-id') });
+            } else if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+              tokens.push({ t: 'text', v: node.textContent });
+            }
+          });
+          this.newCollection.referenceTitleTokens = tokens;
+        }
 
         const enabledStandardFields = Object.entries(this.newCollection.standardFields)
           .filter(([k, v]) => v).map(([k]) => k);
@@ -1086,6 +1119,7 @@
                   <div class="form-input w-full text-sm min-h-[38px] p-2 cursor-text focus-within:ring-2 focus-within:ring-primary/50" 
                        contenteditable="true"
                        @input="syncTokensFromEditor($event)"
+                       @click="if ($event.target.closest('.field-tag-remove')) { $event.target.closest('.field-tag').remove(); syncTokensFromEditor({ target: $el }); }"
                        x-init="$el.innerHTML = renderTokensAsHTML()"
                        x-ref="formatEditor">
                   </div>
@@ -1628,6 +1662,7 @@
                   <div class="form-input w-full text-sm min-h-[38px] p-2 cursor-text focus-within:ring-2 focus-within:ring-primary/50" 
                        contenteditable="true"
                        @input="syncTokensFromEditor($event)"
+                       @click="if ($event.target.closest('.field-tag-remove')) { $event.target.closest('.field-tag').remove(); syncTokensFromEditor({ target: $el }); }"
                        x-init="$el.innerHTML = renderTokensAsHTML()"
                        x-ref="formatEditorEdit">
                   </div>

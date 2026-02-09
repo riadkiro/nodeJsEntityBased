@@ -5,7 +5,7 @@ const PageConfig = require('../models/PageConfig');
 // List page configs
 router.get('/list', async (req, res) => {
     try {
-        const configs = await PageConfig.find({ accountId: req.user.accountNumber })
+        const configs = await PageConfig.find({ accountId: req.account_number })
             .sort({ updatedAt: -1 })
             .select('name type entityRef status version updatedAt');
 
@@ -24,7 +24,7 @@ router.get('/list', async (req, res) => {
 // List page configs (alias)
 router.get('/', async (req, res) => {
     try {
-        const configs = await PageConfig.find({ accountId: req.user.accountNumber })
+        const configs = await PageConfig.find({ accountId: req.account_number })
             .sort({ updatedAt: -1 })
             .select('name type entityRef status version updatedAt');
 
@@ -56,16 +56,19 @@ router.get('/cockpit/new', (req, res) => {
         layout: 'layout-app',
         user: req.user,
         account_number: req.account_number,
-        builderMode: 'cockpit'
+        builderMode: 'cockpit',
+        parentId: req.query.parentId || null,
+        parentType: req.query.parentType || null
     });
 });
+
 
 // Edit page builder
 router.get('/edit/:id', async (req, res) => {
     try {
         const pageConfig = await PageConfig.findOne({
             _id: req.params.id,
-            accountId: req.user.accountNumber
+            accountId: req.account_number
         });
 
         if (!pageConfig) {
@@ -76,7 +79,8 @@ router.get('/edit/:id', async (req, res) => {
             layout: 'layout-app',
             user: req.user,
             account_number: req.account_number,
-            pageConfig
+            pageConfig,
+            builderMode: pageConfig.type === 'cockpit' ? 'cockpit' : 'page'
         });
     } catch (error) {
         console.error('Error loading page config:', error);

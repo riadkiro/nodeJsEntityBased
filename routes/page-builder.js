@@ -14,7 +14,7 @@ const ensureAuthenticated = (req, res, next) => {
 router.get('/api/page-configs', ensureAuthenticated, async (req, res) => {
     try {
         const { type, entityRef, status } = req.query;
-        const query = { accountId: req.user.accountNumber };
+        const query = { accountId: req.account_number };
 
         if (type) query.type = type;
         if (entityRef) query.entityRef = entityRef;
@@ -36,7 +36,7 @@ router.get('/api/page-configs/:id', ensureAuthenticated, async (req, res) => {
     try {
         const config = await PageConfig.findOne({
             _id: req.params.id,
-            accountId: req.user.accountNumber
+            accountId: req.account_number
         });
 
         if (!config) {
@@ -55,7 +55,7 @@ router.post('/api/page-configs', ensureAuthenticated, async (req, res) => {
     try {
         const configData = {
             ...req.body,
-            accountId: req.user.accountNumber
+            accountId: req.account_number
         };
 
         const config = new PageConfig(configData);
@@ -74,7 +74,7 @@ router.put('/api/page-configs/:id', ensureAuthenticated, async (req, res) => {
         const config = await PageConfig.findOneAndUpdate(
             {
                 _id: req.params.id,
-                accountId: req.user.accountNumber
+                accountId: req.account_number
             },
             req.body,
             { new: true, runValidators: true }
@@ -96,7 +96,7 @@ router.delete('/api/page-configs/:id', ensureAuthenticated, async (req, res) => 
     try {
         const config = await PageConfig.findOneAndDelete({
             _id: req.params.id,
-            accountId: req.user.accountNumber
+            accountId: req.account_number
         });
 
         if (!config) {
@@ -116,7 +116,7 @@ router.patch('/api/page-configs/:id/publish', ensureAuthenticated, async (req, r
         const config = await PageConfig.findOneAndUpdate(
             {
                 _id: req.params.id,
-                accountId: req.user.accountNumber
+                accountId: req.account_number
             },
             { status: 'published' },
             { new: true }

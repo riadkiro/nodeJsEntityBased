@@ -38,6 +38,31 @@ router.use("/db", require("./db.routes.js"));
 // Page Builder
 router.use("/page-builder", require("./page-builder.routes.js"));
 
+// Cockpit View (clean URL)
+const PageConfig = require('../models/PageConfig');
+router.get("/cockpit/:id", async (req, res) => {
+    try {
+        const pageConfig = await PageConfig.findOne({
+            _id: req.params.id,
+            accountId: req.account_number
+        });
+
+        if (!pageConfig) {
+            return res.status(404).send('Cockpit not found');
+        }
+
+        res.render('page-builder/cockpit-view', {
+            layout: 'layout-app',
+            user: req.user,
+            account_number: req.account_number,
+            pageConfig
+        });
+    } catch (error) {
+        console.error('Error loading cockpit:', error);
+        res.status(500).send('Error loading cockpit');
+    }
+});
+
 // DataTable HTMX
 router.use("/", require("./datatable.routes.js"));
 

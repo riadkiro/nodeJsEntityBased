@@ -4,11 +4,18 @@ const ViewSchema = new mongoose.Schema({
     name: { type: String, required: true },
     slug: { type: String, required: true },
 
-    // The base entity this view is based on
+    // The base entity this view is based on (optional for cockpits)
     entity: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Entity',
-        required: true
+        default: null
+    },
+
+    // Reference to cockpit page config (for viewType 'cockpit')
+    cockpitId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'PageConfig',
+        default: null
     },
 
     icon: String,
@@ -18,7 +25,7 @@ const ViewSchema = new mongoose.Schema({
     // Type of display
     viewType: {
         type: String,
-        enum: ['list', 'kanban', 'checklist', 'calendar', 'table'],
+        enum: ['list', 'kanban', 'checklist', 'calendar', 'table', 'cockpit'],
         default: 'list'
     },
 

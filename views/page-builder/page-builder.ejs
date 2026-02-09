@@ -55,6 +55,8 @@
   configId: typeof pageConfig !== 'undefined' ? pageConfig._id : null,
   isNew: typeof pageConfig === 'undefined',
   builderMode: typeof builderMode !== 'undefined' ? builderMode : 'page',
+  parentId: typeof parentId !== 'undefined' ? parentId : null,
+  parentType: typeof parentType !== 'undefined' ? parentType : null,
   config: typeof pageConfig !== 'undefined' ? pageConfig : {
     name: typeof builderMode !== 'undefined' && builderMode === 'cockpit' ? 'New Cockpit' : 'New Page',
     type: typeof builderMode !== 'undefined' && builderMode === 'cockpit' ? 'cockpit' : 'dashboard',
@@ -99,6 +101,8 @@ document.addEventListener('alpine:init', () => {
       configId: data.configId,
       pageConfig: data.config,
       builderMode: data.builderMode || 'page',
+      parentId: data.parentId || null,
+      parentType: data.parentType || null,
       lastSaved: null,
       
       builderState: {
@@ -605,17 +609,44 @@ document.addEventListener('alpine:init', () => {
             : `/account/${this.accountNumber}/page-builder/api/page-configs`;
           
           const method = this.configId ? 'PUT' : 'POST';
+          const isNew = !this.configId;
+          
+          // Include parentId/parentType in payload for new cockpits
+          const payload = { ...this.pageConfig };
+          if (this.parentId) payload.parentId = this.parentId;
+          if (this.parentType) payload.parentType = this.parentType;
           
           const response = await fetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(this.pageConfig)
+            body: JSON.stringify(payload)
           });
           
           if (response.ok) {
             const saved = await response.json();
             this.configId = saved._id;
             this.lastSaved = new Date().toLocaleTimeString();
+            
+            // Link cockpit to hierarchy on first save
+            if (isNew && this.parentId && this.parentType) {
+              try {
+                await fetch(`/account/${this.accountNumber}/api/hierarchy/link-cockpit`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    cockpitId: saved._id,
+                    cockpitName: this.pageConfig.name,
+                    parentId: this.parentId,
+                    parentType: this.parentType
+                  })
+                });
+                // Clear parent context after linking (prevent duplicate links)
+                this.parentId = null;
+                this.parentType = null;
+              } catch (linkErr) {
+                console.error('Failed to link cockpit to hierarchy:', linkErr);
+              }
+            }
             
             // Toast notification
             this.showToast('Configuration saved!', 'success');
@@ -627,8 +658,13 @@ document.addEventListener('alpine:init', () => {
       },
       
       async publishConfig() {
+        // Always save first
+        await this.saveConfig();
+        
+        // If save failed and configId is still null, abort
         if (!this.configId) {
-          await this.saveConfig();
+          this.showToast('Please save first before publishing', 'error');
+          return;
         }
         
         try {
@@ -639,6 +675,13 @@ document.addEventListener('alpine:init', () => {
           if (response.ok) {
             this.pageConfig.status = 'published';
             this.showToast('Page published!', 'success');
+            
+            // Redirect to cockpit view after publish
+            if (this.builderMode === 'cockpit' || this.pageConfig.type === 'cockpit') {
+              setTimeout(() => {
+                window.location.href = `/account/${this.accountNumber}/cockpit/${this.configId}`;
+              }, 500);
+            }
           }
         } catch (error) {
           console.error('Publish error:', error);

@@ -147,19 +147,35 @@ module.exports = {
                     else if ((parentType === 'folder' || parentType === 'environment') && v.folders.includes(parentId)) isChild = true;
 
                     if (isChild) {
-                        const entity = entities.find(e => e.id === v.entity.toString());
-                        results.push({
-                            type: 'entity',
-                            id: v.id,
-                            name: v.name,
-                            icon: v.icon || (entity ? entity.icon : 'solar:database-bold'),
-                            color: v.color,
-                            order: v.order,
-                            link: `/account/${req.account_number}/view/${v.id}`,
-                            entityId: v.entity,
-                            viewType: v.viewType || 'list',
-                            filters: v.filters || []
-                        });
+                        // Cockpit view
+                        if (v.viewType === 'cockpit') {
+                            results.push({
+                                type: 'cockpit',
+                                id: v.id,
+                                name: v.name,
+                                icon: v.icon || 'solar:monitor-smartphone-bold-duotone',
+                                color: v.color,
+                                order: v.order,
+                                link: `/account/${req.account_number}/cockpit/${v.cockpitId}`,
+                                cockpitId: v.cockpitId,
+                                viewType: 'cockpit'
+                            });
+                        } else {
+                            // Regular entity view
+                            const entity = entities.find(e => e.id === v.entity.toString());
+                            results.push({
+                                type: 'entity',
+                                id: v.id,
+                                name: v.name,
+                                icon: v.icon || (entity ? entity.icon : 'solar:database-bold'),
+                                color: v.color,
+                                order: v.order,
+                                link: `/account/${req.account_number}/view/${v.id}`,
+                                entityId: v.entity,
+                                viewType: v.viewType || 'list',
+                                filters: v.filters || []
+                            });
+                        }
                     }
                 });
 
@@ -206,7 +222,7 @@ module.exports = {
                 let Model;
                 if (item.type === 'space') Model = SpaceModel;
                 else if (['folder', 'environment'].includes(item.type)) Model = FolderModel;
-                else if (item.type === 'entity') Model = ViewModel;
+                else if (item.type === 'entity' || item.type === 'cockpit') Model = ViewModel;
 
                 if (Model) {
                     await Model.findByIdAndUpdate(item.id, { order: item.order });
@@ -229,7 +245,7 @@ module.exports = {
             const ViewModel = await tenantCollection(req, "View");
             const EntityModel = await tenantCollection(req, "Entity");
 
-            if (itemType === 'entity') {
+            if (itemType === 'entity' || itemType === 'cockpit') {
                 // Determine if we are moving a View or a Legacy Entity
                 let targetModel = ViewModel;
                 let item = await ViewModel.findById(itemId);
@@ -323,7 +339,7 @@ module.exports = {
         let Model;
         if (type === 'space') Model = await tenantCollection(req, "Space");
         if (type === 'folder' || type === 'environment' || type === 'workstation') Model = await tenantCollection(req, "Folder");
-        if (type === 'entity') {
+        if (type === 'entity' || type === 'cockpit') {
             const ViewModel = await tenantCollection(req, "View");
             const view = await ViewModel.findById(id);
             Model = view ? ViewModel : await tenantCollection(req, "Entity");
@@ -337,7 +353,7 @@ module.exports = {
         let Model;
         if (type === 'space') Model = await tenantCollection(req, "Space");
         if (type === 'folder' || type === 'environment' || type === 'workstation') Model = await tenantCollection(req, "Folder");
-        if (type === 'entity') {
+        if (type === 'entity' || type === 'cockpit') {
             const ViewModel = await tenantCollection(req, "View");
             const view = await ViewModel.findById(id);
             Model = view ? ViewModel : await tenantCollection(req, "Entity");
@@ -356,7 +372,7 @@ module.exports = {
         let Model;
         if (type === 'space') Model = await tenantCollection(req, "Space");
         if (type === 'folder' || type === 'environment' || type === 'workstation') Model = await tenantCollection(req, "Folder");
-        if (type === 'entity') {
+        if (type === 'entity' || type === 'cockpit') {
             const ViewModel = await tenantCollection(req, "View");
             const view = await ViewModel.findById(id);
             Model = view ? ViewModel : await tenantCollection(req, "Entity");
@@ -437,6 +453,23 @@ module.exports = {
             order: 0,
             spaces: parentType === 'space' ? [parentId] : [],
             folders: (parentType === 'folder' || parentType === 'environment' || parentType === 'workstation') ? [parentId] : []
+        });
+        await newView.save();
+        res.json({ success: true, view: newView });
+    },
+
+    linkCockpit: async (req, res) => {
+        const ViewModel = await tenantCollection(req, "View");
+        const { cockpitId, cockpitName, parentId, parentType } = req.body;
+        const newView = new ViewModel({
+            name: cockpitName || 'Cockpit',
+            slug: 'cockpit-' + Date.now(),
+            viewType: 'cockpit',
+            cockpitId: cockpitId,
+            createdBy: req.user._id,
+            order: 0,
+            spaces: parentType === 'space' ? [parentId] : [],
+            folders: (parentType === 'folder' || parentType === 'environment') ? [parentId] : []
         });
         await newView.save();
         res.json({ success: true, view: newView });

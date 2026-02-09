@@ -1,6 +1,7 @@
 <!-- Property Panel (Right Side) - Widget Configuration -->
 <div 
   x-show="builderState.selectedBlockId && builderState.mode === 'edit'"
+  x-data="{ tab: 'appearance' }"
   x-transition:enter="transform transition ease-out duration-200"
   x-transition:enter-start="translate-x-full opacity-0"
   x-transition:enter-end="translate-x-0 opacity-100"
@@ -21,7 +22,7 @@
   </div>
 
   <!-- Tabs -->
-  <div class="flex border-b dark:border-gray-700 shrink-0" x-data="{ tab: 'appearance' }">
+  <div class="flex border-b dark:border-gray-700 shrink-0">
     <button 
       @click="tab = 'appearance'"
       :class="tab === 'appearance' ? 'border-primary text-primary' : 'border-transparent text-gray-500'"
@@ -45,9 +46,9 @@
   </div>
 
   <!-- Panel Content -->
-  <div class="flex-1 overflow-y-auto p-4" x-data="{ tab: 'appearance' }">
+  <div class="flex-1 overflow-y-auto p-4">
     <template x-if="builderState.selectedBlockId">
-      <div x-data="{ block: pageConfig.blocks[builderState.selectedBlockId] }">
+      <div x-data="{ block: pageConfig.blocks[builderState.selectedBlockId], get blockData() { if (!this.block.data) this.block.data = { source: '', query: '', sort: '', limit: null }; return this.block.data; } }">
         
         <!-- Appearance Tab -->
         <div x-show="tab === 'appearance'" class="space-y-4">
@@ -184,52 +185,54 @@
         </div>
 
         <!-- Data Tab (Cockpit only) -->
-        <div x-show="tab === 'data'" class="space-y-4">
-          <!-- Source -->
-          <div>
-            <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Data Source</label>
-            <select class="form-select w-full text-sm py-2" x-model="block.data.source">
-              <option value="">Select source...</option>
-              <option value="consultations">Consultations</option>
-              <option value="patients">Patients</option>
-              <option value="activities">Activities</option>
-              <option value="messages">Messages</option>
-            </select>
-          </div>
+        <template x-if="tab === 'data'">
+          <div class="space-y-4">
+            <!-- Source -->
+            <div>
+              <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Data Source</label>
+              <select class="form-select w-full text-sm py-2" x-model="blockData.source">
+                <option value="">Select source...</option>
+                <option value="consultations">Consultations</option>
+                <option value="patients">Patients</option>
+                <option value="activities">Activities</option>
+                <option value="messages">Messages</option>
+              </select>
+            </div>
 
-          <!-- Query / Filter -->
-          <div>
-            <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Filter</label>
-            <select class="form-select w-full text-sm py-2" x-model="block.data.query">
-              <option value="">All records</option>
-              <option value="status:waiting">Status = Waiting</option>
-              <option value="status:in_progress">Status = In Progress</option>
-              <option value="status:done">Status = Done</option>
-              <option value="priority:urgent">Priority = Urgent</option>
-            </select>
-          </div>
+            <!-- Query / Filter -->
+            <div>
+              <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Filter</label>
+              <select class="form-select w-full text-sm py-2" x-model="blockData.query">
+                <option value="">All records</option>
+                <option value="status:waiting">Status = Waiting</option>
+                <option value="status:in_progress">Status = In Progress</option>
+                <option value="status:done">Status = Done</option>
+                <option value="priority:urgent">Priority = Urgent</option>
+              </select>
+            </div>
 
-          <!-- Sort -->
-          <div>
-            <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Sort by</label>
-            <select class="form-select w-full text-sm py-2" x-model="block.data.sort">
-              <option value="scheduled_at:asc">Scheduled (earliest first)</option>
-              <option value="scheduled_at:desc">Scheduled (latest first)</option>
-              <option value="createdAt:desc">Created (newest first)</option>
-              <option value="priority:desc">Priority (urgent first)</option>
-            </select>
-          </div>
+            <!-- Sort -->
+            <div>
+              <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Sort by</label>
+              <select class="form-select w-full text-sm py-2" x-model="blockData.sort">
+                <option value="scheduled_at:asc">Scheduled (earliest first)</option>
+                <option value="scheduled_at:desc">Scheduled (latest first)</option>
+                <option value="createdAt:desc">Created (newest first)</option>
+                <option value="priority:desc">Priority (urgent first)</option>
+              </select>
+            </div>
 
-          <!-- Limit -->
-          <div>
-            <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Limit</label>
-            <input 
-              type="number" 
-              class="form-input w-full text-sm py-2"
-              x-model.number="block.data.limit"
-              placeholder="No limit">
+            <!-- Limit -->
+            <div>
+              <label class="block text-xs font-semibold mb-1.5 text-gray-600 dark:text-gray-400">Limit</label>
+              <input 
+                type="number" 
+                class="form-input w-full text-sm py-2"
+                x-model.number="blockData.limit"
+                placeholder="No limit">
+            </div>
           </div>
-        </div>
+        </template>
 
         <!-- Actions Tab (Cockpit only) -->
         <div x-show="tab === 'actions'" class="space-y-4">

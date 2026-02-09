@@ -364,66 +364,7 @@
         </h2>
 
         <!-- Quick Apps: grid (4 x 2) - quick access to main apps -->
-        <li class="menu nav-item">
-          <div class="nav-link px-0 py-3">
-            <div class="grid grid-cols-3 gap-2">
-              <!-- Dossier -->
-              <button class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Dossier" title="Dossier" @click="$dispatch('open-create-menu', 'folder')">
-                <iconify-icon icon="solar:folder-2-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
-                <span class="sr-only">Dossier</span>
-              </button>
-
-              <!-- Collection -->
-              <button class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Collection" title="Collection" @click="$dispatch('open-create-menu', 'collection')">
-                <iconify-icon icon="solar:database-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
-                <span class="sr-only">Collection</span>
-              </button>
-
-              <!-- Documents -->
-              <button class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Documents" title="Documents" @click="$dispatch('open-create-menu', 'document')">
-                <iconify-icon icon="solar:document-text-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
-                <span class="sr-only">Documents</span>
-              </button>
-
-              <!-- Médias -->
-              <button class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Médias" title="Médias" @click="$dispatch('open-create-menu', 'media')">
-                <iconify-icon icon="solar:gallery-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
-                <span class="sr-only">Médias</span>
-              </button>
-
-              <!-- Notes -->
-              <button class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Notes" title="Notes" @click="$dispatch('open-create-menu', 'note')">
-                <iconify-icon icon="solar:notes-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
-                <span class="sr-only">Notes</span>
-              </button>
-
-              <!-- Tâches -->
-              <button class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Tâches" title="Tâches" @click="$dispatch('open-create-menu', 'task')">
-                <iconify-icon icon="solar:clipboard-check-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
-                <span class="sr-only">Tâches</span>
-              </button>
-
-              <!-- Calendrier -->
-              <button class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Calendrier" title="Calendrier" @click="$dispatch('open-create-menu', 'calendar')">
-                <iconify-icon icon="solar:calendar-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
-                <span class="sr-only">Calendrier</span>
-              </button>
-
-              <!-- Contact -->
-              <button class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Contact" title="Contact" @click="$dispatch('open-create-menu', 'contact')">
-                <iconify-icon icon="solar:user-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
-                <span class="sr-only">Contact</span>
-              </button>
-
-              <!-- Drive -->
-              <button class="group grid h-10 w-10 sm:h-12 sm:w-12 place-content-center rounded-full bg-white-light/40 hover:bg-white-light/90 dark:bg-dark/40 dark:hover:bg-dark/60 transition-colors text-gray-700 dark:text-[#d0d2d6] focus:outline-none focus:ring-2 focus:ring-primary/40" aria-label="Drive" title="Drive" @click="$dispatch('open-create-menu', 'drive')">
-                <iconify-icon icon="solar:folder-cloud-line-duotone" width="24" height="24" class="text-gray-700 dark:text-gray-300 group-hover:text-primary transform transition-transform group-hover:scale-110"></iconify-icon>
-                <span class="sr-only">Drive</span>
-              </button>
-            </div>
-            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 text-center">Applications</div>
-          </div>
-        </li>
+        
 
         <!-- 📦 Collections -->
         <li class="menu nav-item">
@@ -1864,6 +1805,15 @@
                     <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Tableau de bord</span>
                   </div>
                 </li>
+
+                <!-- Cockpit -->
+                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
+                  @click="$store.sidebar.showMenu = false; window.location.href = '/account/<%= account_number %>/page-builder/cockpit/new?parentId=' + $store.sidebar.contextItem.id + '&parentType=' + $store.sidebar.contextItem.type">
+                  <div class="flex items-center gap-2">
+                    <iconify-icon icon="solar:monitor-smartphone-bold-duotone" width="18" height="18" style="color: #10b981"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Cockpit</span>
+                  </div>
+                </li>
               </ul>
             </div>
           </template>
@@ -2052,6 +2002,15 @@
                   <div class="flex items-center gap-2">
                     <iconify-icon icon="solar:chart-line-duotone" width="18" height="18"></iconify-icon>
                     <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Analyse</span>
+                  </div>
+                </li>
+
+                <!-- Cockpit -->
+                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
+                  @click="$store.sidebar.showEditMenu = false; window.location.href = '/account/<%= account_number %>/page-builder/cockpit/new?parentId=' + $store.sidebar.contextItem.id + '&parentType=' + $store.sidebar.contextItem.type">
+                  <div class="flex items-center gap-2">
+                    <iconify-icon icon="solar:monitor-smartphone-bold-duotone" width="18" height="18" style="color: #10b981"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Cockpit</span>
                   </div>
                 </li>
               </div>

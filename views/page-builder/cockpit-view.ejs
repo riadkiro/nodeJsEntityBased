@@ -1,0 +1,446 @@
+<div x-data="cockpitView()">
+  
+  <!-- Header Bar -->
+  <div class="mb-4 bg-white dark:bg-gray-800 border dark:border-gray-700 shadow-sm rounded-lg">
+    <div class="h-14 flex items-center justify-between px-6">
+      <div class="flex items-center gap-3">
+        <iconify-icon icon="solar:monitor-smartphone-bold-duotone" width="22" class="text-primary"></iconify-icon>
+        <h1 class="text-lg font-semibold dark:text-white" x-text="pageConfig.name"></h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 dark:text-gray-400" x-show="pageConfig.status === 'published'">
+          <iconify-icon icon="solar:check-circle-bold" class="text-success mr-1"></iconify-icon>
+          Published
+        </span>
+        <a :href="`/account/${accountNumber}/page-builder/edit/${configId}`" 
+           class="btn btn-outline-primary btn-sm flex items-center gap-1">
+          <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon>
+          Edit
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Area -->
+  <div class="max-w-7xl mx-auto">
+    
+    <!-- Rows -->
+    <div class="space-y-6">
+      <template x-for="(row, rowIndex) in pageConfig.layout[activeTab]" :key="row.id">
+        <div>
+          <!-- Row Grid -->
+          <div 
+            :class="[
+              'grid gap-6',
+              row.equalHeight && 'items-stretch'
+            ]"
+            :style="`grid-template-columns: repeat(12, 1fr)`">
+            
+            <!-- Columns -->
+            <template x-for="(column, colIndex) in row.columns" :key="colIndex">
+              <div 
+                :style="`grid-column: span ${column.width}`"
+                :class="[
+                  'relative',
+                  row.equalHeight && 'flex flex-col h-full'
+                ]">
+                
+                <!-- Blocks in Column -->
+                <div 
+                  :class="[
+                    row.equalHeight && 'flex-1 flex flex-col'
+                  ]">
+                  <template x-for="blockId in column.blocks" :key="blockId">
+                    <div 
+                      class="relative"
+                      :class="[
+                        row.equalHeight && 'flex-1'
+                      ]"
+                      style="margin-bottom: 1.5rem;">
+                      
+                      <!-- Block Content -->
+                      <div x-data="{ block: pageConfig.blocks[blockId] }" class="h-full" :style="row.equalHeight && 'display: flex; flex-direction: column;'">
+                        
+                        <!-- Panel Block -->
+                        <template x-if="block && block.type === 'panel'">
+                          <div class="panel">
+                            <div class="mb-5 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Panel Title'"></h5>
+                            </div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Panel content...</div>
+                          </div>
+                        </template>
+
+                        <!-- Text Block -->
+                        <template x-if="block && block.type === 'text'">
+                          <div class="panel">
+                            <div x-text="block.content || 'Text content...'" class="prose max-w-none dark:text-gray-300"></div>
+                          </div>
+                        </template>
+
+                        <!-- KPI Card Block -->
+                        <template x-if="block && block.type === 'kpi-card'">
+                          <div class="panel h-full">
+                            <div class="mb-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase" x-text="block.label || 'KPI'"></div>
+                            <div class="text-3xl font-bold text-primary mb-2">0</div>
+                            <div class="text-xs text-success">↑ 12%</div>
+                          </div>
+                        </template>
+
+                        <!-- Statistics Block -->
+                        <template x-if="block && block.type === 'statistics'">
+                          <div class="panel h-full" x-data="{
+                            initCharts() {
+                              const totalVisit = new ApexCharts(this.$refs.totalVisit, {
+                                series: [{ data: [21, 9, 36, 12, 44, 25, 59, 41, 66, 25] }],
+                                chart: {
+                                  height: 58, type: 'line', fontFamily: 'Nunito, sans-serif',
+                                  sparkline: { enabled: true },
+                                  dropShadow: { enabled: true, blur: 3, color: '#009688', opacity: 0.4 }
+                                },
+                                stroke: { curve: 'smooth', width: 2 },
+                                colors: ['#009688'],
+                                grid: { padding: { top: 5, bottom: 5, left: 5, right: 5 } },
+                                tooltip: { x: { show: false }, y: { title: { formatter: () => '' } } }
+                              });
+                              totalVisit.render();
+
+                              const paidVisit = new ApexCharts(this.$refs.paidVisit, {
+                                series: [{ data: [22, 19, 30, 47, 32, 44, 34, 55, 41, 69] }],
+                                chart: {
+                                  height: 58, type: 'line', fontFamily: 'Nunito, sans-serif',
+                                  sparkline: { enabled: true },
+                                  dropShadow: { enabled: true, blur: 3, color: '#e7515a', opacity: 0.4 }
+                                },
+                                stroke: { curve: 'smooth', width: 2 },
+                                colors: ['#e7515a'],
+                                grid: { padding: { top: 5, bottom: 5, left: 5, right: 5 } },
+                                tooltip: { x: { show: false }, y: { title: { formatter: () => '' } } }
+                              });
+                              paidVisit.render();
+                            }
+                          }" x-init="setTimeout(() => initCharts(), 100)">
+                            <div class="mb-5 flex items-center justify-between dark:text-white-light">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Statistics'"></h5>
+                            </div>
+                            <div class="grid gap-8 text-sm font-bold text-[#515365] sm:grid-cols-2">
+                              <div>
+                                <div>
+                                  <div>Total Visits</div>
+                                  <div class="text-lg text-[#f8538d]">423,964</div>
+                                </div>
+                                <div x-ref="totalVisit"></div>
+                              </div>
+                              <div>
+                                <div>
+                                  <div>Paid Visits</div>
+                                  <div class="text-lg text-[#f8538d]">7,929</div>
+                                </div>
+                                <div x-ref="paidVisit"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Expense Tracker Block -->
+                        <template x-if="block && block.type === 'expense-tracker'">
+                          <div class="panel h-full">
+                            <div class="mb-5 flex items-center justify-between dark:text-white-light">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Expenses'"></h5>
+                            </div>
+                            <div class="my-10 text-3xl font-bold text-[#e95f2b]">
+                              <span x-text="`${block.currency || '$'} ${(block.value || 0).toLocaleString()}`"></span>
+                              <span class="text-sm text-black ltr:mr-1 rtl:ml-1 dark:text-white-light" x-text="block.period || 'this week'"></span>
+                              <svg class="inline h-5 w-5 text-success" viewBox="0 0 24 24" fill="none">
+                                <path opacity="0.5" d="M22 7L14.6203 14.3347C13.6227 15.3263 13.1238 15.822 12.5051 15.822C11.8864 15.8219 11.3876 15.326 10.3902 14.3342L10.1509 14.0962C9.15254 13.1035 8.65338 12.6071 8.03422 12.6074C7.41506 12.6076 6.91626 13.1043 5.91867 14.0977L2 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M22.0001 12.5458V7H16.418" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                              </svg>
+                            </div>
+                            <div class="flex items-center justify-between">
+                              <div class="h-5 w-full overflow-hidden rounded-full bg-dark-light p-1 shadow-3xl dark:bg-dark-light/10 dark:shadow-none">
+                                <div class="relative h-full w-full rounded-full bg-gradient-to-r from-[#4361ee] to-[#805dca] before:absolute before:inset-y-0 before:m-auto before:h-2 before:w-2 before:rounded-full before:bg-white ltr:before:right-0.5 rtl:before:left-0.5" :style="`width: ${block.progress || 0}%`"></div>
+                              </div>
+                              <span class="ltr:ml-5 rtl:mr-5 dark:text-white-light" x-text="`${block.progress || 0}%`"></span>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Progress List Block -->
+                        <template x-if="block && block.type === 'progress-list'">
+                          <div class="panel h-full" x-data="{
+                            getGradient(color) {
+                              const gradients = {
+                                primary: 'linear-gradient(to right, #009ffd, #2a2a72)',
+                                danger: 'linear-gradient(to right, #a71d31, #3f0d12)',
+                                warning: 'linear-gradient(to right, #fe5f75, #fc9842)',
+                                success: 'linear-gradient(to right, #11998e, #38ef7d)',
+                                info: 'linear-gradient(to right, #4361ee, #805dca)',
+                                secondary: 'linear-gradient(to right, #667eea, #764ba2)'
+                              };
+                              return gradients[color] || gradients.primary;
+                            },
+                            getBgColor(color) {
+                              const colors = {
+                                primary: '#4361ee', danger: '#e7515a', warning: '#e2a03f',
+                                success: '#00ab55', info: '#2196f3', secondary: '#805dca'
+                              };
+                              return colors[color] || colors.primary;
+                            }
+                          }">
+                            <div class="mb-5 flex items-start justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white-light" x-text="block.title || 'Progress List'"></h5>
+                            </div>
+                            <div class="flex flex-col space-y-5">
+                              <template x-for="item in block.items || []" :key="item.label">
+                                <div class="flex items-center">
+                                  <div class="h-9 w-9">
+                                    <div class="flex h-9 w-9 items-center justify-center rounded-xl" 
+                                         :style="`background-color: ${getBgColor(item.color)}20; color: ${getBgColor(item.color)}`">
+                                      <iconify-icon icon="solar:globe-bold" width="20"></iconify-icon>
+                                    </div>
+                                  </div>
+                                  <div class="w-full flex-initial px-3">
+                                    <div class="w-summary-info mb-1 flex justify-between font-semibold text-white-dark">
+                                      <h6 x-text="item.label"></h6>
+                                      <p class="text-xs ltr:ml-auto rtl:mr-auto" x-text="`${item.value}%`"></p>
+                                    </div>
+                                    <div>
+                                      <div class="h-5 w-full overflow-hidden rounded-full bg-dark-light p-1 shadow-3xl dark:bg-dark-light/10 dark:shadow-none">
+                                        <div class="relative h-full rounded-full before:absolute before:inset-y-0 before:m-auto before:h-2 before:w-2 before:rounded-full before:bg-white ltr:before:right-0.5 rtl:before:left-0.5"
+                                             :style="`width: ${item.value}%; background: ${getGradient(item.color)}`"></div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </template>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Work Queue Block -->
+                        <template x-if="block && block.type === 'work-queue'">
+                          <div class="panel h-full" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                            <div class="mb-4 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Queue'"></h5>
+                              <div class="flex gap-1">
+                                <span class="badge bg-info/20 text-info rounded-full px-2 text-xs">12 en attente</span>
+                              </div>
+                            </div>
+                            <div class="space-y-2 text-sm">
+                              <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                <div class="flex items-center gap-2">
+                                  <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold">JD</div>
+                                  <div>
+                                    <div class="font-medium">Jean Dupont</div>
+                                    <div class="text-xs text-gray-500">Consultation</div>
+                                  </div>
+                                </div>
+                                <div class="flex gap-1">
+                                  <button class="p-1 hover:bg-primary/10 rounded"><iconify-icon icon="solar:phone-bold" width="14"></iconify-icon></button>
+                                  <button class="p-1 hover:bg-success/10 rounded text-success"><iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon></button>
+                                </div>
+                              </div>
+                              <div class="flex items-center justify-between p-2 bg-warning/10 rounded-lg border-l-2 border-warning">
+                                <div class="flex items-center gap-2">
+                                  <div class="w-8 h-8 rounded-full bg-warning/20 flex items-center justify-center text-xs font-bold">ML</div>
+                                  <div>
+                                    <div class="font-medium">Marie Leblanc <span class="text-warning text-xs">⚡ Urgent</span></div>
+                                    <div class="text-xs text-gray-500">Douleur aiguë</div>
+                                  </div>
+                                </div>
+                                <div class="flex gap-1">
+                                  <button class="p-1 hover:bg-primary/10 rounded"><iconify-icon icon="solar:phone-bold" width="14"></iconify-icon></button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Comms Dock Block -->
+                        <template x-if="block && block.type === 'comms-dock'">
+                          <div class="panel h-full flex flex-col" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                            <div class="mb-4 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Communications'"></h5>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                              <button class="btn btn-outline-primary btn-sm"><iconify-icon icon="solar:call-medicine-bold" width="14" class="mr-1"></iconify-icon>Suivant</button>
+                              <button class="btn btn-outline-info btn-sm"><iconify-icon icon="solar:map-arrow-right-bold" width="14" class="mr-1"></iconify-icon>Viens ici</button>
+                              <button class="btn btn-outline-success btn-sm"><iconify-icon icon="solar:document-medicine-bold" width="14" class="mr-1"></iconify-icon>Ordonnance</button>
+                              <button class="btn btn-outline-warning btn-sm"><iconify-icon icon="solar:test-tube-bold" width="14" class="mr-1"></iconify-icon>Labo</button>
+                            </div>
+                            <div class="flex-1 overflow-y-auto space-y-2 text-sm bg-gray-50 dark:bg-gray-700/30 rounded-lg p-2">
+                              <div class="bg-white dark:bg-gray-800 p-2 rounded text-xs">
+                                <div class="font-medium text-gray-500">Secrétaire</div>
+                                <div>Le patient Dupont est arrivé</div>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Activity Feed Block -->
+                        <template x-if="block && block.type === 'activity-feed'">
+                          <div class="panel h-full" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                            <div class="mb-4 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Activités'"></h5>
+                            </div>
+                            <div class="space-y-3 text-sm">
+                              <div class="flex gap-3">
+                                <div class="w-6 h-6 rounded-full bg-success/20 flex items-center justify-center shrink-0">
+                                  <iconify-icon icon="solar:check-circle-bold" width="12" class="text-success"></iconify-icon>
+                                </div>
+                                <div>
+                                  <div class="font-medium">Consultation terminée</div>
+                                  <div class="text-xs text-gray-500">Jean Dupont • il y a 5 min</div>
+                                </div>
+                              </div>
+                              <div class="flex gap-3">
+                                <div class="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                                  <iconify-icon icon="solar:phone-bold" width="12" class="text-primary"></iconify-icon>
+                                </div>
+                                <div>
+                                  <div class="font-medium">Patient appelé</div>
+                                  <div class="text-xs text-gray-500">Marie Leblanc • il y a 10 min</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Focus Card Block -->
+                        <template x-if="block && block.type === 'focus-card'">
+                          <div class="panel h-full" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                            <div class="mb-4 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Prochain Patient'"></h5>
+                              <span class="badge bg-primary/10 text-primary">En attente</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                              <div class="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold">JD</div>
+                              <div>
+                                <div class="text-xl font-bold dark:text-white">Jean Dupont</div>
+                                <div class="text-gray-500 dark:text-gray-400 text-sm">Consultation • Salle 3</div>
+                                <div class="text-xs mt-1 text-gray-400">Arrivé il y a 15 min</div>
+                              </div>
+                            </div>
+                            <div class="mt-4 flex gap-2">
+                              <button class="btn btn-primary btn-sm flex-1">
+                                <iconify-icon icon="solar:phone-bold" width="14" class="mr-1"></iconify-icon>Appeler
+                              </button>
+                              <button class="btn btn-outline-primary btn-sm flex-1">
+                                <iconify-icon icon="solar:document-bold" width="14" class="mr-1"></iconify-icon>Dossier
+                              </button>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Urgency Radar Block -->
+                        <template x-if="block && block.type === 'urgency-radar'">
+                          <div class="panel h-full border-l-4 border-danger" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                            <div class="mb-4 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white flex items-center gap-2">
+                                <iconify-icon icon="solar:danger-triangle-bold" class="text-danger"></iconify-icon>
+                                <span x-text="block.title || 'Urgences'"></span>
+                              </h5>
+                              <span class="badge bg-danger text-white rounded-full px-2 text-xs">3</span>
+                            </div>
+                            <div class="space-y-2 text-sm">
+                              <div class="p-2 bg-danger/10 rounded-lg flex items-center justify-between">
+                                <div>
+                                  <div class="font-medium text-danger">Marie Leblanc</div>
+                                  <div class="text-xs text-gray-500">Douleur aiguë • 20 min</div>
+                                </div>
+                                <button class="btn btn-danger btn-sm">Traiter</button>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- KPI Cards Block -->
+                        <template x-if="block && block.type === 'kpi-cards'">
+                          <div class="panel h-full" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                            <div class="mb-4">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Indicateurs'"></h5>
+                            </div>
+                            <div class="grid grid-cols-4 gap-4">
+                              <div class="text-center">
+                                <div class="text-2xl font-bold text-primary">24</div>
+                                <div class="text-xs text-gray-500">Patients</div>
+                              </div>
+                              <div class="text-center">
+                                <div class="text-2xl font-bold text-success">18</div>
+                                <div class="text-xs text-gray-500">Vus</div>
+                              </div>
+                              <div class="text-center">
+                                <div class="text-2xl font-bold text-warning">6</div>
+                                <div class="text-xs text-gray-500">Restants</div>
+                              </div>
+                              <div class="text-center">
+                                <div class="text-2xl font-bold text-danger">2</div>
+                                <div class="text-xs text-gray-500">Urgents</div>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Action Button Block -->
+                        <template x-if="block && block.type === 'action-button'">
+                          <div class="panel h-full flex items-center justify-center" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                            <button 
+                              :class="[
+                                'btn flex items-center gap-2 transition-all',
+                                block.variant === 'outline' ? `btn-outline-${block.color || 'primary'}` : `btn-${block.color || 'primary'}`,
+                                block.size === 'lg' ? 'btn-lg text-base px-8 py-3' : block.size === 'sm' ? 'btn-sm text-xs px-3 py-1' : 'px-5 py-2'
+                              ]">
+                              <iconify-icon 
+                                x-show="block.icon" 
+                                :icon="block.icon || 'solar:play-bold'" 
+                                :width="block.size === 'lg' ? '20' : block.size === 'sm' ? '14' : '16'">
+                              </iconify-icon>
+                              <span x-text="block.label || 'Action'"></span>
+                            </button>
+                          </div>
+                        </template>
+
+                        <!-- Unknown Block Type -->
+                        <template x-if="block && !['panel', 'text', 'kpi-card', 'statistics', 'expense-tracker', 'progress-list', 'work-queue', 'comms-dock', 'activity-feed', 'focus-card', 'urgency-radar', 'kpi-cards', 'action-button'].includes(block.type)">
+                          <div class="panel">
+                            <span x-text="'Unknown block type: ' + block.type"></span>
+                          </div>
+                        </template>
+
+                      </div>
+                    </div>
+                  </template>
+                </div>
+
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+    </div>
+
+  </div>
+</div>
+
+<script type="application/json" id="cockpit-view-data">
+<%- JSON.stringify({
+  accountNumber: account_number,
+  configId: pageConfig._id,
+  config: pageConfig
+}).replace(/</g, '\\u003C') %>
+</script>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('cockpitView', () => {
+    const data = JSON.parse(document.getElementById('cockpit-view-data').textContent);
+    
+    return {
+      accountNumber: data.accountNumber,
+      configId: data.configId,
+      pageConfig: data.config,
+      activeTab: data.config.tabs && data.config.tabs.length > 0 ? data.config.tabs[0].id : 'default'
+    };
+  });
+});
+</script>

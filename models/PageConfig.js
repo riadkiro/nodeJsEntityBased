@@ -2,8 +2,7 @@ const mongoose = require('mongoose');
 
 const PageConfigSchema = new mongoose.Schema({
     accountId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Account',
+        type: String,
         required: true,
         index: true
     },
@@ -17,12 +16,22 @@ const PageConfigSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['dashboard', 'record_page', 'analytics'],
+        enum: ['dashboard', 'record_page', 'analytics', 'cockpit'],
         required: true
     },
     entityRef: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Entity',
+        default: null
+    },
+    // Hierarchy placement (folder/space where this cockpit lives)
+    parentId: {
+        type: String,
+        default: null
+    },
+    parentType: {
+        type: String,
+        enum: ['space', 'folder', 'environment', null],
         default: null
     },
     status: {

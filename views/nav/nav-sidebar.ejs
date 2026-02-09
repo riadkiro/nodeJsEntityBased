@@ -1894,13 +1894,33 @@
           <ul class="space-y-0.5">
             <!-- Si c'est une entité, afficher uniquement "Ajouter [nom]" -->
             <template x-if="$store.sidebar.contextItem?.type === 'entity'">
-              <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
-                @click="window.location.href = $store.sidebar.contextItem.link + '/new'">
-                <div class="flex items-center gap-2">
-                  <iconify-icon :icon="$store.sidebar.contextItem.icon || 'solar:add-circle-line-duotone'" width="18" height="18"></iconify-icon>
-                  <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary" x-text="'Ajouter ' + ($store.sidebar.contextItem.name || 'élément')"></span>
-                </div>
-              </li>
+              <div>
+                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
+                  @click="window.location.href = $store.sidebar.contextItem.link + '/new'">
+                  <div class="flex items-center gap-2">
+                    <iconify-icon :icon="$store.sidebar.contextItem.icon || 'solar:add-circle-line-duotone'" width="18" height="18"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary" x-text="'Ajouter ' + ($store.sidebar.contextItem.name || 'élément')"></span>
+                  </div>
+                </li>
+                <!-- Divider -->
+                <div class="border-t border-gray-100 dark:border-gray-700 my-1.5 mx-2"></div>
+                <!-- View Forms -->
+                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
+                  @click="$store.sidebar.showEditMenu = false; window.location.href = '/account/<%= account_number %>/entity/' + $store.sidebar.contextItem.entityId + '/forms'">
+                  <div class="flex items-center gap-2">
+                    <iconify-icon icon="solar:document-text-line-duotone" width="18" height="18"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Voir les formulaires</span>
+                  </div>
+                </li>
+                <!-- Add Form -->
+                <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
+                  @click="$store.sidebar.showEditMenu = false; window.location.href = '/account/<%= account_number %>/entity/' + $store.sidebar.contextItem.entityId + '/forms/add'">
+                  <div class="flex items-center gap-2">
+                    <iconify-icon icon="solar:add-square-line-duotone" width="18" height="18"></iconify-icon>
+                    <span class="text-xs text-gray-700 dark:text-gray-400 group-hover:text-primary">Ajouter un formulaire</span>
+                  </div>
+                </li>
+              </div>
             </template>
 
             <!-- Sinon, afficher la liste complète (pour space, folder, environment) -->

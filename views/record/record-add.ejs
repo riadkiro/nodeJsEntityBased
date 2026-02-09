@@ -47,7 +47,139 @@
             <div class="flex-1 space-y-6">
                 <div class="panel">
                     <div class="space-y-8">
-                        <!-- Tabbed Attributes Section -->
+
+                    <% if (locals.entityFormLayout && locals.entityFormLayout.rows) { %>
+                        <!-- ========== ENTITY FORM LAYOUT (Row/Column Grid) ========== -->
+                        <div>
+                            <div class="space-y-4">
+                                <% entityFormLayout.rows.forEach(function(row, rowIndex) { %>
+                                    <div class="flex flex-wrap -mx-2">
+                                        <% row.columns.forEach(function(col, colIndex) { %>
+                                            <div class="px-2 mb-3" style="width: <%= (col.width / 12 * 100).toFixed(4) %>%">
+                                                <% (col.fields || []).forEach(function(field) { %>
+                                                    <% if (field.type === 'standard') { %>
+                                                        <% var def = locals.entityFormFieldDefs && locals.entityFormFieldDefs.standard[field.fieldId]; %>
+                                                        <% if (def) { %>
+                                                            <% if (field.fieldId === 'title') { %>
+                                                                <!-- Title is already rendered in the header panel above -->
+                                                            <% } else if (def.inputType === 'textarea') { %>
+                                                                <div class="mb-3">
+                                                                    <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700">
+                                                                        <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
+                                                                        <%= field.label || def.label %>
+                                                                        <% if (field.required) { %><span class="text-danger">*</span><% } %>
+                                                                    </label>
+                                                                    <textarea name="<%= def.inputName %>" class="form-textarea" rows="4"
+                                                                        placeholder="<%= field.placeholder || def.label %>"
+                                                                        <%= field.required ? 'required' : '' %>></textarea>
+                                                                </div>
+                                                            <% } else if (def.inputType === 'file') { %>
+                                                                <div class="mb-3">
+                                                                    <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700">
+                                                                        <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
+                                                                        <%= field.label || def.label %>
+                                                                    </label>
+                                                                    <input name="<%= def.inputName %>" type="file" class="form-input" />
+                                                                </div>
+                                                            <% } else { %>
+                                                                <div class="mb-3">
+                                                                    <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700">
+                                                                        <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
+                                                                        <%= field.label || def.label %>
+                                                                        <% if (field.required) { %><span class="text-danger">*</span><% } %>
+                                                                    </label>
+                                                                    <input name="<%= def.inputName %>" type="<%= def.inputType || 'text' %>" class="form-input"
+                                                                        placeholder="<%= field.placeholder || def.label %>"
+                                                                        <%= field.required ? 'required' : '' %> />
+                                                                </div>
+                                                            <% } %>
+                                                        <% } %>
+
+                                                    <% } else if (field.type === 'custom') { %>
+                                                        <% var cf = locals.entityFormFieldDefs && locals.entityFormFieldDefs.custom[field.fieldId]; %>
+                                                        <% if (cf && cf.htmlTemplate) { %>
+                                                            <div class="mb-3">
+                                                                <%- cf.htmlTemplate
+                                                                    .replace(/\{\{\s*label\s*\}\}/g, field.label || cf.label || cf.name)
+                                                                    .replace(/\{\{\s*name\s*\}\}/g, cf.name || '')
+                                                                    .replace(/\{\{\s*placeholder\s*\}\}/g, field.placeholder || cf.label || cf.name)
+                                                                    .replace(/\{\{\s*required\s*\}\}/g, field.required ? 'required' : '') %>
+                                                            </div>
+                                                        <% } else if (cf) { %>
+                                                            <div class="mb-3">
+                                                                <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700">
+                                                                    <iconify-icon icon="<%= (cf.ui && cf.ui.icon) || 'solar:widget-bold-duotone' %>" width="14" class="text-info"></iconify-icon>
+                                                                    <%= field.label || cf.label || cf.name %>
+                                                                    <% if (field.required) { %><span class="text-danger">*</span><% } %>
+                                                                </label>
+                                                                <% if (cf.inputType === 'textarea' || cf.inputType === 'richtext') { %>
+                                                                    <textarea name="custom[<%= cf.name %>]" class="form-textarea" rows="3"
+                                                                        placeholder="<%= field.placeholder || cf.label || cf.name %>"
+                                                                        <%= field.required ? 'required' : '' %>></textarea>
+                                                                <% } else if (cf.inputType === 'select' && cf.options && cf.options.length) { %>
+                                                                    <select name="custom[<%= cf.name %>]" class="form-select" <%= field.required ? 'required' : '' %>>
+                                                                        <option value="">-- Choisir --</option>
+                                                                        <% cf.options.forEach(function(o) { %>
+                                                                            <option><%= o.label || o %></option>
+                                                                        <% }); %>
+                                                                    </select>
+                                                                <% } else if (cf.inputType === 'checkbox') { %>
+                                                                    <div class="flex items-center gap-2 py-2">
+                                                                        <input name="custom[<%= cf.name %>]" type="checkbox" class="form-checkbox" />
+                                                                    </div>
+                                                                <% } else { %>
+                                                                    <input name="custom[<%= cf.name %>]" type="<%= cf.inputType || 'text' %>" class="form-input"
+                                                                        placeholder="<%= field.placeholder || cf.label || cf.name %>"
+                                                                        <%= field.required ? 'required' : '' %> />
+                                                                <% } %>
+                                                            </div>
+                                                        <% } %>
+
+                                                    <% } else if (field.type === 'relation') { %>
+                                                        <% var rel = locals.entityFormFieldDefs && locals.entityFormFieldDefs.relation[field.fieldId]; %>
+                                                        <% if (rel) { %>
+                                                            <div class="mb-3">
+                                                                <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700">
+                                                                    <iconify-icon icon="<%= (rel.targetEntity && rel.targetEntity.icon) || 'solar:link-round-bold-duotone' %>" width="14"
+                                                                        style="color: <%= (rel.targetEntity && rel.targetEntity.color) || '#4361ee' %>"></iconify-icon>
+                                                                    <%= field.label || rel.label || 'Relation' %>
+                                                                </label>
+                                                                <div class="form-input flex items-center gap-2 text-gray-400 text-sm cursor-pointer hover:border-primary/40 transition-colors"
+                                                                     style="border-color: <%= (rel.targetEntity && rel.targetEntity.color) || '#4361ee' %>30">
+                                                                    <iconify-icon icon="solar:magnifer-bold" width="14"
+                                                                        style="color: <%= (rel.targetEntity && rel.targetEntity.color) || '#4361ee' %>"></iconify-icon>
+                                                                    Rechercher <%= (rel.targetEntity && rel.targetEntity.name) || '' %>...
+                                                                </div>
+                                                            </div>
+                                                        <% } %>
+
+                                                    <% } else if (field.type === 'classification') { %>
+                                                        <% var cls = locals.entityFormFieldDefs && locals.entityFormFieldDefs.classification[field.fieldId]; %>
+                                                        <% if (cls) { %>
+                                                            <div class="mb-3">
+                                                                <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700">
+                                                                    <iconify-icon icon="solar:tag-bold-duotone" width="14" class="text-success"></iconify-icon>
+                                                                    <%= field.label || cls.name %>
+                                                                </label>
+                                                                <select name="classification[<%= cls._id %>]" class="form-select">
+                                                                    <option value="">-- Sélectionner --</option>
+                                                                    <% (cls.options || []).forEach(function(o) { %>
+                                                                        <option><%= o.label %></option>
+                                                                    <% }); %>
+                                                                </select>
+                                                            </div>
+                                                        <% } %>
+                                                    <% } %>
+                                                <% }); %>
+                                            </div>
+                                        <% }); %>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        </div>
+
+                    <% } else { %>
+                        <!-- ========== LEGACY LAYOUT (Tabs + Canvas) ========== -->
                         <!-- Tabbed Attributes Section -->
                         <div>
                             <div class="flex justify-between items-end pb-4 border-b border-gray-100">
@@ -142,6 +274,7 @@
                                 x-html="renderAllFields()">
                             </div>
                         </div>
+                    <% } %>
                     </div>
                 </div>
             </div>

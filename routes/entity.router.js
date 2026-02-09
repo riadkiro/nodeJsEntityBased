@@ -18,6 +18,8 @@ router.get("/api/:id", entityController.getDetails_Api);
 router.get("/api/:id/fields", entityController.getEntityFields_Api);
 //API - Update entity (JSON)
 router.post("/api/update/:id", entityController.update_Api);
+//API - Publish form layout
+router.post("/api/publish-form/:id", entityController.publishFormLayout_Api);
 //Form
 router.get("/add", entityController.addForm);
 //On post create new product

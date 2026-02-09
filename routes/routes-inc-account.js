@@ -13,6 +13,7 @@ router.get("/home", (req, res) => {
 });
 
 router.use("/entity", require("./entity.router.js"));
+router.use("/entity/:entityId/forms", require("./entity-form.router.js"));
 router.use("/field-template", require("./field-template.router.js"));
 router.use("/field-type", require("./field-type.router.js")); // Admin: Types de champs
 router.use("/record", require("./record.router.js"));

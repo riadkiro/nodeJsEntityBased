@@ -53,8 +53,10 @@ module.exports = {
       const FieldTemplate = await tenantCollection(req, "FieldTemplate");
       const Classification = await tenantCollection(req, "Classification");
 
-      const entity = await Entity.findById(req.params.id);
+      const entity = await Entity.findById(req.params.id).populate('relations.targetEntity', '_id name slug icon color');
       const allClassifications = await Classification.find();
+      // All entities for relation display in form builder
+      const allEntities = await Entity.find({}, '_id name slug icon color');
       if (!entity) {
         return res.status(404).render("errors/404", {
           message: "Entité introuvable.",
@@ -90,7 +92,9 @@ module.exports = {
         fields: selectedFields,
         allFieldTemplates,
         allClassifications,
-        formLayout: entity.layout || [],
+        allEntities,
+        formLayout: entity.formLayout || entity.layout || { version: 1, rows: [] },
+        formLayoutStatus: entity.formLayoutStatus || 'draft',
         account_number: req.account_number,
         layout: "layout-app",
       });
@@ -367,6 +371,35 @@ module.exports = {
       res.json({ success: true, entity: updated });
     } catch (err) {
       console.error("❌ Error updating entity:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  // Publish form layout (save + set status to published)
+  publishFormLayout_Api: async (req, res) => {
+    try {
+      const Entity = await tenantCollection(req, "Entity");
+      const entityId = req.params.id;
+
+      // Save formLayout if provided in body
+      const updateData = { formLayoutStatus: 'published' };
+      if (req.body.formLayout) {
+        updateData.formLayout = req.body.formLayout;
+      }
+
+      const updated = await Entity.findByIdAndUpdate(entityId, updateData, {
+        new: true,
+        runValidators: true,
+      });
+
+      if (!updated) {
+        return res.status(404).json({ error: "Entity not found" });
+      }
+
+      console.log("✅ Form layout published for entity:", entityId);
+      res.json({ success: true, entity: updated });
+    } catch (err) {
+      console.error("❌ Error publishing form layout:", err);
       res.status(500).json({ error: err.message });
     }
   },

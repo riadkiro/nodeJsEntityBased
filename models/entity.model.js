@@ -81,10 +81,21 @@ const EntitySchema = new mongoose.Schema(
       bidirectional: { type: Boolean, default: false },
       required: { type: Boolean, default: false }
     }],
-    // Configuration visuelle des champs (lignes/colonnes)
+    // Legacy: flat field layout (deprecated, kept for migration)
     layout: {
       type: mongoose.Schema.Types.Mixed,
-      default: [], // ex: [ { id: "row1", columns: [ { fields: ["id1"] }, { fields: ["id2"] } ] } ]
+      default: [],
+    },
+    // Form Builder layout (versioned)
+    formLayout: {
+      type: mongoose.Schema.Types.Mixed,
+      default: { version: 1, rows: [] }
+    },
+    // Form Builder status (draft/published)
+    formLayoutStatus: {
+      type: String,
+      enum: ['draft', 'published'],
+      default: 'draft'
     },
     // Overrides par entité pour les FieldTemplates partagés
     // Clé: FieldTemplate._id (string), Valeur: { label, required, width, order, visible, ... }

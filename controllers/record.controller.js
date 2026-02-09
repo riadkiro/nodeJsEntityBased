@@ -118,6 +118,7 @@ module.exports = {
 
     addForm: async (req, res) => {
         try {
+            console.log('[Record addForm] CALLED with formId:', req.query.formId, 'entity:', req.params.entityName);
             await tenantCollection(req, "FieldTemplate");
             await tenantCollection(req, "Classification");
             const EntityModel = await tenantCollection(req, "Entity");
@@ -134,10 +135,150 @@ module.exports = {
 
             const allFieldTemplates = await tenantCollection(req, "FieldTemplate").then(m => m.find({}));
 
+            // Try to load from EntityForm (multi-form architecture)
+            let resolvedLayout = entity.layout || [];
+            let activeFormName = null;
+            let entityFormLayout = null; // Full row/column layout from EntityForm
+            let entityFormFieldDefs = null; // Field definitions for EntityForm rendering
+            const EntityForm = await tenantCollection(req, "EntityForm");
+
+            if (EntityForm) {
+                let selectedForm = null;
+
+                if (req.query.formId) {
+                    // Specific form requested
+                    selectedForm = await EntityForm.findById(req.query.formId);
+                    console.log('[Record] FormId requested:', req.query.formId, 'Found:', !!selectedForm);
+                } else {
+                    // Auto-select: default published form, or first published form
+                    selectedForm = await EntityForm.findOne({ entityId: entity._id, isDefault: true, status: 'published' });
+                    if (!selectedForm) {
+                        selectedForm = await EntityForm.findOne({ entityId: entity._id, status: 'published' }).sort({ order: 1 });
+                    }
+                    console.log('[Record] Auto-select form for entity:', entity._id, 'Found:', !!selectedForm);
+                }
+
+                if (selectedForm) {
+                    console.log('[Record] Selected form:', selectedForm.name, 'Status:', selectedForm.status, 'Has layout.version:', !!selectedForm.layout?.version, 'Rows:', selectedForm.layout?.rows?.length);
+                }
+
+                if (selectedForm && selectedForm.layout && selectedForm.layout.version) {
+                    activeFormName = selectedForm.name;
+
+                    // Pass the full EntityForm layout for native rendering
+                    entityFormLayout = selectedForm.layout;
+
+                    // Build field definitions map for the template
+                    const standardFieldDefs = {
+                        title: { key: 'title', label: 'Titre', icon: 'solar:text-bold', inputType: 'text', inputName: 'standard[title]' },
+                        description: { key: 'description', label: 'Description', icon: 'solar:document-text-bold-duotone', inputType: 'textarea', inputName: 'standard[description]' },
+                        slug: { key: 'slug', label: 'Slug', icon: 'solar:link-bold', inputType: 'text', inputName: 'standard[slug]' },
+                        date: { key: 'date', label: 'Date', icon: 'solar:calendar-bold-duotone', inputType: 'date', inputName: 'standard[date]' },
+                        icon: { key: 'icon', label: 'Icône', icon: 'solar:star-bold-duotone', inputType: 'text', inputName: 'standard[icon]' },
+                        image: { key: 'image', label: 'Image', icon: 'solar:gallery-bold-duotone', inputType: 'file', inputName: 'standard[image]' },
+                        attachments: { key: 'attachments', label: 'Pièces jointes', icon: 'solar:paperclip-bold', inputType: 'file', inputName: 'standard[attachments]' }
+                    };
+
+                    const customFieldDefs = {};
+                    (entity.customFields || []).forEach(cf => {
+                        customFieldDefs[cf._id.toString()] = {
+                            _id: cf._id.toString(),
+                            name: cf.name,
+                            label: cf.label,
+                            type: cf.type,
+                            inputType: cf.inputType || cf.type || 'text',
+                            htmlTemplate: cf.htmlTemplate || '',
+                            options: cf.options || [],
+                            ui: cf.ui || {}
+                        };
+                    });
+
+                    const relationDefs = {};
+                    (entity.relations || []).forEach(r => {
+                        relationDefs[r.key] = {
+                            key: r.key,
+                            label: r.label,
+                            cardinality: r.cardinality,
+                            inputMode: r.inputMode,
+                            targetEntity: r.targetEntity ? {
+                                _id: (r.targetEntity._id || r.targetEntity).toString(),
+                                name: r.targetEntity.name || '',
+                                slug: r.targetEntity.slug || '',
+                                icon: r.targetEntity.icon || '',
+                                color: r.targetEntity.color || ''
+                            } : null
+                        };
+                    });
+
+                    const classificationDefs = {};
+                    (entity.classifications || []).forEach(c => {
+                        const cls = typeof c === 'object' ? c : null;
+                        if (cls) {
+                            classificationDefs[cls._id.toString()] = {
+                                _id: cls._id.toString(),
+                                name: cls.name,
+                                options: (cls.options || []).map(o => ({ label: o.label || o.name || o, color: o.color || '' }))
+                            };
+                        }
+                    });
+
+                    entityFormFieldDefs = {
+                        standard: standardFieldDefs,
+                        custom: customFieldDefs,
+                        relation: relationDefs,
+                        classification: classificationDefs
+                    };
+
+                    // Also build flat layout for legacy canvas (custom fields only)
+                    const flatFields = [];
+                    (selectedForm.layout.rows || []).forEach(row => {
+                        row.columns.forEach(col => {
+                            (col.fields || []).forEach(field => {
+                                if (field.type === 'custom') {
+                                    flatFields.push({
+                                        fieldId: field.fieldId,
+                                        width: col.width,
+                                        id: field.id,
+                                        tabId: 'default'
+                                    });
+                                }
+                            });
+                        });
+                    });
+                    resolvedLayout = { tabs: [{ id: 'default', title: 'Attributs', icon: 'tabler:apps' }], fields: flatFields };
+                }
+            } else {
+                console.log('[Record] EntityForm model NOT loaded');
+            }
+
+            // Fallback to legacy Entity.formLayout if no EntityForm was found
+            if (!activeFormName && entity.formLayoutStatus === 'published' && entity.formLayout && entity.formLayout.version) {
+                const flatFields = [];
+                (entity.formLayout.rows || []).forEach(row => {
+                    row.columns.forEach(col => {
+                        (col.fields || []).forEach(field => {
+                            if (field.type === 'custom') {
+                                flatFields.push({
+                                    fieldId: field.fieldId,
+                                    width: col.width,
+                                    id: field.id,
+                                    tabId: 'default'
+                                });
+                            }
+                        });
+                    });
+                });
+                resolvedLayout = { tabs: [{ id: 'default', title: 'Attributs', icon: 'tabler:apps' }], fields: flatFields };
+            }
+
             res.render("record/record-add", {
                 entity,
                 fields: entity.customFields,
-                formLayout: entity.layout || [],
+                formLayout: resolvedLayout,
+                formLayoutStatus: entity.formLayoutStatus || 'draft',
+                activeFormName,
+                entityFormLayout,
+                entityFormFieldDefs,
                 allFieldTemplates,
                 account_number: req.account_number,
                 layout: "layout-app"

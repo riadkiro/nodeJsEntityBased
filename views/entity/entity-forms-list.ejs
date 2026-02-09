@@ -1,0 +1,189 @@
+<!-- Entity Forms List -->
+<div class="bg-gray-50 dark:bg-gray-900" style="min-height: calc(100vh - 80px);">
+
+  <!-- Header -->
+  <div class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
+    <div class="h-14 flex items-center justify-between px-6">
+      <div class="flex items-center gap-3">
+        <a href="/account/<%= account_number %>/entity/list" class="w-8 h-8 rounded-md flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Retour">
+          <iconify-icon icon="solar:arrow-left-line-duotone" width="20"></iconify-icon>
+        </a>
+        <div class="flex items-center gap-2">
+          <iconify-icon icon="<%= entity.icon || 'solar:box-bold-duotone' %>" width="22" style="color: <%= entity.color || 'var(--primary)' %>"></iconify-icon>
+          <h1 class="font-bold text-lg"><%= entity.name %></h1>
+          <span class="text-xs text-gray-400">— Formulaires</span>
+        </div>
+      </div>
+      <a href="/account/<%= account_number %>/entity/<%= entity._id %>/forms/add"
+         class="btn btn-primary btn-sm flex items-center gap-1.5">
+        <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
+        Nouveau formulaire
+      </a>
+    </div>
+  </div>
+
+  <!-- Forms Grid -->
+  <div class="max-w-5xl mx-auto p-6">
+
+    <% if (forms.length === 0) { %>
+      <!-- Empty State -->
+      <div class="flex flex-col items-center justify-center py-20">
+        <div class="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+          <iconify-icon icon="solar:document-text-bold-duotone" width="40" class="text-primary"></iconify-icon>
+        </div>
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Aucun formulaire</h2>
+        <p class="text-gray-500 text-sm mb-6 text-center max-w-md">
+          Créez votre premier formulaire pour définir comment les utilisateurs ajouteront des records à <strong><%= entity.name %></strong>.
+        </p>
+        <a href="/account/<%= account_number %>/entity/<%= entity._id %>/forms/add"
+           class="btn btn-primary flex items-center gap-2">
+          <iconify-icon icon="solar:add-circle-bold" width="18"></iconify-icon>
+          Créer un formulaire
+        </a>
+      </div>
+    <% } else { %>
+      <!-- Forms Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <% forms.forEach(function(form) { %>
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-primary/30 transition-all group overflow-hidden"
+               x-data="{ menuOpen: false }">
+            
+            <!-- Card Header -->
+            <div class="p-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+              <div class="flex items-start justify-between">
+                <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                  <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                       style="background: <%= form.color || entity.color || '#4361ee' %>15">
+                    <iconify-icon icon="<%= form.icon || 'solar:document-text-bold-duotone' %>" width="18"
+                                  style="color: <%= form.color || entity.color || '#4361ee' %>"></iconify-icon>
+                  </div>
+                  <div class="min-w-0">
+                    <h3 class="font-semibold text-sm text-gray-800 dark:text-white truncate"><%= form.name %></h3>
+                    <div class="flex items-center gap-2 mt-0.5">
+                      <% if (form.status === 'published') { %>
+                        <span class="text-[9px] font-bold uppercase tracking-wide text-success bg-success/10 px-1.5 py-0.5 rounded">Publié</span>
+                      <% } else { %>
+                        <span class="text-[9px] font-bold uppercase tracking-wide text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">Brouillon</span>
+                      <% } %>
+                      <% if (form.isDefault) { %>
+                        <span class="text-[9px] font-bold uppercase tracking-wide text-primary bg-primary/10 px-1.5 py-0.5 rounded">Défaut</span>
+                      <% } %>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Menu -->
+                <div class="relative">
+                  <button @click.stop="menuOpen = !menuOpen"
+                          class="w-7 h-7 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
+                    <iconify-icon icon="solar:menu-dots-bold" width="16" class="text-gray-400"></iconify-icon>
+                  </button>
+                  <div x-show="menuOpen" x-cloak @click.away="menuOpen = false"
+                       x-transition:enter="transition ease-out duration-100"
+                       x-transition:enter-start="opacity-0 scale-95"
+                       x-transition:enter-end="opacity-100 scale-100"
+                       class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-30 py-1 text-xs">
+                    <a href="/account/<%= account_number %>/entity/<%= entity._id %>/forms/<%= form._id %>/edit"
+                       class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                      <iconify-icon icon="solar:pen-new-square-bold-duotone" width="14"></iconify-icon>
+                      Modifier
+                    </a>
+                    <% if (!form.isDefault) { %>
+                      <button onclick="setDefault('<%= form._id %>')"
+                              class="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-left">
+                        <iconify-icon icon="solar:star-bold-duotone" width="14"></iconify-icon>
+                        Définir par défaut
+                      </button>
+                    <% } %>
+                    <div class="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                    <button onclick="deleteForm('<%= form._id %>', '<%= form.name %>')"
+                            class="w-full flex items-center gap-2 px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 text-left">
+                      <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="14"></iconify-icon>
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="p-4 pt-3">
+              <% if (form.description) { %>
+                <p class="text-xs text-gray-500 mb-3 line-clamp-2"><%= form.description %></p>
+              <% } %>
+
+              <!-- Stats -->
+              <div class="flex items-center gap-4 text-[10px] text-gray-400 uppercase tracking-wide">
+                <span class="flex items-center gap-1">
+                  <iconify-icon icon="solar:widget-bold-duotone" width="12"></iconify-icon>
+                  <%= (form.layout && form.layout.rows) ? form.layout.rows.reduce((acc, r) => acc + r.columns.reduce((a, c) => a + (c.fields ? c.fields.length : 0), 0), 0) : 0 %> champs
+                </span>
+                <span class="flex items-center gap-1">
+                  <iconify-icon icon="solar:rows-bold-duotone" width="12"></iconify-icon>
+                  <%= (form.layout && form.layout.rows) ? form.layout.rows.length : 0 %> lignes
+                </span>
+              </div>
+
+              <!-- CTA -->
+              <div class="flex gap-2 mt-3">
+                <a href="/account/<%= account_number %>/entity/<%= entity._id %>/forms/<%= form._id %>/edit"
+                   class="flex-1 btn btn-outline-primary btn-sm text-xs flex items-center justify-center gap-1.5">
+                  <iconify-icon icon="solar:pen-new-square-bold-duotone" width="13"></iconify-icon>
+                  Éditer
+                </a>
+                <% if (form.status === 'published') { %>
+                  <a href="/account/<%= account_number %>/record/<%= entity.slug %>/add?formId=<%= form._id %>"
+                     class="flex-1 btn btn-primary btn-sm text-xs flex items-center justify-center gap-1.5">
+                    <iconify-icon icon="solar:play-bold" width="13"></iconify-icon>
+                    Utiliser
+                  </a>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  const acct = '<%= account_number %>';
+  const entityId = '<%= entity._id %>';
+  const baseUrl = `/account/${acct}/entity/${entityId}/forms`;
+
+  async function setDefault(formId) {
+    try {
+      const res = await fetch(`${baseUrl}/api/set-default/${formId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      if (res.ok) {
+        Swal.fire({ icon: 'success', title: 'Formulaire par défaut mis à jour', showConfirmButton: false, timer: 1200, toast: true, position: 'top-end' });
+        setTimeout(() => location.reload(), 800);
+      }
+    } catch (e) {
+      Swal.fire({ icon: 'error', title: 'Erreur', text: e.message });
+    }
+  }
+
+  async function deleteForm(formId, name) {
+    const result = await Swal.fire({
+      title: 'Supprimer ce formulaire ?',
+      text: `"${name}" sera supprimé définitivement.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      confirmButtonText: 'Supprimer',
+      cancelButtonText: 'Annuler'
+    });
+    if (result.isConfirmed) {
+      try {
+        const res = await fetch(`${baseUrl}/api/${formId}`, { method: 'DELETE' });
+        if (res.ok) {
+          Swal.fire({ icon: 'success', title: 'Supprimé !', showConfirmButton: false, timer: 1000, toast: true, position: 'top-end' });
+          setTimeout(() => location.reload(), 600);
+        }
+      } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Erreur', text: e.message });
+      }
+    }
+  }
+</script>

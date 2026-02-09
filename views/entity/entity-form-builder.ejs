@@ -1,17 +1,17 @@
-<!-- Entity Form Builder -->
+<!-- Entity Form Builder (multi-form mode) -->
 <div x-data="formBuilder()" class="flex flex-col" style="height: calc(100vh - 80px);">
 
   <!-- Header Bar -->
   <div class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
     <div class="h-12 flex items-center justify-between px-4">
       <div class="flex items-center gap-3">
-        <a href="/account/<%= account_number %>/entity/list" class="w-8 h-8 rounded-md flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Retour">
+        <a :href="'/account/' + accountNumber + '/entity/' + entityId + '/forms'" class="w-8 h-8 rounded-md flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Retour aux formulaires">
           <iconify-icon icon="solar:arrow-left-line-duotone" width="20"></iconify-icon>
         </a>
         <div class="flex items-center gap-2">
           <iconify-icon :icon="entityMeta.icon || 'solar:box-bold-duotone'" width="20" :style="entityMeta.color ? 'color:' + entityMeta.color : ''"></iconify-icon>
-          <h1 class="font-bold text-base" x-text="entityMeta.name"></h1>
-          <span class="text-xs text-gray-400">— Form Builder</span>
+          <h1 class="font-bold text-base" x-text="formName"></h1>
+          <span class="text-xs text-gray-400">— <span x-text="entityMeta.name"></span></span>
         </div>
         <!-- Preview Toggle -->
         <div class="flex items-center ml-4 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
@@ -29,18 +29,30 @@
       </div>
       <div class="flex items-center gap-2">
         <!-- Status badge -->
-        <span x-show="formLayoutStatus === 'published'" class="text-[10px] font-bold uppercase tracking-wide text-success bg-success/10 px-2 py-0.5 rounded">Published</span>
-        <span x-show="formLayoutStatus === 'draft'" class="text-[10px] font-bold uppercase tracking-wide text-gray-400 bg-gray-100 px-2 py-0.5 rounded">Draft</span>
+        <span x-show="formStatus === 'published'" class="text-[10px] font-bold uppercase tracking-wide text-success bg-success/10 px-2 py-0.5 rounded">Published</span>
+        <span x-show="formStatus === 'draft'" class="text-[10px] font-bold uppercase tracking-wide text-gray-400 bg-gray-100 px-2 py-0.5 rounded">Draft</span>
         <!-- Unsaved indicator -->
         <span x-show="isDirty" class="text-xs text-amber-500 flex items-center gap-1">
           <iconify-icon icon="solar:danger-circle-bold" width="14"></iconify-icon>
           Non sauvegardé
         </span>
-        <button @click="saveFormLayout()" class="btn btn-primary btn-sm" :disabled="isSaving">
+        <!-- Form name edit -->
+        <div class="relative" x-data="{ editing: false }">
+          <button @click="editing = !editing" class="btn btn-outline-secondary btn-sm text-xs" title="Renommer">
+            <iconify-icon icon="solar:pen-bold" width="12"></iconify-icon>
+          </button>
+          <div x-show="editing" x-cloak @click.away="editing = false"
+               class="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-30 p-3 w-64">
+            <label class="text-[10px] font-bold uppercase text-gray-400 block mb-1">Nom du formulaire</label>
+            <input type="text" x-model="formName" class="form-input text-sm w-full mb-2" />
+            <button @click="editing = false; isDirty = true" class="btn btn-primary btn-sm w-full text-xs">OK</button>
+          </div>
+        </div>
+        <button @click="saveForm()" class="btn btn-primary btn-sm" :disabled="isSaving">
           <iconify-icon icon="solar:diskette-bold" class="mr-1"></iconify-icon>
           <span x-text="isSaving ? 'Sauvegarde...' : 'Sauvegarder'"></span>
         </button>
-        <button @click="publishFormLayout()" class="btn btn-success btn-sm" :disabled="isPublishing">
+        <button @click="publishForm()" class="btn btn-success btn-sm" :disabled="isPublishing">
           <iconify-icon icon="solar:check-circle-bold" class="mr-1"></iconify-icon>
           <span x-text="isPublishing ? 'Publication...' : 'Publier'"></span>
         </button>
@@ -67,6 +79,9 @@
 <%- JSON.stringify({
   accountNumber: account_number,
   entityId: entity._id,
+  formId: form ? form._id : null,
+  formName: formName || 'Nouveau formulaire',
+  formStatus: formStatus || 'draft',
   entityMeta: {
     name: entity.name,
     slug: entity.slug,
@@ -75,7 +90,6 @@
     color: entity.color || ''
   },
   formLayout: formLayout,
-  formLayoutStatus: formLayoutStatus,
   standardFieldDefs: {
     title: { key: 'title', label: 'Titre', icon: 'solar:text-bold', inputType: 'text' },
     description: { key: 'description', label: 'Description', icon: 'solar:document-text-bold-duotone', inputType: 'textarea' },
@@ -91,8 +105,10 @@
     name: f.name,
     label: f.label,
     type: f.type,
+    inputType: f.inputType || f.type || 'text',
     htmlTemplate: f.htmlTemplate || '',
-    ui: f.ui || {}
+    ui: f.ui || {},
+    options: f.options || []
   })),
   relations: (entity.relations || []).map(r => ({
     key: r.key,
@@ -109,7 +125,8 @@
   })),
   classifications: (allClassifications || []).map(c => ({
     _id: c._id.toString(),
-    name: c.name
+    name: c.name,
+    options: (c.options || []).map(o => ({ label: o.label || o.name || o, color: o.color || '' }))
   })),
   entityClassificationIds: (entity.classifications || []).map(id => id.toString()),
   statusClassificationId: entity.statusClassification ? entity.statusClassification.toString() : ''
@@ -124,14 +141,11 @@ document.addEventListener('alpine:init', () => {
     // Normalize formLayout
     let formLayout = data.formLayout;
     if (!formLayout || !formLayout.version) {
-      // Migration from old flat array or empty
       formLayout = { version: 1, rows: [] };
       if (Array.isArray(data.formLayout) && data.formLayout.length > 0) {
-        // Legacy flat layout: migrate
         if (data.formLayout[0] && data.formLayout[0].columns) {
           formLayout.rows = data.formLayout;
         } else {
-          // Old flat format: [ {fieldId, width, id} ] -> single row
           const row = { id: 'row_migrated', columns: [{ width: 12, fields: [] }] };
           data.formLayout.forEach(item => {
             row.columns[0].fields.push({
@@ -155,6 +169,9 @@ document.addEventListener('alpine:init', () => {
       // State
       accountNumber: data.accountNumber,
       entityId: data.entityId,
+      formId: data.formId,
+      formName: data.formName,
+      formStatus: data.formStatus,
       entityMeta: data.entityMeta,
       formLayout: formLayout,
       standardFieldDefs: data.standardFieldDefs,
@@ -169,10 +186,9 @@ document.addEventListener('alpine:init', () => {
       isSaving: false,
       isPreview: false,
       isPublishing: false,
-      formLayoutStatus: data.formLayoutStatus || 'draft',
       sidebar: {
         open: true,
-        mode: 'fields' // 'fields' | 'rows' | 'settings'
+        mode: 'fields'
       },
 
       init() {
@@ -189,7 +205,6 @@ document.addEventListener('alpine:init', () => {
       },
 
       isFieldOnCanvas(type, fieldId) {
-        // Standard & relation are unique, custom can be multiple (for now enforce unique)
         for (const row of this.formLayout.rows) {
           for (const col of row.columns) {
             for (const field of col.fields) {
@@ -202,6 +217,73 @@ document.addEventListener('alpine:init', () => {
         return false;
       },
 
+      // ========== ROW/FIELD MANAGEMENT ==========
+
+      addRow(cols, insertAtIndex = null) {
+        const row = {
+          id: genId(),
+          columns: Array.from({ length: cols }, () => ({
+            width: Math.floor(12 / cols),
+            fields: []
+          }))
+        };
+        if (row.columns.length > 0) {
+          const remainder = 12 - row.columns.reduce((s, c) => s + c.width, 0);
+          if (remainder > 0) row.columns[row.columns.length - 1].width += remainder;
+        }
+        if (insertAtIndex !== null && insertAtIndex >= 0) {
+          this.formLayout.rows.splice(insertAtIndex + 1, 0, row);
+        } else {
+          this.formLayout.rows.push(row);
+        }
+        this.$nextTick(() => this.initSortables());
+      },
+
+      moveRow(index, direction) {
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= this.formLayout.rows.length) return;
+        const rows = this.formLayout.rows;
+        [rows[index], rows[newIndex]] = [rows[newIndex], rows[index]];
+      },
+
+      duplicateRow(index) {
+        const original = this.formLayout.rows[index];
+        const clone = JSON.parse(JSON.stringify(original));
+        clone.id = genId();
+        clone.columns.forEach(col => {
+          col.fields.forEach(f => { f.id = genId(); });
+        });
+        this.formLayout.rows.splice(index + 1, 0, clone);
+        this.$nextTick(() => this.initSortables());
+      },
+
+      deleteRow(index) {
+        this.formLayout.rows.splice(index, 1);
+      },
+
+      selectField(fieldId) {
+        this.selectedFieldId = this.selectedFieldId === fieldId ? null : fieldId;
+      },
+
+      removeField(rowIndex, colIndex, fieldIndex) {
+        this.formLayout.rows[rowIndex].columns[colIndex].fields.splice(fieldIndex, 1);
+        this.selectedFieldId = null;
+      },
+
+      moveFieldUp(rowIndex, colIndex, fieldIndex) {
+        if (fieldIndex === 0) return;
+        const fields = this.formLayout.rows[rowIndex].columns[colIndex].fields;
+        [fields[fieldIndex], fields[fieldIndex - 1]] = [fields[fieldIndex - 1], fields[fieldIndex]];
+      },
+
+      moveFieldDown(rowIndex, colIndex, fieldIndex) {
+        const fields = this.formLayout.rows[rowIndex].columns[colIndex].fields;
+        if (fieldIndex >= fields.length - 1) return;
+        [fields[fieldIndex], fields[fieldIndex + 1]] = [fields[fieldIndex + 1], fields[fieldIndex]];
+      },
+
+      // ========== DRAG & DROP FROM SIDEBAR ==========
+
       onSidebarDragStart(event, type, fieldId, label, icon) {
         if (this.isFieldOnCanvas(type, fieldId)) {
           event.preventDefault();
@@ -213,163 +295,40 @@ document.addEventListener('alpine:init', () => {
         event.dataTransfer.effectAllowed = 'copy';
       },
 
-      // ========== CANVAS DROP ==========
-
-      handleCanvasDrop(event, rowIndex, colIndex) {
-        let fieldData;
-        try {
-          fieldData = JSON.parse(event.dataTransfer.getData('application/json'));
-        } catch (e) { return; }
-
-        if (!fieldData || !fieldData.type || !fieldData.fieldId) return;
-        if (this.isFieldOnCanvas(fieldData.type, fieldData.fieldId)) return;
-
-        const newField = {
-          id: genId(),
-          type: fieldData.type,
-          fieldId: fieldData.fieldId,
-          label: '',
-          required: false,
-          placeholder: '',
-          helpText: ''
-        };
-
-        // If no rows, create one
-        if (this.formLayout.rows.length === 0) {
-          this.addRow(1);
-          rowIndex = 0;
-          colIndex = 0;
-        }
-
-        const row = this.formLayout.rows[rowIndex];
-        if (row && row.columns[colIndex]) {
-          row.columns[colIndex].fields.push(newField);
-          this.isDirty = true;
-          this.$nextTick(() => this.initSortables());
-        }
-      },
-
-      // ========== ROW MANAGEMENT ==========
-
-      addRow(numCols, afterIndex) {
-        const width = Math.floor(12 / numCols);
-        const remainder = 12 - (width * numCols);
-        const columns = [];
-        for (let i = 0; i < numCols; i++) {
-          columns.push({
-            width: width + (i === 0 ? remainder : 0),
-            fields: []
-          });
-        }
-        const row = { id: 'row_' + Date.now(), columns };
-        
-        if (typeof afterIndex === 'number') {
-          this.formLayout.rows.splice(afterIndex + 1, 0, row);
-        } else {
-          this.formLayout.rows.push(row);
-        }
-        this.isDirty = true;
-      },
-
       addRowCustom(widths) {
         const columns = widths.map(w => ({ width: w, fields: [] }));
-        const row = { id: 'row_' + Date.now(), columns };
+        const row = { id: genId(), columns };
         this.formLayout.rows.push(row);
         this.isDirty = true;
+        this.$nextTick(() => this.initSortables());
       },
-
-      deleteRow(rowIndex) {
-        this.formLayout.rows.splice(rowIndex, 1);
-        this.isDirty = true;
-      },
-
-      moveRow(rowIndex, direction) {
-        const newIndex = rowIndex + direction;
-        if (newIndex < 0 || newIndex >= this.formLayout.rows.length) return;
-        const rows = this.formLayout.rows;
-        const temp = rows[rowIndex];
-        rows[rowIndex] = rows[newIndex];
-        rows[newIndex] = temp;
-        // Force reactivity
-        this.formLayout.rows = [...rows];
-        this.isDirty = true;
-      },
-
-      duplicateRow(rowIndex) {
-        const row = JSON.parse(JSON.stringify(this.formLayout.rows[rowIndex]));
-        row.id = 'row_' + Date.now();
-        // Generate new field IDs to avoid duplicates
-        row.columns.forEach(col => {
-          col.fields.forEach(f => { f.id = genId(); });
-        });
-        this.formLayout.rows.splice(rowIndex + 1, 0, row);
-        this.isDirty = true;
-      },
-
-      // ========== FIELD MANAGEMENT ==========
-
-      selectField(fieldId) {
-        this.selectedFieldId = this.selectedFieldId === fieldId ? null : fieldId;
-      },
-
-      removeField(rowIndex, colIndex, fieldIndex) {
-        this.formLayout.rows[rowIndex].columns[colIndex].fields.splice(fieldIndex, 1);
-        this.isDirty = true;
-      },
-
-      moveFieldUp(rowIndex, colIndex, fieldIndex) {
-        if (fieldIndex === 0) return;
-        const fields = this.formLayout.rows[rowIndex].columns[colIndex].fields;
-        const temp = fields[fieldIndex];
-        fields[fieldIndex] = fields[fieldIndex - 1];
-        fields[fieldIndex - 1] = temp;
-        this.formLayout.rows[rowIndex].columns[colIndex].fields = [...fields];
-      },
-
-      moveFieldDown(rowIndex, colIndex, fieldIndex) {
-        const fields = this.formLayout.rows[rowIndex].columns[colIndex].fields;
-        if (fieldIndex >= fields.length - 1) return;
-        const temp = fields[fieldIndex];
-        fields[fieldIndex] = fields[fieldIndex + 1];
-        fields[fieldIndex + 1] = temp;
-        this.formLayout.rows[rowIndex].columns[colIndex].fields = [...fields];
-      },
-
-      // ========== AUTO LAYOUT ==========
 
       autoLayout(numCols) {
-        // Collect all fields currently on canvas
         const allFields = [];
         this.formLayout.rows.forEach(row => {
           row.columns.forEach(col => {
             col.fields.forEach(f => allFields.push({ ...f }));
           });
         });
-
-        // Add un-placed standard fields
         this.enabledStandardFields.forEach(key => {
           if (!allFields.find(f => f.type === 'standard' && f.fieldId === key)) {
             allFields.push({ id: genId(), type: 'standard', fieldId: key, label: '', required: false, placeholder: '', helpText: '' });
           }
         });
-        // Add un-placed custom fields
         this.availableCustomFields.forEach(cf => {
           if (!allFields.find(f => f.type === 'custom' && f.fieldId === cf._id)) {
             allFields.push({ id: genId(), type: 'custom', fieldId: cf._id, label: '', required: false, placeholder: '', helpText: '' });
           }
         });
-        // Add un-placed relations
         this.entityRelations.forEach(rel => {
           if (!allFields.find(f => f.type === 'relation' && f.fieldId === rel.key)) {
             allFields.push({ id: genId(), type: 'relation', fieldId: rel.key, label: '', required: false, placeholder: '', helpText: '' });
           }
         });
 
-        // Build rows
         const rows = [];
         const colWidth = Math.floor(12 / numCols);
         const remainder = 12 - (colWidth * numCols);
-
         for (let i = 0; i < allFields.length; i += numCols) {
           const columns = [];
           for (let c = 0; c < numCols; c++) {
@@ -379,42 +338,63 @@ document.addEventListener('alpine:init', () => {
               fields: field ? [field] : []
             });
           }
-          rows.push({ id: 'row_' + Date.now() + '_' + i, columns });
+          rows.push({ id: genId() + '_' + i, columns });
         }
-
         this.formLayout.rows = rows;
         this.isDirty = true;
         this.$nextTick(() => this.initSortables());
       },
 
-      // ========== FIELD PREVIEW RENDERING ==========
+      handleCanvasDrop(event, rowIndex, colIndex) {
+        const fieldData = event.dataTransfer.getData('application/json');
+        if (!fieldData) return;
+        try {
+          const field = JSON.parse(fieldData);
+          if (this.isFieldOnCanvas(field.type, field.fieldId)) {
+            Swal.fire({ icon: 'warning', title: 'Champ déjà présent', text: 'Ce champ est déjà sur le formulaire.', timer: 2000, showConfirmButton: false, toast: true, position: 'top-end' });
+            return;
+          }
+          const newField = {
+            id: genId(),
+            type: field.type,
+            fieldId: field.fieldId,
+            label: field.label || '',
+            required: false,
+            placeholder: '',
+            helpText: ''
+          };
+          this.formLayout.rows[rowIndex].columns[colIndex].fields.push(newField);
+          this.$nextTick(() => this.initSortables());
+        } catch (e) {
+          console.error('Drop error:', e);
+        }
+      },
+
+      // ========== FIELD RENDERING ==========
 
       renderFieldPreview(field) {
-        const type = field.type;
-        const fieldId = field.fieldId;
+        const { type, fieldId } = field;
 
         if (type === 'standard') {
           const def = this.standardFieldDefs[fieldId];
           if (!def) return this.renderMissingField(fieldId, 'standard');
-          const label = field.label || def.label;
-          const icon = def.icon;
-          if (def.inputType === 'textarea') {
+          const label = def.label;
+          const icon = def.icon || 'solar:text-bold';
+          if (fieldId === 'title') {
             return `<div>
-              <label class="flex items-center gap-1"><iconify-icon icon="${icon}" width="12" class="text-warning"></iconify-icon>${label}</label>
-              <textarea class="form-input" disabled placeholder="${field.placeholder || label}"></textarea>
+              <label class="flex items-center gap-1"><iconify-icon icon="${icon}" width="12" class="text-primary"></iconify-icon>${label}</label>
+              <input type="text" class="form-input" disabled placeholder="${label}" />
             </div>`;
           }
-          if (def.inputType === 'file') {
+          if (fieldId === 'description') {
             return `<div>
               <label class="flex items-center gap-1"><iconify-icon icon="${icon}" width="12" class="text-warning"></iconify-icon>${label}</label>
-              <div class="h-[38px] flex items-center px-3 bg-gray-50 border border-gray-100 rounded-lg text-xs text-gray-400">
-                <iconify-icon icon="solar:upload-bold" width="14" class="mr-2"></iconify-icon>Choisir un fichier
-              </div>
+              <textarea class="form-textarea" disabled placeholder="${label}"></textarea>
             </div>`;
           }
           return `<div>
-            <label class="flex items-center gap-1"><iconify-icon icon="${icon}" width="12" class="text-warning"></iconify-icon>${label}</label>
-            <input type="${def.inputType || 'text'}" class="form-input" disabled placeholder="${field.placeholder || label}" />
+            <label class="flex items-center gap-1"><iconify-icon icon="${icon}" width="12"></iconify-icon>${label}</label>
+            <input type="${def.inputType || 'text'}" class="form-input" disabled placeholder="${label}" />
           </div>`;
         }
 
@@ -423,7 +403,6 @@ document.addEventListener('alpine:init', () => {
           if (!cf) return this.renderMissingField(fieldId, 'custom');
           const label = field.label || cf.label || cf.name;
           const icon = cf.ui?.icon || 'solar:widget-bold-duotone';
-          // Use htmlTemplate if available
           if (cf.htmlTemplate) {
             const rendered = cf.htmlTemplate
               .replace(/\{\{\s*label\s*\}\}/g, label)
@@ -487,123 +466,55 @@ document.addEventListener('alpine:init', () => {
       renderPreviewField(field) {
         const { type, fieldId } = field;
 
-        // Standard fields
         if (type === 'standard') {
           const def = this.standardFieldDefs[fieldId];
           if (!def) return '';
           const label = def.label;
           const req = field.required ? '<span class="text-danger ml-0.5">*</span>' : '';
-
           if (fieldId === 'title') {
-            return `<div>
-              <label class="text-xs font-semibold text-gray-600 mb-1 block">${label}${req}</label>
-              <input type="text" class="form-input w-full" placeholder="Entrez le titre" />
-            </div>`;
+            return `<div><label class="text-xs font-semibold text-gray-600 mb-1 block">${label}${req}</label><input type="text" class="form-input w-full" placeholder="Entrez le titre" /></div>`;
           }
           if (fieldId === 'description') {
-            return `<div>
-              <label class="text-xs font-semibold text-gray-600 mb-1 block">${label}${req}</label>
-              <textarea class="form-textarea w-full" rows="3" placeholder="Entrez la description"></textarea>
-            </div>`;
+            return `<div><label class="text-xs font-semibold text-gray-600 mb-1 block">${label}${req}</label><textarea class="form-textarea w-full" rows="3" placeholder="Entrez la description"></textarea></div>`;
           }
-          if (def.inputType === 'date') {
-            return `<div>
-              <label class="text-xs font-semibold text-gray-600 mb-1 block">${label}${req}</label>
-              <input type="date" class="form-input w-full" />
-            </div>`;
-          }
-          if (def.inputType === 'checkbox') {
-            return `<div class="flex items-center gap-2 py-2">
-              <input type="checkbox" class="form-checkbox" />
-              <label class="text-xs font-semibold text-gray-600">${label}</label>
-            </div>`;
-          }
-          return `<div>
-            <label class="text-xs font-semibold text-gray-600 mb-1 block">${label}${req}</label>
-            <input type="${def.inputType || 'text'}" class="form-input w-full" placeholder="${label}" />
-          </div>`;
+          return `<div><label class="text-xs font-semibold text-gray-600 mb-1 block">${label}${req}</label><input type="${def.inputType || 'text'}" class="form-input w-full" placeholder="${label}" /></div>`;
         }
 
-        // Custom fields
         if (type === 'custom') {
           const cf = this.availableCustomFields.find(f => f._id === fieldId);
           if (!cf) return this.renderMissingField(fieldId, 'custom');
           const label = field.label || cf.label || cf.name;
           const req = field.required ? '<span class="text-danger ml-0.5">*</span>' : '';
           const inputType = cf.inputType || cf.type || 'text';
-
           if (inputType === 'textarea' || inputType === 'richtext') {
-            return `<div>
-              <label class="text-xs font-semibold text-gray-600 mb-1 block">${label}${req}</label>
-              <textarea class="form-textarea w-full" rows="3" placeholder="${label}"></textarea>
-            </div>`;
+            return `<div><label class="text-xs font-semibold text-gray-600 mb-1 block">${label}${req}</label><textarea class="form-textarea w-full" rows="3" placeholder="${label}"></textarea></div>`;
           }
           if (inputType === 'select' && cf.options?.length) {
             const opts = cf.options.map(o => `<option>${o.label || o}</option>`).join('');
-            return `<div>
-              <label class="text-xs font-semibold text-gray-600 mb-1 block">${label}${req}</label>
-              <select class="form-select w-full"><option value="">-- Choisir --</option>${opts}</select>
-            </div>`;
+            return `<div><label class="text-xs font-semibold text-gray-600 mb-1 block">${label}${req}</label><select class="form-select w-full"><option value="">-- Choisir --</option>${opts}</select></div>`;
           }
-          if (inputType === 'checkbox') {
-            return `<div class="flex items-center gap-2 py-2">
-              <input type="checkbox" class="form-checkbox" />
-              <label class="text-xs font-semibold text-gray-600">${label}</label>
-            </div>`;
-          }
-          if (inputType === 'number') {
-            return `<div>
-              <label class="text-xs font-semibold text-gray-600 mb-1 block">${label}${req}</label>
-              <input type="number" class="form-input w-full" placeholder="0" />
-            </div>`;
-          }
-          if (inputType === 'date') {
-            return `<div>
-              <label class="text-xs font-semibold text-gray-600 mb-1 block">${label}${req}</label>
-              <input type="date" class="form-input w-full" />
-            </div>`;
-          }
-          return `<div>
-            <label class="text-xs font-semibold text-gray-600 mb-1 block">${label}${req}</label>
-            <input type="text" class="form-input w-full" placeholder="${label}" />
-          </div>`;
+          return `<div><label class="text-xs font-semibold text-gray-600 mb-1 block">${label}${req}</label><input type="${inputType}" class="form-input w-full" placeholder="${label}" /></div>`;
         }
 
-        // Relation fields
         if (type === 'relation') {
           const rel = this.entityRelations.find(r => r.key === fieldId);
           if (!rel) return this.renderMissingField(fieldId, 'relation');
           const label = field.label || rel.label || 'Relation';
           const color = rel.targetEntity?.color || '#4361ee';
           const icon = rel.targetEntity?.icon || 'solar:link-round-bold-duotone';
-          const cardinality = rel.cardinality === 'one-to-one' ? '1:1' : rel.cardinality === 'one-to-many' ? '1:N' : 'N:N';
           return `<div>
-            <label class="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1.5">
-              <iconify-icon icon="${icon}" width="14" style="color:${color}"></iconify-icon>
-              ${label}
-              <span class="text-[9px] font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded ml-auto">${cardinality}</span>
-            </label>
-            <div class="form-input w-full flex items-center gap-2 text-gray-400 text-sm cursor-pointer hover:border-primary/40 transition-colors" style="border-color:${color}30">
-              <iconify-icon icon="solar:magnifer-bold" width="14" style="color:${color}"></iconify-icon>
-              Rechercher ${rel.targetEntity?.name || ''}...
-            </div>
+            <label class="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1.5"><iconify-icon icon="${icon}" width="14" style="color:${color}"></iconify-icon>${label}</label>
+            <div class="form-input w-full flex items-center gap-2 text-gray-400 text-sm" style="border-color:${color}30"><iconify-icon icon="solar:magnifer-bold" width="14" style="color:${color}"></iconify-icon>Rechercher ${rel.targetEntity?.name || ''}...</div>
           </div>`;
         }
 
-        // Classification fields
         if (type === 'classification') {
           const cls = this.entityClassifications.find(c => c._id === fieldId);
           if (!cls) return this.renderMissingField(fieldId, 'classification');
           const label = field.label || cls.name;
           return `<div>
-            <label class="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1.5">
-              <iconify-icon icon="solar:tag-bold-duotone" width="14" class="text-success"></iconify-icon>
-              ${label}
-            </label>
-            <select class="form-select w-full">
-              <option value="">-- Sélectionner --</option>
-              ${(cls.options || []).map(o => `<option>${o.label}</option>`).join('')}
-            </select>
+            <label class="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1.5"><iconify-icon icon="solar:tag-bold-duotone" width="14" class="text-success"></iconify-icon>${label}</label>
+            <select class="form-select w-full"><option value="">-- Sélectionner --</option>${(cls.options || []).map(o => `<option>${o.label}</option>`).join('')}</select>
           </div>`;
         }
 
@@ -613,7 +524,6 @@ document.addEventListener('alpine:init', () => {
       // ========== SORTABLE ==========
 
       initSortables() {
-        // Init SortableJS on each column for reordering within canvas
         document.querySelectorAll('[id^="col-"]').forEach(el => {
           if (el._sortable) el._sortable.destroy();
           el._sortable = new Sortable(el, {
@@ -624,23 +534,15 @@ document.addEventListener('alpine:init', () => {
             handle: '.fb-field-item',
             draggable: '.fb-field-item',
             onEnd: (evt) => {
-              // Sync DOM order back to data
               const fromRowIndex = parseInt(evt.from.dataset.rowIndex);
               const fromColIndex = parseInt(evt.from.dataset.colIndex);
               const toRowIndex = parseInt(evt.to.dataset.rowIndex);
               const toColIndex = parseInt(evt.to.dataset.colIndex);
-
               if (isNaN(fromRowIndex) || isNaN(fromColIndex) || isNaN(toRowIndex) || isNaN(toColIndex)) return;
-
-              // Get the moved field
               const field = this.formLayout.rows[fromRowIndex]?.columns[fromColIndex]?.fields[evt.oldIndex];
               if (!field) return;
-
-              // Remove from source
               this.formLayout.rows[fromRowIndex].columns[fromColIndex].fields.splice(evt.oldIndex, 1);
-              // Insert at target
               this.formLayout.rows[toRowIndex].columns[toColIndex].fields.splice(evt.newIndex, 0, field);
-
               this.isDirty = true;
             }
           });
@@ -649,22 +551,41 @@ document.addEventListener('alpine:init', () => {
 
       // ========== SAVE ==========
 
-      async saveFormLayout() {
+      async saveForm() {
         this.isSaving = true;
         try {
-          const res = await fetch(`/account/${this.accountNumber}/entity/api/update/${this.entityId}`, {
+          let url, body;
+          
+          if (this.formId) {
+            // Update existing form
+            url = `/account/${this.accountNumber}/entity/${this.entityId}/forms/api/update/${this.formId}`;
+            body = { name: this.formName, layout: this.formLayout };
+          } else {
+            // Create new form
+            url = `/account/${this.accountNumber}/entity/${this.entityId}/forms/api/save`;
+            body = { name: this.formName, layout: this.formLayout };
+          }
+
+          const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              formLayout: this.formLayout
-            })
+            body: JSON.stringify(body)
           });
           
           if (res.ok) {
+            const result = await res.json();
+            
+            // If it was a new form, update formId so next saves are updates
+            if (!this.formId && result.form && result.form._id) {
+              this.formId = result.form._id;
+              // Update URL without reload so the formId is in the address
+              history.replaceState(null, '', `/account/${this.accountNumber}/entity/${this.entityId}/forms/${this.formId}/edit`);
+            }
+
             this.isDirty = false;
             Swal.fire({
               icon: 'success',
-              title: 'Layout sauvegardé',
+              title: 'Formulaire sauvegardé',
               showConfirmButton: false,
               timer: 1000,
               toast: true,
@@ -682,41 +603,31 @@ document.addEventListener('alpine:init', () => {
 
       // ========== PUBLISH ==========
 
-      async publishFormLayout() {
-        // Save first, then publish
-        await this.saveFormLayout();
-        
-        if (this.isDirty) {
-          // Save failed
-          return;
-        }
+      async publishForm() {
+        // Save first
+        await this.saveForm();
+        if (this.isDirty) return;
+        if (!this.formId) return;
 
         this.isPublishing = true;
         try {
-          const res = await fetch(`/account/${this.accountNumber}/entity/api/publish-form/${this.entityId}`, {
+          const res = await fetch(`/account/${this.accountNumber}/entity/${this.entityId}/forms/api/publish/${this.formId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              formLayout: this.formLayout
-            })
+            body: JSON.stringify({ layout: this.formLayout })
           });
           
           if (res.ok) {
-            this.formLayoutStatus = 'published';
+            this.formStatus = 'published';
             Swal.fire({
               icon: 'success',
               title: 'Formulaire publié !',
-              text: 'Le layout est maintenant actif pour la création de records.',
+              text: 'Ce formulaire est maintenant disponible pour la création de records.',
               showConfirmButton: false,
               timer: 1500,
               toast: true,
               position: 'top-end'
             });
-
-            // Redirect to record add page after short delay
-            setTimeout(() => {
-              window.location.href = `/account/${this.accountNumber}/record/${this.entityMeta.slug}/add`;
-            }, 1000);
           } else {
             throw new Error('Publish failed');
           }

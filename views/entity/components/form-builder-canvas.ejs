@@ -1,0 +1,171 @@
+<style>
+  /* Form Builder Canvas Styles */
+  .fb-field-item label {
+    display: block !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    color: #4b5563 !important;
+    margin-bottom: 2px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+  }
+  .fb-field-item .form-input,
+  .fb-field-item input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .fb-field-item select {
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+    background-color: #f9fafb !important;
+    border: 1px solid #f3f4f6 !important;
+    border-radius: 8px !important;
+    color: #111827 !important;
+    width: 100% !important;
+    height: 38px !important;
+    margin: 0 !important;
+    pointer-events: none;
+  }
+  .fb-field-item textarea {
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+    background-color: #f9fafb !important;
+    border: 1px solid #f3f4f6 !important;
+    border-radius: 8px !important;
+    width: 100% !important;
+    min-height: 80px !important;
+    pointer-events: none;
+  }
+  .fb-drop-zone {
+    min-height: 60px;
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+  .fb-drop-zone.drag-over {
+    background-color: rgba(var(--primary-rgb, 67, 97, 238), 0.08) !important;
+    border-color: rgba(var(--primary-rgb, 67, 97, 238), 0.4) !important;
+  }
+  .fb-sortable-ghost {
+    opacity: 0.08;
+    background: #6366f1 !important;
+    border-radius: 8px;
+  }
+  .fb-sortable-drag {
+    background: white !important;
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25) !important;
+    transform: rotate(0.5deg) scale(1.01);
+    z-index: 999;
+  }
+  .fb-row:hover .fb-row-toolbar {
+    opacity: 1;
+  }
+  .fb-field-item:hover .fb-field-actions {
+    opacity: 1;
+  }
+</style>
+
+<!-- Canvas Area -->
+<div class="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-6">
+  <div class="max-w-5xl mx-auto">
+
+    <!-- Empty State -->
+    <template x-if="formLayout.rows.length === 0">
+      <div class="flex flex-col items-center justify-center h-96 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg"
+           @dragover.prevent="$el.classList.add('fb-drop-zone', 'drag-over')"
+           @dragleave="$el.classList.remove('drag-over')"
+           @drop.prevent="addRow(1); $nextTick(() => handleCanvasDrop($event, 0, 0))">
+        <iconify-icon icon="solar:widget-5-bold-duotone" width="64" class="text-gray-400 mb-4"></iconify-icon>
+        <p class="text-gray-500 mb-4">Glissez un champ ici ou ajoutez une ligne</p>
+        <button @click="addRow(1)" class="btn btn-primary btn-sm">
+          <iconify-icon icon="solar:add-circle-bold" class="mr-1"></iconify-icon>
+          Ajouter une ligne
+        </button>
+      </div>
+    </template>
+
+    <!-- Rows -->
+    <div class="space-y-4" id="form-builder-rows">
+      <template x-for="(row, rowIndex) in formLayout.rows" :key="row.id">
+        <div class="fb-row group relative">
+          
+          <!-- Row Toolbar -->
+          <div class="fb-row-toolbar opacity-0 absolute -top-8 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-1 flex gap-1 z-20 transition-opacity">
+            <button @click.stop="addRow(1, rowIndex)" title="1 colonne" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-bold">1</button>
+            <button @click.stop="addRow(2, rowIndex)" title="2 colonnes" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-bold">2</button>
+            <button @click.stop="addRow(3, rowIndex)" title="3 colonnes" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-bold">3</button>
+            <div class="w-px h-5 bg-gray-200 dark:bg-gray-700 self-center"></div>
+            <button @click.stop="moveRow(rowIndex, -1)" :disabled="rowIndex === 0" title="Monter" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30">
+              <iconify-icon icon="solar:arrow-up-outline" width="14"></iconify-icon>
+            </button>
+            <button @click.stop="moveRow(rowIndex, 1)" :disabled="rowIndex === formLayout.rows.length - 1" title="Descendre" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30">
+              <iconify-icon icon="solar:arrow-down-outline" width="14"></iconify-icon>
+            </button>
+            <button @click.stop="duplicateRow(rowIndex)" title="Dupliquer" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+              <iconify-icon icon="solar:copy-bold" width="14"></iconify-icon>
+            </button>
+            <button @click.stop="deleteRow(rowIndex)" title="Supprimer" class="w-7 h-7 flex items-center justify-center rounded hover:bg-red-100 dark:hover:bg-red-900/20 text-gray-500 hover:text-red-600">
+              <iconify-icon icon="solar:trash-bin-minimalistic-outline" width="14"></iconify-icon>
+            </button>
+          </div>
+
+          <!-- Row Grid -->
+          <div class="grid gap-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 hover:border-primary/30 transition-colors"
+               :style="'grid-template-columns: repeat(' + row.columns.reduce((s, c) => s + c.width, 0) + ', minmax(0, 1fr))'">
+            
+            <template x-for="(col, colIndex) in row.columns" :key="row.id + '-col-' + colIndex">
+              <div class="fb-drop-zone rounded-lg border border-dashed border-gray-200 dark:border-gray-700 p-2 min-h-[60px]"
+                   :style="'grid-column: span ' + col.width"
+                   :data-row-index="rowIndex"
+                   :data-col-index="colIndex"
+                   @dragover.prevent="$el.classList.add('drag-over')"
+                   @dragleave="$el.classList.remove('drag-over')"
+                   @drop.prevent="$el.classList.remove('drag-over'); handleCanvasDrop($event, rowIndex, colIndex)">
+                
+                <!-- Fields in this column -->
+                <div class="space-y-2" :id="'col-' + row.id + '-' + colIndex" :data-row-index="rowIndex" :data-col-index="colIndex">
+                  <template x-for="(field, fieldIndex) in col.fields" :key="field.id">
+                    <div class="fb-field-item group/field relative bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-3 cursor-grab hover:border-primary/30 hover:shadow-sm transition-all"
+                         :data-field-id="field.id"
+                         :class="selectedFieldId === field.id && 'ring-2 ring-primary/50 border-primary/30'"
+                         @click.stop="selectField(field.id)">
+                      
+                      <!-- Field Actions -->
+                      <div class="fb-field-actions opacity-0 absolute top-1 right-1 flex items-center gap-0.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded px-1 z-10 transition-opacity">
+                        <button @click.stop="moveFieldUp(rowIndex, colIndex, fieldIndex)" class="p-1 text-gray-400 hover:text-primary" title="Monter">
+                          <iconify-icon icon="solar:arrow-up-outline" width="12"></iconify-icon>
+                        </button>
+                        <button @click.stop="moveFieldDown(rowIndex, colIndex, fieldIndex)" class="p-1 text-gray-400 hover:text-primary" title="Descendre">
+                          <iconify-icon icon="solar:arrow-down-outline" width="12"></iconify-icon>
+                        </button>
+                        <button @click.stop="removeField(rowIndex, colIndex, fieldIndex)" class="p-1 text-gray-400 hover:text-red-500" title="Retirer">
+                          <iconify-icon icon="solar:trash-bin-minimalistic-outline" width="12"></iconify-icon>
+                        </button>
+                      </div>
+                      
+                      <!-- Field Preview -->
+                      <div x-html="renderFieldPreview(field)"></div>
+                    </div>
+                  </template>
+
+                  <!-- Empty column placeholder -->
+                  <template x-if="col.fields.length === 0">
+                    <div class="flex items-center justify-center h-12 text-gray-300 text-xs">
+                      <iconify-icon icon="solar:add-circle-linear" width="16" class="mr-1"></iconify-icon>
+                      Glissez un champ ici
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Add Row Button (bottom) -->
+    <template x-if="formLayout.rows.length > 0">
+      <div class="mt-4 flex justify-center">
+        <button @click="addRow(1)" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-primary border border-dashed border-gray-300 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
+          <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
+          Ajouter une ligne
+        </button>
+      </div>
+    </template>
+  </div>
+</div>

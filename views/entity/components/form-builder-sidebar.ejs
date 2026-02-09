@@ -1,0 +1,273 @@
+<!-- Icon Bar (64px) -->
+<div class="w-16 bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col items-center py-4 gap-3 shrink-0">
+  <!-- Fields -->
+  <button 
+    @click="sidebar.mode = 'fields'; sidebar.open = true"
+    :class="sidebar.mode === 'fields' && sidebar.open && 'bg-primary/20 text-primary'"
+    class="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700"
+    title="Champs">
+    <iconify-icon icon="solar:widget-add-bold-duotone" width="24"></iconify-icon>
+  </button>
+
+  <!-- Rows -->
+  <button 
+    @click="sidebar.mode = 'rows'; sidebar.open = true"
+    :class="sidebar.mode === 'rows' && sidebar.open && 'bg-primary/20 text-primary'"
+    class="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700"
+    title="Lignes">
+    <iconify-icon icon="solar:layers-bold-duotone" width="24"></iconify-icon>
+  </button>
+
+  <div class="h-px w-8 bg-gray-200 dark:bg-gray-700"></div>
+
+  <!-- Settings -->
+  <button 
+    @click="sidebar.mode = 'settings'; sidebar.open = true"
+    :class="sidebar.mode === 'settings' && sidebar.open && 'bg-primary/20 text-primary'"
+    class="w-10 h-10 rounded transition-colors flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700"
+    title="Paramètres">
+    <iconify-icon icon="solar:settings-bold-duotone" width="24"></iconify-icon>
+  </button>
+</div>
+
+<!-- Expanded Sidebar Drawer (300px) -->
+<div 
+  x-show="sidebar.open"
+  x-transition:enter="transform transition ease-out duration-200"
+  x-transition:enter-start="-translate-x-full opacity-0"
+  x-transition:enter-end="translate-x-0 opacity-100"
+  x-transition:leave="transform transition ease-in duration-150"
+  x-transition:leave-start="translate-x-0 opacity-100"
+  x-transition:leave-end="-translate-x-full opacity-0"
+  class="w-[300px] bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
+
+  <!-- ======================== -->
+  <!-- FIELDS MODE              -->
+  <!-- ======================== -->
+  <template x-if="sidebar.mode === 'fields'">
+    <div class="flex flex-col h-full">
+      <div class="h-12 border-b dark:border-gray-700 px-4 flex items-center justify-between shrink-0">
+        <h3 class="font-semibold text-sm">Champs disponibles</h3>
+        <button @click="sidebar.open = false" class="w-7 h-7 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-3 space-y-4">
+        <!-- Standard Fields -->
+        <div>
+          <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Champs standards</div>
+          <div id="sidebar-standard-fields" class="space-y-1">
+            <template x-for="field in getAvailableStandardFields()" :key="'std-'+field.key">
+              <div 
+                class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 cursor-grab hover:border-primary/30 hover:bg-primary/5 transition-colors"
+                :class="isFieldOnCanvas('standard', field.key) && 'opacity-40 cursor-not-allowed'"
+                :data-field-type="'standard'"
+                :data-field-id="field.key"
+                :data-field-label="field.label"
+                :data-field-icon="field.icon"
+                draggable="true"
+                @dragstart="onSidebarDragStart($event, 'standard', field.key, field.label, field.icon)">
+                <iconify-icon :icon="field.icon" width="16" class="text-warning shrink-0"></iconify-icon>
+                <span class="text-sm truncate" x-text="field.label"></span>
+                <iconify-icon icon="solar:add-circle-linear" width="14" class="ml-auto text-gray-300 shrink-0"></iconify-icon>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Custom Fields -->
+        <div x-show="availableCustomFields.length > 0">
+          <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Champs personnalisés</div>
+          <div id="sidebar-custom-fields" class="space-y-1">
+            <template x-for="field in availableCustomFields" :key="'cf-'+field._id">
+              <div 
+                class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 cursor-grab hover:border-info/30 hover:bg-info/5 transition-colors"
+                :class="isFieldOnCanvas('custom', field._id) && 'opacity-40 cursor-not-allowed'"
+                :data-field-type="'custom'"
+                :data-field-id="field._id"
+                :data-field-label="field.label || field.name"
+                :data-field-icon="field.ui?.icon || 'solar:widget-bold-duotone'"
+                draggable="true"
+                @dragstart="onSidebarDragStart($event, 'custom', field._id, field.label || field.name, field.ui?.icon || 'solar:widget-bold-duotone')">
+                <iconify-icon :icon="field.ui?.icon || 'solar:widget-bold-duotone'" width="16" class="text-info shrink-0"></iconify-icon>
+                <span class="text-sm truncate" x-text="field.label || field.name"></span>
+                <iconify-icon icon="solar:add-circle-linear" width="14" class="ml-auto text-gray-300 shrink-0"></iconify-icon>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Relations -->
+        <div x-show="entityRelations.length > 0">
+          <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Relations</div>
+          <div id="sidebar-relations" class="space-y-1">
+            <template x-for="rel in entityRelations" :key="'rel-'+rel.key">
+              <div 
+                class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 cursor-grab hover:border-primary/30 hover:bg-primary/5 transition-colors"
+                :class="isFieldOnCanvas('relation', rel.key) && 'opacity-40 cursor-not-allowed'"
+                :style="rel.targetEntity?.color ? 'border-color:' + rel.targetEntity.color + '30' : ''"
+                :data-field-type="'relation'"
+                :data-field-id="rel.key"
+                :data-field-label="rel.label || 'Relation'"
+                :data-field-icon="rel.targetEntity?.icon || 'solar:link-round-bold-duotone'"
+                draggable="true"
+                @dragstart="onSidebarDragStart($event, 'relation', rel.key, rel.label || 'Relation', rel.targetEntity?.icon || 'solar:link-round-bold-duotone')">
+                <iconify-icon :icon="rel.targetEntity?.icon || 'solar:link-round-bold-duotone'" width="16" class="shrink-0"
+                  :style="rel.targetEntity?.color ? 'color:' + rel.targetEntity.color : 'color: var(--primary)'"></iconify-icon>
+                <div class="min-w-0 flex-1">
+                  <span class="text-sm truncate block" x-text="rel.label || 'Relation'"></span>
+                  <span class="text-[10px] text-gray-400" x-text="rel.cardinality === 'one-to-one' ? '1:1' : rel.cardinality === 'one-to-many' ? '1:N' : 'N:N'"></span>
+                </div>
+                <iconify-icon icon="solar:add-circle-linear" width="14" class="ml-auto text-gray-300 shrink-0"></iconify-icon>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Classifications -->
+        <div x-show="entityClassifications.length > 0">
+          <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Classifications</div>
+          <div id="sidebar-classifications" class="space-y-1">
+            <template x-for="cls in entityClassifications" :key="'cls-'+cls._id">
+              <div 
+                class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 cursor-grab hover:border-success/30 hover:bg-success/5 transition-colors"
+                :class="isFieldOnCanvas('classification', cls._id) && 'opacity-40 cursor-not-allowed'"
+                :data-field-type="'classification'"
+                :data-field-id="cls._id"
+                :data-field-label="cls.name"
+                :data-field-icon="'solar:tag-bold-duotone'"
+                draggable="true"
+                @dragstart="onSidebarDragStart($event, 'classification', cls._id, cls.name, 'solar:tag-bold-duotone')">
+                <iconify-icon icon="solar:tag-bold-duotone" width="16" class="text-success shrink-0"></iconify-icon>
+                <span class="text-sm truncate" x-text="cls.name"></span>
+                <iconify-icon icon="solar:add-circle-linear" width="14" class="ml-auto text-gray-300 shrink-0"></iconify-icon>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- ======================== -->
+  <!-- ROWS MODE                -->
+  <!-- ======================== -->
+  <template x-if="sidebar.mode === 'rows'">
+    <div class="flex flex-col h-full">
+      <div class="h-12 border-b dark:border-gray-700 px-4 flex items-center justify-between shrink-0">
+        <h3 class="font-semibold text-sm">Lignes</h3>
+        <button @click="sidebar.open = false" class="w-7 h-7 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-3 space-y-3">
+        <p class="text-xs text-gray-400 mb-2">Choisissez un layout de colonnes :</p>
+        
+        <!-- 1 column -->
+        <button @click="addRow(1)" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+          <div class="flex gap-1 flex-1">
+            <div class="h-8 flex-1 bg-primary/20 rounded"></div>
+          </div>
+          <span class="text-xs text-gray-500">1 colonne</span>
+        </button>
+
+        <!-- 2 columns -->
+        <button @click="addRow(2)" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+          <div class="flex gap-1 flex-1">
+            <div class="h-8 flex-1 bg-primary/20 rounded"></div>
+            <div class="h-8 flex-1 bg-primary/20 rounded"></div>
+          </div>
+          <span class="text-xs text-gray-500">2 colonnes</span>
+        </button>
+
+        <!-- 3 columns -->
+        <button @click="addRow(3)" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+          <div class="flex gap-1 flex-1">
+            <div class="h-8 flex-1 bg-primary/20 rounded"></div>
+            <div class="h-8 flex-1 bg-primary/20 rounded"></div>
+            <div class="h-8 flex-1 bg-primary/20 rounded"></div>
+          </div>
+          <span class="text-xs text-gray-500">3 colonnes</span>
+        </button>
+
+        <!-- 4 columns -->
+        <button @click="addRow(4)" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+          <div class="flex gap-1 flex-1">
+            <div class="h-8 flex-1 bg-primary/20 rounded"></div>
+            <div class="h-8 flex-1 bg-primary/20 rounded"></div>
+            <div class="h-8 flex-1 bg-primary/20 rounded"></div>
+            <div class="h-8 flex-1 bg-primary/20 rounded"></div>
+          </div>
+          <span class="text-xs text-gray-500">4 colonnes</span>
+        </button>
+
+        <!-- 1/3 + 2/3 -->
+        <button @click="addRowCustom([4, 8])" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+          <div class="flex gap-1 flex-1">
+            <div class="h-8 w-1/3 bg-primary/20 rounded"></div>
+            <div class="h-8 flex-1 bg-primary/20 rounded"></div>
+          </div>
+          <span class="text-xs text-gray-500">1/3 + 2/3</span>
+        </button>
+
+        <!-- 2/3 + 1/3 -->
+        <button @click="addRowCustom([8, 4])" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+          <div class="flex gap-1 flex-1">
+            <div class="h-8 flex-1 bg-primary/20 rounded"></div>
+            <div class="h-8 w-1/3 bg-primary/20 rounded"></div>
+          </div>
+          <span class="text-xs text-gray-500">2/3 + 1/3</span>
+        </button>
+
+        <div class="border-t dark:border-gray-700 pt-3 mt-3">
+          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Auto Layout</p>
+          <button @click="autoLayout(1)" class="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            <iconify-icon icon="solar:align-vertical-spacing-bold" width="16" class="mr-2"></iconify-icon>
+            1 colonne (empilé)
+          </button>
+          <button @click="autoLayout(2)" class="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            <iconify-icon icon="solar:align-horizontal-spacing-bold" width="16" class="mr-2"></iconify-icon>
+            2 colonnes (côte à côte)
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- ======================== -->
+  <!-- SETTINGS MODE            -->
+  <!-- ======================== -->
+  <template x-if="sidebar.mode === 'settings'">
+    <div class="flex flex-col h-full">
+      <div class="h-12 border-b dark:border-gray-700 px-4 flex items-center justify-between shrink-0">
+        <h3 class="font-semibold text-sm">Paramètres</h3>
+        <button @click="sidebar.open = false" class="w-7 h-7 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 space-y-4">
+        <div>
+          <label class="text-xs font-medium text-gray-500 mb-1 block">Nom de l'entité</label>
+          <input type="text" x-model="entityMeta.name" class="form-input w-full text-sm" />
+        </div>
+        <div>
+          <label class="text-xs font-medium text-gray-500 mb-1 block">Slug</label>
+          <input type="text" x-model="entityMeta.slug" class="form-input w-full text-sm" />
+        </div>
+        <div>
+          <label class="text-xs font-medium text-gray-500 mb-1 block">Description</label>
+          <textarea x-model="entityMeta.description" class="form-input w-full text-sm" rows="3"></textarea>
+        </div>
+        <div>
+          <label class="text-xs font-medium text-gray-500 mb-1 block">Icône</label>
+          <input type="text" x-model="entityMeta.icon" class="form-input w-full text-sm" placeholder="solar:..." />
+        </div>
+        <div>
+          <label class="text-xs font-medium text-gray-500 mb-1 block">Couleur</label>
+          <input type="color" x-model="entityMeta.color" class="form-input w-20 h-10 p-1" />
+        </div>
+      </div>
+    </div>
+  </template>
+</div>

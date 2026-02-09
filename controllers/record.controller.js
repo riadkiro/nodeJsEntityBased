@@ -200,7 +200,9 @@ module.exports = {
                             key: r.key,
                             label: r.label,
                             cardinality: r.cardinality,
-                            inputMode: r.inputMode,
+                            inputMode: r.inputMode || 'autocomplete',
+                            searchFields: r.searchFields || [],
+                            displayFields: r.displayFields || [],
                             targetEntity: r.targetEntity ? {
                                 _id: (r.targetEntity._id || r.targetEntity).toString(),
                                 name: r.targetEntity.name || '',
@@ -584,6 +586,7 @@ module.exports = {
     searchAjax: async (req, res) => {
         try {
             const { entityId, q } = req.query;
+            const displayFieldIds = req.query.displayFields ? req.query.displayFields.split(',') : [];
             const RecordModel = await tenantCollection(req, "Record");
             const Entity = await tenantCollection(req, "Entity");
 
@@ -636,7 +639,28 @@ module.exports = {
                     return '';
                 });
                 const label = parts.join('').trim() || r.title || r.slug || r._id.toString();
-                return { id: r._id, label };
+
+                const result = { id: r._id, label };
+
+                // If displayFields requested, add field values for modal picker
+                if (displayFieldIds.length > 0 && r.customFields) {
+                    result.fields = {};
+                    // Standard fields
+                    ['title', 'slug', 'date', 'description'].forEach(key => {
+                        if (displayFieldIds.includes(key)) {
+                            result.fields[key] = r[key] || '';
+                        }
+                    });
+                    // Custom fields
+                    r.customFields.forEach(cf => {
+                        const cfId = (cf.field_id?._id || cf.field_id)?.toString();
+                        if (cfId && displayFieldIds.includes(cfId)) {
+                            result.fields[cfId] = cf.value || '';
+                        }
+                    });
+                }
+
+                return result;
             });
 
             res.json({

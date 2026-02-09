@@ -99,10 +99,16 @@
       
       // Wizard state
       step: 1,
+      step2Tab: 'fields',
       fieldSearch: '',
       selectedFields: [],
       systemFields: [],
       openCategories: { popular: true }, // Categories accordion state - popular open by default
+      
+      // Relations state
+      allEntities: [],
+      relations: [],
+      entityFieldsCache: {},
       
       // Classifications
       allClassifications: [],
@@ -477,8 +483,10 @@
 
       resetForm() {
         this.step = 1;
+        this.step2Tab = 'fields';
         this.fieldSearch = '';
         this.selectedFields = [];
+        this.relations = [];
         this.accordionVisuel = false;
         this.accordionChamps = true;
         this.accordionClassifications = false;
@@ -495,6 +503,96 @@
           statusClassificationId: '',
           classifications: []
         };
+      },
+      
+      // ===== Relations Methods =====
+      _uuidv4() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+          const r = Math.random() * 16 | 0;
+          return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+      },
+      
+      async loadAllEntities() {
+        if (this.allEntities.length > 0) return; // cache
+        try {
+          const res = await fetch('/account/<%= account_number %>/entity/api/list');
+          if (res.ok) this.allEntities = await res.json();
+        } catch (e) {
+          console.error('Failed to load entities:', e);
+        }
+      },
+      
+      async loadEntityFields(entityId) {
+        if (!entityId) return [];
+        if (this.entityFieldsCache[entityId]) return this.entityFieldsCache[entityId];
+        try {
+          const res = await fetch(`/account/<%= account_number %>/entity/api/${entityId}/fields`);
+          if (res.ok) {
+            const fields = await res.json();
+            this.entityFieldsCache[entityId] = fields;
+            return fields;
+          }
+        } catch (e) {
+          console.error('Failed to load entity fields:', e);
+        }
+        return [];
+      },
+      
+      addRelation() {
+        this.relations.push({
+          key: this._uuidv4(),
+          targetEntity: '',
+          label: '',
+          inverseLabel: '',
+          cardinality: 'one-to-many',
+          inputMode: 'autocomplete',
+          storage: 'on-source',
+          searchFields: [],
+          displayFields: [],
+          bidirectional: false,
+          required: false,
+          _targetFields: [] // transient: fields of target entity for UI
+        });
+      },
+      
+      removeRelation(index) {
+        this.relations.splice(index, 1);
+      },
+      
+      async onRelationEntityChange(relation) {
+        // Reset fields when entity changes
+        relation.searchFields = [];
+        relation.displayFields = [];
+        relation._targetFields = [];
+        
+        if (relation.targetEntity) {
+          // Auto-fill label from entity name
+          const entity = this.allEntities.find(e => e._id === relation.targetEntity);
+          if (entity && !relation.label) {
+            relation.label = entity.name;
+          }
+          // Load fields
+          relation._targetFields = await this.loadEntityFields(relation.targetEntity);
+        }
+      },
+      
+      toggleSearchField(relation, fieldId) {
+        const idx = relation.searchFields.indexOf(fieldId);
+        if (idx >= 0) {
+          relation.searchFields.splice(idx, 1);
+        } else {
+          relation.searchFields.push(fieldId);
+        }
+      },
+      
+      toggleDisplayField(relation, fieldId) {
+        const idx = relation.displayFields.indexOf(fieldId);
+        if (idx >= 0) {
+          relation.displayFields.splice(idx, 1);
+        } else {
+          relation.displayFields.push(fieldId);
+        }
       },
 
       async createCollection() {
@@ -527,7 +625,8 @@
               customFields: this.selectedFields.map(f => f._id),
               referenceTitleTokens: this.newCollection.referenceTitleTokens,
               statusClassification: this.newCollection.statusClassificationId || null,
-              classifications: this.newCollection.classifications
+              classifications: this.newCollection.classifications,
+              relations: this.relations.filter(r => r.targetEntity).map(({ _targetFields, ...r }) => r)
             })
           });
 
@@ -574,6 +673,20 @@
               classifications: (entity.classifications || []).map(c => c._id || c)
             };
             this.selectedFields = entity.customFields || [];
+            
+            // Load relations with their target entity fields
+            this.relations = (entity.relations || []).map(r => ({
+              ...r,
+              targetEntity: r.targetEntity?._id || r.targetEntity || '',
+              _targetFields: []
+            }));
+            // Load target fields for each relation
+            await this.loadAllEntities();
+            for (const rel of this.relations) {
+              if (rel.targetEntity) {
+                rel._targetFields = await this.loadEntityFields(rel.targetEntity);
+              }
+            }
             this.step = 1;
             this.showEditModal = true;
           }
@@ -605,7 +718,8 @@
               customFields: this.selectedFields.map(f => f._id || f),
               referenceTitleTokens: this.newCollection.referenceTitleTokens,
               statusClassification: this.newCollection.statusClassificationId || null,
-              classifications: this.newCollection.classifications
+              classifications: this.newCollection.classifications,
+              relations: this.relations.filter(r => r.targetEntity).map(({ _targetFields, ...r }) => r)
             })
           });
 
@@ -987,81 +1101,243 @@
             </div>
           </div>
 
-          <!-- STEP 2: Sélection des champs -->
+          <!-- STEP 2: Champs & Relations -->
           <div x-show="step === 2" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
             
-            <!-- Search -->
-            <div class="relative mb-4">
-              <input type="text" x-model="fieldSearch" placeholder="Rechercher un champ..." class="form-input w-full pl-9 text-sm">
-              <iconify-icon icon="solar:magnifer-linear" class="absolute left-3 top-2.5 text-gray-400" width="16"></iconify-icon>
+            <!-- Tabs -->
+            <div class="flex border-b dark:border-gray-700 mb-4">
+              <button type="button" @click="step2Tab = 'fields'" 
+                      class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+                      :class="step2Tab === 'fields' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'">
+                <iconify-icon icon="solar:layers-bold-duotone" width="16" class="mr-1"></iconify-icon>
+                Champs
+              </button>
+              <button type="button" @click="step2Tab = 'relations'; loadAllEntities()" 
+                      class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+                      :class="step2Tab === 'relations' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'">
+                <iconify-icon icon="solar:link-round-bold-duotone" width="16" class="mr-1"></iconify-icon>
+                Relations
+                <span x-show="relations.length > 0" class="ml-1 px-1.5 py-0.5 text-xs bg-primary/20 text-primary rounded-full" x-text="relations.length"></span>
+              </button>
             </div>
 
-            <!-- Champs sélectionnés -->
-            <div x-show="selectedFields.length > 0" class="mb-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
-              <div class="text-xs font-semibold text-primary mb-2 flex items-center gap-1">
-                <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
-                <span x-text="selectedFields.length + ' champ(s) sélectionné(s)'"></span>
+            <!-- TAB: Champs -->
+            <div x-show="step2Tab === 'fields'">
+              <!-- Search -->
+              <div class="relative mb-4">
+                <input type="text" x-model="fieldSearch" placeholder="Rechercher un champ..." class="form-input w-full pl-9 text-sm">
+                <iconify-icon icon="solar:magnifer-linear" class="absolute left-3 top-2.5 text-gray-400" width="16"></iconify-icon>
               </div>
-              <div class="flex flex-wrap gap-1.5">
-                <template x-for="(field, idx) in selectedFields" :key="field._id">
-                  <div class="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-xs border shadow-sm">
-                    <iconify-icon :icon="field.icon" width="14" class="text-primary"></iconify-icon>
-                    <span x-text="field.label"></span>
-                    <button type="button" @click="selectedFields.splice(idx, 1)" class="text-gray-400 hover:text-red-500 ml-0.5">
-                      <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
+
+              <!-- Champs sélectionnés -->
+              <div x-show="selectedFields.length > 0" class="mb-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                <div class="text-xs font-semibold text-primary mb-2 flex items-center gap-1">
+                  <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                  <span x-text="selectedFields.length + ' champ(s) sélectionné(s)'"></span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  <template x-for="(field, idx) in selectedFields" :key="field._id">
+                    <div class="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-xs border shadow-sm">
+                      <iconify-icon :icon="field.icon" width="14" class="text-primary"></iconify-icon>
+                      <span x-text="field.label"></span>
+                      <button type="button" @click="selectedFields.splice(idx, 1)" class="text-gray-400 hover:text-red-500 ml-0.5">
+                        <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
+                      </button>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <!-- Catégories de champs -->
+              <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+                <template x-for="category in filteredCategories" :key="category.key">
+                  <div class="border dark:border-gray-700 rounded-lg overflow-hidden">
+                    <button type="button" 
+                            @click="openCategories[category.key] = !openCategories[category.key]"
+                            class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 font-medium text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                      <div class="flex items-center gap-2">
+                        <iconify-icon :icon="getCategoryIcon(category.key)" width="16" class="text-primary"></iconify-icon>
+                        <span x-text="category.label"></span>
+                        <span class="text-gray-400 text-xs" x-text="'(' + category.fields.length + ')'"></span>
+                      </div>
+                      <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
+                                    :class="openCategories[category.key] && 'rotate-180'" 
+                                    style="transition: transform 0.2s"></iconify-icon>
                     </button>
+                    <div x-show="openCategories[category.key]" x-collapse class="divide-y dark:divide-gray-700">
+                      <template x-for="field in category.fields" :key="field._id">
+                        <div class="px-3 py-2 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                             :class="isFieldSelected(field._id) && 'bg-primary/5'">
+                          <div class="flex items-center gap-2 flex-1 min-w-0">
+                            <iconify-icon :icon="field.icon" width="18" class="text-gray-500 shrink-0"></iconify-icon>
+                            <div class="min-w-0">
+                              <div class="text-sm font-medium truncate" x-text="field.label"></div>
+                              <div class="text-xs text-gray-400 truncate" x-text="field.description" x-show="field.description"></div>
+                            </div>
+                          </div>
+                          <button type="button" 
+                                  @click="toggleField(field)"
+                                  class="shrink-0 px-2 py-1 rounded text-xs font-medium transition-colors"
+                                  :class="isFieldSelected(field._id) ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-primary/10 text-primary hover:bg-primary/20'">
+                            <span x-text="isFieldSelected(field._id) ? 'Retirer' : 'Ajouter'"></span>
+                          </button>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </template>
+                
+                <div x-show="filteredCategories.length === 0" class="text-center py-8 text-gray-400">
+                  <iconify-icon icon="solar:box-broken" width="40" class="mb-2"></iconify-icon>
+                  <p class="text-sm">Aucun champ trouvé</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB: Relations -->
+            <div x-show="step2Tab === 'relations'">
+              <!-- Relations list -->
+              <div class="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                <template x-for="(relation, rIdx) in relations" :key="relation.key">
+                  <div class="border dark:border-gray-700 rounded-lg p-3 space-y-3 bg-gray-50/50 dark:bg-gray-800/50">
+                    <!-- Header with delete -->
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                        <iconify-icon icon="solar:link-round-bold-duotone" width="16" class="text-primary"></iconify-icon>
+                        <span x-text="relation.label || ('Relation ' + (rIdx + 1))"></span>
+                      </span>
+                      <button type="button" @click="removeRelation(rIdx)" class="text-gray-400 hover:text-red-500 transition-colors">
+                        <iconify-icon icon="solar:trash-bin-trash-bold" width="16"></iconify-icon>
+                      </button>
+                    </div>
+
+                    <!-- Entity picker -->
+                    <div>
+                      <label class="text-xs font-medium text-gray-500 mb-1 block">Entité cible</label>
+                      <select x-model="relation.targetEntity" @change="onRelationEntityChange(relation)" class="form-select w-full text-sm">
+                        <option value="">Sélectionner une entité...</option>
+                        <template x-for="ent in allEntities" :key="ent._id">
+                          <option :value="ent._id" x-text="ent.name"></option>
+                        </template>
+                      </select>
+                    </div>
+
+                    <!-- Label -->
+                    <div class="grid grid-cols-2 gap-2">
+                      <div>
+                        <label class="text-xs font-medium text-gray-500 mb-1 block">Label</label>
+                        <input type="text" x-model="relation.label" placeholder="Ex: Patient" class="form-input w-full text-sm">
+                      </div>
+                      <div>
+                        <label class="text-xs font-medium text-gray-500 mb-1 block">Label inverse</label>
+                        <input type="text" x-model="relation.inverseLabel" placeholder="Ex: Consultations" class="form-input w-full text-sm">
+                      </div>
+                    </div>
+
+                    <!-- Cardinality -->
+                    <div>
+                      <label class="text-xs font-medium text-gray-500 mb-1 block">Cardinalité</label>
+                      <div class="flex gap-1">
+                        <template x-for="card in [{v:'one-to-one',l:'1:1'},{v:'one-to-many',l:'1:N'},{v:'many-to-many',l:'N:N'}]" :key="card.v">
+                          <button type="button" @click="relation.cardinality = card.v"
+                                  class="flex-1 px-3 py-1.5 text-xs font-semibold rounded-md border transition-colors"
+                                  :class="relation.cardinality === card.v 
+                                    ? 'bg-primary text-white border-primary' 
+                                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-primary/50'">
+                            <span x-text="card.l"></span>
+                          </button>
+                        </template>
+                      </div>
+                    </div>
+
+                    <!-- Input Mode + Storage -->
+                    <div class="grid grid-cols-2 gap-2">
+                      <div>
+                        <label class="text-xs font-medium text-gray-500 mb-1 block">Mode d'encodage</label>
+                        <select x-model="relation.inputMode" class="form-select w-full text-sm">
+                          <option value="autocomplete">Autocomplete</option>
+                          <option value="select">Select</option>
+                          <option value="modal-picker">Modal Picker</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="text-xs font-medium text-gray-500 mb-1 block">Stockage</label>
+                        <select x-model="relation.storage" class="form-select w-full text-sm">
+                          <option value="on-source">Sur la source</option>
+                          <option value="on-target">Sur la cible</option>
+                          <option value="join">Table de jointure</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- Search fields (shown after entity selected) -->
+                    <template x-if="relation._targetFields && relation._targetFields.length > 0">
+                      <div>
+                        <label class="text-xs font-medium text-gray-500 mb-1 block">Champs de recherche</label>
+                        <div class="flex flex-wrap gap-1.5">
+                          <template x-for="field in relation._targetFields" :key="'s-'+relation.key+'-'+field.id">
+                            <button type="button" @click="toggleSearchField(relation, field.id)"
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-colors"
+                                    :class="relation.searchFields.includes(field.id) 
+                                      ? 'bg-info/10 border-info/30 text-info' 
+                                      : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 hover:border-info/50'">
+                              <iconify-icon :icon="field.icon" width="12"></iconify-icon>
+                              <span x-text="field.label"></span>
+                            </button>
+                          </template>
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- Display fields -->
+                    <template x-if="relation._targetFields && relation._targetFields.length > 0">
+                      <div>
+                        <label class="text-xs font-medium text-gray-500 mb-1 block">Champs à afficher</label>
+                        <div class="flex flex-wrap gap-1.5">
+                          <template x-for="field in relation._targetFields" :key="'d-'+relation.key+'-'+field.id">
+                            <button type="button" @click="toggleDisplayField(relation, field.id)"
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-colors"
+                                    :class="relation.displayFields.includes(field.id) 
+                                      ? 'bg-success/10 border-success/30 text-success' 
+                                      : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 hover:border-success/50'">
+                              <iconify-icon :icon="field.icon" width="12"></iconify-icon>
+                              <span x-text="field.label"></span>
+                            </button>
+                          </template>
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- Toggles row -->
+                    <div class="flex items-center gap-4 pt-2 border-t dark:border-gray-700">
+                      <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-500">
+                        <input type="checkbox" x-model="relation.bidirectional" class="form-checkbox rounded text-primary">
+                        Bidirectionnelle
+                      </label>
+                      <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-500">
+                        <input type="checkbox" x-model="relation.required" class="form-checkbox rounded text-primary">
+                        Requis
+                      </label>
+                    </div>
                   </div>
                 </template>
               </div>
-            </div>
 
-            <!-- Catégories de champs -->
-            <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
-              <template x-for="category in filteredCategories" :key="category.key">
-                <div class="border dark:border-gray-700 rounded-lg overflow-hidden">
-                  <!-- Category Header - Clickable Accordion -->
-                  <button type="button" 
-                          @click="openCategories[category.key] = !openCategories[category.key]"
-                          class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 font-medium text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                    <div class="flex items-center gap-2">
-                      <iconify-icon :icon="getCategoryIcon(category.key)" width="16" class="text-primary"></iconify-icon>
-                      <span x-text="category.label"></span>
-                      <span class="text-gray-400 text-xs" x-text="'(' + category.fields.length + ')'"></span>
-                    </div>
-                    <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
-                                  :class="openCategories[category.key] && 'rotate-180'" 
-                                  style="transition: transform 0.2s"></iconify-icon>
-                  </button>
-                  <!-- Category Content - Collapsible -->
-                  <div x-show="openCategories[category.key]" x-collapse class="divide-y dark:divide-gray-700">
-                    <template x-for="field in category.fields" :key="field._id">
-                      <div class="px-3 py-2 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                           :class="isFieldSelected(field._id) && 'bg-primary/5'">
-                        <div class="flex items-center gap-2 flex-1 min-w-0">
-                          <iconify-icon :icon="field.icon" width="18" class="text-gray-500 shrink-0"></iconify-icon>
-                          <div class="min-w-0">
-                            <div class="text-sm font-medium truncate" x-text="field.label"></div>
-                            <div class="text-xs text-gray-400 truncate" x-text="field.description" x-show="field.description"></div>
-                          </div>
-                        </div>
-                        <button type="button" 
-                                @click="toggleField(field)"
-                                class="shrink-0 px-2 py-1 rounded text-xs font-medium transition-colors"
-                                :class="isFieldSelected(field._id) ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-primary/10 text-primary hover:bg-primary/20'">
-                          <span x-text="isFieldSelected(field._id) ? 'Retirer' : 'Ajouter'"></span>
-                        </button>
-                      </div>
-                    </template>
-                  </div>
-                </div>
-              </template>
-              
+              <!-- Add relation button -->
+              <button type="button" @click="addRelation()" 
+                      class="w-full mt-3 flex items-center justify-center gap-2 py-2.5 text-sm text-primary hover:text-primary/80 border border-dashed border-primary/30 rounded-lg hover:bg-primary/5 transition-colors">
+                <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
+                <span>Ajouter une relation</span>
+              </button>
+
               <!-- Empty state -->
-              <div x-show="filteredCategories.length === 0" class="text-center py-8 text-gray-400">
-                <iconify-icon icon="solar:box-broken" width="40" class="mb-2"></iconify-icon>
-                <p class="text-sm">Aucun champ trouvé</p>
+              <div x-show="relations.length === 0" class="text-center py-6 text-gray-400">
+                <iconify-icon icon="solar:link-broken-bold-duotone" width="40" class="mb-2"></iconify-icon>
+                <p class="text-sm">Aucune relation configurée</p>
+                <p class="text-xs mt-1">Cliquez sur le bouton ci-dessus pour lier cette collection à d'autres</p>
               </div>
             </div>
+
           </div>
         </form>
       </div>
@@ -1349,81 +1625,243 @@
             </div>
           </div>
 
-          <!-- STEP 2: Sélection des champs -->
+          <!-- STEP 2: Champs & Relations -->
           <div x-show="step === 2" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
             
-            <!-- Search -->
-            <div class="relative mb-4">
-              <input type="text" x-model="fieldSearch" placeholder="Rechercher un champ..." class="form-input w-full pl-9 text-sm">
-              <iconify-icon icon="solar:magnifer-linear" class="absolute left-3 top-2.5 text-gray-400" width="16"></iconify-icon>
+            <!-- Tabs -->
+            <div class="flex border-b dark:border-gray-700 mb-4">
+              <button type="button" @click="step2Tab = 'fields'" 
+                      class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+                      :class="step2Tab === 'fields' ? 'border-warning text-warning' : 'border-transparent text-gray-500 hover:text-gray-700'">
+                <iconify-icon icon="solar:layers-bold-duotone" width="16" class="mr-1"></iconify-icon>
+                Champs
+              </button>
+              <button type="button" @click="step2Tab = 'relations'; loadAllEntities()" 
+                      class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+                      :class="step2Tab === 'relations' ? 'border-warning text-warning' : 'border-transparent text-gray-500 hover:text-gray-700'">
+                <iconify-icon icon="solar:link-round-bold-duotone" width="16" class="mr-1"></iconify-icon>
+                Relations
+                <span x-show="relations.length > 0" class="ml-1 px-1.5 py-0.5 text-xs bg-warning/20 text-warning rounded-full" x-text="relations.length"></span>
+              </button>
             </div>
 
-            <!-- Champs sélectionnés -->
-            <div x-show="selectedFields.length > 0" class="mb-4 p-3 bg-warning/5 rounded-lg border border-warning/20">
-              <div class="text-xs font-semibold text-warning mb-2 flex items-center gap-1">
-                <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
-                <span x-text="selectedFields.length + ' champ(s) sélectionné(s)'"></span>
+            <!-- TAB: Champs -->
+            <div x-show="step2Tab === 'fields'">
+              <!-- Search -->
+              <div class="relative mb-4">
+                <input type="text" x-model="fieldSearch" placeholder="Rechercher un champ..." class="form-input w-full pl-9 text-sm">
+                <iconify-icon icon="solar:magnifer-linear" class="absolute left-3 top-2.5 text-gray-400" width="16"></iconify-icon>
               </div>
-              <div class="flex flex-wrap gap-1.5">
-                <template x-for="(field, idx) in selectedFields" :key="field._id || idx">
-                  <div class="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-xs border shadow-sm">
-                    <iconify-icon :icon="field.icon || 'solar:widget-bold'" width="14" class="text-warning"></iconify-icon>
-                    <span x-text="field.label || field.name || 'Champ'"></span>
-                    <button type="button" @click="selectedFields.splice(idx, 1)" class="text-gray-400 hover:text-red-500 ml-0.5">
-                      <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
+
+              <!-- Champs sélectionnés -->
+              <div x-show="selectedFields.length > 0" class="mb-4 p-3 bg-warning/5 rounded-lg border border-warning/20">
+                <div class="text-xs font-semibold text-warning mb-2 flex items-center gap-1">
+                  <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                  <span x-text="selectedFields.length + ' champ(s) sélectionné(s)'"></span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  <template x-for="(field, idx) in selectedFields" :key="field._id || idx">
+                    <div class="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-xs border shadow-sm">
+                      <iconify-icon :icon="field.icon || 'solar:widget-bold'" width="14" class="text-warning"></iconify-icon>
+                      <span x-text="field.label || field.name || 'Champ'"></span>
+                      <button type="button" @click="selectedFields.splice(idx, 1)" class="text-gray-400 hover:text-red-500 ml-0.5">
+                        <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
+                      </button>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <!-- Catégories de champs -->
+              <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+                <template x-for="category in filteredCategories" :key="category.key">
+                  <div class="border dark:border-gray-700 rounded-lg overflow-hidden">
+                    <button type="button" 
+                            @click="openCategories[category.key] = !openCategories[category.key]"
+                            class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 font-medium text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                      <div class="flex items-center gap-2">
+                        <iconify-icon :icon="getCategoryIcon(category.key)" width="16" class="text-warning"></iconify-icon>
+                        <span x-text="category.label"></span>
+                        <span class="text-gray-400 text-xs" x-text="'(' + category.fields.length + ')'"></span>
+                      </div>
+                      <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
+                                    :class="openCategories[category.key] && 'rotate-180'" 
+                                    style="transition: transform 0.2s"></iconify-icon>
                     </button>
+                    <div x-show="openCategories[category.key]" x-collapse class="divide-y dark:divide-gray-700">
+                      <template x-for="field in category.fields" :key="field._id">
+                        <div class="px-3 py-2 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                             :class="isFieldSelected(field._id) && 'bg-warning/5'">
+                          <div class="flex items-center gap-2 flex-1 min-w-0">
+                            <iconify-icon :icon="field.icon" width="18" class="text-gray-500 shrink-0"></iconify-icon>
+                            <div class="min-w-0">
+                              <div class="text-sm font-medium truncate" x-text="field.label"></div>
+                              <div class="text-xs text-gray-400 truncate" x-text="field.description" x-show="field.description"></div>
+                            </div>
+                          </div>
+                          <button type="button" 
+                                  @click="toggleField(field)"
+                                  class="shrink-0 px-2 py-1 rounded text-xs font-medium transition-colors"
+                                  :class="isFieldSelected(field._id) ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-warning/10 text-warning hover:bg-warning/20'">
+                            <span x-text="isFieldSelected(field._id) ? 'Retirer' : 'Ajouter'"></span>
+                          </button>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </template>
+                
+                <div x-show="filteredCategories.length === 0" class="text-center py-8 text-gray-400">
+                  <iconify-icon icon="solar:box-broken" width="40" class="mb-2"></iconify-icon>
+                  <p class="text-sm">Aucun champ trouvé</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB: Relations -->
+            <div x-show="step2Tab === 'relations'">
+              <!-- Relations list -->
+              <div class="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                <template x-for="(relation, rIdx) in relations" :key="relation.key">
+                  <div class="border dark:border-gray-700 rounded-lg p-3 space-y-3 bg-gray-50/50 dark:bg-gray-800/50">
+                    <!-- Header with delete -->
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                        <iconify-icon icon="solar:link-round-bold-duotone" width="16" class="text-warning"></iconify-icon>
+                        <span x-text="relation.label || ('Relation ' + (rIdx + 1))"></span>
+                      </span>
+                      <button type="button" @click="removeRelation(rIdx)" class="text-gray-400 hover:text-red-500 transition-colors">
+                        <iconify-icon icon="solar:trash-bin-trash-bold" width="16"></iconify-icon>
+                      </button>
+                    </div>
+
+                    <!-- Entity picker -->
+                    <div>
+                      <label class="text-xs font-medium text-gray-500 mb-1 block">Entité cible</label>
+                      <select x-model="relation.targetEntity" @change="onRelationEntityChange(relation)" class="form-select w-full text-sm">
+                        <option value="">Sélectionner une entité...</option>
+                        <template x-for="ent in allEntities" :key="ent._id">
+                          <option :value="ent._id" x-text="ent.name"></option>
+                        </template>
+                      </select>
+                    </div>
+
+                    <!-- Label -->
+                    <div class="grid grid-cols-2 gap-2">
+                      <div>
+                        <label class="text-xs font-medium text-gray-500 mb-1 block">Label</label>
+                        <input type="text" x-model="relation.label" placeholder="Ex: Patient" class="form-input w-full text-sm">
+                      </div>
+                      <div>
+                        <label class="text-xs font-medium text-gray-500 mb-1 block">Label inverse</label>
+                        <input type="text" x-model="relation.inverseLabel" placeholder="Ex: Consultations" class="form-input w-full text-sm">
+                      </div>
+                    </div>
+
+                    <!-- Cardinality -->
+                    <div>
+                      <label class="text-xs font-medium text-gray-500 mb-1 block">Cardinalité</label>
+                      <div class="flex gap-1">
+                        <template x-for="card in [{v:'one-to-one',l:'1:1'},{v:'one-to-many',l:'1:N'},{v:'many-to-many',l:'N:N'}]" :key="card.v">
+                          <button type="button" @click="relation.cardinality = card.v"
+                                  class="flex-1 px-3 py-1.5 text-xs font-semibold rounded-md border transition-colors"
+                                  :class="relation.cardinality === card.v 
+                                    ? 'bg-warning text-white border-warning' 
+                                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-warning/50'">
+                            <span x-text="card.l"></span>
+                          </button>
+                        </template>
+                      </div>
+                    </div>
+
+                    <!-- Input Mode + Storage -->
+                    <div class="grid grid-cols-2 gap-2">
+                      <div>
+                        <label class="text-xs font-medium text-gray-500 mb-1 block">Mode d'encodage</label>
+                        <select x-model="relation.inputMode" class="form-select w-full text-sm">
+                          <option value="autocomplete">Autocomplete</option>
+                          <option value="select">Select</option>
+                          <option value="modal-picker">Modal Picker</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="text-xs font-medium text-gray-500 mb-1 block">Stockage</label>
+                        <select x-model="relation.storage" class="form-select w-full text-sm">
+                          <option value="on-source">Sur la source</option>
+                          <option value="on-target">Sur la cible</option>
+                          <option value="join">Table de jointure</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- Search fields -->
+                    <template x-if="relation._targetFields && relation._targetFields.length > 0">
+                      <div>
+                        <label class="text-xs font-medium text-gray-500 mb-1 block">Champs de recherche</label>
+                        <div class="flex flex-wrap gap-1.5">
+                          <template x-for="field in relation._targetFields" :key="'es-'+relation.key+'-'+field.id">
+                            <button type="button" @click="toggleSearchField(relation, field.id)"
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-colors"
+                                    :class="relation.searchFields.includes(field.id) 
+                                      ? 'bg-info/10 border-info/30 text-info' 
+                                      : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 hover:border-info/50'">
+                              <iconify-icon :icon="field.icon" width="12"></iconify-icon>
+                              <span x-text="field.label"></span>
+                            </button>
+                          </template>
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- Display fields -->
+                    <template x-if="relation._targetFields && relation._targetFields.length > 0">
+                      <div>
+                        <label class="text-xs font-medium text-gray-500 mb-1 block">Champs à afficher</label>
+                        <div class="flex flex-wrap gap-1.5">
+                          <template x-for="field in relation._targetFields" :key="'ed-'+relation.key+'-'+field.id">
+                            <button type="button" @click="toggleDisplayField(relation, field.id)"
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-colors"
+                                    :class="relation.displayFields.includes(field.id) 
+                                      ? 'bg-success/10 border-success/30 text-success' 
+                                      : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 hover:border-success/50'">
+                              <iconify-icon :icon="field.icon" width="12"></iconify-icon>
+                              <span x-text="field.label"></span>
+                            </button>
+                          </template>
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- Toggles row -->
+                    <div class="flex items-center gap-4 pt-2 border-t dark:border-gray-700">
+                      <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-500">
+                        <input type="checkbox" x-model="relation.bidirectional" class="form-checkbox rounded text-warning">
+                        Bidirectionnelle
+                      </label>
+                      <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-500">
+                        <input type="checkbox" x-model="relation.required" class="form-checkbox rounded text-warning">
+                        Requis
+                      </label>
+                    </div>
                   </div>
                 </template>
               </div>
-            </div>
 
-            <!-- Catégories de champs -->
-            <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
-              <template x-for="category in filteredCategories" :key="category.key">
-                <div class="border dark:border-gray-700 rounded-lg overflow-hidden">
-                  <!-- Category Header - Clickable Accordion -->
-                  <button type="button" 
-                          @click="openCategories[category.key] = !openCategories[category.key]"
-                          class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 font-medium text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                    <div class="flex items-center gap-2">
-                      <iconify-icon :icon="getCategoryIcon(category.key)" width="16" class="text-warning"></iconify-icon>
-                      <span x-text="category.label"></span>
-                      <span class="text-gray-400 text-xs" x-text="'(' + category.fields.length + ')'"></span>
-                    </div>
-                    <iconify-icon icon="solar:alt-arrow-down-linear" width="14" 
-                                  :class="openCategories[category.key] && 'rotate-180'" 
-                                  style="transition: transform 0.2s"></iconify-icon>
-                  </button>
-                  <!-- Category Content - Collapsible -->
-                  <div x-show="openCategories[category.key]" x-collapse class="divide-y dark:divide-gray-700">
-                    <template x-for="field in category.fields" :key="field._id">
-                      <div class="px-3 py-2 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                           :class="isFieldSelected(field._id) && 'bg-warning/5'">
-                        <div class="flex items-center gap-2 flex-1 min-w-0">
-                          <iconify-icon :icon="field.icon" width="18" class="text-gray-500 shrink-0"></iconify-icon>
-                          <div class="min-w-0">
-                            <div class="text-sm font-medium truncate" x-text="field.label"></div>
-                            <div class="text-xs text-gray-400 truncate" x-text="field.description" x-show="field.description"></div>
-                          </div>
-                        </div>
-                        <button type="button" 
-                                @click="toggleField(field)"
-                                class="shrink-0 px-2 py-1 rounded text-xs font-medium transition-colors"
-                                :class="isFieldSelected(field._id) ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-warning/10 text-warning hover:bg-warning/20'">
-                          <span x-text="isFieldSelected(field._id) ? 'Retirer' : 'Ajouter'"></span>
-                        </button>
-                      </div>
-                    </template>
-                  </div>
-                </div>
-              </template>
-              
+              <!-- Add relation button -->
+              <button type="button" @click="addRelation()" 
+                      class="w-full mt-3 flex items-center justify-center gap-2 py-2.5 text-sm text-warning hover:text-warning/80 border border-dashed border-warning/30 rounded-lg hover:bg-warning/5 transition-colors">
+                <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
+                <span>Ajouter une relation</span>
+              </button>
+
               <!-- Empty state -->
-              <div x-show="filteredCategories.length === 0" class="text-center py-8 text-gray-400">
-                <iconify-icon icon="solar:box-broken" width="40" class="mb-2"></iconify-icon>
-                <p class="text-sm">Aucun champ trouvé</p>
+              <div x-show="relations.length === 0" class="text-center py-6 text-gray-400">
+                <iconify-icon icon="solar:link-broken-bold-duotone" width="40" class="mb-2"></iconify-icon>
+                <p class="text-sm">Aucune relation configurée</p>
+                <p class="text-xs mt-1">Cliquez sur le bouton ci-dessus pour lier cette collection à d'autres</p>
               </div>
             </div>
+
           </div>
         </form>
       </div>

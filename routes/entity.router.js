@@ -10,8 +10,12 @@ const upload = uploadTo((req) => `public/uploads/${req.account_number}`);
 
 //list
 router.get("/list", entityController.list);
+//API - List all entities (lightweight, for pickers)
+router.get("/api/list", entityController.listAll_Api);
 //API - Get entity details by ID (JSON)
 router.get("/api/:id", entityController.getDetails_Api);
+//API - Get fields of a specific entity
+router.get("/api/:id/fields", entityController.getEntityFields_Api);
 //API - Update entity (JSON)
 router.post("/api/update/:id", entityController.update_Api);
 //Form

@@ -380,5 +380,62 @@ module.exports = {
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
+  },
+
+  // List all entities (for relation picker) — lightweight
+  listAll_Api: async (req, res) => {
+    try {
+      const EntityModel = await tenantCollection(req, "Entity");
+      const entities = await EntityModel.find({}, '_id name slug icon color');
+      res.json(entities);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  },
+
+  // Get fields of a specific entity (for relation searchFields/displayFields config)
+  getEntityFields_Api: async (req, res) => {
+    try {
+      const EntityModel = await tenantCollection(req, "Entity");
+      const entity = await EntityModel.findById(req.params.id).populate('customFields');
+      if (!entity) return res.status(404).json({ error: "Entity not found" });
+
+      const fields = [];
+
+      // Standard fields
+      const standardFieldDefs = {
+        title: { label: 'Titre', icon: 'solar:text-bold', type: 'string' },
+        description: { label: 'Description', icon: 'solar:document-text-bold-duotone', type: 'string' },
+        slug: { label: 'Slug', icon: 'solar:link-bold', type: 'string' },
+        date: { label: 'Date', icon: 'solar:calendar-bold-duotone', type: 'date' },
+        icon: { label: 'Icône', icon: 'solar:star-bold-duotone', type: 'string' },
+        image: { label: 'Image', icon: 'solar:gallery-bold-duotone', type: 'media' },
+        attachments: { label: 'Pièces jointes', icon: 'solar:paperclip-bold', type: 'media' }
+      };
+
+      (entity.enabledStandardFields || []).forEach(fieldKey => {
+        const def = standardFieldDefs[fieldKey];
+        if (def) {
+          fields.push({ id: fieldKey, label: def.label, icon: def.icon, type: def.type, isStandard: true });
+        }
+      });
+
+      // Custom fields (populated)
+      (entity.customFields || []).forEach(cf => {
+        if (cf && cf._id) {
+          fields.push({
+            id: cf._id.toString(),
+            label: cf.label || cf.name,
+            icon: cf.ui?.icon || 'solar:widget-bold',
+            type: cf.type || 'string',
+            isStandard: false
+          });
+        }
+      });
+
+      res.json(fields);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   }
 };

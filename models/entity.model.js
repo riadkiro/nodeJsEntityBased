@@ -55,6 +55,32 @@ const EntitySchema = new mongoose.Schema(
         ref: "Classification",
       },
     ],
+    // Relations vers d'autres entités
+    relations: [{
+      key: { type: String, required: true },          // uuid stable
+      targetEntity: { type: mongoose.Schema.Types.ObjectId, ref: 'Entity', required: true },
+      label: String,                                    // "Patient", "Médecin"
+      inverseLabel: String,                             // "Consultations" (vu depuis l'entité cible)
+      cardinality: {
+        type: String,
+        enum: ['one-to-one', 'one-to-many', 'many-to-many'],
+        default: 'one-to-many'
+      },
+      inputMode: {
+        type: String,
+        enum: ['select', 'autocomplete', 'modal-picker'],
+        default: 'autocomplete'
+      },
+      storage: {
+        type: String,
+        enum: ['on-source', 'on-target', 'join'],
+        default: 'on-source'
+      },
+      searchFields: [String],                           // fieldIds to search on
+      displayFields: [String],                          // fieldIds to show in dropdown
+      bidirectional: { type: Boolean, default: false },
+      required: { type: Boolean, default: false }
+    }],
     // Configuration visuelle des champs (lignes/colonnes)
     layout: {
       type: mongoose.Schema.Types.Mixed,

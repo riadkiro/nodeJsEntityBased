@@ -21,6 +21,10 @@ router.use("/view", require("./view.router.js"));
 router.use("/classification", require("./classification.router.js"));
 router.use("/mailbox", require("./mailbox.router.js"));
 
+// LineBuilder (Schema Builder + Document Lines) — MUST be before api-account (has catch-all /:id)
+router.use("/", require("./line-schema.router.js"));
+router.use("/", require("./document-line.router.js"));
+
 router.use("/api/", require("./api/api-account.router.js"));
 router.use("/api/user", require("./api/api-user.router.js"));
 router.use("/mailbox", require("./mailbox.router.js"));
@@ -113,7 +117,33 @@ router.get("/doctor", (req, res) => {
     });
 });
 
-// Cockpit Builder v1 - Doctor Consultation
+// Ordonnance (Prescription with LineBuilder)
+const { tenantCollection } = require('../middleware/tenant');
+const mongoose = require('mongoose');
+router.get("/ordonnance", async (req, res) => {
+    try {
+        const LineSchema = await tenantCollection(req, 'LineSchema');
+        const schema = LineSchema ? await LineSchema.findOne({ slug: 'prescription_v1' }).lean() : null;
+
+        if (!schema) {
+            return res.status(404).send('Schema prescription_v1 introuvable. Lancez: node scripts/seed-line-schemas.js 5001');
+        }
+
+        // Generate a temporary document ID for this new ordonnance
+        const documentId = new mongoose.Types.ObjectId();
+
+        res.render("account/ordonnance", {
+            layout: "layout-app",
+            user: req.user,
+            account_number: req.account_number,
+            schemaId: schema._id,
+            documentId: documentId
+        });
+    } catch (error) {
+        console.error('[Ordonnance] Error:', error);
+        res.status(500).send('Server Error');
+    }
+});
 const { loadCockpitConfig } = require('../utils/cockpit-loader');
 router.get("/doctor/cockpit", async (req, res) => {
     const cockpitConfig = await loadCockpitConfig('consultation', req.account_number);

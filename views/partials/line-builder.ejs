@@ -1,0 +1,768 @@
+<!-- LineBuilder Partial — Embeddable editable table
+  Usage: include('../partials/line-builder', { schemaId, documentId, accountNumber })
+-->
+
+<style>
+    .lb-container { width: 100%; font-family: inherit; }
+    .lb-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 0; margin-bottom: 4px; }
+    .lb-table-wrap { overflow-x: auto; border: 1px solid #e0e6ed; border-radius: 8px; }
+    .dark .lb-table-wrap { border-color: #1b2e4b; }
+    .lb-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .lb-table th { padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; color: #888ea8; text-transform: uppercase; letter-spacing: 0.04em; background: #f8f9fa; border-bottom: 2px solid #e0e6ed; white-space: nowrap; }
+    .dark .lb-table th { background: #0e1726; border-color: #1b2e4b; }
+    .lb-table td { padding: 4px 6px; border-bottom: 1px solid #f1f2f3; vertical-align: middle; }
+    .dark .lb-table td { border-color: #1b2e4b; }
+    .lb-table tr:hover { background: rgba(67, 97, 238, 0.03); }
+    .lb-table tr.active-row { background: rgba(67, 97, 238, 0.06); }
+    .lb-cell { position: relative; cursor: pointer; min-height: 32px; display: flex; align-items: center; }
+    .lb-cell-display { padding: 4px 6px; min-height: 28px; border-radius: 4px; width: 100%; }
+    .lb-cell-display:hover { background: rgba(67, 97, 238, 0.06); }
+    .lb-cell-editing .lb-cell-display { display: none; }
+    .lb-cell input, .lb-cell select, .lb-cell textarea { font-size: 13px; width: 100%; border: 1px solid #4361ee; border-radius: 4px; padding: 4px 8px; outline: none; background: white; }
+    .dark .lb-cell input, .dark .lb-cell select, .dark .lb-cell textarea { background: #0e1726; border-color: #4361ee; color: #e0e6ed; }
+    .lb-cell-editor { display: none; }
+    .lb-cell-editing .lb-cell-editor { display: block; }
+    .lb-row-handle { cursor: grab; color: #bbb; padding: 0 4px; }
+    .lb-row-handle:active { cursor: grabbing; }
+    .lb-row-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+    .lb-table tr:hover .lb-row-actions { opacity: 1; }
+    .lb-footer { border-top: 2px solid #e0e6ed; background: #f8f9fa; }
+    .dark .lb-footer { border-color: #1b2e4b; background: #0e1726; }
+    .lb-footer td { padding: 8px 10px; font-weight: 600; }
+    .lb-autocomplete { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e0e6ed; border-radius: 6px; max-height: 200px; overflow-y: auto; z-index: 30; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+    .dark .lb-autocomplete { background: #0e1726; border-color: #1b2e4b; }
+    .lb-autocomplete-item { padding: 8px 12px; cursor: pointer; font-size: 13px; }
+    .lb-autocomplete-item:hover, .lb-autocomplete-item.active { background: rgba(67, 97, 238, 0.1); }
+    .lb-tag { display: inline-flex; align-items: center; gap: 2px; padding: 2px 8px; border-radius: 10px; font-size: 11px; background: rgba(67, 97, 238, 0.1); color: #4361ee; margin: 1px; }
+    .lb-tag button { font-size: 10px; color: inherit; margin-left: 2px; }
+    .lb-formula-value { font-style: italic; color: #888ea8; }
+    .lb-width-xs { min-width: 60px; max-width: 80px; }
+    .lb-width-s { min-width: 80px; max-width: 120px; }
+    .lb-width-m { min-width: 120px; max-width: 200px; }
+    .lb-width-l { min-width: 180px; max-width: 280px; }
+    .lb-width-xl { min-width: 260px; max-width: 400px; }
+    .sortable-ghost { opacity: 0.3; }
+    .lb-dosage-wrap { display: flex; gap: 4px; }
+    .lb-dosage-wrap input { flex: 1; }
+    .lb-dosage-wrap select { width: 80px; flex-shrink: 0; }
+    .lb-duration-wrap { display: flex; gap: 4px; }
+    .lb-duration-wrap input { flex: 1; }
+    .lb-duration-wrap select { width: 90px; flex-shrink: 0; }
+</style>
+
+<div class="lb-container"
+    x-data="lineBuilder('<%= typeof schemaId !== 'undefined' ? schemaId : '' %>', '<%= typeof documentId !== 'undefined' ? documentId : '' %>', '<%= typeof accountNumber !== 'undefined' ? accountNumber : account_number %>')"
+    x-init="init()"
+    @keydown="handleKeydown($event)">
+
+    <!-- Toolbar -->
+    <div class="lb-toolbar">
+        <template x-if="schema">
+            <div class="flex items-center gap-2 flex-wrap">
+                <button @click="addLine()" class="btn btn-sm btn-primary">
+                    <svg class="h-4 w-4 ltr:mr-1 rtl:ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Ligne
+                </button>
+                <template x-if="schema.lineTypes && schema.lineTypes.length > 1">
+                    <select x-model="newLineType" class="form-select form-select-sm w-auto">
+                        <template x-for="lt in schema.lineTypes" :key="lt">
+                            <option :value="lt" x-text="lt"></option>
+                        </template>
+                    </select>
+                </template>
+                <div class="ml-auto flex gap-2">
+                    <button @click="saveToDB()" class="btn btn-sm btn-success" :disabled="saving">
+                        <svg x-show="!saving" class="h-4 w-4 ltr:mr-1 rtl:ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        </svg>
+                        <span x-text="saving ? 'Sauvegarde...' : 'Enregistrer'"></span>
+                    </button>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Table -->
+    <div class="lb-table-wrap" x-show="schema">
+        <table class="lb-table">
+            <thead>
+                <tr>
+                    <th style="width: 30px;"></th>
+                    <th style="width: 30px;">#</th>
+                    <template x-for="col in activeColumns" :key="col.key">
+                        <th :class="'lb-width-' + (col.width || 'M').toLowerCase()" x-text="col.label"></th>
+                    </template>
+                    <th style="width: 60px;"></th>
+                </tr>
+            </thead>
+            <tbody x-ref="linesSortable">
+                <template x-for="(line, lineIdx) in lines" :key="line._tempId">
+                    <tr :class="{ 'active-row': selectedCell && selectedCell.lineIdx === lineIdx }">
+                        <!-- Drag handle -->
+                        <td>
+                            <span class="lb-row-handle" data-sortable-handle>
+                                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+                            </span>
+                        </td>
+                        <!-- Row number -->
+                        <td class="text-xs text-white-dark" x-text="lineIdx + 1"></td>
+                        <!-- Cells -->
+                        <template x-for="col in activeColumns" :key="col.key">
+                            <td :class="'lb-width-' + (col.width || 'M').toLowerCase()">
+                                <div class="lb-cell"
+                                    :class="{ 'lb-cell-editing': isEditing(lineIdx, col.key) }"
+                                    @click="startEdit(lineIdx, col.key)"
+                                    x-show="isColumnVisible(col, line)">
+
+                                    <!-- Display mode -->
+                                    <div class="lb-cell-display">
+                                        <template x-if="col.type === 'formula'">
+                                            <span class="lb-formula-value" x-text="formatValue(col, getComputed(line, col.key))"></span>
+                                        </template>
+                                        <template x-if="col.type === 'multiselect'">
+                                            <div class="flex flex-wrap gap-0.5">
+                                                <template x-for="v in (getValue(line, col.key) || [])" :key="v">
+                                                    <span class="lb-tag" x-text="getOptionLabel(col, v)"></span>
+                                                </template>
+                                                <span x-show="!(getValue(line, col.key) || []).length" class="text-white-dark text-xs">—</span>
+                                            </div>
+                                        </template>
+                                        <template x-if="col.type === 'relation'">
+                                            <span x-text="getValue(line, col.key + '_label') || getValue(line, col.key) || '—'" class="text-sm"></span>
+                                        </template>
+                                        <template x-if="col.type === 'dosage'">
+                                            <span x-text="formatDosage(getValue(line, col.key))" class="text-sm"></span>
+                                        </template>
+                                        <template x-if="col.type === 'duration'">
+                                            <span x-text="formatDuration(getValue(line, col.key))" class="text-sm"></span>
+                                        </template>
+                                        <template x-if="!['formula','multiselect','relation','dosage','duration'].includes(col.type)">
+                                            <span x-text="formatValue(col, getValue(line, col.key)) || '—'" class="text-sm"></span>
+                                        </template>
+                                    </div>
+
+                                    <!-- Edit mode -->
+                                    <div class="lb-cell-editor" @click.stop>
+                                        <!-- text -->
+                                        <template x-if="col.type === 'text'">
+                                            <input type="text"
+                                                :value="getValue(line, col.key)"
+                                                @input="setValue(line, col.key, $event.target.value)"
+                                                @keydown.tab="moveNext(lineIdx, col.key, $event)"
+                                                @keydown.enter="moveDown(lineIdx, col.key, $event)"
+                                                @keydown.escape="stopEdit()"
+                                                x-ref="cellInput" />
+                                        </template>
+
+                                        <!-- number -->
+                                        <template x-if="col.type === 'number'">
+                                            <input type="number" step="any"
+                                                :value="getValue(line, col.key)"
+                                                @input="setValue(line, col.key, parseFloat($event.target.value) || 0)"
+                                                @keydown.tab="moveNext(lineIdx, col.key, $event)"
+                                                @keydown.enter="moveDown(lineIdx, col.key, $event)"
+                                                @keydown.escape="stopEdit()" />
+                                        </template>
+
+                                        <!-- money -->
+                                        <template x-if="col.type === 'money'">
+                                            <input type="number" step="0.01"
+                                                :value="getValue(line, col.key)"
+                                                @input="setValue(line, col.key, parseFloat($event.target.value) || 0)"
+                                                @keydown.tab="moveNext(lineIdx, col.key, $event)"
+                                                @keydown.enter="moveDown(lineIdx, col.key, $event)"
+                                                @keydown.escape="stopEdit()" />
+                                        </template>
+
+                                        <!-- select -->
+                                        <template x-if="col.type === 'select'">
+                                            <select
+                                                :value="getValue(line, col.key)"
+                                                @change="setValue(line, col.key, $event.target.value); moveNext(lineIdx, col.key, $event)"
+                                                @keydown.escape="stopEdit()">
+                                                <option value="">—</option>
+                                                <template x-for="opt in (col.config.options || [])" :key="opt.value">
+                                                    <option :value="opt.value" x-text="opt.label"></option>
+                                                </template>
+                                            </select>
+                                        </template>
+
+                                        <!-- multiselect -->
+                                        <template x-if="col.type === 'multiselect'">
+                                            <div>
+                                                <div class="flex flex-wrap gap-1 mb-1">
+                                                    <template x-for="v in (getValue(line, col.key) || [])" :key="v">
+                                                        <span class="lb-tag">
+                                                            <span x-text="getOptionLabel(col, v)"></span>
+                                                            <button @click="toggleMultiselect(line, col.key, v)">×</button>
+                                                        </span>
+                                                    </template>
+                                                </div>
+                                                <select @change="toggleMultiselect(line, col.key, $event.target.value); $event.target.value = ''">
+                                                    <option value="">+ Ajouter</option>
+                                                    <template x-for="opt in getAvailableOptions(col, getValue(line, col.key))" :key="opt.value">
+                                                        <option :value="opt.value" x-text="opt.label"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                        </template>
+
+                                        <!-- relation (autocomplete) -->
+                                        <template x-if="col.type === 'relation'">
+                                            <div style="position: relative;">
+                                                <input type="text"
+                                                    :value="searchQuery"
+                                                    @input="searchQuery = $event.target.value; debouncedSearch(col)"
+                                                    @focus="searchQuery = getValue(line, col.key + '_label') || ''"
+                                                    @keydown.escape="stopEdit(); searchResults = []"
+                                                    placeholder="Rechercher..." />
+                                                <div x-show="searchResults.length > 0" class="lb-autocomplete">
+                                                    <template x-for="(result, ri) in searchResults" :key="result._id">
+                                                        <div class="lb-autocomplete-item"
+                                                            :class="{ active: ri === searchIdx }"
+                                                            @click="selectRelation(line, col, result)">
+                                                            <span x-text="result.label || result.title"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- date -->
+                                        <template x-if="col.type === 'date'">
+                                            <input type="date"
+                                                :value="getValue(line, col.key)"
+                                                @input="setValue(line, col.key, $event.target.value)"
+                                                @keydown.tab="moveNext(lineIdx, col.key, $event)"
+                                                @keydown.escape="stopEdit()" />
+                                        </template>
+
+                                        <!-- textarea -->
+                                        <template x-if="col.type === 'textarea'">
+                                            <textarea rows="2"
+                                                :value="getValue(line, col.key)"
+                                                @input="setValue(line, col.key, $event.target.value)"
+                                                @keydown.escape="stopEdit()"
+                                                style="min-height: 50px; resize: vertical;"></textarea>
+                                        </template>
+
+                                        <!-- dosage -->
+                                        <template x-if="col.type === 'dosage'">
+                                            <div class="lb-dosage-wrap">
+                                                <input type="number" step="any"
+                                                    :value="(getValue(line, col.key) || {}).amount || ''"
+                                                    @input="setDosageAmount(line, col.key, $event.target.value)" />
+                                                <select
+                                                    :value="(getValue(line, col.key) || {}).unit || ''"
+                                                    @change="setDosageUnit(line, col.key, $event.target.value)">
+                                                    <template x-for="u in (col.config.units || ['mg','ml','g','cp'])" :key="u">
+                                                        <option :value="u" x-text="u"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                        </template>
+
+                                        <!-- duration -->
+                                        <template x-if="col.type === 'duration'">
+                                            <div class="lb-duration-wrap">
+                                                <input type="number" step="1"
+                                                    :value="(getValue(line, col.key) || {}).amount || ''"
+                                                    @input="setDurationAmount(line, col.key, $event.target.value)" />
+                                                <select
+                                                    :value="(getValue(line, col.key) || {}).unit || ''"
+                                                    @change="setDurationUnit(line, col.key, $event.target.value)">
+                                                    <template x-for="u in (col.config.units || ['day','week','month'])" :key="u">
+                                                        <option :value="u" x-text="unitLabel(u)"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                        </template>
+
+                                        <!-- formula (readonly) -->
+                                        <template x-if="col.type === 'formula'">
+                                            <span class="lb-formula-value text-sm px-2" x-text="formatValue(col, getComputed(line, col.key))"></span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </td>
+                        </template>
+                        <!-- Row actions -->
+                        <td>
+                            <div class="lb-row-actions">
+                                <button @click="duplicateLine(lineIdx)" class="text-white-dark hover:text-primary" title="Dupliquer">
+                                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                </button>
+                                <button @click="removeLine(lineIdx)" class="text-white-dark hover:text-danger" title="Supprimer">
+                                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+            <!-- Footer totals -->
+            <tfoot x-show="schema && schema.totals && schema.totals.subtotalKey" x-cloak>
+                <tr class="lb-footer">
+                    <td colspan="2"></td>
+                    <template x-for="col in activeColumns" :key="col.key">
+                        <td>
+                            <template x-if="schema && schema.totals && (col.key === schema.totals.subtotalKey || col.type === 'formula')">
+                                <span class="font-bold" x-text="col.key === schema.totals.subtotalKey ? 'Sous-total: ' + formatMoney(totals.subtotal) : ''"></span>
+                            </template>
+                        </td>
+                    </template>
+                    <td></td>
+                </tr>
+                <tr class="lb-footer" x-show="schema && schema.totals && schema.totals.vatKey">
+                    <td colspan="2"></td>
+                    <template x-for="col in activeColumns" :key="col.key">
+                        <td>
+                            <template x-if="schema && schema.totals && (col.key === schema.totals.subtotalKey || col.type === 'formula')">
+                                <span class="font-bold text-warning" x-text="col.key === schema.totals.subtotalKey ? 'TVA: ' + formatMoney(totals.vat) : ''"></span>
+                            </template>
+                        </td>
+                    </template>
+                    <td></td>
+                </tr>
+                <tr class="lb-footer">
+                    <td colspan="2"></td>
+                    <template x-for="col in activeColumns" :key="col.key">
+                        <td>
+                            <template x-if="schema && schema.totals && (col.key === schema.totals.subtotalKey || col.type === 'formula')">
+                                <span class="text-lg font-bold text-primary" x-text="col.key === schema.totals.subtotalKey ? 'Total: ' + formatMoney(totals.total) : ''"></span>
+                            </template>
+                        </td>
+                    </template>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- Empty state -->
+    <div x-show="lines.length === 0 && schema" class="py-8 text-center text-sm text-white-dark">
+        Aucune ligne. Cliquez sur « + Ligne » pour commencer.
+    </div>
+
+    <!-- Loading state -->
+    <div x-show="!schema" class="py-8 text-center text-sm text-white-dark">
+        Chargement du schéma...
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+function lineBuilder(schemaId, documentId, accountNumber) {
+    return {
+        schema: null,
+        lines: [],
+        selectedCell: null,
+        totals: { subtotal: 0, vat: 0, total: 0 },
+        saving: false,
+        newLineType: '',
+        searchQuery: '',
+        searchResults: [],
+        searchIdx: -1,
+        _searchTimeout: null,
+
+        get activeColumns() {
+            if (!this.schema) return [];
+            return this.schema.columns
+                .filter(c => c.visible !== false)
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
+        },
+
+        async init() {
+            await this.loadSchema();
+            if (documentId) await this.loadLines();
+            this.$nextTick(() => this.initSortable());
+        },
+
+        async loadSchema() {
+            if (!schemaId) return;
+            try {
+                const res = await fetch(`/account/${accountNumber}/api/line-schemas/${schemaId}`, { credentials: 'include' });
+                const data = await res.json();
+                if (data.data) {
+                    this.schema = data.data;
+                    this.newLineType = this.schema.defaultLineType || this.schema.lineTypes?.[0] || 'product';
+                }
+            } catch (e) { console.error('[LineBuilder] Schema load error:', e); }
+        },
+
+        async loadLines() {
+            if (!documentId) return;
+            try {
+                const res = await fetch(`/account/${accountNumber}/api/document-lines/${documentId}`, { credentials: 'include' });
+                const data = await res.json();
+                if (data.data) {
+                    this.lines = data.data.map(l => ({
+                        ...l,
+                        _tempId: l._id || ('tmp_' + Date.now() + '_' + Math.random())
+                    }));
+                    this.computeAllTotals();
+                }
+            } catch (e) { console.error('[LineBuilder] Lines load error:', e); }
+        },
+
+        initSortable() {
+            if (this.$refs.linesSortable && typeof Sortable !== 'undefined') {
+                Sortable.create(this.$refs.linesSortable, {
+                    handle: '[data-sortable-handle]',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: (evt) => {
+                        const newLines = [...this.lines];
+                        const [moved] = newLines.splice(evt.oldIndex, 1);
+                        newLines.splice(evt.newIndex, 0, moved);
+                        this.lines = newLines;
+                    }
+                });
+            }
+        },
+
+        // ─── Line management ──────────────────────────────────────────
+        addLine() {
+            this.lines.push({
+                _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
+                lineType: this.newLineType || this.schema?.defaultLineType || 'product',
+                values: {},
+                computed: {},
+                order: this.lines.length
+            });
+        },
+
+        duplicateLine(idx) {
+            const src = this.lines[idx];
+            this.lines.splice(idx + 1, 0, {
+                _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
+                lineType: src.lineType,
+                values: JSON.parse(JSON.stringify(src.values || {})),
+                computed: JSON.parse(JSON.stringify(src.computed || {})),
+                order: idx + 1
+            });
+        },
+
+        removeLine(idx) {
+            this.lines.splice(idx, 1);
+            this.computeAllTotals();
+        },
+
+        // ─── Cell editing ─────────────────────────────────────────────
+        getValue(line, key) { return line.values?.[key]; },
+
+        getComputed(line, key) { return line.computed?.[key] ?? 0; },
+
+        setValue(line, key, value) {
+            if (!line.values) line.values = {};
+            line.values[key] = value;
+            this.computeLineFormulas(line);
+            this.computeAllTotals();
+        },
+
+        setDosageAmount(line, key, val) {
+            if (!line.values) line.values = {};
+            const cur = line.values[key] || {};
+            line.values[key] = { ...cur, amount: parseFloat(val) || 0 };
+        },
+
+        setDosageUnit(line, key, val) {
+            if (!line.values) line.values = {};
+            const cur = line.values[key] || {};
+            line.values[key] = { ...cur, unit: val };
+        },
+
+        setDurationAmount(line, key, val) {
+            if (!line.values) line.values = {};
+            const cur = line.values[key] || {};
+            line.values[key] = { ...cur, amount: parseInt(val) || 0 };
+        },
+
+        setDurationUnit(line, key, val) {
+            if (!line.values) line.values = {};
+            const cur = line.values[key] || {};
+            line.values[key] = { ...cur, unit: val };
+        },
+
+        isEditing(lineIdx, colKey) {
+            return this.selectedCell && this.selectedCell.lineIdx === lineIdx && this.selectedCell.colKey === colKey;
+        },
+
+        startEdit(lineIdx, colKey) {
+            const col = this.activeColumns.find(c => c.key === colKey);
+            if (col && col.type === 'formula') return; // formula is readonly
+            this.selectedCell = { lineIdx, colKey };
+            this.searchResults = [];
+            this.searchQuery = '';
+            console.log('[LB] startEdit', colKey, 'type:', col?.type, 'config:', JSON.stringify(col?.config));
+            this.$nextTick(() => {
+                const input = this.$el.querySelector('.lb-cell-editing input, .lb-cell-editing select, .lb-cell-editing textarea');
+                if (input) input.focus();
+            });
+        },
+
+        stopEdit() {
+            this.selectedCell = null;
+            this.searchResults = [];
+        },
+
+        isColumnVisible(col, line) {
+            if (!col.showWhen || !col.showWhen.lineType || col.showWhen.lineType.length === 0) return true;
+            return col.showWhen.lineType.includes(line.lineType);
+        },
+
+        // ─── Navigation ───────────────────────────────────────────────
+        moveNext(lineIdx, colKey, event) {
+            event.preventDefault();
+            const colKeys = this.activeColumns.map(c => c.key);
+            const ci = colKeys.indexOf(colKey);
+            if (ci < colKeys.length - 1) {
+                this.startEdit(lineIdx, colKeys[ci + 1]);
+            } else if (lineIdx < this.lines.length - 1) {
+                this.startEdit(lineIdx + 1, colKeys[0]);
+            }
+        },
+
+        moveDown(lineIdx, colKey, event) {
+            event.preventDefault();
+            if (lineIdx < this.lines.length - 1) {
+                this.startEdit(lineIdx + 1, colKey);
+            } else {
+                this.addLine();
+                this.$nextTick(() => this.startEdit(this.lines.length - 1, colKey));
+            }
+        },
+
+        handleKeydown(event) {
+            // Ctrl+D = duplicate
+            if (event.ctrlKey && event.key === 'd' && this.selectedCell) {
+                event.preventDefault();
+                this.duplicateLine(this.selectedCell.lineIdx);
+            }
+            // Delete = remove line (only when not in input)
+            if (event.key === 'Delete' && event.ctrlKey && this.selectedCell) {
+                event.preventDefault();
+                this.removeLine(this.selectedCell.lineIdx);
+                this.selectedCell = null;
+            }
+        },
+
+        // ─── Formula computation ──────────────────────────────────────
+        computeLineFormulas(line) {
+            if (!this.schema) return;
+            const formulaCols = this.schema.columns.filter(c => c.type === 'formula');
+            const computed = {};
+            for (const col of formulaCols) {
+                if (col.config && col.config.expression) {
+                    const context = { ...(line.values || {}), ...computed };
+                    computed[col.key] = this.evalFormula(col.config.expression, context);
+                }
+            }
+            line.computed = computed;
+        },
+
+        evalFormula(expression, context) {
+            try {
+                const safeExpr = expression.replace(/[a-zA-Z_]\w*/g, (varName) => {
+                    if (context.hasOwnProperty(varName)) {
+                        const val = parseFloat(context[varName]);
+                        return isNaN(val) ? '0' : val.toString();
+                    }
+                    return '0';
+                });
+                if (!/^[\d\s.+\-*/()]+$/.test(safeExpr)) return 0;
+                return Function('"use strict"; return (' + safeExpr + ')')();
+            } catch (e) { return 0; }
+        },
+
+        computeAllTotals() {
+            if (!this.schema || !this.schema.totals) return;
+            let subtotal = 0;
+            let vat = 0;
+
+            for (const line of this.lines) {
+                this.computeLineFormulas(line);
+                if (this.schema.totals.subtotalKey) {
+                    subtotal += parseFloat(line.computed?.[this.schema.totals.subtotalKey] || line.values?.[this.schema.totals.subtotalKey] || 0);
+                }
+                if (this.schema.totals.vatKey) {
+                    vat += parseFloat(line.computed?.[this.schema.totals.vatKey] || line.values?.[this.schema.totals.vatKey] || 0);
+                }
+            }
+
+            this.totals.subtotal = subtotal;
+            this.totals.vat = vat;
+
+            if (this.schema.totals.totalFormula) {
+                this.totals.total = this.evalFormula(this.schema.totals.totalFormula, { subtotal, vat });
+            } else {
+                this.totals.total = subtotal + vat;
+            }
+        },
+
+        // ─── Relation autocomplete ────────────────────────────────────
+        debouncedSearch(col) {
+            console.log('[LB] debouncedSearch called, query:', this.searchQuery, 'col:', col.key, 'targetEntity:', col.config?.targetEntity);
+            clearTimeout(this._searchTimeout);
+            this._searchTimeout = setTimeout(() => this.searchCatalog(col), 300);
+        },
+
+        async searchCatalog(col) {
+            console.log('[LB] searchCatalog', { targetEntity: col.config?.targetEntity, query: this.searchQuery, hasConfig: !!col.config });
+            if (!col.config || !col.config.targetEntity || !this.searchQuery.trim()) {
+                console.log('[LB] SKIPPED search: config missing or no query');
+                this.searchResults = [];
+                return;
+            }
+            const searchFieldsParam = col.config.searchFields ? '&searchFields=' + encodeURIComponent(col.config.searchFields.join(',')) : '';
+            const url = `/account/${accountNumber}/api/catalog-search?entityId=${col.config.targetEntity}&q=${encodeURIComponent(this.searchQuery)}${searchFieldsParam}`;
+            console.log('[LB] Fetching:', url);
+            try {
+                const res = await fetch(url, { credentials: 'include' });
+                const json = await res.json();
+                console.log('[LB] Search response:', json);
+                this.searchResults = json.data || json || [];
+                this.searchIdx = -1;
+            } catch (e) {
+                console.error('[LineBuilder] Search error:', e);
+                this.searchResults = [];
+            }
+        },
+
+        selectRelation(line, col, result) {
+            if (!line.values) line.values = {};
+            line.values[col.key] = result._id;
+            line.values[col.key + '_label'] = result.label || result.title;
+
+            // Apply defaults from relation
+            if (col.config && col.config.applyDefaults && result.customFields) {
+                for (const [targetKey, sourcePath] of Object.entries(col.config.applyDefaults)) {
+                    if (sourcePath.startsWith('cf.')) {
+                        const cfKey = sourcePath.substring(3);
+                        if (result.customFields[cfKey] !== undefined) {
+                            line.values[targetKey] = result.customFields[cfKey];
+                        }
+                    } else if (['title', 'slug'].includes(sourcePath)) {
+                        line.values[targetKey] = result[sourcePath];
+                    }
+                }
+            }
+
+            this.searchResults = [];
+            this.searchQuery = result.label || result.title;
+            this.computeLineFormulas(line);
+            this.computeAllTotals();
+        },
+
+        // ─── Multiselect helpers ──────────────────────────────────────
+        toggleMultiselect(line, key, value) {
+            if (!value) return;
+            if (!line.values) line.values = {};
+            const current = line.values[key] || [];
+            const idx = current.indexOf(value);
+            if (idx >= 0) {
+                current.splice(idx, 1);
+            } else {
+                current.push(value);
+            }
+            line.values[key] = [...current];
+        },
+
+        getAvailableOptions(col, selected) {
+            const sel = selected || [];
+            return (col.config?.options || []).filter(o => !sel.includes(o.value));
+        },
+
+        getOptionLabel(col, value) {
+            const opt = (col.config?.options || []).find(o => o.value === value);
+            return opt ? opt.label : value;
+        },
+
+        // ─── Formatting ──────────────────────────────────────────────
+        formatValue(col, val) {
+            if (val === null || val === undefined || val === '') return '';
+            if (col.type === 'money' || col.type === 'formula') {
+                return this.formatMoney(val);
+            }
+            if (col.type === 'select') {
+                return this.getOptionLabel(col, val);
+            }
+            return val;
+        },
+
+        formatMoney(val) {
+            const num = parseFloat(val);
+            if (isNaN(num)) return '0.00';
+            return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        },
+
+        formatDosage(val) {
+            if (!val || typeof val !== 'object') return '—';
+            return `${val.amount || 0} ${val.unit || 'mg'}`;
+        },
+
+        formatDuration(val) {
+            if (!val || typeof val !== 'object') return '—';
+            return `${val.amount || 0} ${this.unitLabel(val.unit || 'day')}`;
+        },
+
+        unitLabel(u) {
+            const map = { day: 'jour(s)', week: 'semaine(s)', month: 'mois', year: 'an(s)' };
+            return map[u] || u;
+        },
+
+        // ─── Save ─────────────────────────────────────────────────────
+        async saveToDB() {
+            if (!documentId || !this.schema) {
+                alert('Document ID ou schéma manquant');
+                return;
+            }
+            this.saving = true;
+            try {
+                const payload = {
+                    schemaId: this.schema._id,
+                    lines: this.lines.map((line, i) => ({
+                        _id: line._id || undefined,
+                        lineType: line.lineType,
+                        values: line.values || {},
+                        order: i
+                    }))
+                };
+
+                const res = await fetch(`/account/${accountNumber}/api/document-lines/${documentId}/bulk`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+                if (res.ok) {
+                    this.lines = (result.data || []).map(l => ({
+                        ...l,
+                        _tempId: l._id || ('tmp_' + Date.now() + '_' + Math.random())
+                    }));
+                    if (result.totals) this.totals = result.totals;
+                    // Success feedback
+                    const btn = this.$el.querySelector('.btn-success');
+                    if (btn) {
+                        btn.classList.add('!bg-success');
+                        setTimeout(() => btn.classList.remove('!bg-success'), 1000);
+                    }
+                } else {
+                    alert('Erreur: ' + (result.error || 'Unknown'));
+                }
+            } catch (e) {
+                console.error('[LineBuilder] Save error:', e);
+                alert('Erreur réseau');
+            } finally {
+                this.saving = false;
+            }
+        }
+    };
+}
+</script>

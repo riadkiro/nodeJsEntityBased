@@ -305,6 +305,24 @@
                 </a>
               </div>
             </li>
+            <li x-data="{ hovered: false }">
+              <div class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900"
+                @mouseenter="hovered = true" @mouseleave="hovered = false">
+                <iconify-icon icon="solar:document-text-line-duotone" class="ml-2" width="16" height="16"></iconify-icon>
+                <a href="/account/<%= account_number %>/line-schemas" class="flex items-center w-full py-2 ml-2">
+                  Line Schemas
+                </a>
+              </div>
+            </li>
+            <li x-data="{ hovered: false }">
+              <div class="flex items-center hover:bg-gray-100 dark:text-[#888ea8] dark:hover:bg-gray-900"
+                @mouseenter="hovered = true" @mouseleave="hovered = false">
+                <iconify-icon icon="solar:clipboard-text-line-duotone" class="ml-2" width="16" height="16"></iconify-icon>
+                <a href="/account/<%= account_number %>/ordonnance" class="flex items-center w-full py-2 ml-2">
+                  Ordonnance
+                </a>
+              </div>
+            </li>
           </ul>
         </li>
 

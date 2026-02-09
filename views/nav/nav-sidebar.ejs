@@ -458,6 +458,16 @@
                   :class="window.location.pathname.includes('/db') ? '!text-primary font-bold' : ''">Base de données</a>
               </div>
             </li>
+            <!-- Line Schemas -->
+            <li x-data="{ hovered: false }">
+              <div class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
+                @mouseenter="hovered = true" @mouseleave="hovered = false">
+                <iconify-icon icon="solar:document-text-bold-duotone" class="ml-2" width="16" height="16"></iconify-icon>
+                <a href="/account/<%= account_number %>/line-schemas" 
+                  class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors flex-1"
+                  :class="window.location.pathname.includes('/line-schemas') ? '!text-primary font-bold' : ''">Line Schemas</a>
+              </div>
+            </li>
           </ul>
         </li>
 

@@ -1,0 +1,308 @@
+const { tenantCollection } = require('../middleware/tenant');
+
+// ─── Safe formula evaluator (whitelist only) ──────────────────────────
+function evaluateFormula(expression, context) {
+    try {
+        // Only allow: numbers, basic math ops, parentheses, and known variable names
+        const safeExpr = expression.replace(/[a-zA-Z_]\w*/g, (varName) => {
+            if (context.hasOwnProperty(varName)) {
+                const val = parseFloat(context[varName]);
+                return isNaN(val) ? '0' : val.toString();
+            }
+            return '0';
+        });
+
+        // Whitelist: only digits, dots, math operators, parentheses, spaces
+        if (!/^[\d\s.+\-*/()]+$/.test(safeExpr)) {
+            console.warn('[Formula] Rejected unsafe expression:', safeExpr);
+            return 0;
+        }
+
+        return Function('"use strict"; return (' + safeExpr + ')')();
+    } catch (e) {
+        console.error('[Formula] Evaluation error:', e.message, 'expr:', expression);
+        return 0;
+    }
+}
+
+module.exports = {
+    // ─── List lines for a document ─────────────────────────────────────
+    listByDocument: async (req, res) => {
+        try {
+            const DocumentLine = await tenantCollection(req, 'DocumentLine');
+            if (!DocumentLine) return res.status(500).json({ error: 'Model not available' });
+
+            const lines = await DocumentLine.find({ documentId: req.params.documentId })
+                .sort({ order: 1 })
+                .lean();
+
+            res.json({ data: lines });
+        } catch (error) {
+            console.error('[DocumentLine] List error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    // ─── Bulk save (upsert + delete removed) ───────────────────────────
+    bulkSave: async (req, res) => {
+        try {
+            const DocumentLine = await tenantCollection(req, 'DocumentLine');
+            const LineSchema = await tenantCollection(req, 'LineSchema');
+            if (!DocumentLine || !LineSchema) return res.status(500).json({ error: 'Model not available' });
+
+            const { documentId } = req.params;
+            const { lines, schemaId } = req.body;
+
+            if (!Array.isArray(lines)) {
+                return res.status(400).json({ error: 'lines must be an array' });
+            }
+
+            // Load schema for formula computation
+            let schema = null;
+            if (schemaId) {
+                schema = await LineSchema.findById(schemaId).lean();
+            }
+
+            // Get existing line IDs
+            const existingLines = await DocumentLine.find({ documentId }).select('_id').lean();
+            const existingIds = new Set(existingLines.map(l => l._id.toString()));
+            const incomingIds = new Set();
+
+            const operations = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const lineData = {
+                    documentId,
+                    lineType: line.lineType || 'product',
+                    values: line.values || {},
+                    order: i,
+                    createdBy: line.createdBy || req.user?._id
+                };
+
+                // Compute formula columns
+                if (schema) {
+                    lineData.computed = computeLineFormulas(schema, lineData.values);
+                }
+
+                if (line._id) {
+                    incomingIds.add(line._id);
+                    operations.push({
+                        updateOne: {
+                            filter: { _id: line._id, documentId },
+                            update: { $set: lineData },
+                            upsert: true
+                        }
+                    });
+                } else {
+                    operations.push({
+                        insertOne: { document: lineData }
+                    });
+                }
+            }
+
+            // Delete lines that were removed by the user
+            const toDelete = [...existingIds].filter(id => !incomingIds.has(id));
+            if (toDelete.length > 0) {
+                operations.push({
+                    deleteMany: {
+                        filter: { _id: { $in: toDelete }, documentId }
+                    }
+                });
+            }
+
+            if (operations.length > 0) {
+                await DocumentLine.bulkWrite(operations);
+            }
+
+            // Re-fetch saved lines
+            const savedLines = await DocumentLine.find({ documentId })
+                .sort({ order: 1 })
+                .lean();
+
+            // Compute document totals
+            let totals = {};
+            if (schema && schema.totals) {
+                totals = computeDocumentTotals(schema, savedLines);
+            }
+
+            res.json({ data: savedLines, totals });
+        } catch (error) {
+            console.error('[DocumentLine] BulkSave error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    // ─── Recompute totals ──────────────────────────────────────────────
+    recompute: async (req, res) => {
+        try {
+            const DocumentLine = await tenantCollection(req, 'DocumentLine');
+            const LineSchema = await tenantCollection(req, 'LineSchema');
+            if (!DocumentLine || !LineSchema) return res.status(500).json({ error: 'Model not available' });
+
+            const { documentId } = req.params;
+            const { schemaId } = req.body;
+
+            const schema = await LineSchema.findById(schemaId).lean();
+            if (!schema) return res.status(404).json({ error: 'Schema not found' });
+
+            const lines = await DocumentLine.find({ documentId }).sort({ order: 1 });
+
+            // Recompute each line's formula columns
+            for (const line of lines) {
+                const computed = computeLineFormulas(schema, line.values || {});
+                line.computed = computed;
+                line.markModified('computed');
+                await line.save();
+            }
+
+            // Compute document totals
+            const savedLines = await DocumentLine.find({ documentId }).sort({ order: 1 }).lean();
+            const totals = computeDocumentTotals(schema, savedLines);
+
+            res.json({ data: savedLines, totals });
+        } catch (error) {
+            console.error('[DocumentLine] Recompute error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    // ─── Catalog search (products/treatments from a target entity) ─────
+    catalogSearch: async (req, res) => {
+        try {
+            const mongoose = require('mongoose');
+            const Record = await tenantCollection(req, 'Record');
+            const Entity = await tenantCollection(req, 'Entity');
+            if (!Record || !Entity) return res.status(500).json({ error: 'Model not available' });
+
+            const { entityId, q, searchFields } = req.query;
+            if (!entityId) return res.status(400).json({ error: 'entityId is required' });
+
+            // Cast to ObjectId to ensure proper matching
+            let entityOid;
+            try {
+                entityOid = new mongoose.Types.ObjectId(entityId);
+            } catch (e) {
+                return res.status(400).json({ error: 'Invalid entityId format' });
+            }
+
+            // Register FieldTemplate on tenant connection (needed for populate)
+            await tenantCollection(req, 'FieldTemplate');
+
+            const entity = await Entity.findById(entityOid)
+                .select('referenceTitleTokens')
+                .lean();
+
+            console.log('[CatalogSearch] entityId:', entityId, 'q:', q, 'entity found:', !!entity);
+
+            let query = { entityId: entityOid };
+            if (q && q.trim()) {
+                const searchFieldList = searchFields ? searchFields.split(',') : ['title'];
+                const orConditions = [];
+
+                for (const field of searchFieldList) {
+                    if (['title', 'slug', 'description'].includes(field)) {
+                        // Standard Record fields
+                        orConditions.push({ [field]: { $regex: q, $options: 'i' } });
+                    } else {
+                        // Custom field search - match by field value in customFields array
+                        orConditions.push({ 'customFields.value': { $regex: q, $options: 'i' } });
+                    }
+                }
+
+                if (orConditions.length > 0) {
+                    query.$or = orConditions;
+                }
+            }
+
+            console.log('[CatalogSearch] query:', JSON.stringify(query));
+
+            const records = await Record.find(query)
+                .sort({ title: 1 })
+                .limit(20)
+                .select('title slug customFields entityId')
+                .lean();
+
+            console.log('[CatalogSearch] found', records.length, 'records, first:', records[0] ? { _id: records[0]._id, title: records[0].title, entityId: records[0].entityId } : 'none');
+
+            // Build result with custom field values for default mapping
+            const results = records.map(r => {
+                const cfMap = {};
+                (r.customFields || []).forEach(cf => {
+                    const fieldId = (cf.field_id?._id || cf.field_id)?.toString();
+                    if (fieldId) cfMap[fieldId] = cf.value;
+                });
+
+                // Build label from tokens
+                const tokens = entity?.referenceTitleTokens || [{ t: 'field', id: 'title' }];
+                const parts = tokens.map(token => {
+                    if (token.t === 'text') return token.v || '';
+                    if (token.t === 'field') {
+                        if (['title', 'slug'].includes(token.id)) return r[token.id] || '';
+                        return cfMap[token.id] || '';
+                    }
+                    return '';
+                });
+
+                return {
+                    _id: r._id,
+                    label: parts.join('').trim() || r.title || r.slug,
+                    title: r.title,
+                    customFields: cfMap
+                };
+            });
+
+            res.json({ data: results });
+        } catch (error) {
+            console.error('[DocumentLine] CatalogSearch error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    }
+};
+
+// ─── Formula helpers ───────────────────────────────────────────────────
+function computeLineFormulas(schema, values) {
+    const computed = {};
+    const formulaColumns = (schema.columns || []).filter(c => c.type === 'formula');
+
+    for (const col of formulaColumns) {
+        if (col.config && col.config.expression) {
+            // Build context from values + already computed
+            const context = { ...values, ...computed };
+            computed[col.key] = evaluateFormula(col.config.expression, context);
+        }
+    }
+
+    return computed;
+}
+
+function computeDocumentTotals(schema, lines) {
+    const totals = {};
+
+    if (schema.totals) {
+        // SUM subtotalKey across all lines
+        if (schema.totals.subtotalKey) {
+            totals.subtotal = lines.reduce((sum, line) => {
+                const val = (line.computed && line.computed[schema.totals.subtotalKey]) ||
+                    (line.values && line.values[schema.totals.subtotalKey]) || 0;
+                return sum + parseFloat(val || 0);
+            }, 0);
+        }
+
+        // SUM vatKey across all lines
+        if (schema.totals.vatKey) {
+            totals.vat = lines.reduce((sum, line) => {
+                const val = (line.computed && line.computed[schema.totals.vatKey]) ||
+                    (line.values && line.values[schema.totals.vatKey]) || 0;
+                return sum + parseFloat(val || 0);
+            }, 0);
+        }
+
+        // Evaluate totalFormula
+        if (schema.totals.totalFormula) {
+            totals.total = evaluateFormula(schema.totals.totalFormula, totals);
+        }
+    }
+
+    return totals;
+}

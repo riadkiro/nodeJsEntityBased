@@ -1,0 +1,60 @@
+<%- include("../nav/nav-breadcrumb") %>
+
+<div class="pt-5 space-y-6">
+    <!-- Header -->
+    <div class="panel">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <iconify-icon icon="solar:document-medicine-bold-duotone" width="24" height="24" class="text-primary"></iconify-icon>
+                </div>
+                <div>
+                    <h2 class="text-lg font-bold dark:text-white">Nouvelle Ordonnance</h2>
+                    <p class="text-sm text-white-dark">Ajoutez les traitements prescrits au patient</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="badge bg-warning/10 text-warning rounded-full px-3 py-1 text-xs">Brouillon</span>
+            </div>
+        </div>
+
+        <!-- Patient Info (demo static) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <div>
+                <span class="text-xs text-white-dark uppercase tracking-wider">Patient</span>
+                <p class="font-semibold dark:text-white mt-1">Ahmed Benali</p>
+            </div>
+            <div>
+                <span class="text-xs text-white-dark uppercase tracking-wider">Date</span>
+                <p class="font-semibold dark:text-white mt-1"><%= new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) %></p>
+            </div>
+            <div>
+                <span class="text-xs text-white-dark uppercase tracking-wider">Dr.</span>
+                <p class="font-semibold dark:text-white mt-1"><%= user?.name || 'Médecin' %></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- LineBuilder -->
+    <div class="panel">
+        <div class="flex items-center gap-2 mb-4">
+            <iconify-icon icon="solar:pills-3-bold-duotone" width="20" height="20" class="text-primary"></iconify-icon>
+            <h3 class="font-semibold dark:text-white">Lignes de traitement</h3>
+        </div>
+
+        <%- include('../partials/line-builder', { 
+            schemaId: schemaId, 
+            documentId: documentId, 
+            accountNumber: account_number 
+        }) %>
+    </div>
+
+    <!-- Notes -->
+    <div class="panel">
+        <div class="flex items-center gap-2 mb-4">
+            <iconify-icon icon="solar:notes-bold-duotone" width="20" height="20" class="text-warning"></iconify-icon>
+            <h3 class="font-semibold dark:text-white">Notes & Instructions générales</h3>
+        </div>
+        <textarea class="form-textarea w-full min-h-[80px]" placeholder="Instructions particulières, régime alimentaire, recommandations..."></textarea>
+    </div>
+</div>

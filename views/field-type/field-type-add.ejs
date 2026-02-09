@@ -1,0 +1,127 @@
+<% const accountNum = account_number; %>
+
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="panel">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+      <div class="flex items-center gap-3">
+        <iconify-icon icon="solar:add-circle-bold-duotone" width="28" class="text-primary"></iconify-icon>
+        <div>
+          <h5 class="text-xl font-bold dark:text-white">Nouveau type de champ</h5>
+          <p class="text-sm text-gray-500">Créer un nouveau composant technique de base</p>
+        </div>
+      </div>
+      <a href="/account/<%= accountNum %>/field-type/list" class="btn btn-outline-dark flex items-center gap-2">
+        <iconify-icon icon="solar:arrow-left-bold" width="18"></iconify-icon>
+        <span>Retour à la liste</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <form action="/account/<%= accountNum %>/field-type/create" method="POST">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Left Column: Identification -->
+      <div class="panel">
+        <h6 class="text-lg font-semibold mb-5 dark:text-white">🧾 Identification</h6>
+        <div class="space-y-4">
+          <div>
+            <label for="name" class="dark:text-white">Clé technique <span class="text-danger">*</span></label>
+            <input id="name" type="text" name="name" class="form-input" placeholder="ex: string, number, date" required />
+            <p class="text-xs text-gray-500 mt-1">Identifiant unique (lowercase, sans espaces)</p>
+          </div>
+          <div>
+            <label for="label" class="dark:text-white">Nom d'affichage <span class="text-danger">*</span></label>
+            <input id="label" type="text" name="label" class="form-input" placeholder="ex: Texte court, Nombre, Date" required />
+          </div>
+          <div>
+            <label for="description" class="dark:text-white">Description</label>
+            <textarea id="description" name="description" class="form-textarea" rows="3" placeholder="Description du type de champ"></textarea>
+          </div>
+          <div>
+            <label for="category" class="dark:text-white">Catégorie</label>
+            <select id="category" name="category" class="form-select">
+              <option value="text">Texte</option>
+              <option value="numeric">Numérique</option>
+              <option value="date">Date / Temps</option>
+              <option value="choice">Choix</option>
+              <option value="relation">Relation</option>
+              <option value="media">Média</option>
+              <option value="advanced">Avancé</option>
+            </select>
+          </div>
+          <div>
+            <label for="order" class="dark:text-white">Ordre</label>
+            <input id="order" type="number" name="order" class="form-input" value="0" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: UI & Config -->
+      <div class="space-y-6">
+        <div class="panel">
+          <h6 class="text-lg font-semibold mb-5 dark:text-white">🎨 Apparence</h6>
+          <div class="space-y-4">
+            <div>
+              <label for="icon" class="dark:text-white">Icône</label>
+              <input id="icon" type="text" name="icon" class="form-input" value="solar:widget-bold-duotone" placeholder="solar:widget-bold-duotone" />
+              <p class="text-xs text-gray-500 mt-1">Nom de l'icône Iconify</p>
+            </div>
+            <div>
+              <label for="color" class="dark:text-white">Couleur</label>
+              <input id="color" type="text" name="color" class="form-input" placeholder="ex: #4361ee" />
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h6 class="text-lg font-semibold mb-5 dark:text-white">⚙️ Configuration technique</h6>
+          <div class="space-y-4">
+            <div>
+              <label for="inputComponent" class="dark:text-white">Composant d'input</label>
+              <input id="inputComponent" type="text" name="inputComponent" class="form-input" placeholder="Nom du composant (optionnel)" />
+            </div>
+            <div>
+              <label for="displayComponent" class="dark:text-white">Composant d'affichage</label>
+              <input id="displayComponent" type="text" name="displayComponent" class="form-input" placeholder="Nom du composant (optionnel)" />
+            </div>
+            <div>
+              <label for="filterOperators" class="dark:text-white">Opérateurs de filtre</label>
+              <input id="filterOperators" type="text" name="filterOperators" class="form-input" value="equals" placeholder="equals, contains, gt, lt (séparés par virgule)" />
+              <p class="text-xs text-gray-500 mt-1">Séparés par des virgules</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h6 class="text-lg font-semibold mb-5 dark:text-white">🎛️ Options UI par défaut</h6>
+          <div class="space-y-4">
+            <div>
+              <label for="defaultUIOptions.width" class="dark:text-white">Largeur</label>
+              <select id="defaultUIOptions.width" name="defaultUIOptions[width]" class="form-select">
+                <option value="full">Pleine largeur</option>
+                <option value="half">Demi</option>
+                <option value="third">Tiers</option>
+              </select>
+            </div>
+            <div>
+              <label for="defaultUIOptions.placeholder" class="dark:text-white">Placeholder</label>
+              <input id="defaultUIOptions.placeholder" type="text" name="defaultUIOptions[placeholder]" class="form-input" placeholder="Texte placeholder par défaut" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="flex justify-end gap-3 mt-6">
+      <a href="/account/<%= accountNum %>/field-type/list" class="btn btn-outline-danger">Annuler</a>
+      <button type="submit" class="btn btn-primary flex items-center gap-2">
+        <iconify-icon icon="solar:check-circle-bold" width="18"></iconify-icon>
+        <span>Créer le type</span>
+      </button>
+    </div>
+  </form>
+</div>

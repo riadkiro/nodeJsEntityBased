@@ -90,6 +90,10 @@ module.exports = {
      */
     create: async (req, res) => {
         try {
+            // Parse filterOperators from comma-separated string
+            if (typeof req.body.filterOperators === 'string') {
+                req.body.filterOperators = req.body.filterOperators.split(',').map(s => s.trim()).filter(Boolean);
+            }
             const fieldType = new FieldType(req.body);
             await fieldType.save();
 
@@ -138,6 +142,9 @@ module.exports = {
      */
     update: async (req, res) => {
         try {
+            if (typeof req.body.filterOperators === 'string') {
+                req.body.filterOperators = req.body.filterOperators.split(',').map(s => s.trim()).filter(Boolean);
+            }
             await FieldType.findByIdAndUpdate(req.params.id, req.body);
             res.redirect(`/account/${req.account_number}/field-type/list`);
         } catch (error) {

@@ -75,6 +75,7 @@ const FieldTemplateSchema = new mongoose.Schema({
         case 'boolean': return ['equals'];
         case 'date': return ['equals', 'before', 'after', 'between'];
         case 'select': return ['equals', 'in'];
+        case 'recurrence': return ['equals', 'in'];
         default: return ['equals'];
       }
     }

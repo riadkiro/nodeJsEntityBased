@@ -70,6 +70,7 @@
         { value: 'boolean', label: 'Case à cocher', icon: 'solar:check-square-bold-duotone', desc: 'Oui/Non' },
         { value: 'select', label: 'Liste déroulante', icon: 'solar:list-down-bold-duotone', desc: 'Choix multiple' },
         { value: 'relation', label: 'Relation', icon: 'solar:link-bold-duotone', desc: 'Lien vers une collection' },
+        { value: 'recurrence', label: 'Récurrence', icon: 'solar:clock-circle-bold-duotone', desc: 'Fréquence + moments' },
         { value: 'file', label: 'Fichier', icon: 'solar:file-bold-duotone', desc: 'Document, PDF...' },
         { value: 'image', label: 'Image', icon: 'solar:gallery-bold-duotone', desc: 'Photo, illustration' },
       ],
@@ -95,7 +96,10 @@
         min: null,
         max: null,
         includeTime: false,
-        acceptTypes: ''
+        acceptTypes: '',
+        // Recurrence slot config
+        slots: {},
+        allowCustomText: false
       },
 
       init() {
@@ -236,7 +240,9 @@
           min: field.type_config?.min || null,
           max: field.type_config?.max || null,
           includeTime: field.type_config?.includeTime || false,
-          acceptTypes: field.type_config?.acceptTypes || ''
+          acceptTypes: field.type_config?.acceptTypes || '',
+          slots: field.type_config?.slots || {},
+          allowCustomText: field.type_config?.allowCustomText || false
         };
         this.showAdvanced = !!(field.regex || field.htmlTemplate || field.jsTemplate);
         this.showDevMode = !!(field.htmlTemplate || field.jsTemplate);
@@ -265,7 +271,9 @@
           min: null,
           max: null,
           includeTime: false,
-          acceptTypes: ''
+          acceptTypes: '',
+          slots: {},
+          allowCustomText: false
         };
       },
 
@@ -302,6 +310,13 @@
         formBody.append('type_config.multiple', this.formData.multiple);
         formBody.append('required', this.formData.required);
         formBody.append('unique', this.formData.unique);
+
+        // Recurrence-specific: send structured data as JSON
+        if (this.formData.type === 'recurrence') {
+          formBody.append('type_config.options', JSON.stringify(this.formData.options));
+          formBody.append('type_config.slots', JSON.stringify(this.formData.slots));
+          formBody.append('type_config.allowCustomText', this.formData.allowCustomText);
+        }
 
         try {
           const res = await fetch(url, { method: "POST", body: formBody });
@@ -571,6 +586,56 @@
               <label class="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" x-model="formData.multiple" class="form-checkbox text-primary">
                 <span class="text-sm">Sélection multiple</span>
+              </label>
+            </div>
+          </template>
+
+          <!-- Options pour RECURRENCE -->
+          <template x-if="formData.type === 'recurrence'">
+            <div class="space-y-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-600">
+              <label class="block text-sm font-semibold">Configuration des slots</label>
+              <p class="text-xs text-gray-500">Chaque option appartient à un slot (ex: frequency, moment). Les options du même slot sont groupées ensemble.</p>
+              
+              <!-- Slot options -->
+              <template x-for="(opt, idx) in formData.options" :key="idx">
+                <div class="flex items-center gap-2">
+                  <input type="text" x-model="opt.slot" placeholder="Slot" class="form-input w-24 text-xs">
+                  <input type="text" x-model="opt.value" placeholder="Valeur" class="form-input w-24 text-xs">
+                  <input type="text" x-model="opt.label" placeholder="Label" class="form-input flex-1 text-sm">
+                  <input type="text" x-model="opt.group" placeholder="Groupe" class="form-input w-24 text-xs">
+                  <button type="button" @click="removeOption(idx)" class="text-danger hover:text-danger/80">
+                    <iconify-icon icon="solar:trash-bin-2-bold" width="18"></iconify-icon>
+                  </button>
+                </div>
+              </template>
+              <button type="button" @click="formData.options.push({ slot: '', value: '', label: '', group: '' })" class="btn btn-outline-primary btn-sm w-full">
+                <iconify-icon icon="solar:add-circle-linear" width="16" class="mr-1"></iconify-icon>
+                Ajouter une option
+              </button>
+
+              <!-- Slot definitions -->
+              <div class="border-t dark:border-gray-600 pt-3 space-y-2">
+                <label class="block text-xs font-semibold text-gray-500">Définitions des slots</label>
+                <p class="text-xs text-gray-400">Configurez chaque slot unique ci-dessous.</p>
+                <template x-for="slotName in [...new Set(formData.options.map(o => o.slot).filter(Boolean))]" :key="slotName">
+                  <div class="flex items-center gap-3 bg-white dark:bg-gray-700 px-3 py-2 rounded border dark:border-gray-600">
+                    <span class="text-xs font-mono font-semibold text-primary" x-text="slotName"></span>
+                    <label class="flex items-center gap-1.5 cursor-pointer ml-auto">
+                      <input type="checkbox" class="form-checkbox text-primary" :checked="formData.slots[slotName]?.multiple" @change="if(!formData.slots[slotName]) formData.slots[slotName] = {}; formData.slots[slotName].multiple = $event.target.checked">
+                      <span class="text-xs">Multiple</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 cursor-pointer">
+                      <input type="checkbox" class="form-checkbox text-primary" :checked="formData.slots[slotName]?.required" @change="if(!formData.slots[slotName]) formData.slots[slotName] = {}; formData.slots[slotName].required = $event.target.checked">
+                      <span class="text-xs">Requis</span>
+                    </label>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Allow custom text toggle -->
+              <label class="flex items-center gap-3 cursor-pointer pt-2">
+                <input type="checkbox" x-model="formData.allowCustomText" class="form-checkbox text-primary">
+                <span class="text-sm">Autoriser le texte libre (champ "Autre")</span>
               </label>
             </div>
           </template>

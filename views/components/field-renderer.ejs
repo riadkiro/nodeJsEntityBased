@@ -34,6 +34,43 @@
                                         <% }) %>
                                             <% } %>
                             </select>
+                            <% } else if (fieldType==='recurrence' ) { %>
+                                <% 
+                                const recVal = (typeof value === 'object' && value !== null) ? value : {};
+                                const typeConfigOpts = (field.type_config && field.type_config.options) || [];
+                                const typeConfigSlots = (field.type_config && field.type_config.slots) || {};
+                                const slotNames = [...new Set(typeConfigOpts.map(o => o.slot).filter(Boolean))];
+                                %>
+                                <div class="space-y-2">
+                                <% slotNames.forEach(slotName => { 
+                                    const slotOpts = typeConfigOpts.filter(o => o.slot === slotName);
+                                    const slotConf = typeConfigSlots[slotName] || {};
+                                    const slotVal = recVal[slotName];
+                                %>
+                                    <% if (!slotConf.multiple) { %>
+                                        <select name="<%= nameAttr %>[<%= slotName %>]" class="form-select text-sm">
+                                            <option value="">-- Choisir --</option>
+                                            <% slotOpts.forEach(opt => { %>
+                                                <option value="<%= opt.value %>" <%= slotVal === opt.value ? 'selected' : '' %>><%= opt.label %></option>
+                                            <% }) %>
+                                        </select>
+                                    <% } else { %>
+                                        <div class="flex flex-wrap gap-1">
+                                            <% slotOpts.forEach(opt => { 
+                                                const isChecked = Array.isArray(slotVal) && slotVal.includes(opt.value);
+                                            %>
+                                                <label class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs cursor-pointer border <%= isChecked ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-gray-100 border-gray-200' %>">
+                                                    <input type="checkbox" name="<%= nameAttr %>[<%= slotName %>][]" value="<%= opt.value %>" class="hidden" <%= isChecked ? 'checked' : '' %>>
+                                                    <span><%= opt.label %></span>
+                                                </label>
+                                            <% }) %>
+                                        </div>
+                                    <% } %>
+                                <% }) %>
+                                <% if (field.type_config && field.type_config.allowCustomText) { %>
+                                    <input name="<%= nameAttr %>[customText]" type="text" value="<%= recVal.customText || '' %>" class="form-input text-sm" placeholder="Texte libre...">
+                                <% } %>
+                                </div>
                             <% } else { %>
                                 <input name="<%= nameAttr %>" type="text" value="<%= value || '' %>" class="form-input"
                                     placeholder="<%= placeholder %>" />

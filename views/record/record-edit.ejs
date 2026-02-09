@@ -404,6 +404,56 @@
     </template>
 </div>`;
                     }
+                    if (!template && field.type === 'recurrence') {
+                        const typeConfig = field.type_config || {};
+                        const options = JSON.stringify(typeConfig.options || []).replace(/"/g, '&quot;');
+                        const slots = JSON.stringify(typeConfig.slots || {}).replace(/"/g, '&quot;');
+                        const allowCustomText = typeConfig.allowCustomText || false;
+                        template = `
+<div x-data="recurrenceField({
+    fieldId: '${field._id}',
+    options: ${options},
+    slots: ${slots},
+    allowCustomText: ${allowCustomText},
+    initialValue: {{value_json}}
+})" class="space-y-2">
+    <label class="block text-sm font-semibold">${field.label}</label>
+    
+    <template x-for="slotName in slotNames" :key="slotName">
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1" x-text="slotName"></label>
+            <template x-if="!getSlotConfig(slotName).multiple">
+                <select class="form-select text-sm" @change="setSlotValue(slotName, $event.target.value)">
+                    <option value="">-- Choisir --</option>
+                    <template x-for="opt in getSlotOptions(slotName)" :key="opt.value">
+                        <option :value="opt.value" x-text="opt.label" :selected="currentValue[slotName] === opt.value"></option>
+                    </template>
+                </select>
+            </template>
+            <template x-if="getSlotConfig(slotName).multiple">
+                <div class="flex flex-wrap gap-1.5">
+                    <template x-for="opt in getSlotOptions(slotName)" :key="opt.value">
+                        <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs cursor-pointer border transition-all"
+                               :class="(currentValue[slotName] || []).includes(opt.value) ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-gray-100 border-gray-200 dark:bg-gray-700 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-primary/30'">
+                            <input type="checkbox" class="hidden" :value="opt.value" :checked="(currentValue[slotName] || []).includes(opt.value)" @change="toggleSlotValue(slotName, opt.value)">
+                            <span x-text="opt.label"></span>
+                        </label>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </template>
+
+    <template x-if="allowCustomText">
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Autre</label>
+            <input type="text" class="form-input text-sm" x-model="currentValue.customText" @input="serialize()" placeholder="Texte libre...">
+        </div>
+    </template>
+
+    <input type="hidden" name="custom[${field._id}]" :value="serialized">
+</div>`;
+                    }
                     const val = this.valuesMap[field._id] || '';
                     const valJson = JSON.stringify(val).replace(/"/g, '&quot;');
                     const isTruthy = val === true || val === 'on' || val === 'true' || val === 1 || val === '1';
@@ -574,6 +624,61 @@
                 }
             };
         });
+
+        // ========== RECURRENCE FIELD ==========
+        Alpine.data('recurrenceField', (config) => ({
+            fieldId: config.fieldId,
+            options: config.options || [],
+            slotsConfig: config.slots || {},
+            allowCustomText: config.allowCustomText || false,
+            currentValue: {},
+            serialized: '{}',
+            slotNames: [],
+
+            init() {
+                this.slotNames = [...new Set(this.options.map(o => o.slot).filter(Boolean))];
+                const initial = config.initialValue;
+                if (initial && typeof initial === 'object') {
+                    this.currentValue = JSON.parse(JSON.stringify(initial));
+                } else if (initial && typeof initial === 'string') {
+                    try { this.currentValue = JSON.parse(initial); } catch(e) { this.currentValue = {}; }
+                } else {
+                    this.currentValue = {};
+                }
+                this.currentValue._v = this.currentValue._v || 1;
+                this.serialize();
+            },
+
+            getSlotOptions(slotName) {
+                return this.options.filter(o => o.slot === slotName);
+            },
+
+            getSlotConfig(slotName) {
+                return this.slotsConfig[slotName] || {};
+            },
+
+            setSlotValue(slotName, value) {
+                this.currentValue[slotName] = value;
+                this.serialize();
+            },
+
+            toggleSlotValue(slotName, value) {
+                if (!Array.isArray(this.currentValue[slotName])) {
+                    this.currentValue[slotName] = [];
+                }
+                const idx = this.currentValue[slotName].indexOf(value);
+                if (idx === -1) {
+                    this.currentValue[slotName].push(value);
+                } else {
+                    this.currentValue[slotName].splice(idx, 1);
+                }
+                this.serialize();
+            },
+
+            serialize() {
+                this.serialized = JSON.stringify(this.currentValue);
+            }
+        }));
 
         Alpine.data('relationField', (config) => ({
             fieldId: config.fieldId,

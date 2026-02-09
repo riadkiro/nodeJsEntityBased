@@ -390,7 +390,12 @@ module.exports = {
                 for (const [fieldId, value] of Object.entries(custom)) {
                     // Skip non-ObjectId keys (e.g. relation UUID keys like "1ce30e77-...")
                     if (!isValidObjectId(fieldId)) continue;
-                    customFieldsArray.push({ field_id: fieldId, value });
+                    // Parse JSON string values (e.g. recurrence field sends serialized JSON)
+                    let parsedValue = value;
+                    if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
+                        try { parsedValue = JSON.parse(value); } catch (e) { }
+                    }
+                    customFieldsArray.push({ field_id: fieldId, value: parsedValue });
                 }
             }
 
@@ -523,7 +528,12 @@ module.exports = {
             const customFieldsArray = [];
             if (custom) {
                 for (const [fieldId, value] of Object.entries(custom)) {
-                    customFieldsArray.push({ field_id: fieldId, value });
+                    // Parse JSON string values (e.g. recurrence field sends serialized JSON)
+                    let parsedValue = value;
+                    if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
+                        try { parsedValue = JSON.parse(value); } catch (e) { }
+                    }
+                    customFieldsArray.push({ field_id: fieldId, value: parsedValue });
                 }
             }
 

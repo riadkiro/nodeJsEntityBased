@@ -97,8 +97,17 @@ module.exports = {
       if (req.body["type_config.multiple"]) {
         type_config.multiple = req.body["type_config.multiple"] === 'on' || req.body["type_config.multiple"] === true || req.body["type_config.multiple"] === 'true';
       }
+      // Recurrence: structured options, slots, allowCustomText
+      if (req.body["type_config.options"]) {
+        try { type_config.options = typeof req.body["type_config.options"] === 'string' ? JSON.parse(req.body["type_config.options"]) : req.body["type_config.options"]; } catch (e) { }
+      }
+      if (req.body["type_config.slots"]) {
+        try { type_config.slots = typeof req.body["type_config.slots"] === 'string' ? JSON.parse(req.body["type_config.slots"]) : req.body["type_config.slots"]; } catch (e) { }
+      }
+      if (req.body["type_config.allowCustomText"] !== undefined) {
+        type_config.allowCustomText = req.body["type_config.allowCustomText"] === 'on' || req.body["type_config.allowCustomText"] === true || req.body["type_config.allowCustomText"] === 'true';
+      }
 
-      const ui = {};
       if (req.body["ui.placeholder"]) {
         ui.placeholder = req.body["ui.placeholder"];
       }
@@ -191,8 +200,17 @@ module.exports = {
       if (req.body["type_config.multiple"]) {
         type_config.multiple = req.body["type_config.multiple"] === 'on' || req.body["type_config.multiple"] === true || req.body["type_config.multiple"] === 'true';
       }
+      // Recurrence: structured options, slots, allowCustomText
+      if (req.body["type_config.options"]) {
+        try { type_config.options = typeof req.body["type_config.options"] === 'string' ? JSON.parse(req.body["type_config.options"]) : req.body["type_config.options"]; } catch (e) { }
+      }
+      if (req.body["type_config.slots"]) {
+        try { type_config.slots = typeof req.body["type_config.slots"] === 'string' ? JSON.parse(req.body["type_config.slots"]) : req.body["type_config.slots"]; } catch (e) { }
+      }
+      if (req.body["type_config.allowCustomText"] !== undefined) {
+        type_config.allowCustomText = req.body["type_config.allowCustomText"] === 'on' || req.body["type_config.allowCustomText"] === true || req.body["type_config.allowCustomText"] === 'true';
+      }
 
-      const ui = {};
       if (req.body["ui.placeholder"]) {
         ui.placeholder = req.body["ui.placeholder"];
       }

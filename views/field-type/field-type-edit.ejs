@@ -1,0 +1,129 @@
+<% const accountNum = account_number; %>
+<% const ft = fieldType; %>
+
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="panel">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+      <div class="flex items-center gap-3">
+        <iconify-icon icon="solar:pen-bold-duotone" width="28" class="text-primary"></iconify-icon>
+        <div>
+          <h5 class="text-xl font-bold dark:text-white">Modifier le type de champ</h5>
+          <p class="text-sm text-gray-500"><%= ft.label %> (<%= ft.name %>)</p>
+        </div>
+      </div>
+      <a href="/account/<%= accountNum %>/field-type/list" class="btn btn-outline-dark flex items-center gap-2">
+        <iconify-icon icon="solar:arrow-left-bold" width="18"></iconify-icon>
+        <span>Retour à la liste</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <form action="/account/<%= accountNum %>/field-type/update/<%= ft._id %>" method="POST">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Left Column: Identification -->
+      <div class="panel">
+        <h6 class="text-lg font-semibold mb-5 dark:text-white">🧾 Identification</h6>
+        <div class="space-y-4">
+          <div>
+            <label for="name" class="dark:text-white">Clé technique <span class="text-danger">*</span></label>
+            <input id="name" type="text" name="name" class="form-input" value="<%= ft.name %>" required />
+            <p class="text-xs text-gray-500 mt-1">Identifiant unique (lowercase, sans espaces)</p>
+          </div>
+          <div>
+            <label for="label" class="dark:text-white">Nom d'affichage <span class="text-danger">*</span></label>
+            <input id="label" type="text" name="label" class="form-input" value="<%= ft.label %>" required />
+          </div>
+          <div>
+            <label for="description" class="dark:text-white">Description</label>
+            <textarea id="description" name="description" class="form-textarea" rows="3"><%= ft.description || '' %></textarea>
+          </div>
+          <div>
+            <label for="category" class="dark:text-white">Catégorie</label>
+            <select id="category" name="category" class="form-select">
+              <option value="text" <%= ft.category === 'text' ? 'selected' : '' %>>Texte</option>
+              <option value="numeric" <%= ft.category === 'numeric' ? 'selected' : '' %>>Numérique</option>
+              <option value="date" <%= ft.category === 'date' ? 'selected' : '' %>>Date / Temps</option>
+              <option value="choice" <%= ft.category === 'choice' ? 'selected' : '' %>>Choix</option>
+              <option value="relation" <%= ft.category === 'relation' ? 'selected' : '' %>>Relation</option>
+              <option value="media" <%= ft.category === 'media' ? 'selected' : '' %>>Média</option>
+              <option value="advanced" <%= ft.category === 'advanced' ? 'selected' : '' %>>Avancé</option>
+            </select>
+          </div>
+          <div>
+            <label for="order" class="dark:text-white">Ordre</label>
+            <input id="order" type="number" name="order" class="form-input" value="<%= ft.order || 0 %>" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: UI & Config -->
+      <div class="space-y-6">
+        <div class="panel">
+          <h6 class="text-lg font-semibold mb-5 dark:text-white">🎨 Apparence</h6>
+          <div class="space-y-4">
+            <div>
+              <label for="icon" class="dark:text-white">Icône</label>
+              <input id="icon" type="text" name="icon" class="form-input" value="<%= ft.icon || 'solar:widget-bold-duotone' %>" />
+              <p class="text-xs text-gray-500 mt-1">Nom de l'icône Iconify</p>
+            </div>
+            <div>
+              <label for="color" class="dark:text-white">Couleur</label>
+              <input id="color" type="text" name="color" class="form-input" value="<%= ft.color || '' %>" />
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h6 class="text-lg font-semibold mb-5 dark:text-white">⚙️ Configuration technique</h6>
+          <div class="space-y-4">
+            <div>
+              <label for="inputComponent" class="dark:text-white">Composant d'input</label>
+              <input id="inputComponent" type="text" name="inputComponent" class="form-input" value="<%= ft.inputComponent || '' %>" />
+            </div>
+            <div>
+              <label for="displayComponent" class="dark:text-white">Composant d'affichage</label>
+              <input id="displayComponent" type="text" name="displayComponent" class="form-input" value="<%= ft.displayComponent || '' %>" />
+            </div>
+            <div>
+              <label for="filterOperators" class="dark:text-white">Opérateurs de filtre</label>
+              <input id="filterOperators" type="text" name="filterOperators" class="form-input" value="<%= (ft.filterOperators || []).join(', ') %>" />
+              <p class="text-xs text-gray-500 mt-1">Séparés par des virgules</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h6 class="text-lg font-semibold mb-5 dark:text-white">🎛️ Options UI par défaut</h6>
+          <div class="space-y-4">
+            <div>
+              <label for="defaultUIOptions.width" class="dark:text-white">Largeur</label>
+              <% const uiWidth = (ft.defaultUIOptions && ft.defaultUIOptions.width) || 'full'; %>
+              <select id="defaultUIOptions.width" name="defaultUIOptions[width]" class="form-select">
+                <option value="full" <%= uiWidth === 'full' ? 'selected' : '' %>>Pleine largeur</option>
+                <option value="half" <%= uiWidth === 'half' ? 'selected' : '' %>>Demi</option>
+                <option value="third" <%= uiWidth === 'third' ? 'selected' : '' %>>Tiers</option>
+              </select>
+            </div>
+            <div>
+              <label for="defaultUIOptions.placeholder" class="dark:text-white">Placeholder</label>
+              <input id="defaultUIOptions.placeholder" type="text" name="defaultUIOptions[placeholder]" class="form-input" value="<%= (ft.defaultUIOptions && ft.defaultUIOptions.placeholder) || '' %>" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="flex justify-end gap-3 mt-6">
+      <a href="/account/<%= accountNum %>/field-type/list" class="btn btn-outline-danger">Annuler</a>
+      <button type="submit" class="btn btn-primary flex items-center gap-2">
+        <iconify-icon icon="solar:check-circle-bold" width="18"></iconify-icon>
+        <span>Enregistrer</span>
+      </button>
+    </div>
+  </form>
+</div>

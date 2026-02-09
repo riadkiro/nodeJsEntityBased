@@ -286,7 +286,31 @@ function renderCellValue(record, col, accountNumber, entitySlug, config) {
                     const fieldId = cf.field_id?._id || cf.field_id
                     return fieldId?.toString() === col.id
                 })
-                return field?.value || ''
+                if (!field) return ''
+                const val = field.value
+                // Recurrence field: render as badges
+                if (val && typeof val === 'object' && val._v) {
+                    const badges = []
+                    Object.entries(val).forEach(([key, v]) => {
+                        if (key === '_v' || key === 'customText') return
+                        if (Array.isArray(v)) {
+                            v.forEach(item => badges.push(item))
+                        } else if (v) {
+                            badges.push(v)
+                        }
+                    })
+                    if (val.customText) badges.push(val.customText)
+                    return (
+                        <div className="flex flex-wrap gap-1">
+                            {badges.map((b, i) => (
+                                <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                                    {b}
+                                </span>
+                            ))}
+                        </div>
+                    )
+                }
+                return val || ''
             }
             return ''
         }

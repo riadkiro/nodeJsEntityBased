@@ -579,12 +579,14 @@ module.exports = {
         try {
             const { entityId, q } = req.query;
             const RecordModel = await tenantCollection(req, "Record");
+            const Entity = await tenantCollection(req, "Entity");
 
             let query = { entityId: entityId };
             if (q) {
                 query.$or = [
                     { title: { $regex: q, $options: 'i' } },
-                    { slug: { $regex: q, $options: 'i' } }
+                    { slug: { $regex: q, $options: 'i' } },
+                    { 'customFields.value': { $regex: q, $options: 'i' } }
                 ];
             } else if (req.query.ids) {
                 const ids = req.query.ids.split(',');
@@ -595,18 +597,41 @@ module.exports = {
             const limit = parseInt(req.query.limit) || 5;
             const skip = (page - 1) * limit;
 
+            // Get entity to access referenceTitleTokens
+            const entity = await Entity.findById(entityId).select('referenceTitleTokens').lean();
+            const tokens = entity?.referenceTitleTokens || [{ t: 'field', id: 'title' }];
+
             const records = await RecordModel.find(query)
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit)
-                .select('title slug _id');
+                .select('title slug _id customFields')
+                .populate({ path: 'customFields.field_id', select: 'label fieldType' })
+                .lean();
 
             const total = await RecordModel.countDocuments(query);
 
-            const formatted = records.map(r => ({
-                id: r._id,
-                label: r.title || r.slug || r._id.toString()
-            }));
+            const formatted = records.map(r => {
+                // Compute referenceTitle from tokens
+                const parts = tokens.map(token => {
+                    if (token.t === 'text') return token.v || '';
+                    if (token.t === 'field') {
+                        if (['title', 'slug', 'date', 'description'].includes(token.id)) {
+                            return r[token.id] || '';
+                        }
+                        if (r.customFields && Array.isArray(r.customFields)) {
+                            const cf = r.customFields.find(c => {
+                                const cfId = c.field_id?._id || c.field_id;
+                                return cfId && cfId.toString() === token.id;
+                            });
+                            return cf?.value || '';
+                        }
+                    }
+                    return '';
+                });
+                const label = parts.join('').trim() || r.title || r.slug || r._id.toString();
+                return { id: r._id, label };
+            });
 
             res.json({
                 data: formatted,

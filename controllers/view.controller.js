@@ -69,7 +69,31 @@ module.exports = {
                 sort = { [view.settings.sortBy.field]: view.settings.sortBy.direction === 'asc' ? 1 : -1 };
             }
 
-            const records = await RecordModel.find(query).sort(sort).populate('customFields.field_id');
+            const records = await RecordModel.find(query).sort(sort).populate('customFields.field_id').lean();
+
+            // Compute referenceTitle for each record from entity.referenceTitleTokens
+            const tokens = entity.referenceTitleTokens || [{ t: 'field', id: 'title' }];
+            records.forEach(record => {
+                const parts = tokens.map(token => {
+                    if (token.t === 'text') return token.v || '';
+                    if (token.t === 'field') {
+                        // Standard fields
+                        if (['title', 'slug', 'date', 'description'].includes(token.id)) {
+                            return record[token.id] || '';
+                        }
+                        // Custom fields — match by field_id
+                        if (record.customFields && Array.isArray(record.customFields)) {
+                            const cf = record.customFields.find(c => {
+                                const cfId = c.field_id?._id || c.field_id;
+                                return cfId && cfId.toString() === token.id;
+                            });
+                            return cf?.value || '';
+                        }
+                    }
+                    return '';
+                });
+                record.referenceTitle = parts.join('').trim() || record.title || 'Sans titre';
+            });
 
             res.render("record/record-view-progressive", {
                 view,

@@ -110,7 +110,8 @@ async function seedOpenAI() {
                     model: '{{input.model}}',
                     messages: '{{input.messages}}',
                     temperature: '{{input.temperature}}',
-                    max_tokens: '{{input.max_tokens}}'
+                    max_tokens: '{{input.max_tokens}}',
+                    response_format: '{{input.response_format}}'
                 }
             },
             responseMapping: {

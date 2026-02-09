@@ -63,8 +63,16 @@ async function execute({ provider, action, input = {}, secrets = {} }) {
 
         // Add body for methods that support it
         if (['post', 'put', 'patch'].includes(config.method)) {
-            if (Object.keys(resolvedBody).length > 0) {
-                config.data = resolvedBody;
+            // Strip null/undefined values from resolved body
+            // (e.g. response_format when not set, optional fields)
+            const cleanedBody = {};
+            for (const [k, v] of Object.entries(resolvedBody)) {
+                if (v !== null && v !== undefined) {
+                    cleanedBody[k] = v;
+                }
+            }
+            if (Object.keys(cleanedBody).length > 0) {
+                config.data = cleanedBody;
                 // Default to JSON
                 if (!headers['Content-Type'] && !headers['content-type']) {
                     headers['Content-Type'] = 'application/json';

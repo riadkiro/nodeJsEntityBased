@@ -518,9 +518,17 @@
                                         <span>Email auteur</span><code>trigger.actorEmail</code>
                                       </div>
                                       <template x-for="(s, si) in steps.filter((s2, i2) => i2 < index)" :key="s.id">
-                                        <div class="wf-var-popover-item" @click="setFieldValue(step, field.key, '{{steps.' + s.id + '.content}}', true); varPickerOpen=null">
-                                          <span x-text="'Step ' + (si+1) + ' output'"></span>
-                                          <code x-text="'steps.' + s.id + '.content'"></code>
+                                        <div>
+                                          <div class="wf-var-popover-item" @click="setFieldValue(step, field.key, '{{steps.' + s.id + '.content}}', true); varPickerOpen=null">
+                                            <span x-text="'Step ' + (si+1) + ' output'"></span>
+                                            <code x-text="'steps.' + s.id + '.content'"></code>
+                                          </div>
+                                          <template x-for="subKey in getStepJsonKeys(s)" :key="s.id + '-' + subKey">
+                                            <div class="wf-var-popover-item" style="padding-left:24px" @click="setFieldValue(step, field.key, '{{steps.' + s.id + '.content.' + subKey + '}}', true); varPickerOpen=null">
+                                              <span x-text="subKey" style="font-size:11px"></span>
+                                              <code x-text="'steps.' + s.id + '.content.' + subKey" style="font-size:10px"></code>
+                                            </div>
+                                          </template>
                                         </div>
                                       </template>
                                     </div>
@@ -593,9 +601,17 @@
                                           <span>Titre du record</span><code>trigger.record.title</code>
                                         </div>
                                         <template x-for="(s, si) in steps.filter((s2, i2) => i2 < index)" :key="s.id">
-                                          <div class="wf-var-popover-item" @click="setFieldValue(step, field.fieldId, '{{steps.' + s.id + '.content}}', true); varPickerOpen=null">
-                                            <span x-text="'Step ' + (si+1) + ' output'"></span>
-                                            <code x-text="'steps.' + s.id + '.content'"></code>
+                                          <div>
+                                            <div class="wf-var-popover-item" @click="setFieldValue(step, field.fieldId, '{{steps.' + s.id + '.content}}', true); varPickerOpen=null">
+                                              <span x-text="'Step ' + (si+1) + ' output'"></span>
+                                              <code x-text="'steps.' + s.id + '.content'"></code>
+                                            </div>
+                                            <template x-for="subKey in getStepJsonKeys(s)" :key="s.id + '-' + subKey">
+                                              <div class="wf-var-popover-item" style="padding-left:24px" @click="setFieldValue(step, field.fieldId, '{{steps.' + s.id + '.content.' + subKey + '}}', true); varPickerOpen=null">
+                                                <span x-text="subKey" style="font-size:11px"></span>
+                                                <code x-text="'steps.' + s.id + '.content.' + subKey" style="font-size:10px"></code>
+                                              </div>
+                                            </template>
                                           </div>
                                         </template>
                                       </div>
@@ -715,9 +731,17 @@
                                   <span>Email auteur</span><code>trigger.actorEmail</code>
                                 </div>
                                 <template x-for="(s, si) in steps.filter((s2, i2) => i2 < steps.indexOf(step))" :key="s.id">
-                                  <div class="wf-var-popover-item" @click="appendExtFieldValue(step, 'user_prompt', '{{steps.' + s.id + '.content}}'); varPickerOpen=null">
-                                    <span x-text="'Step ' + (si+1) + ' output'"></span>
-                                    <code x-text="'steps.' + s.id + '.content'"></code>
+                                  <div>
+                                    <div class="wf-var-popover-item" @click="appendExtFieldValue(step, 'user_prompt', '{{steps.' + s.id + '.content}}'); varPickerOpen=null">
+                                      <span x-text="'Step ' + (si+1) + ' output'"></span>
+                                      <code x-text="'steps.' + s.id + '.content'"></code>
+                                    </div>
+                                    <template x-for="subKey in getStepJsonKeys(s)" :key="s.id + '-' + subKey">
+                                      <div class="wf-var-popover-item" style="padding-left:24px" @click="appendExtFieldValue(step, 'user_prompt', '{{steps.' + s.id + '.content.' + subKey + '}}'); varPickerOpen=null">
+                                        <span x-text="subKey" style="font-size:11px"></span>
+                                        <code x-text="'steps.' + s.id + '.content.' + subKey" style="font-size:10px"></code>
+                                      </div>
+                                    </template>
                                   </div>
                                 </template>
                               </div>
@@ -890,7 +914,12 @@
             <div class="text-[10px] font-semibold text-gray-400 mb-1">OUTPUTS DES STEPS</div>
             <div class="flex flex-wrap">
               <template x-for="(step, i) in steps" :key="step.id + '-var'">
-                <span class="wf-var-chip system" @click="insertVariable('{{steps.' + step.id + '}}')" :title="'{{steps.' + step.id + '}}'" x-text="'Step ' + (i+1) + ' output'" style="cursor:pointer"></span>
+                <div class="flex flex-wrap">
+                  <span class="wf-var-chip system" @click="insertVariable('{{steps.' + step.id + '.content}}')" :title="'{{steps.' + step.id + '.content}}'" x-text="'Step ' + (i+1) + ' output'" style="cursor:pointer"></span>
+                  <template x-for="subKey in getStepJsonKeys(step)" :key="step.id + '-sub-' + subKey">
+                    <span class="wf-var-chip field" @click="insertVariable('{{steps.' + step.id + '.content.' + subKey + '}}')" :title="'{{steps.' + step.id + '.content.' + subKey + '}}'" x-text="subKey" style="cursor:pointer; font-size:10px"></span>
+                  </template>
+                </div>
               </template>
             </div>
           </div>
@@ -1386,6 +1415,18 @@ function workflowBuilder() {
       }
       // Fallback: copy to clipboard
       this.copyVariable(variable);
+    },
+
+    /** Get JSON sub-keys from a step's json_schema (if defined) */
+    getStepJsonKeys(step) {
+      try {
+        const fv = step.uiState?.externalFieldValues;
+        if (!fv || fv.response_format !== 'json_object') return [];
+        const schemaStr = fv.json_schema;
+        if (!schemaStr) return [];
+        const parsed = JSON.parse(schemaStr);
+        return Object.keys(parsed);
+      } catch { return []; }
     },
 
     // ── Select Node ──

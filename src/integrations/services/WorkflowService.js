@@ -129,7 +129,18 @@ async function processJob({ job, workflow, ConnectionModel, LogModel, JobModel, 
             }
 
             // Store step output for next steps (enables {{steps.step_1.recordId}})
-            context.steps[step.id] = result.data;
+            // Auto-parse JSON string in 'content' field (e.g. OpenAI response_format: json_schema)
+            // so that {{steps.step_1.content.nom}} works instead of getting the raw JSON string
+            const stepData = { ...result.data };
+            if (typeof stepData.content === 'string') {
+                try {
+                    const parsed = JSON.parse(stepData.content);
+                    if (typeof parsed === 'object' && parsed !== null) {
+                        stepData.content = parsed;
+                    }
+                } catch { /* not JSON, keep as string */ }
+            }
+            context.steps[step.id] = stepData;
 
             stepResults.push({
                 stepId: step.id,

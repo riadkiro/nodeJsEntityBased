@@ -310,8 +310,11 @@ module.exports = {
 
                 const customFieldsArray = [];
                 if (customFields) {
+                    const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
                     for (const [fieldId, value] of Object.entries(customFields)) {
                         if (value !== null && value !== undefined && value !== '') {
+                            // Skip non-ObjectId keys (e.g. relation UUID keys)
+                            if (!isValidObjectId(fieldId)) continue;
                             customFieldsArray.push({ field_id: fieldId, value });
                         }
                     }
@@ -381,7 +384,10 @@ module.exports = {
 
             const customFieldsArray = [];
             if (custom) {
+                const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
                 for (const [fieldId, value] of Object.entries(custom)) {
+                    // Skip non-ObjectId keys (e.g. relation UUID keys like "1ce30e77-...")
+                    if (!isValidObjectId(fieldId)) continue;
                     customFieldsArray.push({ field_id: fieldId, value });
                 }
             }

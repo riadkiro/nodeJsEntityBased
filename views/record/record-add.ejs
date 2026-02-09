@@ -5,11 +5,11 @@
         <div class="panel mb-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        <span class="text-gray-400 font-normal">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                        <span class="text-gray-400 dark:text-gray-500 font-normal">
                             <%= entity.name %>
                         </span>
-                        <span class="text-gray-300">/</span>
+                        <span class="text-gray-300 dark:text-gray-600">/</span>
                         <div class="flex items-center gap-2 group" x-data="{ editing: true, title: '' }">
                             <template x-if="!editing">
                                 <span
@@ -64,7 +64,7 @@
                                                                 <!-- Title is already rendered in the header panel above -->
                                                             <% } else if (def.inputType === 'textarea') { %>
                                                                 <div class="mb-3">
-                                                                    <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700">
+                                                                    <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
                                                                         <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
                                                                         <%= field.label || def.label %>
                                                                         <% if (field.required) { %><span class="text-danger">*</span><% } %>
@@ -75,7 +75,7 @@
                                                                 </div>
                                                             <% } else if (def.inputType === 'file') { %>
                                                                 <div class="mb-3">
-                                                                    <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700">
+                                                                    <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
                                                                         <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
                                                                         <%= field.label || def.label %>
                                                                     </label>
@@ -83,7 +83,7 @@
                                                                 </div>
                                                             <% } else { %>
                                                                 <div class="mb-3">
-                                                                    <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700">
+                                                                    <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
                                                                         <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
                                                                         <%= field.label || def.label %>
                                                                         <% if (field.required) { %><span class="text-danger">*</span><% } %>
@@ -107,7 +107,7 @@
                                                             </div>
                                                         <% } else if (cf) { %>
                                                             <div class="mb-3">
-                                                                <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700">
+                                                                <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
                                                                     <iconify-icon icon="<%= (cf.ui && cf.ui.icon) || 'solar:widget-bold-duotone' %>" width="14" class="text-info"></iconify-icon>
                                                                     <%= field.label || cf.label || cf.name %>
                                                                     <% if (field.required) { %><span class="text-danger">*</span><% } %>
@@ -154,7 +154,7 @@
                                                                     multiple: <%= (rel.cardinality === 'one-to-many' || rel.cardinality === 'many-to-many') ? 'true' : 'false' %>,
                                                                     initialValue: null
                                                                 })" data-display-fields='<%- JSON.stringify(rel.displayFields || []) %>' class="relative">
-                                                                    <label class="flex items-center gap-1.5 mb-1">
+                                                                    <label class="flex items-center gap-1.5 mb-1 dark:text-gray-300">
                                                                         <iconify-icon icon="<%= (rel.targetEntity && rel.targetEntity.icon) || 'solar:link-round-bold-duotone' %>" width="14"
                                                                             style="color: <%= (rel.targetEntity && rel.targetEntity.color) || '#4361ee' %>"></iconify-icon>
                                                                         <%= field.label || rel.label || 'Relation' %>
@@ -162,8 +162,8 @@
 
                                                                     <!-- Trigger Button -->
                                                                     <button type="button" @click="openModal()"
-                                                                        class="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md hover:border-primary/50 transition-colors text-sm bg-white">
-                                                                        <span class="flex items-center gap-2 text-gray-500">
+                                                                        class="w-full flex items-center justify-between px-3 py-2 border border-gray-300 dark:border-gray-800 rounded-md hover:border-primary/50 transition-colors text-sm bg-white dark:bg-[#1b2e4b]">
+                                                                        <span class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                                                                             <iconify-icon icon="solar:magnifer-bold-duotone" width="16"></iconify-icon>
                                                                             <span x-text="selectedItems.length > 0 ? selectedItems.length + ' sélectionné(s)' : 'Sélectionner <%= mpName %>...'"></span>
                                                                         </span>
@@ -196,28 +196,28 @@
 
                                                                     <!-- Modal Overlay - controlled via JS in openModal/closeModal -->
                                                                     <div x-ref="modalOverlay"
-                                                                         style="display: none;"
-                                                                         class="fixed inset-0 z-[999] flex items-center justify-center bg-black/40"
+                                                                         style="display: none; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);"
+                                                                         class="fixed inset-0 z-[999] flex items-center justify-center bg-black/30"
                                                                          @click.self="closeModal()">
-                                                                            <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl mx-4 flex flex-col"
+                                                                            <div class="bg-white dark:bg-[#0e1726] rounded-xl shadow-2xl w-full max-w-3xl mx-4 flex flex-col"
                                                                                  style="max-height: 80vh;" @click.stop>
                                                                                 <!-- Modal Header -->
-                                                                                <div class="flex items-center justify-between px-5 py-3 border-b">
+                                                                                <div class="flex items-center justify-between px-5 py-3 border-b dark:border-gray-800">
                                                                                     <div class="flex items-center gap-2">
                                                                                         <iconify-icon :icon="refEntityIcon" width="18" :style="'color:' + refEntityColor"></iconify-icon>
-                                                                                        <h3 class="font-semibold text-sm" x-text="'Sélectionner ' + refEntityName"></h3>
-                                                                                        <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full" x-text="modalTotal + ' résultats'"></span>
+                                                                                        <h3 class="font-semibold text-sm dark:text-gray-200" x-text="'Sélectionner ' + refEntityName"></h3>
+                                                                                        <span class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-0.5 rounded-full" x-text="modalTotal + ' résultats'"></span>
                                                                                     </div>
-                                                                                    <button type="button" @click="closeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                                                                    <button type="button" @click="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                                                                                         <iconify-icon icon="tabler:x" width="20"></iconify-icon>
                                                                                     </button>
                                                                                 </div>
 
                                                                                 <!-- Search Bar -->
-                                                                                <div class="px-5 py-3 border-b">
+                                                                                <div class="px-5 py-3 border-b dark:border-gray-800">
                                                                                     <div class="relative">
                                                                                         <iconify-icon icon="solar:magnifer-bold-duotone" width="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></iconify-icon>
-                                                                                        <input type="text" class="form-input pl-9 text-sm" placeholder="Rechercher..."
+                                                                                        <input type="text" class="form-input pl-9 text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200 dark:placeholder-gray-500" placeholder="Rechercher..."
                                                                                                x-model="modalSearch" @input.debounce.300ms="fetchModalResults(true)" x-ref="modalSearchInput" />
                                                                                     </div>
                                                                                 </div>
@@ -233,27 +233,27 @@
                                                                                     <template x-if="!(modalLoading && modalPage === 1)">
                                                                                         <div>
                                                                                             <template x-if="modalResults.length === 0 && !modalLoading">
-                                                                                                <div class="flex flex-col items-center justify-center py-12 text-gray-400">
+                                                                                                <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
                                                                                                     <iconify-icon icon="solar:box-minimalistic-bold-duotone" width="40" class="mb-2"></iconify-icon>
                                                                                                     <span class="text-sm">Aucun résultat trouvé</span>
                                                                                                 </div>
                                                                                             </template>
-                                                                                            <div class="divide-y">
+                                                                                            <div class="divide-y dark:divide-gray-800">
                                                                                                 <template x-for="result in modalResults" :key="result.id">
                                                                                                     <div @click="toggleModalSelect(result)"
                                                                                                          class="flex items-center gap-3 px-5 py-2.5 cursor-pointer transition-colors"
-                                                                                                         :class="isSelected(result.id) ? 'bg-primary/5' : 'hover:bg-gray-50'">
+                                                                                                         :class="isSelected(result.id) ? 'bg-primary/5' : 'hover:bg-gray-50 dark:hover:bg-white/5'">
                                                                                                         <!-- Checkbox / Radio -->
                                                                                                         <div class="flex-shrink-0">
                                                                                                             <template x-if="multiple">
                                                                                                                 <div class="w-4 h-4 rounded border-2 flex items-center justify-center transition-colors"
-                                                                                                                     :class="isSelected(result.id) ? 'bg-primary border-primary' : 'border-gray-300'">
+                                                                                                                     :class="isSelected(result.id) ? 'bg-primary border-primary' : 'border-gray-300 dark:border-gray-600'">
                                                                                                                     <iconify-icon x-show="isSelected(result.id)" icon="tabler:check" width="11" class="text-white"></iconify-icon>
                                                                                                                 </div>
                                                                                                             </template>
                                                                                                             <template x-if="!multiple">
                                                                                                                 <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors"
-                                                                                                                     :class="isSelected(result.id) ? 'border-primary' : 'border-gray-300'">
+                                                                                                                     :class="isSelected(result.id) ? 'border-primary' : 'border-gray-300 dark:border-gray-600'">
                                                                                                                     <div x-show="isSelected(result.id)" class="w-2 h-2 rounded-full bg-primary"></div>
                                                                                                                 </div>
                                                                                                             </template>
@@ -261,12 +261,12 @@
 
                                                                                                         <!-- Label -->
                                                                                                         <div class="flex-1 min-w-0">
-                                                                                                            <span class="text-sm font-medium truncate block" x-text="result.label"></span>
+                                                                                                            <span class="text-sm font-medium truncate block dark:text-gray-200" x-text="result.label"></span>
                                                                                                             <!-- Display fields as secondary info -->
                                                                                                             <template x-if="result.fields && Object.keys(result.fields).length > 0">
                                                                                                                 <div class="flex flex-wrap gap-x-4 gap-y-0.5 mt-0.5">
                                                                                                                     <template x-for="(val, key) in result.fields" :key="key">
-                                                                                                                        <span class="text-xs text-gray-400" x-show="val">
+                                                                                                                        <span class="text-xs text-gray-400 dark:text-gray-500" x-show="val">
                                                                                                                             <span x-text="val"></span>
                                                                                                                         </span>
                                                                                                                     </template>
@@ -279,7 +279,7 @@
 
                                                                                             <!-- Load more -->
                                                                                             <template x-if="modalHasMore">
-                                                                                                <div class="px-5 py-2 border-t">
+                                                                                                <div class="px-5 py-2 border-t dark:border-gray-800">
                                                                                                     <button type="button" @click="loadMoreModal()" class="w-full text-sm text-primary hover:bg-primary/5 py-1.5 rounded" :disabled="modalLoading">
                                                                                                         <span x-show="!modalLoading">Charger plus...</span>
                                                                                                         <span x-show="modalLoading">Chargement...</span>
@@ -291,8 +291,8 @@
                                                                                 </div>
 
                                                                                 <!-- Modal Footer -->
-                                                                                <div class="flex items-center justify-between px-5 py-3 border-t bg-gray-50 rounded-b-xl">
-                                                                                    <span class="text-xs text-gray-500" x-text="tempSelected.length + ' sélectionné(s)'"></span>
+                                                                                <div class="flex items-center justify-between px-5 py-3 border-t bg-gray-50 dark:bg-[#1b2e4b] dark:border-gray-800 rounded-b-xl">
+                                                                                    <span class="text-xs text-gray-500 dark:text-gray-400" x-text="tempSelected.length + ' sélectionné(s)'"></span>
                                                                                     <div class="flex gap-2">
                                                                                         <button type="button" @click="closeModal()" class="btn btn-outline-secondary btn-sm text-xs">Annuler</button>
                                                                                         <button type="button" @click="confirmSelection()" class="btn btn-primary btn-sm text-xs">
@@ -315,7 +315,7 @@
                                                                     multiple: <%= (rel.cardinality === 'one-to-many' || rel.cardinality === 'many-to-many') ? 'true' : 'false' %>,
                                                                     initialValue: null
                                                                 })" class="relative">
-                                                                    <label class="flex items-center gap-1.5 mb-1">
+                                                                    <label class="flex items-center gap-1.5 mb-1 dark:text-gray-300">
                                                                         <iconify-icon icon="<%= (rel.targetEntity && rel.targetEntity.icon) || 'solar:link-round-bold-duotone' %>" width="14"
                                                                             style="color: <%= (rel.targetEntity && rel.targetEntity.color) || '#4361ee' %>"></iconify-icon>
                                                                         <%= field.label || rel.label || 'Relation' %>
@@ -339,7 +339,7 @@
                                                                         <!-- Results Dropdown -->
                                                                         <div x-show="showResults"
                                                                              style="display: none;"
-                                                                             class="absolute z-50 w-full mt-1 bg-white border border-border rounded-md shadow-xl max-h-60 overflow-y-auto overflow-x-hidden">
+                                                                             class="absolute z-50 w-full mt-1 bg-white dark:bg-[#0e1726] border border-border dark:border-gray-800 rounded-md shadow-xl max-h-60 overflow-y-auto overflow-x-hidden">
 
                                                                             <template x-if="loading && page === 1">
                                                                                 <div class="px-4 py-2 text-sm text-secondary">Loading...</div>
@@ -398,7 +398,7 @@
                                                         <% var cls = locals.entityFormFieldDefs && locals.entityFormFieldDefs.classification[field.fieldId]; %>
                                                         <% if (cls) { %>
                                                             <div class="mb-3">
-                                                                <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700">
+                                                                <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
                                                                     <iconify-icon icon="solar:tag-bold-duotone" width="14" class="text-success"></iconify-icon>
                                                                     <%= field.label || cls.name %>
                                                                 </label>

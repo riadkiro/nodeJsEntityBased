@@ -26,7 +26,14 @@ const db = require("./config/db").globalDbUri;
 // Connect to MongoDB
 mongoose
   .connect(db, { useNewUrlParser: true })
-  .then(() => console.log("MongoDB Connected : Global DB"))
+  .then(() => {
+    console.log("MongoDB Connected : Global DB");
+
+    // Start workflow worker
+    const WorkflowWorker = require('./src/integrations/services/WorkflowWorker');
+    WorkflowWorker.start();
+    console.log("WorkflowWorker started");
+  })
   .catch((err) => console.log(err));
 
 //CSS and static files

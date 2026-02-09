@@ -52,7 +52,62 @@ async function emitRecordUpdated({ WorkflowJobModel, workspaceId, entityId, reco
 }
 
 /**
+ * Emit manual.button trigger — for manual execution from UI
+ * @param {object} options
+ * @param {object} options.WorkflowJobModel - Tenant WorkflowJob model
+ * @param {string} options.workspaceId - Workspace ID
+ * @param {string} options.workflowId - Specific workflow to execute
+ * @param {object} options.record - Record snapshot (if contextual button)
+ * @param {object} options.actor - { email, userId, name }
+ * @param {object} options.inputs - Manual input values
+ */
+async function emitManualButton({ WorkflowJobModel, workspaceId, workflowId, record, actor, inputs }) {
+    try {
+        const workflow = await Workflow.findOne({
+            _id: workflowId,
+            workspaceId,
+            'trigger.type': 'manual.button',
+            enabled: true
+        }).lean();
+
+        if (!workflow) {
+            return { enqueued: 0, error: 'Workflow not found or not enabled' };
+        }
+
+        const triggerData = {
+            event: 'manual',
+            timestamp: new Date(),
+            actor: actor || {},
+            inputs: inputs || {}
+        };
+
+        // Include record if provided (contextual button on a record)
+        if (record) {
+            triggerData.record = record;
+        }
+
+        const job = await WorkflowJobModel.create({
+            workspaceId,
+            workflowId: workflow._id,
+            status: 'pending',
+            triggerData,
+            attempts: 0,
+            nextRunAt: new Date()
+        });
+
+        console.log(`[WorkflowTriggers] Enqueued manual job ${job._id} for workflow "${workflow.name}"`);
+
+        return { enqueued: 1, jobId: job._id };
+
+    } catch (error) {
+        console.error('[WorkflowTriggers] Error emitting manual button:', error);
+        return { enqueued: 0, error: error.message };
+    }
+}
+
+/**
  * Internal: Find matching workflows and enqueue jobs
+ * Used for record.created / record.updated (entity-scoped triggers)
  */
 async function emitTrigger({ WorkflowJobModel, workspaceId, entityId, triggerType, triggerData }) {
     try {
@@ -92,5 +147,6 @@ async function emitTrigger({ WorkflowJobModel, workspaceId, entityId, triggerTyp
 
 module.exports = {
     emitRecordCreated,
-    emitRecordUpdated
+    emitRecordUpdated,
+    emitManualButton
 };

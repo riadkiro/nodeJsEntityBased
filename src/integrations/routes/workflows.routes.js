@@ -113,7 +113,7 @@ router.get('/new', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const workspaceId = req.account_number;
-        const { name, description, category, trigger, steps, settings } = req.body;
+        const { name, description, category, trigger, steps, settings, contextBindings } = req.body;
 
         const workflow = await Workflow.create({
             workspaceId,
@@ -122,6 +122,7 @@ router.post('/', async (req, res) => {
             category: category || 'automation',
             enabled: false,
             trigger,
+            contextBindings: contextBindings || [],
             steps: steps || [],
             settings: settings || {}
         });
@@ -410,12 +411,12 @@ router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const workspaceId = req.account_number;
-        const { name, description, category, trigger, steps, settings } = req.body;
+        const { name, description, category, trigger, steps, settings, contextBindings } = req.body;
 
         const workflow = await Workflow.findOneAndUpdate(
             { _id: id, workspaceId },
-            { name, description, category, trigger, steps, settings },
-            { new: true }
+            { name, description, category, trigger, steps, settings, contextBindings: contextBindings || [] },
+            { new: true, runValidators: true }
         );
 
         if (!workflow) {
@@ -470,6 +471,8 @@ router.post('/:id/toggle', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
+
+
 
 /**
  * GET /workflows/:id/jobs

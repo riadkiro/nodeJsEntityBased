@@ -27,11 +27,28 @@ async function processJob({ job, workflow, ConnectionModel, LogModel, JobModel, 
     let lastError = null;
     let finalStatus = 'completed';
 
-    // Build context with trigger data
+    // Build context with trigger data + context bindings
     const context = {
         trigger: job.triggerData,
-        steps: {}  // Will hold outputs from previous steps
+        actor: job.triggerData?.actor || {},
+        inputs: job.triggerData?.inputs || {},
+        contexts: {},   // Populated from contextBindings
+        steps: {}       // Will hold outputs from previous steps
     };
+
+    // ── Resolve context bindings ──
+    for (const binding of workflow.contextBindings || []) {
+        if (binding.type === 'entity') {
+            if (binding.source === 'currentRecord' && job.triggerData?.record) {
+                // The trigger record is the context source
+                context.contexts[binding.key] = job.triggerData.record;
+            }
+            // Future: source=byId → fetch by ID, source=query → run query
+        } else if (binding.type === 'manual') {
+            // Manual inputs are passed at execution time
+            context.contexts[binding.key] = job.triggerData?.inputs?.[binding.key] || {};
+        }
+    }
 
     console.log(`[WorkflowService] Processing job ${job._id} for workflow "${workflow.name}"`);
 

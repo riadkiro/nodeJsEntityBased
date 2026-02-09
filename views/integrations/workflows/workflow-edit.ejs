@@ -281,17 +281,93 @@
               <option value="record.updated">✏️ Enregistrement modifié</option>
             </select>
           </div>
-          <template x-if="triggerType">
+          <!-- Scope (only for manual.button) -->
+          <template x-if="triggerType === 'manual.button'">
+            <div class="mb-3">
+              <label class="wf-label">Scope</label>
+              <select x-model="triggerScope" @change="onScopeChange()" class="wf-select">
+                <option value="global">🌍 Global (accessible partout)</option>
+                <option value="entity">📁 Dans une entity (records / listes)</option>
+                <option value="page">📄 Dans une page / cockpit</option>
+              </select>
+            </div>
+          </template>
+          <!-- Entity picker: shown for record.* (forced) or entity scope -->
+          <template x-if="triggerType && (triggerType.startsWith('record.') || triggerScope === 'entity')">
             <div>
-              <label class="wf-label">Collection (Entity)</label>
+              <label class="wf-label" x-text="triggerType.startsWith('record.') ? 'Collection (Entity) *' : 'Collection (Entity)'"></label>
               <select x-model="triggerEntityId" @change="loadEntityContext()" class="wf-select">
-                <option value="">— Optionnel —</option>
+                <option value="">— Choisir —</option>
                 <% entities.forEach(e => { %>
                   <option value="<%= e._id %>"><%= e.name %></option>
                 <% }) %>
               </select>
             </div>
           </template>
+        </div>
+      </div>
+
+      <!-- ═══ CONTEXT SOURCES ═══ -->
+      <div class="wf-connector" x-show="triggerType">
+        <div class="wf-connector-line"></div>
+        <div class="wf-connector-dot"></div>
+      </div>
+      <div class="wf-node context" x-show="triggerType" @click="selectNode('context')">
+        <div class="wf-node-header">
+          <div class="wf-node-icon bg-gradient-to-br from-amber-500 to-orange-600">
+            <iconify-icon icon="solar:database-bold" width="20" class="text-white"></iconify-icon>
+          </div>
+          <div class="flex-1">
+            <div class="wf-node-title dark:text-white">Sources de contexte</div>
+            <div class="wf-node-subtitle" x-text="contextBindings.length + ' source(s) configurée(s)'"></div>
+          </div>
+        </div>
+        <div class="wf-node-body">
+          <!-- Existing bindings -->
+          <template x-for="(binding, bIdx) in contextBindings" :key="bIdx">
+            <div class="wf-context-binding" style="display:flex; gap:8px; align-items:center; margin-bottom:8px; padding:8px; border:1px solid var(--wf-border); border-radius:8px; background: rgba(255,255,255,0.02);">
+              <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
+                <div style="display:flex; gap:6px; align-items:center;">
+                  <input type="text" x-model="binding.key" class="wf-input" placeholder="alias (ex: person)" 
+                    style="width:100px; font-size:11px; padding:4px 8px; font-family:monospace;" 
+                    @input="binding.key = binding.key.toLowerCase().replace(/[^a-z0-9_]/g,'')">
+                  <select x-model="binding.type" @change="onBindingTypeChange(binding)" class="wf-select" style="flex:1; font-size:11px; padding:4px 8px;">
+                    <option value="entity">📁 Entity</option>
+                    <option value="manual">✏️ Manual Input</option>
+                  </select>
+                </div>
+                <!-- Entity binding: entity + source -->
+                <template x-if="binding.type === 'entity'">
+                  <div style="display:flex; gap:6px;">
+                    <select x-model="binding.entityId" @change="loadBindingEntityContext(bIdx)" class="wf-select" style="flex:1; font-size:11px; padding:4px 8px;">
+                      <option value="">— Entity —</option>
+                      <% entities.forEach(e => { %>
+                        <option value="<%= e._id %>"><%= e.name %></option>
+                      <% }) %>
+                    </select>
+                    <select x-model="binding.source" class="wf-select" style="flex:1; font-size:11px; padding:4px 8px;">
+                      <option value="currentRecord">📌 Record courant</option>
+                      <option value="byId">🔑 Par ID</option>
+                    </select>
+                  </div>
+                </template>
+                <!-- Manual binding: JSON schema -->
+                <template x-if="binding.type === 'manual'">
+                  <textarea x-model="binding._schemaStr" class="wf-textarea" rows="2" 
+                    style="font-size:11px; font-family:monospace; padding:4px 8px;"
+                    placeholder='{"url": "string", "note": "string"}'></textarea>
+                </template>
+              </div>
+              <button @click="removeContextBinding(bIdx)" class="wf-node-action-btn" title="Retirer" style="flex-shrink:0;">
+                <iconify-icon icon="solar:trash-bin-2-linear" width="14"></iconify-icon>
+              </button>
+            </div>
+          </template>
+          <!-- Add context button -->
+          <button @click="addContextBinding()" class="wf-add-step" style="width:100%; margin-top:4px;">
+            <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
+            <span>Ajouter un contexte</span>
+          </button>
         </div>
       </div>
 
@@ -623,7 +699,8 @@
                           <textarea class="wf-prompt-area" rows="4"
                             placeholder="Écrivez votre prompt ici... Utilisez ≡ pour insérer des variables"
                             :value="getExtFieldValue(step, 'user_prompt')"
-                            @input="setExtFieldValue(step, 'user_prompt', $event.target.value)"></textarea>
+                            @input="setExtFieldValue(step, 'user_prompt', $event.target.value)"
+                            @focus="activePromptStepId = step.id"></textarea>
                           <div style="position:absolute; top:8px; right:8px;">
                             <button class="wf-var-btn" @click.stop="toggleVarPicker(step.id, 'ext_prompt')" title="Insérer une variable">≡</button>
                             <template x-if="varPickerOpen === step.id + '.ext_prompt'">
@@ -734,28 +811,62 @@
       <!-- Available Variables -->
       <div class="wf-sidebar-section">
         <div class="wf-sidebar-title">Variables disponibles</div>
-        <template x-if="!triggerEntityId">
-          <p class="text-xs text-gray-500">Sélectionnez une collection pour voir les variables</p>
-        </template>
 
-        <!-- System variables -->
+        <!-- System variables (always visible) -->
         <div class="mb-3" x-show="triggerType">
           <div class="text-[10px] font-semibold text-gray-400 mb-1">SYSTÈME</div>
           <div class="flex flex-wrap">
-            <span class="wf-var-chip system" @click="copyVariable('{{trigger.record._id}}')" title="Cliquer pour copier">_id</span>
-            <span class="wf-var-chip system" @click="copyVariable('{{trigger.record.title}}')" title="Cliquer pour copier">title</span>
-            <span class="wf-var-chip system" @click="copyVariable('{{trigger.record.createdAt}}')" title="Cliquer pour copier">createdAt</span>
-            <span class="wf-var-chip system" @click="copyVariable('{{actor.email}}')" title="Cliquer pour copier">actor.email</span>
+            <span class="wf-var-chip system" @click="insertVariable('{{actor.email}}')" title="Cliquer pour insérer" style="cursor:pointer">actor.email</span>
+            <span class="wf-var-chip system" @click="insertVariable('{{actor.name}}')" title="Cliquer pour insérer" style="cursor:pointer">actor.name</span>
           </div>
         </div>
 
-        <!-- Entity fields -->
+        <!-- Trigger record vars (shown when entity is set on trigger) -->
+        <div class="mb-3" x-show="triggerEntityId">
+          <div class="text-[10px] font-semibold text-gray-400 mb-1">TRIGGER RECORD</div>
+          <div class="flex flex-wrap">
+            <span class="wf-var-chip system" @click="insertVariable('{{trigger.record._id}}')" title="Cliquer pour insérer" style="cursor:pointer">_id</span>
+            <span class="wf-var-chip system" @click="insertVariable('{{trigger.record.title}}')" title="Cliquer pour insérer" style="cursor:pointer">title</span>
+            <span class="wf-var-chip system" @click="insertVariable('{{trigger.record.createdAt}}')" title="Cliquer pour insérer" style="cursor:pointer">createdAt</span>
+          </div>
+        </div>
+
+        <!-- Legacy entity context fields -->
         <template x-if="entityContext && entityContext.fields && entityContext.fields.length > 0">
           <div class="mb-3">
-            <div class="text-[10px] font-semibold text-gray-400 mb-1">CHAMPS</div>
+            <div class="text-[10px] font-semibold text-gray-400 mb-1">CHAMPS (TRIGGER)</div>
             <div class="flex flex-wrap">
               <template x-for="field in entityContext.fields" :key="field._id">
-                <span class="wf-var-chip field" @click="copyVariable(field.variable)" :title="field.variable" x-text="field.name"></span>
+                <span class="wf-var-chip field" @click="insertVariable(field.variable)" :title="field.variable" x-text="field.name" style="cursor:pointer"></span>
+              </template>
+            </div>
+          </div>
+        </template>
+
+        <!-- Context Binding variables (dynamic) -->
+        <template x-for="(binding, bIdx) in contextBindings" :key="'cb-' + bIdx">
+          <div class="mb-3" x-show="binding._entityContext || binding.type === 'manual'">
+            <div class="text-[10px] font-semibold text-amber-400 mb-1" x-text="'CONTEXT: ' + binding.key.toUpperCase()"></div>
+            <div class="flex flex-wrap">
+              <!-- Entity binding: show fields from _entityContext -->
+              <template x-if="binding.type === 'entity' && binding._entityContext">
+                <template x-for="field in (binding._entityContext.fields || [])" :key="'cb-f-' + field._id">
+                  <span class="wf-var-chip field" 
+                    @click="insertVariable('{{contexts.' + binding.key + '.' + field.name + '}}')" 
+                    :title="'{{contexts.' + binding.key + '.' + field.name + '}}'"
+                    x-text="binding.key + '.' + field.name" style="cursor:pointer"></span>
+                </template>
+              </template>
+              <!-- Always show _id and title for entity bindings -->
+              <template x-if="binding.type === 'entity' && binding.entityId">
+                <span class="wf-var-chip system" @click="insertVariable('{{contexts.' + binding.key + '._id}}')" style="cursor:pointer" x-text="binding.key + '._id'"></span>
+              </template>
+              <template x-if="binding.type === 'entity' && binding.entityId">
+                <span class="wf-var-chip system" @click="insertVariable('{{contexts.' + binding.key + '.title}}')" style="cursor:pointer" x-text="binding.key + '.title'"></span>
+              </template>
+              <!-- Manual binding: show schema keys -->
+              <template x-if="binding.type === 'manual'">
+                <span class="wf-var-chip system" @click="insertVariable('{{inputs.' + binding.key + '}}')" style="cursor:pointer" x-text="'inputs.' + binding.key"></span>
               </template>
             </div>
           </div>
@@ -767,7 +878,7 @@
             <div class="text-[10px] font-semibold text-gray-400 mb-1">CLASSIFICATIONS</div>
             <div class="flex flex-wrap">
               <template x-for="cls in entityContext.classifications" :key="cls._id">
-                <span class="wf-var-chip classification" @click="copyVariable(cls.variable)" :title="cls.variable" x-text="cls.name"></span>
+                <span class="wf-var-chip classification" @click="insertVariable(cls.variable)" :title="cls.variable" x-text="cls.name" style="cursor:pointer"></span>
               </template>
             </div>
           </div>
@@ -779,7 +890,7 @@
             <div class="text-[10px] font-semibold text-gray-400 mb-1">OUTPUTS DES STEPS</div>
             <div class="flex flex-wrap">
               <template x-for="(step, i) in steps" :key="step.id + '-var'">
-                <span class="wf-var-chip system" @click="copyVariable('{{steps.' + step.id + '}}')" :title="'{{steps.' + step.id + '}}'" x-text="'Step ' + (i+1) + ' output'"></span>
+                <span class="wf-var-chip system" @click="insertVariable('{{steps.' + step.id + '}}')" :title="'{{steps.' + step.id + '}}'" x-text="'Step ' + (i+1) + ' output'" style="cursor:pointer"></span>
               </template>
             </div>
           </div>
@@ -865,14 +976,18 @@
 function workflowBuilder() {
   return {
     // Workflow data
-    workflowId: '<%= workflow ? workflow._id : "" %>',
-    workflowName: '<%= workflow ? workflow.name : "" %>',
-    workflowDescription: '<%= workflow ? (workflow.description || "") : "" %>',
-    workflowCategory: '<%= workflow ? (workflow.category || "automation") : "automation" %>',
+    workflowId: <%- JSON.stringify(workflow ? String(workflow._id) : "") %>,
+    workflowName: <%- JSON.stringify(workflow ? (workflow.name || "") : "") %>,
+    workflowDescription: <%- JSON.stringify(workflow ? (workflow.description || "") : "") %>,
+    workflowCategory: <%- JSON.stringify(workflow ? (workflow.category || "automation") : "automation") %>,
 
     // Trigger
-    triggerType: '<%= workflow ? (workflow.trigger?.type || "") : "" %>',
-    triggerEntityId: '<%= workflow ? (workflow.trigger?.entityId || "") : "" %>',
+    triggerType: <%- JSON.stringify(workflow ? (workflow.trigger?.type || "") : "") %>,
+    triggerScope: <%- JSON.stringify(workflow ? (workflow.trigger?.scope || "entity") : "entity") %>,
+    triggerEntityId: <%- JSON.stringify(workflow ? String(workflow.trigger?.entityId || "") : "") %>,
+
+    // Context Bindings
+    contextBindings: <%- workflow && workflow.contextBindings ? JSON.stringify(workflow.contextBindings.map(b => ({ key: b.key, type: b.type, entityId: b.entityId?.toString() || b.entityId || '', source: b.source || 'currentRecord', schema: b.schema || null, _entityContext: null }))) : '[]' %>,
 
     // Steps
     steps: [],
@@ -942,9 +1057,16 @@ function workflowBuilder() {
         }
       <% } %>
 
-      // Load entity context if entity is set
+      // Load entity context for trigger entity
       if (this.triggerEntityId) {
         await this.loadEntityContext();
+      }
+
+      // Load entity context for each context binding
+      for (let i = 0; i < this.contextBindings.length; i++) {
+        if (this.contextBindings[i].type === 'entity' && this.contextBindings[i].entityId) {
+          await this.loadBindingEntityContext(i);
+        }
       }
 
       // Load jobs
@@ -955,8 +1077,9 @@ function workflowBuilder() {
 
     // ── Trigger ──
     getTriggerLabel() {
+      const scopeLabels = { global: '🌍 Global', entity: '📁 Entity', page: '📄 Page' };
       const labels = {
-        'manual.button': 'Déclenché manuellement par un bouton',
+        'manual.button': 'Bouton ' + (scopeLabels[this.triggerScope] || ''),
         'record.created': 'Quand un enregistrement est créé',
         'record.updated': 'Quand un enregistrement est modifié'
       };
@@ -964,8 +1087,66 @@ function workflowBuilder() {
     },
 
     onTriggerTypeChange() {
-      if (this.triggerType === 'manual.button') {
-        // Entity is optional for manual triggers
+      // Force scope=entity for record.* triggers
+      if (this.triggerType.startsWith('record.')) {
+        this.triggerScope = 'entity';
+      }
+      // Reset entity if switching to global
+      if (this.triggerType === 'manual.button' && this.triggerScope === 'global') {
+        this.triggerEntityId = '';
+        this.entityContext = null;
+      }
+    },
+
+    onScopeChange() {
+      if (this.triggerScope === 'global') {
+        this.triggerEntityId = '';
+        this.entityContext = null;
+      }
+    },
+
+    // ── Context Bindings ──
+    addContextBinding() {
+      const idx = this.contextBindings.length + 1;
+      this.contextBindings.push({
+        key: 'ctx' + idx,
+        type: 'entity',
+        entityId: '',
+        source: 'currentRecord',
+        schema: null,
+        _schemaStr: '',
+        _entityContext: null
+      });
+    },
+
+    removeContextBinding(idx) {
+      this.contextBindings.splice(idx, 1);
+    },
+
+    onBindingTypeChange(binding) {
+      if (binding.type === 'manual') {
+        binding.entityId = '';
+        binding.source = 'static';
+        binding._entityContext = null;
+        binding._schemaStr = binding._schemaStr || '{}';
+      } else {
+        binding.source = 'currentRecord';
+        binding.schema = null;
+        binding._schemaStr = '';
+      }
+    },
+
+    async loadBindingEntityContext(idx) {
+      const binding = this.contextBindings[idx];
+      if (!binding || !binding.entityId) { binding._entityContext = null; return; }
+      try {
+        const resp = await fetch(`/account/<%= account_number %>/workflows/api/entity-context/${binding.entityId}`, { credentials: 'include' });
+        const data = await resp.json();
+        if (data.success) {
+          binding._entityContext = data.variables;
+        }
+      } catch (e) {
+        console.error('Error loading binding entity context:', e);
       }
     },
 
@@ -1183,13 +1364,28 @@ function workflowBuilder() {
     },
 
     // ── Variables ──
+    activePromptStepId: null,
+
     copyVariable(variable) {
       navigator.clipboard.writeText(variable).then(() => {
-        // Show toast
         if (window.showMessage) {
           window.showMessage('Variable copiée : ' + variable, 'success');
         }
       });
+    },
+
+    /** Insert variable into the active external prompt, or copy to clipboard as fallback */
+    insertVariable(variable) {
+      if (this.activePromptStepId) {
+        const step = this.steps.find(s => s.id === this.activePromptStepId);
+        if (step && !this.isInternalProvider(step)) {
+          this.appendExtFieldValue(step, 'user_prompt', variable);
+          if (window.showMessage) window.showMessage('Variable insérée dans le prompt', 'success');
+          return;
+        }
+      }
+      // Fallback: copy to clipboard
+      this.copyVariable(variable);
     },
 
     // ── Select Node ──
@@ -1237,14 +1433,26 @@ function workflowBuilder() {
         };
       });
 
+      // Build contextBindings payload (strip _entityContext and _schemaStr)
+      const bindingsPayload = this.contextBindings.map(b => {
+        const binding = { key: b.key, type: b.type, source: b.source };
+        if (b.type === 'entity' && b.entityId) binding.entityId = b.entityId;
+        if (b.type === 'manual' && b._schemaStr) {
+          try { binding.schema = JSON.parse(b._schemaStr); } catch { binding.schema = {}; }
+        }
+        return binding;
+      });
+
       const payload = {
         name: this.workflowName,
         description: this.workflowDescription,
         category: this.workflowCategory,
         trigger: {
           type: this.triggerType,
+          scope: this.triggerScope || 'entity',
           ...(this.triggerEntityId ? { entityId: this.triggerEntityId } : {})
         },
+        contextBindings: bindingsPayload,
         steps: stepsPayload,
         settings: {
           idempotencyWindow: 5000,

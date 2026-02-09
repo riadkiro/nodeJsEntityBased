@@ -113,11 +113,11 @@
                                                                     <% if (field.required) { %><span class="text-danger">*</span><% } %>
                                                                 </label>
                                                                 <% if (cf.inputType === 'textarea' || cf.inputType === 'richtext') { %>
-                                                                    <textarea name="custom[<%= cf.name %>]" class="form-textarea" rows="3"
+                                                                    <textarea name="custom[<%= cf._id %>]" class="form-textarea" rows="3"
                                                                         placeholder="<%= field.placeholder || cf.label || cf.name %>"
                                                                         <%= field.required ? 'required' : '' %>></textarea>
                                                                 <% } else if (cf.inputType === 'select' && cf.options && cf.options.length) { %>
-                                                                    <select name="custom[<%= cf.name %>]" class="form-select" <%= field.required ? 'required' : '' %>>
+                                                                    <select name="custom[<%= cf._id %>]" class="form-select" <%= field.required ? 'required' : '' %>>
                                                                         <option value="">-- Choisir --</option>
                                                                         <% cf.options.forEach(function(o) { %>
                                                                             <option><%= o.label || o %></option>
@@ -125,10 +125,10 @@
                                                                     </select>
                                                                 <% } else if (cf.inputType === 'checkbox') { %>
                                                                     <div class="flex items-center gap-2 py-2">
-                                                                        <input name="custom[<%= cf.name %>]" type="checkbox" class="form-checkbox" />
+                                                                        <input name="custom[<%= cf._id %>]" type="checkbox" class="form-checkbox" />
                                                                     </div>
                                                                 <% } else { %>
-                                                                    <input name="custom[<%= cf.name %>]" type="<%= cf.inputType || 'text' %>" class="form-input"
+                                                                    <input name="custom[<%= cf._id %>]" type="<%= cf.inputType || 'text' %>" class="form-input"
                                                                         placeholder="<%= field.placeholder || cf.label || cf.name %>"
                                                                         <%= field.required ? 'required' : '' %> />
                                                                 <% } %>

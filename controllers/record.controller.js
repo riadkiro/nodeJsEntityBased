@@ -126,7 +126,8 @@ module.exports = {
             const entity = await EntityModel.findOne({ slug: req.params.entityName })
                 .populate('customFields')
                 .populate('statusClassification')
-                .populate('classifications');
+                .populate('classifications')
+                .populate('relations.targetEntity');
             if (!entity) return res.status(404).render("errors/404", {
                 message: "Entity not found",
                 account_number: req.account_number,

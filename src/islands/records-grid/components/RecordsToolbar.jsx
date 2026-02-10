@@ -359,18 +359,30 @@ export default function RecordsToolbar({
                         </div>
 
                         {/* Separator */}
-                        <div className="border-t border-gray-100 dark:border-white/10 my-2"></div>
+                        <div className="border-t border-gray-100 dark:border-white/10 mt-3 mb-2"></div>
 
-                        {/* Show Avatar Toggle */}
-                        <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg">
-                            <input
-                                type="checkbox"
-                                checked={preferences.showAvatar !== false}
-                                onChange={() => onPreferencesChange('showAvatar', !(preferences.showAvatar !== false))}
-                                className="form-checkbox text-primary w-3.5 h-3.5 rounded"
-                            />
-                            <span className="text-xs text-gray-700 dark:text-gray-300">Afficher l'avatar</span>
-                        </label>
+                        {/* Title Display Mode */}
+                        <div>
+                            <div className="text-xs font-medium text-gray-500 dark:text-white-dark mb-2">Affichage titre</div>
+                            <div className="flex gap-1">
+                                {[
+                                    { value: 'avatar', label: 'Avatar' },
+                                    { value: 'icon', label: 'Icône' },
+                                    { value: 'none', label: 'Aucun' }
+                                ].map(opt => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => onPreferencesChange('titleDisplay', opt.value)}
+                                        className={`flex-1 px-2 py-1.5 text-xs rounded-lg transition-all ${(preferences.titleDisplay || 'avatar') === opt.value
+                                            ? 'bg-primary text-white'
+                                            : 'bg-gray-100 dark:bg-dark/40 text-gray-600 dark:text-white-dark/70 hover:bg-gray-200 dark:hover:bg-dark/60'
+                                            }`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </>,
                 document.body

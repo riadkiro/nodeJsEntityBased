@@ -179,7 +179,7 @@ router.post('/api/user/view-preferences', async (req, res) => {
                     sort: preferences.sort || { field: 'createdAt', direction: 'desc' },
                     density: preferences.density || 'normal',
                     pageSize: preferences.pageSize || 25,
-                    showAvatar: preferences.showAvatar !== undefined ? preferences.showAvatar : true
+                    titleDisplay: preferences.titleDisplay || 'avatar'
                 },
                 updatedAt: new Date()
             },

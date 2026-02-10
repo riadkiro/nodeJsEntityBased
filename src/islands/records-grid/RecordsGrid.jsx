@@ -24,6 +24,7 @@ export default function RecordsGrid({
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [searchQuery, setSearchQuery] = useState('')
+    const [entityIcon, setEntityIcon] = useState('')
 
     // Preferences state
     const [preferences, setPreferences] = useState({
@@ -31,7 +32,7 @@ export default function RecordsGrid({
         sort: { field: 'createdAt', direction: 'desc' },
         density: 'normal',
         pageSize: 10,
-        showAvatar: true
+        titleDisplay: 'avatar'
     })
 
     // Pagination state
@@ -69,6 +70,11 @@ export default function RecordsGrid({
 
             setAllRecords(data.records || [])
             setFilteredRecords(data.records || [])
+
+            // Store entity icon
+            if (data.entity?.icon) {
+                setEntityIcon(data.entity.icon)
+            }
 
             // Merge server preferences with local
             if (data.preferences) {
@@ -364,7 +370,8 @@ export default function RecordsGrid({
                         }}
                         onColumnReorder={handleColumnReorder}
                         density={preferences.density}
-                        showAvatar={preferences.showAvatar !== false}
+                        titleDisplay={preferences.titleDisplay || 'avatar'}
+                        entityIcon={entityIcon}
                         accountNumber={accountNumber}
                         entitySlug={entitySlug}
                     />

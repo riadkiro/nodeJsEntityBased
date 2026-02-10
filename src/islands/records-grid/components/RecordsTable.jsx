@@ -12,7 +12,8 @@ export default function RecordsTable({
     onSort,
     onColumnReorder,
     density,
-    showAvatar,
+    titleDisplay,
+    entityIcon,
     accountNumber,
     entitySlug
 }) {
@@ -92,8 +93,8 @@ export default function RecordsTable({
                                     setDraggedColumn(null)
                                     setDragOverColumn(null)
                                 }}
-                                className={`px-2 ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'border-l-2 border-l-primary bg-primary/5' : ''}`}
-                                style={{ transition: 'opacity 0.15s, border-color 0.15s, background 0.15s' }}
+                                className={`px-2 ${col.id === 'actions' ? 'sticky right-0 bg-white dark:bg-gray-900 z-20' : ''} ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'border-l-2 border-l-primary bg-primary/5' : ''}`}
+                                style={{ transition: 'opacity 0.15s, border-color 0.15s, background 0.15s', ...(col.id === 'actions' ? { width: '1%', whiteSpace: 'nowrap' } : {}) }}
                             >
                                 <div className="flex items-center gap-1">
                                     {/* Drag handle - only this element is draggable */}
@@ -181,10 +182,10 @@ export default function RecordsTable({
                             {columns.map(col => (
                                 <td
                                     key={col.id}
-                                    className={config.fontSize}
-                                    style={{ padding: cellPadding }}
+                                    className={`${config.fontSize} ${col.id === 'actions' ? 'sticky right-0 bg-white dark:bg-gray-900' : ''}`}
+                                    style={{ padding: cellPadding, ...(col.id === 'actions' ? { width: '1%', whiteSpace: 'nowrap' } : {}) }}
                                 >
-                                    {renderCellValue(record, col, accountNumber, entitySlug, config, showAvatar)}
+                                    {renderCellValue(record, col, accountNumber, entitySlug, config, titleDisplay, entityIcon)}
                                 </td>
                             ))}
                         </tr>
@@ -209,7 +210,7 @@ export default function RecordsTable({
 }
 
 // Helper to render cell values with proper formatting
-function renderCellValue(record, col, accountNumber, entitySlug, config, showAvatar) {
+function renderCellValue(record, col, accountNumber, entitySlug, config, titleDisplay, entityIcon) {
     switch (col.id) {
         case 'title': {
             const refTitle = record.referenceTitle || record.title || 'Sans titre'
@@ -220,14 +221,24 @@ function renderCellValue(record, col, accountNumber, entitySlug, config, showAva
 
             return (
                 <div className="flex items-center gap-2">
-                    {showAvatar !== false && (
+                    {titleDisplay === 'avatar' && (
                         <img
                             src={imageUrl}
                             alt={refTitle}
                             className={`${config.imageSize} rounded-full max-w-none`}
                         />
                     )}
-                    <div className={config.fontWeight}>{refTitle}</div>
+                    {titleDisplay === 'icon' && entityIcon && (
+                        <div className={`${config.imageSize} rounded-lg max-w-none flex items-center justify-center bg-primary/10 text-primary shrink-0`}>
+                            <iconify-icon icon={entityIcon} width="16"></iconify-icon>
+                        </div>
+                    )}
+                    <a
+                        href={`/account/${accountNumber}/record/${entitySlug}/${record._id}`}
+                        className={`${config.fontWeight} hover:text-primary transition-colors`}
+                    >
+                        {refTitle}
+                    </a>
                 </div>
             )
         }
@@ -237,11 +248,11 @@ function renderCellValue(record, col, accountNumber, entitySlug, config, showAva
 
         case 'actions':
             return (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0">
                     {/* View */}
                     <a
                         href={`/account/${accountNumber}/record/${entitySlug}/${record._id}`}
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-primary hover:bg-primary/10 transition-all"
+                        className="p-1 rounded-lg text-gray-500 hover:text-primary hover:bg-primary/10 transition-all"
                         title="Voir"
                     >
                         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -252,7 +263,7 @@ function renderCellValue(record, col, accountNumber, entitySlug, config, showAva
                     {/* Edit */}
                     <a
                         href={`/account/${accountNumber}/record/${entitySlug}/${record._id}/edit`}
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-info hover:bg-info/10 transition-all"
+                        className="p-1 rounded-lg text-gray-500 hover:text-info hover:bg-info/10 transition-all"
                         title="Modifier"
                     >
                         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -262,7 +273,7 @@ function renderCellValue(record, col, accountNumber, entitySlug, config, showAva
                     {/* Delete */}
                     <button
                         type="button"
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-danger hover:bg-danger/10 transition-all"
+                        className="p-1 rounded-lg text-gray-500 hover:text-danger hover:bg-danger/10 transition-all"
                         title="Supprimer"
                         onClick={() => {
                             if (confirm('Êtes-vous sûr de vouloir supprimer cet enregistrement ?')) {

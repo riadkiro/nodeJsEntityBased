@@ -185,7 +185,7 @@
                                                 @change="setValue(line, col.key, $event.target.value); moveNext(lineIdx, col.key, $event)"
                                                 @keydown.escape="stopEdit()">
                                                 <option value="">—</option>
-                                                <template x-for="opt in (col.config.options || [])" :key="opt.value">
+                                                <template x-for="opt in getFilteredOptions(line, col)" :key="opt.value">
                                                     <option :value="opt.value" x-text="opt.label"></option>
                                                 </template>
                                             </select>
@@ -204,7 +204,7 @@
                                                 </div>
                                                 <select @change="toggleMultiselect(line, col.key, $event.target.value); $event.target.value = ''">
                                                     <option value="">+ Ajouter</option>
-                                                    <template x-for="opt in getAvailableOptions(col, getValue(line, col.key))" :key="opt.value">
+                                                    <template x-for="opt in getAvailableOptions(col, getValue(line, col.key), line)" :key="opt.value">
                                                         <option :value="opt.value" x-text="opt.label"></option>
                                                     </template>
                                                 </select>
@@ -259,7 +259,7 @@
                                                 <select
                                                     :value="(getValue(line, col.key) || {}).unit || ''"
                                                     @change="setDosageUnit(line, col.key, $event.target.value)">
-                                                    <template x-for="u in (col.config.units || ['mg','ml','g','cp'])" :key="u">
+                                                    <template x-for="u in getFilteredUnits(line, col)" :key="u">
                                                         <option :value="u" x-text="u"></option>
                                                     </template>
                                                 </select>
@@ -275,7 +275,7 @@
                                                 <select
                                                     :value="(getValue(line, col.key) || {}).unit || ''"
                                                     @change="setDurationUnit(line, col.key, $event.target.value)">
-                                                    <template x-for="u in (col.config.units || ['day','week','month'])" :key="u">
+                                                    <template x-for="u in getFilteredUnits(line, col)" :key="u">
                                                         <option :value="u" x-text="unitLabel(u)"></option>
                                                     </template>
                                                 </select>
@@ -368,6 +368,8 @@ function lineBuilder(schemaId, documentId, accountNumber) {
         searchResults: [],
         searchIdx: -1,
         _searchTimeout: null,
+        // Dynamic filter state: { lineId: { colKey: [allowed_values] } }
+        dynamicFilters: {},
 
         get activeColumns() {
             if (!this.schema) return [];
@@ -652,10 +654,86 @@ function lineBuilder(schemaId, documentId, accountNumber) {
                 }
             }
 
+            // Apply dynamic filters from relation config
+            this.applyDynamicFilters(line, col, result);
+
             this.searchResults = [];
             this.searchQuery = result.label || result.title;
             this.computeLineFormulas(line);
             this.computeAllTotals();
+        },
+
+        // ─── Dynamic filter system ────────────────────────────────────
+        applyDynamicFilters(line, col, result) {
+            const dfc = col.config?._dynamicFilterConfig;
+            if (!dfc || !result.customFields) return;
+
+            const filters = {};
+            for (const [targetColKey, fieldId] of Object.entries(dfc)) {
+                const fieldValues = result.customFields[fieldId];
+                if (Array.isArray(fieldValues) && fieldValues.length > 0) {
+                    filters[targetColKey] = fieldValues;
+                }
+                // else: no filter → fallback to show all
+            }
+
+            this.dynamicFilters[line._tempId] = filters;
+            // Sanitize: reset values that are no longer allowed
+            this.sanitizeLineValues(line);
+        },
+
+        sanitizeLineValues(line) {
+            const filters = this.dynamicFilters[line._tempId];
+            if (!filters || !this.schema) return;
+
+            for (const [colKey, allowed] of Object.entries(filters)) {
+                const col = this.schema.columns.find(c => c.key === colKey);
+                if (!col || !allowed || allowed.length === 0) continue;
+
+                const currentVal = this.getValue(line, colKey);
+                if (currentVal === undefined || currentVal === null || currentVal === '') continue;
+
+                if (col.type === 'dosage') {
+                    // Dosage stores { amount, unit }
+                    if (typeof currentVal === 'object' && currentVal.unit && !allowed.includes(currentVal.unit)) {
+                        line.values[colKey] = { ...currentVal, unit: allowed[0] || '' };
+                    }
+                } else if (col.type === 'duration') {
+                    // Duration stores { amount, unit }
+                    if (typeof currentVal === 'object' && currentVal.unit && !allowed.includes(currentVal.unit)) {
+                        line.values[colKey] = { ...currentVal, unit: allowed[0] || '' };
+                    }
+                } else if (col.type === 'select') {
+                    // Select stores string value
+                    if (typeof currentVal === 'string' && !allowed.includes(currentVal)) {
+                        line.values[colKey] = '';
+                    }
+                } else if (col.type === 'multiselect') {
+                    // Multiselect stores array of values
+                    if (Array.isArray(currentVal)) {
+                        const filtered = currentVal.filter(v => allowed.includes(v));
+                        line.values[colKey] = filtered;
+                    }
+                }
+            }
+        },
+
+        clearDynamicFilters(line) {
+            delete this.dynamicFilters[line._tempId];
+        },
+
+        getFilteredOptions(line, col) {
+            const allowed = this.dynamicFilters[line._tempId]?.[col.key];
+            const allOptions = col.config?.options || [];
+            if (!allowed || allowed.length === 0) return allOptions; // fallback: all
+            return allOptions.filter(opt => allowed.includes(opt.value));
+        },
+
+        getFilteredUnits(line, col) {
+            const allowed = this.dynamicFilters[line._tempId]?.[col.key];
+            const allUnits = col.config?.units || (col.type === 'dosage' ? ['mg','ml','g','cp'] : ['day','week','month']);
+            if (!allowed || allowed.length === 0) return allUnits; // fallback: all
+            return allUnits.filter(u => allowed.includes(u));
         },
 
         // ─── Multiselect helpers ──────────────────────────────────────
@@ -672,9 +750,10 @@ function lineBuilder(schemaId, documentId, accountNumber) {
             line.values[key] = [...current];
         },
 
-        getAvailableOptions(col, selected) {
+        getAvailableOptions(col, selected, line) {
             const sel = selected || [];
-            return (col.config?.options || []).filter(o => !sel.includes(o.value));
+            const allOpts = line ? this.getFilteredOptions(line, col) : (col.config?.options || []);
+            return allOpts.filter(o => !sel.includes(o.value));
         },
 
         getOptionLabel(col, value) {

@@ -182,6 +182,7 @@ module.exports = {
 
                     const customFieldDefs = {};
                     (entity.customFields || []).forEach(cf => {
+                        const typeConfig = cf.type_config || {};
                         customFieldDefs[cf._id.toString()] = {
                             _id: cf._id.toString(),
                             name: cf.name,
@@ -189,8 +190,9 @@ module.exports = {
                             type: cf.type,
                             inputType: cf.inputType || cf.type || 'text',
                             htmlTemplate: cf.htmlTemplate || '',
-                            options: cf.options || [],
-                            type_config: cf.type_config || {},
+                            options: typeConfig.options || cf.options || [],
+                            multiple: typeConfig.multiple || false,
+                            type_config: typeConfig,
                             ui: cf.ui || {}
                         };
                     });

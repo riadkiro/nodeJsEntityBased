@@ -26,13 +26,21 @@ const db = require("./config/db").globalDbUri;
 // Connect to MongoDB
 mongoose
   .connect(db, { useNewUrlParser: true })
-  .then(() => {
+  .then(async () => {
     console.log("MongoDB Connected : Global DB");
 
-    // Start workflow worker
-    const WorkflowWorker = require('./src/integrations/services/WorkflowWorker');
-    WorkflowWorker.start();
-    console.log("WorkflowWorker started");
+    // Start workflow worker with tenant DB connection
+    try {
+      const WorkflowWorker = require('./src/integrations/services/WorkflowWorker');
+      const dbConfig = require('./config/db');
+      const defaultTenant = process.env.DEFAULT_TENANT || '5001';
+      const tenantDbUrl = `${dbConfig.uri}saas_app_rb_${defaultTenant}`;
+      const tenantConn = await mongoose.createConnection(tenantDbUrl, { useNewUrlParser: true });
+      console.log(`[WorkflowWorker] Connected to tenant DB: saas_app_rb_${defaultTenant}`);
+      WorkflowWorker.start(tenantConn);
+    } catch (err) {
+      console.error('[WorkflowWorker] Failed to start:', err.message);
+    }
   })
   .catch((err) => console.log(err));
 

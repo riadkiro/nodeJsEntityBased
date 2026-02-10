@@ -20,6 +20,7 @@ const LOCK_TIMEOUT = 5 * 60 * 1000;
 
 let isRunning = false;
 let pollTimer = null;
+let storedTenantConnection = null;
 
 /**
  * Start the workflow worker
@@ -32,6 +33,7 @@ function start(tenantDbConnection) {
     }
 
     isRunning = true;
+    storedTenantConnection = tenantDbConnection;
     console.log(`[WorkflowWorker] Starting worker ${WORKER_ID}`);
 
     // Register models on tenant connection
@@ -128,13 +130,20 @@ async function poll(JobModel, ConnectionModel, LogModel) {
                         }
                     );
                 } else {
+                    // Build fake req for tenantCollection
+                    const tenantReq = {
+                        tenantDbConnection: storedTenantConnection,
+                        tenantDbReady: true
+                    };
+
                     // Process the job
                     await WorkflowService.processJob({
                         job,
                         workflow,
                         ConnectionModel,
                         LogModel,
-                        JobModel
+                        JobModel,
+                        tenantReq
                     });
                 }
             }

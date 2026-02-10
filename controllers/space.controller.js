@@ -1,6 +1,18 @@
 const tenantCollection = require("../middleware/tenant").tenantCollection;
 const mongoose = require("mongoose");
 
+// Generate a unique slug for a given model
+async function uniqueSlug(Model, name) {
+    const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const existing = await Model.findOne({ slug: base });
+    if (!existing) return base;
+    let counter = 2;
+    while (await Model.findOne({ slug: `${base}-${counter}` })) {
+        counter++;
+    }
+    return `${base}-${counter}`;
+}
+
 module.exports = {
     list: async (req, res) => {
         try {
@@ -30,8 +42,8 @@ module.exports = {
             const { name, description, color } = req.body;
             console.log("Saving new Space:", req.body);
 
-            // Auto-generate slug and owner for now to satisfy strict schema
-            const slug = name.toLowerCase().replace(/ /g, '-') + '-' + Date.now();
+            // Auto-generate unique slug
+            const slug = await uniqueSlug(Space, name);
             const owner = new mongoose.Types.ObjectId(); // Placeholder owner
 
             const spaceData = {

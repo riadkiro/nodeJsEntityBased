@@ -5,6 +5,18 @@ const path = require('path');
 // Cache for loaded icon libraries
 const iconLibrariesCache = {};
 
+// Generate a unique slug for a given model
+async function uniqueSlug(Model, name) {
+    const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const existing = await Model.findOne({ slug: base });
+    if (!existing) return base;
+    let counter = 2;
+    while (await Model.findOne({ slug: `${base}-${counter}` })) {
+        counter++;
+    }
+    return `${base}-${counter}`;
+}
+
 module.exports = {
     getIconLibraries: async (req, res) => {
         try {
@@ -284,7 +296,7 @@ module.exports = {
         const count = await SpaceModel.countDocuments();
         const newSpace = new SpaceModel({
             name,
-            slug: name.toLowerCase().replace(/ /g, '-') + '-' + Date.now(),
+            slug: await uniqueSlug(SpaceModel, name),
             owner: req.user._id,
             color,
             icon,
@@ -298,7 +310,8 @@ module.exports = {
         const FolderModel = await tenantCollection(req, "Folder");
         const { name, parentId, parentType, type, icon, color } = req.body;
         // Basic order strategy: 0 (or count if scoped query, but 0 is fine for now as user can drag)
-        const folderData = { name, slug: name.toLowerCase().replace(/ /g, '-') + '-' + Date.now(), createdBy: req.user._id, order: 0 };
+        const slug = await uniqueSlug(FolderModel, name);
+        const folderData = { name, slug, createdBy: req.user._id, order: 0 };
         if (type) folderData.type = type;
         if (icon) folderData.icon = icon;
         if (color) folderData.color = color;
@@ -313,7 +326,7 @@ module.exports = {
         const EntityModel = await tenantCollection(req, "Entity");
         const ViewModel = await tenantCollection(req, "View");
         const { name, parentId, parentType, viewType, icon, color } = req.body;
-        const slug = name.toLowerCase().replace(/ /g, '-') + '-' + Date.now();
+        const slug = await uniqueSlug(EntityModel, name);
 
         const newEntity = new EntityModel({ name, slug, createdBy: req.user._id });
         await newEntity.save();
@@ -446,7 +459,7 @@ module.exports = {
         const entity = await EntityModel.findById(entityId);
         const newView = new ViewModel({
             name: entity.name,
-            slug: entity.name.toLowerCase().replace(/ /g, '-') + '-' + Date.now(),
+            slug: await uniqueSlug(ViewModel, entity.name),
             entity: entity._id,
             viewType: viewType || 'list',
             createdBy: req.user._id,
@@ -463,7 +476,7 @@ module.exports = {
         const { cockpitId, cockpitName, parentId, parentType } = req.body;
         const newView = new ViewModel({
             name: cockpitName || 'Cockpit',
-            slug: 'cockpit-' + Date.now(),
+            slug: await uniqueSlug(ViewModel, cockpitName || 'cockpit'),
             viewType: 'cockpit',
             cockpitId: cockpitId,
             createdBy: req.user._id,

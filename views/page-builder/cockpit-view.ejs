@@ -1,18 +1,22 @@
-<div x-data="cockpitView()">
+<div x-data="cockpitView()" x-init="fetchDashboardData()">
   
   <!-- Header Bar -->
   <div class="mb-4 bg-white dark:bg-gray-900 border dark:border-0 shadow-sm rounded-lg">
     <div class="h-14 flex items-center justify-between px-6">
       <div class="flex items-center gap-3">
-        <iconify-icon icon="solar:monitor-smartphone-bold-duotone" width="22" class="text-primary"></iconify-icon>
-        <h1 class="text-lg font-semibold dark:text-white" x-text="pageConfig.name"></h1>
+        <iconify-icon icon="solar:monitor-smartphone-bold-duotone" width="24" class="text-primary"></iconify-icon>
+        <h2 class="text-lg font-semibold dark:text-white" x-text="pageConfig.name || 'Cockpit'"></h2>
       </div>
-      <div class="flex items-center gap-3">
-        <span class="text-xs text-gray-500 dark:text-gray-400" x-show="pageConfig.status === 'published'">
-          <iconify-icon icon="solar:check-circle-bold" class="text-success mr-1"></iconify-icon>
-          Published
-        </span>
-        <a :href="`/account/${accountNumber}/page-builder/edit/${configId}`" 
+      <div class="flex items-center gap-2">
+        <!-- Loading indicator -->
+        <div x-show="loading" x-cloak class="animate-spin">
+          <iconify-icon icon="solar:refresh-bold" width="18" class="text-primary"></iconify-icon>
+        </div>
+        <button @click="fetchDashboardData()" class="btn btn-outline-primary btn-sm flex items-center gap-1">
+          <iconify-icon icon="solar:refresh-bold" width="14"></iconify-icon>
+          Actualiser
+        </button>
+        <a :href="`/account/${accountNumber}/page-builder/editor/${configId}`"
            class="btn btn-outline-primary btn-sm flex items-center gap-1">
           <iconify-icon icon="solar:pen-bold" width="14"></iconify-icon>
           Edit
@@ -58,37 +62,236 @@
                       ]"
                       style="margin-bottom: 1.5rem;">
                       
-                      <!-- Block Content -->
-                      <div x-data="{ block: pageConfig.blocks[blockId] }" class="h-full" :style="row.equalHeight && 'display: flex; flex-direction: column;'">
+                      <!-- Block Content — NO nested x-data, use b(blockId) helper -->
+                      <div class="h-full" :style="row.equalHeight && 'display: flex; flex-direction: column;'">
                         
-                        <!-- Panel Block -->
-                        <template x-if="block && block.type === 'panel'">
-                          <div class="panel">
-                            <div class="mb-5 flex items-center justify-between">
-                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Panel Title'"></h5>
+                        <!-- KPI Cards Block (DYNAMIC) -->
+                        <template x-if="b(blockId)?.type === 'kpi-cards'">
+                          <div class="panel h-full" :style="b(blockId).props?.height ? `min-height: ${b(blockId).props.height}px` : ''">
+                            <div class="mb-4">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="b(blockId).title || 'Indicateurs'"></h5>
                             </div>
-                            <div class="text-sm text-gray-500 dark:text-gray-400">Panel content...</div>
+                            <!-- If mapping.items is an array of config objects (key-based) -->
+                            <template x-if="Array.isArray(b(blockId).props?.mapping?.items) && b(blockId).props.mapping.items[0]?.key">
+                              <div class="grid grid-cols-4 gap-4">
+                                <template x-for="item in b(blockId).props.mapping.items" :key="item.key">
+                                  <div class="text-center">
+                                    <div class="text-2xl font-bold" :class="`text-${item.color || 'primary'}`" x-text="getNestedValue(dashboardData, item.key) ?? '—'"></div>
+                                    <div class="text-xs text-gray-500" x-text="item.label"></div>
+                                  </div>
+                                </template>
+                              </div>
+                            </template>
+                            <!-- If mapping.items is a string path to data array (byStatus) -->
+                            <template x-if="typeof b(blockId).props?.mapping?.items === 'string'">
+                              <div class="grid gap-3">
+                                <template x-for="item in (getNestedValue(dashboardData, b(blockId).props.mapping.items) || [])" :key="item.label">
+                                  <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+                                    <span class="text-sm font-medium" x-text="item.label"></span>
+                                    <span class="badge bg-primary/20 text-primary rounded-full px-2" x-text="item.count"></span>
+                                  </div>
+                                </template>
+                              </div>
+                            </template>
                           </div>
                         </template>
 
-                        <!-- Text Block -->
-                        <template x-if="block && block.type === 'text'">
-                          <div class="panel">
-                            <div x-text="block.content || 'Text content...'" class="prose max-w-none dark:text-gray-300"></div>
+                        <!-- Work Queue Block (DYNAMIC) -->
+                        <template x-if="b(blockId)?.type === 'work-queue'">
+                          <div class="panel h-full" :style="b(blockId).props?.height ? `min-height: ${b(blockId).props.height}px` : ''">
+                            <div class="mb-4 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="b(blockId).title || 'Queue'"></h5>
+                              <div class="flex gap-1">
+                                <span class="badge bg-info/20 text-info rounded-full px-2 text-xs" 
+                                      x-text="getQueueData(b(blockId)).length + ' ' + (b(blockId).title?.includes('Attente') ? 'en attente' : 'consultations')"></span>
+                              </div>
+                            </div>
+                            <div class="space-y-2 text-sm max-h-[380px] overflow-y-auto custom-scrollbar">
+                              <template x-for="item in getQueueData(b(blockId))" :key="item.id">
+                                <div :class="[
+                                    'flex items-center justify-between p-2 rounded-lg transition-all',
+                                    item.urgent ? 'bg-warning/10 border-l-2 border-warning' : 
+                                    item.status === 'en_cours' ? 'bg-primary/10 border-l-2 border-primary' :
+                                    item.status === 'Terminée' ? 'bg-success/10 border-l-2 border-success' :
+                                    item.status === 'Programmée' ? 'bg-gray-50/50 dark:bg-gray-700/20' :
+                                    'bg-gray-50 dark:bg-gray-700/50'
+                                  ]">
+                                  <div class="flex items-center gap-2">
+                                    <div :class="[
+                                        'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold',
+                                        item.urgent ? 'bg-warning/20 text-warning' : 
+                                        item.status === 'en_cours' ? 'bg-primary/20 text-primary' : 
+                                        item.status === 'Terminée' ? 'bg-success/20 text-success' : 
+                                        'bg-primary/20 text-primary'
+                                      ]" x-text="item.initials"></div>
+                                    <div>
+                                      <div class="font-medium">
+                                        <span x-text="item.title"></span>
+                                        <span x-show="item.urgent" class="text-warning text-xs"> ⚡ Urgent</span>
+                                        <span x-show="item.status === 'en_cours'" class="text-primary text-xs"> 🔵 En cours</span>
+                                      </div>
+                                      <div class="text-xs text-gray-500">
+                                        <span x-text="item.motif || 'Consultation'"></span>
+                                        <span x-show="item.salle"> • </span>
+                                        <span x-show="item.salle" x-text="'Salle ' + item.salle"></span>
+                                        <span x-show="item.rdv_at"> • </span>
+                                        <span x-show="item.rdv_at" x-text="formatTime(item.rdv_at)"></span>
+                                        <template x-if="item.status && typeof item.status === 'string' && !['en_cours','en_salle_attente'].includes(item.status)">
+                                          <span class="ml-1 text-gray-400" x-text="'— ' + item.status"></span>
+                                        </template>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div class="flex gap-1">
+                                    <button class="p-1 hover:bg-primary/10 rounded"><iconify-icon icon="solar:phone-bold" width="14"></iconify-icon></button>
+                                    <template x-if="item.status === 'en_salle_attente'">
+                                      <button class="p-1 hover:bg-success/10 rounded text-success"><iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon></button>
+                                    </template>
+                                  </div>
+                                </div>
+                              </template>
+                              <!-- Empty state -->
+                              <template x-if="getQueueData(b(blockId)).length === 0 && !loading">
+                                <div class="text-center py-8 text-gray-400">
+                                  <iconify-icon icon="solar:inbox-line-bold-duotone" width="32"></iconify-icon>
+                                  <p class="mt-2 text-sm">Aucun élément</p>
+                                </div>
+                              </template>
+                            </div>
                           </div>
                         </template>
 
-                        <!-- KPI Card Block -->
-                        <template x-if="block && block.type === 'kpi-card'">
+                        <!-- Focus Card Block (DYNAMIC) -->
+                        <template x-if="b(blockId)?.type === 'focus-card'">
+                          <div class="panel h-full" :style="b(blockId).props?.height ? `min-height: ${b(blockId).props.height}px` : ''">
+                            <div class="mb-4 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="b(blockId).title || 'Prochain Patient'"></h5>
+                              <template x-if="nextPatient">
+                                <span :class="[
+                                  'badge rounded-full px-2',
+                                  nextPatient.urgent ? 'bg-warning/10 text-warning' : 'bg-primary/10 text-primary'
+                                ]" x-text="nextPatient.urgent ? 'Urgent' : 'En attente'"></span>
+                              </template>
+                            </div>
+                            <template x-if="nextPatient">
+                              <div>
+                                <div class="flex items-center gap-4">
+                                  <div :class="[
+                                    'w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold',
+                                    nextPatient.urgent ? 'bg-warning/10 text-warning' : 'bg-primary/10 text-primary'
+                                  ]" x-text="nextPatient.initials"></div>
+                                  <div>
+                                    <div class="text-xl font-bold dark:text-white" x-text="nextPatient.title"></div>
+                                    <div class="text-gray-500 dark:text-gray-400 text-sm">
+                                      <span x-text="nextPatient.motif || 'Consultation'"></span>
+                                      <span x-show="nextPatient.salle"> • </span>
+                                      <span x-show="nextPatient.salle" x-text="'Salle ' + nextPatient.salle"></span>
+                                    </div>
+                                    <div class="text-xs mt-1 text-gray-400" x-text="nextPatient.rdv_at ? 'RDV : ' + formatTime(nextPatient.rdv_at) : ''"></div>
+                                  </div>
+                                </div>
+                                <div class="mt-4 flex gap-2">
+                                  <button class="btn btn-primary btn-sm flex-1">
+                                    <iconify-icon icon="solar:phone-bold" width="14" class="mr-1"></iconify-icon>Appeler
+                                  </button>
+                                  <button class="btn btn-outline-primary btn-sm flex-1">
+                                    <iconify-icon icon="solar:document-bold" width="14" class="mr-1"></iconify-icon>Dossier
+                                  </button>
+                                </div>
+                              </div>
+                            </template>
+                            <template x-if="!nextPatient && !loading">
+                              <div class="text-center py-8 text-gray-400">
+                                <iconify-icon icon="solar:check-circle-bold-duotone" width="40" class="text-success"></iconify-icon>
+                                <p class="mt-2 text-sm">Tous les patients ont été vus !</p>
+                              </div>
+                            </template>
+                          </div>
+                        </template>
+
+                        <!-- Urgency Radar Block (DYNAMIC) -->
+                        <template x-if="b(blockId)?.type === 'urgency-radar'">
+                          <div class="panel h-full border-l-4 border-danger" :style="b(blockId).props?.height ? `min-height: ${b(blockId).props.height}px` : ''">
+                            <div class="mb-4 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white flex items-center gap-2">
+                                <iconify-icon icon="solar:danger-triangle-bold" class="text-danger"></iconify-icon>
+                                <span x-text="b(blockId).title || 'Urgences'"></span>
+                              </h5>
+                              <span class="badge bg-danger text-white rounded-full px-2 text-xs" x-text="(dashboardData.urgencies || []).length"></span>
+                            </div>
+                            <div class="space-y-2 text-sm">
+                              <template x-for="urg in (dashboardData.urgencies || [])" :key="urg.id">
+                                <div class="p-2 bg-danger/10 rounded-lg flex items-center justify-between">
+                                  <div>
+                                    <div class="font-medium text-danger" x-text="urg.title"></div>
+                                    <div class="text-xs text-gray-500" x-text="urg.rdv_at ? formatTime(urg.rdv_at) : ''"></div>
+                                  </div>
+                                  <button class="btn btn-danger btn-sm">Traiter</button>
+                                </div>
+                              </template>
+                              <template x-if="(dashboardData.urgencies || []).length === 0 && !loading">
+                                <div class="text-center py-4 text-gray-400 text-sm">Aucune urgence</div>
+                              </template>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Progress List Block (DYNAMIC) -->
+                        <template x-if="b(blockId)?.type === 'progress-list'">
                           <div class="panel h-full">
-                            <div class="mb-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase" x-text="block.label || 'KPI'"></div>
-                            <div class="text-3xl font-bold text-primary mb-2">0</div>
-                            <div class="text-xs text-success">↑ 12%</div>
+                            <div class="mb-5 flex items-start justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white-light" x-text="b(blockId).title || 'Progress List'"></h5>
+                            </div>
+                            <div class="flex flex-col space-y-5">
+                              <template x-for="item in getProgressItems(blockId)" :key="item.label">
+                                <div class="flex items-center">
+                                  <div class="h-9 w-9">
+                                    <div class="flex h-9 w-9 items-center justify-center rounded-xl" 
+                                         :style="`background-color: ${getBgColor(item.color)}20; color: ${getBgColor(item.color)}`">
+                                      <iconify-icon :icon="item.status ? 'solar:checklist-bold' : 'solar:pill-bold'" width="20"></iconify-icon>
+                                    </div>
+                                  </div>
+                                  <div class="w-full flex-initial px-3">
+                                    <div class="w-summary-info mb-1 flex justify-between font-semibold text-white-dark">
+                                      <h6 x-text="item.label"></h6>
+                                      <p class="text-xs ltr:ml-auto rtl:mr-auto" x-text="item.percent ? `${item.percent}%` : (item.count ? `×${item.count}` : `${item.value}%`)"></p>
+                                    </div>
+                                    <div>
+                                      <div class="h-5 w-full overflow-hidden rounded-full bg-dark-light p-1 shadow-3xl dark:bg-dark-light/10 dark:shadow-none">
+                                        <div class="relative h-full rounded-full before:absolute before:inset-y-0 before:m-auto before:h-2 before:w-2 before:rounded-full before:bg-white ltr:before:right-0.5 rtl:before:left-0.5"
+                                             :style="`width: ${item.percent || item.value || 50}%; background: ${getGradient(item.color)}`"></div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </template>
+                            </div>
+                          </div>
+                        </template>
+
+                        <!-- Comms Dock Block (static) -->
+                        <template x-if="b(blockId)?.type === 'comms-dock'">
+                          <div class="panel h-full flex flex-col" :style="b(blockId).props?.height ? `min-height: ${b(blockId).props.height}px` : ''">
+                            <div class="mb-4 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="b(blockId).title || 'Communications'"></h5>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                              <button class="btn btn-outline-primary btn-sm"><iconify-icon icon="solar:call-medicine-bold" width="14" class="mr-1"></iconify-icon>Suivant</button>
+                              <button class="btn btn-outline-info btn-sm"><iconify-icon icon="solar:map-arrow-right-bold" width="14" class="mr-1"></iconify-icon>Viens ici</button>
+                              <button class="btn btn-outline-success btn-sm"><iconify-icon icon="solar:document-medicine-bold" width="14" class="mr-1"></iconify-icon>Ordonnance</button>
+                              <button class="btn btn-outline-warning btn-sm"><iconify-icon icon="solar:test-tube-bold" width="14" class="mr-1"></iconify-icon>Labo</button>
+                            </div>
+                            <div class="flex-1 overflow-y-auto space-y-2 text-sm bg-gray-50 dark:bg-gray-700/30 rounded-lg p-2">
+                              <div class="bg-white dark:bg-gray-800 p-2 rounded text-xs">
+                                <div class="font-medium text-gray-500">Système</div>
+                                <div>Dashboard connecté — données en temps réel</div>
+                              </div>
+                            </div>
                           </div>
                         </template>
 
                         <!-- Statistics Block -->
-                        <template x-if="block && block.type === 'statistics'">
+                        <template x-if="b(blockId)?.type === 'statistics'">
                           <div class="panel h-full" x-data="{
                             initCharts() {
                               const totalVisit = new ApexCharts(this.$refs.totalVisit, {
@@ -121,7 +324,7 @@
                             }
                           }" x-init="setTimeout(() => initCharts(), 100)">
                             <div class="mb-5 flex items-center justify-between dark:text-white-light">
-                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Statistics'"></h5>
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="b(blockId).title || 'Statistics'"></h5>
                             </div>
                             <div class="grid gap-8 text-sm font-bold text-[#515365] sm:grid-cols-2">
                               <div>
@@ -142,268 +345,46 @@
                           </div>
                         </template>
 
-                        <!-- Expense Tracker Block -->
-                        <template x-if="block && block.type === 'expense-tracker'">
-                          <div class="panel h-full">
-                            <div class="mb-5 flex items-center justify-between dark:text-white-light">
-                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Expenses'"></h5>
+                        <!-- Panel Block -->
+                        <template x-if="b(blockId)?.type === 'panel'">
+                          <div class="panel">
+                            <div class="mb-5 flex items-center justify-between">
+                              <h5 class="text-lg font-semibold dark:text-white" x-text="b(blockId).title || 'Panel Title'"></h5>
                             </div>
-                            <div class="my-10 text-3xl font-bold text-[#e95f2b]">
-                              <span x-text="`${block.currency || '$'} ${(block.value || 0).toLocaleString()}`"></span>
-                              <span class="text-sm text-black ltr:mr-1 rtl:ml-1 dark:text-white-light" x-text="block.period || 'this week'"></span>
-                              <svg class="inline h-5 w-5 text-success" viewBox="0 0 24 24" fill="none">
-                                <path opacity="0.5" d="M22 7L14.6203 14.3347C13.6227 15.3263 13.1238 15.822 12.5051 15.822C11.8864 15.8219 11.3876 15.326 10.3902 14.3342L10.1509 14.0962C9.15254 13.1035 8.65338 12.6071 8.03422 12.6074C7.41506 12.6076 6.91626 13.1043 5.91867 14.0977L2 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M22.0001 12.5458V7H16.418" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                              </svg>
-                            </div>
-                            <div class="flex items-center justify-between">
-                              <div class="h-5 w-full overflow-hidden rounded-full bg-dark-light p-1 shadow-3xl dark:bg-dark-light/10 dark:shadow-none">
-                                <div class="relative h-full w-full rounded-full bg-gradient-to-r from-[#4361ee] to-[#805dca] before:absolute before:inset-y-0 before:m-auto before:h-2 before:w-2 before:rounded-full before:bg-white ltr:before:right-0.5 rtl:before:left-0.5" :style="`width: ${block.progress || 0}%`"></div>
-                              </div>
-                              <span class="ltr:ml-5 rtl:mr-5 dark:text-white-light" x-text="`${block.progress || 0}%`"></span>
-                            </div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Panel content...</div>
                           </div>
                         </template>
 
-                        <!-- Progress List Block -->
-                        <template x-if="block && block.type === 'progress-list'">
-                          <div class="panel h-full" x-data="{
-                            getGradient(color) {
-                              const gradients = {
-                                primary: 'linear-gradient(to right, #009ffd, #2a2a72)',
-                                danger: 'linear-gradient(to right, #a71d31, #3f0d12)',
-                                warning: 'linear-gradient(to right, #fe5f75, #fc9842)',
-                                success: 'linear-gradient(to right, #11998e, #38ef7d)',
-                                info: 'linear-gradient(to right, #4361ee, #805dca)',
-                                secondary: 'linear-gradient(to right, #667eea, #764ba2)'
-                              };
-                              return gradients[color] || gradients.primary;
-                            },
-                            getBgColor(color) {
-                              const colors = {
-                                primary: '#4361ee', danger: '#e7515a', warning: '#e2a03f',
-                                success: '#00ab55', info: '#2196f3', secondary: '#805dca'
-                              };
-                              return colors[color] || colors.primary;
-                            }
-                          }">
-                            <div class="mb-5 flex items-start justify-between">
-                              <h5 class="text-lg font-semibold dark:text-white-light" x-text="block.title || 'Progress List'"></h5>
-                            </div>
-                            <div class="flex flex-col space-y-5">
-                              <template x-for="item in block.items || []" :key="item.label">
-                                <div class="flex items-center">
-                                  <div class="h-9 w-9">
-                                    <div class="flex h-9 w-9 items-center justify-center rounded-xl" 
-                                         :style="`background-color: ${getBgColor(item.color)}20; color: ${getBgColor(item.color)}`">
-                                      <iconify-icon icon="solar:globe-bold" width="20"></iconify-icon>
-                                    </div>
-                                  </div>
-                                  <div class="w-full flex-initial px-3">
-                                    <div class="w-summary-info mb-1 flex justify-between font-semibold text-white-dark">
-                                      <h6 x-text="item.label"></h6>
-                                      <p class="text-xs ltr:ml-auto rtl:mr-auto" x-text="`${item.value}%`"></p>
-                                    </div>
-                                    <div>
-                                      <div class="h-5 w-full overflow-hidden rounded-full bg-dark-light p-1 shadow-3xl dark:bg-dark-light/10 dark:shadow-none">
-                                        <div class="relative h-full rounded-full before:absolute before:inset-y-0 before:m-auto before:h-2 before:w-2 before:rounded-full before:bg-white ltr:before:right-0.5 rtl:before:left-0.5"
-                                             :style="`width: ${item.value}%; background: ${getGradient(item.color)}`"></div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </template>
-                            </div>
-                          </div>
-                        </template>
-
-                        <!-- Work Queue Block -->
-                        <template x-if="block && block.type === 'work-queue'">
-                          <div class="panel h-full" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
-                            <div class="mb-4 flex items-center justify-between">
-                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Queue'"></h5>
-                              <div class="flex gap-1">
-                                <span class="badge bg-info/20 text-info rounded-full px-2 text-xs">12 en attente</span>
-                              </div>
-                            </div>
-                            <div class="space-y-2 text-sm">
-                              <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div class="flex items-center gap-2">
-                                  <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold">JD</div>
-                                  <div>
-                                    <div class="font-medium">Jean Dupont</div>
-                                    <div class="text-xs text-gray-500">Consultation</div>
-                                  </div>
-                                </div>
-                                <div class="flex gap-1">
-                                  <button class="p-1 hover:bg-primary/10 rounded"><iconify-icon icon="solar:phone-bold" width="14"></iconify-icon></button>
-                                  <button class="p-1 hover:bg-success/10 rounded text-success"><iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon></button>
-                                </div>
-                              </div>
-                              <div class="flex items-center justify-between p-2 bg-warning/10 rounded-lg border-l-2 border-warning">
-                                <div class="flex items-center gap-2">
-                                  <div class="w-8 h-8 rounded-full bg-warning/20 flex items-center justify-center text-xs font-bold">ML</div>
-                                  <div>
-                                    <div class="font-medium">Marie Leblanc <span class="text-warning text-xs">⚡ Urgent</span></div>
-                                    <div class="text-xs text-gray-500">Douleur aiguë</div>
-                                  </div>
-                                </div>
-                                <div class="flex gap-1">
-                                  <button class="p-1 hover:bg-primary/10 rounded"><iconify-icon icon="solar:phone-bold" width="14"></iconify-icon></button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </template>
-
-                        <!-- Comms Dock Block -->
-                        <template x-if="block && block.type === 'comms-dock'">
-                          <div class="panel h-full flex flex-col" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
-                            <div class="mb-4 flex items-center justify-between">
-                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Communications'"></h5>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2 mb-4">
-                              <button class="btn btn-outline-primary btn-sm"><iconify-icon icon="solar:call-medicine-bold" width="14" class="mr-1"></iconify-icon>Suivant</button>
-                              <button class="btn btn-outline-info btn-sm"><iconify-icon icon="solar:map-arrow-right-bold" width="14" class="mr-1"></iconify-icon>Viens ici</button>
-                              <button class="btn btn-outline-success btn-sm"><iconify-icon icon="solar:document-medicine-bold" width="14" class="mr-1"></iconify-icon>Ordonnance</button>
-                              <button class="btn btn-outline-warning btn-sm"><iconify-icon icon="solar:test-tube-bold" width="14" class="mr-1"></iconify-icon>Labo</button>
-                            </div>
-                            <div class="flex-1 overflow-y-auto space-y-2 text-sm bg-gray-50 dark:bg-gray-700/30 rounded-lg p-2">
-                              <div class="bg-white dark:bg-gray-800 p-2 rounded text-xs">
-                                <div class="font-medium text-gray-500">Secrétaire</div>
-                                <div>Le patient Dupont est arrivé</div>
-                              </div>
-                            </div>
-                          </div>
-                        </template>
-
-                        <!-- Activity Feed Block -->
-                        <template x-if="block && block.type === 'activity-feed'">
-                          <div class="panel h-full" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
-                            <div class="mb-4 flex items-center justify-between">
-                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Activités'"></h5>
-                            </div>
-                            <div class="space-y-3 text-sm">
-                              <div class="flex gap-3">
-                                <div class="w-6 h-6 rounded-full bg-success/20 flex items-center justify-center shrink-0">
-                                  <iconify-icon icon="solar:check-circle-bold" width="12" class="text-success"></iconify-icon>
-                                </div>
-                                <div>
-                                  <div class="font-medium">Consultation terminée</div>
-                                  <div class="text-xs text-gray-500">Jean Dupont • il y a 5 min</div>
-                                </div>
-                              </div>
-                              <div class="flex gap-3">
-                                <div class="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                  <iconify-icon icon="solar:phone-bold" width="12" class="text-primary"></iconify-icon>
-                                </div>
-                                <div>
-                                  <div class="font-medium">Patient appelé</div>
-                                  <div class="text-xs text-gray-500">Marie Leblanc • il y a 10 min</div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </template>
-
-                        <!-- Focus Card Block -->
-                        <template x-if="block && block.type === 'focus-card'">
-                          <div class="panel h-full" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
-                            <div class="mb-4 flex items-center justify-between">
-                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Prochain Patient'"></h5>
-                              <span class="badge bg-primary/10 text-primary">En attente</span>
-                            </div>
-                            <div class="flex items-center gap-4">
-                              <div class="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold">JD</div>
-                              <div>
-                                <div class="text-xl font-bold dark:text-white">Jean Dupont</div>
-                                <div class="text-gray-500 dark:text-gray-400 text-sm">Consultation • Salle 3</div>
-                                <div class="text-xs mt-1 text-gray-400">Arrivé il y a 15 min</div>
-                              </div>
-                            </div>
-                            <div class="mt-4 flex gap-2">
-                              <button class="btn btn-primary btn-sm flex-1">
-                                <iconify-icon icon="solar:phone-bold" width="14" class="mr-1"></iconify-icon>Appeler
-                              </button>
-                              <button class="btn btn-outline-primary btn-sm flex-1">
-                                <iconify-icon icon="solar:document-bold" width="14" class="mr-1"></iconify-icon>Dossier
-                              </button>
-                            </div>
-                          </div>
-                        </template>
-
-                        <!-- Urgency Radar Block -->
-                        <template x-if="block && block.type === 'urgency-radar'">
-                          <div class="panel h-full border-l-4 border-danger" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
-                            <div class="mb-4 flex items-center justify-between">
-                              <h5 class="text-lg font-semibold dark:text-white flex items-center gap-2">
-                                <iconify-icon icon="solar:danger-triangle-bold" class="text-danger"></iconify-icon>
-                                <span x-text="block.title || 'Urgences'"></span>
-                              </h5>
-                              <span class="badge bg-danger text-white rounded-full px-2 text-xs">3</span>
-                            </div>
-                            <div class="space-y-2 text-sm">
-                              <div class="p-2 bg-danger/10 rounded-lg flex items-center justify-between">
-                                <div>
-                                  <div class="font-medium text-danger">Marie Leblanc</div>
-                                  <div class="text-xs text-gray-500">Douleur aiguë • 20 min</div>
-                                </div>
-                                <button class="btn btn-danger btn-sm">Traiter</button>
-                              </div>
-                            </div>
-                          </div>
-                        </template>
-
-                        <!-- KPI Cards Block -->
-                        <template x-if="block && block.type === 'kpi-cards'">
-                          <div class="panel h-full" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
-                            <div class="mb-4">
-                              <h5 class="text-lg font-semibold dark:text-white" x-text="block.title || 'Indicateurs'"></h5>
-                            </div>
-                            <div class="grid grid-cols-4 gap-4">
-                              <div class="text-center">
-                                <div class="text-2xl font-bold text-primary">24</div>
-                                <div class="text-xs text-gray-500">Patients</div>
-                              </div>
-                              <div class="text-center">
-                                <div class="text-2xl font-bold text-success">18</div>
-                                <div class="text-xs text-gray-500">Vus</div>
-                              </div>
-                              <div class="text-center">
-                                <div class="text-2xl font-bold text-warning">6</div>
-                                <div class="text-xs text-gray-500">Restants</div>
-                              </div>
-                              <div class="text-center">
-                                <div class="text-2xl font-bold text-danger">2</div>
-                                <div class="text-xs text-gray-500">Urgents</div>
-                              </div>
-                            </div>
+                        <!-- Text Block -->
+                        <template x-if="b(blockId)?.type === 'text'">
+                          <div class="panel">
+                            <div x-text="b(blockId).content || 'Text content...'" class="prose max-w-none dark:text-gray-300"></div>
                           </div>
                         </template>
 
                         <!-- Action Button Block -->
-                        <template x-if="block && block.type === 'action-button'">
-                          <div class="panel h-full flex items-center justify-center" :style="block.props?.height ? `min-height: ${block.props.height}px` : ''">
+                        <template x-if="b(blockId)?.type === 'action-button'">
+                          <div class="panel h-full flex items-center justify-center" :style="b(blockId).props?.height ? `min-height: ${b(blockId).props.height}px` : ''">
                             <button 
                               :class="[
                                 'btn flex items-center gap-2 transition-all',
-                                block.variant === 'outline' ? `btn-outline-${block.color || 'primary'}` : `btn-${block.color || 'primary'}`,
-                                block.size === 'lg' ? 'btn-lg text-base px-8 py-3' : block.size === 'sm' ? 'btn-sm text-xs px-3 py-1' : 'px-5 py-2'
+                                b(blockId).variant === 'outline' ? `btn-outline-${b(blockId).color || 'primary'}` : `btn-${b(blockId).color || 'primary'}`,
+                                b(blockId).size === 'lg' ? 'btn-lg text-base px-8 py-3' : b(blockId).size === 'sm' ? 'btn-sm text-xs px-3 py-1' : 'px-5 py-2'
                               ]">
                               <iconify-icon 
-                                x-show="block.icon" 
-                                :icon="block.icon || 'solar:play-bold'" 
-                                :width="block.size === 'lg' ? '20' : block.size === 'sm' ? '14' : '16'">
+                                x-show="b(blockId).icon" 
+                                :icon="b(blockId).icon || 'solar:play-bold'" 
+                                :width="b(blockId).size === 'lg' ? '20' : b(blockId).size === 'sm' ? '14' : '16'">
                               </iconify-icon>
-                              <span x-text="block.label || 'Action'"></span>
+                              <span x-text="b(blockId).label || 'Action'"></span>
                             </button>
                           </div>
                         </template>
 
                         <!-- Unknown Block Type -->
-                        <template x-if="block && !['panel', 'text', 'kpi-card', 'statistics', 'expense-tracker', 'progress-list', 'work-queue', 'comms-dock', 'activity-feed', 'focus-card', 'urgency-radar', 'kpi-cards', 'action-button'].includes(block.type)">
+                        <template x-if="b(blockId) && !['panel', 'text', 'kpi-card', 'statistics', 'expense-tracker', 'progress-list', 'work-queue', 'comms-dock', 'activity-feed', 'focus-card', 'urgency-radar', 'kpi-cards', 'action-button'].includes(b(blockId).type)">
                           <div class="panel">
-                            <span x-text="'Unknown block type: ' + block.type"></span>
+                            <span x-text="'Unknown block type: ' + b(blockId).type"></span>
                           </div>
                         </template>
 
@@ -439,7 +420,113 @@ document.addEventListener('alpine:init', () => {
       accountNumber: data.accountNumber,
       configId: data.configId,
       pageConfig: data.config,
-      activeTab: data.config.tabs && data.config.tabs.length > 0 ? data.config.tabs[0].id : 'default'
+      activeTab: data.config.tabs && data.config.tabs.length > 0 ? data.config.tabs[0].id : 'default',
+      
+      // Dynamic data
+      loading: false,
+      dashboardData: {},
+      nextPatient: null,
+
+      // Block helper — returns the block config for a given blockId
+      b(id) {
+        return this.pageConfig.blocks?.[id] || null;
+      },
+
+      async fetchDashboardData() {
+        this.loading = true;
+        console.log('[Cockpit] Fetching from:', `/account/${this.accountNumber}/api/analytics/today`);
+        try {
+          const res = await fetch(`/account/${this.accountNumber}/api/analytics/today`, {
+            credentials: 'include'
+          });
+          console.log('[Cockpit] Response status:', res.status);
+          if (res.ok) {
+            this.dashboardData = await res.json();
+            this.nextPatient = this.dashboardData.waitingRoom?.[0] || null;
+            console.log('[Cockpit] Data loaded:', {
+              today: this.dashboardData.today,
+              waitingRoom: this.dashboardData.waitingRoom?.length,
+              schedule: this.dashboardData.schedule?.length,
+              urgencies: this.dashboardData.urgencies?.length,
+              tasks: this.dashboardData.tasks?.length
+            });
+          } else {
+            const text = await res.text();
+            console.error('[Cockpit] API error:', res.status, text.substring(0, 200));
+          }
+        } catch (e) {
+          console.error('[Cockpit] Failed to fetch data:', e);
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      getNestedValue(obj, path) {
+        if (!obj || !path) return null;
+        return path.split('.').reduce((acc, key) => acc?.[key], obj);
+      },
+
+      getQueueData(block) {
+        if (!this.dashboardData) return [];
+        const query = block?.props?.query;
+        if (!query) return this.dashboardData.waitingRoom || [];
+        
+        // Route to different arrays based on the query
+        if (query.filters?.status__in) {
+          return this.dashboardData.waitingRoom || [];
+        }
+        if (query.filters?.rdv_at__today) {
+          return this.dashboardData.schedule || [];
+        }
+        return this.dashboardData.waitingRoom || [];
+      },
+
+      getProgressItems(blockId) {
+        const block = this.b(blockId);
+        if (!block) return [];
+        
+        // Analytics-sourced progress list (topMedications)
+        const mapping = block.props?.mapping?.items;
+        if (mapping && typeof mapping === 'string') {
+          return this.getNestedValue(this.dashboardData, mapping) || [];
+        }
+        // Task-sourced list
+        if (block.props?.dataSource?.includes('/api/records') && block.props?.query?.entitySlug === 'tache') {
+          return (this.dashboardData.tasks || []).slice(0, 8).map(t => ({
+            label: t.title,
+            value: t.priority === 'Haute' ? 80 : t.priority === 'Moyenne' ? 50 : 30,
+            color: t.priority === 'Haute' ? 'danger' : t.priority === 'Moyenne' ? 'warning' : 'primary',
+            status: t.status
+          }));
+        }
+        return block.items || [];
+      },
+
+      getGradient(color) {
+        const gradients = {
+          primary: 'linear-gradient(to right, #009ffd, #2a2a72)',
+          danger: 'linear-gradient(to right, #a71d31, #3f0d12)',
+          warning: 'linear-gradient(to right, #fe5f75, #fc9842)',
+          success: 'linear-gradient(to right, #11998e, #38ef7d)',
+          info: 'linear-gradient(to right, #4361ee, #805dca)',
+          secondary: 'linear-gradient(to right, #667eea, #764ba2)'
+        };
+        return gradients[color] || gradients.primary;
+      },
+
+      getBgColor(color) {
+        const colors = {
+          primary: '#4361ee', danger: '#e7515a', warning: '#e2a03f',
+          success: '#00ab55', info: '#2196f3', secondary: '#805dca'
+        };
+        return colors[color] || colors.primary;
+      },
+
+      formatTime(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      }
     };
   });
 });

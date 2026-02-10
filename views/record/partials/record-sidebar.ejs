@@ -31,11 +31,13 @@
                         </div>
 
                         <div class="space-y-3 mt-4" x-show="openActions" x-collapse>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2" x-data="{ submitting: false }" @submit.window="submitting = true">
                                 <button type="submit" form="main-record-form"
-                                    class="btn btn-primary flex-1 py-2 flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-wider transition-all hover:shadow-lg hover:shadow-primary/20">
-                                    <iconify-icon icon="solar:diskette-bold" width="16"></iconify-icon>
-                                    <span>
+                                    :disabled="submitting"
+                                    :class="submitting ? 'opacity-60 cursor-wait' : 'hover:shadow-lg hover:shadow-primary/20'"
+                                    class="btn btn-primary flex-1 py-2 flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-wider transition-all">
+                                    <iconify-icon :icon="submitting ? 'line-md:loading-twotone-loop' : 'solar:diskette-bold'" width="16"></iconify-icon>
+                                    <span x-text="submitting ? 'Envoi...' : '<%= locals.record ? 'Enregistrer' : 'Créer' %>'">
                                         <%= locals.record ? 'Enregistrer' : 'Créer' %>
                                     </span>
                                 </button>

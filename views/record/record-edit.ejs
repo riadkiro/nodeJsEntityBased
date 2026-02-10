@@ -1250,6 +1250,135 @@
             }
         }));
 
+        // ========== MODAL PICKER FIELD ==========
+        Alpine.data('modalPickerField', (config) => ({
+            fieldId: config.fieldId,
+            refEntity: config.refEntity,
+            refEntityName: config.refEntityName || '',
+            refEntityIcon: config.refEntityIcon || 'solar:link-round-bold-duotone',
+            refEntityColor: config.refEntityColor || '#4361ee',
+            multiple: config.multiple || false,
+            displayFields: [],
+            selectedItems: [],
+            tempSelected: [],
+            showModal: false,
+            modalSearch: '',
+            modalResults: [],
+            modalLoading: false,
+            modalPage: 1,
+            modalTotal: 0,
+            modalHasMore: false,
+
+            init() {
+                // Read displayFields from data attribute to avoid JSON quote conflicts in x-data
+                try {
+                    const dfAttr = this.$el.dataset.displayFields;
+                    if (dfAttr) this.displayFields = JSON.parse(dfAttr);
+                } catch(e) { console.warn('Failed to parse displayFields:', e); }
+
+                if (config.initialValue) {
+                    this.loadInitialValues(config.initialValue);
+                }
+            },
+
+            async loadInitialValues(val) {
+                const ids = Array.isArray(val) ? val : [val];
+                if (ids.length === 0 || !ids[0]) return;
+                try {
+                    const acc = '<%= account_number %>';
+                    const res = await fetch(`/account/${acc}/record/api/search?entityId=${this.refEntity}&ids=${ids.join(',')}&displayFields=${this.displayFields.join(',')}`, { credentials: 'include' });
+                    const json = await res.json();
+                    this.selectedItems = (json.data || []).map(r => ({ id: r.id, label: r.label }));
+                } catch(e) { console.error('Modal picker init error:', e); }
+            },
+
+            openModal() {
+                this.tempSelected = [...this.selectedItems];
+                this.modalSearch = '';
+                this.modalPage = 1;
+                this.modalResults = [];
+                this.showModal = true;
+                this.fetchModalResults(true);
+
+                // Direct DOM manipulation - bypass Alpine reactivity
+                const overlay = this.$refs.modalOverlay;
+                if (overlay) {
+                    overlay.style.display = 'flex';
+                }
+
+                setTimeout(() => {
+                    const input = this.$refs.modalSearchInput;
+                    if (input) input.focus();
+                }, 50);
+            },
+
+            closeModal() {
+                this.showModal = false;
+                const overlay = this.$refs.modalOverlay;
+                if (overlay) overlay.style.display = 'none';
+            },
+
+            async fetchModalResults(reset = false) {
+                if (reset) {
+                    this.modalPage = 1;
+                    this.modalResults = [];
+                }
+                this.modalLoading = true;
+                try {
+                    const acc = '<%= account_number %>';
+                    const q = this.modalSearch ? `&q=${encodeURIComponent(this.modalSearch)}` : '';
+                    const df = this.displayFields.length > 0 ? `&displayFields=${this.displayFields.join(',')}` : '';
+                    const url = `/account/${acc}/record/api/search?entityId=${this.refEntity}&page=${this.modalPage}&limit=20${q}${df}`;
+                    const res = await fetch(url, { credentials: 'include' });
+                    const json = await res.json();
+                    if (reset) {
+                        this.modalResults = json.data || [];
+                    } else {
+                        this.modalResults = [...this.modalResults, ...(json.data || [])];
+                    }
+                    this.modalTotal = json.meta?.total || 0;
+                    this.modalHasMore = json.meta?.hasMore || false;
+                } catch(e) {
+                    console.error('Modal fetch error:', e);
+                } finally {
+                    this.modalLoading = false;
+                }
+            },
+
+            loadMoreModal() {
+                this.modalPage++;
+                this.fetchModalResults(false);
+            },
+
+            isSelected(id) {
+                return this.tempSelected.some(i => i.id === id);
+            },
+
+            toggleModalSelect(result) {
+                const idx = this.tempSelected.findIndex(i => i.id === result.id);
+                if (idx >= 0) {
+                    this.tempSelected.splice(idx, 1);
+                } else {
+                    if (this.multiple) {
+                        this.tempSelected.push({ id: result.id, label: result.label });
+                    } else {
+                        this.tempSelected = [{ id: result.id, label: result.label }];
+                    }
+                }
+            },
+
+            confirmSelection() {
+                this.selectedItems = [...this.tempSelected];
+                this.showModal = false;
+                const overlay = this.$refs.modalOverlay;
+                if (overlay) overlay.style.display = 'none';
+            },
+
+            removeItem(id) {
+                this.selectedItems = this.selectedItems.filter(i => i.id !== id);
+            }
+        }));
+
         window.addEventListener('load', () => {
             const el = document.querySelector('[x-data^="recordForm()"]');
             if (el) window.recordFormApp = Alpine.$data(el);

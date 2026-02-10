@@ -44,13 +44,22 @@ router.use("/db", require("./db.routes.js"));
 router.use("/page-builder", require("./page-builder.routes.js"));
 
 // Cockpit View (clean URL)
-const PageConfig = require('../models/PageConfig');
+// Pre-register PageConfig model (non-standard filename: PageConfig.js instead of page-config.model.js)
+try { require('../models/PageConfig'); } catch (e) { }
 router.get("/cockpit/:id", async (req, res) => {
     try {
-        const pageConfig = await PageConfig.findOne({
-            _id: req.params.id,
-            accountId: req.account_number
-        });
+        const PageConfig = await tenantCollection(req, "PageConfig");
+
+        // Support both ObjectId and slug
+        const idParam = req.params.id;
+        let query;
+        if (mongoose.Types.ObjectId.isValid(idParam)) {
+            query = { $or: [{ _id: idParam }, { slug: idParam }] };
+        } else {
+            query = { slug: idParam };
+        }
+
+        const pageConfig = await PageConfig.findOne(query);
 
         if (!pageConfig) {
             return res.status(404).send('Cockpit not found');

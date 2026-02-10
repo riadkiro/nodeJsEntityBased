@@ -20,6 +20,7 @@ import KanbanCard from './components/KanbanCard'
 
 export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlug, kanbanFieldId = 'status' }) {
     const [columns, setColumns] = useState([])
+    const [statusClassificationId, setStatusClassificationId] = useState(null)
     const [records, setRecords] = useState([])
     const [orderByColumn, setOrderByColumn] = useState({})
     const [loading, setLoading] = useState(true)
@@ -111,6 +112,7 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
                         icon: opt.icon
                     }))
                 }
+                setStatusClassificationId(entity.statusClassification?._id || null)
                 cols.push({ id: 'none', title: 'Sans Statut', color: '#9ca3af' })
             } else {
                 const cls = entity.classifications?.find(c => c._id === kanbanFieldId)
@@ -139,6 +141,15 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
 
     const getRecordColumnId = useCallback((record) => {
         if (kanbanFieldId === 'status') {
+            // Read from classificationValues using statusClassification ID
+            if (statusClassificationId && record.classificationValues) {
+                const cv = record.classificationValues.find(v => String(v.classificationId) === String(statusClassificationId))
+                if (cv?.optionId) {
+                    const opt = cv.optionId
+                    return typeof opt === 'object' ? String(opt._id || opt.id || 'none') : String(opt)
+                }
+            }
+            // Fallback to record.status for legacy records
             const s = record.status
             if (!s) return 'none'
             if (typeof s === 'string') return String(s)
@@ -151,7 +162,7 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
         if (typeof opt === 'string') return String(opt)
         if (typeof opt === 'object') return String(opt._id || opt.id || 'none')
         return 'none'
-    }, [kanbanFieldId])
+    }, [kanbanFieldId, statusClassificationId])
 
     // Group records by column, then apply saved order
     const recordsByColumn = useMemo(() => {
@@ -204,20 +215,33 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
 
     const updateRecordField = useCallback(async (recordId, newColumnId) => {
         let url, body
-        if (kanbanFieldId === 'status') {
+        console.log('[Kanban] updateRecordField called', { recordId, newColumnId, kanbanFieldId, statusClassificationId })
+        if (kanbanFieldId === 'status' && statusClassificationId) {
+            // Use update-classification with the statusClassification ID
+            url = `/account/${accountNumber}/api/record/update-classification`
+            body = { recordId, classificationId: statusClassificationId, optionId: newColumnId }
+        } else if (kanbanFieldId === 'status') {
+            // Legacy fallback
             url = `/account/${accountNumber}/api/record/update-status`
             body = { recordId, status: newColumnId }
         } else {
             url = `/account/${accountNumber}/api/record/update-classification`
             body = { recordId, classificationId: kanbanFieldId, optionId: newColumnId }
         }
-        await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(body)
-        })
-    }, [accountNumber, kanbanFieldId])
+        console.log('[Kanban] Sending request:', { url, body })
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(body)
+            })
+            const data = await res.json()
+            console.log('[Kanban] Response:', data)
+        } catch (err) {
+            console.error('[Kanban] Error:', err)
+        }
+    }, [accountNumber, kanbanFieldId, statusClassificationId])
 
     const activeRecord = useMemo(() => {
         if (!activeId) return null
@@ -292,7 +316,16 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
         // Optimistic record field update (status/classification) + API
         setRecords(prev => prev.map(r => {
             if (String(r._id) !== activeRecordId) return r
-            if (kanbanFieldId === 'status') return { ...r, status: toCol === 'none' ? null : toCol }
+            if (kanbanFieldId === 'status') {
+                // Update classificationValues using statusClassification ID
+                const clsId = statusClassificationId
+                if (clsId) {
+                    const next = (r.classificationValues || []).filter(cv => String(cv.classificationId) !== String(clsId))
+                    if (toCol !== 'none') next.push({ classificationId: clsId, optionId: toCol })
+                    return { ...r, classificationValues: next }
+                }
+                return { ...r, status: toCol === 'none' ? null : toCol }
+            }
             const next = (r.classificationValues || []).filter(cv => String(cv.classificationId) !== String(kanbanFieldId))
             if (toCol !== 'none') next.push({ classificationId: kanbanFieldId, optionId: toCol })
             return { ...r, classificationValues: next }

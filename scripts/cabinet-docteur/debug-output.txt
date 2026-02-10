@@ -1,0 +1,28 @@
+﻿=== IDs de reference ===
+Entity consultation: 697c20e04b70c78bbe2e8702
+rdv_at field: 698af7f4f2100f0facaafaa9
+Status classification: 698af7f4f2100f0facaafa74
+  En salle attente optionId: 698af7f4f2100f0facaafa76
+  En cours optionId: 698af7f4f2100f0facaafa77
+  Terminee optionId: 698af7f4f2100f0facaafa78
+
+=== 9 CONSULTATIONS DU JOUR ===
+
+                   | Latifa El Amrani - Check-up annuel | statut: Termin├®e | urgent: false | classifValues: 2
+                   | Hassan Tahiri - Consultation de routine | statut: Termin├®e | urgent: false | classifValues: 2
+                   | Fatima Rhazi - Allergie saisonni├¿re | statut: Termin├®e | urgent: false | classifValues: 2
+>>> SALLE ATTENTE | Souad Fassi - Douleurs thoraciques | statut: En cours | urgent: false | classifValues: 2
+>>> SALLE ATTENTE | Hassan Bouchta - Suivi grossesse | statut: En salle d'attente | urgent: true | classifValues: 2
+>>> SALLE ATTENTE | Jamal Zniber - Vaccination | statut: En salle d'attente | urgent: false | classifValues: 2
+                   | Nadia Chaoui - Maux de t├¬te | statut: Programm├®e | urgent: false | classifValues: 2
+                   | Jamal Tazi - Renouvellement ordonnance | statut: Programm├®e | urgent: false | classifValues: 2
+                   | Leila Fassi - Contr├┤le tension | statut: Programm├®e | urgent: false | classifValues: 2
+
+=== SALLE D'ATTENTE: 3 personnes ===
+  1. Souad Fassi - Douleurs thoraciques (En cours)
+  2. Hassan Bouchta - Suivi grossesse (En salle d'attente) URGENT
+  3. Jamal Zniber - Vaccination (En salle d'attente)
+
+=== EXEMPLE record en salle attente ===
+title: Souad Fassi - Douleurs thoraciques
+classificationValues: [{"classificationId":"698af7f4f2100f0facaafa74","optionId":"698af7f4f2100f0facaafa77","_id":"698afa0acca06e6fc8afba9a"},{"classificationId":"698af7f4f2100f0facaafa82","optionId":"698af7f4f2100f0facaafa83","_id":"698afa0acca06e6fc8afba9b"}]

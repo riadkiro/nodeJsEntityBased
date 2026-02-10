@@ -672,7 +672,10 @@ module.exports = {
 
             const customFieldsArray = [];
             if (custom) {
+                const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
                 for (const [fieldId, value] of Object.entries(custom)) {
+                    // Skip non-ObjectId keys (e.g. relation UUID keys like "1ce30e77-...")
+                    if (!isValidObjectId(fieldId)) continue;
                     // Parse JSON string values (e.g. recurrence field sends serialized JSON)
                     let parsedValue = value;
                     if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
@@ -850,9 +853,11 @@ module.exports = {
         try {
             const RecordModel = await tenantCollection(req, "Record");
             const { recordId, classificationId, optionId } = req.body;
+            console.log('[updateClassification] Received:', { recordId, classificationId, optionId });
 
             const record = await RecordModel.findById(recordId);
             if (!record) return res.status(404).json({ error: "Record not found" });
+            console.log('[updateClassification] Record found, current classificationValues:', JSON.stringify(record.classificationValues));
 
             // Remove existing values for this classification (Single Select Flow Behavior)
             record.classificationValues = record.classificationValues.filter(

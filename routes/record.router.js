@@ -4,6 +4,9 @@ const recordController = require("../controllers/record.controller");
 const uploadTo = require("../middleware/upload");
 const upload = uploadTo((req) => `public/uploads/${req.account_number}`);
 
+// API for relations — MUST be before dynamic /:entityName routes
+router.get("/api/search", recordController.searchAjax);
+
 // Dynamic Record management based on Entity slug
 router.get("/:entityName/list", recordController.list);
 router.get("/:entityName/list-view", recordController.listView);
@@ -19,7 +22,5 @@ router.get("/:entityName/delete/:id", recordController.delete);
 // Record detail page (fiche) — must be AFTER all specific routes
 router.get("/:entityName/:id", recordController.detailPage);
 
-// API for relations
-router.get("/api/search", recordController.searchAjax);
-
 module.exports = router;
+

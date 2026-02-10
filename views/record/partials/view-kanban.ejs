@@ -139,6 +139,7 @@
         Alpine.data("recordKanban", () => ({
             columns: [],
             kanbanField: '<%= (view.settings && view.settings.kanbanField) ? view.settings.kanbanField : "status" %>',
+            statusClassificationId: null,
 
             init() {
                 this.prepareData();
@@ -208,6 +209,7 @@
                                 tasks: []
                             }));
                             cols.push({ id: 'none', title: 'Sans Statut', tasks: [] });
+                            this.statusClassificationId = entity.statusClassification?._id || null;
                         } else {
                             cols = [
                                 { id: 'draft', title: 'Brouillon', tasks: [] },
@@ -245,7 +247,14 @@
                         let colId = 'none';
 
                         if (field === 'status') {
-                            colId = task.status || 'none';
+                            // Check classificationValues using statusClassification ID
+                            const statusClsId = entity.statusClassification?._id;
+                            if (statusClsId && task.classificationValues) {
+                                const val = task.classificationValues.find(cv => cv.classificationId === statusClsId);
+                                if (val) colId = val.optionId;
+                            }
+                            // Fallback to record.status for legacy records
+                            if (colId === 'none' && task.status) colId = task.status;
                         } else {
                             if (task.classificationValues) {
                                 const val = task.classificationValues.find(cv => cv.classificationId === field);
@@ -297,7 +306,14 @@
                                 try {
                                     let url, body;
 
-                                    if (self.kanbanField === 'status') {
+                                    if (self.kanbanField === 'status' && self.statusClassificationId) {
+                                        url = `/account/<%= account_number %>/api/record/update-classification`;
+                                        body = {
+                                            recordId,
+                                            classificationId: self.statusClassificationId,
+                                            optionId: newColId
+                                        };
+                                    } else if (self.kanbanField === 'status') {
                                         url = `/account/<%= account_number %>/api/record/update-status`;
                                         body = { recordId, status: newColId };
                                     } else {

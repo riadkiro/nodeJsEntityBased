@@ -220,6 +220,9 @@ module.exports = {
     } catch (error) {
       console.error('Entity save error:', error);
       if (isJsonRequest) {
+        if (error.code === 11000) {
+          return res.status(400).json({ success: false, error: `Le slug "${entityData.slug}" existe déjà. Choisissez un slug unique.` });
+        }
         return res.status(500).json({ success: false, error: error.message });
       }
       res.status(500).render("entity/entity-add", {
@@ -358,6 +361,14 @@ module.exports = {
 
       console.log("🔄 API Update Entity:", entityId, entityData);
 
+      // Check slug uniqueness if slug is being updated
+      if (entityData.slug) {
+        const existing = await Entity.findOne({ slug: entityData.slug, _id: { $ne: entityId } });
+        if (existing) {
+          return res.status(400).json({ error: `Le slug "${entityData.slug}" existe déjà. Choisissez un slug unique.` });
+        }
+      }
+
       const updated = await Entity.findByIdAndUpdate(entityId, entityData, {
         new: true,
         runValidators: true,
@@ -371,6 +382,9 @@ module.exports = {
       res.json({ success: true, entity: updated });
     } catch (err) {
       console.error("❌ Error updating entity:", err);
+      if (err.code === 11000) {
+        return res.status(400).json({ error: `Le slug "${req.body.slug}" existe déjà. Choisissez un slug unique.` });
+      }
       res.status(500).json({ error: err.message });
     }
   },

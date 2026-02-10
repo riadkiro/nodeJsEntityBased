@@ -671,7 +671,8 @@
             this.resetForm();
             setTimeout(() => location.reload(), 1000);
           } else {
-            throw new Error('Erreur lors de la création');
+            const errData = await res.json().catch(() => null);
+            throw new Error(errData?.error || 'Erreur lors de la création');
           }
         } catch (e) {
           Swal.fire({ icon: 'error', title: 'Erreur', text: e.message });
@@ -786,7 +787,8 @@
             this.resetForm();
             setTimeout(() => location.reload(), 1000);
           } else {
-            throw new Error('Erreur lors de la mise à jour');
+            const errData = await res.json().catch(() => null);
+            throw new Error(errData?.error || 'Erreur lors de la mise à jour');
           }
         } catch (e) {
           Swal.fire({ icon: 'error', title: 'Erreur', text: e.message });

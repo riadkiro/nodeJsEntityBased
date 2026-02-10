@@ -133,6 +133,8 @@
       accordionClassifications: false,
       accordionReference: false,
       
+      slugManuallyEdited: false,
+      
       // New collection form
       newCollection: {
         name: '',
@@ -496,6 +498,7 @@
       resetForm() {
         this.step = 1;
         this.step2Tab = 'fields';
+        this.slugManuallyEdited = false;
         this.fieldSearch = '';
         this.selectedFields = [];
         this.relations = [];
@@ -611,16 +614,32 @@
         return this.allEntities.find(e => e._id === entityId) || null;
       },
 
+      // WordPress-style slug sanitization
+      slugify(text) {
+        return text
+          .toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
+      },
+
+      onNameInput() {
+        if (!this.slugManuallyEdited) {
+          this.newCollection.slug = this.slugify(this.newCollection.name);
+        }
+      },
+
+      onSlugInput() {
+        this.slugManuallyEdited = true;
+        this.newCollection.slug = this.slugify(this.newCollection.slug);
+      },
+
       async createCollection() {
         if (!this.newCollection.name) return;
         this.isSubmitting = true;
 
         if (!this.newCollection.slug) {
-          this.newCollection.slug = this.newCollection.name
-            .toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-|-$/g, '');
+          this.newCollection.slug = this.slugify(this.newCollection.name);
         }
 
         const enabledStandardFields = Object.entries(this.newCollection.standardFields)
@@ -663,6 +682,7 @@
 
       async openEditModal(entityId) {
         this.editingId = entityId;
+        this.slugManuallyEdited = true; // Existing slug, don't auto-regenerate
         await this.loadClassifications();
         try {
           const res = await fetch(`/account/<%= account_number %>/entity/api/${entityId}`);
@@ -914,7 +934,7 @@
             <!-- Nom -->
             <div class="mb-4">
               <label class="mb-2 block text-sm font-bold">Nom *</label>
-              <input type="text" x-model="newCollection.name" placeholder="Ex: Contacts, Projets, Factures..." class="form-input w-full" required>
+              <input type="text" x-model="newCollection.name" @input="onNameInput()" placeholder="Ex: Contacts, Projets, Factures..." class="form-input w-full" required>
             </div>
 
             <!-- Description et Slug - Accordion -->
@@ -932,7 +952,7 @@
               <div x-show="showDescSlug" x-collapse class="mt-2 space-y-3">
                 <textarea x-model="newCollection.description" rows="2" placeholder="Description de la collection..." class="form-input w-full resize-none text-sm"></textarea>
                 <div>
-                  <input type="text" x-model="newCollection.slug" placeholder="slug-de-la-collection" class="form-input w-full text-sm">
+                  <input type="text" x-model="newCollection.slug" @input="onSlugInput()" placeholder="slug-de-la-collection" class="form-input w-full text-sm">
                   <p class="text-xs text-gray-400 mt-1">Identifiant unique (généré automatiquement si vide)</p>
                 </div>
               </div>
@@ -1438,7 +1458,7 @@
             <!-- Nom -->
             <div class="mb-4">
               <label class="mb-2 block text-sm font-bold">Nom *</label>
-              <input type="text" x-model="newCollection.name" placeholder="Ex: Contacts, Projets, Factures..." class="form-input w-full" required>
+              <input type="text" x-model="newCollection.name" @input="onNameInput()" placeholder="Ex: Contacts, Projets, Factures..." class="form-input w-full" required>
             </div>
 
             <!-- Description et Slug - Accordion -->
@@ -1456,8 +1476,8 @@
               <div x-show="showDescSlug" x-collapse class="mt-2 space-y-3">
                 <textarea x-model="newCollection.description" rows="2" placeholder="Description de la collection..." class="form-input w-full resize-none text-sm"></textarea>
                 <div>
-                  <input type="text" x-model="newCollection.slug" placeholder="slug-de-la-collection" class="form-input w-full text-sm bg-gray-50 dark:bg-gray-800" disabled>
-                  <p class="text-xs text-gray-400 mt-1">Le slug ne peut pas être modifié</p>
+                  <input type="text" x-model="newCollection.slug" @input="onSlugInput()" placeholder="slug-de-la-collection" class="form-input w-full text-sm">
+                  <p class="text-xs text-gray-400 mt-1">Identifiant unique (modifié = pas de regénération auto)</p>
                 </div>
               </div>
             </div>

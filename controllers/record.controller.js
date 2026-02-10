@@ -1016,6 +1016,28 @@ module.exports = {
                 // PageConfig may not exist in all tenants
             }
 
+            // Compute referenceTitle from entity.referenceTitleTokens
+            const tokens = entity.referenceTitleTokens || [{ t: 'field', id: 'title' }];
+            const refParts = tokens.map(token => {
+                if (token.t === 'text') return token.v || '';
+                if (token.t === 'field') {
+                    // Standard fields
+                    if (['title', 'slug', 'date', 'description'].includes(token.id)) {
+                        return record[token.id] || '';
+                    }
+                    // Custom fields — match by field_id
+                    if (record.customFields && Array.isArray(record.customFields)) {
+                        const cf = record.customFields.find(c => {
+                            const cfId = c.field_id?._id || c.field_id;
+                            return cfId && cfId.toString() === token.id;
+                        });
+                        return cf?.value || '';
+                    }
+                }
+                return '';
+            });
+            const referenceTitle = refParts.join('').trim() || record.title || 'Sans titre';
+
             res.render("record/record-detail", {
                 entity,
                 record,
@@ -1024,6 +1046,7 @@ module.exports = {
                 classificationDisplay,
                 relationData,
                 customPages,
+                referenceTitle,
                 account_number: req.account_number,
                 layout: "layout-app"
             });

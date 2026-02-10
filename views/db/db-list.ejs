@@ -76,7 +76,7 @@ Base de données
     <!-- Tree View -->
     <div x-show="!loading" class="panel db-tree pb-12">
         <!-- Global Database -->
-        <div class="border-b dark:border-gray-700 " x-show="tree.global">
+        <div class="border-b dark:border-gray-800 " x-show="tree.global">
             <div class="db-header group flex items-center justify-between p-4" @click="tree.global.isOpen = !tree.global.isOpen">
                 <div class="flex items-center gap-3" >
                     <iconify-icon icon="solar:alt-arrow-down-bold" width="16" x-show="tree.global.isOpen" class="text-gray-400"></iconify-icon>
@@ -125,7 +125,7 @@ Base de données
         <!-- Custom Databases (Sortable) -->
         <div id="databases-sortable">
             <template x-for="db in tree.databases" :key="db.id">
-                <div class="database-item border-b dark:border-gray-700 last:border-0" :data-db-id="db.id">
+                <div class="database-item border-b dark:border-gray-800 last:border-0" :data-db-id="db.id">
                     <div class="db-header group flex items-center justify-between p-4" @click="db.isOpen = !db.isOpen">
                         <div class="flex items-center gap-3">
                             <iconify-icon icon="mdi:drag-vertical" width="16" class="text-gray-300 cursor-grab db-drag-handle" @click.stop></iconify-icon>
@@ -252,7 +252,7 @@ Base de données
 
                                 <!-- Grid -->
                                 <div
-                                    class="flex flex-wrap gap-1 mb-2 max-h-48 overflow-y-auto custom-scrollbar p-1 border rounded dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 content-start"
+                                    class="flex flex-wrap gap-1 mb-2 max-h-48 overflow-y-auto custom-scrollbar p-1 border rounded dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 content-start"
                                     @scroll.debounce="if($el.scrollTop + $el.clientHeight >= $el.scrollHeight - 20) loadMoreIcons()">
                                     <template x-for="icon in icons" :key="icon">
                                         <div
@@ -430,7 +430,7 @@ Base de données
 
                                 <!-- Grid -->
                                 <div
-                                    class="flex flex-wrap gap-1 mb-2 max-h-48 overflow-y-auto custom-scrollbar p-1 border rounded dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 content-start"
+                                    class="flex flex-wrap gap-1 mb-2 max-h-48 overflow-y-auto custom-scrollbar p-1 border rounded dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 content-start"
                                     @scroll.debounce="if($el.scrollTop + $el.clientHeight >= $el.scrollHeight - 20) loadMoreIcons()">
                                     <template x-for="icon in icons" :key="icon">
                                         <div

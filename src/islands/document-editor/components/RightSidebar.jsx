@@ -55,7 +55,7 @@ export default function RightSidebar({
 
             <div className="flex-1 overflow-auto bg-white dark:bg-gray-900" style={{ scrollbarColor: '#64748b transparent', scrollbarWidth: 'thin' }}>
                 {/* Section: Information */}
-                <div className="border-b dark:border-gray-700">
+                <div className="border-b dark:border-gray-800">
                     <button
                         onClick={() => toggleSection('info')}
                         className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
@@ -79,7 +79,7 @@ export default function RightSidebar({
                                     type="text"
                                     value={doc.name}
                                     onChange={(e) => handleChange('name', e.target.value)}
-                                    className="form-input bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-sm focus:ring-primary/20 w-full"
+                                    className="form-input bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-800 text-sm focus:ring-primary/20 w-full"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -88,7 +88,7 @@ export default function RightSidebar({
                                     <select
                                         value={doc.format}
                                         onChange={handleFormatChange}
-                                        className="form-select w-full text-xs py-1.5 focus:ring-primary/20 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                                        className="form-select w-full text-xs py-1.5 focus:ring-primary/20 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800"
                                     >
                                         <option value="A4">A4</option>
                                         <option value="A5">A5</option>
@@ -102,7 +102,7 @@ export default function RightSidebar({
                                     <select
                                         value={doc.orientation}
                                         onChange={handleOrientationChange}
-                                        className="form-select w-full text-xs py-1.5 focus:ring-primary/20 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                                        className="form-select w-full text-xs py-1.5 focus:ring-primary/20 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800"
                                     >
                                         <option value="portrait">Portrait</option>
                                         <option value="landscape">Paysage</option>
@@ -114,7 +114,7 @@ export default function RightSidebar({
                                 <select
                                     value={doc.status}
                                     onChange={(e) => handleChange('status', e.target.value)}
-                                    className="form-select w-full text-xs py-1.5 focus:ring-primary/20 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                                    className="form-select w-full text-xs py-1.5 focus:ring-primary/20 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800"
                                 >
                                     <option value="draft">Brouillon</option>
                                     <option value="published">Publié</option>
@@ -125,7 +125,7 @@ export default function RightSidebar({
                 </div>
 
                 {/* Section: Margins */}
-                <div className="border-b dark:border-gray-700">
+                <div className="border-b dark:border-gray-800">
                     <button
                         onClick={() => toggleSection('margins')}
                         className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
@@ -206,7 +206,7 @@ export default function RightSidebar({
                 </div>
 
                 {/* Section: Pages */}
-                <div className="border-b dark:border-gray-700">
+                <div className="border-b dark:border-gray-800">
                     <div
                         onClick={() => toggleSection('pages')}
                         className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group cursor-pointer"

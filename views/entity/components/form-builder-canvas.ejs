@@ -66,7 +66,7 @@
 
     <!-- Empty State -->
     <template x-if="formLayout.rows.length === 0">
-      <div class="flex flex-col items-center justify-center h-96 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg"
+      <div class="flex flex-col items-center justify-center h-96 border-2 border-dashed border-gray-300 dark:border-gray-800 rounded-lg"
            @dragover.prevent="$el.classList.add('fb-drop-zone', 'drag-over')"
            @dragleave="$el.classList.remove('drag-over')"
            @drop.prevent="addRow(1); $nextTick(() => handleCanvasDrop($event, 0, 0))">
@@ -105,11 +105,11 @@
           </div>
 
           <!-- Row Grid -->
-          <div class="grid gap-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 hover:border-primary/30 transition-colors"
+          <div class="grid gap-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-800 p-3 hover:border-primary/30 transition-colors"
                :style="'grid-template-columns: repeat(' + row.columns.reduce((s, c) => s + c.width, 0) + ', minmax(0, 1fr))'">
             
             <template x-for="(col, colIndex) in row.columns" :key="row.id + '-col-' + colIndex">
-              <div class="fb-drop-zone rounded-lg border border-dashed border-gray-200 dark:border-gray-700 p-2 min-h-[60px]"
+              <div class="fb-drop-zone rounded-lg border border-dashed border-gray-200 dark:border-gray-800 p-2 min-h-[60px]"
                    :style="'grid-column: span ' + col.width"
                    :data-row-index="rowIndex"
                    :data-col-index="colIndex"
@@ -120,7 +120,7 @@
                 <!-- Fields in this column -->
                 <div class="space-y-2" :id="'col-' + row.id + '-' + colIndex" :data-row-index="rowIndex" :data-col-index="colIndex">
                   <template x-for="(field, fieldIndex) in col.fields" :key="field.id">
-                    <div class="fb-field-item group/field relative bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-3 cursor-grab hover:border-primary/30 hover:shadow-sm transition-all"
+                    <div class="fb-field-item group/field relative bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-lg p-3 cursor-grab hover:border-primary/30 hover:shadow-sm transition-all"
                          :data-field-id="field.id"
                          :class="selectedFieldId === field.id && 'ring-2 ring-primary/50 border-primary/30'"
                          @click.stop="selectField(field.id)">
@@ -161,7 +161,7 @@
     <!-- Add Row Button (bottom) -->
     <template x-if="formLayout.rows.length > 0">
       <div class="mt-4 flex justify-center">
-        <button @click="addRow(1)" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-primary border border-dashed border-gray-300 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
+        <button @click="addRow(1)" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-primary border border-dashed border-gray-300 dark:border-gray-800 rounded-lg hover:border-primary/50 transition-colors">
           <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
           Ajouter une ligne
         </button>

@@ -2,7 +2,7 @@
 <div class="bg-gray-50 dark:bg-gray-900" style="min-height: calc(100vh - 80px);">
 
   <!-- Header -->
-  <div class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm">
+  <div class="bg-white dark:bg-gray-800 border-b dark:border-gray-800 shadow-sm">
     <div class="h-14 flex items-center justify-between px-6">
       <div class="flex items-center gap-3">
         <a href="/account/<%= account_number %>/entity/list" class="w-8 h-8 rounded-md flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Retour">
@@ -45,11 +45,11 @@
       <!-- Forms Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <% forms.forEach(function(form) { %>
-          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-primary/30 transition-all group overflow-hidden"
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 hover:shadow-lg hover:border-primary/30 transition-all group overflow-hidden"
                x-data="{ menuOpen: false }">
             
             <!-- Card Header -->
-            <div class="p-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+            <div class="p-4 pb-3 border-b border-gray-100 dark:border-gray-800">
               <div class="flex items-start justify-between">
                 <div class="flex items-center gap-2.5 flex-1 min-w-0">
                   <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -82,7 +82,7 @@
                        x-transition:enter="transition ease-out duration-100"
                        x-transition:enter-start="opacity-0 scale-95"
                        x-transition:enter-end="opacity-100 scale-100"
-                       class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-30 py-1 text-xs">
+                       class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl z-30 py-1 text-xs">
                     <a href="/account/<%= account_number %>/entity/<%= entity._id %>/forms/<%= form._id %>/edit"
                        class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
                       <iconify-icon icon="solar:pen-new-square-bold-duotone" width="14"></iconify-icon>
@@ -95,7 +95,7 @@
                         Définir par défaut
                       </button>
                     <% } %>
-                    <div class="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                    <div class="border-t border-gray-100 dark:border-gray-800 my-1"></div>
                     <button onclick="deleteForm('<%= form._id %>', '<%= form.name %>')"
                             class="w-full flex items-center gap-2 px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 text-left">
                       <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="14"></iconify-icon>

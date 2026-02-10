@@ -94,7 +94,7 @@ export default function EditorHeader({
                 <select
                     value={currentFont}
                     onChange={(e) => handleFormat('fontName', e.target.value)}
-                    className="form-select text-xs py-1 px-2 border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-lg w-32"
+                    className="form-select text-xs py-1 px-2 border-gray-200 dark:border-gray-800 dark:bg-gray-800 rounded-lg w-32"
                 >
                     {FONT_FAMILIES.map(font => (
                         <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>
@@ -116,7 +116,7 @@ export default function EditorHeader({
                         type="number"
                         value={currentFontSize}
                         onChange={(e) => handleFontSizeChange(parseInt(e.target.value) || 16)}
-                        className="w-10 text-center text-xs py-1 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded"
+                        className="w-10 text-center text-xs py-1 border border-gray-200 dark:border-gray-800 dark:bg-gray-800 rounded"
                     />
                     <button
                         onClick={() => handleFontSizeChange(Math.min(72, currentFontSize + 1))}
@@ -207,7 +207,7 @@ export default function EditorHeader({
                         <iconify-icon icon="tabler:line-height" width="18"></iconify-icon>
                         <span className="text-[10px]">{currentLineHeight}</span>
                     </button>
-                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover:block z-50 min-w-[80px]">
+                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-800 rounded-lg shadow-lg py-1 hidden group-hover:block z-50 min-w-[80px]">
                         {[1, 1.15, 1.5, 2, 2.5, 3].map(val => (
                             <button
                                 key={val}
@@ -226,7 +226,7 @@ export default function EditorHeader({
                         <iconify-icon icon="tabler:letter-spacing" width="18"></iconify-icon>
                         <span className="text-[10px]">{currentLetterSpacing}px</span>
                     </button>
-                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover:block z-50 min-w-[80px]">
+                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-800 rounded-lg shadow-lg py-1 hidden group-hover:block z-50 min-w-[80px]">
                         {[-2, -1, 0, 1, 2, 3, 4, 5].map(val => (
                             <button
                                 key={val}
@@ -270,7 +270,7 @@ export default function EditorHeader({
                         <iconify-icon icon="tabler:clipboard-text" width="18"></iconify-icon>
                         <iconify-icon icon="tabler:chevron-down" width="12"></iconify-icon>
                     </button>
-                    <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover:block z-50 min-w-[140px]">
+                    <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-800 rounded-lg shadow-lg py-1 hidden group-hover:block z-50 min-w-[140px]">
                         <button
                             onClick={() => setPasteMode('keep')}
                             className={`w-full px-3 py-1.5 text-xs text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 ${pasteMode === 'keep' ? 'text-primary font-medium' : 'text-gray-600 dark:text-gray-300'}`}

@@ -20,28 +20,28 @@
                 <label class="block text-sm font-medium dark:text-gray-300 mb-1">Action Key</label>
                 <input type="text" name="actionKey" value="<%= action?.actionKey || '' %>" 
                        placeholder="search-photos" pattern="[a-z0-9-]+"
-                       class="form-input w-full dark:bg-gray-900 dark:border-gray-700" 
+                       class="form-input w-full dark:bg-gray-900 dark:border-gray-800" 
                        <%= isNew ? '' : 'readonly' %> required>
             </div>
             <div>
                 <label class="block text-sm font-medium dark:text-gray-300 mb-1">Name</label>
                 <input type="text" name="name" value="<%= action?.name || '' %>" 
-                       class="form-input w-full dark:bg-gray-900 dark:border-gray-700" required>
+                       class="form-input w-full dark:bg-gray-900 dark:border-gray-800" required>
             </div>
         </div>
 
         <div>
             <label class="block text-sm font-medium dark:text-gray-300 mb-1">Description</label>
             <textarea name="description" rows="2"
-                      class="form-textarea w-full dark:bg-gray-900 dark:border-gray-700"><%= action?.description || '' %></textarea>
+                      class="form-textarea w-full dark:bg-gray-900 dark:border-gray-800"><%= action?.description || '' %></textarea>
         </div>
 
-        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <div class="border-t border-gray-200 dark:border-gray-800 pt-6">
             <h3 class="text-lg font-medium dark:text-white mb-4">HTTP Configuration</h3>
             <div class="grid grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium dark:text-gray-300 mb-1">Method</label>
-                    <select name="http.method" class="form-select w-full dark:bg-gray-900 dark:border-gray-700">
+                    <select name="http.method" class="form-select w-full dark:bg-gray-900 dark:border-gray-800">
                         <% ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].forEach(m => { %>
                             <option value="<%= m %>" <%= action?.http?.method === m ? 'selected' : '' %>><%= m %></option>
                         <% }) %>
@@ -51,55 +51,55 @@
                     <label class="block text-sm font-medium dark:text-gray-300 mb-1">Path</label>
                     <input type="text" name="http.path" value="<%= action?.http?.path || '/' %>" 
                            placeholder="/search/photos"
-                           class="form-input w-full dark:bg-gray-900 dark:border-gray-700" required>
+                           class="form-input w-full dark:bg-gray-900 dark:border-gray-800" required>
                 </div>
             </div>
         </div>
 
-        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <div class="border-t border-gray-200 dark:border-gray-800 pt-6">
             <h3 class="text-lg font-medium dark:text-white mb-4">Request Template</h3>
             
             <div class="mb-4">
                 <label class="block text-sm font-medium dark:text-gray-300 mb-1">Query Parameters (JSON)</label>
                 <textarea name="requestTemplate.query" rows="3"
-                          class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-700"
+                          class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-800"
                           placeholder='{"query": "{{input.query}}", "per_page": 10}'><%= JSON.stringify(action?.requestTemplate?.query || {}, null, 2) %></textarea>
             </div>
             
             <div class="mb-4">
                 <label class="block text-sm font-medium dark:text-gray-300 mb-1">Headers (JSON)</label>
                 <textarea name="requestTemplate.headers" rows="3"
-                          class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-700"
+                          class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-800"
                           placeholder='{"X-Custom": "value"}'><%= JSON.stringify(action?.requestTemplate?.headers || {}, null, 2) %></textarea>
             </div>
             
             <div>
                 <label class="block text-sm font-medium dark:text-gray-300 mb-1">Body (JSON) - for POST/PUT/PATCH</label>
                 <textarea name="requestTemplate.body" rows="4"
-                          class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-700"
+                          class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-800"
                           placeholder='{"name": "{{input.name}}"}'><%= JSON.stringify(action?.requestTemplate?.body || {}, null, 2) %></textarea>
             </div>
         </div>
 
-        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <div class="border-t border-gray-200 dark:border-gray-800 pt-6">
             <h3 class="text-lg font-medium dark:text-white mb-4">Response Mapping (JSON)</h3>
             <textarea name="responseMapping" rows="3"
-                      class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-700"
+                      class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-800"
                       placeholder='{"photos": "results", "total": "total"}'><%= JSON.stringify(action?.responseMapping || {}, null, 2) %></textarea>
             <p class="text-xs text-gray-500 mt-1">Map response paths to output keys. Example: {"items": "data.results"}</p>
         </div>
 
-        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <div class="border-t border-gray-200 dark:border-gray-800 pt-6">
             <h3 class="text-lg font-medium dark:text-white mb-4">Test Configuration</h3>
             <div>
                 <label class="block text-sm font-medium dark:text-gray-300 mb-1">Test Payload (JSON)</label>
                 <textarea name="testPayload" rows="3"
-                          class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-700"
+                          class="form-textarea w-full font-mono text-sm dark:bg-gray-900 dark:border-gray-800"
                           placeholder='{"query": "mountains"}'><%= JSON.stringify(action?.testPayload || {}, null, 2) %></textarea>
             </div>
         </div>
 
-        <div class="flex items-center gap-4 border-t border-gray-200 dark:border-gray-700 pt-6">
+        <div class="flex items-center gap-4 border-t border-gray-200 dark:border-gray-800 pt-6">
             <label class="flex items-center gap-2">
                 <input type="checkbox" name="isPublished" <%= action?.isPublished ? 'checked' : '' %> 
                        class="form-checkbox rounded dark:bg-gray-900">
@@ -107,7 +107,7 @@
             </label>
         </div>
 
-        <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-800">
             <% if (!isNew) { %>
                 <button type="button" onclick="testAction()" class="btn btn-outline-success">
                     🧪 Test Action
@@ -125,7 +125,7 @@
     </form>
 
     <% if (!isNew) { %>
-    <div id="testResults" class="hidden mt-6 p-4 rounded border border-gray-200 dark:border-gray-700">
+    <div id="testResults" class="hidden mt-6 p-4 rounded border border-gray-200 dark:border-gray-800">
         <h4 class="font-medium dark:text-white mb-2">Test Results</h4>
         <pre id="testOutput" class="text-xs bg-gray-900 text-green-400 p-3 rounded overflow-auto max-h-64"></pre>
     </div>

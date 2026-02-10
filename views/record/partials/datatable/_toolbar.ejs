@@ -36,7 +36,7 @@
         
         <%# Expandable Toolbar - Canva Style %>
         <div class="config-toolbar" x-data="{ showToolbar: false, activePanel: null }">
-            <div class="flex flex-row-reverse items-center bg-white dark:bg-[#0e1726] rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="flex flex-row-reverse items-center bg-white dark:bg-[#0e1726] rounded-md shadow-sm border border-gray-200 dark:border-gray-800">
                 
                 <%# Main Settings Toggle Button (stays on right) %>
                 <button type="button" 
@@ -67,7 +67,7 @@
                         <div x-show="activePanel === 'spacing'" 
                              x-transition
                              @click.outside="activePanel = null"
-                             class="absolute right-0 top-full mt-2 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 w-56 z-50">
+                             class="absolute right-0 top-full mt-2 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg p-4 w-56 z-50">
                             
                             <%# Row Height %>
                             <div class="mb-4">
@@ -108,7 +108,7 @@
                         <div x-show="activePanel === 'columns'" 
                              x-transition
                              @click.outside="activePanel = null"
-                             class="absolute right-0 top-full mt-2 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 w-56 z-50">
+                             class="absolute right-0 top-full mt-2 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg p-3 w-56 z-50">
                             <div class="text-xs font-semibold mb-2 text-gray-600 dark:text-gray-400">Colonnes visibles</div>
                             <div class="space-y-1 max-h-48 overflow-y-auto">
                                 <% if (typeof columns !== 'undefined' && columns) { %>
@@ -123,7 +123,7 @@
                                 <% } %>
                             </div>
                             
-                            <div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
+                            <div class="border-t border-gray-200 dark:border-gray-800 my-3"></div>
                             
                             <div class="text-xs font-semibold mb-2 text-gray-600 dark:text-gray-400">Par page</div>
                             <div class="flex flex-wrap gap-1">
@@ -155,7 +155,7 @@
                         <div x-show="activePanel === 'filter'" 
                              x-transition
                              @click.outside="activePanel = null"
-                             class="absolute right-0 top-full mt-2 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 w-64 z-50">
+                             class="absolute right-0 top-full mt-2 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg p-4 w-64 z-50">
                             <div class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                                 Filtres à venir...
                             </div>

@@ -282,10 +282,10 @@ export default class extends Controller {
                 const btnDensity = btn.dataset.density
                 if (btnDensity === density) {
                     btn.classList.add('border-primary', 'bg-primary/10', 'text-primary')
-                    btn.classList.remove('border-gray-200', 'dark:border-gray-700')
+                    btn.classList.remove('border-gray-200', 'dark:border-gray-800')
                 } else {
                     btn.classList.remove('border-primary', 'bg-primary/10', 'text-primary')
-                    btn.classList.add('border-gray-200', 'dark:border-gray-700')
+                    btn.classList.add('border-gray-200', 'dark:border-gray-800')
                 }
             })
         }

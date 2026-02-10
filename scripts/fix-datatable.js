@@ -21,7 +21,7 @@ if (!content.includes('dataTable-bottom')) {
     content = content.replace(
         /<\/table><\/div><\/div>/,
         `</table></div>
-                        <div class="dataTable-bottom mt-4 pt-4 border-t dark:border-gray-700 flex items-center justify-between flex-shrink-0">
+                        <div class="dataTable-bottom mt-4 pt-4 border-t dark:border-gray-800 flex items-center justify-between flex-shrink-0">
                             <div class="dataTable-info text-sm text-gray-500 dark:text-gray-400">Showing 1 to 10 of 25 entries</div>
                             <nav class="dataTable-pagination">
                                 <ul class="inline-flex items-center gap-1">

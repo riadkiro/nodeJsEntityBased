@@ -916,7 +916,7 @@
          x-show="showCreateModal" x-transition.scale.origin.center>
       
       <!-- Header -->
-      <div class="flex items-center justify-between p-5 border-b dark:border-gray-700">
+      <div class="flex items-center justify-between p-5 border-b dark:border-gray-800">
         <div class="flex items-center gap-2">
           <iconify-icon icon="solar:inbox-line-broken" width="22" class="text-primary"></iconify-icon>
           <span class="font-semibold text-lg dark:text-white">Nouvelle collection</span>
@@ -1093,7 +1093,7 @@
                               :class="isClassificationSelected(cls._id) 
                                 ? 'bg-info/10 border-info/30 text-info' 
                                 : cls._id === newCollection.statusClassificationId 
-                                  ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-300 cursor-not-allowed' 
+                                  ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-800 text-gray-300 cursor-not-allowed' 
                                   : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400 hover:border-info/50'"
                               :disabled="cls._id === newCollection.statusClassificationId">
                         <iconify-icon icon="solar:tag-bold-duotone" width="12"></iconify-icon>
@@ -1152,7 +1152,7 @@
 
 
             <!-- Active Toggle -->
-            <div class="flex items-center justify-between pt-3 border-t dark:border-gray-700">
+            <div class="flex items-center justify-between pt-3 border-t dark:border-gray-800">
               <span class="text-sm text-gray-500">Collection active</span>
               <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" x-model="newCollection.active" class="sr-only peer">
@@ -1165,7 +1165,7 @@
           <div x-show="step === 2" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
             
             <!-- Tabs -->
-            <div class="flex border-b dark:border-gray-700 mb-4">
+            <div class="flex border-b dark:border-gray-800 mb-4">
               <button type="button" @click="step2Tab = 'fields'" 
                       class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
                       :class="step2Tab === 'fields' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'">
@@ -1211,7 +1211,7 @@
               <!-- Catégories de champs -->
               <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
                 <template x-for="category in filteredCategories" :key="category.key">
-                  <div class="border dark:border-gray-700 rounded-lg overflow-hidden">
+                  <div class="border dark:border-gray-800 rounded-lg overflow-hidden">
                     <button type="button" 
                             @click="openCategories[category.key] = !openCategories[category.key]"
                             class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 font-medium text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
@@ -1259,7 +1259,7 @@
               <!-- Relations list -->
               <div class="space-y-3 max-h-[400px] overflow-y-auto pr-1">
                 <template x-for="(relation, rIdx) in relations" :key="relation.key">
-                  <div class="border dark:border-gray-700 rounded-lg p-3 space-y-3 bg-gray-50/50 dark:bg-gray-800/50">
+                  <div class="border dark:border-gray-800 rounded-lg p-3 space-y-3 bg-gray-50/50 dark:bg-gray-800/50">
                     <!-- Header with delete -->
                     <div class="flex items-center justify-between">
                       <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
@@ -1369,7 +1369,7 @@
                     </template>
 
                     <!-- Toggles row -->
-                    <div class="flex items-center gap-4 pt-2 border-t dark:border-gray-700">
+                    <div class="flex items-center gap-4 pt-2 border-t dark:border-gray-800">
                       <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-500">
                         <input type="checkbox" x-model="relation.bidirectional" class="form-checkbox rounded text-primary">
                         Bidirectionnelle
@@ -1403,7 +1403,7 @@
       </div>
 
       <!-- Footer - Navigation -->
-      <div class="p-5 border-t dark:border-gray-700 flex gap-3 flex-shrink-0">
+      <div class="p-5 border-t dark:border-gray-800 flex gap-3 flex-shrink-0">
         <!-- Step 1 -->
         <template x-if="step === 1">
           <button type="button" @click="if(newCollection.name) { loadSystemFields(); step = 2; }" 
@@ -1440,7 +1440,7 @@
          x-show="showEditModal" x-transition.scale.origin.center>
       
       <!-- Header -->
-      <div class="flex items-center justify-between p-5 border-b dark:border-gray-700">
+      <div class="flex items-center justify-between p-5 border-b dark:border-gray-800">
         <div class="flex items-center gap-2">
           <iconify-icon icon="solar:pen-new-square-bold-duotone" width="22" class="text-warning"></iconify-icon>
           <span class="font-semibold text-lg dark:text-white">Modifier la collection</span>
@@ -1636,7 +1636,7 @@
                               :class="isClassificationSelected(cls._id) 
                                 ? 'bg-info/10 border-info/30 text-info' 
                                 : cls._id === newCollection.statusClassificationId 
-                                  ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-300 cursor-not-allowed' 
+                                  ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-800 text-gray-300 cursor-not-allowed' 
                                   : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400 hover:border-info/50'"
                               :disabled="cls._id === newCollection.statusClassificationId">
                         <iconify-icon icon="solar:tag-bold-duotone" width="12"></iconify-icon>
@@ -1696,7 +1696,7 @@
 
 
             <!-- Active Toggle -->
-            <div class="flex items-center justify-between pt-3 border-t dark:border-gray-700">
+            <div class="flex items-center justify-between pt-3 border-t dark:border-gray-800">
               <span class="text-sm text-gray-500">Collection active</span>
               <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" x-model="newCollection.active" class="sr-only peer">
@@ -1709,7 +1709,7 @@
           <div x-show="step === 2" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
             
             <!-- Tabs -->
-            <div class="flex border-b dark:border-gray-700 mb-4">
+            <div class="flex border-b dark:border-gray-800 mb-4">
               <button type="button" @click="step2Tab = 'fields'" 
                       class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
                       :class="step2Tab === 'fields' ? 'border-warning text-warning' : 'border-transparent text-gray-500 hover:text-gray-700'">
@@ -1755,7 +1755,7 @@
               <!-- Catégories de champs -->
               <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
                 <template x-for="category in filteredCategories" :key="category.key">
-                  <div class="border dark:border-gray-700 rounded-lg overflow-hidden">
+                  <div class="border dark:border-gray-800 rounded-lg overflow-hidden">
                     <button type="button" 
                             @click="openCategories[category.key] = !openCategories[category.key]"
                             class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 font-medium text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
@@ -1803,7 +1803,7 @@
               <!-- Relations list -->
               <div class="space-y-3 max-h-[400px] overflow-y-auto pr-1">
                 <template x-for="(relation, rIdx) in relations" :key="relation.key">
-                  <div class="border dark:border-gray-700 rounded-lg p-3 space-y-3 bg-gray-50/50 dark:bg-gray-800/50">
+                  <div class="border dark:border-gray-800 rounded-lg p-3 space-y-3 bg-gray-50/50 dark:bg-gray-800/50">
                     <!-- Header with delete -->
                     <div class="flex items-center justify-between">
                       <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
@@ -1913,7 +1913,7 @@
                     </template>
 
                     <!-- Toggles row -->
-                    <div class="flex items-center gap-4 pt-2 border-t dark:border-gray-700">
+                    <div class="flex items-center gap-4 pt-2 border-t dark:border-gray-800">
                       <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-500">
                         <input type="checkbox" x-model="relation.bidirectional" class="form-checkbox rounded text-warning">
                         Bidirectionnelle
@@ -1947,7 +1947,7 @@
       </div>
 
       <!-- Footer - Navigation -->
-      <div class="p-5 border-t dark:border-gray-700 flex gap-3 flex-shrink-0">
+      <div class="p-5 border-t dark:border-gray-800 flex gap-3 flex-shrink-0">
         <!-- Step 1 -->
         <template x-if="step === 1">
           <div class="flex gap-3 w-full">

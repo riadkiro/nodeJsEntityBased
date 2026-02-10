@@ -22,7 +22,7 @@
     
     <!-- Empty State -->
     <template x-if="!pageConfig.layout[builderState.activeTab] || pageConfig.layout[builderState.activeTab].length === 0">
-      <div class="flex flex-col items-center justify-center h-96 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
+      <div class="flex flex-col items-center justify-center h-96 border-2 border-dashed border-gray-300 dark:border-gray-800 rounded-lg">
         <iconify-icon icon="solar:widget-5-bold-duotone" width="64" class="text-gray-400 mb-4"></iconify-icon>
         <p class="text-gray-500 mb-4">No rows yet. Start building your page!</p>
         <button @click="addRow()" class="btn btn-primary">
@@ -189,7 +189,7 @@
                 :style="`grid-column: span ${column.width}`"
                 class="relative transition-all duration-200 group/col"
                 :class="[
-                  builderState.mode === 'edit' && column.blocks.length === 0 && 'border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-400 dark:hover:border-gray-500',
+                  builderState.mode === 'edit' && column.blocks.length === 0 && 'border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg hover:border-gray-400 dark:hover:border-gray-500',
                   builderState.mode === 'edit' && column.blocks.length === 0 && !row.equalHeight && 'h-[90px]',
                   row.equalHeight && 'flex flex-col h-full'
                 ]">
@@ -242,7 +242,7 @@
                         x-transition:enter="transition ease-out duration-100"
                         x-transition:enter-start="opacity-0 scale-95"
                         x-transition:enter-end="opacity-100 scale-100"
-                        class="absolute top-2 right-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-1 flex gap-1 z-50 border border-gray-200 dark:border-gray-700">
+                        class="absolute top-2 right-2 bg-white dark:bg-gray-800 shadow-xl rounded-lg p-1 flex gap-1 z-50 border border-gray-200 dark:border-gray-800">
                         <!-- Options Button -->
                         <button 
                           @click.stop="openBlockSettings(blockId)"

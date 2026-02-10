@@ -786,7 +786,7 @@
 
                       <!-- Grid -->
                       <div
-                        class="flex flex-wrap gap-1 mb-2 max-h-60 overflow-y-auto custom-scrollbar p-1 border rounded dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 content-start"
+                        class="flex flex-wrap gap-1 mb-2 max-h-60 overflow-y-auto custom-scrollbar p-1 border rounded dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 content-start"
                         @scroll.debounce="if($el.scrollTop + $el.clientHeight >= $el.scrollHeight - 20) loadMoreIcons()">
                         <template x-for="icon in icons" :key="icon">
                           <div
@@ -1923,7 +1923,7 @@
                   </div>
                 </li>
                 <!-- Divider -->
-                <div class="border-t border-gray-100 dark:border-gray-700 my-1.5 mx-2"></div>
+                <div class="border-t border-gray-100 dark:border-gray-800 my-1.5 mx-2"></div>
                 <!-- View Forms -->
                 <li class="hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg cursor-pointer transition-colors group"
                   @click="$store.sidebar.showEditMenu = false; window.location.href = '/account/<%= account_number %>/entity/' + $store.sidebar.contextItem.entityId + '/forms'">

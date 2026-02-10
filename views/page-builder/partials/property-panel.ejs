@@ -8,10 +8,10 @@
   x-transition:leave="transform transition ease-in duration-150"
   x-transition:leave-start="translate-x-0 opacity-100"
   x-transition:leave-end="translate-x-full opacity-0"
-  class="w-[320px] bg-white dark:bg-gray-800 border-l dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
+  class="w-[320px] bg-white dark:bg-gray-800 border-l dark:border-gray-800 flex flex-col shrink-0 overflow-hidden">
   
   <!-- Header -->
-  <div class="h-14 border-b dark:border-gray-700 px-4 flex items-center justify-between shrink-0">
+  <div class="h-14 border-b dark:border-gray-800 px-4 flex items-center justify-between shrink-0">
     <div class="flex items-center gap-2">
       <iconify-icon icon="solar:settings-bold-duotone" width="18" class="text-primary"></iconify-icon>
       <h3 class="font-semibold text-sm">Widget Settings</h3>
@@ -22,7 +22,7 @@
   </div>
 
   <!-- Tabs -->
-  <div class="flex border-b dark:border-gray-700 shrink-0">
+  <div class="flex border-b dark:border-gray-800 shrink-0">
     <button 
       @click="tab = 'appearance'"
       :class="tab === 'appearance' ? 'border-primary text-primary' : 'border-transparent text-gray-500'"
@@ -287,7 +287,7 @@
   </div>
 
   <!-- Footer -->
-  <div class="border-t dark:border-gray-700 p-3 shrink-0">
+  <div class="border-t dark:border-gray-800 p-3 shrink-0">
     <button @click="deleteBlock(builderState.selectedBlockId)" class="btn btn-outline-danger btn-sm w-full">
       <iconify-icon icon="solar:trash-bin-minimalistic-bold" class="mr-1"></iconify-icon>
       Delete Widget

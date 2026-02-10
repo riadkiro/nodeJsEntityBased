@@ -35,7 +35,7 @@
 
     <!-- Description -->
     <% if (entity.description) { %>
-        <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-800">
             <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Description</h2>
             <p class="text-gray-600 dark:text-gray-400">
                 <%= entity.description %>
@@ -44,14 +44,14 @@
         <% } %>
 
             <!-- Custom Fields Configuration -->
-            <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-800">
                 <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Configured Fields</h2>
 
                 <% if (entity.customFields && entity.customFields.length> 0) { %>
                     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         <% entity.customFields.forEach(field=> { %>
                             <div
-                                class="relative flex items-start space-x-3 rounded-md border border-gray-200 p-4 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
+                                class="relative flex items-start space-x-3 rounded-md border border-gray-200 p-4 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-700/50">
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center justify-between">
                                         <p class="text-sm font-medium text-gray-900 dark:text-white">

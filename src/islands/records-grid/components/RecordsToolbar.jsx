@@ -283,7 +283,7 @@ export default function RecordsToolbar({
                         </div>
 
                         {/* Page Size */}
-                        <div>
+                        <div className="mb-4">
                             <div className="text-xs font-medium text-gray-500 dark:text-white-dark mb-2">Lignes par page</div>
                             <div className="flex gap-1">
                                 {[10, 25, 50, 100].map(size => (
@@ -357,6 +357,20 @@ export default function RecordsToolbar({
                                 )
                             })}
                         </div>
+
+                        {/* Separator */}
+                        <div className="border-t border-gray-100 dark:border-white/10 my-2"></div>
+
+                        {/* Show Avatar Toggle */}
+                        <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1.5 rounded-lg">
+                            <input
+                                type="checkbox"
+                                checked={preferences.showAvatar !== false}
+                                onChange={() => onPreferencesChange('showAvatar', !(preferences.showAvatar !== false))}
+                                className="form-checkbox text-primary w-3.5 h-3.5 rounded"
+                            />
+                            <span className="text-xs text-gray-700 dark:text-gray-300">Afficher l'avatar</span>
+                        </label>
                     </div>
                 </>,
                 document.body

@@ -12,6 +12,7 @@ export default function RecordsTable({
     onSort,
     onColumnReorder,
     density,
+    showAvatar,
     accountNumber,
     entitySlug
 }) {
@@ -183,7 +184,7 @@ export default function RecordsTable({
                                     className={config.fontSize}
                                     style={{ padding: cellPadding }}
                                 >
-                                    {renderCellValue(record, col, accountNumber, entitySlug, config)}
+                                    {renderCellValue(record, col, accountNumber, entitySlug, config, showAvatar)}
                                 </td>
                             ))}
                         </tr>
@@ -208,7 +209,7 @@ export default function RecordsTable({
 }
 
 // Helper to render cell values with proper formatting
-function renderCellValue(record, col, accountNumber, entitySlug, config) {
+function renderCellValue(record, col, accountNumber, entitySlug, config, showAvatar) {
     switch (col.id) {
         case 'title': {
             const refTitle = record.referenceTitle || record.title || 'Sans titre'
@@ -219,11 +220,13 @@ function renderCellValue(record, col, accountNumber, entitySlug, config) {
 
             return (
                 <div className="flex items-center gap-2">
-                    <img
-                        src={imageUrl}
-                        alt={refTitle}
-                        className={`${config.imageSize} rounded-full max-w-none`}
-                    />
+                    {showAvatar !== false && (
+                        <img
+                            src={imageUrl}
+                            alt={refTitle}
+                            className={`${config.imageSize} rounded-full max-w-none`}
+                        />
+                    )}
                     <div className={config.fontWeight}>{refTitle}</div>
                 </div>
             )

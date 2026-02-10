@@ -102,7 +102,7 @@
                 <div class="space-y-3">
                     <% fieldDefs.forEach(function(field) { %>
                         <% var value = recordValues[field._id]; %>
-                        <div class="py-2.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                        <div class="py-2.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
                             <div class="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 mb-1">
                                 <iconify-icon icon="<%= field.icon %>" width="14"></iconify-icon>
                                 <span><%= field.label %></span>
@@ -174,7 +174,7 @@
                             <div class="flex flex-wrap gap-2">
                                 <% rel.records.forEach(function(r) { %>
                                     <a href="/account/<%= account_number %>/record/<%= rel.targetSlug %>/<%= r._id %>"
-                                       class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primary/5 transition-all text-sm">
+                                       class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-primary hover:bg-primary/5 transition-all text-sm">
                                         <% if (r.icon) { %>
                                             <iconify-icon icon="<%= r.icon %>" width="14" class="text-primary"></iconify-icon>
                                         <% } else { %>

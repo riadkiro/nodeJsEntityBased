@@ -1432,7 +1432,7 @@ Résumé final (HTML):`
                                             data-action-card-id={action.id}
                                             className={`p-2 rounded-lg border transition-all cursor-pointer ${isApplied ? 'bg-success/10 border-success/20 opacity-60' :
                                                 isFailed ? 'bg-danger/10 border-danger/20' :
-                                                    isIgnored ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-50' :
+                                                    isIgnored ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-800 opacity-50' :
                                                         hoveredActionId === action.id
                                                             ? 'bg-amber-500/15 border-amber-500/40'
                                                             : 'bg-amber-500/5 dark:border-gray-800 border-gray-800'

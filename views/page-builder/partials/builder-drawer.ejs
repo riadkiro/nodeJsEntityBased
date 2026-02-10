@@ -8,11 +8,11 @@
   x-transition:leave-start="translate-x-0"
   x-transition:leave-end="-translate-x-full"
   @click.outside="closeDrawer()"
-  class="fixed left-16 top-14 bottom-0 w-80 bg-white dark:bg-gray-800 border-r dark:border-gray-700 z-40 shadow-xl overflow-y-auto"
+  class="fixed left-16 top-14 bottom-0 w-80 bg-white dark:bg-gray-800 border-r dark:border-gray-800 z-40 shadow-xl overflow-y-auto"
   style="display: none;">
 
   <!-- Drawer Header -->
-  <div class="sticky top-0 bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-4 flex items-center justify-between z-10">
+  <div class="sticky top-0 bg-white dark:bg-gray-800 border-b dark:border-gray-800 p-4 flex items-center justify-between z-10">
     <h3 class="font-semibold text-sm uppercase tracking-wide" x-text="
       builderState.drawerMode === 'blocks' ? 'Add Blocks' :
       builderState.drawerMode === 'rows' ? 'Manage Rows' :

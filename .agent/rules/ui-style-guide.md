@@ -10,13 +10,13 @@
 ## ⚠️ RÈGLES DARK MODE STRICTES (NE JAMAIS DÉROGER)
 
 ### Borders en Dark Mode
-**TOUJOURS** utiliser `dark:border-gray-800` — **JAMAIS** `dark:border-gray-700`
+**TOUJOURS** utiliser `dark:border-gray-800` — **JAMAIS** `dark:border-gray-800`
 ```css
 /* ✅ CORRECT */
 border border-gray-200 dark:border-gray-800
 
 /* ❌ INCORRECT - NE JAMAIS UTILISER */
-border border-gray-200 dark:border-gray-700
+border border-gray-200 dark:border-gray-800
 ```
 
 ### Textes en Dark Mode

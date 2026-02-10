@@ -256,7 +256,7 @@
             
             <!-- Expandable Control Toolbar -->
             <div class="config-toolbar" style="position: absolute; top: 16px; right: 16px; z-index: 10;">
-                <div class="flex flex-row-reverse items-center bg-white dark:bg-[#0e1726] rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="flex flex-row-reverse items-center bg-white dark:bg-[#0e1726] rounded-md shadow-sm border border-gray-200 dark:border-gray-800">
                     
                     <!-- Main Settings Toggle Button (stays on right) -->
                     <button type="button" 
@@ -287,7 +287,7 @@
                             <div x-show="activePanel === 'spacing'" 
                                  x-transition
                                  @click.outside="activePanel = null"
-                                 class="absolute right-0 top-full mt-2 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 w-56 z-50">
+                                 class="absolute right-0 top-full mt-2 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg p-4 w-56 z-50">
                                 
                                 <!-- Row Height -->
                                 <div class="mb-4">
@@ -330,7 +330,7 @@
                             <div x-show="activePanel === 'columns'" 
                                  x-transition
                                  @click.outside="activePanel = null"
-                                 class="absolute right-0 top-full mt-2 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 w-56 z-50">
+                                 class="absolute right-0 top-full mt-2 bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg p-3 w-56 z-50">
                                 <div class="text-xs font-semibold mb-2 text-gray-600 dark:text-gray-400">Colonnes visibles</div>
                                 <template x-for="(col, index) in columns" :key="index">
                                     <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1 rounded text-sm">
@@ -342,7 +342,7 @@
                                     </label>
                                 </template>
                                 
-                                <div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
+                                <div class="border-t border-gray-200 dark:border-gray-800 my-3"></div>
                                 
                                 <div class="text-xs font-semibold mb-2 text-gray-600 dark:text-gray-400">Par page</div>
                                 <div class="flex flex-wrap gap-1">

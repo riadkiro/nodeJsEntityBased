@@ -30,7 +30,8 @@ export default function RecordsGrid({
         columns: [],
         sort: { field: 'createdAt', direction: 'desc' },
         density: 'normal',
-        pageSize: 10
+        pageSize: 10,
+        showAvatar: true
     })
 
     // Pagination state
@@ -363,13 +364,14 @@ export default function RecordsGrid({
                         }}
                         onColumnReorder={handleColumnReorder}
                         density={preferences.density}
+                        showAvatar={preferences.showAvatar !== false}
                         accountNumber={accountNumber}
                         entitySlug={entitySlug}
                     />
                 </div>
 
                 {/* Pagination footer */}
-                <div className="dataTable-bottom mt-4 flex items-center justify-between border-t pt-4 dark:border-gray-700">
+                <div className="dataTable-bottom mt-4 flex items-center justify-between border-t pt-4 dark:border-gray-800">
                     <div className="dataTable-info text-gray-500 dark:text-gray-400">
                         Affichage de {((pagination.page - 1) * pagination.limit) + 1} à {Math.min(pagination.page * pagination.limit, pagination.total)} sur {pagination.total}
                     </div>

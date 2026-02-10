@@ -45,7 +45,7 @@
                                         <button 
                                             type="button" 
                                             class="p-2 rounded-lg border transition-all"
-                                            :class="accountIcon === icon ? 'border-primary bg-primary/10' : 'border-gray-200 dark:border-gray-700 hover:border-primary'"
+                                            :class="accountIcon === icon ? 'border-primary bg-primary/10' : 'border-gray-200 dark:border-gray-800 hover:border-primary'"
                                             @click="accountIcon = icon"
                                         >
                                             <iconify-icon :icon="icon" width="20" height="20"></iconify-icon>
@@ -168,7 +168,7 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div class="p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
                     <h6 class="font-semibold mb-2">Exporter les données</h6>
                     <p class="text-sm text-gray-500 mb-3">Téléchargez toutes les données de ce compte au format JSON.</p>
                     <button type="button" class="btn btn-outline-primary btn-sm">

@@ -141,7 +141,7 @@ className="dark:bg-dark/60 dark:text-white-dark/70"
 
 ### Borders
 - **Light mode**: `border border-gray-100`
-- **Dark mode**: `dark:border-0` (no border) OR `dark:border-gray-700/30` (very subtle)
+- **Dark mode**: `dark:border-0` (no border) OR `dark:border-gray-800/30` (very subtle)
 
 ### Key Principles
 1. **Never use pure white text** in dark mode → use `text-white-dark` instead

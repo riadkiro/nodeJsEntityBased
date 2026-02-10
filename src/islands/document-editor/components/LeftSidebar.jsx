@@ -311,7 +311,7 @@ function GalleryPanel() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Rechercher des photos..."
-                    className="form-input w-full pr-8 text-sm dark:bg-gray-800 dark:border-gray-700"
+                    className="form-input w-full pr-8 text-sm dark:bg-gray-800 dark:border-gray-800"
                 />
                 {searchQuery && (
                     <button
@@ -361,7 +361,7 @@ function GalleryPanel() {
                                     e.dataTransfer.setData('text/html', html)
                                     e.dataTransfer.effectAllowed = 'copy'
                                 }}
-                                className="relative group cursor-move rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-primary transition-colors aspect-video"
+                                className="relative group cursor-move rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-primary transition-colors aspect-video"
                                 title={`Photo par ${photo.author}`}
                             >
                                 <img

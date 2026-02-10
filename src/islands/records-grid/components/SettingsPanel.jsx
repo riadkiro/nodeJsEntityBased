@@ -109,7 +109,7 @@ export default function SettingsPanel({
             {/* Floating Popover Panel - Anchored to button */}
             <div
                 ref={panelRef}
-                className="fixed w-[360px] max-w-[calc(100vw-32px)] bg-white dark:bg-[#0e1726] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                className="fixed w-[360px] max-w-[calc(100vw-32px)] bg-white dark:bg-[#0e1726] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden"
                 style={{
                     zIndex: 9999,
                     top: `${position.top}px`,
@@ -119,7 +119,7 @@ export default function SettingsPanel({
                 }}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
                         Paramètres d'affichage
                     </h3>
@@ -148,8 +148,8 @@ export default function SettingsPanel({
                                         key={density}
                                         onClick={() => handleDensityChange(density)}
                                         className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition-all ${preferences.density === density
-                                                ? 'border-primary bg-primary/10 text-primary shadow-sm'
-                                                : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800'
+                                            ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                                            : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800'
                                             }`}
                                     >
                                         {density === 'compact' ? 'Compact' : density === 'normal' ? 'Normal' : 'Confort'}
@@ -169,8 +169,8 @@ export default function SettingsPanel({
                                         key={size}
                                         onClick={() => handlePageSizeChange(size)}
                                         className={`px-4 py-2 text-xs font-medium rounded-lg transition-all ${preferences.pageSize === size
-                                                ? 'bg-primary text-white shadow-md'
-                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                            ? 'bg-primary text-white shadow-md'
+                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                             }`}
                                     >
                                         {size}
@@ -200,7 +200,7 @@ export default function SettingsPanel({
                                     value={columnSearch}
                                     onChange={(e) => setColumnSearch(e.target.value)}
                                     placeholder="Filtrer colonnes..."
-                                    className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50"
                                 />
                             </div>
 

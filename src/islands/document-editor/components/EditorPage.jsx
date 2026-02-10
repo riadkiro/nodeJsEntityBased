@@ -271,7 +271,7 @@ function LayoutRow({ row, rowIndex, pageIndex, doc, setDoc }) {
 function LayoutColumn({ column, colIndex, rowIndex, pageIndex, doc, setDoc }) {
     return (
         <div
-            className="flex-1 min-h-[80px] border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg p-2 hover:border-primary/50 transition-colors"
+            className="flex-1 min-h-[80px] border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg p-2 hover:border-primary/50 transition-colors"
             style={{ width: `${column.width}%` }}
         >
             {(column.elements || []).length === 0 ? (
@@ -320,7 +320,7 @@ function LayoutElement({ element, elIndex, colIndex, rowIndex, pageIndex, doc, s
     }, [pageIndex, rowIndex, colIndex, elIndex, setDoc])
 
     return (
-        <div className="group/el relative p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+        <div className="group/el relative p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-800">
             {/* Element Controls */}
             <div className="absolute -top-2 -right-2 opacity-0 group-hover/el:opacity-100 transition-opacity">
                 <button

@@ -1,5 +1,5 @@
 <!-- Sidebar Icons (64px) -->
-<div class="w-16 bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col items-center py-4 gap-3 shrink-0">
+<div class="w-16 bg-white dark:bg-gray-800 border-r dark:border-gray-800 flex flex-col items-center py-4 gap-3 shrink-0">
   <!-- Add Blocks -->
   <button 
     @click="builderState.selectedBlockId = null; builderState.sidebarOpen = true; builderState.drawerMode = 'blocks'"
@@ -59,7 +59,7 @@
   x-transition:leave="transform transition ease-in duration-150"
   x-transition:leave-start="translate-x-0 opacity-100"
   x-transition:leave-end="-translate-x-full opacity-0"
-  class="w-[350px] bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
+  class="w-[350px] bg-white dark:bg-gray-800 border-r dark:border-gray-800 flex flex-col shrink-0 overflow-hidden">
   
   <!-- ====================================== -->
   <!-- WIDGET SETTINGS MODE (config clicked) -->
@@ -68,7 +68,7 @@
     <div class="flex flex-col h-full" x-data="{ settingsTab: 'appearance' }">
       
       <!-- Header with block name + back button -->
-      <div class="h-14 border-b dark:border-gray-700 px-4 flex items-center justify-between shrink-0">
+      <div class="h-14 border-b dark:border-gray-800 px-4 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2 min-w-0">
           <button 
             @click="builderState.selectedBlockId = null; builderState.sidebarOpen = true; builderState.drawerMode = 'blocks'"
@@ -89,7 +89,7 @@
       </div>
 
       <!-- Tabs -->
-      <div class="flex border-b dark:border-gray-700 shrink-0 px-1">
+      <div class="flex border-b dark:border-gray-800 shrink-0 px-1">
         <button 
           @click="settingsTab = 'appearance'"
           :class="settingsTab === 'appearance' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'"
@@ -140,7 +140,7 @@
             </div>
 
             <!-- Divider -->
-            <div class="border-t dark:border-gray-700"></div>
+            <div class="border-t dark:border-gray-800"></div>
 
             <!-- Options (not for action-button) -->
             <div x-show="block.type !== 'action-button'">
@@ -194,7 +194,7 @@
                   <div class="mt-1.5 text-[10px] text-gray-400">Ex: solar:phone-bold, solar:document-bold</div>
                 </div>
 
-                <div class="border-t dark:border-gray-700"></div>
+                <div class="border-t dark:border-gray-800"></div>
 
                 <!-- Color -->
                 <div>
@@ -373,7 +373,7 @@
       </div>
 
       <!-- Footer: Delete -->
-      <div class="border-t dark:border-gray-700 p-3 shrink-0">
+      <div class="border-t dark:border-gray-800 p-3 shrink-0">
         <button @click="deleteBlock(builderState.selectedBlockId)" class="btn btn-outline-danger btn-sm w-full rounded-lg">
           <iconify-icon icon="solar:trash-bin-minimalistic-bold" class="mr-1"></iconify-icon>
           Delete Widget
@@ -389,7 +389,7 @@
     <div class="flex flex-col h-full">
       
       <!-- Header -->
-      <div class="h-14 border-b dark:border-gray-700 px-4 flex items-center justify-between shrink-0">
+      <div class="h-14 border-b dark:border-gray-800 px-4 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2">
           <iconify-icon icon="solar:widget-add-bold-duotone" width="18" class="text-primary"></iconify-icon>
           <h3 class="font-semibold text-sm">Widget Library</h3>

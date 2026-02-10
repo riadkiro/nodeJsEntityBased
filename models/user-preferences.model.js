@@ -35,6 +35,10 @@ const userPreferencesSchema = new mongoose.Schema({
         pageSize: {
             type: Number,
             default: 10
+        },
+        showAvatar: {
+            type: Boolean,
+            default: true
         }
     },
     updatedAt: {

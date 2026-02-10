@@ -1,5 +1,5 @@
 <!-- Icon Bar (64px) -->
-<div class="w-16 bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col items-center py-4 gap-3 shrink-0">
+<div class="w-16 bg-white dark:bg-gray-800 border-r dark:border-gray-800 flex flex-col items-center py-4 gap-3 shrink-0">
   <!-- Fields -->
   <button 
     @click="sidebar.mode = 'fields'; sidebar.open = true"
@@ -39,14 +39,14 @@
   x-transition:leave="transform transition ease-in duration-150"
   x-transition:leave-start="translate-x-0 opacity-100"
   x-transition:leave-end="-translate-x-full opacity-0"
-  class="w-[300px] bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
+  class="w-[300px] bg-white dark:bg-gray-800 border-r dark:border-gray-800 flex flex-col shrink-0 overflow-hidden">
 
   <!-- ======================== -->
   <!-- FIELDS MODE              -->
   <!-- ======================== -->
   <template x-if="sidebar.mode === 'fields'">
     <div class="flex flex-col h-full">
-      <div class="h-12 border-b dark:border-gray-700 px-4 flex items-center justify-between shrink-0">
+      <div class="h-12 border-b dark:border-gray-800 px-4 flex items-center justify-between shrink-0">
         <h3 class="font-semibold text-sm">Champs disponibles</h3>
         <button @click="sidebar.open = false" class="w-7 h-7 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
           <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
@@ -60,7 +60,7 @@
           <div id="sidebar-standard-fields" class="space-y-1">
             <template x-for="field in getAvailableStandardFields()" :key="'std-'+field.key">
               <div 
-                class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 cursor-grab hover:border-primary/30 hover:bg-primary/5 transition-colors"
+                class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-800 cursor-grab hover:border-primary/30 hover:bg-primary/5 transition-colors"
                 :class="isFieldOnCanvas('standard', field.key) && 'opacity-40 cursor-not-allowed'"
                 :data-field-type="'standard'"
                 :data-field-id="field.key"
@@ -82,7 +82,7 @@
           <div id="sidebar-custom-fields" class="space-y-1">
             <template x-for="field in availableCustomFields" :key="'cf-'+field._id">
               <div 
-                class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 cursor-grab hover:border-info/30 hover:bg-info/5 transition-colors"
+                class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-800 cursor-grab hover:border-info/30 hover:bg-info/5 transition-colors"
                 :class="isFieldOnCanvas('custom', field._id) && 'opacity-40 cursor-not-allowed'"
                 :data-field-type="'custom'"
                 :data-field-id="field._id"
@@ -104,7 +104,7 @@
           <div id="sidebar-relations" class="space-y-1">
             <template x-for="rel in entityRelations" :key="'rel-'+rel.key">
               <div 
-                class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 cursor-grab hover:border-primary/30 hover:bg-primary/5 transition-colors"
+                class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-800 cursor-grab hover:border-primary/30 hover:bg-primary/5 transition-colors"
                 :class="isFieldOnCanvas('relation', rel.key) && 'opacity-40 cursor-not-allowed'"
                 :style="rel.targetEntity?.color ? 'border-color:' + rel.targetEntity.color + '30' : ''"
                 :data-field-type="'relation'"
@@ -131,7 +131,7 @@
           <div id="sidebar-classifications" class="space-y-1">
             <template x-for="cls in entityClassifications" :key="'cls-'+cls._id">
               <div 
-                class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 cursor-grab hover:border-success/30 hover:bg-success/5 transition-colors"
+                class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-800 cursor-grab hover:border-success/30 hover:bg-success/5 transition-colors"
                 :class="isFieldOnCanvas('classification', cls._id) && 'opacity-40 cursor-not-allowed'"
                 :data-field-type="'classification'"
                 :data-field-id="cls._id"
@@ -155,7 +155,7 @@
   <!-- ======================== -->
   <template x-if="sidebar.mode === 'rows'">
     <div class="flex flex-col h-full">
-      <div class="h-12 border-b dark:border-gray-700 px-4 flex items-center justify-between shrink-0">
+      <div class="h-12 border-b dark:border-gray-800 px-4 flex items-center justify-between shrink-0">
         <h3 class="font-semibold text-sm">Lignes</h3>
         <button @click="sidebar.open = false" class="w-7 h-7 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
           <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
@@ -165,7 +165,7 @@
         <p class="text-xs text-gray-400 mb-2">Choisissez un layout de colonnes :</p>
         
         <!-- 1 column -->
-        <button @click="addRow(1)" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+        <button @click="addRow(1)" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-primary/50 hover:bg-primary/5 transition-colors">
           <div class="flex gap-1 flex-1">
             <div class="h-8 flex-1 bg-primary/20 rounded"></div>
           </div>
@@ -173,7 +173,7 @@
         </button>
 
         <!-- 2 columns -->
-        <button @click="addRow(2)" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+        <button @click="addRow(2)" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-primary/50 hover:bg-primary/5 transition-colors">
           <div class="flex gap-1 flex-1">
             <div class="h-8 flex-1 bg-primary/20 rounded"></div>
             <div class="h-8 flex-1 bg-primary/20 rounded"></div>
@@ -182,7 +182,7 @@
         </button>
 
         <!-- 3 columns -->
-        <button @click="addRow(3)" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+        <button @click="addRow(3)" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-primary/50 hover:bg-primary/5 transition-colors">
           <div class="flex gap-1 flex-1">
             <div class="h-8 flex-1 bg-primary/20 rounded"></div>
             <div class="h-8 flex-1 bg-primary/20 rounded"></div>
@@ -192,7 +192,7 @@
         </button>
 
         <!-- 4 columns -->
-        <button @click="addRow(4)" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+        <button @click="addRow(4)" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-primary/50 hover:bg-primary/5 transition-colors">
           <div class="flex gap-1 flex-1">
             <div class="h-8 flex-1 bg-primary/20 rounded"></div>
             <div class="h-8 flex-1 bg-primary/20 rounded"></div>
@@ -203,7 +203,7 @@
         </button>
 
         <!-- 1/3 + 2/3 -->
-        <button @click="addRowCustom([4, 8])" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+        <button @click="addRowCustom([4, 8])" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-primary/50 hover:bg-primary/5 transition-colors">
           <div class="flex gap-1 flex-1">
             <div class="h-8 w-1/3 bg-primary/20 rounded"></div>
             <div class="h-8 flex-1 bg-primary/20 rounded"></div>
@@ -212,7 +212,7 @@
         </button>
 
         <!-- 2/3 + 1/3 -->
-        <button @click="addRowCustom([8, 4])" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+        <button @click="addRowCustom([8, 4])" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-primary/50 hover:bg-primary/5 transition-colors">
           <div class="flex gap-1 flex-1">
             <div class="h-8 flex-1 bg-primary/20 rounded"></div>
             <div class="h-8 w-1/3 bg-primary/20 rounded"></div>
@@ -220,7 +220,7 @@
           <span class="text-xs text-gray-500">2/3 + 1/3</span>
         </button>
 
-        <div class="border-t dark:border-gray-700 pt-3 mt-3">
+        <div class="border-t dark:border-gray-800 pt-3 mt-3">
           <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Auto Layout</p>
           <button @click="autoLayout(1)" class="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <iconify-icon icon="solar:align-vertical-spacing-bold" width="16" class="mr-2"></iconify-icon>
@@ -240,7 +240,7 @@
   <!-- ======================== -->
   <template x-if="sidebar.mode === 'settings'">
     <div class="flex flex-col h-full">
-      <div class="h-12 border-b dark:border-gray-700 px-4 flex items-center justify-between shrink-0">
+      <div class="h-12 border-b dark:border-gray-800 px-4 flex items-center justify-between shrink-0">
         <h3 class="font-semibold text-sm">Paramètres</h3>
         <button @click="sidebar.open = false" class="w-7 h-7 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
           <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>

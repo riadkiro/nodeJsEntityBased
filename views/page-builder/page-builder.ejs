@@ -1,7 +1,7 @@
 <div x-data="pageBuilder()">
   
   <!-- Header Bar -->
-  <div class="mb-4 bg-white dark:bg-gray-800 border dark:border-gray-700 shadow-sm rounded-lg">
+  <div class="mb-4 bg-white dark:bg-gray-900 border dark:border-0 shadow-sm rounded-lg">
     <div class="h-14 flex items-center justify-between px-6">
       <div class="flex items-center gap-4">
         <h1 class="text-lg font-semibold" x-text="pageConfig.name"></h1>
@@ -718,7 +718,7 @@ document.addEventListener('alpine:init', () => {
         switch (block.type) {
           case 'panel':
             return `
-              <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 border border-gray-200 dark:border-gray-700">
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 border border-gray-200 dark:border-gray-800">
                 <div class="mb-5 flex items-center justify-between">
                   <h5 class="text-lg font-semibold text-gray-900 dark:text-white" contenteditable="${this.builderState.mode === 'edit'}">${block.title || 'Panel Title'}</h5>
                 </div>
@@ -728,7 +728,7 @@ document.addEventListener('alpine:init', () => {
           
           case 'text':
             return `
-              <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 border border-gray-200 dark:border-gray-700">
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 border border-gray-200 dark:border-gray-800">
                 <div contenteditable="${this.builderState.mode === 'edit'}" class="prose max-w-none text-gray-700 dark:text-gray-300">
                   ${block.content || 'Double-click to edit text...'}
                 </div>
@@ -737,7 +737,7 @@ document.addEventListener('alpine:init', () => {
           
           case 'kpi-card':
             return `
-              <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 border border-gray-200 dark:border-gray-700 h-full">
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 border border-gray-200 dark:border-gray-800 h-full">
                 <div class="mb-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">${block.label || 'KPI'}</div>
                 <div class="text-3xl font-bold text-primary mb-2">0</div>
                 <div class="text-xs text-success">↑ 12%</div>
@@ -746,7 +746,7 @@ document.addEventListener('alpine:init', () => {
           
           case 'statistics':
             return `
-              <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 border border-gray-200 dark:border-gray-700 h-full">
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 border border-gray-200 dark:border-gray-800 h-full">
                 <div class="mb-5 flex items-center justify-between">
                   <h5 class="text-lg font-semibold text-gray-900 dark:text-white" contenteditable="${this.builderState.mode === 'edit'}">${block.title || 'Statistics'}</h5>
                   <div x-data="dropdown" @click.outside="open = false" class="dropdown">
@@ -779,7 +779,7 @@ document.addEventListener('alpine:init', () => {
             `;
           
           default:
-            return `<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 border border-gray-200 dark:border-gray-700">Unknown block type: ${block.type}</div>`;
+            return `<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 border border-gray-200 dark:border-gray-800">Unknown block type: ${block.type}</div>`;
         }
       }
     };

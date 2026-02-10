@@ -1,7 +1,8 @@
 <div x-data="recordForm()" class="space-y-6">
     <form action="/account/<%= account_number %>/record/<%= entity.slug %>/update/<%= record._id %>" method="POST"
         enctype="multipart/form-data" id="main-record-form">
-        <!-- Big Title Panel -->
+        <!-- Big Title Panel (only for legacy layout - EntityForm renders title inline) -->
+        <% if (!(locals.entityFormLayout && locals.entityFormLayout.rows)) { %>
         <div class="panel mb-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -43,12 +44,445 @@
                 </div>
             </div>
         </div>
+        <% } %>
         <div class="flex flex-col lg:flex-row gap-6">
             <!-- Main Form Content -->
             <div class="flex-1 space-y-6">
                 <div class="panel">
                     <div class="space-y-8">
 
+                    <% if (locals.entityFormLayout && locals.entityFormLayout.rows) { %>
+                        <!-- ========== ENTITY FORM LAYOUT (Row/Column Grid) ========== -->
+                        <div>
+                            <div class="space-y-4">
+                                <% entityFormLayout.rows.forEach(function(row, rowIndex) { %>
+                                    <div class="flex flex-wrap -mx-2">
+                                        <% row.columns.forEach(function(col, colIndex) { %>
+                                            <div class="px-2 mb-3" style="width: <%= (col.width / 12 * 100).toFixed(4) %>%">
+                                                <% (col.fields || []).forEach(function(field) { %>
+                                                    <% if (field.type === 'standard') { %>
+                                                        <% var def = locals.entityFormFieldDefs && locals.entityFormFieldDefs.standard[field.fieldId]; %>
+                                                        <% if (def) { %>
+                                                            <% if (field.fieldId === 'title') { %>
+                                                                <div class="mb-3">
+                                                                    <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                                                        <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
+                                                                        <%= field.label || def.label %>
+                                                                        <% if (field.required) { %><span class="text-danger">*</span><% } %>
+                                                                    </label>
+                                                                    <input name="<%= def.inputName %>" type="text" class="form-input"
+                                                                        value="<%= record.title || '' %>"
+                                                                        placeholder="<%= field.placeholder || def.label %>"
+                                                                        <%= field.required ? 'required' : '' %> />
+                                                                </div>
+                                                            <% } else if (def.inputType === 'textarea') { %>
+                                                                <div class="mb-3">
+                                                                    <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                                                        <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
+                                                                        <%= field.label || def.label %>
+                                                                        <% if (field.required) { %><span class="text-danger">*</span><% } %>
+                                                                    </label>
+                                                                    <textarea name="<%= def.inputName %>" class="form-textarea" rows="4"
+                                                                        placeholder="<%= field.placeholder || def.label %>"
+                                                                        <%= field.required ? 'required' : '' %>><%= record[field.fieldId] || '' %></textarea>
+                                                                </div>
+                                                            <% } else if (def.inputType === 'file') { %>
+                                                                <div class="mb-3">
+                                                                    <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                                                        <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
+                                                                        <%= field.label || def.label %>
+                                                                    </label>
+                                                                    <% if (record[field.fieldId]) { %>
+                                                                        <div class="text-xs text-gray-500 mb-1">Fichier actuel : <span class="text-primary"><%= record[field.fieldId] %></span></div>
+                                                                    <% } %>
+                                                                    <input name="<%= def.inputName %>" type="file" class="form-input" />
+                                                                </div>
+                                                            <% } else if (def.inputType === 'date') { %>
+                                                                <div class="mb-3">
+                                                                    <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                                                        <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
+                                                                        <%= field.label || def.label %>
+                                                                        <% if (field.required) { %><span class="text-danger">*</span><% } %>
+                                                                    </label>
+                                                                    <input name="<%= def.inputName %>" type="date" class="form-input"
+                                                                        value="<%= record[field.fieldId] ? new Date(record[field.fieldId]).toISOString().split('T')[0] : '' %>"
+                                                                        <%= field.required ? 'required' : '' %> />
+                                                                </div>
+                                                            <% } else { %>
+                                                                <div class="mb-3">
+                                                                    <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                                                        <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
+                                                                        <%= field.label || def.label %>
+                                                                        <% if (field.required) { %><span class="text-danger">*</span><% } %>
+                                                                    </label>
+                                                                    <input name="<%= def.inputName %>" type="<%= def.inputType || 'text' %>" class="form-input"
+                                                                        value="<%= record[field.fieldId] || '' %>"
+                                                                        placeholder="<%= field.placeholder || def.label %>"
+                                                                        <%= field.required ? 'required' : '' %> />
+                                                                </div>
+                                                            <% } %>
+                                                        <% } %>
+
+                                                    <% } else if (field.type === 'custom') { %>
+                                                        <% var cf = locals.entityFormFieldDefs && locals.entityFormFieldDefs.custom[field.fieldId]; %>
+                                                        <% var cfVal = locals.recordValues && locals.recordValues[field.fieldId]; %>
+                                                        <% if (cf && cf.htmlTemplate) { %>
+                                                            <div class="mb-3">
+                                                                <%- cf.htmlTemplate
+                                                                    .replace(/\{\{\s*label\s*\}\}/g, field.label || cf.label || cf.name)
+                                                                    .replace(/\{\{\s*name\s*\}\}/g, cf.name || '')
+                                                                    .replace(/\{\{\s*placeholder\s*\}\}/g, field.placeholder || cf.label || cf.name)
+                                                                    .replace(/\{\{\s*required\s*\}\}/g, field.required ? 'required' : '') %>
+                                                            </div>
+                                                        <% } else if (cf) { %>
+                                                            <div class="mb-3">
+                                                                <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                                                    <iconify-icon icon="<%= (cf.ui && cf.ui.icon) || 'solar:widget-bold-duotone' %>" width="14" class="text-info"></iconify-icon>
+                                                                    <%= field.label || cf.label || cf.name %>
+                                                                    <% if (field.required) { %><span class="text-danger">*</span><% } %>
+                                                                </label>
+                                                                <% if (cf.inputType === 'textarea' || cf.inputType === 'richtext') { %>
+                                                                    <textarea name="custom[<%= cf._id %>]" class="form-textarea" rows="3"
+                                                                        placeholder="<%= field.placeholder || cf.label || cf.name %>"
+                                                                        <%= field.required ? 'required' : '' %>><%= cfVal || '' %></textarea>
+                                                                <% } else if (cf.inputType === 'select' && cf.options && cf.options.length) { %>
+                                                                    <% if (cf.multiple) { %>
+                                                                        <% var selectedArr = Array.isArray(cfVal) ? cfVal : (cfVal ? [cfVal] : []); %>
+                                                                        <div class="flex flex-wrap gap-2" x-data='{
+                                                                            selected: <%- JSON.stringify(selectedArr) %>,
+                                                                            toggle(val) {
+                                                                                const idx = this.selected.indexOf(val);
+                                                                                if (idx === -1) this.selected.push(val);
+                                                                                else this.selected.splice(idx, 1);
+                                                                            },
+                                                                            isSelected(val) { return this.selected.includes(val); }
+                                                                        }'>
+                                                                            <% cf.options.forEach(function(opt) { %>
+                                                                                <label class="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer border transition-all duration-200 select-none"
+                                                                                       :class="isSelected('<%= opt.value %>') ? 'bg-primary/10 border-primary/40 text-primary shadow-sm shadow-primary/10 ring-1 ring-primary/20' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-primary/30 hover:bg-primary/5 hover:text-primary/70 shadow-sm'">
+                                                                                    <input type="checkbox" name="custom[<%= cf._id %>][]" value="<%= opt.value %>" class="hidden"
+                                                                                           :checked="isSelected('<%= opt.value %>')"
+                                                                                           @change="toggle('<%= opt.value %>')">
+                                                                                    <svg x-show="isSelected('<%= opt.value %>')" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                                                    <span><%= opt.label || opt.value %></span>
+                                                                                </label>
+                                                                            <% }); %>
+                                                                        </div>
+                                                                    <% } else { %>
+                                                                        <select name="custom[<%= cf._id %>]" class="form-select" <%= field.required ? 'required' : '' %>>
+                                                                            <option value="">-- Choisir --</option>
+                                                                            <% cf.options.forEach(function(o) { %>
+                                                                                <option value="<%= o.value || o %>" <%= (cfVal == (o.value || o)) ? 'selected' : '' %>><%= o.label || o %></option>
+                                                                            <% }); %>
+                                                                        </select>
+                                                                    <% } %>
+                                                                <% } else if (cf.inputType === 'checkbox') { %>
+                                                                    <div class="flex items-center gap-2 py-2">
+                                                                        <input name="custom[<%= cf._id %>]" type="checkbox" class="form-checkbox"
+                                                                            <%= (cfVal === true || cfVal === 'on' || cfVal === 'true') ? 'checked' : '' %> />
+                                                                    </div>
+                                                                <% } else if (cf.type === 'recurrence') { %>
+                                                                    <% var recVal = (cfVal && typeof cfVal === 'object') ? cfVal : {}; %>
+                                                                    <script type="application/json" id="rec-config-<%= cf._id %>"><%- JSON.stringify({ options: cf.type_config.options || [], slots: cf.type_config.slots || {}, allowCustomText: cf.type_config.allowCustomText || false }) %></script>
+                                                                    <div x-data="recurrenceField({
+                                                                        fieldId: '<%= cf._id %>',
+                                                                        configElementId: 'rec-config-<%= cf._id %>',
+                                                                        initialValue: <%- JSON.stringify(recVal) %>
+                                                                    })" class="space-y-3">
+                                                                         <template x-for="slotName in slotNames" :key="slotName">
+                                                                             <div>
+                                                                                 <label class="block text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5" x-text="slotName"></label>
+                                                                                 <template x-if="getSlotUI(slotName) === 'select'">
+                                                                                     <select class="form-select text-sm" @change="setSlotValue(slotName, $event.target.value)">
+                                                                                         <option value="">-- Choisir --</option>
+                                                                                         <template x-for="opt in getSlotOptions(slotName)" :key="opt.value">
+                                                                                             <option :value="opt.value" x-text="opt.label" :selected="currentValue[slotName] === opt.value"></option>
+                                                                                         </template>
+                                                                                     </select>
+                                                                                 </template>
+                                                                                 <template x-if="getSlotUI(slotName) === 'checkbox'">
+                                                                                     <div class="flex flex-wrap gap-2">
+                                                                                         <template x-for="opt in getSlotOptions(slotName)" :key="opt.value">
+                                                                                             <label class="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer border transition-all duration-200 select-none"
+                                                                                                    :class="isSlotSelected(slotName, opt.value) ? 'bg-primary/10 border-primary/40 text-primary shadow-sm shadow-primary/10 ring-1 ring-primary/20' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-primary/30 hover:bg-primary/5 hover:text-primary/70 shadow-sm'">
+                                                                                                 <input type="checkbox" class="hidden" :value="opt.value" :checked="isSlotSelected(slotName, opt.value)" @change="toggleSlotValue(slotName, opt.value)">
+                                                                                                 <svg x-show="isSlotSelected(slotName, opt.value)" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                                                                 <span x-text="opt.label"></span>
+                                                                                             </label>
+                                                                                         </template>
+                                                                                     </div>
+                                                                                 </template>
+                                                                             </div>
+                                                                         </template>
+                                                                         <template x-if="allowCustomText">
+                                                                             <div>
+                                                                                 <label class="block text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Autre</label>
+                                                                                 <input type="text" class="form-input text-sm" x-model="currentValue.customText" @input="serialize()" placeholder="Texte libre...">
+                                                                            </div>
+                                                                        </template>
+                                                                        <input type="hidden" name="custom[<%= cf._id %>]" :value="serialized">
+                                                                    </div>
+                                                                <% } else { %>
+                                                                    <input name="custom[<%= cf._id %>]" type="<%= cf.inputType || 'text' %>" class="form-input"
+                                                                        value="<%= cfVal || '' %>"
+                                                                        placeholder="<%= field.placeholder || cf.label || cf.name %>"
+                                                                        <%= field.required ? 'required' : '' %> />
+                                                                <% } %>
+                                                            </div>
+                                                        <% } %>
+
+                                                    <% } else if (field.type === 'relation') { %>
+                                                        <% var rel = locals.entityFormFieldDefs && locals.entityFormFieldDefs.relation[field.fieldId]; %>
+                                                        <% var relVal = locals.recordValues && locals.recordValues[field.fieldId]; %>
+                                                        <% if (rel) { %>
+                                                            <% if (rel.inputMode === 'modal-picker') { %>
+                                                            <!-- ========== MODAL PICKER MODE ========== -->
+                                                            <div class="mb-3">
+                                                                <% var mpIcon = (rel.targetEntity && rel.targetEntity.icon) || 'solar:link-round-bold-duotone'; %>
+                                                                <% var mpColor = (rel.targetEntity && rel.targetEntity.color) || '#4361ee'; %>
+                                                                <% var mpName = (rel.targetEntity && rel.targetEntity.name) || ''; %>
+                                                                <% var mpEntityId = (rel.targetEntity && rel.targetEntity._id) || ''; %>
+                                                                <div x-data="modalPickerField({
+                                                                    fieldId: '<%= rel.key %>',
+                                                                    refEntity: '<%= mpEntityId %>',
+                                                                    refEntityName: '<%= mpName %>',
+                                                                    refEntityIcon: '<%= mpIcon %>',
+                                                                    refEntityColor: '<%= mpColor %>',
+                                                                    multiple: <%= (rel.cardinality === 'one-to-many' || rel.cardinality === 'many-to-many') ? 'true' : 'false' %>,
+                                                                    initialValue: <%- JSON.stringify(relVal || null) %>
+                                                                })" data-display-fields='<%- JSON.stringify(rel.displayFields || []) %>' class="relative">
+                                                                    <label class="flex items-center gap-1.5 mb-1 dark:text-gray-300">
+                                                                        <iconify-icon icon="<%= mpIcon %>" width="14"
+                                                                            style="color: <%= mpColor %>"></iconify-icon>
+                                                                        <%= field.label || rel.label || 'Relation' %>
+                                                                    </label>
+
+                                                                    <!-- Trigger Button -->
+                                                                    <button type="button" @click="openModal()"
+                                                                        class="w-full flex items-center justify-between px-3 py-2 border border-gray-300 dark:border-gray-800 rounded-md hover:border-primary/50 transition-colors text-sm bg-white dark:bg-[#1b2e4b]">
+                                                                        <span class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                                                                            <iconify-icon icon="solar:magnifer-bold-duotone" width="16"></iconify-icon>
+                                                                            <span x-text="selectedItems.length > 0 ? selectedItems.length + ' sélectionné(s)' : 'Sélectionner <%= mpName %>...'"></span>
+                                                                        </span>
+                                                                        <iconify-icon icon="tabler:external-link" width="14" class="text-gray-400"></iconify-icon>
+                                                                    </button>
+
+                                                                    <!-- Selected Items Tags -->
+                                                                    <div class="flex flex-wrap gap-1 mt-2" x-show="selectedItems.length > 0">
+                                                                        <template x-for="item in selectedItems" :key="item.id">
+                                                                            <span class="inline-flex items-center gap-1 px-1.5 h-6 bg-primary/10 text-primary rounded text-xs border border-primary/20">
+                                                                                <span x-text="item.label"></span>
+                                                                                <button type="button" @click="removeItem(item.id)" class="hover:text-danger flex items-center transition-colors">
+                                                                                    <iconify-icon icon="tabler:x" width="11"></iconify-icon>
+                                                                                </button>
+                                                                            </span>
+                                                                        </template>
+                                                                    </div>
+
+                                                                    <!-- Hidden inputs -->
+                                                                    <template x-if="multiple">
+                                                                        <div>
+                                                                            <template x-for="item in selectedItems" :key="item.id">
+                                                                                <input type="hidden" :name="'custom[' + fieldId + '][]'" :value="item.id">
+                                                                            </template>
+                                                                        </div>
+                                                                    </template>
+                                                                    <template x-if="!multiple">
+                                                                        <input type="hidden" :name="'custom[' + fieldId + ']'" :value="selectedItems[0]?.id || ''">
+                                                                    </template>
+
+                                                                    <!-- Modal Overlay -->
+                                                                    <div x-ref="modalOverlay"
+                                                                         style="display: none; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);"
+                                                                         class="fixed inset-0 z-[999] flex items-center justify-center bg-black/30"
+                                                                         @click.self="closeModal()">
+                                                                            <div class="bg-white dark:bg-[#0e1726] rounded-xl shadow-2xl w-full max-w-3xl mx-4 flex flex-col"
+                                                                                 style="max-height: 80vh;" @click.stop>
+                                                                                <div class="flex items-center justify-between px-5 py-3 border-b dark:border-gray-800">
+                                                                                    <div class="flex items-center gap-2">
+                                                                                        <iconify-icon :icon="refEntityIcon" width="18" :style="'color:' + refEntityColor"></iconify-icon>
+                                                                                        <h3 class="font-semibold text-sm dark:text-gray-200" x-text="'Sélectionner ' + refEntityName"></h3>
+                                                                                        <span class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-0.5 rounded-full" x-text="modalTotal + ' résultats'"></span>
+                                                                                    </div>
+                                                                                    <button type="button" @click="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                                                                                        <iconify-icon icon="tabler:x" width="20"></iconify-icon>
+                                                                                    </button>
+                                                                                </div>
+                                                                                <div class="px-5 py-3 border-b dark:border-gray-800">
+                                                                                    <div class="relative">
+                                                                                        <iconify-icon icon="solar:magnifer-bold-duotone" width="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></iconify-icon>
+                                                                                        <input type="text" class="form-input pl-9 text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200 dark:placeholder-gray-500" placeholder="Rechercher..."
+                                                                                               x-model="modalSearch" @input.debounce.300ms="fetchModalResults(true)" x-ref="modalSearchInput" />
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="flex-1 overflow-y-auto">
+                                                                                    <template x-if="modalLoading && modalPage === 1">
+                                                                                        <div class="flex items-center justify-center py-12">
+                                                                                            <iconify-icon icon="svg-spinners:ring-resize" width="28" class="text-primary"></iconify-icon>
+                                                                                        </div>
+                                                                                    </template>
+                                                                                    <template x-if="!(modalLoading && modalPage === 1)">
+                                                                                        <div>
+                                                                                            <template x-if="modalResults.length === 0 && !modalLoading">
+                                                                                                <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
+                                                                                                    <iconify-icon icon="solar:box-minimalistic-bold-duotone" width="40" class="mb-2"></iconify-icon>
+                                                                                                    <span class="text-sm">Aucun résultat trouvé</span>
+                                                                                                </div>
+                                                                                            </template>
+                                                                                            <div class="divide-y dark:divide-gray-800">
+                                                                                                <template x-for="result in modalResults" :key="result.id">
+                                                                                                    <div @click="toggleModalSelect(result)"
+                                                                                                         class="flex items-center gap-3 px-5 py-2.5 cursor-pointer transition-colors"
+                                                                                                         :class="isSelected(result.id) ? 'bg-primary/5' : 'hover:bg-gray-50 dark:hover:bg-white/5'">
+                                                                                                        <div class="flex-shrink-0">
+                                                                                                            <template x-if="multiple">
+                                                                                                                <div class="w-4 h-4 rounded border-2 flex items-center justify-center transition-colors"
+                                                                                                                     :class="isSelected(result.id) ? 'bg-primary border-primary' : 'border-gray-300 dark:border-gray-600'">
+                                                                                                                    <iconify-icon x-show="isSelected(result.id)" icon="tabler:check" width="11" class="text-white"></iconify-icon>
+                                                                                                                </div>
+                                                                                                            </template>
+                                                                                                            <template x-if="!multiple">
+                                                                                                                <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors"
+                                                                                                                     :class="isSelected(result.id) ? 'border-primary' : 'border-gray-300 dark:border-gray-600'">
+                                                                                                                    <div x-show="isSelected(result.id)" class="w-2 h-2 rounded-full bg-primary"></div>
+                                                                                                                </div>
+                                                                                                            </template>
+                                                                                                        </div>
+                                                                                                        <div class="flex-1 min-w-0">
+                                                                                                            <span class="text-sm font-medium truncate block dark:text-gray-200" x-text="result.label"></span>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </template>
+                                                                                            </div>
+                                                                                            <template x-if="modalHasMore">
+                                                                                                <div class="px-5 py-2 border-t dark:border-gray-800">
+                                                                                                    <button type="button" @click="loadMoreModal()" class="w-full text-sm text-primary hover:bg-primary/5 py-1.5 rounded" :disabled="modalLoading">
+                                                                                                        <span x-show="!modalLoading">Charger plus...</span>
+                                                                                                        <span x-show="modalLoading">Chargement...</span>
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            </template>
+                                                                                        </div>
+                                                                                    </template>
+                                                                                </div>
+                                                                                <div class="flex items-center justify-between px-5 py-3 border-t bg-gray-50 dark:bg-[#1b2e4b] dark:border-gray-800 rounded-b-xl">
+                                                                                    <span class="text-xs text-gray-500 dark:text-gray-400" x-text="tempSelected.length + ' sélectionné(s)'"></span>
+                                                                                    <div class="flex gap-2">
+                                                                                        <button type="button" @click="closeModal()" class="btn btn-outline-secondary btn-sm text-xs">Annuler</button>
+                                                                                        <button type="button" @click="confirmSelection()" class="btn btn-primary btn-sm text-xs">
+                                                                                            <iconify-icon icon="tabler:check" width="14" class="mr-1"></iconify-icon>
+                                                                                            Valider
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <% } else { %>
+                                                            <!-- ========== AUTOCOMPLETE MODE (default) ========== -->
+                                                            <div class="mb-3">
+                                                                <div x-data="relationField({
+                                                                    fieldId: '<%= rel.key %>',
+                                                                    refEntity: '<%= (rel.targetEntity && rel.targetEntity._id) || '' %>',
+                                                                    multiple: <%= (rel.cardinality === 'one-to-many' || rel.cardinality === 'many-to-many') ? 'true' : 'false' %>,
+                                                                    initialValue: <%- JSON.stringify(relVal || null) %>
+                                                                })" class="relative">
+                                                                    <label class="flex items-center gap-1.5 mb-1 dark:text-gray-300">
+                                                                        <iconify-icon icon="<%= (rel.targetEntity && rel.targetEntity.icon) || 'solar:link-round-bold-duotone' %>" width="14"
+                                                                            style="color: <%= (rel.targetEntity && rel.targetEntity.color) || '#4361ee' %>"></iconify-icon>
+                                                                        <%= field.label || rel.label || 'Relation' %>
+                                                                    </label>
+                                                                    <div class="relative group" @click.away="showResults = false">
+                                                                        <input x-ref="searchInput" type="text" class="form-input pr-10"
+                                                                            placeholder="Rechercher <%= (rel.targetEntity && rel.targetEntity.name) || '' %>..."
+                                                                            x-model="searchQuery" @input.debounce.300ms="search" @focus="openDropdown" />
+                                                                        <div @click="$refs.searchInput.focus(); openDropdown()" class="text-gray-400 cursor-pointer flex items-center" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 10;">
+                                                                            <iconify-icon icon="tabler:chevron-down" width="16"></iconify-icon>
+                                                                        </div>
+                                                                        <div x-show="showResults" style="display: none;"
+                                                                             class="absolute z-50 w-full mt-1 bg-white dark:bg-[#0e1726] border border-border dark:border-gray-800 rounded-md shadow-xl max-h-60 overflow-y-auto overflow-x-hidden">
+                                                                            <template x-if="loading && page === 1">
+                                                                                <div class="px-4 py-2 text-sm text-secondary">Loading...</div>
+                                                                            </template>
+                                                                            <template x-for="result in results" :key="result.id">
+                                                                                <div @click="selectItem(result)"
+                                                                                     class="px-4 py-2 hover:bg-primary/5 cursor-pointer flex justify-between items-center border-b border-border last:border-0">
+                                                                                    <span x-text="result.label" class="truncate"></span>
+                                                                                    <iconify-icon icon="tabler:plus" class="text-primary/50" width="16"></iconify-icon>
+                                                                                </div>
+                                                                            </template>
+                                                                            <template x-if="!loading && results.length === 0">
+                                                                                <div class="px-4 py-2 text-sm text-secondary">Aucun résultat</div>
+                                                                            </template>
+                                                                            <template x-if="hasMore">
+                                                                                <button type="button" @click.stop="loadMore" class="w-full px-4 py-2 text-sm text-primary hover:bg-primary/5 text-center disabled:opacity-50" :disabled="loading">
+                                                                                    <span x-show="!loading">Charger plus...</span>
+                                                                                    <span x-show="loading">Chargement...</span>
+                                                                                </button>
+                                                                            </template>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="flex flex-wrap gap-1 mt-2">
+                                                                        <template x-for="item in selectedItems" :key="item.id">
+                                                                            <span class="inline-flex items-center gap-1 px-1.5 h-6 bg-primary/10 text-primary rounded text-xs border border-primary/20">
+                                                                                <span x-text="item.label"></span>
+                                                                                <button type="button" @click="removeItem(item.id)" class="hover:text-danger flex items-center transition-colors">
+                                                                                    <iconify-icon icon="tabler:x" width="11"></iconify-icon>
+                                                                                </button>
+                                                                            </span>
+                                                                        </template>
+                                                                    </div>
+                                                                    <template x-if="multiple">
+                                                                        <div>
+                                                                            <template x-for="item in selectedItems" :key="item.id">
+                                                                                <input type="hidden" :name="'custom[' + fieldId + '][]'" :value="item.id">
+                                                                            </template>
+                                                                        </div>
+                                                                    </template>
+                                                                    <template x-if="!multiple">
+                                                                        <input type="hidden" :name="'custom[' + fieldId + ']'" :value="selectedItems[0]?.id || ''">
+                                                                    </template>
+                                                                </div>
+                                                            </div>
+                                                            <% } %>
+                                                        <% } %>
+
+                                                    <% } else if (field.type === 'classification') { %>
+                                                        <% var cls = locals.entityFormFieldDefs && locals.entityFormFieldDefs.classification[field.fieldId]; %>
+                                                        <% if (cls) { %>
+                                                            <%
+                                                                var selectedClassVal = '';
+                                                                if (record.classificationValues) {
+                                                                    var cv = record.classificationValues.find(function(c) { return c.classificationId && c.classificationId.toString() === cls._id; });
+                                                                    if (cv) selectedClassVal = (cv.optionId || '').toString();
+                                                                }
+                                                            %>
+                                                            <div class="mb-3">
+                                                                <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                                                    <iconify-icon icon="solar:tag-bold-duotone" width="14" class="text-success"></iconify-icon>
+                                                                    <%= field.label || cls.name %>
+                                                                </label>
+                                                                <select name="classification[<%= cls._id %>]" class="form-select">
+                                                                    <option value="">-- Sélectionner --</option>
+                                                                    <% (cls.options || []).forEach(function(o) { %>
+                                                                        <option value="<%= o._id %>" <%= (selectedClassVal === o._id) ? 'selected' : '' %>><%= o.label %></option>
+                                                                    <% }); %>
+                                                                </select>
+                                                            </div>
+                                                        <% } %>
+                                                    <% } %>
+                                                <% }); %>
+                                            </div>
+                                        <% }); %>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        </div>
+
+                    <% } else { %>
+                        <!-- ========== LEGACY LAYOUT (Tabs + Canvas) ========== -->
                         <!-- Tabbed Attributes Section -->
                         <!-- Tabbed Attributes Section -->
                         <div>
@@ -144,6 +578,7 @@
                                 x-html="renderAllFields()">
                             </div>
                         </div>
+                    <% } %>
                     </div>
                 </div>
             </div>

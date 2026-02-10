@@ -1,0 +1,356 @@
+<!-- views/record/record-detail.ejs -->
+<div class="space-y-5">
+    <!-- Breadcrumb + Header -->
+    <div class="panel !p-4">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-2 text-sm">
+                <a href="/account/<%= account_number %>/entity/list" class="text-gray-400 hover:text-primary transition-colors">
+                    <iconify-icon icon="solar:home-2-bold-duotone" width="16"></iconify-icon>
+                </a>
+                <iconify-icon icon="solar:alt-arrow-right-linear" width="14" class="text-gray-400"></iconify-icon>
+                <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
+                   class="text-gray-400 hover:text-primary transition-colors flex items-center gap-1">
+                    <% if (entity.icon) { %><iconify-icon icon="<%= entity.icon %>" width="14"></iconify-icon><% } %>
+                    <span><%= entity.name %></span>
+                </a>
+                <iconify-icon icon="solar:alt-arrow-right-linear" width="14" class="text-gray-400"></iconify-icon>
+                <span class="text-primary font-medium"><%= record.title || 'Sans titre' %></span>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="/account/<%= account_number %>/record/<%= entity.slug %>/edit/<%= record._id %>"
+                   class="btn btn-outline-primary btn-sm flex items-center gap-1.5">
+                    <iconify-icon icon="solar:pen-2-linear" width="16"></iconify-icon>
+                    <span>Modifier</span>
+                </a>
+                <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
+                   class="btn btn-outline-dark btn-sm flex items-center gap-1.5">
+                    <iconify-icon icon="solar:arrow-left-linear" width="16"></iconify-icon>
+                    <span>Retour</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Title + Status -->
+    <div class="panel !p-5">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+            <div class="flex items-center gap-3">
+                <% if (record.icon) { %>
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                         style="background: <%= entity.color || '#4361ee' %>15; color: <%= entity.color || '#4361ee' %>;">
+                        <iconify-icon icon="<%= record.icon %>" width="28"></iconify-icon>
+                    </div>
+                <% } else if (record.image) { %>
+                    <img src="<%= record.image %>" alt="" class="w-12 h-12 rounded-xl object-cover">
+                <% } else { %>
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                         style="background: <%= entity.color || '#4361ee' %>15; color: <%= entity.color || '#4361ee' %>;">
+                        <iconify-icon icon="<%= entity.icon || 'solar:document-bold-duotone' %>" width="28"></iconify-icon>
+                    </div>
+                <% } %>
+                <div>
+                    <h1 class="text-2xl font-bold dark:text-white"><%= record.title || 'Sans titre' %></h1>
+                    <% if (record.slug) { %>
+                        <p class="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                            <iconify-icon icon="solar:link-bold" width="12"></iconify-icon>
+                            <%= record.slug %>
+                        </p>
+                    <% } %>
+                </div>
+            </div>
+            <% if (classificationDisplay.length > 0) { %>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <% classificationDisplay.forEach(function(c) { %>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
+                              style="background: <%= c.color %>20; color: <%= c.color %>; border: 1px solid <%= c.color %>30;">
+                            <% if (c.isStatus) { %>
+                                <span class="w-1.5 h-1.5 rounded-full" style="background: <%= c.color %>;"></span>
+                            <% } %>
+                            <%= c.label %>
+                        </span>
+                    <% }); %>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <!-- Main Content (2/3) -->
+        <div class="lg:col-span-2 space-y-5">
+
+            <!-- Description -->
+            <% if (record.description) { %>
+            <div class="panel !p-5">
+                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <iconify-icon icon="solar:document-text-bold-duotone" width="16" class="text-secondary"></iconify-icon>
+                    Description
+                </h3>
+                <div class="prose dark:prose-invert max-w-none text-sm leading-relaxed">
+                    <%- record.description %>
+                </div>
+            </div>
+            <% } %>
+
+            <!-- Standard Fields -->
+            <div class="panel !p-5">
+                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4 flex items-center gap-2">
+                    <iconify-icon icon="solar:clipboard-list-bold-duotone" width="16" class="text-primary"></iconify-icon>
+                    Informations
+                </h3>
+                <div class="space-y-3">
+                    <% if (record.date) { %>
+                    <div class="flex items-center justify-between py-2.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                        <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                            <iconify-icon icon="solar:calendar-bold-duotone" width="16"></iconify-icon>
+                            <span>Date</span>
+                        </div>
+                        <span class="text-sm font-medium dark:text-white">
+                            <%= new Date(record.date).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }) %>
+                        </span>
+                    </div>
+                    <% } %>
+                    <% if (record.end_date) { %>
+                    <div class="flex items-center justify-between py-2.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                        <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                            <iconify-icon icon="solar:calendar-mark-bold-duotone" width="16"></iconify-icon>
+                            <span>Date de fin</span>
+                        </div>
+                        <span class="text-sm font-medium dark:text-white">
+                            <%= new Date(record.end_date).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }) %>
+                        </span>
+                    </div>
+                    <% } %>
+                    <% if (record.status) { %>
+                    <div class="flex items-center justify-between py-2.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                        <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                            <iconify-icon icon="solar:flag-bold-duotone" width="16"></iconify-icon>
+                            <span>Statut</span>
+                        </div>
+                        <span class="badge bg-primary/10 text-primary text-xs"><%= record.status %></span>
+                    </div>
+                    <% } %>
+                    <% if (record.link) { %>
+                    <div class="flex items-center justify-between py-2.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                        <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                            <iconify-icon icon="solar:link-bold-duotone" width="16"></iconify-icon>
+                            <span>Lien</span>
+                        </div>
+                        <a href="<%= record.link %>" target="_blank" class="text-sm text-primary hover:underline truncate max-w-[250px]">
+                            <%= record.link %>
+                        </a>
+                    </div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Custom Fields -->
+            <% if (fieldDefs.length > 0) { %>
+            <div class="panel !p-5">
+                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4 flex items-center gap-2">
+                    <iconify-icon icon="solar:widget-5-bold-duotone" width="16" class="text-warning"></iconify-icon>
+                    Champs personnalisés
+                </h3>
+                <div class="space-y-3">
+                    <% fieldDefs.forEach(function(field) { %>
+                        <% var value = recordValues[field._id]; %>
+                        <div class="flex items-start justify-between py-2.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                            <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 min-w-[140px]">
+                                <iconify-icon icon="<%= field.icon %>" width="16"></iconify-icon>
+                                <span><%= field.label %></span>
+                            </div>
+                            <div class="text-sm font-medium dark:text-white text-right max-w-[60%]">
+                                <% if (value === undefined || value === null || value === '') { %>
+                                    <span class="text-gray-300 dark:text-gray-600 italic">—</span>
+                                <% } else if (field.type === 'select' && field.options.length > 0) { %>
+                                    <% if (Array.isArray(value)) { %>
+                                        <div class="flex flex-wrap gap-1 justify-end">
+                                        <% value.forEach(function(v) { %>
+                                            <% var opt = field.options.find(function(o) { return o.value === v || o.label === v; }); %>
+                                            <span class="badge bg-primary/10 text-primary text-xs"><%= opt ? opt.label : v %></span>
+                                        <% }); %>
+                                        </div>
+                                    <% } else { %>
+                                        <% var opt = field.options.find(function(o) { return o.value === value || o.label === value; }); %>
+                                        <span class="badge bg-primary/10 text-primary text-xs"><%= opt ? opt.label : value %></span>
+                                    <% } %>
+                                <% } else if (field.type === 'boolean' || field.type === 'checkbox') { %>
+                                    <% if (value === true || value === 'true' || value === '1') { %>
+                                        <iconify-icon icon="solar:check-circle-bold" width="20" class="text-success"></iconify-icon>
+                                    <% } else { %>
+                                        <iconify-icon icon="solar:close-circle-bold" width="20" class="text-danger"></iconify-icon>
+                                    <% } %>
+                                <% } else if (field.type === 'date') { %>
+                                    <%= new Date(value).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }) %>
+                                <% } else if (field.type === 'url') { %>
+                                    <a href="<%= value %>" target="_blank" class="text-primary hover:underline truncate max-w-[250px] block"><%= value %></a>
+                                <% } else if (field.type === 'email') { %>
+                                    <a href="mailto:<%= value %>" class="text-primary hover:underline"><%= value %></a>
+                                <% } else if (field.type === 'number' || field.type === 'currency') { %>
+                                    <span class="font-mono"><%= typeof value === 'number' ? value.toLocaleString('fr-FR') : value %></span>
+                                <% } else if (field.type === 'textarea' || field.type === 'richtext') { %>
+                                    <div class="prose dark:prose-invert max-w-none text-sm text-left"><%- value %></div>
+                                <% } else if (field.type === 'recurrence') { %>
+                                    <% if (value && value.moments) { %>
+                                        <div class="flex flex-wrap gap-1 justify-end">
+                                        <% value.moments.forEach(function(m) { %>
+                                            <span class="badge bg-info/10 text-info text-xs"><%= m %></span>
+                                        <% }); %>
+                                        </div>
+                                    <% } else { %>
+                                        <span class="text-gray-300 dark:text-gray-600 italic">—</span>
+                                    <% } %>
+                                <% } else { %>
+                                    <%= value %>
+                                <% } %>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            </div>
+            <% } %>
+
+            <!-- Relations -->
+            <% var relKeys = Object.keys(relationData); %>
+            <% if (relKeys.length > 0) { %>
+            <div class="panel !p-5">
+                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4 flex items-center gap-2">
+                    <iconify-icon icon="solar:link-round-bold-duotone" width="16" class="text-info"></iconify-icon>
+                    Relations
+                </h3>
+                <div class="space-y-4">
+                    <% relKeys.forEach(function(key) { %>
+                        <% var rel = relationData[key]; %>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 uppercase mb-2"><%= rel.label %></p>
+                            <div class="flex flex-wrap gap-2">
+                                <% rel.records.forEach(function(r) { %>
+                                    <a href="/account/<%= account_number %>/record/<%= rel.targetSlug %>/<%= r._id %>"
+                                       class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primary/5 transition-all text-sm">
+                                        <% if (r.icon) { %>
+                                            <iconify-icon icon="<%= r.icon %>" width="14" class="text-primary"></iconify-icon>
+                                        <% } else { %>
+                                            <iconify-icon icon="solar:document-bold-duotone" width="14" class="text-gray-400"></iconify-icon>
+                                        <% } %>
+                                        <span><%= r.title || 'Sans titre' %></span>
+                                    </a>
+                                <% }); %>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            </div>
+            <% } %>
+
+            <!-- Image -->
+            <% if (record.image) { %>
+            <div class="panel !p-5">
+                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <iconify-icon icon="solar:gallery-bold-duotone" width="16" class="text-success"></iconify-icon>
+                    Image
+                </h3>
+                <img src="<%= record.image %>" alt="<%= record.title %>" class="rounded-xl max-w-full max-h-[400px] object-contain">
+            </div>
+            <% } %>
+        </div>
+
+        <!-- Sidebar (1/3) -->
+        <div class="space-y-5">
+
+            <!-- Quick Actions -->
+            <div class="panel !p-4">
+                <div class="space-y-2">
+                    <a href="/account/<%= account_number %>/record/<%= entity.slug %>/edit/<%= record._id %>"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-primary/5 transition-colors text-sm group w-full">
+                        <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                            <iconify-icon icon="solar:pen-2-bold-duotone" width="16" class="text-primary"></iconify-icon>
+                        </div>
+                        <span class="font-medium dark:text-white">Modifier cette fiche</span>
+                    </a>
+                    <a href="/account/<%= account_number %>/record/<%= entity.slug %>/delete/<%= record._id %>"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-danger/5 transition-colors text-sm group w-full"
+                       onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette fiche ?');">
+                        <div class="w-8 h-8 rounded-lg bg-danger/10 flex items-center justify-center group-hover:bg-danger/20 transition-colors">
+                            <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="16" class="text-danger"></iconify-icon>
+                        </div>
+                        <span class="font-medium text-danger">Supprimer</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Metadata -->
+            <div class="panel !p-4">
+                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Métadonnées</h3>
+                <div class="space-y-3 text-sm">
+                    <% if (record.createdBy) { %>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-info/20 flex items-center justify-center">
+                            <% if (record.createdBy.avatar) { %>
+                                <img src="<%= record.createdBy.avatar %>" class="w-8 h-8 rounded-full object-cover">
+                            <% } else { %>
+                                <iconify-icon icon="solar:user-bold" width="14" class="text-primary"></iconify-icon>
+                            <% } %>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">Créé par</p>
+                            <p class="font-medium dark:text-white text-sm"><%= record.createdBy.name || record.createdBy.email %></p>
+                        </div>
+                    </div>
+                    <% } %>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-success/20 to-primary/20 flex items-center justify-center">
+                            <iconify-icon icon="solar:calendar-add-bold" width="14" class="text-success"></iconify-icon>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">Créé le</p>
+                            <p class="font-medium dark:text-white text-sm">
+                                <%= new Date(record.createdAt).toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-warning/20 to-secondary/20 flex items-center justify-center">
+                            <iconify-icon icon="solar:clock-circle-bold" width="14" class="text-warning"></iconify-icon>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">Modifié le</p>
+                            <p class="font-medium dark:text-white text-sm">
+                                <%= new Date(record.updatedAt).toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Pages (Future) -->
+            <% if (customPages.length > 0) { %>
+            <div class="panel !p-4">
+                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Fiches personnalisées</h3>
+                <div class="space-y-1">
+                    <% customPages.forEach(function(page) { %>
+                        <a href="/account/<%= account_number %>/record/<%= entity.slug %>/<%= record._id %>?pageId=<%= page._id %>"
+                           class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm">
+                            <iconify-icon icon="solar:document-bold-duotone" width="14" class="text-info"></iconify-icon>
+                            <span class="dark:text-white"><%= page.name %></span>
+                        </a>
+                    <% }); %>
+                </div>
+            </div>
+            <% } %>
+
+            <!-- Entity Info -->
+            <div class="panel !p-4">
+                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Collection</h3>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                         style="background: <%= entity.color || '#4361ee' %>15; color: <%= entity.color || '#4361ee' %>;">
+                        <iconify-icon icon="<%= entity.icon || 'solar:inbox-bold-duotone' %>" width="22"></iconify-icon>
+                    </div>
+                    <div>
+                        <p class="font-semibold dark:text-white text-sm"><%= entity.name %></p>
+                        <p class="text-xs text-gray-400"><%= entity.slug %></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

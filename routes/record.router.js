@@ -15,6 +15,10 @@ router.get("/:entityName/edit/:id", recordController.editForm);
 router.get("/:entityName/:id/edit", recordController.editForm);
 router.post("/:entityName/update/:id", upload.single("image"), recordController.update);
 router.get("/:entityName/delete/:id", recordController.delete);
+
+// Record detail page (fiche) — must be AFTER all specific routes
+router.get("/:entityName/:id", recordController.detailPage);
+
 // API for relations
 router.get("/api/search", recordController.searchAjax);
 

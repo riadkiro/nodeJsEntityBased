@@ -870,5 +870,170 @@ module.exports = {
             console.error("[Record Controller] Update Classification Error:", error);
             res.status(500).json({ error: error.message });
         }
+    },
+
+    // ===== Record Detail Page (Fiche) =====
+    detailPage: async (req, res) => {
+        try {
+            await tenantCollection(req, "FieldTemplate");
+            await tenantCollection(req, "Classification");
+            const EntityModel = await tenantCollection(req, "Entity");
+            const RecordModel = await tenantCollection(req, "Record");
+
+            // Load entity with all related data
+            const entity = await EntityModel.findOne({ slug: req.params.entityName })
+                .populate('customFields')
+                .populate('statusClassification')
+                .populate('classifications')
+                .populate('relations.targetEntity');
+
+            if (!entity) return res.status(404).render("errors/404", {
+                message: "Collection introuvable",
+                account_number: req.account_number,
+                layout: "layout-app"
+            });
+
+            if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+                return res.status(400).render("errors/404", {
+                    message: "ID de fiche invalide",
+                    account_number: req.account_number,
+                    layout: "layout-app"
+                });
+            }
+
+            const record = await RecordModel.findById(req.params.id)
+                .populate('createdBy', 'name email avatar')
+                .populate('updatedBy', 'name email avatar');
+
+            if (!record) return res.status(404).render("errors/404", {
+                message: "Fiche introuvable",
+                account_number: req.account_number,
+                layout: "layout-app"
+            });
+
+            // Build record values map for display
+            const recordValues = {};
+            (record.customFields || []).forEach(cv => {
+                const fid = (cv.field_id?._id || cv.field_id || '').toString();
+                if (fid) recordValues[fid] = cv.value;
+            });
+
+            // Build field definitions for template
+            const fieldDefs = [];
+            (entity.customFields || []).forEach(cf => {
+                if (!cf) return;
+                const typeConfig = cf.type_config || {};
+                fieldDefs.push({
+                    _id: cf._id.toString(),
+                    name: cf.name,
+                    label: cf.label || cf.name,
+                    type: cf.type,
+                    icon: cf.ui?.icon || 'solar:widget-bold-duotone',
+                    options: typeConfig.options || cf.options || [],
+                    multiple: typeConfig.multiple || false,
+                    type_config: typeConfig,
+                    ui: cf.ui || {}
+                });
+            });
+
+            // Load classifications data for display
+            const classificationValues = record.classificationValues || [];
+            const classificationDisplay = [];
+            if (entity.statusClassification && classificationValues.length > 0) {
+                const statusClassif = entity.statusClassification;
+                const statusValue = classificationValues.find(
+                    cv => cv.classificationId?.toString() === statusClassif._id?.toString()
+                );
+                if (statusValue && statusClassif.options) {
+                    const option = statusClassif.options.find(
+                        o => o._id?.toString() === statusValue.optionId?.toString()
+                    );
+                    if (option) {
+                        classificationDisplay.push({
+                            name: statusClassif.name,
+                            label: option.label,
+                            color: option.color || '#888',
+                            isStatus: true
+                        });
+                    }
+                }
+            }
+            if (entity.classifications && entity.classifications.length > 0) {
+                entity.classifications.forEach(classif => {
+                    const cv = classificationValues.find(
+                        v => v.classificationId?.toString() === classif._id?.toString()
+                    );
+                    if (cv && classif.options) {
+                        const option = classif.options.find(
+                            o => o._id?.toString() === cv.optionId?.toString()
+                        );
+                        if (option) {
+                            classificationDisplay.push({
+                                name: classif.name,
+                                label: option.label,
+                                color: option.color || '#888',
+                                isStatus: false
+                            });
+                        }
+                    }
+                });
+            }
+
+            // Load relation data
+            const relationData = {};
+            if (entity.relations && entity.relations.length > 0) {
+                for (const rel of entity.relations) {
+                    const cv = (record.customFields || []).find(
+                        c => (c.field_id?._id || c.field_id || '').toString() === rel.key
+                    );
+                    if (cv && cv.value) {
+                        const targetEntitySlug = rel.targetEntity?.slug;
+                        if (rel.targetEntity) {
+                            const TargetRecord = await tenantCollection(req, "Record");
+                            const ids = Array.isArray(cv.value) ? cv.value : [cv.value];
+                            const relatedRecords = await TargetRecord.find({ _id: { $in: ids } })
+                                .select('title slug image icon');
+                            relationData[rel.key] = {
+                                label: rel.label,
+                                targetSlug: targetEntitySlug,
+                                records: relatedRecords
+                            };
+                        }
+                    }
+                }
+            }
+
+            // Load custom pages (PageConfig type: record_page) for this entity
+            let customPages = [];
+            try {
+                const PageConfig = await tenantCollection(req, "PageConfig");
+                customPages = await PageConfig.find({
+                    entityRef: entity._id,
+                    type: 'record_page',
+                    status: 'published'
+                }).select('name tabs header').sort({ createdAt: 1 });
+            } catch (e) {
+                // PageConfig may not exist in all tenants
+            }
+
+            res.render("record/record-detail", {
+                entity,
+                record,
+                recordValues,
+                fieldDefs,
+                classificationDisplay,
+                relationData,
+                customPages,
+                account_number: req.account_number,
+                layout: "layout-app"
+            });
+        } catch (err) {
+            console.error("❌ Error in record detailPage:", err);
+            res.status(500).render("errors/500", {
+                message: "Erreur serveur",
+                layout: "layout-app",
+                account_number: req.account_number
+            });
+        }
     }
 };

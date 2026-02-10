@@ -115,12 +115,12 @@
                                         <div class="flex flex-wrap gap-1">
                                         <% value.forEach(function(v) { %>
                                             <% var opt = field.options.find(function(o) { return o.value === v || o.label === v; }); %>
-                                            <span class="badge bg-primary/10 text-primary text-xs"><%= opt ? opt.label : v %></span>
+                                            <span class="px-2 py-0 rounded border border-primary/20 bg-primary/5 text-primary text-xs"><%= opt ? opt.label : v %></span>
                                         <% }); %>
                                         </div>
                                     <% } else { %>
                                         <% var opt = field.options.find(function(o) { return o.value === value || o.label === value; }); %>
-                                        <span class="badge bg-primary/10 text-primary text-xs"><%= opt ? opt.label : value %></span>
+                                        <span class="px-2 py-0 rounded border border-primary/20 bg-primary/5 text-primary text-xs"><%= opt ? opt.label : value %></span>
                                     <% } %>
                                 <% } else if (field.type === 'boolean' || field.type === 'checkbox') { %>
                                     <% if (value === true || value === 'true' || value === '1') { %>

@@ -25,7 +25,7 @@
                             <template x-if="editing">
                                 <input name="standard[title]" type="text" x-model="title" @keyup.enter="editing = false"
                                     @blur="editing = false"
-                                    class="form-input !h-9 !text-lg !font-bold !py-0 !border-primary border-2 focus:ring-0 w-auto min-w-[300px]"
+                                    class="form-input !h-9 !text-lg !font-bold !py-0 !border-primary border-2 focus:ring-0 w-auto min-w-[300px] dark:bg-[#121e32] dark:text-gray-200"
                                     x-init="$nextTick(() => $el.focus())">
                             </template>
                             <!-- Hidden input for form submission if not editing -->
@@ -70,7 +70,7 @@
                                                                         <%= field.label || def.label %>
                                                                         <% if (field.required) { %><span class="text-danger">*</span><% } %>
                                                                     </label>
-                                                                    <input name="<%= def.inputName %>" type="text" class="form-input"
+                                                                    <input name="<%= def.inputName %>" type="text" class="form-input dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300"
                                                                         value="<%= record.title || '' %>"
                                                                         placeholder="<%= field.placeholder || def.label %>"
                                                                         <%= field.required ? 'required' : '' %> />
@@ -82,7 +82,7 @@
                                                                         <%= field.label || def.label %>
                                                                         <% if (field.required) { %><span class="text-danger">*</span><% } %>
                                                                     </label>
-                                                                    <textarea name="<%= def.inputName %>" class="form-textarea" rows="4"
+                                                                    <textarea name="<%= def.inputName %>" class="form-textarea dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" rows="4"
                                                                         placeholder="<%= field.placeholder || def.label %>"
                                                                         <%= field.required ? 'required' : '' %>><%= record[field.fieldId] || '' %></textarea>
                                                                 </div>
@@ -95,7 +95,7 @@
                                                                     <% if (record[field.fieldId]) { %>
                                                                         <div class="text-xs text-gray-500 mb-1">Fichier actuel : <span class="text-primary"><%= record[field.fieldId] %></span></div>
                                                                     <% } %>
-                                                                    <input name="<%= def.inputName %>" type="file" class="form-input" />
+                                                                    <input name="<%= def.inputName %>" type="file" class="form-input dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" />
                                                                 </div>
                                                             <% } else if (def.inputType === 'date') { %>
                                                                 <div class="mb-3">
@@ -104,7 +104,7 @@
                                                                         <%= field.label || def.label %>
                                                                         <% if (field.required) { %><span class="text-danger">*</span><% } %>
                                                                     </label>
-                                                                    <input name="<%= def.inputName %>" type="date" class="form-input"
+                                                                    <input name="<%= def.inputName %>" type="date" class="form-input dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300"
                                                                         value="<%= record[field.fieldId] ? new Date(record[field.fieldId]).toISOString().split('T')[0] : '' %>"
                                                                         <%= field.required ? 'required' : '' %> />
                                                                 </div>
@@ -115,7 +115,7 @@
                                                                         <%= field.label || def.label %>
                                                                         <% if (field.required) { %><span class="text-danger">*</span><% } %>
                                                                     </label>
-                                                                    <input name="<%= def.inputName %>" type="<%= def.inputType || 'text' %>" class="form-input"
+                                                                    <input name="<%= def.inputName %>" type="<%= def.inputType || 'text' %>" class="form-input dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300"
                                                                         value="<%= record[field.fieldId] || '' %>"
                                                                         placeholder="<%= field.placeholder || def.label %>"
                                                                         <%= field.required ? 'required' : '' %> />
@@ -158,8 +158,8 @@
                                                                             isSelected(val) { return this.selected.includes(val); }
                                                                         }'>
                                                                             <% cf.options.forEach(function(opt) { %>
-                                                                                <label class="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer border transition-all duration-200 select-none"
-                                                                                       :class="isSelected('<%= opt.value %>') ? 'bg-primary/10 border-primary/40 text-primary shadow-sm shadow-primary/10 ring-1 ring-primary/20' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-primary/30 hover:bg-primary/5 hover:text-primary/70 shadow-sm'">
+                                                                                <label class="group inline-flex items-center gap-1.5 px-2 py-0 rounded text-xs font-medium cursor-pointer border transition-all duration-200 select-none"
+                                                                                       :class="isSelected('<%= opt.value %>') ? 'bg-primary/10 border-primary text-primary' : 'bg-white dark:bg-[#1b2e4b] border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-primary/30 hover:bg-primary/5 hover:text-primary/70'">
                                                                                     <input type="checkbox" name="custom[<%= cf._id %>][]" value="<%= opt.value %>" class="hidden"
                                                                                            :checked="isSelected('<%= opt.value %>')"
                                                                                            @change="toggle('<%= opt.value %>')">
@@ -203,8 +203,8 @@
                                                                                  <template x-if="getSlotUI(slotName) === 'checkbox'">
                                                                                      <div class="flex flex-wrap gap-2">
                                                                                          <template x-for="opt in getSlotOptions(slotName)" :key="opt.value">
-                                                                                             <label class="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer border transition-all duration-200 select-none"
-                                                                                                    :class="isSlotSelected(slotName, opt.value) ? 'bg-primary/10 border-primary/40 text-primary shadow-sm shadow-primary/10 ring-1 ring-primary/20' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-primary/30 hover:bg-primary/5 hover:text-primary/70 shadow-sm'">
+                                                                                             <label class="group inline-flex items-center gap-1.5 px-2 py-0 rounded text-xs font-medium cursor-pointer border transition-all duration-200 select-none"
+                                                                                                    :class="isSlotSelected(slotName, opt.value) ? 'bg-primary/10 border-primary text-primary' : 'bg-white dark:bg-[#1b2e4b] border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-primary/30 hover:bg-primary/5 hover:text-primary/70'">
                                                                                                  <input type="checkbox" class="hidden" :value="opt.value" :checked="isSlotSelected(slotName, opt.value)" @change="toggleSlotValue(slotName, opt.value)">
                                                                                                  <svg x-show="isSlotSelected(slotName, opt.value)" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                                                                                  <span x-text="opt.label"></span>
@@ -217,13 +217,13 @@
                                                                          <template x-if="allowCustomText">
                                                                              <div>
                                                                                  <label class="block text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Autre</label>
-                                                                                 <input type="text" class="form-input text-sm" x-model="currentValue.customText" @input="serialize()" placeholder="Texte libre...">
+                                                                                 <input type="text" class="form-input text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" x-model="currentValue.customText" @input="serialize()" placeholder="Texte libre...">
                                                                             </div>
                                                                         </template>
                                                                         <input type="hidden" name="custom[<%= cf._id %>]" :value="serialized">
                                                                     </div>
                                                                 <% } else { %>
-                                                                    <input name="custom[<%= cf._id %>]" type="<%= cf.inputType || 'text' %>" class="form-input"
+                                                                    <input name="custom[<%= cf._id %>]" type="<%= cf.inputType || 'text' %>" class="form-input dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300"
                                                                         value="<%= cfVal || '' %>"
                                                                         placeholder="<%= field.placeholder || cf.label || cf.name %>"
                                                                         <%= field.required ? 'required' : '' %> />
@@ -868,8 +868,8 @@
             <template x-if="getSlotUI(slotName) === 'checkbox'">
                 <div class="flex flex-wrap gap-2">
                     <template x-for="opt in getSlotOptions(slotName)" :key="opt.value">
-                        <label class="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer border transition-all duration-200 select-none"
-                               :class="isSlotSelected(slotName, opt.value) ? 'bg-primary/10 border-primary/40 text-primary shadow-sm shadow-primary/10 ring-1 ring-primary/20' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-primary/30 hover:bg-primary/5 hover:text-primary/70 shadow-sm'">
+                        <label class="group inline-flex items-center gap-1.5 px-2 py-0 rounded text-xs font-medium cursor-pointer border transition-all duration-200 select-none"
+                               :class="isSlotSelected(slotName, opt.value) ? 'bg-primary/10 border-primary text-primary' : 'bg-white dark:bg-[#1b2e4b] border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-primary/30 hover:bg-primary/5 hover:text-primary/70'">
                             <input type="checkbox" class="hidden" :value="opt.value" :checked="isSlotSelected(slotName, opt.value)" @change="toggleSlotValue(slotName, opt.value)">
                             <svg x-show="isSlotSelected(slotName, opt.value)" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                             <span x-text="opt.label"></span>
@@ -1286,11 +1286,27 @@
         transition: all 0.2s;
     }
 
+    .dark .form-input,
+    .dark input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    .dark select,
+    .dark .form-select {
+        background-color: #121e32 !important;
+        border-color: #17263c !important;
+        color: #e0e6ed !important;
+    }
+
     .form-input:focus,
     select:focus {
         border-color: #4361ee !important;
         background-color: #fff !important;
         box-shadow: 0 0 0 1px rgba(67, 97, 238, 0.1) !important;
+    }
+
+    .dark .form-input:focus,
+    .dark select:focus {
+        border-color: #22bce9 !important;
+        background-color: #1b2e4b !important;
+        box-shadow: 0 0 0 1px rgba(34, 188, 233, 0.1) !important;
     }
 
     textarea,
@@ -1305,6 +1321,13 @@
         min-height: 100px !important;
         margin: 0 !important;
         resize: vertical !important;
+    }
+
+    .dark textarea,
+    .dark .form-textarea {
+        background-color: #121e32 !important;
+        border-color: #17263c !important;
+        color: #e0e6ed !important;
     }
 
     /* Reset for file inputs - Match Entity Builder */

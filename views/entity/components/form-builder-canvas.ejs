@@ -9,6 +9,9 @@
     text-transform: uppercase !important;
     letter-spacing: 0.05em !important;
   }
+  .dark .fb-field-item label {
+    color: #9ca3af !important;
+  }
   .fb-field-item .form-input,
   .fb-field-item input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
   .fb-field-item select {
@@ -23,6 +26,13 @@
     margin: 0 !important;
     pointer-events: none;
   }
+  .dark .fb-field-item .form-input,
+  .dark .fb-field-item input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .dark .fb-field-item select {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+    color: #d1d5db !important;
+  }
   .fb-field-item textarea {
     font-size: 13px !important;
     padding: 8px 12px !important;
@@ -33,14 +43,12 @@
     min-height: 80px !important;
     pointer-events: none;
   }
-  .fb-drop-zone {
-    min-height: 60px;
-    transition: background-color 0.15s, border-color 0.15s;
+  .dark .fb-field-item textarea {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
   }
-  .fb-drop-zone.drag-over {
-    background-color: rgba(var(--primary-rgb, 67, 97, 238), 0.08) !important;
-    border-color: rgba(var(--primary-rgb, 67, 97, 238), 0.4) !important;
-  }
+
+  /* Sortable */
   .fb-sortable-ghost {
     opacity: 0.08;
     background: #6366f1 !important;
@@ -52,89 +60,216 @@
     transform: rotate(0.5deg) scale(1.01);
     z-index: 999;
   }
-  .fb-row:hover .fb-row-toolbar {
-    opacity: 1;
+
+  /* Drop indicator line for sidebar drag */
+  .fb-drop-indicator {
+    height: 20px;
+    background: rgba(67, 97, 238, 0.12);
+    border: 2px dashed var(--primary, #4361ee);
+    border-radius: 6px;
+    margin: 4px 0;
+    pointer-events: none;
   }
-  .fb-field-item:hover .fb-field-actions {
-    opacity: 1;
+
+  /* Column resize handle */
+  .fb-col-resize {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    width: 16px;
+    cursor: col-resize;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateX(-50%);
+  }
+  .fb-col-resize::before {
+    content: '';
+    display: block;
+    width: 3px;
+    height: 24px;
+    border-radius: 3px;
+    background: #d1d5db;
+    transition: all 0.15s;
+  }
+  .fb-col-resize:hover::before,
+  .fb-col-resize.active::before {
+    height: 100%;
+    background: var(--primary, #4361ee);
+    box-shadow: 0 0 8px rgba(67, 97, 238, 0.4);
+  }
+  .dark .fb-col-resize::before {
+    background: #4b5563;
+  }
+
+  /* Width badge on resize */
+  .fb-width-badge {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--primary, #4361ee);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  /* Column width badge */
+  .fb-col-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(var(--primary-rgb, 67, 97, 238), 0.1);
+    color: var(--primary, #4361ee);
+  }
+
+  /* Drop zones */
+  .fb-drop-zone {
+    min-height: 60px;
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+  .fb-drop-zone.drag-over {
+    background-color: rgba(var(--primary-rgb, 67, 97, 238), 0.08) !important;
+    border-color: rgba(var(--primary-rgb, 67, 97, 238), 0.4) !important;
   }
 </style>
 
 <!-- Canvas Area -->
-<div class="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-6">
+<div class="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-6" @click="builderState.selectedFieldId = null; if(builderState.drawerMode === 'field-settings') builderState.drawerMode = 'fields'">
+
   <div class="max-w-5xl mx-auto">
 
     <!-- Empty State -->
     <template x-if="formLayout.rows.length === 0">
-      <div class="flex flex-col items-center justify-center h-96 border-2 border-dashed border-gray-300 dark:border-gray-800 rounded-lg"
-           @dragover.prevent="$el.classList.add('fb-drop-zone', 'drag-over')"
-           @dragleave="$el.classList.remove('drag-over')"
+      <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm"
+           style="min-height: 420px;"
+           @dragover.prevent="$el.classList.add('drag-over', 'fb-drop-zone')"
+           @dragleave="$el.classList.remove('drag-over', 'fb-drop-zone')"
            @drop.prevent="addRow(1); $nextTick(() => handleCanvasDrop($event, 0, 0))">
-        <iconify-icon icon="solar:widget-5-bold-duotone" width="64" class="text-gray-400 mb-4"></iconify-icon>
-        <p class="text-gray-500 mb-4">Glissez un champ ici ou ajoutez une ligne</p>
-        <button @click="addRow(1)" class="btn btn-primary btn-sm">
-          <iconify-icon icon="solar:add-circle-bold" class="mr-1"></iconify-icon>
-          Ajouter une ligne
-        </button>
+
+        <!-- Animated icon -->
+        <div class="relative mb-6">
+          <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-info/20 flex items-center justify-center">
+            <iconify-icon icon="solar:widget-5-bold-duotone" width="40" class="text-primary"></iconify-icon>
+          </div>
+          <div class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
+            <iconify-icon icon="solar:add-circle-bold" width="16" class="text-primary"></iconify-icon>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-bold text-gray-700 dark:text-gray-200 mb-1">Construisez votre formulaire</h3>
+        <p class="text-sm text-gray-400 mb-6 text-center max-w-[320px]">Glissez des champs depuis la barre latérale ou ajoutez une ligne pour commencer</p>
+        
+        <!-- Quick-start layouts -->
+        <div class="flex items-center gap-2">
+          <button @click.stop="addRow(1)" class="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:border-primary hover:text-primary hover:shadow-md transition-all">
+            <div class="flex gap-0.5"><div class="w-8 h-2 bg-primary/30 rounded-sm"></div></div>
+            1 col
+          </button>
+          <button @click.stop="addRow(2)" class="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:border-primary hover:text-primary hover:shadow-md transition-all">
+            <div class="flex gap-0.5"><div class="w-4 h-2 bg-primary/30 rounded-sm"></div><div class="w-4 h-2 bg-primary/30 rounded-sm"></div></div>
+            2 cols
+          </button>
+          <button @click.stop="addRow(3)" class="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:border-primary hover:text-primary hover:shadow-md transition-all">
+            <div class="flex gap-0.5"><div class="w-3 h-2 bg-primary/30 rounded-sm"></div><div class="w-3 h-2 bg-primary/30 rounded-sm"></div><div class="w-3 h-2 bg-primary/30 rounded-sm"></div></div>
+            3 cols
+          </button>
+        </div>
       </div>
     </template>
 
     <!-- Rows -->
     <div class="space-y-4" id="form-builder-rows">
       <template x-for="(row, rowIndex) in formLayout.rows" :key="row.id">
-        <div class="fb-row group relative">
-          
-          <!-- Row Toolbar -->
-          <div class="fb-row-toolbar opacity-0 absolute -top-8 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-1 flex gap-1 z-20 transition-opacity">
-            <button @click.stop="addRow(1, rowIndex)" title="1 colonne" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-bold">1</button>
-            <button @click.stop="addRow(2, rowIndex)" title="2 colonnes" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-bold">2</button>
-            <button @click.stop="addRow(3, rowIndex)" title="3 colonnes" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-bold">3</button>
-            <div class="w-px h-5 bg-gray-200 dark:bg-gray-700 self-center"></div>
-            <button @click.stop="moveRow(rowIndex, -1)" :disabled="rowIndex === 0" title="Monter" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30">
+        <div class="group relative"
+             :data-row-id="row.id"
+             @mouseenter="builderState.hoveredRowId = row.id"
+             @mouseleave="builderState.hoveredRowId = null">
+
+          <!-- Row Toolbar (appears on hover, same as cockpit) -->
+          <div x-show="builderState.hoveredRowId === row.id" x-cloak
+               class="absolute -top-4 left-1/2 transform -translate-x-1/2 -translate-y-0 z-20 flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-lg px-2 py-1"
+               @click.stop>
+            <!-- Column Layout Presets -->
+            <div class="flex items-center gap-0.5 mr-1 border-r dark:border-gray-700 pr-2">
+              <button @click="setRowLayout(row.id, [12])" class="w-6 h-6 rounded flex items-center justify-center hover:bg-primary/10 transition-colors" title="1 colonne">
+                <div class="flex gap-px"><div class="w-4 h-2 bg-gray-400 rounded-sm"></div></div>
+              </button>
+              <button @click="setRowLayout(row.id, [6,6])" class="w-6 h-6 rounded flex items-center justify-center hover:bg-primary/10 transition-colors" title="2 colonnes">
+                <div class="flex gap-px"><div class="w-2 h-2 bg-gray-400 rounded-sm"></div><div class="w-2 h-2 bg-gray-400 rounded-sm"></div></div>
+              </button>
+              <button @click="setRowLayout(row.id, [4,4,4])" class="w-6 h-6 rounded flex items-center justify-center hover:bg-primary/10 transition-colors" title="3 colonnes">
+                <div class="flex gap-px"><div class="w-1.5 h-2 bg-gray-400 rounded-sm"></div><div class="w-1.5 h-2 bg-gray-400 rounded-sm"></div><div class="w-1.5 h-2 bg-gray-400 rounded-sm"></div></div>
+              </button>
+              <button @click="setRowLayout(row.id, [4,8])" class="w-6 h-6 rounded flex items-center justify-center hover:bg-primary/10 transition-colors" title="⅓ + ⅔">
+                <div class="flex gap-px"><div class="w-1 h-2 bg-gray-400 rounded-sm"></div><div class="w-3 h-2 bg-gray-400 rounded-sm"></div></div>
+              </button>
+              <button @click="setRowLayout(row.id, [8,4])" class="w-6 h-6 rounded flex items-center justify-center hover:bg-primary/10 transition-colors" title="⅔ + ⅓">
+                <div class="flex gap-px"><div class="w-3 h-2 bg-gray-400 rounded-sm"></div><div class="w-1 h-2 bg-gray-400 rounded-sm"></div></div>
+              </button>
+            </div>
+            <!-- Row Actions -->
+            <button @click="moveRow(rowIndex, -1)" class="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-all" title="Monter" :disabled="rowIndex === 0">
               <iconify-icon icon="solar:arrow-up-outline" width="14"></iconify-icon>
             </button>
-            <button @click.stop="moveRow(rowIndex, 1)" :disabled="rowIndex === formLayout.rows.length - 1" title="Descendre" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30">
+            <button @click="moveRow(rowIndex, 1)" class="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-all" title="Descendre" :disabled="rowIndex === formLayout.rows.length - 1">
               <iconify-icon icon="solar:arrow-down-outline" width="14"></iconify-icon>
             </button>
-            <button @click.stop="duplicateRow(rowIndex)" title="Dupliquer" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+            <button @click="duplicateRow(rowIndex)" class="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-info hover:bg-info/10 transition-all" title="Dupliquer">
               <iconify-icon icon="solar:copy-bold" width="14"></iconify-icon>
             </button>
-            <button @click.stop="deleteRow(rowIndex)" title="Supprimer" class="w-7 h-7 flex items-center justify-center rounded hover:bg-red-100 dark:hover:bg-red-900/20 text-gray-500 hover:text-red-600">
-              <iconify-icon icon="solar:trash-bin-minimalistic-outline" width="14"></iconify-icon>
+            <div class="w-px h-4 bg-gray-200 dark:bg-gray-700"></div>
+            <button @click="deleteRow(rowIndex)" class="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-danger hover:bg-danger/10 transition-all" title="Supprimer">
+              <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="14"></iconify-icon>
             </button>
           </div>
 
           <!-- Row Grid -->
-          <div class="grid gap-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-800 p-3 hover:border-primary/30 transition-colors"
-               :style="'grid-template-columns: repeat(' + row.columns.reduce((s, c) => s + c.width, 0) + ', minmax(0, 1fr))'">
+          <div class="grid gap-3 bg-white dark:bg-[#0e1726] rounded-xl border border-gray-200 dark:border-gray-700 p-3 transition-colors"
+               :class="builderState.hoveredRowId === row.id && 'border-primary/30'"
+               :style="'grid-template-columns: repeat(12, 1fr)'">
             
             <template x-for="(col, colIndex) in row.columns" :key="row.id + '-col-' + colIndex">
-              <div class="fb-drop-zone rounded-lg border border-dashed border-gray-200 dark:border-gray-800 p-2 min-h-[60px]"
+              <div class="fb-drop-zone relative rounded-lg border border-dashed border-gray-200 dark:border-gray-700 p-2 min-h-[60px]"
                    :style="'grid-column: span ' + col.width"
                    :data-row-index="rowIndex"
-                   :data-col-index="colIndex"
-                   @dragover.prevent="$el.classList.add('drag-over')"
-                   @dragleave="$el.classList.remove('drag-over')"
-                   @drop.prevent="$el.classList.remove('drag-over'); handleCanvasDrop($event, rowIndex, colIndex)">
+                   :data-col-index="colIndex">
                 
+                <!-- Column width badge -->
+                <div class="absolute -top-2.5 left-3 fb-col-badge" x-text="col.width + '/12'"></div>
+
                 <!-- Fields in this column -->
-                <div class="space-y-2" :id="'col-' + row.id + '-' + colIndex" :data-row-index="rowIndex" :data-col-index="colIndex">
+                <div class="space-y-2 mt-1"
+                     data-sortable-column
+                     :data-row-id="row.id"
+                     :data-col-index="colIndex"
+                     x-init="initSortableColumn($el, row.id, colIndex)">
                   <template x-for="(field, fieldIndex) in col.fields" :key="field.id">
-                    <div class="fb-field-item group/field relative bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-lg p-3 cursor-grab hover:border-primary/30 hover:shadow-sm transition-all"
+                    <div class="fb-field-item group/field relative bg-white dark:bg-[#0e1726] border border-gray-100 dark:border-gray-700 rounded-lg p-3 cursor-grab hover:border-primary/30 hover:shadow-sm transition-all"
                          :data-field-id="field.id"
-                         :class="selectedFieldId === field.id && 'ring-2 ring-primary/50 border-primary/30'"
+                         :class="builderState.selectedFieldId === field.id && 'ring-2 ring-primary/50 border-primary/30 shadow-md'"
                          @click.stop="selectField(field.id)">
                       
-                      <!-- Field Actions -->
-                      <div class="fb-field-actions opacity-0 absolute top-1 right-1 flex items-center gap-0.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded px-1 z-10 transition-opacity">
-                        <button @click.stop="moveFieldUp(rowIndex, colIndex, fieldIndex)" class="p-1 text-gray-400 hover:text-primary" title="Monter">
-                          <iconify-icon icon="solar:arrow-up-outline" width="12"></iconify-icon>
+                      <!-- Block Action Popover (appears on selection, same as cockpit) -->
+                      <div x-show="builderState.selectedFieldId === field.id" x-cloak
+                           class="absolute -top-3 right-2 flex items-center gap-0.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-lg rounded-lg px-1 py-0.5 z-10"
+                           @click.stop>
+                        <button @click="openFieldSettings(field.id)" class="p-1.5 text-gray-400 hover:text-primary rounded transition-colors" title="Paramètres">
+                          <iconify-icon icon="solar:settings-bold" width="14"></iconify-icon>
                         </button>
-                        <button @click.stop="moveFieldDown(rowIndex, colIndex, fieldIndex)" class="p-1 text-gray-400 hover:text-primary" title="Descendre">
-                          <iconify-icon icon="solar:arrow-down-outline" width="12"></iconify-icon>
+                        <button @click="duplicateFieldInPlace(rowIndex, colIndex, fieldIndex)" class="p-1.5 text-gray-400 hover:text-info rounded transition-colors" title="Dupliquer">
+                          <iconify-icon icon="solar:copy-bold" width="14"></iconify-icon>
                         </button>
-                        <button @click.stop="removeField(rowIndex, colIndex, fieldIndex)" class="p-1 text-gray-400 hover:text-red-500" title="Retirer">
-                          <iconify-icon icon="solar:trash-bin-minimalistic-outline" width="12"></iconify-icon>
+                        <div class="w-px h-3.5 bg-gray-200 dark:bg-gray-600"></div>
+                        <button @click.stop="removeField(rowIndex, colIndex, fieldIndex)" class="p-1.5 text-gray-400 hover:text-danger rounded transition-colors" title="Retirer">
+                          <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="14"></iconify-icon>
                         </button>
                       </div>
                       
@@ -145,12 +280,21 @@
 
                   <!-- Empty column placeholder -->
                   <template x-if="col.fields.length === 0">
-                    <div class="flex items-center justify-center h-12 text-gray-300 text-xs">
-                      <iconify-icon icon="solar:add-circle-linear" width="16" class="mr-1"></iconify-icon>
+                    <div class="flex flex-col items-center justify-center h-14 text-gray-300 dark:text-gray-600 text-xs rounded-lg border border-dashed border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30">
+                      <iconify-icon icon="solar:add-circle-linear" width="18" class="mb-0.5"></iconify-icon>
                       Glissez un champ ici
                     </div>
                   </template>
                 </div>
+
+                <!-- Column resize handle -->
+                <template x-if="colIndex < row.columns.length - 1">
+                  <div class="fb-col-resize" 
+                       :style="'right: -10px;'"
+                       @mousedown="startResize($event, rowIndex, colIndex)"
+                       :class="resizing && resizing.rowIndex === rowIndex && resizing.colIndex === colIndex && 'active'">
+                  </div>
+                </template>
               </div>
             </template>
           </div>
@@ -158,14 +302,16 @@
       </template>
     </div>
 
-    <!-- Add Row Button (bottom) -->
+    <!-- Add Row Button (bottom, same as cockpit) -->
     <template x-if="formLayout.rows.length > 0">
-      <div class="mt-4 flex justify-center">
-        <button @click="addRow(1)" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-primary border border-dashed border-gray-300 dark:border-gray-800 rounded-lg hover:border-primary/50 transition-colors">
-          <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
+      <div class="mt-6 flex justify-center">
+        <button @click="addRow(1)" 
+                class="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 hover:border-primary hover:text-primary hover:shadow-md transition-all">
+          <iconify-icon icon="solar:add-circle-bold" width="18"></iconify-icon>
           Ajouter une ligne
         </button>
       </div>
     </template>
+
   </div>
 </div>

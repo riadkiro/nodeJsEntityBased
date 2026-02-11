@@ -13,15 +13,15 @@
           <h1 class="font-bold text-base" x-text="formName"></h1>
           <span class="text-xs text-gray-400">— <span x-text="entityMeta.name"></span></span>
         </div>
-        <!-- Preview Toggle -->
+        <!-- Edit/Preview Toggle -->
         <div class="flex items-center ml-4 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
-          <button @click="isPreview = false" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all"
-                  :class="!isPreview ? 'bg-white dark:bg-gray-600 shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'">
+          <button @click="builderState.mode = 'edit'; isPreview = false" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+                  :class="builderState.mode === 'edit' ? 'bg-white dark:bg-gray-600 shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'">
             <iconify-icon icon="solar:pen-new-square-bold-duotone" width="14"></iconify-icon>
             Éditer
           </button>
-          <button @click="isPreview = true" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all"
-                  :class="isPreview ? 'bg-white dark:bg-gray-600 shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'">
+          <button @click="builderState.mode = 'preview'; isPreview = true" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+                  :class="builderState.mode === 'preview' ? 'bg-white dark:bg-gray-600 shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'">
             <iconify-icon icon="solar:eye-bold-duotone" width="14"></iconify-icon>
             Aperçu
           </button>
@@ -62,13 +62,13 @@
 
   <!-- Main Builder Area -->
   <div class="flex flex-1 overflow-hidden">
-    <template x-if="!isPreview">
+    <template x-if="builderState.mode === 'edit'">
       <div class="flex flex-1 overflow-hidden">
         <%- include('components/form-builder-sidebar') %>
         <%- include('components/form-builder-canvas') %>
       </div>
     </template>
-    <template x-if="isPreview">
+    <template x-if="builderState.mode === 'preview'">
       <%- include('components/form-builder-preview') %>
     </template>
   </div>
@@ -181,19 +181,24 @@ document.addEventListener('alpine:init', () => {
       entityClassifications: data.classifications.filter(c => 
         data.entityClassificationIds.includes(c._id) || data.statusClassificationId === c._id
       ),
-      selectedFieldId: null,
       isDirty: false,
       isSaving: false,
       isPreview: false,
       isPublishing: false,
-      sidebar: {
-        open: true,
-        mode: 'fields'
+      resizing: null,
+
+      // Builder State (cockpit builder pattern)
+      builderState: {
+        mode: 'edit',
+        selectedFieldId: null,
+        hoveredRowId: null,
+        drawerMode: 'fields',
+        sidebarOpen: true,
+        activeTab: 'default'
       },
 
       init() {
         this.$watch('formLayout', () => { this.isDirty = true; }, { deep: true });
-        this.$nextTick(() => this.initSortables());
       },
 
       // ========== SIDEBAR HELPERS ==========
@@ -217,7 +222,7 @@ document.addEventListener('alpine:init', () => {
         return false;
       },
 
-      // ========== ROW/FIELD MANAGEMENT ==========
+      // ========== ROW MANAGEMENT (cockpit builder pattern) ==========
 
       addRow(cols, insertAtIndex = null) {
         const row = {
@@ -231,12 +236,41 @@ document.addEventListener('alpine:init', () => {
           const remainder = 12 - row.columns.reduce((s, c) => s + c.width, 0);
           if (remainder > 0) row.columns[row.columns.length - 1].width += remainder;
         }
-        if (insertAtIndex !== null && insertAtIndex >= 0) {
+        if (insertAtIndex !== null && insertAtIndex >= -1) {
           this.formLayout.rows.splice(insertAtIndex + 1, 0, row);
         } else {
           this.formLayout.rows.push(row);
         }
-        this.$nextTick(() => this.initSortables());
+      },
+
+      setRowLayout(rowId, widths) {
+        const row = this.formLayout.rows.find(r => r.id === rowId);
+        if (!row) return;
+        
+        // Collect all existing fields from all columns
+        const allFields = [];
+        row.columns.forEach(col => {
+          col.fields.forEach(f => allFields.push({ ...f }));
+        });
+
+        // Create new columns with specified widths
+        const newColumns = widths.map(w => ({ width: w, fields: [] }));
+        
+        // Distribute existing fields across new columns
+        allFields.forEach((field, i) => {
+          const colIdx = i % newColumns.length;
+          newColumns[colIdx].fields.push(field);
+        });
+
+        row.columns = newColumns;
+        this.isDirty = true;
+      },
+
+      addRowCustom(widths) {
+        const columns = widths.map(w => ({ width: w, fields: [] }));
+        const row = { id: genId(), columns };
+        this.formLayout.rows.push(row);
+        this.isDirty = true;
       },
 
       moveRow(index, direction) {
@@ -254,54 +288,107 @@ document.addEventListener('alpine:init', () => {
           col.fields.forEach(f => { f.id = genId(); });
         });
         this.formLayout.rows.splice(index + 1, 0, clone);
-        this.$nextTick(() => this.initSortables());
       },
 
       deleteRow(index) {
         this.formLayout.rows.splice(index, 1);
       },
 
+      // ========== FIELD MANAGEMENT ==========
+
       selectField(fieldId) {
-        this.selectedFieldId = this.selectedFieldId === fieldId ? null : fieldId;
+        if (this.builderState.selectedFieldId === fieldId) {
+          this.builderState.selectedFieldId = null;
+          if (this.builderState.drawerMode === 'field-settings') {
+            this.builderState.drawerMode = 'fields';
+          }
+        } else {
+          this.builderState.selectedFieldId = fieldId;
+          this.builderState.drawerMode = 'field-settings';
+          this.builderState.sidebarOpen = true;
+        }
+      },
+
+      openFieldSettings(fieldId) {
+        this.builderState.selectedFieldId = fieldId;
+        this.builderState.drawerMode = 'field-settings';
+        this.builderState.sidebarOpen = true;
+      },
+
+      getSelectedField() {
+        if (!this.builderState.selectedFieldId) return null;
+        for (const row of this.formLayout.rows) {
+          for (const col of row.columns) {
+            for (const field of col.fields) {
+              if (field.id === this.builderState.selectedFieldId) return field;
+            }
+          }
+        }
+        return null;
+      },
+
+      getFieldMeta(field) {
+        if (!field) return null;
+        if (field.type === 'standard') return this.standardFieldDefs[field.fieldId];
+        if (field.type === 'custom') return this.availableCustomFields.find(f => f._id === field.fieldId);
+        if (field.type === 'relation') return this.entityRelations.find(r => r.key === field.fieldId);
+        if (field.type === 'classification') return this.entityClassifications.find(c => c._id === field.fieldId);
+        return null;
+      },
+
+      updateFieldProperty(fieldId, key, value) {
+        for (const row of this.formLayout.rows) {
+          for (const col of row.columns) {
+            for (const field of col.fields) {
+              if (field.id === fieldId) {
+                field[key] = value;
+                this.isDirty = true;
+                return;
+              }
+            }
+          }
+        }
       },
 
       removeField(rowIndex, colIndex, fieldIndex) {
         this.formLayout.rows[rowIndex].columns[colIndex].fields.splice(fieldIndex, 1);
-        this.selectedFieldId = null;
+        if (this.builderState.selectedFieldId) {
+          this.builderState.selectedFieldId = null;
+          if (this.builderState.drawerMode === 'field-settings') {
+            this.builderState.drawerMode = 'fields';
+          }
+        }
       },
 
-      moveFieldUp(rowIndex, colIndex, fieldIndex) {
-        if (fieldIndex === 0) return;
-        const fields = this.formLayout.rows[rowIndex].columns[colIndex].fields;
-        [fields[fieldIndex], fields[fieldIndex - 1]] = [fields[fieldIndex - 1], fields[fieldIndex]];
+      removeFieldById(fieldId) {
+        for (const row of this.formLayout.rows) {
+          for (const col of row.columns) {
+            const idx = col.fields.findIndex(f => f.id === fieldId);
+            if (idx !== -1) {
+              col.fields.splice(idx, 1);
+              return;
+            }
+          }
+        }
       },
 
-      moveFieldDown(rowIndex, colIndex, fieldIndex) {
-        const fields = this.formLayout.rows[rowIndex].columns[colIndex].fields;
-        if (fieldIndex >= fields.length - 1) return;
-        [fields[fieldIndex], fields[fieldIndex + 1]] = [fields[fieldIndex + 1], fields[fieldIndex]];
-      },
-
-      // ========== DRAG & DROP FROM SIDEBAR ==========
-
-      onSidebarDragStart(event, type, fieldId, label, icon) {
-        if (this.isFieldOnCanvas(type, fieldId)) {
-          event.preventDefault();
+      duplicateFieldInPlace(rowIndex, colIndex, fieldIndex) {
+        const original = this.formLayout.rows[rowIndex].columns[colIndex].fields[fieldIndex];
+        if (!original) return;
+        // Only duplicate if it's not a unique-per-canvas field
+        if (this.isFieldOnCanvas(original.type, original.fieldId)) {
+          // For unique fields, don't duplicate — show warning
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({ icon: 'info', title: 'Champ unique', text: 'Ce champ est déjà présent sur le formulaire.', timer: 2000, showConfirmButton: false, toast: true, position: 'top-end' });
+          }
           return;
         }
-        event.dataTransfer.setData('application/json', JSON.stringify({
-          type, fieldId: String(fieldId), label, icon
-        }));
-        event.dataTransfer.effectAllowed = 'copy';
+        const clone = JSON.parse(JSON.stringify(original));
+        clone.id = genId();
+        this.formLayout.rows[rowIndex].columns[colIndex].fields.splice(fieldIndex + 1, 0, clone);
       },
 
-      addRowCustom(widths) {
-        const columns = widths.map(w => ({ width: w, fields: [] }));
-        const row = { id: genId(), columns };
-        this.formLayout.rows.push(row);
-        this.isDirty = true;
-        this.$nextTick(() => this.initSortables());
-      },
+      // ========== AUTO-LAYOUT ==========
 
       autoLayout(numCols) {
         const allFields = [];
@@ -342,32 +429,119 @@ document.addEventListener('alpine:init', () => {
         }
         this.formLayout.rows = rows;
         this.isDirty = true;
-        this.$nextTick(() => this.initSortables());
+      },
+
+      // ========== DRAG & DROP FROM SIDEBAR ==========
+
+      onSidebarDragStart(event, type, fieldId, label, icon) {
+        if (this.isFieldOnCanvas(type, fieldId)) {
+          event.preventDefault();
+          return;
+        }
+        event.dataTransfer.setData('application/json', JSON.stringify({ type, fieldId, label, icon }));
+        event.dataTransfer.effectAllowed = 'copy';
+      },
+
+      showDropIndicator(event, rowIndex, colIndex) {
+        const dropZone = event.currentTarget;
+        const sortableContainer = dropZone.querySelector('[data-sortable-column]');
+        if (!sortableContainer) return;
+        
+        // Supprimer l'ancien indicateur
+        dropZone.querySelectorAll('.fb-drop-indicator').forEach(el => el.remove());
+        
+        const fieldItems = sortableContainer.querySelectorAll('.fb-field-item');
+        const dropY = event.clientY;
+        
+        // Créer l'indicateur
+        const indicator = document.createElement('div');
+        indicator.className = 'fb-drop-indicator';
+        
+        // Trouver la position d'insertion
+        let inserted = false;
+        for (let i = 0; i < fieldItems.length; i++) {
+          const rect = fieldItems[i].getBoundingClientRect();
+          const midY = rect.top + rect.height / 2;
+          if (dropY < midY) {
+            fieldItems[i].parentNode.insertBefore(indicator, fieldItems[i]);
+            inserted = true;
+            break;
+          }
+        }
+        if (!inserted) {
+          sortableContainer.appendChild(indicator);
+        }
+      },
+      
+      hideDropIndicator(el) {
+        el.querySelectorAll('.fb-drop-indicator').forEach(ind => ind.remove());
       },
 
       handleCanvasDrop(event, rowIndex, colIndex) {
-        const fieldData = event.dataTransfer.getData('application/json');
-        if (!fieldData) return;
-        try {
-          const field = JSON.parse(fieldData);
-          if (this.isFieldOnCanvas(field.type, field.fieldId)) {
-            Swal.fire({ icon: 'warning', title: 'Champ déjà présent', text: 'Ce champ est déjà sur le formulaire.', timer: 2000, showConfirmButton: false, toast: true, position: 'top-end' });
-            return;
-          }
-          const newField = {
-            id: genId(),
-            type: field.type,
-            fieldId: field.fieldId,
-            label: field.label || '',
-            required: false,
-            placeholder: '',
-            helpText: ''
-          };
-          this.formLayout.rows[rowIndex].columns[colIndex].fields.push(newField);
-          this.$nextTick(() => this.initSortables());
-        } catch (e) {
-          console.error('Drop error:', e);
+        const item = event.dataTransfer && event.dataTransfer.getData('application/json');
+        
+        let fieldType, fieldId, fieldLabel, fieldIcon;
+        
+        if (item) {
+          try {
+            const parsed = JSON.parse(item);
+            fieldType = parsed.type;
+            fieldId = parsed.fieldId;
+            fieldLabel = parsed.label;
+            fieldIcon = parsed.icon;
+          } catch(e) {}
         }
+        
+        if (!fieldType) {
+          const draggedEl = event.target.closest('[data-field-type]') || event.target;
+          fieldType = draggedEl?.dataset?.fieldType;
+          fieldId = draggedEl?.dataset?.fieldId;
+          fieldLabel = draggedEl?.dataset?.fieldLabel;
+          fieldIcon = draggedEl?.dataset?.fieldIcon;
+        }
+        
+        if (!fieldType || !fieldId) return;
+        
+        if (this.isFieldOnCanvas(fieldType, fieldId)) {
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({ icon: 'warning', title: 'Champ déjà présent', text: 'Ce champ est déjà sur le formulaire.', timer: 2000, showConfirmButton: false, toast: true, position: 'top-end' });
+          }
+          return;
+        }
+        
+        const newField = {
+          id: genId(),
+          type: fieldType,
+          fieldId: fieldId,
+          label: fieldLabel || '',
+          required: false,
+          placeholder: '',
+          helpText: ''
+        };
+        
+        // Calculer la position d'insertion basée sur clientY
+        const col = this.formLayout.rows[rowIndex].columns[colIndex];
+        const dropY = event.clientY;
+        
+        // Trouver le container sortable de cette colonne
+        const dropZone = event.currentTarget;
+        const sortableContainer = dropZone.querySelector('[data-sortable-column]');
+        
+        let insertIndex = col.fields.length; // Par défaut, à la fin
+        
+        if (sortableContainer) {
+          const fieldItems = sortableContainer.querySelectorAll('.fb-field-item');
+          for (let i = 0; i < fieldItems.length; i++) {
+            const rect = fieldItems[i].getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            if (dropY < midY) {
+              insertIndex = i;
+              break;
+            }
+          }
+        }
+        
+        col.fields.splice(insertIndex, 0, newField);
       },
 
       // ========== FIELD RENDERING ==========
@@ -521,32 +695,159 @@ document.addEventListener('alpine:init', () => {
         return this.renderMissingField(fieldId, type);
       },
 
-      // ========== SORTABLE ==========
+      // ========== SORTABLE (Total DOM Sync pattern) ==========
 
-      initSortables() {
-        document.querySelectorAll('[id^="col-"]').forEach(el => {
-          if (el._sortable) el._sortable.destroy();
-          el._sortable = new Sortable(el, {
-            group: { name: 'form-fields', pull: true, put: true },
-            animation: 150,
-            ghostClass: 'fb-sortable-ghost',
-            dragClass: 'fb-sortable-drag',
-            handle: '.fb-field-item',
-            draggable: '.fb-field-item',
-            onEnd: (evt) => {
-              const fromRowIndex = parseInt(evt.from.dataset.rowIndex);
-              const fromColIndex = parseInt(evt.from.dataset.colIndex);
-              const toRowIndex = parseInt(evt.to.dataset.rowIndex);
-              const toColIndex = parseInt(evt.to.dataset.colIndex);
-              if (isNaN(fromRowIndex) || isNaN(fromColIndex) || isNaN(toRowIndex) || isNaN(toColIndex)) return;
-              const field = this.formLayout.rows[fromRowIndex]?.columns[fromColIndex]?.fields[evt.oldIndex];
-              if (!field) return;
-              this.formLayout.rows[fromRowIndex].columns[fromColIndex].fields.splice(evt.oldIndex, 1);
-              this.formLayout.rows[toRowIndex].columns[toColIndex].fields.splice(evt.newIndex, 0, field);
-              this.isDirty = true;
+      initSortableColumn(el, rowId, colIndex) {
+        const self = this;
+
+        Sortable.create(el, {
+          group: { name: 'form-fields', pull: true, put: true },
+          animation: 150,
+          ghostClass: 'fb-sortable-ghost',
+          dragClass: 'fb-sortable-drag',
+          handle: '.fb-field-item',
+          draggable: '.fb-field-item',
+          swapThreshold: 0.65,
+          onAdd(evt) {
+            // Handle cloned items from sidebar
+            const item = evt.item;
+            const fieldType = item.dataset.fieldType;
+            const fieldId = item.dataset.fieldId;
+            const fieldLabel = item.dataset.fieldLabel || '';
+            const fieldIcon = item.dataset.fieldIcon || '';
+            const insertIdx = evt.newIndex;
+            
+            // Toujours supprimer le clone DOM — Alpine gère le rendu
+            item.remove();
+            
+            if (!fieldType || !fieldId) return;
+            
+            // Vérifier si déjà sur le canvas
+            if (self.isFieldOnCanvas(fieldType, fieldId)) {
+              if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'warning', title: 'Champ déjà présent', text: 'Ce champ est déjà sur le formulaire.', timer: 2000, showConfirmButton: false, toast: true, position: 'top-end' });
+              }
+              return;
             }
-          });
+            
+            // Trouver la colonne cible
+            const row = self.formLayout.rows.find(r => r.id === rowId);
+            if (!row) return;
+            const col = row.columns[colIndex];
+            if (!col) return;
+            
+            // Créer le nouveau field
+            const newField = {
+              id: genId(),
+              type: fieldType,
+              fieldId: fieldId,
+              label: fieldLabel,
+              required: false,
+              placeholder: '',
+              helpText: ''
+            };
+            
+            col.fields.splice(insertIdx, 0, newField);
+            self.isDirty = true;
+          },
+          onEnd(evt) {
+            // === 1. Capturer les références ===
+            const fieldId = evt.item.dataset.fieldId;
+            console.log('[DnD] onEnd fired', { fieldId, oldIndex: evt.oldIndex, newIndex: evt.newIndex });
+            console.log('[DnD] from:', evt.from.dataset.rowId, 'col', evt.from.dataset.colIndex);
+            console.log('[DnD] to:', evt.to.dataset.rowId, 'col', evt.to.dataset.colIndex);
+            if (!fieldId) { console.log('[DnD] No fieldId, abort'); return; }
+            
+            const fromRowId = evt.from.dataset.rowId;
+            const fromColIdx = parseInt(evt.from.dataset.colIndex);
+            const toRowId = evt.to.dataset.rowId;
+            const toColIdx = parseInt(evt.to.dataset.colIndex);
+            const newIdx = evt.newIndex;
+            
+            if (fromRowId === toRowId && fromColIdx === toColIdx && evt.oldIndex === newIdx) {
+              console.log('[DnD] No change, skip');
+              return;
+            }
+            
+            // === 2. Trouver le field par ID ===
+            const fromRow = self.formLayout.rows.find(r => r.id === fromRowId);
+            const toRow = self.formLayout.rows.find(r => r.id === toRowId);
+            console.log('[DnD] fromRow found:', !!fromRow, 'toRow found:', !!toRow);
+            if (!fromRow || !toRow) return;
+            
+            const fromCol = fromRow.columns[fromColIdx];
+            const toCol = toRow.columns[toColIdx];
+            console.log('[DnD] fromCol found:', !!fromCol, 'fields:', fromCol?.fields?.length);
+            console.log('[DnD] toCol found:', !!toCol, 'fields:', toCol?.fields?.length);
+            if (!fromCol || !toCol) return;
+            
+            const fieldIndex = fromCol.fields.findIndex(f => f.id === fieldId);
+            console.log('[DnD] fieldIndex in source:', fieldIndex);
+            if (fieldIndex === -1) return;
+            
+            const [movedField] = fromCol.fields.splice(fieldIndex, 1);
+            
+            // === 3. ANNULER le move DOM de Sortable ===
+            if (evt.from !== evt.to) {
+              evt.item.remove();
+              evt.from.appendChild(evt.item);
+            } else {
+              const items = Array.from(evt.from.querySelectorAll('.fb-field-item'));
+              const refItem = items[evt.oldIndex] || null;
+              if (refItem) {
+                evt.from.insertBefore(evt.item, refItem);
+              }
+            }
+            
+            // === 4. Insérer dans la colonne cible ===
+            console.log('[DnD] Inserting at index', newIdx, 'into toCol with', toCol.fields.length, 'fields');
+            toCol.fields.splice(newIdx, 0, movedField);
+            console.log('[DnD] Done! fromCol now:', fromCol.fields.length, 'toCol now:', toCol.fields.length);
+            
+            self.isDirty = true;
+          }
         });
+      },
+
+      // Legacy stubs
+      initSortables() {},
+      initRowSortable() {},
+
+      // ========== COLUMN RESIZE ==========
+
+      startResize(event, rowIndex, colIndex) {
+        event.preventDefault();
+        const row = this.formLayout.rows[rowIndex];
+        const rowEl = event.target.closest('[data-row-id]');
+        if (!rowEl) return;
+        const gridEl = rowEl.querySelector('.grid');
+        if (!gridEl) return;
+        const gridWidth = gridEl.getBoundingClientRect().width;
+        const startX = event.clientX;
+        const leftCol = row.columns[colIndex];
+        const rightCol = row.columns[colIndex + 1];
+        const startLeftW = leftCol.width;
+        const startRightW = rightCol.width;
+        const unitWidth = gridWidth / row.columns.reduce((s, c) => s + c.width, 0);
+
+        this.resizing = { rowIndex, colIndex };
+
+        const onMove = (e) => {
+          const deltaX = e.clientX - startX;
+          const deltaUnits = Math.round(deltaX / unitWidth);
+          const newLeft = Math.max(2, Math.min(startLeftW + startRightW - 2, startLeftW + deltaUnits));
+          const newRight = startLeftW + startRightW - newLeft;
+          leftCol.width = newLeft;
+          rightCol.width = newRight;
+        };
+        const onUp = () => {
+          this.resizing = null;
+          this.isDirty = true;
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
       },
 
       // ========== SAVE ==========
@@ -557,11 +858,9 @@ document.addEventListener('alpine:init', () => {
           let url, body;
           
           if (this.formId) {
-            // Update existing form
             url = `/account/${this.accountNumber}/entity/${this.entityId}/forms/api/update/${this.formId}`;
             body = { name: this.formName, layout: this.formLayout };
           } else {
-            // Create new form
             url = `/account/${this.accountNumber}/entity/${this.entityId}/forms/api/save`;
             body = { name: this.formName, layout: this.formLayout };
           }
@@ -575,10 +874,8 @@ document.addEventListener('alpine:init', () => {
           if (res.ok) {
             const result = await res.json();
             
-            // If it was a new form, update formId so next saves are updates
             if (!this.formId && result.form && result.form._id) {
               this.formId = result.form._id;
-              // Update URL without reload so the formId is in the address
               history.replaceState(null, '', `/account/${this.accountNumber}/entity/${this.entityId}/forms/${this.formId}/edit`);
             }
 
@@ -604,7 +901,6 @@ document.addEventListener('alpine:init', () => {
       // ========== PUBLISH ==========
 
       async publishForm() {
-        // Save first
         await this.saveForm();
         if (this.isDirty) return;
         if (!this.formId) return;

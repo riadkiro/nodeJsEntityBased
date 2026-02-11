@@ -314,13 +314,24 @@ export default function RecordsGrid({
         virtualizer.measure()
     }, [rowHeight, virtualizer])
 
-    // Visible columns
+    // Visible columns — actions always last
     const visibleColumns = useMemo(() => {
-        if (!preferences.columns?.length) return columns
-        return columns.filter(col => {
-            const pref = preferences.columns.find(p => p.id === col.id)
-            return pref ? pref.visible !== false : true
-        })
+        let cols
+        if (!preferences.columns?.length) {
+            cols = columns
+        } else {
+            cols = columns.filter(col => {
+                const pref = preferences.columns.find(p => p.id === col.id)
+                return pref ? pref.visible !== false : true
+            })
+        }
+        // Force actions to end
+        const actionsIdx = cols.findIndex(c => c.id === 'actions')
+        if (actionsIdx > -1 && actionsIdx < cols.length - 1) {
+            const [actionsCol] = cols.splice(actionsIdx, 1)
+            cols = [...cols, actionsCol]
+        }
+        return cols
     }, [columns, preferences.columns])
 
     // Loading state

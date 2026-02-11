@@ -93,7 +93,7 @@ export default function RecordsTable({
                                     setDraggedColumn(null)
                                     setDragOverColumn(null)
                                 }}
-                                className={`px-2 ${col.id === 'actions' ? 'sticky right-0 bg-white dark:bg-gray-900 z-20' : ''} ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'border-l-2 border-l-primary bg-primary/5' : ''}`}
+                                className={`px-2 ${col.id === 'actions' ? 'sticky right-0 z-20' : ''} ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'border-l-2 border-l-primary bg-primary/5' : ''}`}
                                 style={{ transition: 'opacity 0.15s, border-color 0.15s, background 0.15s', ...(col.id === 'actions' ? { width: '1%', whiteSpace: 'nowrap' } : {}) }}
                             >
                                 <div className="flex items-center gap-1">

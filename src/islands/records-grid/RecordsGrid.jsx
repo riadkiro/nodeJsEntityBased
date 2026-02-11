@@ -179,6 +179,7 @@ export default function RecordsGrid({
             _searchIndex: [
                 record.title || '',
                 record.referenceTitle || '',
+                record.computedTitle || '',
                 ...(record.customFields || []).map(cf => cf.value || '')
             ].join(' ').toLowerCase()
         }))

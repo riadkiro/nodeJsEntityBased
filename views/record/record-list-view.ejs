@@ -248,8 +248,8 @@ document.addEventListener('alpine:init', () => {
                 // Search filter
                 if (this.searchQuery) {
                     const search = this.searchQuery.toLowerCase();
-                    const matchesTitle = record.title?.toLowerCase().includes(search);
-                    if (!matchesTitle) return false;
+                    const displayTitle = (record.computedTitle || record.title || '').toLowerCase();
+                    if (!displayTitle.includes(search)) return false;
                 }
 
                 // Classification filters
@@ -281,7 +281,7 @@ document.addEventListener('alpine:init', () => {
                 data: {
                     headings: columns.map(c => c.title),
                     data: this.filteredRecords.map(r => [
-                        r.title || '-',
+                        r.computedTitle || r.title || '-',
                         r.slug || '-',
                         r.date ? new Date(r.date).toLocaleDateString() : '-',
                         r.status || '-'

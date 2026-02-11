@@ -365,40 +365,75 @@
 </div>
 </div>
 
-<% const columnNames=['Titre']; 
+<% 
+// ===== Build dynamic columns =====
+const columnNames = ['Titre'];
+
+// Relation columns (from entity.relations)
+const entityRelations = entity.relations || [];
+entityRelations.forEach(rel => {
+    columnNames.push(rel.label || rel.key);
+});
+
+// Custom field columns
 entity.customFields.forEach(field => {
     columnNames.push(field.label);
 });
+
+// Classification columns (from entity.classifications)
+const entityClassifications = (entity.classifications || []).filter(c => c && c.name);
+entityClassifications.forEach(classif => {
+    columnNames.push(classif.name);
+});
+
 columnNames.push("Créé le");
 columnNames.push("Actions");
 
+// ===== Build data rows =====
 const dataRows = records.map(record => {
     const row = [];
     
-    // Reference column with image or initial
-    const refTitle = record.referenceTitle || record.title || 'Sans titre';
+    // --- Title column (uses computedTitle) ---
+    const refTitle = record.referenceTitle || record.computedTitle || record.title || 'Sans titre';
     const initial = refTitle.charAt(0).toUpperCase();
     const imageUrl = record.image || null;
+    const detailUrl = '/account/' + account_number + '/record/' + entity.slug + '/' + record._id;
     
     let refHtml = '';
     if (imageUrl) {
-        refHtml = `<div class="flex items-center gap-3">
+        refHtml = `<a href="${detailUrl}" class="flex items-center gap-3 hover:text-primary">
             <img src="${imageUrl}" alt="${refTitle}" class="w-8 h-8 rounded-full object-cover">
             <span class="font-medium">${refTitle}</span>
-        </div>`;
+        </a>`;
     } else {
-        // Generate color from initial
         const colors = ['bg-primary', 'bg-info', 'bg-success', 'bg-warning', 'bg-danger', 'bg-secondary'];
         const colorIndex = initial.charCodeAt(0) % colors.length;
         const bgColor = colors[colorIndex];
-        refHtml = `<div class="flex items-center gap-3">
+        refHtml = `<a href="${detailUrl}" class="flex items-center gap-3 hover:text-primary">
             <div class="w-8 h-8 rounded-full ${bgColor} flex items-center justify-center text-white font-semibold text-sm">${initial}</div>
             <span class="font-medium">${refTitle}</span>
-        </div>`;
+        </a>`;
     }
     row.push(refHtml);
     
-    // Custom fields
+    // --- Relation columns ---
+    const denormRelations = (record._denorm && record._denorm.relations) || [];
+    entityRelations.forEach(rel => {
+        const denormRel = denormRelations.find(dr => dr.relationKey === rel.key);
+        if (denormRel && denormRel.records && denormRel.records.length > 0) {
+            const links = denormRel.records.map(r => {
+                const href = '/account/' + account_number + '/record/' + (r.entitySlug || '') + '/' + r._id;
+                return `<a href="${href}" class="text-primary hover:underline">${r.title || 'Sans titre'}</a>`;
+            });
+            row.push(links.join(', '));
+        } else {
+            // Fallback: try raw relation value
+            const rawRel = (record.relations || []).find(r => r.relationKey === rel.key);
+            row.push(rawRel && rawRel.value ? '—' : '');
+        }
+    });
+    
+    // --- Custom field columns ---
     entity.customFields.forEach(field => {
         const customField = record.customFields.find(cf =>
             cf.field_id && (cf.field_id._id || cf.field_id).toString() === field._id.toString()
@@ -406,13 +441,38 @@ const dataRows = records.map(record => {
         row.push(customField ? customField.value : '');
     });
     
+    // --- Classification columns (with colored badges) ---
+    entityClassifications.forEach(classif => {
+        const classifId = classif._id.toString();
+        const cv = (record.classificationValues || []).find(
+            c => c.classificationId && c.classificationId.toString() === classifId
+        );
+        if (cv && cv.label) {
+            const color = cv.color || '#888';
+            row.push(`<span class="badge whitespace-nowrap" style="background-color: ${color}15; color: ${color}; border: 1px solid ${color}30;">${cv.label}</span>`);
+        } else if (cv && cv.value) {
+            // Fallback for old records without denormalized label
+            row.push(`<span class="badge badge-outline-primary">${cv.value}</span>`);
+        } else {
+            row.push('');
+        }
+    });
+    
     row.push(new Date(record.createdAt).toLocaleDateString());
     
     const actionsHtml = `<div class="flex items-center gap-2">
+        <a href="/account/${account_number}/record/${entity.slug}/${record._id}"
+            class="btn btn-sm btn-outline-primary p-1" title="Voir">
+            <iconify-icon icon="solar:eye-bold-duotone" width="16"></iconify-icon>
+        </a>
         <a href="/account/${account_number}/record/${entity.slug}/edit/${record._id}"
-            class="btn btn-sm btn-outline-info">Modifier</a>
+            class="btn btn-sm btn-outline-info p-1" title="Modifier">
+            <iconify-icon icon="solar:pen-bold-duotone" width="16"></iconify-icon>
+        </a>
         <a href="/account/${account_number}/record/${entity.slug}/delete/${record._id}"
-            class="btn btn-sm btn-outline-danger" onclick="return confirm('Confirmer la suppression ?')">Supprimer</a>
+            class="btn btn-sm btn-outline-danger p-1" title="Supprimer" onclick="return confirm('Confirmer la suppression ?')">
+            <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="16"></iconify-icon>
+        </a>
     </div>`;
     row.push(actionsHtml);
     return row;

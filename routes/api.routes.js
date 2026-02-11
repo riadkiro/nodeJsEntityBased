@@ -55,7 +55,7 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
                     {
                         $or: [
                             { title: { $regex: q, $options: 'i' } },
-                            { referenceTitle: { $regex: q, $options: 'i' } },
+                            { computedTitle: { $regex: q, $options: 'i' } },
                             { 'customFields.value': { $regex: q, $options: 'i' } }
                         ]
                     }
@@ -73,7 +73,7 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
 
         // Fetch records with pagination - minimal populate for performance
         const records = await Record.find(query)
-            .select('title referenceTitle image customFields status classificationValues createdAt updatedAt')
+            .select('title computedTitle image customFields status classificationValues relations _denorm createdAt updatedAt')
             .populate({
                 path: 'customFields.field_id',
                 select: 'label fieldType'
@@ -83,31 +83,11 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             .limit(limitNum)
             .lean()
 
-        // Compute referenceTitle for each record from entity.referenceTitleTokens
-        const tokens = entity.referenceTitleTokens || [];
-        if (tokens.length > 0) {
-            records.forEach(record => {
-                const parts = tokens.map(token => {
-                    if (token.t === 'text') return token.v || '';
-                    if (token.t === 'field') {
-                        // Standard fields
-                        if (['title', 'slug', 'date', 'description'].includes(token.id)) {
-                            return record[token.id] || '';
-                        }
-                        // Custom fields — match by field_id
-                        if (record.customFields && Array.isArray(record.customFields)) {
-                            const cf = record.customFields.find(c => {
-                                const cfId = c.field_id?._id || c.field_id;
-                                return cfId && cfId.toString() === token.id;
-                            });
-                            return cf?.value || '';
-                        }
-                    }
-                    return '';
-                });
-                record.referenceTitle = parts.join('').trim() || record.title || '';
-            });
-        }
+        // Use pre-computed title (denormalized at save time)
+        records.forEach(record => {
+            record.referenceTitle = record.computedTitle || record.title || 'Sans titre';
+        });
+
         let preferences = null
         if (req.user?._id) {
             const prefs = await UserPreferences.findOne({
@@ -115,10 +95,9 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
                 viewId
             }).lean()
             preferences = prefs?.preferences || null
-            console.log('[API] Load preferences - showSidebar:', preferences?.showSidebar, 'viewId:', viewId)
         }
 
-        // Build columns from entity custom fields (which are now populated)
+        // Build columns from entity fields
         const customFieldColumns = (entity.customFields || []).map(f => ({
             id: f._id.toString(),
             name: f.label || f.name || 'Champ',
@@ -126,10 +105,28 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             sortable: true
         }))
 
+        // Relation columns
+        const relationColumns = (entity.relations || []).map(rel => ({
+            id: `rel:${rel.key}`,
+            name: rel.label || rel.key,
+            type: 'relation',
+            sortable: false
+        }))
+
+        // Classification columns
+        const classificationColumns = (entity.classifications || []).filter(c => c && c.name).map(c => ({
+            id: `classif:${c._id.toString()}`,
+            name: c.name,
+            type: 'classification',
+            sortable: false
+        }))
+
         const columns = [
             { id: 'title', name: 'Titre', sortable: true },
+            ...relationColumns,
             ...customFieldColumns,
-            { id: 'createdAt', name: 'Créé le ▼', sortable: true },
+            ...classificationColumns,
+            { id: 'createdAt', name: 'Créé le', sortable: true },
             { id: 'actions', name: 'Actions', sortable: false }
         ]
 

@@ -4,6 +4,7 @@ const Record = require("../models/record.model");
 const FieldTemplate = require("../models/field-template.model");
 const tenantCollection = require("../middleware/tenant").tenantCollection;
 const WorkflowTriggers = require("../src/integrations/services/WorkflowTriggers");
+const denormService = require("../services/record-denorm.service");
 
 module.exports = {
     list: async (req, res) => {
@@ -299,7 +300,9 @@ module.exports = {
         try {
             const EntityModel = await tenantCollection(req, "Entity");
             const RecordModel = await tenantCollection(req, "Record");
-            const entity = await EntityModel.findOne({ slug: req.params.entityName });
+            const entity = await EntityModel.findOne({ slug: req.params.entityName })
+                .populate('classifications')
+                .populate('statusClassification');
             if (!entity) return res.status(404).render("errors/404", {
                 message: "Entity not found",
                 account_number: req.account_number,
@@ -329,7 +332,7 @@ module.exports = {
                     }
                 }
 
-                const newRecord = new RecordModel({
+                const recordData = {
                     entityId: entity._id,
                     title: title || 'Sans titre',
                     slug: slug,
@@ -338,8 +341,13 @@ module.exports = {
                     customFields: customFieldsArray,
                     relations: relationsArray,
                     createdBy: req.user?._id
-                });
+                };
 
+                // Compute denormalized fields
+                const denorm = await denormService.computeDenorm(recordData, entity, RecordModel, EntityModel);
+                Object.assign(recordData, denorm);
+
+                const newRecord = new RecordModel(recordData);
                 await newRecord.save();
 
                 // Emit workflow trigger (async, non-blocking)
@@ -426,15 +434,20 @@ module.exports = {
                 }
             }
 
-            const newRecord = new RecordModel({
+            const recordData = {
                 entityId: entity._id,
                 ...standard,
                 customFields: customFieldsArray,
                 relations: relationsArray,
                 classificationValues: classificationValuesArray,
                 createdBy: req.user._id
-            });
+            };
 
+            // Compute denormalized fields
+            const denorm = await denormService.computeDenorm(recordData, entity, RecordModel, EntityModel);
+            Object.assign(recordData, denorm);
+
+            const newRecord = new RecordModel(recordData);
             await newRecord.save();
 
             // Emit workflow trigger (async, non-blocking)
@@ -649,7 +662,9 @@ module.exports = {
         try {
             const EntityModel = await tenantCollection(req, "Entity");
             const RecordModel = await tenantCollection(req, "Record");
-            const entity = await EntityModel.findOne({ slug: req.params.entityName });
+            const entity = await EntityModel.findOne({ slug: req.params.entityName })
+                .populate('classifications')
+                .populate('statusClassification');
             if (!entity) return res.status(404).render("errors/404", {
                 message: "Entity not found",
                 account_number: req.account_number,
@@ -723,11 +738,23 @@ module.exports = {
             if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
                 return res.status(400).send("Invalid Record ID");
             }
+
+            // Compute denormalized fields
+            const recordDataForDenorm = {
+                ...standard,
+                customFields: customFieldsArray,
+                relations: relationsArray,
+                classificationValues: classificationValuesArray
+            };
+            const denorm = await denormService.computeDenorm(recordDataForDenorm, entity, RecordModel, EntityModel);
+
             const updatedRecord = await RecordModel.findByIdAndUpdate(req.params.id, {
                 ...standard,
                 customFields: customFieldsArray,
                 relations: relationsArray,
-                classificationValues: classificationValuesArray,
+                classificationValues: denorm.classificationValues,
+                computedTitle: denorm.computedTitle,
+                '_denorm.relations': denorm._denorm.relations,
                 updatedBy: req.user._id
             }, { new: true });
 
@@ -742,6 +769,10 @@ module.exports = {
                 record: updatedRecord.toObject(),
                 changes: { ...standard, customFields: customFieldsArray }
             }).catch(err => console.error('[Workflow Trigger Error]', err));
+
+            // Async: re-denorm records that reference this one (e.g., if patient name changed)
+            denormService.syncDependents(req.params.id, req, { source: 'controller' })
+                .catch(err => console.error('[Denorm Sync Error]', err));
 
             res.redirect(`/account/${req.account_number}/record/${entity.slug}/edit/${req.params.id}?success=true`);
         } catch (error) {

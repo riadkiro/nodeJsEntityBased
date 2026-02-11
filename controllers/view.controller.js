@@ -71,15 +71,20 @@ module.exports = {
 
             const records = await RecordModel.find(query).sort(sort).populate('customFields.field_id').lean();
 
-            // Compute referenceTitle for each record from entity.referenceTitleTokens
+            // Use pre-computed title (denormalized at save time)
+            // If computedTitle is missing (un-migrated records), fall back to live resolution
+            const denormService = require('../services/record-denorm.service');
             const tokens = entity.referenceTitleTokens || [{ t: 'field', id: 'title' }];
+            const hasRelTokens = tokens.some(t => t.t === 'field' && t.id && t.id.startsWith('rel:'));
 
-            // Pre-load related records for rel: tokens
-            const relTokens = tokens.filter(t => t.t === 'field' && t.id && t.id.startsWith('rel:'));
-            const relatedRecordsMap = {};
-            if (relTokens.length > 0) {
+            // Only load related records if there are un-migrated records with rel: tokens
+            const unmigrated = hasRelTokens ? records.filter(r => !r.computedTitle) : [];
+            let relatedRecordsMap = {};
+
+            if (unmigrated.length > 0) {
                 const allRelatedIds = new Set();
-                for (const record of records) {
+                const relTokens = tokens.filter(t => t.t === 'field' && t.id && t.id.startsWith('rel:'));
+                for (const record of unmigrated) {
                     for (const rt of relTokens) {
                         const dotIdx = rt.id.indexOf('.');
                         const relKey = rt.id.substring(4, dotIdx);
@@ -91,57 +96,24 @@ module.exports = {
                     }
                 }
                 if (allRelatedIds.size > 0) {
-                    const relatedRecords = await RecordModel.find({ _id: { $in: [...allRelatedIds] } })
-                        .select('title slug description date customFields')
+                    const relRecs = await RecordModel.find({ _id: { $in: [...allRelatedIds] } })
+                        .select('title slug description date customFields computedTitle')
                         .populate({ path: 'customFields.field_id', select: 'label fieldType' })
                         .lean();
-                    relatedRecords.forEach(rr => { relatedRecordsMap[rr._id.toString()] = rr; });
+                    relRecs.forEach(rr => { relatedRecordsMap[rr._id.toString()] = rr; });
                 }
             }
 
-            records.forEach(record => {
-                const parts = tokens.map(token => {
-                    if (token.t === 'text') return token.v || '';
-                    if (token.t === 'field') {
-                        // Relation sub-field: rel:<relKey>.<subFieldId>
-                        if (token.id && token.id.startsWith('rel:')) {
-                            const dotIdx = token.id.indexOf('.');
-                            const relKey = token.id.substring(4, dotIdx);
-                            const subFieldId = token.id.substring(dotIdx + 1);
-                            const rv = (record.relations || []).find(rel => rel.relationKey === relKey);
-                            if (rv && rv.value) {
-                                const targetId = Array.isArray(rv.value) ? rv.value[0] : rv.value;
-                                const targetRecord = relatedRecordsMap[targetId?.toString()];
-                                if (targetRecord) {
-                                    if (['title', 'slug', 'date', 'description'].includes(subFieldId)) {
-                                        return targetRecord[subFieldId] || '';
-                                    }
-                                    const tcf = (targetRecord.customFields || []).find(c => {
-                                        const cfId = c.field_id?._id || c.field_id;
-                                        return cfId && cfId.toString() === subFieldId;
-                                    });
-                                    return tcf?.value || '';
-                                }
-                            }
-                            return '';
-                        }
-                        // Standard fields
-                        if (['title', 'slug', 'date', 'description'].includes(token.id)) {
-                            return record[token.id] || '';
-                        }
-                        // Custom fields — match by field_id
-                        if (record.customFields && Array.isArray(record.customFields)) {
-                            const cf = record.customFields.find(c => {
-                                const cfId = c.field_id?._id || c.field_id;
-                                return cfId && cfId.toString() === token.id;
-                            });
-                            return cf?.value || '';
-                        }
-                    }
-                    return '';
-                });
-                record.referenceTitle = parts.join('').trim() || record.title || 'Sans titre';
-            });
+            for (const record of records) {
+                if (record.computedTitle) {
+                    // Use denormalized title (fast path)
+                    record.referenceTitle = record.computedTitle;
+                } else {
+                    // Live fallback for un-migrated records
+                    record.referenceTitle = await denormService.computeTitle(record, entity, RecordModel)
+                        || record.title || 'Sans titre';
+                }
+            }
 
             res.render("record/record-view-progressive", {
                 view,

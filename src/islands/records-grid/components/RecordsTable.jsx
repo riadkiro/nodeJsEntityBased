@@ -294,6 +294,62 @@ function renderCellValue(record, col, accountNumber, entitySlug, config, titleDi
             )
 
         default: {
+            // Relation column (id starts with 'rel:')
+            if (col.id.startsWith('rel:')) {
+                const relKey = col.id.substring(4)
+                const denormRelations = record._denorm?.relations || []
+                const denormRel = denormRelations.find(dr => dr.relationKey === relKey)
+                if (denormRel?.records?.length > 0) {
+                    return (
+                        <div className="flex flex-wrap gap-1">
+                            {denormRel.records.map((r, i) => (
+                                <a
+                                    key={i}
+                                    href={`/account/${accountNumber}/record/${r.entitySlug || entitySlug}/${r._id}`}
+                                    className="text-primary hover:underline text-xs"
+                                >
+                                    {r.title || 'Sans titre'}
+                                </a>
+                            ))}
+                        </div>
+                    )
+                }
+                // Fallback: raw relation without denorm
+                const rawRel = (record.relations || []).find(r => r.relationKey === relKey)
+                return rawRel?.value ? '—' : ''
+            }
+
+            // Classification column (id starts with 'classif:')
+            if (col.id.startsWith('classif:')) {
+                const classifId = col.id.substring(8)
+                const cv = (record.classificationValues || []).find(
+                    c => c.classificationId?.toString() === classifId
+                )
+                if (cv?.label) {
+                    const color = cv.color || '#888'
+                    return (
+                        <span
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap"
+                            style={{
+                                backgroundColor: `${color}15`,
+                                color: color,
+                                border: `1px solid ${color}30`
+                            }}
+                        >
+                            {cv.label}
+                        </span>
+                    )
+                }
+                if (cv?.value) {
+                    return (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                            {cv.value}
+                        </span>
+                    )
+                }
+                return ''
+            }
+
             // Custom field value
             if (record.customFields) {
                 const field = record.customFields.find(cf => {

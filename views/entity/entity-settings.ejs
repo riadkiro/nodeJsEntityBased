@@ -1,0 +1,876 @@
+<%/* entity-settings — Full page Add / Edit entity */%>
+
+<style>
+.entity-settings-page .section-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+.dark .entity-settings-page .section-card {
+  background: #1b2e4b;
+  border-color: #253b5c;
+}
+.entity-settings-page .section-card:hover {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+}
+.dark .entity-settings-page .section-card:hover {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+}
+.entity-settings-page .section-header {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: between;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.entity-settings-page .section-header:hover {
+  background: rgba(0,0,0,0.015);
+}
+.dark .entity-settings-page .section-header:hover {
+  background: rgba(255,255,255,0.02);
+}
+.entity-settings-page .section-body {
+  padding: 0 20px 20px;
+}
+.entity-settings-page .hero-preview {
+  width: 72px; height: 72px;
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  transition: all 0.3s;
+  background: rgba(var(--primary-rgb, 67 97 238) / 0.1);
+  color: rgb(var(--primary-rgb, 67 97 238));
+}
+.entity-settings-page .hero-preview.has-color {
+  color: #fff;
+}
+
+/* Field tag styles for reference title */
+.field-tag {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.5rem !important;
+  background-color: rgba(var(--warning-rgb, 251 191 36) / 0.2);
+  border: 1px solid rgba(var(--warning-rgb, 251 191 36) / 0.4);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgb(var(--warning-rgb, 251 191 36));
+  user-select: all;
+  cursor: default;
+  vertical-align: middle;
+  line-height: 1.5 !important;
+  height: auto !important;
+}
+.field-tag:hover {
+  background-color: rgba(var(--warning-rgb, 251 191 36) / 0.3);
+}
+.field-tag-remove {
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0.6; transition: opacity 0.2s; margin-left: 0.125rem;
+}
+.field-tag-remove:hover { opacity: 1; color: #ef4444; }
+</style>
+
+<script>
+  // Global function to remove field tag from contenteditable
+  window.removeFieldTag = function(removeBtn) {
+    const fieldTag = removeBtn.closest('.field-tag');
+    if (!fieldTag) return;
+    const editor = fieldTag.closest('[contenteditable]');
+    fieldTag.remove();
+    if (!editor) return;
+    const tokens = [];
+    editor.childNodes.forEach(node => {
+      if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('field-tag')) {
+        tokens.push({ t: 'field', id: node.getAttribute('data-field-id') });
+      } else if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+        tokens.push({ t: 'text', v: node.textContent });
+      }
+    });
+    editor.dispatchEvent(new CustomEvent('token-sync', { bubbles: false, detail: { tokens } }));
+  };
+</script>
+
+<!-- Data Injection -->
+<script type="application/json" id="entity-settings-data">
+<%- JSON.stringify({
+  mode: locals.mode || 'create',
+  accountNumber: account_number,
+  entity: locals.entity ? {
+    _id: entity._id,
+    name: entity.name || '',
+    slug: entity.slug || '',
+    description: entity.description || '',
+    icon: entity.icon || '',
+    color: entity.color || '',
+    image: entity.image || '',
+    active: entity.active !== false,
+    enabledStandardFields: entity.enabledStandardFields || [],
+    referenceTitleTokens: entity.referenceTitleTokens || [{ t: 'field', id: 'title' }],
+    customFields: (entity.customFields || []).map(f => typeof f === 'object' ? f : f),
+    statusClassification: entity.statusClassification ? (entity.statusClassification._id || entity.statusClassification).toString() : '',
+    classifications: (entity.classifications || []).map(c => (c._id || c).toString()),
+    relations: (entity.relations || []).map(r => ({
+      ...JSON.parse(JSON.stringify(r)),
+      targetEntity: r.targetEntity ? (r.targetEntity._id || r.targetEntity).toString() : ''
+    }))
+  } : null,
+  allClassifications: (locals.allClassifications || []).map(c => ({ _id: c._id.toString(), name: c.name })),
+  allEntities: (locals.allEntities || []).map(e => ({ _id: e._id.toString(), name: e.name, slug: e.slug, icon: e.icon || '', color: e.color || '' }))
+}).replace(/</g, '\\u003C') %>
+</script>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('entitySettings', () => {
+    const raw = JSON.parse(document.getElementById('entity-settings-data').textContent);
+    const isEdit = raw.mode === 'edit';
+    const entity = raw.entity;
+
+    return {
+      // Mode
+      isEdit,
+      accountNumber: raw.accountNumber,
+      entityId: isEdit ? entity._id : null,
+      isSubmitting: false,
+      slugManuallyEdited: isEdit,
+
+      // Sections accordion
+      sectionOpen: {
+        general: true,
+        visual: true,
+        fields: true,
+        classifications: false,
+        relations: false,
+        reference: false,
+        advanced: false
+      },
+
+      // Form data
+      form: {
+        name: isEdit ? entity.name : '',
+        slug: isEdit ? entity.slug : '',
+        description: isEdit ? entity.description : '',
+        icon: isEdit ? entity.icon : '',
+        color: isEdit ? entity.color : '',
+        image: isEdit ? entity.image : '',
+        active: isEdit ? entity.active : true,
+        referenceTitleTokens: isEdit ? entity.referenceTitleTokens : [{ t: 'field', id: 'title' }],
+        standardFields: {
+          title: isEdit ? (entity.enabledStandardFields || []).includes('title') : true,
+          description: isEdit ? (entity.enabledStandardFields || []).includes('description') : true,
+          icon: isEdit ? (entity.enabledStandardFields || []).includes('icon') : true,
+          attachments: isEdit ? (entity.enabledStandardFields || []).includes('attachments') : true,
+          image: isEdit ? (entity.enabledStandardFields || []).includes('image') : true,
+          slug: isEdit ? (entity.enabledStandardFields || []).includes('slug') : true,
+          date: isEdit ? (entity.enabledStandardFields || []).includes('date') : true
+        },
+        statusClassificationId: isEdit ? entity.statusClassification : '',
+        classifications: isEdit ? entity.classifications : []
+      },
+
+      // Fields
+      selectedFields: [],
+      systemFields: [],
+      fieldSearch: '',
+      openCategories: { popular: true },
+
+      // Relations
+      allEntities: raw.allEntities || [],
+      relations: isEdit ? (entity.relations || []).map(r => ({ ...r, _targetFields: [] })) : [],
+      entityFieldsCache: {},
+
+      // Classifications
+      allClassifications: raw.allClassifications || [],
+
+      // Step 2 tab
+      step2Tab: 'fields',
+
+      // Computed
+      get filteredCategories() {
+        if (!this.fieldSearch) return this.systemFields;
+        const s = this.fieldSearch.toLowerCase();
+        return this.systemFields.map(cat => ({
+          ...cat,
+          fields: cat.fields.filter(f =>
+            f.label.toLowerCase().includes(s) || f.name.toLowerCase().includes(s) ||
+            (f.description && f.description.toLowerCase().includes(s))
+          )
+        })).filter(cat => cat.fields.length > 0);
+      },
+
+      // Init
+      async init() {
+        await this.loadSystemFields();
+        if (isEdit) {
+          // Load selected custom fields details
+          await this.loadSelectedFields();
+          // Load relation target fields
+          for (const rel of this.relations) {
+            if (rel.targetEntity) {
+              rel._targetFields = await this.loadEntityFields(rel.targetEntity);
+            }
+          }
+        }
+        // Init pickers after DOM renders
+        this.$nextTick(() => {
+          this.initPickers();
+          // Render format editor
+          const editor = this.$refs.formatEditor;
+          if (editor) editor.innerHTML = this.renderTokensAsHTML();
+        });
+      },
+
+      initPickers() {
+        const iconEl = document.getElementById('settings-icon-picker');
+        const colorEl = document.getElementById('settings-color-picker');
+        if (iconEl && window.IconPicker) {
+          this._iconPicker = new IconPicker(iconEl, {
+            name: 'icon', value: this.form.icon || '',
+            onSelect: (icon) => { this.form.icon = icon; }
+          });
+        }
+        if (colorEl && window.ColorPicker) {
+          this._colorPicker = new ColorPicker(colorEl, {
+            name: 'color', value: this.form.color || '',
+            onSelect: (color) => { this.form.color = color; }
+          });
+        }
+      },
+
+      async loadSelectedFields() {
+        if (!isEdit || !entity.customFields?.length) return;
+        try {
+          // Load from system fields to match by ID
+          const allFields = [];
+          this.systemFields.forEach(cat => cat.fields.forEach(f => allFields.push(f)));
+          const cfIds = entity.customFields.map(f => typeof f === 'object' ? (f._id || f) : f).map(String);
+          this.selectedFields = allFields.filter(f => cfIds.includes(String(f._id)));
+          // If some were not found in system fields, try fetching entity details
+          if (this.selectedFields.length < cfIds.length) {
+            try {
+              const res = await fetch(`/account/${this.accountNumber}/entity/api/${entity._id}`);
+              if (res.ok) {
+                const ent = await res.json();
+                if (ent.customFields) {
+                  this.selectedFields = (ent.customFields || []).filter(f => f && f._id);
+                }
+              }
+            } catch(e) { console.error(e); }
+          }
+        } catch(e) { console.error(e); }
+      },
+
+      // ===== Helper Methods =====
+      isFieldSelected(fieldId) { return this.selectedFields.some(f => f._id === fieldId); },
+      toggleField(field) {
+        const idx = this.selectedFields.findIndex(f => f._id === field._id);
+        if (idx >= 0) this.selectedFields.splice(idx, 1);
+        else this.selectedFields.push(field);
+      },
+      getCategoryIcon(key) {
+        const icons = { popular:'solar:star-bold-duotone', text:'solar:text-bold-duotone', numeric:'solar:hashtag-bold-duotone', date:'solar:calendar-bold-duotone', choice:'solar:checklist-bold-duotone', relation:'solar:link-round-bold-duotone', media:'solar:gallery-bold-duotone', computed:'solar:calculator-bold-duotone', advanced:'solar:code-bold-duotone' };
+        return icons[key] || 'solar:widget-bold-duotone';
+      },
+      getFieldIcon(fieldId) {
+        const icons = { title:'solar:text-bold-duotone', description:'solar:document-text-bold-duotone', icon:'solar:star-bold-duotone', attachments:'solar:paperclip-bold-duotone', image:'solar:gallery-bold-duotone', slug:'solar:link-bold-duotone', date:'solar:calendar-bold-duotone' };
+        if (icons[fieldId]) return icons[fieldId];
+        // Handle relation sub-fields: rel:relationKey.targetFieldId
+        if (fieldId.startsWith('rel:')) {
+          const [relPart, tfId] = fieldId.substring(4).split('.');
+          const rel = this.relations.find(r => r.key === relPart);
+          if (rel && rel._targetFields) {
+            const tf = rel._targetFields.find(f => f.id === tfId);
+            if (tf?.icon) return tf.icon;
+          }
+          return 'solar:link-round-bold-duotone';
+        }
+        const cf = this.selectedFields.find(f => f._id === fieldId);
+        return cf?.icon || 'solar:widget-bold-duotone';
+      },
+      getFieldLabel(fieldId) {
+        const labels = { title:'Titre', description:'Description', icon:'Icône', attachments:'Pièces jointes', image:'Image', slug:'Slug', date:'Date' };
+        if (labels[fieldId]) return labels[fieldId];
+        // Handle relation sub-fields: rel:relationKey.targetFieldId
+        if (fieldId.startsWith('rel:')) {
+          const [relPart, tfId] = fieldId.substring(4).split('.');
+          const rel = this.relations.find(r => r.key === relPart);
+          if (rel) {
+            const relLabel = rel.label || 'Relation';
+            if (rel._targetFields) {
+              const tf = rel._targetFields.find(f => f.id === tfId);
+              if (tf) return relLabel + '.' + tf.label;
+            }
+            return relLabel + '.' + tfId;
+          }
+          return fieldId;
+        }
+        const cf = this.selectedFields.find(f => f._id === fieldId);
+        return cf?.label || cf?.name || fieldId;
+      },
+
+      // Slug
+      slugify(text) {
+        return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      },
+      onNameInput() { if (!this.slugManuallyEdited) this.form.slug = this.slugify(this.form.name); },
+      onSlugInput() { this.slugManuallyEdited = true; this.form.slug = this.slugify(this.form.slug); },
+
+      // Image
+      handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (file) { this.form.imageFile = file; this.form.image = URL.createObjectURL(file); }
+      },
+
+      // System fields
+      async loadSystemFields() {
+        try {
+          const res = await fetch(`/account/${this.accountNumber}/field-template/api/system`);
+          if (res.ok) this.systemFields = await res.json();
+        } catch(e) { console.error(e); }
+      },
+
+      // Classifications
+      toggleClassification(id) {
+        if (id === this.form.statusClassificationId) return;
+        const idx = this.form.classifications.indexOf(id);
+        if (idx >= 0) this.form.classifications.splice(idx, 1);
+        else this.form.classifications.push(id);
+      },
+      isClassificationSelected(id) { return this.form.classifications.includes(id); },
+      onStatusClassificationChange() {
+        const sid = this.form.statusClassificationId;
+        if (sid) { const idx = this.form.classifications.indexOf(sid); if (idx >= 0) this.form.classifications.splice(idx, 1); }
+      },
+
+      // Relations
+      _uuidv4() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }); },
+      async loadEntityFields(entityId) {
+        if (!entityId) return [];
+        if (this.entityFieldsCache[entityId]) return this.entityFieldsCache[entityId];
+        try {
+          const res = await fetch(`/account/${this.accountNumber}/entity/api/${entityId}/fields`);
+          if (res.ok) { const fields = await res.json(); this.entityFieldsCache[entityId] = fields; return fields; }
+        } catch(e) { console.error(e); }
+        return [];
+      },
+      addRelation() {
+        this.relations.push({ key: this._uuidv4(), targetEntity:'', label:'', inverseLabel:'', cardinality:'one-to-many', inputMode:'autocomplete', storage:'on-source', searchFields:[], displayFields:[], bidirectional:false, required:false, _targetFields:[] });
+      },
+      removeRelation(idx) { this.relations.splice(idx, 1); },
+      async onRelationEntityChange(rel) {
+        rel.searchFields = []; rel.displayFields = []; rel._targetFields = [];
+        if (rel.targetEntity) {
+          const ent = this.allEntities.find(e => e._id === rel.targetEntity);
+          if (ent && !rel.label) rel.label = ent.name;
+          rel._targetFields = await this.loadEntityFields(rel.targetEntity);
+        }
+      },
+      toggleSearchField(rel, fid) { const i = rel.searchFields.indexOf(fid); if (i>=0) rel.searchFields.splice(i,1); else rel.searchFields.push(fid); },
+      toggleDisplayField(rel, fid) { const i = rel.displayFields.indexOf(fid); if (i>=0) rel.displayFields.splice(i,1); else rel.displayFields.push(fid); },
+      getRelationEntity(entityId) { return this.allEntities.find(e => e._id === entityId) || null; },
+
+      // Reference title tokens
+      getAvailableFields() {
+        const usedIds = this.form.referenceTitleTokens.filter(t=>t.t==='field').map(t=>t.id);
+        const available = [];
+        if (!usedIds.includes('title')) available.push({ id:'title', label:'Titre', icon:'solar:text-bold-duotone' });
+        ['description','icon','attachments','image','slug','date'].forEach(f => {
+          if (this.form.standardFields[f] && !usedIds.includes(f)) available.push({ id:f, label:this.getFieldLabel(f), icon:this.getFieldIcon(f) });
+        });
+        this.selectedFields.forEach(f => { if (!usedIds.includes(f._id)) available.push({ id:f._id, label:f.label||f.name, icon:this.getFieldIcon(f._id) }); });
+        return available;
+      },
+      addFieldById(fieldId) {
+        const editor = this.$refs.formatEditor;
+        if (editor) { this.syncTokensFromDOM(editor); }
+        if (this.form.referenceTitleTokens.some(t=>t.t==='field')) this.form.referenceTitleTokens.push({ t:'text', v:' ' });
+        this.form.referenceTitleTokens.push({ t:'field', id:fieldId });
+        this.$nextTick(() => { if (editor) editor.innerHTML = this.renderTokensAsHTML(); });
+      },
+      syncTokensFromDOM(editor) {
+        const tokens = [];
+        editor.childNodes.forEach(node => {
+          if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('field-tag')) tokens.push({ t:'field', id:node.getAttribute('data-field-id') });
+          else if (node.nodeType === Node.TEXT_NODE && node.textContent.length > 0) tokens.push({ t:'text', v:node.textContent });
+        });
+        this.form.referenceTitleTokens = tokens;
+      },
+      syncTokensFromEditor(event) { this.syncTokensFromDOM(event.target); },
+      renderTokensAsHTML() {
+        return this.form.referenceTitleTokens.map((token, idx) => {
+          if (token.t === 'field') {
+            const icon = this.getFieldIcon(token.id), label = this.getFieldLabel(token.id);
+            return `<span class="field-tag" data-field-id="${token.id}" data-token-index="${idx}" contenteditable="false"><iconify-icon icon="${icon}" width="12"></iconify-icon> ${label}<span class="field-tag-remove"><iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon></span></span>`;
+          }
+          return token.v || '';
+        }).join('');
+      },
+
+      // ===== SAVE =====
+      async save() {
+        if (!this.form.name) return;
+        this.isSubmitting = true;
+        if (!this.form.slug) this.form.slug = this.slugify(this.form.name);
+
+        // Sync tokens from editor
+        const editor = this.$refs.formatEditor;
+        if (editor) this.syncTokensFromDOM(editor);
+
+        const enabledStandardFields = Object.entries(this.form.standardFields).filter(([k,v])=>v).map(([k])=>k);
+        const payload = {
+          name: this.form.name,
+          slug: this.form.slug,
+          description: this.form.description,
+          icon: this.form.icon,
+          color: this.form.color,
+          active: this.form.active,
+          enabledStandardFields,
+          customFields: this.selectedFields.map(f => f._id || f),
+          referenceTitleTokens: this.form.referenceTitleTokens,
+          statusClassification: this.form.statusClassificationId || null,
+          classifications: this.form.classifications,
+          relations: this.relations.filter(r => r.targetEntity).map(({ _targetFields, ...r }) => r)
+        };
+
+        try {
+          const url = this.isEdit
+            ? `/account/${this.accountNumber}/entity/api/update/${this.entityId}`
+            : `/account/${this.accountNumber}/entity/add`;
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) {
+            const result = await res.json();
+            Swal.fire({ icon:'success', title: this.isEdit ? 'Collection mise à jour !' : 'Collection créée !', timer:1500, showConfirmButton:false });
+            if (!this.isEdit && result.entity?._id) {
+              setTimeout(() => { window.location.href = `/account/${this.accountNumber}/entity/settings/${result.entity._id}`; }, 1000);
+            }
+          } else {
+            const err = await res.json().catch(()=>null);
+            throw new Error(err?.error || 'Erreur lors de la sauvegarde');
+          }
+        } catch(e) {
+          Swal.fire({ icon:'error', title:'Erreur', text:e.message });
+        } finally { this.isSubmitting = false; }
+      },
+
+      // Delete
+      async deleteEntity() {
+        if (!this.isEdit) return;
+        const result = await Swal.fire({ title:'Supprimer cette collection ?', text:'Cette action est irréversible.', icon:'warning', showCancelButton:true, confirmButtonColor:'#ef4444', confirmButtonText:'Supprimer', cancelButtonText:'Annuler' });
+        if (!result.isConfirmed) return;
+        try {
+          const res = await fetch(`/account/${this.accountNumber}/entity/${this.entityId}`, { method:'DELETE' });
+          if (res.ok) {
+            Swal.fire({ icon:'success', title:'Supprimée', timer:1200, showConfirmButton:false });
+            setTimeout(() => { window.location.href = `/account/${this.accountNumber}/entity/list`; }, 800);
+          }
+        } catch(e) { Swal.fire({ icon:'error', title:'Erreur', text:e.message }); }
+      }
+    };
+  });
+});
+</script>
+
+<div x-data="entitySettings()" class="entity-settings-page">
+  <!-- Page Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-3">
+      <a href="/account/<%= account_number %>/entity/list"
+         class="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border dark:border-gray-800"
+         title="Retour aux collections">
+        <iconify-icon icon="solar:arrow-left-line-duotone" width="20"></iconify-icon>
+      </a>
+      <div>
+        <h1 class="text-xl font-bold dark:text-white flex items-center gap-2">
+          <template x-if="form.icon">
+            <iconify-icon :icon="form.icon" width="24" :style="form.color ? 'color:'+form.color : ''"></iconify-icon>
+          </template>
+          <span x-text="isEdit ? form.name || 'Modifier la collection' : 'Nouvelle collection'"></span>
+        </h1>
+        <p class="text-xs text-gray-400 mt-0.5" x-text="isEdit ? 'Paramètres de la collection' : 'Créer et configurer une nouvelle collection'"></p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <template x-if="isEdit">
+        <a :href="`/account/${accountNumber}/entity/edit/${entityId}`"
+           class="btn btn-outline-primary btn-sm">
+          <iconify-icon icon="solar:widget-bold-duotone" class="mr-1"></iconify-icon>
+          Form Builder
+        </a>
+      </template>
+      <button @click="save()" class="btn btn-primary" :disabled="isSubmitting || !form.name">
+        <span x-show="isSubmitting" class="animate-spin border-2 border-white border-l-transparent rounded-full w-4 h-4 mr-2 inline-block"></span>
+        <iconify-icon icon="solar:diskette-bold" class="mr-1" x-show="!isSubmitting"></iconify-icon>
+        <span x-text="isSubmitting ? 'Sauvegarde...' : (isEdit ? 'Mettre à jour' : 'Créer')"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- LEFT COLUMN: Main Settings -->
+    <div class="lg:col-span-2 space-y-5">
+
+      <!-- Section: General -->
+      <div class="section-card">
+        <div class="section-header" @click="sectionOpen.general = !sectionOpen.general">
+          <div class="flex items-center gap-2 flex-1">
+            <iconify-icon icon="solar:settings-bold-duotone" width="20" class="text-primary"></iconify-icon>
+            <span class="font-semibold dark:text-white">Informations générales</span>
+          </div>
+          <iconify-icon icon="solar:alt-arrow-down-linear" width="16" class="text-gray-400" :class="sectionOpen.general && 'rotate-180'" style="transition:transform 0.2s"></iconify-icon>
+        </div>
+        <div x-show="sectionOpen.general" x-collapse class="section-body">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="mb-1.5 block text-sm font-semibold dark:text-gray-300">Nom *</label>
+              <input type="text" x-model="form.name" @input="onNameInput()" placeholder="Ex: Contacts, Projets, Factures..." class="form-input w-full" required>
+            </div>
+            <div>
+              <label class="mb-1.5 block text-sm font-semibold dark:text-gray-300">Slug</label>
+              <input type="text" x-model="form.slug" @input="onSlugInput()" placeholder="slug-auto-genere" class="form-input w-full text-sm">
+              <p class="text-xs text-gray-400 mt-1">Identifiant unique (auto si vide)</p>
+            </div>
+          </div>
+          <div class="mt-4">
+            <label class="mb-1.5 block text-sm font-semibold dark:text-gray-300">Description</label>
+            <textarea x-model="form.description" rows="3" placeholder="Description de la collection..." class="form-input w-full resize-none text-sm"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Standard Fields -->
+      <div class="section-card">
+        <div class="section-header" @click="sectionOpen.fields = !sectionOpen.fields">
+          <div class="flex items-center gap-2 flex-1">
+            <iconify-icon icon="solar:layers-bold-duotone" width="20" class="text-warning"></iconify-icon>
+            <span class="font-semibold dark:text-white">Champs</span>
+            <span class="text-xs text-gray-400 ml-1" x-text="selectedFields.length ? selectedFields.length + ' personnalisé(s)' : ''"></span>
+          </div>
+          <iconify-icon icon="solar:alt-arrow-down-linear" width="16" class="text-gray-400" :class="sectionOpen.fields && 'rotate-180'" style="transition:transform 0.2s"></iconify-icon>
+        </div>
+        <div x-show="sectionOpen.fields" x-collapse class="section-body space-y-4">
+          <!-- Standard fields chips -->
+          <div class="p-3 border border-warning/30 rounded-lg dark:border-warning/20">
+            <div class="text-xs text-warning font-medium mb-2 flex items-center gap-1">
+              <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+              <span>Champs par défaut</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <template x-for="(enabled, field) in form.standardFields" :key="'std-'+field">
+                <button type="button" @click="form.standardFields[field] = !form.standardFields[field]"
+                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all"
+                        :class="enabled ? 'bg-warning/10 border-warning/30 text-warning shadow-sm' : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'">
+                  <iconify-icon :icon="getFieldIcon(field)" width="12"></iconify-icon>
+                  <span x-text="getFieldLabel(field)"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- Tabs: Fields / Relations -->
+          <div class="flex border-b dark:border-gray-800">
+            <button type="button" @click="step2Tab = 'fields'" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+                    :class="step2Tab === 'fields' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'">
+              <iconify-icon icon="solar:layers-bold-duotone" width="16" class="mr-1"></iconify-icon>
+              Champs personnalisés
+            </button>
+            <button type="button" @click="step2Tab = 'relations'" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+                    :class="step2Tab === 'relations' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'">
+              <iconify-icon icon="solar:link-round-bold-duotone" width="16" class="mr-1"></iconify-icon>
+              Relations
+              <span x-show="relations.length > 0" class="ml-1 px-1.5 py-0.5 text-xs bg-primary/20 text-primary rounded-full" x-text="relations.length"></span>
+            </button>
+          </div>
+
+          <!-- TAB: Custom Fields -->
+          <div x-show="step2Tab === 'fields'" class="space-y-3">
+            <!-- Selected fields -->
+            <div x-show="selectedFields.length > 0" class="p-3 bg-primary/5 rounded-lg border border-primary/20">
+              <div class="text-xs font-semibold text-primary mb-2 flex items-center gap-1">
+                <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                <span x-text="selectedFields.length + ' champ(s) sélectionné(s)'"></span>
+              </div>
+              <div class="flex flex-wrap gap-1.5">
+                <template x-for="(field, idx) in selectedFields" :key="field._id">
+                  <div class="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-xs border shadow-sm">
+                    <iconify-icon :icon="field.icon || 'solar:widget-bold'" width="14" class="text-primary"></iconify-icon>
+                    <span x-text="field.label || field.name"></span>
+                    <button type="button" @click="selectedFields.splice(idx, 1)" class="text-gray-400 hover:text-red-500 ml-0.5">
+                      <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
+                    </button>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Search -->
+            <div class="relative">
+              <input type="text" x-model="fieldSearch" placeholder="Rechercher un champ..." class="form-input w-full pl-9 text-sm">
+              <iconify-icon icon="solar:magnifer-linear" class="absolute left-3 top-2.5 text-gray-400" width="16"></iconify-icon>
+            </div>
+
+            <!-- Categories -->
+            <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+              <template x-for="category in filteredCategories" :key="category.key">
+                <div class="border dark:border-gray-800 rounded-lg overflow-hidden">
+                  <button type="button" @click="openCategories[category.key] = !openCategories[category.key]"
+                          class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 font-medium text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <div class="flex items-center gap-2">
+                      <iconify-icon :icon="getCategoryIcon(category.key)" width="16" class="text-primary"></iconify-icon>
+                      <span x-text="category.label"></span>
+                      <span class="text-gray-400 text-xs" x-text="'(' + category.fields.length + ')'"></span>
+                    </div>
+                    <iconify-icon icon="solar:alt-arrow-down-linear" width="14" :class="openCategories[category.key] && 'rotate-180'" style="transition:transform 0.2s"></iconify-icon>
+                  </button>
+                  <div x-show="openCategories[category.key]" x-collapse class="divide-y dark:divide-gray-700">
+                    <template x-for="field in category.fields" :key="field._id">
+                      <div class="px-3 py-2 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                           :class="isFieldSelected(field._id) && 'bg-primary/5'">
+                        <div class="flex items-center gap-2 flex-1 min-w-0">
+                          <iconify-icon :icon="field.icon" width="18" class="text-gray-500 shrink-0"></iconify-icon>
+                          <div class="min-w-0">
+                            <div class="text-sm font-medium truncate" x-text="field.label"></div>
+                            <div class="text-xs text-gray-400 truncate" x-text="field.description" x-show="field.description"></div>
+                          </div>
+                        </div>
+                        <button type="button" @click="toggleField(field)"
+                                class="shrink-0 px-2 py-1 rounded text-xs font-medium transition-colors"
+                                :class="isFieldSelected(field._id) ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-primary/10 text-primary hover:bg-primary/20'">
+                          <span x-text="isFieldSelected(field._id) ? 'Retirer' : 'Ajouter'"></span>
+                        </button>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- TAB: Relations -->
+          <div x-show="step2Tab === 'relations'" class="space-y-3">
+            <div class="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+              <template x-for="(relation, rIdx) in relations" :key="relation.key">
+                <div class="border dark:border-gray-800 rounded-lg p-3 space-y-3 bg-gray-50/50 dark:bg-gray-800/50">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                      <iconify-icon icon="solar:link-round-bold-duotone" width="16" class="text-primary"></iconify-icon>
+                      <span x-text="relation.label || ('Relation ' + (rIdx+1))"></span>
+                    </span>
+                    <button type="button" @click="removeRelation(rIdx)" class="text-gray-400 hover:text-red-500 transition-colors">
+                      <iconify-icon icon="solar:trash-bin-trash-bold" width="16"></iconify-icon>
+                    </button>
+                  </div>
+                  <div>
+                    <label class="text-xs font-medium text-gray-500 mb-1 block">Entité cible</label>
+                    <select x-model="relation.targetEntity" @change="onRelationEntityChange(relation)" class="form-select w-full text-sm">
+                      <option value="">Sélectionner une entité...</option>
+                      <template x-for="ent in allEntities" :key="ent._id">
+                        <option :value="ent._id" x-text="ent.name"></option>
+                      </template>
+                    </select>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div><label class="text-xs font-medium text-gray-500 mb-1 block">Label</label><input type="text" x-model="relation.label" placeholder="Ex: Patient" class="form-input w-full text-sm"></div>
+                    <div><label class="text-xs font-medium text-gray-500 mb-1 block">Label inverse</label><input type="text" x-model="relation.inverseLabel" placeholder="Ex: Consultations" class="form-input w-full text-sm"></div>
+                  </div>
+                  <div><label class="text-xs font-medium text-gray-500 mb-1 block">Cardinalité</label>
+                    <div class="flex gap-1">
+                      <template x-for="card in [{v:'one-to-one',l:'1:1'},{v:'one-to-many',l:'1:N'},{v:'many-to-many',l:'N:N'}]" :key="card.v">
+                        <button type="button" @click="relation.cardinality = card.v"
+                                class="flex-1 px-3 py-1.5 text-xs font-semibold rounded-md border transition-colors"
+                                :class="relation.cardinality === card.v ? 'bg-primary text-white border-primary' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-primary/50'">
+                          <span x-text="card.l"></span>
+                        </button>
+                      </template>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div><label class="text-xs font-medium text-gray-500 mb-1 block">Mode d'encodage</label><select x-model="relation.inputMode" class="form-select w-full text-sm"><option value="autocomplete">Autocomplete</option><option value="select">Select</option><option value="modal-picker">Modal Picker</option></select></div>
+                    <div><label class="text-xs font-medium text-gray-500 mb-1 block">Stockage</label><select x-model="relation.storage" class="form-select w-full text-sm"><option value="on-source">Sur la source</option><option value="on-target">Sur la cible</option><option value="join">Table de jointure</option></select></div>
+                  </div>
+                  <template x-if="relation._targetFields && relation._targetFields.length > 0">
+                    <div class="space-y-2">
+                      <div><label class="text-xs font-medium text-gray-500 mb-1 block">Champs de recherche</label><div class="flex flex-wrap gap-1.5"><template x-for="field in relation._targetFields" :key="'s-'+relation.key+'-'+field.id"><button type="button" @click="toggleSearchField(relation, field.id)" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-colors" :class="relation.searchFields.includes(field.id) ? 'bg-info/10 border-info/30 text-info' : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 hover:border-info/50'"><iconify-icon :icon="field.icon" width="12"></iconify-icon><span x-text="field.label"></span></button></template></div></div>
+                      <div><label class="text-xs font-medium text-gray-500 mb-1 block">Champs à afficher</label><div class="flex flex-wrap gap-1.5"><template x-for="field in relation._targetFields" :key="'d-'+relation.key+'-'+field.id"><button type="button" @click="toggleDisplayField(relation, field.id)" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-colors" :class="relation.displayFields.includes(field.id) ? 'bg-success/10 border-success/30 text-success' : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 hover:border-success/50'"><iconify-icon :icon="field.icon" width="12"></iconify-icon><span x-text="field.label"></span></button></template></div></div>
+                    </div>
+                  </template>
+                  <div class="flex items-center gap-4 pt-2 border-t dark:border-gray-800">
+                    <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-500"><input type="checkbox" x-model="relation.bidirectional" class="form-checkbox rounded text-primary"> Bidirectionnelle</label>
+                    <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-500"><input type="checkbox" x-model="relation.required" class="form-checkbox rounded text-primary"> Requis</label>
+                  </div>
+                </div>
+              </template>
+            </div>
+            <button type="button" @click="addRelation()" class="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-primary hover:text-primary/80 border border-dashed border-primary/30 rounded-lg hover:bg-primary/5 transition-colors">
+              <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
+              <span>Ajouter une relation</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Classifications -->
+      <div class="section-card">
+        <div class="section-header" @click="sectionOpen.classifications = !sectionOpen.classifications">
+          <div class="flex items-center gap-2 flex-1">
+            <iconify-icon icon="solar:tag-bold-duotone" width="20" class="text-info"></iconify-icon>
+            <span class="font-semibold dark:text-white">Classifications</span>
+          </div>
+          <iconify-icon icon="solar:alt-arrow-down-linear" width="16" class="text-gray-400" :class="sectionOpen.classifications && 'rotate-180'" style="transition:transform 0.2s"></iconify-icon>
+        </div>
+        <div x-show="sectionOpen.classifications" x-collapse class="section-body space-y-4">
+          <div class="p-3 border border-info/30 rounded-lg">
+            <label class="text-xs text-info font-medium mb-2 block">
+              <iconify-icon icon="solar:diploma-bold-duotone" width="14" class="mr-1"></iconify-icon>
+              Classification de statut (Kanban)
+            </label>
+            <select x-model="form.statusClassificationId" @change="onStatusClassificationChange()" class="form-select w-full text-sm">
+              <option value="">Aucune</option>
+              <template x-for="cls in allClassifications" :key="cls._id">
+                <option :value="cls._id" x-text="cls.name"></option>
+              </template>
+            </select>
+          </div>
+          <div class="p-3 border border-info/30 rounded-lg">
+            <label class="text-xs text-info font-medium mb-2 block">
+              <iconify-icon icon="solar:tag-horizontal-bold-duotone" width="14" class="mr-1"></iconify-icon>
+              Classifications additionnelles
+            </label>
+            <div class="flex flex-wrap gap-1.5" x-show="allClassifications.length > 0">
+              <template x-for="cls in allClassifications" :key="cls._id">
+                <button type="button" @click="toggleClassification(cls._id)"
+                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors"
+                        :class="isClassificationSelected(cls._id) ? 'bg-info/10 border-info/30 text-info' : cls._id === form.statusClassificationId ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-800 text-gray-300 cursor-not-allowed' : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400 hover:border-info/50'"
+                        :disabled="cls._id === form.statusClassificationId">
+                  <iconify-icon icon="solar:tag-bold-duotone" width="12"></iconify-icon>
+                  <span x-text="cls.name"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Reference Title -->
+      <div class="section-card">
+        <div class="section-header" @click="sectionOpen.reference = !sectionOpen.reference">
+          <div class="flex items-center gap-2 flex-1">
+            <iconify-icon icon="solar:document-text-bold-duotone" width="20" class="text-success"></iconify-icon>
+            <span class="font-semibold dark:text-white">Champ de référence</span>
+          </div>
+          <iconify-icon icon="solar:alt-arrow-down-linear" width="16" class="text-gray-400" :class="sectionOpen.reference && 'rotate-180'" style="transition:transform 0.2s"></iconify-icon>
+        </div>
+        <div x-show="sectionOpen.reference" x-collapse class="section-body space-y-3">
+          <p class="text-xs text-gray-400">Ce champ sera utilisé comme titre lors des listings, relations, etc.</p>
+          <div class="flex flex-wrap gap-1.5" x-show="getAvailableFields().length > 0">
+            <span class="text-xs text-gray-500 mr-1">Champs disponibles:</span>
+            <template x-for="field in getAvailableFields()" :key="field.id">
+              <button type="button" @click="addFieldById(field.id)"
+                      class="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-primary/10 hover:border-primary hover:text-primary transition-colors cursor-pointer">
+                <iconify-icon :icon="field.icon" width="12"></iconify-icon>
+                <span x-text="field.label"></span>
+                <iconify-icon icon="solar:add-circle-bold" width="12" class="opacity-50"></iconify-icon>
+              </button>
+            </template>
+          </div>
+          <div class="form-input w-full text-sm min-h-[38px] p-2 cursor-text focus-within:ring-2 focus-within:ring-primary/50"
+               contenteditable="true"
+               @input="syncTokensFromEditor($event)"
+               @click="if ($event.target.closest('.field-tag-remove')) { $event.target.closest('.field-tag').remove(); syncTokensFromEditor({ target: $el }); }"
+               x-ref="formatEditor">
+          </div>
+          <label class="text-xs text-gray-500 block">Format du titre de référence</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Sidebar -->
+    <div class="space-y-5">
+      <!-- Preview Card -->
+      <div class="section-card">
+        <div class="p-5 text-center">
+          <div class="hero-preview mx-auto mb-4" :class="form.color && 'has-color'" :style="form.color ? 'background:'+form.color : ''">
+            <iconify-icon :icon="form.icon || 'solar:box-bold-duotone'" width="36"></iconify-icon>
+          </div>
+          <h3 class="font-bold text-lg dark:text-white" x-text="form.name || 'Nom de la collection'"></h3>
+          <p class="text-xs text-gray-400 mt-1" x-text="form.slug ? '/' + form.slug : '/slug'"></p>
+          <p class="text-sm text-gray-500 mt-2 line-clamp-2" x-text="form.description || 'Pas de description'" x-show="form.description"></p>
+        </div>
+      </div>
+
+      <!-- Visual Section -->
+      <div class="section-card">
+        <div class="section-header" @click="sectionOpen.visual = !sectionOpen.visual">
+          <div class="flex items-center gap-2 flex-1">
+            <iconify-icon icon="solar:pallete-2-bold-duotone" width="20" class="text-secondary"></iconify-icon>
+            <span class="font-semibold dark:text-white">Visuel</span>
+          </div>
+          <iconify-icon icon="solar:alt-arrow-down-linear" width="16" class="text-gray-400" :class="sectionOpen.visual && 'rotate-180'" style="transition:transform 0.2s"></iconify-icon>
+        </div>
+        <div x-show="sectionOpen.visual" x-collapse class="section-body">
+          <div class="flex items-center gap-4">
+            <div>
+              <label class="text-xs font-medium text-gray-500 mb-1.5 block">Icône</label>
+              <div id="settings-icon-picker"></div>
+            </div>
+            <div>
+              <label class="text-xs font-medium text-gray-500 mb-1.5 block">Couleur</label>
+              <div id="settings-color-picker"></div>
+            </div>
+            <div>
+              <label class="text-xs font-medium text-gray-500 mb-1.5 block">Image</label>
+              <label class="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer border dark:border-gray-700" title="Ajouter une image">
+                <iconify-icon icon="solar:gallery-bold-duotone" width="22" class="text-gray-400 hover:text-primary"></iconify-icon>
+                <input type="file" accept="image/*" class="hidden" @change="handleImageUpload($event)">
+              </label>
+            </div>
+          </div>
+          <!-- Image preview -->
+          <div x-show="form.image" class="mt-3">
+            <img :src="form.image" class="w-full h-24 object-cover rounded-lg border dark:border-gray-700">
+          </div>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div class="section-card">
+        <div class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold dark:text-gray-300">Collection active</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" x-model="form.active" class="sr-only peer">
+              <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <template x-if="isEdit">
+        <div class="section-card border-red-200 dark:border-red-900/30">
+          <div class="p-5">
+            <h4 class="text-sm font-bold text-red-500 mb-2 flex items-center gap-1.5">
+              <iconify-icon icon="solar:danger-triangle-bold" width="16"></iconify-icon>
+              Zone de danger
+            </h4>
+            <p class="text-xs text-gray-400 mb-3">Supprimer cette collection et toutes ses données.</p>
+            <button @click="deleteEntity()" class="btn btn-outline-danger btn-sm w-full">
+              <iconify-icon icon="solar:trash-bin-trash-bold" class="mr-1"></iconify-icon>
+              Supprimer la collection
+            </button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>

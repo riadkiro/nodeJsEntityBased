@@ -18,7 +18,9 @@ export default function DataGridToolbar({
     gridId,
     addUrl,
     addLabel,
-    addAction
+    addAction,
+    showSidebar,
+    onToggleSidebar
 }) {
     const [displayPopover, setDisplayPopover] = useState(false)
     const [sortPopover, setSortPopover] = useState(false)
@@ -154,6 +156,24 @@ export default function DataGridToolbar({
 
             {/* Right: Icon buttons */}
             <div className="flex items-center gap-2">
+                {/* Sidebar toggle button - expandable pill */}
+                {onToggleSidebar && (
+                    <button
+                        type="button"
+                        onClick={onToggleSidebar}
+                        className={`btn-sidebar-toggle block rounded-full p-2 transition-all ${showSidebar
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60'}`}
+                        title={showSidebar ? 'Masquer le panneau' : 'Afficher le panneau'}
+                    >
+                        <svg className="btn-sidebar-icon h-4 w-4" viewBox="0 0 24 24" fill="none">
+                            <path d="M3 4H21V20H3V4Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                            <path d="M9 4V20" stroke="currentColor" strokeWidth="1.5" />
+                        </svg>
+                        <span className="btn-sidebar-label">{showSidebar ? 'Masquer' : 'Panneau'}</span>
+                    </button>
+                )}
+
                 {/* Sort */}
                 {(() => {
                     const defaultSort = preferences.sort?.field || ''
@@ -366,6 +386,37 @@ export default function DataGridToolbar({
                 }
                 .btn-add-expandable:hover .btn-add-label {
                     max-width: 120px;
+                    opacity: 1;
+                }
+                .btn-sidebar-toggle {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0;
+                    height: 34px;
+                    padding: 0 9px;
+                    cursor: pointer;
+                    overflow: hidden;
+                    white-space: nowrap;
+                    font-size: 13px;
+                    font-weight: 600;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    border: none;
+                }
+                .btn-sidebar-toggle:hover {
+                    gap: 6px;
+                    padding: 0 16px;
+                }
+                .btn-sidebar-icon {
+                    flex-shrink: 0;
+                }
+                .btn-sidebar-label {
+                    max-width: 0;
+                    opacity: 0;
+                    overflow: hidden;
+                    transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+                }
+                .btn-sidebar-toggle:hover .btn-sidebar-label {
+                    max-width: 100px;
                     opacity: 1;
                 }
             `}</style>

@@ -186,7 +186,7 @@ router.get('/api/datagrid/entities', async (req, res) => {
 
         // Column definitions
         const columns = [
-            { id: 'name', name: 'Nom', sortable: true, link: `/account/${req.account_number}/entity/{id}/settings` },
+            { id: 'name', name: 'Nom', sortable: true, link: `/account/${req.account_number}/entity/edit/{id}` },
             { id: 'slug', name: 'Slug', sortable: true },
             { id: 'description', name: 'Description', sortable: false },
             { id: 'color', name: 'Couleur', sortable: false, type: 'color' },
@@ -326,11 +326,47 @@ router.get('/api/datagrid/tasks', async (req, res) => {
             if (prefs) preferences = prefs.preferences
         }
 
+        // Build filter groups from classifications
+        const filterGroups = classifications.map(cls => {
+            // Count records per option
+            const optionCounts = {}
+            records.forEach(r => {
+                const cvs = r.classificationValues || []
+                cvs.forEach(cv => {
+                    if (cv.classificationId === cls._id.toString() || cv.classificationId?.toString() === cls._id.toString()) {
+                        const key = cv.optionId?.toString()
+                        if (key) optionCounts[key] = (optionCounts[key] || 0) + 1
+                    }
+                })
+            })
+
+            // Determine the row field this classification maps to
+            let field = ''
+            let type = 'list'
+            if (cls.key === 'tache_progression') { field = 'status' }
+            else if (cls.key === 'tache_priority') { field = 'priority' }
+            else if (cls.key === 'tache_tags') { field = 'tags'; type = 'tags' }
+
+            return {
+                id: cls._id.toString(),
+                name: cls.name || cls.key,
+                field,
+                type,
+                options: (cls.options || []).map(opt => ({
+                    id: opt._id.toString(),
+                    label: opt.label,
+                    color: opt.color || '#9ca3af',
+                    count: optionCounts[opt._id.toString()] || 0
+                }))
+            }
+        }).filter(f => f.field) // Only include filters that map to a row field
+
         res.json({
             rows,
             columns,
             defaultSort: { field: 'createdAt', direction: 'desc' },
             preferences,
+            filters: filterGroups,
             entityId: entity._id.toString(),
             entitySlug: entity.slug
         })

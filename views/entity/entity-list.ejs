@@ -829,7 +829,6 @@
       },
 
       init() {
-        const rows = <%- JSON.stringify(rows) %>;
         this.loadSystemFields();
         this.loadClassifications();
 
@@ -867,7 +866,7 @@
       data-icon="solar:box-bold-duotone"
       data-add-action="open-create-modal"
       data-add-label="Nouvelle collection"
-      data-row-click-url="/account/<%= account_number %>/entity/{id}/settings"
+      data-row-click-url="/account/<%= account_number %>/entity/settings/{id}"
       data-density="comfortable"
       data-page-size="10"
       style="min-height: 500px;"

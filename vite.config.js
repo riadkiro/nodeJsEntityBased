@@ -14,6 +14,7 @@ export default defineConfig({
                 documentEditor: path.resolve(__dirname, 'src/islands/document-editor/entry.jsx'),
                 chatPanel: path.resolve(__dirname, 'src/islands/chat-panel/entry.jsx'),
                 dataGrid: path.resolve(__dirname, 'src/islands/data-grid/entry.jsx'),
+                iconPicker: path.resolve(__dirname, 'src/islands/icon-picker/entry.jsx'),
                 // Future islands:
                 // pageBuilder: path.resolve(__dirname, 'src/islands/page-builder/entry.jsx'),
             },

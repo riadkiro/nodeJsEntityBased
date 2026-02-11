@@ -485,5 +485,55 @@ module.exports = {
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
+  },
+
+  // ===== SETTINGS PAGE =====
+  settingsForm: async (req, res) => {
+    try {
+      const Entity = await tenantCollection(req, "Entity");
+      const Classification = await tenantCollection(req, "Classification");
+
+      const entityId = req.params.id;
+      let entity = null;
+      let mode = 'create';
+
+      if (entityId) {
+        if (!mongoose.Types.ObjectId.isValid(entityId)) {
+          return res.status(404).render("errors/404", {
+            message: "ID non valide.",
+            layout: "layout-app",
+            account_number: req.account_number,
+          });
+        }
+        entity = await Entity.findById(entityId).populate('relations.targetEntity', '_id name slug icon color');
+        if (!entity) {
+          return res.status(404).render("errors/404", {
+            message: "Entité introuvable.",
+            layout: "layout-app",
+            account_number: req.account_number,
+          });
+        }
+        mode = 'edit';
+      }
+
+      const allClassifications = await Classification.find();
+      const allEntities = await Entity.find({}, '_id name slug icon color');
+
+      res.render("entity/entity-settings", {
+        mode,
+        entity,
+        allClassifications,
+        allEntities,
+        account_number: req.account_number,
+        layout: "layout-app",
+      });
+    } catch (err) {
+      console.error("Settings form error:", err);
+      return res.status(500).render("errors/500", {
+        message: "Erreur serveur",
+        layout: "layout-app",
+        account_number: req.account_number,
+      });
+    }
   }
 };

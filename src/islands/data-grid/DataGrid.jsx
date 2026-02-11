@@ -7,6 +7,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import DataGridToolbar from './components/DataGridToolbar'
 import DataGridTable from './components/DataGridTable'
+import DataGridSidebar from './components/DataGridSidebar'
 
 export default function DataGrid({
     accountNumber,
@@ -29,6 +30,10 @@ export default function DataGrid({
     const [columns, setColumns] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [sidebarVisible, setSidebarVisible] = useState(initialShowSidebar)
+    const [filters, setFilters] = useState([])
+    const [activeFilters, setActiveFilters] = useState({})
+    const [entityMeta, setEntityMeta] = useState({})
     const [searchQuery, setSearchQuery] = useState('')
 
     // Preferences state
@@ -62,6 +67,15 @@ export default function DataGrid({
 
             setAllRows(data.rows || [])
             setFilteredRows(data.rows || [])
+
+            // Load filters from API response
+            if (data.filters) {
+                setFilters(data.filters)
+            }
+            // Entity metadata
+            if (data.entitySlug || data.entityId) {
+                setEntityMeta({ slug: data.entitySlug, id: data.entityId })
+            }
 
             // Load columns from API response
             if (data.columns) {
@@ -146,6 +160,41 @@ export default function DataGrid({
         }))
     }, [sortedRows])
 
+    // Apply sidebar filters to rows
+    const applyFilters = useCallback((rows, filterState) => {
+        if (!filterState || Object.keys(filterState).length === 0) return rows
+
+        return rows.filter(row => {
+            return Object.entries(filterState).every(([filterId, selectedOptions]) => {
+                if (!selectedOptions || selectedOptions.length === 0) return true
+
+                // Find the filter definition to know which row field to check
+                const filterDef = filters.find(f => f.id === filterId)
+                if (!filterDef) return true
+
+                const rowField = filterDef.field
+                const rowValue = row[rowField] || ''
+
+                // For multi-value fields (tags), check if any selected option matches
+                if (filterDef.type === 'tags') {
+                    const selectedLabels = selectedOptions.map(optId => {
+                        const opt = filterDef.options.find(o => o.id === optId)
+                        return opt ? opt.label.toLowerCase() : ''
+                    })
+                    const rowTags = rowValue.toLowerCase().split(',').map(t => t.trim())
+                    return selectedLabels.some(label => rowTags.includes(label))
+                }
+
+                // For single-value fields (status, priority), check label match
+                const selectedLabels = selectedOptions.map(optId => {
+                    const opt = filterDef.options.find(o => o.id === optId)
+                    return opt ? opt.label : ''
+                })
+                return selectedLabels.includes(rowValue)
+            })
+        })
+    }, [filters])
+
     // Client-side search
     const handleSearch = useCallback((queryOrEvent) => {
         const query = typeof queryOrEvent === 'string'
@@ -155,29 +204,31 @@ export default function DataGrid({
         setSearchQuery(query)
         setPagination(prev => ({ ...prev, page: 1 }))
 
-        if (!query.trim()) {
-            setFilteredRows(rowsWithSearchIndex)
-            return
+        let result = rowsWithSearchIndex
+        if (query.trim()) {
+            const lowerQuery = query.toLowerCase()
+            result = result.filter(row => row._searchIndex.includes(lowerQuery))
         }
+        result = applyFilters(result, activeFilters)
+        setFilteredRows(result)
+    }, [rowsWithSearchIndex, activeFilters, applyFilters])
 
-        const lowerQuery = query.toLowerCase()
-        const filtered = rowsWithSearchIndex.filter(row =>
-            row._searchIndex.includes(lowerQuery)
-        )
-        setFilteredRows(filtered)
-    }, [rowsWithSearchIndex])
+    // Handle sidebar filter changes
+    const handleFilterChange = useCallback((newFilters) => {
+        setActiveFilters(newFilters)
+        setPagination(prev => ({ ...prev, page: 1 }))
+    }, [])
 
-    // Update filtered when sort changes
+    // Update filtered when sort, search, or filters change
     useEffect(() => {
-        if (!searchQuery.trim()) {
-            setFilteredRows(rowsWithSearchIndex)
-        } else {
+        let result = rowsWithSearchIndex
+        if (searchQuery.trim()) {
             const lowerQuery = searchQuery.toLowerCase()
-            setFilteredRows(rowsWithSearchIndex.filter(row =>
-                row._searchIndex.includes(lowerQuery)
-            ))
+            result = result.filter(row => row._searchIndex.includes(lowerQuery))
         }
-    }, [rowsWithSearchIndex])
+        result = applyFilters(result, activeFilters)
+        setFilteredRows(result)
+    }, [rowsWithSearchIndex, activeFilters, applyFilters])
 
     // Pagination
     useEffect(() => {
@@ -293,94 +344,115 @@ export default function DataGrid({
     }
 
     return (
-        <div className="panel p-4 flex-1 flex flex-col overflow-hidden h-full">
-            {/* Toolbar */}
-            <DataGridToolbar
-                title={title}
-                icon={icon}
-                searchQuery={searchQuery}
-                onSearch={handleSearch}
-                columns={columns}
-                preferences={preferences}
-                onPreferencesChange={handlePreferencesChange}
-                loading={loading}
-                accountNumber={accountNumber}
-                gridId={gridId}
-                addUrl={addUrl}
-                addLabel={addLabel}
-                addAction={addAction}
-            />
+        <div className="flex h-full gap-4">
+            {/* Sidebar */}
+            {initialShowSidebar && (
+                <DataGridSidebar
+                    title={title}
+                    titlePlural={title}
+                    icon={icon}
+                    accountNumber={accountNumber}
+                    entitySlug={entityMeta.slug}
+                    filters={filters}
+                    activeFilters={activeFilters}
+                    onFilterChange={handleFilterChange}
+                    showSidebar={sidebarVisible}
+                    addUrl={addUrl}
+                    addLabel={addLabel}
+                />
+            )}
 
-            {/* Table wrapper */}
-            <div className="dataTable-wrapper flex-1 flex flex-col overflow-hidden mt-4">
-                <div
-                    className="dataTable-container flex-1 overflow-auto"
-                    ref={parentRef}
-                >
-                    <DataGridTable
-                        rows={displayRows}
-                        columns={visibleColumns}
-                        virtualizer={virtualizer}
-                        sort={preferences.sort}
-                        onSort={(field) => {
-                            const direction = preferences.sort.field === field && preferences.sort.direction === 'asc'
-                                ? 'desc' : 'asc'
-                            handlePreferencesChange('sort', { field, direction })
-                        }}
-                        onColumnReorder={handleColumnReorder}
-                        density={preferences.density}
-                        accountNumber={accountNumber}
-                        rowClickUrl={rowClickUrl}
-                    />
-                </div>
+            <div className="panel p-4 flex-1 flex flex-col overflow-hidden h-full">
+                {/* Toolbar */}
+                <DataGridToolbar
+                    title={title}
+                    icon={icon}
+                    searchQuery={searchQuery}
+                    onSearch={handleSearch}
+                    columns={columns}
+                    preferences={preferences}
+                    onPreferencesChange={handlePreferencesChange}
+                    loading={loading}
+                    accountNumber={accountNumber}
+                    gridId={gridId}
+                    addUrl={addUrl}
+                    addLabel={addLabel}
+                    addAction={addAction}
+                    showSidebar={sidebarVisible}
+                    onToggleSidebar={initialShowSidebar ? () => setSidebarVisible(v => !v) : undefined}
+                />
 
-                {/* Pagination footer */}
-                <div className="dataTable-bottom flex items-center justify-between border-t pt-4 dark:border-gray-800">
-                    <div className="dataTable-info text-gray-500 dark:text-gray-400">
-                        Affichage de {((pagination.page - 1) * pagination.limit) + 1} à {Math.min(pagination.page * pagination.limit, pagination.total)} sur {pagination.total}
+                {/* Table wrapper */}
+                <div className="dataTable-wrapper flex-1 flex flex-col overflow-hidden mt-4">
+                    <div
+                        className="dataTable-container flex-1 overflow-auto"
+                        ref={parentRef}
+                    >
+                        <DataGridTable
+                            rows={displayRows}
+                            columns={visibleColumns}
+                            virtualizer={virtualizer}
+                            sort={preferences.sort}
+                            onSort={(field) => {
+                                const direction = preferences.sort.field === field && preferences.sort.direction === 'asc'
+                                    ? 'desc' : 'asc'
+                                handlePreferencesChange('sort', { field, direction })
+                            }}
+                            onColumnReorder={handleColumnReorder}
+                            density={preferences.density}
+                            accountNumber={accountNumber}
+                            rowClickUrl={rowClickUrl}
+                        />
                     </div>
-                    <nav className="dataTable-pagination">
-                        <ul className="inline-flex items-center space-x-1 rtl:space-x-reverse">
-                            <li>
-                                <button
-                                    onClick={() => handlePageChange(pagination.page - 1)}
-                                    disabled={pagination.page <= 1}
-                                    className="flex justify-center font-semibold p-2 rounded-full transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:opacity-50"
-                                >
-                                    &laquo;
-                                </button>
-                            </li>
-                            {Array.from({ length: Math.min(pagination.pages, 5) }, (_, i) => {
-                                let pageNum
-                                if (pagination.pages <= 5) pageNum = i + 1
-                                else if (pagination.page <= 3) pageNum = i + 1
-                                else if (pagination.page >= pagination.pages - 2) pageNum = pagination.pages - 4 + i
-                                else pageNum = pagination.page - 2 + i
-                                return (
-                                    <li key={pageNum}>
-                                        <button
-                                            onClick={() => handlePageChange(pageNum)}
-                                            className={`flex justify-center font-semibold px-3.5 py-2 rounded-full transition ${pageNum === pagination.page
-                                                ? 'bg-primary text-white dark:bg-primary dark:text-white-light'
-                                                : 'bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary'
-                                                }`}
-                                        >
-                                            {pageNum}
-                                        </button>
-                                    </li>
-                                )
-                            })}
-                            <li>
-                                <button
-                                    onClick={() => handlePageChange(pagination.page + 1)}
-                                    disabled={pagination.page >= pagination.pages}
-                                    className="flex justify-center font-semibold p-2 rounded-full transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:opacity-50"
-                                >
-                                    &raquo;
-                                </button>
-                            </li>
-                        </ul>
-                    </nav>
+
+                    {/* Pagination footer */}
+                    <div className="dataTable-bottom flex items-center justify-between border-t pt-4 dark:border-gray-800">
+                        <div className="dataTable-info text-gray-500 dark:text-gray-400">
+                            Affichage de {((pagination.page - 1) * pagination.limit) + 1} à {Math.min(pagination.page * pagination.limit, pagination.total)} sur {pagination.total}
+                        </div>
+                        <nav className="dataTable-pagination">
+                            <ul className="inline-flex items-center space-x-1 rtl:space-x-reverse">
+                                <li>
+                                    <button
+                                        onClick={() => handlePageChange(pagination.page - 1)}
+                                        disabled={pagination.page <= 1}
+                                        className="flex justify-center font-semibold p-2 rounded-full transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:opacity-50"
+                                    >
+                                        &laquo;
+                                    </button>
+                                </li>
+                                {Array.from({ length: Math.min(pagination.pages, 5) }, (_, i) => {
+                                    let pageNum
+                                    if (pagination.pages <= 5) pageNum = i + 1
+                                    else if (pagination.page <= 3) pageNum = i + 1
+                                    else if (pagination.page >= pagination.pages - 2) pageNum = pagination.pages - 4 + i
+                                    else pageNum = pagination.page - 2 + i
+                                    return (
+                                        <li key={pageNum}>
+                                            <button
+                                                onClick={() => handlePageChange(pageNum)}
+                                                className={`flex justify-center font-semibold px-3.5 py-2 rounded-full transition ${pageNum === pagination.page
+                                                    ? 'bg-primary text-white dark:bg-primary dark:text-white-light'
+                                                    : 'bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary'
+                                                    }`}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        </li>
+                                    )
+                                })}
+                                <li>
+                                    <button
+                                        onClick={() => handlePageChange(pagination.page + 1)}
+                                        disabled={pagination.page >= pagination.pages}
+                                        className="flex justify-center font-semibold p-2 rounded-full transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:opacity-50"
+                                    >
+                                        &raquo;
+                                    </button>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
                 </div>
             </div>
         </div>

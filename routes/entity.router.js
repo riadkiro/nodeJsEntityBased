@@ -24,6 +24,10 @@ router.post("/api/publish-form/:id", entityController.publishFormLayout_Api);
 router.get("/add", entityController.addForm);
 //On post create new product
 router.post("/add", upload.single("image"), entityController.save);
+//Settings page (create)
+router.get("/settings", entityController.settingsForm);
+//Settings page (edit)
+router.get("/settings/:id", entityController.settingsForm);
 //Single page
 router.get("/:id", entityController.singlePage);
 //Update form

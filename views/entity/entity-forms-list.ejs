@@ -131,6 +131,13 @@
                   <iconify-icon icon="solar:pen-new-square-bold-duotone" width="13"></iconify-icon>
                   Éditer
                 </a>
+                <% if (!form.isDefault) { %>
+                  <button onclick="setDefault('<%= form._id %>')"
+                          class="flex-1 btn btn-outline-warning btn-sm text-xs flex items-center justify-center gap-1.5">
+                    <iconify-icon icon="solar:star-bold-duotone" width="13"></iconify-icon>
+                    Par défaut
+                  </button>
+                <% } %>
                 <% if (form.status === 'published') { %>
                   <a href="/account/<%= account_number %>/record/<%= entity.slug %>/add?formId=<%= form._id %>"
                      class="flex-1 btn btn-primary btn-sm text-xs flex items-center justify-center gap-1.5">

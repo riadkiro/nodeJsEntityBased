@@ -19,6 +19,7 @@ const ClassificationSchema = new mongoose.Schema(
         type: { type: String, enum: ['simple', 'hierarchical'], default: 'simple' },
         allowMultiple: { type: Boolean, default: false },
         options: [ClassificationOptionSchema],
+        defaultOptionId: { type: mongoose.Schema.Types.ObjectId, default: null },
         createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
     },
     { timestamps: true }

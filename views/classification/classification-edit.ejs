@@ -1,179 +1,324 @@
 <div x-data="classificationEditor">
-    <div class="flex items-center justify-between mb-5">
-        <h5 class="text-lg font-semibold dark:text-white-light"
-            x-text="isEdit ? 'Modifier la Classification' : 'Nouvelle Classification'"></h5>
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            <a href="/account/<%= account_number %>/classification/list"
+               class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+                <iconify-icon icon="solar:arrow-left-linear" width="20" class="text-gray-500"></iconify-icon>
+            </a>
+            <div>
+                <h5 class="text-xl font-bold dark:text-white"
+                    x-text="isEdit ? 'Modifier la Classification' : 'Nouvelle Classification'"></h5>
+                <p class="text-xs text-gray-400 mt-0.5" x-show="key" x-text="'Clé : ' + key"></p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/account/<%= account_number %>/classification/list"
+               class="btn btn-sm border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg px-4 py-2 text-xs font-semibold transition-all">Annuler</a>
+            <button type="button" @click="saveClassification"
+                    class="btn btn-sm btn-primary rounded-lg px-5 py-2 text-xs font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all">
+                <iconify-icon icon="solar:diskette-bold" class="mr-1.5" width="14"></iconify-icon>
+                Enregistrer
+            </button>
+        </div>
     </div>
 
-    <form @submit.prevent="saveClassification">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Basic Info -->
-            <div class="lg:col-span-1 space-y-5">
-                <div class="panel">
-                    <h6 class="text-base font-bold mb-4">Informations Générales</h6>
-                    <div class="space-y-4">
-                        <div>
-                            <label>Nom</label>
-                            <input type="text" x-model="name" class="form-input" placeholder="ex: Secteurs d'activité"
-                                required>
-                        </div>
-                        <div>
-                            <label>Clé unique (Slug)</label>
-                            <input type="text" x-model="key" class="form-input" placeholder="ex: sectors" required
-                                :disabled="isEdit">
-                        </div>
-
-                        <!-- Configuration de Type -->
-                        <div class="pt-4 border-t border-gray-100 dark:border-gray-800">
-                            <label class="font-bold flex items-center gap-2 mb-3">
-                                <iconify-icon icon="solar:settings-bold" class="text-primary"></iconify-icon>
-                                Configuration logique
-                            </label>
-
-                            <div
-                                class="space-y-3 bg-gray-50 dark:bg-black/10 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                                <!-- Structure -->
-                                <div>
-                                    <label class="text-[10px] uppercase font-bold text-gray-400 mb-2">Structure</label>
-                                    <div class="flex gap-2">
-                                        <button type="button" @click="type = 'simple'"
-                                            :class="type === 'simple' ? 'btn-primary' : 'btn-outline-primary'"
-                                            class="btn btn-sm flex-1">Plate (Simple)</button>
-                                        <button type="button" @click="type = 'hierarchical'"
-                                            :class="type === 'hierarchical' ? 'btn-primary' : 'btn-outline-primary'"
-                                            class="btn btn-sm flex-1">Hiérarchique</button>
-                                    </div>
-                                </div>
-
-                                <!-- Sélection -->
-                                <div class="pt-2">
-                                    <label class="text-[10px] uppercase font-bold text-gray-400 mb-2">Sélection</label>
-                                    <div class="flex items-center gap-2">
-                                        <label class="w-10 h-5 relative mb-0">
-                                            <input type="checkbox" x-model="allowMultiple"
-                                                class="custom_switch absolute w-full h-full opacity-0 z-10 cursor-pointer peer" />
-                                            <span
-                                                class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-3 before:h-3 before:rounded-full peer-checked:before:left-6 peer-checked:bg-primary before:transition-all before:duration-300"></span>
-                                        </label>
-                                        <span class="text-xs font-semibold"
-                                            x-text="allowMultiple ? 'Sélection multiple autorisée' : 'Sélection unique'"></span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label>Description</label>
-                            <textarea x-model="description" class="form-input" rows="3"></textarea>
-                        </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- LEFT PANEL — General Info -->
+        <div class="md:col-span-1 space-y-5">
+            <!-- Basic Info Card -->
+            <div class="bg-white dark:bg-[#0e1726] rounded-2xl border border-gray-100 dark:border-gray-800 p-5 space-y-4">
+                <div class="flex items-center gap-2 mb-1">
+                    <div class="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <iconify-icon icon="solar:tag-bold-duotone" width="16" class="text-primary"></iconify-icon>
                     </div>
+                    <h6 class="text-sm font-bold dark:text-white">Informations</h6>
+                </div>
+                <div>
+                    <label class="block text-[11px] uppercase font-bold text-gray-400 dark:text-gray-500 mb-1.5 tracking-wider">Nom</label>
+                    <input type="text" x-model="name" class="form-input text-sm" placeholder="ex: Secteurs d'activité" required>
+                </div>
+                <div>
+                    <label class="block text-[11px] uppercase font-bold text-gray-400 dark:text-gray-500 mb-1.5 tracking-wider">Clé unique</label>
+                    <input type="text" x-model="key" class="form-input text-sm font-mono" placeholder="ex: sectors" required :disabled="isEdit"
+                           :class="isEdit ? 'opacity-60 cursor-not-allowed' : ''">
+                </div>
+                <div>
+                    <label class="block text-[11px] uppercase font-bold text-gray-400 dark:text-gray-500 mb-1.5 tracking-wider">Description</label>
+                    <textarea x-model="description" class="form-input text-sm" rows="2" placeholder="Description optionnelle..."></textarea>
                 </div>
             </div>
 
-            <!-- Options Editor -->
-            <div class="lg:col-span-2 space-y-5">
-                <div class="panel">
-                    <div class="flex items-center justify-between mb-4">
-                        <h6 class="text-base font-bold">Options de Classification</h6>
-                        <button type="button" @click="addOption" class="btn btn-sm btn-outline-primary">
-                            <iconify-icon icon="solar:add-circle-bold" class="mr-1"></iconify-icon>
-                            Ajouter une Option
-                        </button>
+            <!-- Configuration Card -->
+            <div class="bg-white dark:bg-[#0e1726] rounded-2xl border border-gray-100 dark:border-gray-800 p-5 space-y-4">
+                <div class="flex items-center gap-2 mb-1">
+                    <div class="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                        <iconify-icon icon="solar:settings-bold-duotone" width="16" class="text-amber-500"></iconify-icon>
                     </div>
+                    <h6 class="text-sm font-bold dark:text-white">Configuration</h6>
+                </div>
 
-                    <div class="space-y-3" id="options-list">
-                        <template x-for="(opt, index) in options" :key="opt.tempId || opt._id">
-                            <div class="p-3 bg-gray-50 dark:bg-black/20 rounded-lg border dark:border-gray-800 group">
-                                <!-- First Line: Main Data -->
-                                <div class="flex items-center gap-3">
-                                    <div class="cursor-move text-white-dark group-hover:text-primary handle">
-                                        <iconify-icon icon="solar:reorder-bold"></iconify-icon>
-                                    </div>
-
-                                    <div class="flex-1">
-                                        <input type="text" x-model="opt.label" class="form-input font-bold"
-                                            placeholder="Label de l'option">
-                                    </div>
-
-                                    <div class="w-16">
-                                        <input type="color" x-model="opt.color"
-                                            class="form-input h-9 p-1 cursor-pointer">
-                                    </div>
-
-                                    <div class="w-24">
-                                        <input type="text" x-model="opt.icon" class="form-input text-xs"
-                                            placeholder="Icon ID">
-                                    </div>
-
-                                    <button type="button" @click="removeOption(index)"
-                                        class="text-danger p-1 hover:bg-danger/10 rounded">
-                                        <iconify-icon icon="solar:trash-bin-minimalistic-bold"
-                                            width="18"></iconify-icon>
-                                    </button>
-                                </div>
-
-                                <!-- Second Line: Hierarchy & Logic (Visible based on type) -->
-                                <div x-show="type === 'hierarchical' || opt.type !== 'normal'"
-                                    class="flex items-center gap-4 mt-3 pt-3 border-t border-gray-200 dark:border-gray-800">
-
-                                    <template x-if="type === 'hierarchical'">
-                                        <div class="flex-1 flex items-center gap-2">
-                                            <label
-                                                class="text-[10px] uppercase font-bold text-white-dark mb-0 whitespace-nowrap">Parent
-                                                :</label>
-                                            <select x-model="opt.parentId"
-                                                class="form-select form-select-sm text-xs py-1">
-                                                <option value="">Aucun parent</option>
-                                                <template x-for="parentOpt in options"
-                                                    :key="parentOpt.tempId || parentOpt._id">
-                                                    <template
-                                                        x-if="(parentOpt.tempId || parentOpt._id) !== (opt.tempId || opt._id)">
-                                                        <option :value="parentOpt._id || parentOpt.tempId"
-                                                            x-text="parentOpt.label || 'Sans nom'"></option>
-                                                    </template>
-                                                </template>
-                                            </select>
-                                        </div>
-                                    </template>
-
-                                    <div class="flex items-center gap-2">
-                                        <label
-                                            class="text-[10px] uppercase font-bold text-white-dark mb-0 whitespace-nowrap">Logique
-                                            Statut :</label>
-                                        <select x-model="opt.type" class="form-select form-select-sm text-xs py-1 w-32">
-                                            <option value="normal">Normal</option>
-                                            <option value="start">Début</option>
-                                            <option value="active">En cours</option>
-                                            <option value="completed">Terminé</option>
-                                        </select>
-                                    </div>
-
-                                    <!-- Indentation visual help -->
-                                    <template x-if="type === 'hierarchical' && opt.parentId">
-                                        <div class="flex items-center text-primary text-[10px] font-bold">
-                                            <iconify-icon icon="solar:round-alt-arrow-right-bold"
-                                                class="mr-1"></iconify-icon>
-                                            Sous-option
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                        </template>
-
-                        <div x-show="options.length === 0" class="text-center py-10 text-white-dark italic">
-                            Aucune option définie. Cliquez sur le bouton pour en ajouter.
-                        </div>
+                <!-- Structure -->
+                <div>
+                    <label class="block text-[11px] uppercase font-bold text-gray-400 dark:text-gray-500 mb-2 tracking-wider">Structure</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" @click="type = 'simple'"
+                                :class="type === 'simple'
+                                    ? 'bg-primary text-white shadow-md shadow-primary/20'
+                                    : 'bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'"
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all">
+                            <iconify-icon icon="solar:list-bold" width="14"></iconify-icon>
+                            Simple
+                        </button>
+                        <button type="button" @click="type = 'hierarchical'"
+                                :class="type === 'hierarchical'
+                                    ? 'bg-primary text-white shadow-md shadow-primary/20'
+                                    : 'bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'"
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all">
+                            <iconify-icon icon="solar:widget-5-bold" width="14"></iconify-icon>
+                            Hiérarchique
+                        </button>
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-3 mt-5">
-                    <a href="/account/<%= account_number %>/classification/list"
-                        class="btn btn-outline-danger">Annuler</a>
-                    <button type="submit" class="btn btn-primary">Enregistrer la Classification</button>
+                <!-- Selection mode -->
+                <div>
+                    <label class="block text-[11px] uppercase font-bold text-gray-400 dark:text-gray-500 mb-2 tracking-wider">Sélection</label>
+                    <div class="flex items-center gap-3 bg-gray-50 dark:bg-white/5 rounded-xl px-4 py-3">
+                        <label class="w-10 h-5 relative mb-0 flex-shrink-0">
+                            <input type="checkbox" x-model="allowMultiple"
+                                   class="custom_switch absolute w-full h-full opacity-0 z-10 cursor-pointer peer" />
+                            <span class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-3 before:h-3 before:rounded-full peer-checked:before:left-6 peer-checked:bg-primary before:transition-all before:duration-300"></span>
+                        </label>
+                        <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"
+                              x-text="allowMultiple ? 'Sélection multiple' : 'Sélection unique'"></span>
+                    </div>
+                </div>
+
+                <!-- Default Option -->
+                <div x-show="options.length > 0">
+                    <label class="block text-[11px] uppercase font-bold text-gray-400 dark:text-gray-500 mb-2 tracking-wider">Option par défaut</label>
+                    <select x-model="defaultOptionId" class="form-select text-sm">
+                        <option value="">Aucune</option>
+                        <template x-for="opt in options" :key="opt._id || opt.tempId">
+                            <option :value="opt._id || opt.tempId" x-text="opt.label || 'Sans nom'"></option>
+                        </template>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Stats Card -->
+            <div class="bg-white dark:bg-[#0e1726] rounded-2xl border border-gray-100 dark:border-gray-800 p-5" x-show="isEdit">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-7 h-7 rounded-lg bg-green-500/10 flex items-center justify-center">
+                        <iconify-icon icon="solar:chart-2-bold-duotone" width="16" class="text-green-500"></iconify-icon>
+                    </div>
+                    <h6 class="text-sm font-bold dark:text-white">Résumé</h6>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-gray-50 dark:bg-white/5 rounded-xl p-3 text-center">
+                        <div class="text-lg font-bold text-primary" x-text="options.length"></div>
+                        <div class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Options</div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-white/5 rounded-xl p-3 text-center" x-show="type === 'hierarchical'">
+                        <div class="text-lg font-bold text-amber-500" x-text="options.filter(o => o.parentId).length"></div>
+                        <div class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Sous-options</div>
+                    </div>
                 </div>
             </div>
         </div>
-    </form>
+
+        <!-- RIGHT PANEL — Options Editor -->
+        <div class="md:col-span-2">
+            <div class="bg-white dark:bg-[#0e1726] rounded-2xl border border-gray-100 dark:border-gray-800">
+                <!-- Options Header -->
+                <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                            <iconify-icon icon="solar:layers-bold-duotone" width="16" class="text-indigo-500"></iconify-icon>
+                        </div>
+                        <h6 class="text-sm font-bold dark:text-white">Options</h6>
+                        <span class="text-[10px] font-bold bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 rounded-full px-2 py-0.5"
+                              x-text="options.length + ' option' + (options.length > 1 ? 's' : '')"></span>
+                    </div>
+                    <button type="button" @click="addOption"
+                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-all">
+                        <iconify-icon icon="solar:add-circle-bold" width="14"></iconify-icon>
+                        Ajouter
+                    </button>
+                </div>
+
+                <!-- Options List -->
+                <div class="p-3 space-y-2" id="options-list">
+                    <template x-for="(opt, index) in options" :key="opt._id || opt.tempId">
+                        <div class="classification-option group"
+                             :data-option-id="opt._id || opt.tempId"
+                             :style="type === 'hierarchical' ? 'margin-left: ' + (getDepth(opt) * 24) + 'px' : ''"
+                             :class="{ 'ring-2 ring-primary/20': (opt._id || opt.tempId) === defaultOptionId }">
+
+                            <!-- Row 1: Main info -->
+                            <div class="flex items-center gap-2 px-3 py-2">
+                                <!-- Drag Handle -->
+                                <div class="handle cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors flex-shrink-0">
+                                    <iconify-icon icon="solar:reorder-bold" width="16"></iconify-icon>
+                                </div>
+
+                                <!-- Default Star -->
+                                <button type="button" @click="toggleDefault(opt)"
+                                        class="flex-shrink-0 transition-all"
+                                        :class="(opt._id || opt.tempId) === defaultOptionId
+                                            ? 'text-amber-400 hover:text-amber-500'
+                                            : 'text-gray-200 dark:text-gray-700 hover:text-amber-300'"
+                                        :title="(opt._id || opt.tempId) === defaultOptionId ? 'Option par défaut' : 'Définir par défaut'">
+                                    <iconify-icon :icon="(opt._id || opt.tempId) === defaultOptionId ? 'solar:star-bold' : 'solar:star-linear'" width="14"></iconify-icon>
+                                </button>
+
+                                <!-- Color Swatch -->
+                                <label class="flex-shrink-0 relative cursor-pointer">
+                                    <div class="w-6 h-6 rounded-lg border-2 border-white dark:border-gray-800 shadow-sm transition-transform hover:scale-110"
+                                         :style="'background-color: ' + (opt.color || '#3b82f6')"></div>
+                                    <input type="color" x-model="opt.color"
+                                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                </label>
+
+                                <!-- Label Input -->
+                                <div class="flex-1 min-w-0">
+                                    <input type="text" x-model="opt.label"
+                                           class="w-full bg-transparent border-0 text-sm font-semibold text-gray-800 dark:text-white placeholder-gray-300 dark:placeholder-gray-600 focus:ring-0 focus:outline-none px-0"
+                                           placeholder="Nom de l'option...">
+                                </div>
+
+                                <!-- Live Badge Preview -->
+                                <div class="flex-shrink-0 hidden sm:block">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap"
+                                          :style="'background-color: ' + (opt.color || '#3b82f6') + '15; color: ' + (opt.color || '#3b82f6') + '; border: 1px solid ' + (opt.color || '#3b82f6') + '30'">
+                                        <iconify-icon :icon="opt.icon || 'solar:info-circle-bold'" width="10"></iconify-icon>
+                                        <span x-text="opt.label || 'Aperçu'"></span>
+                                    </span>
+                                </div>
+
+                                <!-- Delete -->
+                                <button type="button" @click="removeOption(opt)"
+                                        class="flex-shrink-0 p-1 rounded-md text-gray-300 dark:text-gray-700 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all">
+                                    <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="14"></iconify-icon>
+                                </button>
+                            </div>
+
+                            <!-- Row 2: Details (icon, type, parent) -->
+                            <div class="flex items-center gap-3 px-3 pb-2 pt-0 border-t border-gray-100 dark:border-gray-800/50 mt-0"
+                                 style="padding-top: 6px; margin-top: 2px;">
+                                <!-- Icon -->
+                                <div class="flex items-center gap-1.5">
+                                    <div class="w-5 h-5 rounded flex items-center justify-center"
+                                         :style="'color: ' + (opt.color || '#3b82f6')">
+                                        <iconify-icon :icon="opt.icon || 'solar:info-circle-bold'" width="12"></iconify-icon>
+                                    </div>
+                                    <input type="text" x-model="opt.icon"
+                                           class="w-36 bg-gray-50 dark:bg-white/5 text-[10px] font-mono text-gray-500 dark:text-gray-400 rounded px-1.5 py-1 border-0 focus:ring-1 focus:ring-primary/30"
+                                           placeholder="solar:icon-name">
+                                </div>
+
+                                <!-- Status Type -->
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[9px] uppercase font-bold text-gray-300 dark:text-gray-600">Type</span>
+                                    <select x-model="opt.type"
+                                            class="bg-gray-50 dark:bg-white/5 text-[10px] font-semibold rounded px-1.5 py-1 border-0 focus:ring-1 focus:ring-primary/30"
+                                            :class="{
+                                                'text-gray-500 dark:text-gray-400': opt.type === 'normal',
+                                                'text-blue-500': opt.type === 'start',
+                                                'text-amber-500': opt.type === 'active',
+                                                'text-green-500': opt.type === 'completed'
+                                            }">
+                                        <option value="normal">Normal</option>
+                                        <option value="start">Début</option>
+                                        <option value="active">En cours</option>
+                                        <option value="completed">Terminé</option>
+                                    </select>
+                                </div>
+
+                                <!-- Hierarchy: Parent selector -->
+                                <template x-if="type === 'hierarchical'">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[9px] uppercase font-bold text-gray-300 dark:text-gray-600">Parent</span>
+                                        <select x-model="opt.parentId"
+                                                class="bg-gray-50 dark:bg-white/5 text-[10px] font-semibold text-gray-500 dark:text-gray-400 rounded px-1.5 py-1 border-0 focus:ring-1 focus:ring-primary/30">
+                                            <option value="">Racine</option>
+                                            <template x-for="parentOpt in options" :key="parentOpt._id || parentOpt.tempId">
+                                                <template x-if="(parentOpt._id || parentOpt.tempId) !== (opt._id || opt.tempId)">
+                                                    <option :value="parentOpt._id || parentOpt.tempId"
+                                                            x-text="parentOpt.label || 'Sans nom'"></option>
+                                                </template>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </template>
+
+                                <!-- Default indicator inline -->
+                                <div x-show="(opt._id || opt.tempId) === defaultOptionId" class="ml-auto">
+                                    <span class="inline-flex items-center gap-1 text-[9px] font-bold text-amber-500 uppercase tracking-wider">
+                                        <iconify-icon icon="solar:star-bold" width="10"></iconify-icon>
+                                        Par défaut
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Empty State -->
+                    <div x-show="options.length === 0" class="text-center py-16">
+                        <div class="w-16 h-16 rounded-2xl bg-gray-50 dark:bg-white/5 flex items-center justify-center mx-auto mb-4">
+                            <iconify-icon icon="solar:layers-bold-duotone" width="28" class="text-gray-300 dark:text-gray-600"></iconify-icon>
+                        </div>
+                        <p class="text-sm font-semibold text-gray-400 dark:text-gray-500 mb-1">Aucune option</p>
+                        <p class="text-xs text-gray-300 dark:text-gray-600 mb-4">Ajoutez des options à votre classification</p>
+                        <button type="button" @click="addOption"
+                                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-all">
+                            <iconify-icon icon="solar:add-circle-bold" width="14"></iconify-icon>
+                            Ajouter une option
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Add Option dashed button at bottom -->
+                <div x-show="options.length > 0" class="px-3 pb-3">
+                    <button type="button" @click="addOption"
+                            class="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all text-xs font-semibold flex items-center justify-center gap-1.5">
+                        <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
+                        Ajouter une option
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+.classification-option {
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+.dark .classification-option {
+    background: rgba(255,255,255,0.03);
+    border-color: rgba(255,255,255,0.06);
+}
+.classification-option:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.dark .classification-option:hover {
+    border-color: rgba(255,255,255,0.12);
+}
+.classification-option.sortable-ghost {
+    opacity: 0.4;
+    border: 2px dashed var(--primary, #4361ee);
+    background: rgba(67, 97, 238, 0.05);
+}
+.classification-option.sortable-chosen {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+}
+</style>
 
 <script id="classification-data"
     type="application/json"><%- classification ? JSON.stringify(classification) : "null" %></script>
@@ -191,22 +336,78 @@
                 description: initialData ? initialData.description : "",
                 type: initialData ? (initialData.type || 'simple') : 'simple',
                 allowMultiple: initialData ? !!initialData.allowMultiple : false,
-                options: (initialData && initialData.options) ? initialData.options.map(o => ({ ...o, tempId: null })) : [],
+                defaultOptionId: '',
+                _savedDefaultOptionId: initialData?.defaultOptionId ? String(initialData.defaultOptionId) : '',
+                options: (initialData && initialData.options) ? initialData.options.map(o => ({ ...o, _id: o._id ? String(o._id) : null, tempId: null })) : [],
+
+                getDepth(opt) {
+                    if (this.type !== 'hierarchical' || !opt.parentId) return 0;
+                    let depth = 0;
+                    let current = opt;
+                    const seen = new Set();
+                    while (current.parentId && depth < 5) {
+                        const pid = current.parentId.toString ? current.parentId.toString() : current.parentId;
+                        if (seen.has(pid)) break;
+                        seen.add(pid);
+                        const parent = this.options.find(o => {
+                            const oid = o._id || o.tempId;
+                            return oid && (oid === pid || (oid.toString && oid.toString() === pid));
+                        });
+                        if (!parent) break;
+                        depth++;
+                        current = parent;
+                    }
+                    return depth;
+                },
 
                 init() {
-                    // Sortable initialization
+                    // Defer defaultOptionId so x-for renders options first
+                    this.$nextTick(() => {
+                        if (this._savedDefaultOptionId) {
+                            this.defaultOptionId = this._savedDefaultOptionId;
+                        }
+                    });
+
                     this.$nextTick(() => {
                         const el = document.getElementById('options-list');
-                        if (el) {
-                            Sortable.create(el, {
-                                animation: 150,
-                                handle: '.handle',
-                                onEnd: (evt) => {
-                                    const movedItem = this.options.splice(evt.oldIndex, 1)[0];
-                                    this.options.splice(evt.newIndex, 0, movedItem);
+                        if (!el) return;
+
+                        const self = this;
+                        Sortable.create(el, {
+                            animation: 200,
+                            handle: '.handle',
+                            ghostClass: 'sortable-ghost',
+                            chosenClass: 'sortable-chosen',
+                            draggable: '.classification-option',
+                            swapThreshold: 0.65,
+
+                            onEnd(evt) {
+                                // Revert-then-Splice pattern — Alpine owns the DOM
+                                const optionId = evt.item.dataset.optionId;
+
+                                // 1. Find by ID (never by index!)
+                                const fromIndex = self.options.findIndex(o => {
+                                    const oid = o._id || o.tempId;
+                                    return oid && (oid === optionId || (oid.toString && oid.toString() === optionId));
+                                });
+                                if (fromIndex === -1) return;
+
+                                const [moved] = self.options.splice(fromIndex, 1);
+
+                                // 2. Revert Sortable's DOM move
+                                const items = Array.from(evt.from.querySelectorAll('.classification-option'));
+                                const ref = items[evt.oldIndex] || null;
+                                if (ref) {
+                                    evt.from.insertBefore(evt.item, ref);
+                                } else {
+                                    evt.from.appendChild(evt.item);
                                 }
-                            });
-                        }
+
+                                // 3. Insert at new position → Alpine re-renders
+                                const targetIndex = Math.min(evt.newIndex, self.options.length);
+                                self.options.splice(targetIndex, 0, moved);
+                            }
+                        });
                     });
                 },
 
@@ -220,18 +421,40 @@
                         tempId: 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
                         order: this.options.length
                     });
-                },
-
-                removeOption(index) {
-                    const idToRemove = this.options[index]._id || this.options[index].tempId;
-                    this.options.splice(index, 1);
-                    // Cleanup children
-                    this.options.forEach(opt => {
-                        if (opt.parentId === idToRemove) opt.parentId = '';
+                    this.$nextTick(() => {
+                        const list = document.getElementById('options-list');
+                        if (list) {
+                            const items = list.querySelectorAll('.classification-option');
+                            if (items.length) items[items.length - 1].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                        }
                     });
                 },
 
+                removeOption(opt) {
+                    const id = opt._id || opt.tempId;
+                    const index = this.options.findIndex(o => (o._id || o.tempId) === id);
+                    if (index === -1) return;
+                    this.options.splice(index, 1);
+                    // Cleanup children
+                    this.options.forEach(o => {
+                        if (o.parentId && o.parentId.toString() === id?.toString()) o.parentId = '';
+                    });
+                    // Clear default if removed
+                    if (this.defaultOptionId === id || this.defaultOptionId?.toString() === id?.toString()) {
+                        this.defaultOptionId = '';
+                    }
+                },
+
+                toggleDefault(opt) {
+                    const id = opt._id || opt.tempId;
+                    const current = this.defaultOptionId?.toString ? this.defaultOptionId.toString() : this.defaultOptionId;
+                    const target = id?.toString ? id.toString() : id;
+                    this.defaultOptionId = current === target ? '' : id;
+                },
+
                 async saveClassification() {
+                    if (!this.name) return;
+
                     const url = this.isEdit
                         ? `/account/<%= account_number %>/classification/update/${this.id}`
                         : `/account/<%= account_number %>/classification/save`;
@@ -246,10 +469,11 @@
                                 description: this.description,
                                 type: this.type,
                                 allowMultiple: this.allowMultiple,
+                                defaultOptionId: this.defaultOptionId || null,
                                 options: this.options.map((opt, idx) => ({
                                     ...opt,
                                     order: idx,
-                                    parentId: (opt.parentId && !opt.parentId.startsWith('temp_')) ? opt.parentId : null
+                                    parentId: (opt.parentId && !String(opt.parentId).startsWith('temp_')) ? opt.parentId : null
                                 }))
                             })
                         });

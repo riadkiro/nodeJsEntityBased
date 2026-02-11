@@ -43,7 +43,7 @@ module.exports = {
     save: async (req, res) => {
         try {
             const Classification = await tenantCollection(req, "Classification");
-            const { name, key, description, options, type, allowMultiple } = req.body;
+            const { name, key, description, options, type, allowMultiple, defaultOptionId } = req.body;
 
             const newClassification = new Classification({
                 name,
@@ -52,6 +52,7 @@ module.exports = {
                 type: type || 'simple',
                 allowMultiple: !!allowMultiple,
                 options: options || [],
+                defaultOptionId: defaultOptionId || null,
                 createdBy: req.user?._id
             });
 
@@ -67,7 +68,7 @@ module.exports = {
         try {
             const Classification = await tenantCollection(req, "Classification");
             const RecordModel = await tenantCollection(req, "Record");
-            const { name, key, description, options, type, allowMultiple } = req.body;
+            const { name, key, description, options, type, allowMultiple, defaultOptionId } = req.body;
 
             // 1. Get old version to handle cascade delete
             const oldCls = await Classification.findById(req.params.id);
@@ -91,7 +92,8 @@ module.exports = {
                 description,
                 type: type || 'simple',
                 allowMultiple: !!allowMultiple,
-                options: options || []
+                options: options || [],
+                defaultOptionId: defaultOptionId || null
             });
 
             res.redirect(`/account/${req.account_number}/classification/list`);

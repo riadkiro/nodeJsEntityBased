@@ -224,6 +224,7 @@ module.exports = {
                             classificationDefs[cls._id.toString()] = {
                                 _id: cls._id.toString(),
                                 name: cls.name,
+                                defaultOptionId: cls.defaultOptionId ? cls.defaultOptionId.toString() : null,
                                 options: (cls.options || []).map(o => ({ label: o.label || o.name || o, color: o.color || '', _id: (o._id || '').toString() }))
                             };
                         }
@@ -586,6 +587,7 @@ module.exports = {
                             classificationDefs[cls._id.toString()] = {
                                 _id: cls._id.toString(),
                                 name: cls.name,
+                                defaultOptionId: cls.defaultOptionId ? cls.defaultOptionId.toString() : null,
                                 options: (cls.options || []).map(o => ({ label: o.label || o.name || o, color: o.color || '', _id: (o._id || '').toString() }))
                             };
                         }

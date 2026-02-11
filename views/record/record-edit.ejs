@@ -371,7 +371,7 @@
                                                                                         </div>
                                                                                     </template>
                                                                                 </div>
-                                                                                <div class="flex items-center justify-between px-5 py-3 border-t bg-gray-50 dark:bg-[#1b2e4b] dark:border-gray-800 rounded-b-xl">
+                                                                                <div x-show="multiple" class="flex items-center justify-between px-5 py-3 border-t bg-gray-50 dark:bg-[#1b2e4b] dark:border-gray-800 rounded-b-xl">
                                                                                     <span class="text-xs text-gray-500 dark:text-gray-400" x-text="tempSelected.length + ' sélectionné(s)'"></span>
                                                                                     <div class="flex gap-2">
                                                                                         <button type="button" @click="closeModal()" class="btn btn-outline-secondary btn-sm text-xs">Annuler</button>
@@ -1394,6 +1394,8 @@
                         this.tempSelected.push({ id: result.id, label: result.label });
                     } else {
                         this.tempSelected = [{ id: result.id, label: result.label }];
+                        // Single select: auto-confirm immediately
+                        this.confirmSelection();
                     }
                 }
             },

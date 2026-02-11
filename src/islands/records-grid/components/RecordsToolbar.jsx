@@ -69,9 +69,17 @@ export default function RecordsToolbar({
 
     // Toggle column visibility
     const toggleColumn = (columnId) => {
-        const newColumns = preferences.columns.map(col =>
-            col.id === columnId ? { ...col, visible: !col.visible } : col
-        )
+        const exists = preferences.columns.some(col => col.id === columnId)
+        let newColumns
+        if (exists) {
+            newColumns = preferences.columns.map(col =>
+                col.id === columnId ? { ...col, visible: !col.visible } : col
+            )
+        } else {
+            // Column not in preferences yet (new relation/classification columns)
+            // Add it with visible: false (toggling from default visible=true to hidden)
+            newColumns = [...preferences.columns, { id: columnId, visible: false }]
+        }
         onPreferencesChange('columns', newColumns)
     }
 

@@ -151,6 +151,77 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
 })
 
 /**
+ * GET /account/:account_number/api/datagrid/entities
+ * Fetch entities for DataGrid island
+ */
+router.get('/api/datagrid/entities', async (req, res) => {
+    try {
+        const Entity = await tenantCollection(req, "Entity")
+        const UserPreferences = await tenantCollection(req, "UserPreferences")
+
+        const entities = await Entity.find({}).lean()
+
+        // Transform entities into DataGrid rows
+        const rows = entities.map(e => ({
+            _id: e._id.toString(),
+            _icon: e.icon || 'solar:box-bold-duotone',
+            _color: e.color || '#4361ee',
+            name: e.name || '',
+            slug: e.slug || '',
+            description: e.description || '',
+            color: e.color || '#ffffff',
+            icon: e.icon || '',
+            active: e.active !== false,
+            fieldsCount: (e.customFields || []).length + (e.enabledStandardFields || []).length,
+            recordsCount: e._recordsCount || 0,
+            createdAt: e.createdAt
+        }))
+
+        // Count records per entity
+        const Record = await tenantCollection(req, "Record")
+        for (const row of rows) {
+            const count = await Record.countDocuments({ entityId: row._id })
+            row.recordsCount = count
+        }
+
+        // Column definitions
+        const columns = [
+            { id: 'name', name: 'Nom', sortable: true, link: `/account/${req.account_number}/entity/{id}/settings` },
+            { id: 'slug', name: 'Slug', sortable: true },
+            { id: 'description', name: 'Description', sortable: false },
+            { id: 'color', name: 'Couleur', sortable: false, type: 'color' },
+            { id: 'icon', name: 'Icône', sortable: false, type: 'icon' },
+            { id: 'active', name: 'Active', sortable: true, type: 'boolean' },
+            { id: 'fieldsCount', name: 'Champs', sortable: true },
+            { id: 'recordsCount', name: 'Enregistrements', sortable: true },
+            { id: 'createdAt', name: 'Date de création', sortable: true, type: 'date' },
+            { id: 'actions', name: '', sortable: false }
+        ]
+
+        // Load user preferences
+        let preferences = null
+        if (req.user?._id) {
+            const prefs = await UserPreferences.findOne({
+                userId: req.user._id,
+                viewId: 'entity-list'
+            }).lean()
+            if (prefs) preferences = prefs.preferences
+        }
+
+        res.json({
+            rows,
+            columns,
+            defaultSort: { field: 'name', direction: 'asc' },
+            preferences
+        })
+
+    } catch (error) {
+        console.error('[API] Entity list fetch error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
  * POST /account/:account_number/api/user/view-preferences
  * Save user preferences for a specific view
  */

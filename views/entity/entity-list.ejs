@@ -1,15 +1,4 @@
-<% const rows = entities.map((e, i) => [
-  i + 1,
-  e.name,
-  e.slug,
-  e.description || "",
-  e.color || "#ffffff",
-  e.icon || "",
-  (e.enabledStandardFields || []).join(', '),
-  e.createdAt,
-  include("../components/btn-entity-actions", { id: e._id, account_number }),
-]);
-%>
+<%/* entity-list - DataGrid island powered */%>
 
 <style>
 .field-tag {
@@ -859,48 +848,8 @@
           window.history.replaceState({}, '', window.location.pathname);
         }
 
-        this.datatable1 = new simpleDatatables.DataTable("#myTable1", {
-          data: {
-            headings: this.columns.map((c) => c.name),
-            data: rows,
-          },
-          perPage: 10,
-          perPageSelect: [10, 20, 30, 50, 100],
-          columns: [
-            {
-              select: 0,
-              sort: "asc",
-              render: (data) =>
-                `<input type="checkbox" class="form-checkbox" value="${data}" />`,
-            },
-            {
-              select: 4,
-              render: (data) =>
-                `<div class="w-6 h-6 rounded-full border" style="background-color:${data};"></div>`,
-            },
-            {
-              select: 7,
-              render: (data) => {
-                const dt = new Date(data);
-                const month = dt.getMonth() + 1 < 10 ? "0" + (dt.getMonth() + 1) : dt.getMonth() + 1;
-                const day = dt.getDate() < 10 ? "0" + dt.getDate() : dt.getDate();
-                return day + "/" + month + "/" + dt.getFullYear();
-              },
-            },
-            {
-              select: 8,
-              render: (html) => html,
-            },
-          ],
-          firstLast: true,
-          layout: {
-            top: "{search}",
-            bottom: "{info}{select}{pager}",
-          },
-        });
-
-        this.datatable1.columns().hide(this.hideCols);
-        this.datatable1.columns().show(this.showCols);
+        // DataGrid island handles the table rendering
+        // Keep modal event listeners only
       },
     }));
   });
@@ -908,45 +857,39 @@
 
 <div x-data="collectionsManager()">
   <div class="space-y-6">
-    <div class="panel">
-      <div class="flex items-center justify-between mb-5">
-        <div class="flex items-center gap-3">
-          <iconify-icon icon="solar:box-bold-duotone" width="24" height="24" class="text-primary"></iconify-icon>
-          <h5 class="text-lg font-semibold dark:text-white-light">Collections</h5>
-        </div>
-        <button @click="showCreateModal = true" class="btn btn-primary btn-sm flex items-center gap-2">
-          <iconify-icon icon="solar:add-circle-bold" width="18" height="18"></iconify-icon>
-          Nouvelle collection
-        </button>
-      </div>
-      <div class="relative">
-        <div class="mb-5 sm:absolute sm:top-0 sm:mb-0 sm:ltr:right-56 sm:rtl:left-56">
-          <div class="flex items-center">
-            <div class="theme-dropdown relative" x-data="{ columnDropdown: false }" @click.outside="columnDropdown = false">
-              <a href="javascript:;" class="flex items-center rounded-md border border-[#e0e6ed] px-4 py-2 text-sm font-semibold dark:border-[#253b5c] dark:bg-[#1b2e4b] dark:text-white-dark" @click="columnDropdown = !columnDropdown">
-                <span class="ltr:mr-1 rtl:ml-1">Columns</span>
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M19 9L12 15L5 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                </svg>
-              </a>
-              <div class="absolute top-11 z-[10] hidden w-[100px] min-w-[150px] rounded bg-white py-2 text-dark shadow ltr:left-0 rtl:right-0 dark:bg-[#1b2e4b] dark:text-white-light" :class="columnDropdown && '!block'">
-                <ul class="space-y-2 px-4 font-semibold">
-                  <template x-for="(col,i) in columns" :key="i">
-                    <li>
-                      <label class="cursor-pointer">
-                        <input type="checkbox" class="form-checkbox" :id="`chk-${i}`" :value="(i)" @change="col.hidden = $event.target.checked, showHideColumns(i, $event.target.checked)" :checked="col.hidden" />
-                        <span class="ltr:ml-2 rtl:mr-2" x-text="col.name"></span>
-                      </label>
-                    </li>
-                  </template>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-        <table id="myTable1" class="whitespace-nowrap"></table>
-      </div>
-    </div>
+    <!-- DataGrid React Island -->
+    <div 
+      data-island="data-grid"
+      data-account-number="<%= account_number %>"
+      data-grid-id="entity-list"
+      data-data-url="/account/<%= account_number %>/api/datagrid/entities"
+      data-title="Collections"
+      data-icon="solar:box-bold-duotone"
+      data-add-action="open-create-modal"
+      data-add-label="Nouvelle collection"
+      data-row-click-url="/account/<%= account_number %>/entity/{id}/settings"
+      data-density="comfortable"
+      data-page-size="10"
+      style="min-height: 500px;"
+    ></div>
+    <script src="/dist/dataGrid.js" type="module"></script>
+
+    <!-- Listen for add action from DataGrid -->
+    <script>
+      window.addEventListener('open-create-modal', () => {
+        const alpineEl = document.querySelector('[x-data]');
+        if (alpineEl && alpineEl.__x) {
+          alpineEl.__x.$data.showCreateModal = true;
+        } else {
+          // Alpine v3 approach
+          document.querySelectorAll('[x-data]').forEach(el => {
+            if (el._x_dataStack && el._x_dataStack[0]?.showCreateModal !== undefined) {
+              el._x_dataStack[0].showCreateModal = true;
+            }
+          });
+        }
+      });
+    </script>
 
   <!-- Modal Nouvelle Collection - Wizard 2 Étapes -->
   <div x-show="showCreateModal" x-transition.opacity.duration.300ms 

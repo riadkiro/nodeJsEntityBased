@@ -13,6 +13,7 @@ export default defineConfig({
                 kanbanBoard: path.resolve(__dirname, 'src/islands/kanban-board/entry.jsx'),
                 documentEditor: path.resolve(__dirname, 'src/islands/document-editor/entry.jsx'),
                 chatPanel: path.resolve(__dirname, 'src/islands/chat-panel/entry.jsx'),
+                dataGrid: path.resolve(__dirname, 'src/islands/data-grid/entry.jsx'),
                 // Future islands:
                 // pageBuilder: path.resolve(__dirname, 'src/islands/page-builder/entry.jsx'),
             },

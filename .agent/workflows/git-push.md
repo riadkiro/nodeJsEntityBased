@@ -18,24 +18,21 @@ git add -A && git commit -m "message" && git push
 git add -A; git commit -m "message"; git push origin Dev
 ```
 
-## Standard Push Sequence
+## Two Modes
 
+### Mode Normal (default)
+When user says "push" or explicitly asks to push:
 // turbo
-1. Stage all changes:
+1. Push to **Dev** branch with user approval:
 ```powershell
-git add -A
+git add -A; git commit -m "type(scope): description"; git push origin Dev
 ```
 
-// turbo
-2. Commit with descriptive message:
+### Mode Autopilote
+When user has activated autopilot mode (`SafeToAutoRun: true` for everything):
+1. Push to **Dev_antigravity** branch, no approval needed:
 ```powershell
-git commit -m "type(scope): brief description"
-```
-
-// turbo
-3. Push to Dev branch:
-```powershell
-git push origin Dev
+git add -A; git commit -m "[auto] type(scope): description"; git push origin Dev_antigravity
 ```
 
 ## Commit Message Format
@@ -47,14 +44,15 @@ Use conventional commits:
 - `style(scope):` - Styling changes
 - `docs(scope):` - Documentation
 
+In autopilot mode, prefix with `[auto]`:
+- `[auto] feat(scope):` - Auto-pushed feature
+
 ## Examples
 
 ```powershell
-# Single command approach (safe)
+# Normal mode (user requested push → Dev)
 git add -A; git commit -m "feat(dashboard): add scroll to chat panel"; git push origin Dev
 
-# Or step by step (safest)
-git add -A
-git commit -m "feat(dashboard): add scroll to chat panel"
-git push origin Dev
+# Autopilot mode (auto-push → Dev_antigravity)
+git add -A; git commit -m "[auto] feat(dashboard): add scroll to chat panel"; git push origin Dev_antigravity
 ```

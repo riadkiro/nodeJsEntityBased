@@ -24,7 +24,7 @@ export default function RecordsGrid({
     const [displayRecords, setDisplayRecords] = useState([])  // Current page slice
     const [columns, setColumns] = useState([])
     const [loading, setLoading] = useState(true)
-    const [showSidebar, setShowSidebar] = useState(true)
+
     const [error, setError] = useState(null)
     const [searchQuery, setSearchQuery] = useState('')
     const [entityIcon, setEntityIcon] = useState('')
@@ -35,7 +35,8 @@ export default function RecordsGrid({
         sort: { field: 'createdAt', direction: 'desc' },
         density: 'normal',
         pageSize: 10,
-        titleDisplay: 'avatar'
+        titleDisplay: 'avatar',
+        showSidebar: true
     })
 
     // Pagination state
@@ -346,8 +347,8 @@ export default function RecordsGrid({
                 entityNamePlural={entityNamePlural}
                 accountNumber={accountNumber}
                 entitySlug={entitySlug}
-                showSidebar={showSidebar}
-                onToggleSidebar={() => setShowSidebar(!showSidebar)}
+                showSidebar={preferences.showSidebar !== false}
+                onToggleSidebar={() => handlePreferencesChange('showSidebar', !preferences.showSidebar)}
             />
 
             {/* Main content panel */}
@@ -363,8 +364,8 @@ export default function RecordsGrid({
                     accountNumber={accountNumber}
                     entitySlug={entitySlug}
                     viewId={viewId}
-                    showSidebar={showSidebar}
-                    onToggleSidebar={() => setShowSidebar(!showSidebar)}
+                    showSidebar={preferences.showSidebar !== false}
+                    onToggleSidebar={() => handlePreferencesChange('showSidebar', !preferences.showSidebar)}
                 />
 
                 {/* Table wrapper with proper spacing */}

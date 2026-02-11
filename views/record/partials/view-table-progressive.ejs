@@ -42,23 +42,21 @@
         </div>
     </div>
     <div class="flex-1 min-h-0 overflow-hidden">
-        <div class="panel flex-1 p-4 flex flex-col overflow-hidden h-full sm:h-[calc(100vh_-_150px)] sm:min-h-0">
-            <div id="records-grid-<%= viewId %>"
-                 data-island="records-grid"
-                 data-account-id="<%= typeof account !== 'undefined' && account ? account._id : '' %>"
-                 data-account-number="<%= account_number %>"
-                 data-entity-id="<%= entity._id %>"
-                 data-entity-name="<%= entity.name %>"
-                 data-entity-name-plural="<%= entity.namePlural || entity.name %>"
-                 data-entity-slug="<%= entity.slug %>"
-                 data-view-id="<%= viewId %>"
-                 class="h-full">
-                <!-- Loading state while React mounts -->
-                <div class="flex items-center justify-center h-64">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
+        <div id="records-grid-<%= viewId %>"
+             data-island="records-grid"
+             data-account-id="<%= typeof account !== 'undefined' && account ? account._id : '' %>"
+             data-account-number="<%= account_number %>"
+             data-entity-id="<%= entity._id %>"
+             data-entity-name="<%= entity.name %>"
+             data-entity-name-plural="<%= entity.namePlural || entity.name %>"
+             data-entity-slug="<%= entity.slug %>"
+             data-view-id="<%= viewId %>"
+             class="h-full sm:h-[calc(100vh_-_150px)] sm:min-h-0">
+            <!-- Loading state while React mounts -->
+            <div class="flex items-center justify-center h-64">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
-            <script type="module" src="/dist/recordsGrid.js"></script>
         </div>
+        <script type="module" src="/dist/recordsGrid.js"></script>
     </div>
 </div>

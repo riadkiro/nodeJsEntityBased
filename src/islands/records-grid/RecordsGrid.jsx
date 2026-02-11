@@ -351,7 +351,7 @@ export default function RecordsGrid({
             />
 
             {/* Main content panel */}
-            <div className="flex-1 flex flex-col overflow-hidden h-full">
+            <div className="panel p-4 flex-1 flex flex-col overflow-hidden h-full">
                 {/* Toolbar */}
                 <RecordsToolbar
                     searchQuery={searchQuery}

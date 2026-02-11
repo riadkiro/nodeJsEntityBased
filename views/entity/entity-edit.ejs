@@ -170,9 +170,15 @@ document.addEventListener('alpine:init', () => {
       isPreview: false,
       isPublishing: false,
       formLayoutStatus: data.formLayoutStatus || 'draft',
-      sidebar: {
-        open: true,
-        mode: 'fields' // 'fields' | 'rows' | 'settings'
+
+      // Builder State (unified with form-builder-sidebar)
+      builderState: {
+        mode: 'edit',
+        selectedFieldId: null,
+        hoveredRowId: null,
+        drawerMode: 'fields',
+        sidebarOpen: true,
+        activeTab: 'default'
       },
 
       init() {

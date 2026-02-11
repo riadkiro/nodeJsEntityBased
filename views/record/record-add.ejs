@@ -583,11 +583,36 @@
                 </div>
             </div>
 
+            <% const _showRightSidebar = !(locals.entityFormLayout && locals.entityFormLayout.settings && locals.entityFormLayout.settings.showRightSidebar === false); %>
+            <% if (_showRightSidebar) { %>
             <!-- Sidebar Content -->
             <div class="w-[248px] flex-none space-y-4">
                 <%- include('partials/record-sidebar') %>
             </div>
+            <% } %>
         </div>
+
+        <% if (!_showRightSidebar) { %>
+        <!-- Bottom Action Buttons (when sidebar is hidden) -->
+        <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
+                class="btn btn-outline-danger flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider px-5 py-2"
+                title="Annuler">
+                <iconify-icon icon="solar:close-circle-bold" width="16"></iconify-icon>
+                <span>Annuler</span>
+            </a>
+            <button type="submit" form="main-record-form"
+                class="btn btn-primary flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider px-5 py-2 hover:shadow-lg hover:shadow-primary/20 transition-all"
+                x-data="{ submitting: false }" @submit.window="submitting = true"
+                :disabled="submitting"
+                :class="submitting ? 'opacity-60 cursor-wait' : ''">
+                <iconify-icon :icon="submitting ? 'line-md:loading-twotone-loop' : 'solar:diskette-bold'" width="16"></iconify-icon>
+                <span x-text="submitting ? 'Envoi...' : '<%= locals.record ? 'Enregistrer' : 'Créer' %>'">
+                    <%= locals.record ? 'Enregistrer' : 'Créer' %>
+                </span>
+            </button>
+        </div>
+        <% } %>
     </form>
 
     <!-- Modal for adding fields -->

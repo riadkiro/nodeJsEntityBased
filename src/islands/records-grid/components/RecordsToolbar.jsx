@@ -14,7 +14,9 @@ export default function RecordsToolbar({
     loading,
     accountNumber,
     entitySlug,
-    viewId
+    viewId,
+    showSidebar,
+    onToggleSidebar
 }) {
     const [displayPopover, setDisplayPopover] = useState(false)
     const [sortPopover, setSortPopover] = useState(false)
@@ -90,29 +92,43 @@ export default function RecordsToolbar({
 
     return (
         <div className="dataTable-top flex items-center mb-0 justify-between gap-2">
-            {/* Search input - LEFT */}
-            <div className="dataTable-search relative w-64" style={{ marginLeft: 0 }}>
-                <svg
-                    className="absolute left-4 top-1/2 ml-2 -translate-y-1/2 h-4 w-4 text-gray-400"
-                    viewBox="0 0 24 24"
-                    fill="none"
+            {/* Add button + Search input - LEFT */}
+            <div className="flex items-center gap-2">
+                {/* Expandable Add Button - pill style */}
+                <a
+                    href={`/account/${accountNumber}/record/${entitySlug}/add`}
+                    className="btn-add-expandable"
+                    title="Ajouter"
                 >
-                    <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="1.5" />
-                    <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-                <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => onSearch(e.target.value)}
-                    placeholder="Rechercher..."
-                    className="dataTable-input form-input w-full pl-11 pr-10"
-                    style={{ "padding-left": "33px" }}
-                />
-                {loading && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                    </div>
-                )}
+                    <svg className="btn-add-icon" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                    </svg>
+                    <span className="btn-add-label">Ajouter</span>
+                </a>
+
+                <div className="dataTable-search relative w-64" style={{ marginLeft: 0 }}>
+                    <svg
+                        className="absolute left-4 top-1/2 ml-2 -translate-y-1/2 h-4 w-4 text-gray-400"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                    >
+                        <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="1.5" />
+                        <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => onSearch(e.target.value)}
+                        placeholder="Rechercher..."
+                        className="dataTable-input form-input w-full pl-11 pr-10"
+                        style={{ "padding-left": "33px" }}
+                    />
+                    {loading && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        </div>
+                    )}
+                </div>
             </div>
             {/* Icons group - RIGHT */}
             <div className="flex items-center gap-2">
@@ -170,6 +186,20 @@ export default function RecordsToolbar({
                         <path d="M20 12H15C14.4477 12 14 12.4477 14 13V20C14 20.5523 14.4477 21 15 21H20C20.5523 21 21 20.5523 21 20V13C21 12.4477 20.5523 12 20 12Z" stroke="currentColor" strokeWidth="1.5" />
                         <path d="M9 16H4C3.44772 16 3 16.4477 3 17V20C3 20.5523 3.44772 21 4 21H9C9.55228 21 10 20.5523 10 20V17C10 16.4477 9.55228 16 9 16Z" stroke="currentColor" strokeWidth="1.5" />
                     </svg>
+                </button>
+
+                {/* Sidebar toggle button - expandable pill */}
+                <button
+                    type="button"
+                    onClick={onToggleSidebar}
+                    className="btn-sidebar-toggle"
+                    title={showSidebar ? 'Masquer le panneau' : 'Afficher le panneau'}
+                >
+                    <svg className="btn-sidebar-icon" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                        <path d="M9 3V21" stroke="currentColor" strokeWidth="1.5" />
+                    </svg>
+                    <span className="btn-sidebar-label">{showSidebar ? 'Masquer' : 'Panneau'}</span>
                 </button>
             </div>
 
@@ -392,6 +422,92 @@ export default function RecordsToolbar({
                 @keyframes popoverSlide {
                     from { opacity: 0; transform: translateY(-4px); }
                     to { opacity: 1; transform: translateY(0); }
+                }
+                /* Expandable Add Button */
+                .btn-add-expandable {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0;
+                    height: 34px;
+                    padding: 0 10px;
+                    border-radius: 9999px;
+                    background-color: #1b2e4b;
+                    color: rgba(255, 255, 255, 0.5);
+                    font-size: 13px;
+                    font-weight: 600;
+                    white-space: nowrap;
+                    cursor: pointer;
+                    text-decoration: none;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    overflow: hidden;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                }
+                .btn-add-expandable:hover {
+                    gap: 6px;
+                    padding: 0 16px;
+                    background-color: #22bce9;
+                    color: #fff;
+                    box-shadow: 0 4px 12px rgba(34, 188, 233, 0.4);
+                    transform: translateY(-1px);
+                    border-color: transparent;
+                }
+                .btn-add-icon {
+                    width: 16px;
+                    height: 16px;
+                    flex-shrink: 0;
+                }
+                .btn-add-label {
+                    max-width: 0;
+                    opacity: 0;
+                    overflow: hidden;
+                    transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+                }
+                .btn-add-expandable:hover .btn-add-label {
+                    max-width: 80px;
+                    opacity: 1;
+                }
+                /* Sidebar Toggle Button - expandable pill */
+                .btn-sidebar-toggle {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0;
+                    height: 34px;
+                    padding: 0 10px;
+                    border-radius: 9999px;
+                    background-color: #1b2e4b;
+                    color: rgba(255, 255, 255, 0.5);
+                    font-size: 13px;
+                    font-weight: 600;
+                    white-space: nowrap;
+                    cursor: pointer;
+                    text-decoration: none;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    overflow: hidden;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                }
+                .btn-sidebar-toggle:hover {
+                    gap: 6px;
+                    padding: 0 16px;
+                    background-color: #22bce9;
+                    color: #fff;
+                    box-shadow: 0 4px 12px rgba(34, 188, 233, 0.4);
+                    transform: translateY(-1px);
+                    border-color: transparent;
+                }
+                .btn-sidebar-icon {
+                    width: 16px;
+                    height: 16px;
+                    flex-shrink: 0;
+                }
+                .btn-sidebar-label {
+                    max-width: 0;
+                    opacity: 0;
+                    overflow: hidden;
+                    transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+                }
+                .btn-sidebar-toggle:hover .btn-sidebar-label {
+                    max-width: 80px;
+                    opacity: 1;
                 }
             `}</style>
         </div>

@@ -7,6 +7,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import RecordsToolbar from './components/RecordsToolbar'
 import RecordsTable from './components/RecordsTable'
+import RecordsSidebar from './components/RecordsSidebar'
 
 export default function RecordsGrid({
     accountId,
@@ -14,6 +15,7 @@ export default function RecordsGrid({
     entityId,
     viewId,
     entityName,
+    entityNamePlural,
     entitySlug
 }) {
     // State - CLIENT-SIDE SEARCH
@@ -22,6 +24,7 @@ export default function RecordsGrid({
     const [displayRecords, setDisplayRecords] = useState([])  // Current page slice
     const [columns, setColumns] = useState([])
     const [loading, setLoading] = useState(true)
+    const [showSidebar, setShowSidebar] = useState(true)
     const [error, setError] = useState(null)
     const [searchQuery, setSearchQuery] = useState('')
     const [entityIcon, setEntityIcon] = useState('')
@@ -336,99 +339,114 @@ export default function RecordsGrid({
     }
 
     return (
-        <div className="h-full flex flex-col">
-            {/* Toolbar */}
-            <RecordsToolbar
-                searchQuery={searchQuery}
-                onSearch={handleSearch}
-                columns={columns}
-                preferences={preferences}
-                onPreferencesChange={handlePreferencesChange}
-                loading={loading}
+        <div className="relative flex h-full gap-5 sm:min-h-0">
+            {/* Sidebar */}
+            <RecordsSidebar
+                entityName={entityName}
+                entityNamePlural={entityNamePlural}
                 accountNumber={accountNumber}
                 entitySlug={entitySlug}
-                viewId={viewId}
+                showSidebar={showSidebar}
+                onToggleSidebar={() => setShowSidebar(!showSidebar)}
             />
 
-            {/* Table wrapper with proper spacing */}
-            <div className="dataTable-wrapper flex-1 flex flex-col overflow-hidden mt-4">
-                {/* Table container with virtual scrolling */}
-                <div
-                    className="dataTable-container flex-1 overflow-auto"
-                    ref={parentRef}
-                >
-                    <RecordsTable
-                        records={displayRecords}
-                        columns={visibleColumns}
-                        virtualizer={virtualizer}
-                        sort={preferences.sort}
-                        onSort={(field) => {
-                            const direction = preferences.sort.field === field && preferences.sort.direction === 'asc'
-                                ? 'desc'
-                                : 'asc'
-                            handlePreferencesChange('sort', { field, direction })
-                        }}
-                        onColumnReorder={handleColumnReorder}
-                        density={preferences.density}
-                        titleDisplay={preferences.titleDisplay || 'avatar'}
-                        entityIcon={entityIcon}
-                        accountNumber={accountNumber}
-                        entitySlug={entitySlug}
-                    />
-                </div>
+            {/* Main content panel */}
+            <div className="flex-1 flex flex-col overflow-hidden h-full">
+                {/* Toolbar */}
+                <RecordsToolbar
+                    searchQuery={searchQuery}
+                    onSearch={handleSearch}
+                    columns={columns}
+                    preferences={preferences}
+                    onPreferencesChange={handlePreferencesChange}
+                    loading={loading}
+                    accountNumber={accountNumber}
+                    entitySlug={entitySlug}
+                    viewId={viewId}
+                    showSidebar={showSidebar}
+                    onToggleSidebar={() => setShowSidebar(!showSidebar)}
+                />
 
-                {/* Pagination footer */}
-                <div className="dataTable-bottom mt-4 flex items-center justify-between border-t pt-4 dark:border-gray-800">
-                    <div className="dataTable-info text-gray-500 dark:text-gray-400">
-                        Affichage de {((pagination.page - 1) * pagination.limit) + 1} à {Math.min(pagination.page * pagination.limit, pagination.total)} sur {pagination.total}
+                {/* Table wrapper with proper spacing */}
+                <div className="dataTable-wrapper flex-1 flex flex-col overflow-hidden mt-4">
+                    {/* Table container with virtual scrolling */}
+                    <div
+                        className="dataTable-container flex-1 overflow-auto"
+                        ref={parentRef}
+                    >
+                        <RecordsTable
+                            records={displayRecords}
+                            columns={visibleColumns}
+                            virtualizer={virtualizer}
+                            sort={preferences.sort}
+                            onSort={(field) => {
+                                const direction = preferences.sort.field === field && preferences.sort.direction === 'asc'
+                                    ? 'desc'
+                                    : 'asc'
+                                handlePreferencesChange('sort', { field, direction })
+                            }}
+                            onColumnReorder={handleColumnReorder}
+                            density={preferences.density}
+                            titleDisplay={preferences.titleDisplay || 'avatar'}
+                            entityIcon={entityIcon}
+                            accountNumber={accountNumber}
+                            entitySlug={entitySlug}
+                        />
                     </div>
-                    <nav className="dataTable-pagination">
-                        <ul className="inline-flex items-center space-x-1 rtl:space-x-reverse">
-                            <li>
-                                <button
-                                    onClick={() => handlePageChange(pagination.page - 1)}
-                                    disabled={pagination.page <= 1}
-                                    className="flex justify-center font-semibold p-2 rounded-full transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:opacity-50"
-                                >
-                                    &laquo;
-                                </button>
-                            </li>
-                            {Array.from({ length: Math.min(pagination.pages, 5) }, (_, i) => {
-                                let pageNum
-                                if (pagination.pages <= 5) {
-                                    pageNum = i + 1
-                                } else if (pagination.page <= 3) {
-                                    pageNum = i + 1
-                                } else if (pagination.page >= pagination.pages - 2) {
-                                    pageNum = pagination.pages - 4 + i
-                                } else {
-                                    pageNum = pagination.page - 2 + i
-                                }
-                                return (
-                                    <li key={pageNum}>
-                                        <button
-                                            onClick={() => handlePageChange(pageNum)}
-                                            className={`flex justify-center font-semibold px-3.5 py-2 rounded-full transition ${pageNum === pagination.page
-                                                ? 'bg-primary text-white dark:bg-primary dark:text-white-light'
-                                                : 'bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary'
-                                                }`}
-                                        >
-                                            {pageNum}
-                                        </button>
-                                    </li>
-                                )
-                            })}
-                            <li>
-                                <button
-                                    onClick={() => handlePageChange(pagination.page + 1)}
-                                    disabled={pagination.page >= pagination.pages}
-                                    className="flex justify-center font-semibold p-2 rounded-full transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:opacity-50"
-                                >
-                                    &raquo;
-                                </button>
-                            </li>
-                        </ul>
-                    </nav>
+
+                    {/* Pagination footer */}
+                    <div className="dataTable-bottom mt-4 flex items-center justify-between border-t pt-4 dark:border-gray-800">
+                        <div className="dataTable-info text-gray-500 dark:text-gray-400">
+                            Affichage de {((pagination.page - 1) * pagination.limit) + 1} à {Math.min(pagination.page * pagination.limit, pagination.total)} sur {pagination.total}
+                        </div>
+                        <nav className="dataTable-pagination">
+                            <ul className="inline-flex items-center space-x-1 rtl:space-x-reverse">
+                                <li>
+                                    <button
+                                        onClick={() => handlePageChange(pagination.page - 1)}
+                                        disabled={pagination.page <= 1}
+                                        className="flex justify-center font-semibold p-2 rounded-full transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:opacity-50"
+                                    >
+                                        &laquo;
+                                    </button>
+                                </li>
+                                {Array.from({ length: Math.min(pagination.pages, 5) }, (_, i) => {
+                                    let pageNum
+                                    if (pagination.pages <= 5) {
+                                        pageNum = i + 1
+                                    } else if (pagination.page <= 3) {
+                                        pageNum = i + 1
+                                    } else if (pagination.page >= pagination.pages - 2) {
+                                        pageNum = pagination.pages - 4 + i
+                                    } else {
+                                        pageNum = pagination.page - 2 + i
+                                    }
+                                    return (
+                                        <li key={pageNum}>
+                                            <button
+                                                onClick={() => handlePageChange(pageNum)}
+                                                className={`flex justify-center font-semibold px-3.5 py-2 rounded-full transition ${pageNum === pagination.page
+                                                    ? 'bg-primary text-white dark:bg-primary dark:text-white-light'
+                                                    : 'bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary'
+                                                    }`}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        </li>
+                                    )
+                                })}
+                                <li>
+                                    <button
+                                        onClick={() => handlePageChange(pagination.page + 1)}
+                                        disabled={pagination.page >= pagination.pages}
+                                        className="flex justify-center font-semibold p-2 rounded-full transition bg-white-light text-dark hover:text-white hover:bg-primary dark:text-white-light dark:bg-[#191e3a] dark:hover:bg-primary disabled:opacity-50"
+                                    >
+                                        &raquo;
+                                    </button>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
                 </div>
             </div>
         </div>

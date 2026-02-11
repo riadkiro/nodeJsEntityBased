@@ -23,6 +23,7 @@ function mountIslands() {
             entityId: container.dataset.entityId,
             viewId: container.dataset.viewId,
             entityName: container.dataset.entityName || 'Records',
+            entityNamePlural: container.dataset.entityNamePlural || '',
             entitySlug: container.dataset.entitySlug || 'records',
         }
 

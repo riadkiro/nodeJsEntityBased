@@ -222,6 +222,126 @@ router.get('/api/datagrid/entities', async (req, res) => {
 })
 
 /**
+ * GET /account/:account_number/api/datagrid/tasks
+ * Fetch tasks for DataGrid island
+ */
+router.get('/api/datagrid/tasks', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, "Record")
+        const Entity = await tenantCollection(req, "Entity")
+        const Classification = await tenantCollection(req, "Classification")
+        const UserPreferences = await tenantCollection(req, "UserPreferences")
+
+        // Find the Tâches entity
+        const entity = await Entity.findOne({
+            $or: [
+                { slug: 'taches' },
+                { slug: 'tache' },
+                { name: { $regex: /tâche/i } }
+            ]
+        }).lean()
+
+        if (!entity) {
+            return res.status(404).json({ error: 'Tâches entity not found. Run: node scripts/seed-taches-entity.js ' + req.account_number })
+        }
+
+        // Get records
+        const records = await Record.find({ entityId: entity._id }).lean()
+
+        // Get classifications for label resolution
+        const classificationIds = [
+            entity.statusClassification,
+            ...(entity.classifications || [])
+        ].filter(Boolean)
+        const classifications = await Classification.find({ _id: { $in: classificationIds } }).lean()
+        const classMap = {}
+        classifications.forEach(c => {
+            classMap[c._id.toString()] = c
+        })
+
+        // Transform records into rows
+        const rows = records.map(r => {
+            // Resolve classification values
+            const cvs = r.classificationValues || []
+            let statusLabel = '', statusColor = '', priorityLabel = '', priorityColor = '', tags = []
+
+            cvs.forEach(cv => {
+                const cls = classMap[cv.classificationId]
+                if (!cls) return
+                const opt = (cls.options || []).find(o => o._id.toString() === cv.optionId)
+                if (!opt) return
+                if (cls.key === 'tache_progression') {
+                    statusLabel = opt.label
+                    statusColor = opt.color
+                } else if (cls.key === 'tache_priority') {
+                    priorityLabel = opt.label
+                    priorityColor = opt.color
+                } else if (cls.key === 'tache_tags') {
+                    tags.push({ label: opt.label, color: opt.color })
+                }
+            })
+
+            // Resolve custom fields
+            const cfs = r.customFields || []
+            const progressField = cfs.find(f => f.field_id?.toString() === '697e0020000000000000020b')
+            const assigneeField = cfs.find(f => f.field_id?.toString() === '697e0020000000000000020c')
+
+            return {
+                _id: r._id.toString(),
+                _icon: entity.icon || 'solar:checklist-minimalistic-bold-duotone',
+                _color: statusColor || entity.color || '#4361ee',
+                title: r.title || r.referenceTitle || '',
+                status: statusLabel,
+                statusColor,
+                priority: priorityLabel,
+                priorityColor,
+                tags: tags.map(t => t.label).join(', '),
+                progress: progressField?.value || 0,
+                assignedTo: assigneeField?.value || '',
+                dueDate: r.dueDate,
+                description: r.description || '',
+                createdAt: r.createdAt
+            }
+        })
+
+        const columns = [
+            { id: 'title', name: 'Titre', sortable: true },
+            { id: 'status', name: 'Statut', sortable: true, type: 'badge' },
+            { id: 'priority', name: 'Priorité', sortable: true, type: 'badge' },
+            { id: 'tags', name: 'Tags', sortable: false },
+            { id: 'progress', name: 'Progression', sortable: true },
+            { id: 'assignedTo', name: 'Assigné à', sortable: true },
+            { id: 'dueDate', name: 'Échéance', sortable: true, type: 'date' },
+            { id: 'createdAt', name: 'Créé le', sortable: true, type: 'date' },
+            { id: 'actions', name: '', sortable: false }
+        ]
+
+        // Load user preferences
+        let preferences = null
+        if (req.user?._id) {
+            const prefs = await UserPreferences.findOne({
+                userId: req.user._id,
+                viewId: 'tasks-list'
+            }).lean()
+            if (prefs) preferences = prefs.preferences
+        }
+
+        res.json({
+            rows,
+            columns,
+            defaultSort: { field: 'createdAt', direction: 'desc' },
+            preferences,
+            entityId: entity._id.toString(),
+            entitySlug: entity.slug
+        })
+
+    } catch (error) {
+        console.error('[API] Tasks fetch error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
  * POST /account/:account_number/api/user/view-preferences
  * Save user preferences for a specific view
  */

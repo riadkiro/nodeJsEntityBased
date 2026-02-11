@@ -444,8 +444,8 @@
             // Field token
             const fieldId = node.getAttribute('data-field-id');
             tokens.push({ t: 'field', id: fieldId });
-          } else if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
-            // Text token
+          } else if (node.nodeType === Node.TEXT_NODE && node.textContent.length > 0) {
+            // Text token (preserve spaces between fields)
             tokens.push({ t: 'text', v: node.textContent });
           }
         });
@@ -793,7 +793,7 @@
           editor.childNodes.forEach(node => {
             if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('field-tag')) {
               tokens.push({ t: 'field', id: node.getAttribute('data-field-id') });
-            } else if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+            } else if (node.nodeType === Node.TEXT_NODE && node.textContent.length > 0) {
               tokens.push({ t: 'text', v: node.textContent });
             }
           });

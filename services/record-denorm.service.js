@@ -113,7 +113,7 @@ async function computeTitle(recordData, entity, RecordModel) {
         return '';
     });
 
-    return parts.join(' ').replace(/\s+/g, ' ').trim() || recordData.title || 'Sans titre';
+    return parts.join('').trim() || recordData.title || 'Sans titre';
 }
 
 

@@ -73,10 +73,58 @@ module.exports = {
 
             // Compute referenceTitle for each record from entity.referenceTitleTokens
             const tokens = entity.referenceTitleTokens || [{ t: 'field', id: 'title' }];
+
+            // Pre-load related records for rel: tokens
+            const relTokens = tokens.filter(t => t.t === 'field' && t.id && t.id.startsWith('rel:'));
+            const relatedRecordsMap = {};
+            if (relTokens.length > 0) {
+                const allRelatedIds = new Set();
+                for (const record of records) {
+                    for (const rt of relTokens) {
+                        const dotIdx = rt.id.indexOf('.');
+                        const relKey = rt.id.substring(4, dotIdx);
+                        const rv = (record.relations || []).find(rel => rel.relationKey === relKey);
+                        if (rv && rv.value) {
+                            const ids = Array.isArray(rv.value) ? rv.value : [rv.value];
+                            ids.forEach(id => allRelatedIds.add(id.toString()));
+                        }
+                    }
+                }
+                if (allRelatedIds.size > 0) {
+                    const relatedRecords = await RecordModel.find({ _id: { $in: [...allRelatedIds] } })
+                        .select('title slug description date customFields')
+                        .populate({ path: 'customFields.field_id', select: 'label fieldType' })
+                        .lean();
+                    relatedRecords.forEach(rr => { relatedRecordsMap[rr._id.toString()] = rr; });
+                }
+            }
+
             records.forEach(record => {
                 const parts = tokens.map(token => {
                     if (token.t === 'text') return token.v || '';
                     if (token.t === 'field') {
+                        // Relation sub-field: rel:<relKey>.<subFieldId>
+                        if (token.id && token.id.startsWith('rel:')) {
+                            const dotIdx = token.id.indexOf('.');
+                            const relKey = token.id.substring(4, dotIdx);
+                            const subFieldId = token.id.substring(dotIdx + 1);
+                            const rv = (record.relations || []).find(rel => rel.relationKey === relKey);
+                            if (rv && rv.value) {
+                                const targetId = Array.isArray(rv.value) ? rv.value[0] : rv.value;
+                                const targetRecord = relatedRecordsMap[targetId?.toString()];
+                                if (targetRecord) {
+                                    if (['title', 'slug', 'date', 'description'].includes(subFieldId)) {
+                                        return targetRecord[subFieldId] || '';
+                                    }
+                                    const tcf = (targetRecord.customFields || []).find(c => {
+                                        const cfId = c.field_id?._id || c.field_id;
+                                        return cfId && cfId.toString() === subFieldId;
+                                    });
+                                    return tcf?.value || '';
+                                }
+                            }
+                            return '';
+                        }
                         // Standard fields
                         if (['title', 'slug', 'date', 'description'].includes(token.id)) {
                             return record[token.id] || '';

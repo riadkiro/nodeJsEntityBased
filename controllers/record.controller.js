@@ -223,7 +223,7 @@ module.exports = {
                             classificationDefs[cls._id.toString()] = {
                                 _id: cls._id.toString(),
                                 name: cls.name,
-                                options: (cls.options || []).map(o => ({ label: o.label || o.name || o, color: o.color || '' }))
+                                options: (cls.options || []).map(o => ({ label: o.label || o.name || o, color: o.color || '', _id: (o._id || '').toString() }))
                             };
                         }
                     });
@@ -314,13 +314,17 @@ module.exports = {
                 const { title, slug, date, entityId, customFields } = req.body;
 
                 const customFieldsArray = [];
+                const relationsArray = [];
                 if (customFields) {
                     const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
                     for (const [fieldId, value] of Object.entries(customFields)) {
                         if (value !== null && value !== undefined && value !== '') {
-                            // Skip non-ObjectId keys (e.g. relation UUID keys)
-                            if (!isValidObjectId(fieldId)) continue;
-                            customFieldsArray.push({ field_id: fieldId, value });
+                            if (isValidObjectId(fieldId)) {
+                                customFieldsArray.push({ field_id: fieldId, value });
+                            } else if (fieldId) {
+                                // Relation field (UUID key)
+                                relationsArray.push({ relationKey: fieldId, value });
+                            }
                         }
                     }
                 }
@@ -332,6 +336,7 @@ module.exports = {
                     date: date,
                     published: true,
                     customFields: customFieldsArray,
+                    relations: relationsArray,
                     createdBy: req.user?._id
                 });
 
@@ -352,7 +357,8 @@ module.exports = {
             }
 
             // 🛠️ Robust Body Parsing for Multipart/Form-Data (Multer doesn't nest objects)
-            const data = { standard: {}, custom: {}, classifications: {} };
+            const classificationsObj2 = {};
+            const data = { standard: {}, custom: {}, classifications: classificationsObj2, classification: classificationsObj2 };
 
             Object.keys(req.body).forEach(key => {
                 const match = key.match(/^(\w+)\[([^\]]+)\]/);
@@ -366,9 +372,10 @@ module.exports = {
                         }
                         data[group][field] = val;
                     }
-                } else if (key === 'standard' || key === 'custom' || key === 'classifications') {
+                } else if (key === 'standard' || key === 'custom' || key === 'classifications' || key === 'classification') {
                     if (typeof req.body[key] === 'object') {
-                        data[key] = { ...data[key], ...req.body[key] };
+                        const targetKey = key === 'classification' ? 'classifications' : key;
+                        data[targetKey] = { ...data[targetKey], ...req.body[key] };
                     }
                 }
             });
@@ -388,17 +395,21 @@ module.exports = {
             }
 
             const customFieldsArray = [];
+            const relationsArray = [];
             if (custom) {
                 const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
                 for (const [fieldId, value] of Object.entries(custom)) {
-                    // Skip non-ObjectId keys (e.g. relation UUID keys like "1ce30e77-...")
-                    if (!isValidObjectId(fieldId)) continue;
-                    // Parse JSON string values (e.g. recurrence field sends serialized JSON)
-                    let parsedValue = value;
-                    if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
-                        try { parsedValue = JSON.parse(value); } catch (e) { }
+                    if (isValidObjectId(fieldId)) {
+                        // Regular custom field (ObjectId key → FieldTemplate)
+                        let parsedValue = value;
+                        if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
+                            try { parsedValue = JSON.parse(value); } catch (e) { }
+                        }
+                        customFieldsArray.push({ field_id: fieldId, value: parsedValue });
+                    } else if (fieldId && value) {
+                        // Relation field (UUID key)
+                        relationsArray.push({ relationKey: fieldId, value });
                     }
-                    customFieldsArray.push({ field_id: fieldId, value: parsedValue });
                 }
             }
 
@@ -419,6 +430,7 @@ module.exports = {
                 entityId: entity._id,
                 ...standard,
                 customFields: customFieldsArray,
+                relations: relationsArray,
                 classificationValues: classificationValuesArray,
                 createdBy: req.user._id
             });
@@ -478,6 +490,10 @@ module.exports = {
             (record.customFields || []).forEach(cv => {
                 const fid = (cv.field_id?._id || cv.field_id || '').toString();
                 if (fid) recordValues[fid] = cv.value;
+            });
+            // Include relation values (stored separately with UUID keys)
+            (record.relations || []).forEach(rv => {
+                if (rv.relationKey) recordValues[rv.relationKey] = rv.value;
             });
 
             // Try to load from EntityForm (multi-form architecture)
@@ -641,7 +657,8 @@ module.exports = {
             });
 
             // 🛠️ Robust Body Parsing
-            const data = { standard: {}, custom: {}, classifications: {} };
+            const classificationsObj = {};
+            const data = { standard: {}, custom: {}, classifications: classificationsObj, classification: classificationsObj };
 
             Object.keys(req.body).forEach(key => {
                 const match = key.match(/^(\w+)\[([^\]]+)\]/);
@@ -654,9 +671,10 @@ module.exports = {
                         }
                         data[group][field] = val;
                     }
-                } else if (key === 'standard' || key === 'custom' || key === 'classifications') {
+                } else if (key === 'standard' || key === 'custom' || key === 'classifications' || key === 'classification') {
                     if (typeof req.body[key] === 'object') {
-                        data[key] = { ...data[key], ...req.body[key] };
+                        const targetKey = key === 'classification' ? 'classifications' : key;
+                        data[targetKey] = { ...data[targetKey], ...req.body[key] };
                     }
                 }
             });
@@ -671,17 +689,21 @@ module.exports = {
             }
 
             const customFieldsArray = [];
+            const relationsArray = [];
             if (custom) {
                 const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
                 for (const [fieldId, value] of Object.entries(custom)) {
-                    // Skip non-ObjectId keys (e.g. relation UUID keys like "1ce30e77-...")
-                    if (!isValidObjectId(fieldId)) continue;
-                    // Parse JSON string values (e.g. recurrence field sends serialized JSON)
-                    let parsedValue = value;
-                    if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
-                        try { parsedValue = JSON.parse(value); } catch (e) { }
+                    if (isValidObjectId(fieldId)) {
+                        // Regular custom field (ObjectId key → FieldTemplate)
+                        let parsedValue = value;
+                        if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
+                            try { parsedValue = JSON.parse(value); } catch (e) { }
+                        }
+                        customFieldsArray.push({ field_id: fieldId, value: parsedValue });
+                    } else if (fieldId && value) {
+                        // Relation field (UUID key)
+                        relationsArray.push({ relationKey: fieldId, value });
                     }
-                    customFieldsArray.push({ field_id: fieldId, value: parsedValue });
                 }
             }
 
@@ -704,6 +726,7 @@ module.exports = {
             const updatedRecord = await RecordModel.findByIdAndUpdate(req.params.id, {
                 ...standard,
                 customFields: customFieldsArray,
+                relations: relationsArray,
                 classificationValues: classificationValuesArray,
                 updatedBy: req.user._id
             }, { new: true });
@@ -764,25 +787,72 @@ module.exports = {
             const limit = parseInt(req.query.limit) || 5;
             const skip = (page - 1) * limit;
 
-            // Get entity to access referenceTitleTokens
-            const entity = await Entity.findById(entityId).select('referenceTitleTokens').lean();
+            // Get entity to access referenceTitleTokens and relations
+            const entity = await Entity.findById(entityId).select('referenceTitleTokens relations').lean();
             const tokens = entity?.referenceTitleTokens || [{ t: 'field', id: 'title' }];
 
             const records = await RecordModel.find(query)
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit)
-                .select('title slug _id customFields')
+                .select('title slug _id customFields relations')
                 .populate({ path: 'customFields.field_id', select: 'label fieldType' })
                 .lean();
 
             const total = await RecordModel.countDocuments(query);
+
+            // Pre-load related records for rel: tokens
+            const relTokens = tokens.filter(t => t.t === 'field' && t.id && t.id.startsWith('rel:'));
+            const relatedRecordsMap = {}; // { recordId: record }
+            if (relTokens.length > 0) {
+                const allRelatedIds = new Set();
+                for (const r of records) {
+                    for (const rt of relTokens) {
+                        const dotIdx = rt.id.indexOf('.');
+                        const relKey = rt.id.substring(4, dotIdx);
+                        const rv = (r.relations || []).find(rel => rel.relationKey === relKey);
+                        if (rv && rv.value) {
+                            const ids = Array.isArray(rv.value) ? rv.value : [rv.value];
+                            ids.forEach(id => allRelatedIds.add(id.toString()));
+                        }
+                    }
+                }
+                if (allRelatedIds.size > 0) {
+                    const relatedRecords = await RecordModel.find({ _id: { $in: [...allRelatedIds] } })
+                        .select('title slug description date customFields')
+                        .populate({ path: 'customFields.field_id', select: 'label fieldType' })
+                        .lean();
+                    relatedRecords.forEach(rr => { relatedRecordsMap[rr._id.toString()] = rr; });
+                }
+            }
 
             const formatted = records.map(r => {
                 // Compute referenceTitle from tokens
                 const parts = tokens.map(token => {
                     if (token.t === 'text') return token.v || '';
                     if (token.t === 'field') {
+                        // Relation sub-field: rel:<relKey>.<subFieldId>
+                        if (token.id && token.id.startsWith('rel:')) {
+                            const dotIdx = token.id.indexOf('.');
+                            const relKey = token.id.substring(4, dotIdx);
+                            const subFieldId = token.id.substring(dotIdx + 1);
+                            const rv = (r.relations || []).find(rel => rel.relationKey === relKey);
+                            if (rv && rv.value) {
+                                const targetId = Array.isArray(rv.value) ? rv.value[0] : rv.value;
+                                const targetRecord = relatedRecordsMap[targetId?.toString()];
+                                if (targetRecord) {
+                                    if (['title', 'slug', 'date', 'description'].includes(subFieldId)) {
+                                        return targetRecord[subFieldId] || '';
+                                    }
+                                    const tcf = (targetRecord.customFields || []).find(c => {
+                                        const cfId = c.field_id?._id || c.field_id;
+                                        return cfId && cfId.toString() === subFieldId;
+                                    });
+                                    return tcf?.value || '';
+                                }
+                            }
+                            return '';
+                        }
                         if (['title', 'slug', 'date', 'description'].includes(token.id)) {
                             return r[token.id] || '';
                         }
@@ -1023,9 +1093,56 @@ module.exports = {
 
             // Compute referenceTitle from entity.referenceTitleTokens
             const tokens = entity.referenceTitleTokens || [{ t: 'field', id: 'title' }];
+
+            // Pre-load related records for rel: tokens (single record view)
+            const relTokensDetail = tokens.filter(t => t.t === 'field' && t.id && t.id.startsWith('rel:'));
+            const relatedRecordsMapDetail = {};
+            if (relTokensDetail.length > 0) {
+                const allRelatedIds = new Set();
+                for (const rt of relTokensDetail) {
+                    const dotIdx = rt.id.indexOf('.');
+                    const relKey = rt.id.substring(4, dotIdx);
+                    const cv = (record.customFields || []).find(c => (c.field_id?._id || c.field_id || '').toString() === relKey);
+                    if (cv && cv.value) {
+                        const ids = Array.isArray(cv.value) ? cv.value : [cv.value];
+                        ids.forEach(id => allRelatedIds.add(id.toString()));
+                    }
+                }
+                if (allRelatedIds.size > 0) {
+                    const RecordForRef = await tenantCollection(req, "Record");
+                    const relRecs = await RecordForRef.find({ _id: { $in: [...allRelatedIds] } })
+                        .select('title slug description date customFields')
+                        .populate({ path: 'customFields.field_id', select: 'label fieldType' })
+                        .lean();
+                    relRecs.forEach(rr => { relatedRecordsMapDetail[rr._id.toString()] = rr; });
+                }
+            }
+
             const refParts = tokens.map(token => {
                 if (token.t === 'text') return token.v || '';
                 if (token.t === 'field') {
+                    // Relation sub-field: rel:<relKey>.<subFieldId>
+                    if (token.id && token.id.startsWith('rel:')) {
+                        const dotIdx = token.id.indexOf('.');
+                        const relKey = token.id.substring(4, dotIdx);
+                        const subFieldId = token.id.substring(dotIdx + 1);
+                        const cv = (record.customFields || []).find(c => (c.field_id?._id || c.field_id || '').toString() === relKey);
+                        if (cv && cv.value) {
+                            const targetId = Array.isArray(cv.value) ? cv.value[0] : cv.value;
+                            const targetRecord = relatedRecordsMapDetail[targetId?.toString()];
+                            if (targetRecord) {
+                                if (['title', 'slug', 'date', 'description'].includes(subFieldId)) {
+                                    return targetRecord[subFieldId] || '';
+                                }
+                                const tcf = (targetRecord.customFields || []).find(c => {
+                                    const cfId = c.field_id?._id || c.field_id;
+                                    return cfId && cfId.toString() === subFieldId;
+                                });
+                                return tcf?.value || '';
+                            }
+                        }
+                        return '';
+                    }
                     // Standard fields
                     if (['title', 'slug', 'date', 'description'].includes(token.id)) {
                         return record[token.id] || '';

@@ -96,6 +96,7 @@
         min: null,
         max: null,
         includeTime: false,
+        defaultValue: '',
         acceptTypes: '',
         // Recurrence slot config
         slots: {},
@@ -240,6 +241,7 @@
           min: field.type_config?.min || null,
           max: field.type_config?.max || null,
           includeTime: field.type_config?.includeTime || false,
+          defaultValue: field.type_config?.defaultValue || '',
           acceptTypes: field.type_config?.acceptTypes || '',
           slots: field.type_config?.slots || {},
           allowCustomText: field.type_config?.allowCustomText || false
@@ -282,6 +284,7 @@
           min: null,
           max: null,
           includeTime: false,
+          defaultValue: '',
           acceptTypes: '',
           slots: {},
           allowCustomText: false
@@ -327,6 +330,14 @@
           formBody.append('type_config.options', JSON.stringify(this.formData.options));
           formBody.append('type_config.slots', JSON.stringify(this.formData.slots));
           formBody.append('type_config.allowCustomText', this.formData.allowCustomText);
+        }
+
+        // Date-specific
+        if (this.formData.type === 'date') {
+          formBody.append('type_config.includeTime', this.formData.includeTime);
+          if (this.formData.defaultValue) {
+            formBody.append('type_config.defaultValue', this.formData.defaultValue);
+          }
         }
 
         try {
@@ -574,11 +585,19 @@
 
           <!-- Options pour DATE -->
           <template x-if="formData.type === 'date'">
-            <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-600">
+            <div class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-600">
               <label class="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" x-model="formData.includeTime" class="form-checkbox text-primary">
                 <span class="text-sm">Inclure l'heure</span>
               </label>
+              <!-- Default value -->
+              <div>
+                <label class="block text-xs font-medium mb-1 text-gray-500">Valeur par défaut</label>
+                <select x-model="formData.defaultValue" class="form-select text-sm w-full">
+                  <option value="">Aucune</option>
+                  <option value="now" x-text="formData.includeTime ? 'Maintenant (date + heure)' : 'Aujourd\'hui (date du jour)'"></option>
+                </select>
+              </div>
             </div>
           </template>
 

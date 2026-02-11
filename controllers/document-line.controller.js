@@ -226,7 +226,35 @@ module.exports = {
             console.log('[CatalogSearch] found', records.length, 'records, first:', records[0] ? { _id: records[0]._id, title: records[0].title, entityId: records[0].entityId } : 'none');
 
             // Build result with custom field values for default mapping
-            const results = records.map(r => {
+            const results = [];
+
+            // Pre-load related records for rel: tokens
+            const tokens = entity?.referenceTitleTokens || [{ t: 'field', id: 'title' }];
+            const relTokens = tokens.filter(t => t.t === 'field' && t.id && t.id.startsWith('rel:'));
+            const relatedRecordsMap = {};
+            if (relTokens.length > 0) {
+                const allRelatedIds = new Set();
+                for (const r of records) {
+                    for (const rt of relTokens) {
+                        const dotIdx = rt.id.indexOf('.');
+                        const relKey = rt.id.substring(4, dotIdx);
+                        const rv = (r.relations || []).find(rel => rel.relationKey === relKey);
+                        if (rv && rv.value) {
+                            const ids = Array.isArray(rv.value) ? rv.value : [rv.value];
+                            ids.forEach(id => allRelatedIds.add(id.toString()));
+                        }
+                    }
+                }
+                if (allRelatedIds.size > 0) {
+                    const relatedRecords = await Record.find({ _id: { $in: [...allRelatedIds] } })
+                        .select('title slug description date customFields')
+                        .populate({ path: 'customFields.field_id', select: 'label fieldType' })
+                        .lean();
+                    relatedRecords.forEach(rr => { relatedRecordsMap[rr._id.toString()] = rr; });
+                }
+            }
+
+            for (const r of records) {
                 const cfMap = {};
                 (r.customFields || []).forEach(cf => {
                     const fieldId = (cf.field_id?._id || cf.field_id)?.toString();
@@ -234,23 +262,42 @@ module.exports = {
                 });
 
                 // Build label from tokens
-                const tokens = entity?.referenceTitleTokens || [{ t: 'field', id: 'title' }];
                 const parts = tokens.map(token => {
                     if (token.t === 'text') return token.v || '';
                     if (token.t === 'field') {
+                        // Relation sub-field: rel:<relKey>.<subFieldId>
+                        if (token.id && token.id.startsWith('rel:')) {
+                            const dotIdx = token.id.indexOf('.');
+                            const relKey = token.id.substring(4, dotIdx);
+                            const subFieldId = token.id.substring(dotIdx + 1);
+                            const rv = (r.relations || []).find(rel => rel.relationKey === relKey);
+                            if (rv && rv.value) {
+                                const targetId = Array.isArray(rv.value) ? rv.value[0] : rv.value;
+                                const targetRecord = relatedRecordsMap[targetId?.toString()];
+                                if (targetRecord) {
+                                    if (['title', 'slug'].includes(subFieldId)) return targetRecord[subFieldId] || '';
+                                    const tcf = (targetRecord.customFields || []).find(c => {
+                                        const cfId = c.field_id?._id || c.field_id;
+                                        return cfId && cfId.toString() === subFieldId;
+                                    });
+                                    return tcf?.value || '';
+                                }
+                            }
+                            return '';
+                        }
                         if (['title', 'slug'].includes(token.id)) return r[token.id] || '';
                         return cfMap[token.id] || '';
                     }
                     return '';
                 });
 
-                return {
+                results.push({
                     _id: r._id,
                     label: parts.join('').trim() || r.title || r.slug,
                     title: r.title,
                     customFields: cfMap
-                };
-            });
+                });
+            }
 
             res.json({ data: results });
         } catch (error) {

@@ -206,6 +206,20 @@
       },
       
       getFieldIcon(fieldId) {
+        // Relation sub-field: rel:<relKey>.<subFieldId>
+        if (fieldId && fieldId.startsWith('rel:')) {
+          const dotIdx = fieldId.indexOf('.');
+          if (dotIdx > 0) {
+            const relKey = fieldId.substring(4, dotIdx);
+            const subFieldId = fieldId.substring(dotIdx + 1);
+            const rel = this.relations.find(r => r.key === relKey);
+            if (rel && rel._targetFields) {
+              const tf = rel._targetFields.find(f => f.id === subFieldId);
+              if (tf) return tf.icon || 'solar:link-round-bold-duotone';
+            }
+          }
+          return 'solar:link-round-bold-duotone';
+        }
         // Check system fields first
         const icons = {
           title: 'solar:text-bold-duotone',
@@ -227,6 +241,21 @@
       },
       
       getFieldLabel(fieldId) {
+        // Relation sub-field: rel:<relKey>.<subFieldId>
+        if (fieldId && fieldId.startsWith('rel:')) {
+          const dotIdx = fieldId.indexOf('.');
+          if (dotIdx > 0) {
+            const relKey = fieldId.substring(4, dotIdx);
+            const subFieldId = fieldId.substring(dotIdx + 1);
+            const rel = this.relations.find(r => r.key === relKey);
+            const relLabel = rel?.label || 'Relation';
+            if (rel && rel._targetFields) {
+              const tf = rel._targetFields.find(f => f.id === subFieldId);
+              if (tf) return relLabel + '.' + (tf.label || subFieldId);
+            }
+            return relLabel + '.' + subFieldId;
+          }
+        }
         // Check system fields first
         const labels = {
           title: 'Titre',
@@ -348,6 +377,19 @@
         this.selectedFields.forEach(field => {
           if (!usedFieldIds.includes(field._id)) {
             available.push({ id: field._id, label: field.label || field.name, icon: this.getFieldIcon(field._id) });
+          }
+        });
+        
+        // Add relation sub-fields (e.g. Patient.Nom, Patient.Prénom)
+        this.relations.forEach(rel => {
+          if (rel.targetEntity && rel._targetFields && rel._targetFields.length > 0) {
+            const relLabel = rel.label || 'Relation';
+            rel._targetFields.forEach(tf => {
+              const fieldId = `rel:${rel.key}.${tf.id}`;
+              if (!usedFieldIds.includes(fieldId)) {
+                available.push({ id: fieldId, label: relLabel + '.' + tf.label, icon: tf.icon || 'solar:link-round-bold-duotone' });
+              }
+            });
           }
         });
         

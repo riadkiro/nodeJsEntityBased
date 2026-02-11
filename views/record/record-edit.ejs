@@ -249,7 +249,7 @@
                                                                     refEntityIcon: '<%= mpIcon %>',
                                                                     refEntityColor: '<%= mpColor %>',
                                                                     multiple: <%= (rel.cardinality === 'one-to-many' || rel.cardinality === 'many-to-many') ? 'true' : 'false' %>,
-                                                                    initialValue: <%- JSON.stringify(relVal || null) %>
+                                                                    initialValue: <%- JSON.stringify(relVal || null).replace(/"/g, '&quot;') %>
                                                                 })" data-display-fields='<%- JSON.stringify(rel.displayFields || []) %>' class="relative">
                                                                     <label class="flex items-center gap-1.5 mb-1 dark:text-gray-300">
                                                                         <iconify-icon icon="<%= mpIcon %>" width="14"
@@ -260,15 +260,21 @@
                                                                     <!-- Trigger Button -->
                                                                     <button type="button" @click="openModal()"
                                                                         class="w-full flex items-center justify-between px-3 py-2 border border-gray-300 dark:border-gray-800 rounded-md hover:border-primary/50 transition-colors text-sm bg-white dark:bg-[#1b2e4b]">
-                                                                        <span class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                                                                            <iconify-icon icon="solar:magnifer-bold-duotone" width="16"></iconify-icon>
-                                                                            <span x-text="selectedItems.length > 0 ? selectedItems.length + ' sélectionné(s)' : 'Sélectionner <%= mpName %>...'"></span>
+                                                                        <span class="flex items-center gap-2 min-w-0" :class="!multiple && selectedItems.length > 0 ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'">
+                                                                            <iconify-icon icon="solar:magnifer-bold-duotone" width="16" class="shrink-0" x-show="multiple || selectedItems.length === 0"></iconify-icon>
+                                                                            <iconify-icon :icon="refEntityIcon" width="16" :style="'color:' + refEntityColor" class="shrink-0" x-show="!multiple && selectedItems.length > 0" x-cloak></iconify-icon>
+                                                                            <span class="truncate" x-text="!multiple && selectedItems.length > 0 ? selectedItems[0].label : (multiple && selectedItems.length > 0 ? selectedItems.length + ' sélectionné(s)' : 'Rechercher <%= mpName %>...')"></span>
                                                                         </span>
-                                                                        <iconify-icon icon="tabler:external-link" width="14" class="text-gray-400"></iconify-icon>
+                                                                        <span class="flex items-center gap-1 shrink-0">
+                                                                            <span role="button" x-show="!multiple && selectedItems.length > 0" x-cloak @click.stop="removeItem(selectedItems[0]?.id)" class="w-5 h-5 rounded-full flex items-center justify-center text-gray-400 hover:text-danger hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+                                                                                <iconify-icon icon="tabler:x" width="12"></iconify-icon>
+                                                                            </span>
+                                                                            <iconify-icon icon="tabler:external-link" width="14" class="text-gray-400"></iconify-icon>
+                                                                        </span>
                                                                     </button>
 
-                                                                    <!-- Selected Items Tags -->
-                                                                    <div class="flex flex-wrap gap-1 mt-2" x-show="selectedItems.length > 0">
+                                                                    <!-- Selected Items Tags (multi only) -->
+                                                                    <div class="flex flex-wrap gap-1 mt-2" x-show="multiple && selectedItems.length > 0">
                                                                         <template x-for="item in selectedItems" :key="item.id">
                                                                             <span class="inline-flex items-center gap-1 px-1.5 h-6 bg-primary/10 text-primary rounded text-xs border border-primary/20">
                                                                                 <span x-text="item.label"></span>
@@ -387,7 +393,7 @@
                                                                     fieldId: '<%= rel.key %>',
                                                                     refEntity: '<%= (rel.targetEntity && rel.targetEntity._id) || '' %>',
                                                                     multiple: <%= (rel.cardinality === 'one-to-many' || rel.cardinality === 'many-to-many') ? 'true' : 'false' %>,
-                                                                    initialValue: <%- JSON.stringify(relVal || null) %>
+                                                                    initialValue: <%- JSON.stringify(relVal || null).replace(/"/g, '&quot;') %>
                                                                 })" class="relative">
                                                                     <label class="flex items-center gap-1.5 mb-1 dark:text-gray-300">
                                                                         <iconify-icon icon="<%= (rel.targetEntity && rel.targetEntity.icon) || 'solar:link-round-bold-duotone' %>" width="14"
@@ -629,7 +635,7 @@
     <%- JSON.stringify(locals.fields || []).replace(/</g, '\\u003C') %>
 </script>
 <script type="application/json" id="record-values">
-    <%- JSON.stringify(record.customFields || []).replace(/</g, '\\u003C') %>
+    <%- JSON.stringify([...(record.customFields || []), ...((record.relations || []).map(r => ({ field_id: r.relationKey, value: r.value })))]).replace(/</g, '\\u003C') %>
 </script>
 
 <script>

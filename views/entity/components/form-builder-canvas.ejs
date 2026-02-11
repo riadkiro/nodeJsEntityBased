@@ -1,94 +1,255 @@
 <style>
-  /* Form Builder Canvas Styles */
-  .fb-field-item label {
-    display: block !important;
-    font-size: 10px !important;
-    font-weight: 800 !important;
-    color: #4b5563 !important;
-    margin-bottom: 2px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.05em !important;
-  }
-  .dark .fb-field-item label {
-    color: #9ca3af !important;
-  }
-  .fb-field-item .form-input,
-  .fb-field-item input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-  .fb-field-item select {
-    font-size: 13px !important;
-    padding: 8px 12px !important;
-    background-color: #f9fafb !important;
-    border: 1px solid #f3f4f6 !important;
-    border-radius: 8px !important;
-    color: #111827 !important;
-    width: 100% !important;
-    height: 38px !important;
-    margin: 0 !important;
-    pointer-events: none;
-  }
-  .dark .fb-field-item .form-input,
-  .dark .fb-field-item input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-  .dark .fb-field-item select {
-    background-color: #1f2937 !important;
-    border-color: #374151 !important;
-    color: #d1d5db !important;
-  }
-  .fb-field-item textarea {
-    font-size: 13px !important;
-    padding: 8px 12px !important;
-    background-color: #f9fafb !important;
-    border: 1px solid #f3f4f6 !important;
-    border-radius: 8px !important;
-    width: 100% !important;
-    min-height: 80px !important;
-    pointer-events: none;
-  }
-  .dark .fb-field-item textarea {
-    background-color: #1f2937 !important;
-    border-color: #374151 !important;
-  }
+  /* ========================================= */
+  /* Form Builder Canvas — WYSIWYG-first       */
+  /* Pixel-perfect match with Preview mode     */
+  /* ========================================= */
 
-  /* Sortable */
+  /* NO forced label/input overrides — let renderPreviewField styling pass through naturally */
+
+  /* Sortable drag states */
   .fb-sortable-ghost {
-    opacity: 0.08;
-    background: #6366f1 !important;
+    opacity: 0.06;
+    background: var(--primary, #4361ee) !important;
     border-radius: 8px;
   }
   .fb-sortable-drag {
     background: white !important;
-    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25) !important;
-    transform: rotate(0.5deg) scale(1.01);
+    box-shadow: 0 20px 40px -8px rgb(0 0 0 / 0.18) !important;
+    transform: rotate(0.3deg) scale(1.01);
     z-index: 999;
+    border-radius: 10px;
   }
 
   /* Drop indicator line for sidebar drag */
   .fb-drop-indicator {
-    height: 20px;
-    background: rgba(67, 97, 238, 0.12);
+    height: 16px;
+    background: rgba(67, 97, 238, 0.08);
     border: 2px dashed var(--primary, #4361ee);
     border-radius: 6px;
-    margin: 4px 0;
+    margin: 2px 0;
     pointer-events: none;
   }
 
-  /* Column resize handle */
-  .fb-col-resize {
+  /* ---- ROW: invisible by default, subtle on hover ---- */
+  .fb-row {
+    position: relative;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 6px 8px;
+    margin-right: 20px; /* space for toolbar on right */
+    transition: border-color 0.2s, background-color 0.2s;
+  }
+  .fb-row:hover,
+  .fb-row.is-hovered {
+    border-color: #e5e7eb;
+    background: rgba(249, 250, 251, 0.4);
+  }
+  .dark .fb-row:hover,
+  .dark .fb-row.is-hovered {
+    border-color: #374151;
+    background: rgba(30, 41, 59, 0.3);
+  }
+
+  /* ---- COLUMN: no borders by default ---- */
+  .fb-column {
+    position: relative;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 4px;
+    min-height: 50px;
+    transition: border-color 0.15s, background-color 0.15s;
+  }
+  .fb-row:hover .fb-column,
+  .fb-row.is-hovered .fb-column {
+    border-color: rgba(229, 231, 235, 0.6);
+    border-style: dashed;
+  }
+  .dark .fb-row:hover .fb-column,
+  .dark .fb-row.is-hovered .fb-column {
+    border-color: rgba(55, 65, 81, 0.6);
+  }
+  .fb-column.drag-over {
+    background-color: rgba(67, 97, 238, 0.06) !important;
+    border-color: rgba(67, 97, 238, 0.35) !important;
+    border-style: dashed;
+  }
+
+  /* ---- COLUMN WIDTH BADGE: hidden, shown on row hover ---- */
+  .fb-col-badge {
     position: absolute;
-    top: 4px;
-    bottom: 4px;
-    width: 16px;
-    cursor: col-resize;
-    z-index: 15;
+    top: -9px;
+    left: 8px;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    color: #9ca3af;
+    opacity: 0;
+    transform: translateY(3px);
+    transition: all 0.15s ease;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .dark .fb-col-badge {
+    background: #1e293b;
+    border-color: #374151;
+    color: #6b7280;
+  }
+  .fb-row:hover .fb-col-badge,
+  .fb-row.is-hovered .fb-col-badge {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ---- FIELD CARD: clean by default, reveal on hover ---- */
+  .fb-field-card {
+    position: relative;
+    padding: 4px 4px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: grab;
+    transition: all 0.15s ease;
+  }
+  .fb-field-card:hover {
+    border-color: #e5e7eb;
+    background: rgba(249, 250, 251, 0.5);
+  }
+  .dark .fb-field-card:hover {
+    border-color: #374151;
+    background: rgba(30, 41, 59, 0.4);
+  }
+  .fb-field-card.is-selected {
+    border-color: var(--primary, #4361ee) !important;
+    background: rgba(67, 97, 238, 0.02);
+    box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.12);
+  }
+
+  /* ---- FIELD ACTION PILL: appears on selection ---- */
+  .fb-field-actions {
+    position: absolute;
+    top: -10px;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 2px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    z-index: 25;
+  }
+  .dark .fb-field-actions {
+    background: #1e293b;
+    border-color: #374151;
+  }
+  .fb-field-actions button {
+    width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transform: translateX(-50%);
+    border-radius: 6px;
+    color: #6b7280;
+    transition: all 0.12s;
+  }
+  .fb-field-actions button:hover {
+    background: rgba(67, 97, 238, 0.1);
+    color: var(--primary, #4361ee);
+  }
+  .fb-field-actions button.btn-danger:hover {
+    background: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
+  }
+
+  /* ---- ROW TOOLBAR: compact vertical pill on right ---- */
+  .fb-row-toolbar {
+    position: absolute;
+    top: 50%;
+    right: -20px;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 3px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    z-index: 30;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+  .dark .fb-row-toolbar {
+    background: #1e293b;
+    border-color: #374151;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .fb-row:hover .fb-row-toolbar,
+  .fb-row.is-hovered .fb-row-toolbar {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .fb-row-toolbar button {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    color: #6b7280;
+    transition: all 0.12s;
+  }
+  .fb-row-toolbar button:hover {
+    background: rgba(67, 97, 238, 0.1);
+    color: var(--primary, #4361ee);
+  }
+  .fb-row-toolbar button.btn-danger:hover {
+    background: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
+  }
+  .fb-row-toolbar button:disabled {
+    opacity: 0.25;
+    cursor: default;
+  }
+  .fb-row-toolbar .toolbar-sep {
+    width: 16px;
+    height: 1px;
+    background: #e5e7eb;
+    margin: 2px 0;
+  }
+  .dark .fb-row-toolbar .toolbar-sep {
+    background: #374151;
+  }
+
+  /* ---- COLUMN RESIZE HANDLE: hidden, shown on row hover ---- */
+  .fb-col-resize {
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    width: 14px;
+    right: -9px;
+    cursor: col-resize;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .fb-row:hover .fb-col-resize,
+  .fb-row.is-hovered .fb-col-resize {
+    opacity: 1;
   }
   .fb-col-resize::before {
     content: '';
     display: block;
     width: 3px;
-    height: 24px;
+    height: 20px;
     border-radius: 3px;
     background: #d1d5db;
     transition: all 0.15s;
@@ -97,16 +258,16 @@
   .fb-col-resize.active::before {
     height: 100%;
     background: var(--primary, #4361ee);
-    box-shadow: 0 0 8px rgba(67, 97, 238, 0.4);
+    box-shadow: 0 0 6px rgba(67, 97, 238, 0.35);
   }
   .dark .fb-col-resize::before {
     background: #4b5563;
   }
 
-  /* Width badge on resize */
+  /* Width badge on active resize */
   .fb-width-badge {
     position: absolute;
-    top: -22px;
+    top: -20px;
     left: 50%;
     transform: translateX(-50%);
     background: var(--primary, #4361ee);
@@ -120,41 +281,48 @@
     z-index: 20;
   }
 
-  /* Column width badge */
-  .fb-col-badge {
-    font-size: 9px;
-    font-weight: 700;
-    padding: 1px 6px;
-    border-radius: 4px;
-    background: rgba(var(--primary-rgb, 67, 97, 238), 0.1);
-    color: var(--primary, #4361ee);
+  /* Empty column inner placeholder */
+  .fb-empty-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 46px;
+    color: #d1d5db;
+    font-size: 11px;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .dark .fb-empty-col {
+    color: #4b5563;
+  }
+  .fb-row:hover .fb-empty-col,
+  .fb-row.is-hovered .fb-empty-col {
+    opacity: 1;
   }
 
-  /* Drop zones */
-  .fb-drop-zone {
-    min-height: 60px;
-    transition: background-color 0.15s, border-color 0.15s;
-  }
-  .fb-drop-zone.drag-over {
-    background-color: rgba(var(--primary-rgb, 67, 97, 238), 0.08) !important;
-    border-color: rgba(var(--primary-rgb, 67, 97, 238), 0.4) !important;
+  /* Ensure field inputs are non-interactive in edit mode */
+  .fb-field-card input,
+  .fb-field-card select,
+  .fb-field-card textarea {
+    pointer-events: none;
   }
 </style>
 
 <!-- Canvas Area -->
-<div class="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-6" @click="builderState.selectedFieldId = null; if(builderState.drawerMode === 'field-settings') builderState.drawerMode = 'fields'">
+<div class="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 p-6" @click="builderState.selectedFieldId = null; if(builderState.drawerMode === 'field-settings') builderState.drawerMode = 'fields'">
 
-  <div class="max-w-5xl mx-auto">
+  <div class="max-w-3xl mx-auto">
 
     <!-- Empty State -->
     <template x-if="formLayout.rows.length === 0">
-      <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm"
+      <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl bg-white/60 dark:bg-gray-800/30 backdrop-blur-sm"
            style="min-height: 420px;"
-           @dragover.prevent="$el.classList.add('drag-over', 'fb-drop-zone')"
-           @dragleave="$el.classList.remove('drag-over', 'fb-drop-zone')"
+           @dragover.prevent="$el.classList.add('drag-over', 'fb-column')"
+           @dragleave="$el.classList.remove('drag-over', 'fb-column')"
            @drop.prevent="addRow(1); $nextTick(() => handleCanvasDrop($event, 0, 0))">
 
-        <!-- Animated icon -->
         <div class="relative mb-6">
           <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-info/20 flex items-center justify-center">
             <iconify-icon icon="solar:widget-5-bold-duotone" width="40" class="text-primary"></iconify-icon>
@@ -167,7 +335,6 @@
         <h3 class="text-lg font-bold text-gray-700 dark:text-gray-200 mb-1">Construisez votre formulaire</h3>
         <p class="text-sm text-gray-400 mb-6 text-center max-w-[320px]">Glissez des champs depuis la barre latérale ou ajoutez une ligne pour commencer</p>
         
-        <!-- Quick-start layouts -->
         <div class="flex items-center gap-2">
           <button @click.stop="addRow(1)" class="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:border-primary hover:text-primary hover:shadow-md transition-all">
             <div class="flex gap-0.5"><div class="w-8 h-2 bg-primary/30 rounded-sm"></div></div>
@@ -185,129 +352,112 @@
       </div>
     </template>
 
-    <!-- Rows -->
-    <div class="space-y-4" id="form-builder-rows">
-      <template x-for="(row, rowIndex) in formLayout.rows" :key="row.id">
-        <div class="group relative"
-             :data-row-id="row.id"
-             @mouseenter="builderState.hoveredRowId = row.id"
-             @mouseleave="builderState.hoveredRowId = null">
+    <!-- Form Card (matches preview background) -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 px-5 py-4">
+      <!-- Rows -->
+      <div class="space-y-1" id="form-builder-rows">
+        <template x-for="(row, rowIndex) in formLayout.rows" :key="row.id">
+          <div class="fb-row"
+               :data-row-id="row.id"
+               :class="builderState.hoveredRowId === row.id && 'is-hovered'"
+               @mouseenter="builderState.hoveredRowId = row.id"
+               @mouseleave="builderState.hoveredRowId = null">
 
-          <!-- Row Toolbar (appears on hover, same as cockpit) -->
-          <div x-show="builderState.hoveredRowId === row.id" x-cloak
-               class="absolute -top-4 left-1/2 transform -translate-x-1/2 -translate-y-0 z-20 flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-lg px-2 py-1"
-               @click.stop>
-            <!-- Column Layout Presets -->
-            <div class="flex items-center gap-0.5 mr-1 border-r dark:border-gray-700 pr-2">
-              <button @click="setRowLayout(row.id, [12])" class="w-6 h-6 rounded flex items-center justify-center hover:bg-primary/10 transition-colors" title="1 colonne">
-                <div class="flex gap-px"><div class="w-4 h-2 bg-gray-400 rounded-sm"></div></div>
+            <!-- Row Toolbar (right side, vertical pill) -->
+            <div class="fb-row-toolbar" @click.stop>
+              <button @click="setRowLayout(row.id, [12])" title="1 colonne">
+                <div class="flex gap-px"><div class="w-3.5 h-1.5 bg-current rounded-sm opacity-60"></div></div>
               </button>
-              <button @click="setRowLayout(row.id, [6,6])" class="w-6 h-6 rounded flex items-center justify-center hover:bg-primary/10 transition-colors" title="2 colonnes">
-                <div class="flex gap-px"><div class="w-2 h-2 bg-gray-400 rounded-sm"></div><div class="w-2 h-2 bg-gray-400 rounded-sm"></div></div>
+              <button @click="setRowLayout(row.id, [6,6])" title="2 colonnes">
+                <div class="flex gap-px"><div class="w-1.5 h-1.5 bg-current rounded-sm opacity-60"></div><div class="w-1.5 h-1.5 bg-current rounded-sm opacity-60"></div></div>
               </button>
-              <button @click="setRowLayout(row.id, [4,4,4])" class="w-6 h-6 rounded flex items-center justify-center hover:bg-primary/10 transition-colors" title="3 colonnes">
-                <div class="flex gap-px"><div class="w-1.5 h-2 bg-gray-400 rounded-sm"></div><div class="w-1.5 h-2 bg-gray-400 rounded-sm"></div><div class="w-1.5 h-2 bg-gray-400 rounded-sm"></div></div>
+              <button @click="setRowLayout(row.id, [4,4,4])" title="3 colonnes">
+                <div class="flex gap-px"><div class="w-1 h-1.5 bg-current rounded-sm opacity-60"></div><div class="w-1 h-1.5 bg-current rounded-sm opacity-60"></div><div class="w-1 h-1.5 bg-current rounded-sm opacity-60"></div></div>
               </button>
-              <button @click="setRowLayout(row.id, [4,8])" class="w-6 h-6 rounded flex items-center justify-center hover:bg-primary/10 transition-colors" title="⅓ + ⅔">
-                <div class="flex gap-px"><div class="w-1 h-2 bg-gray-400 rounded-sm"></div><div class="w-3 h-2 bg-gray-400 rounded-sm"></div></div>
+              <div class="toolbar-sep"></div>
+              <button @click="moveRow(rowIndex, -1)" title="Monter" :disabled="rowIndex === 0">
+                <iconify-icon icon="solar:arrow-up-linear" width="14"></iconify-icon>
               </button>
-              <button @click="setRowLayout(row.id, [8,4])" class="w-6 h-6 rounded flex items-center justify-center hover:bg-primary/10 transition-colors" title="⅔ + ⅓">
-                <div class="flex gap-px"><div class="w-3 h-2 bg-gray-400 rounded-sm"></div><div class="w-1 h-2 bg-gray-400 rounded-sm"></div></div>
+              <button @click="moveRow(rowIndex, 1)" title="Descendre" :disabled="rowIndex === formLayout.rows.length - 1">
+                <iconify-icon icon="solar:arrow-down-linear" width="14"></iconify-icon>
+              </button>
+              <button @click="duplicateRow(rowIndex)" title="Dupliquer">
+                <iconify-icon icon="solar:copy-linear" width="14"></iconify-icon>
+              </button>
+              <div class="toolbar-sep"></div>
+              <button @click="deleteRow(rowIndex)" title="Supprimer" class="btn-danger">
+                <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon>
               </button>
             </div>
-            <!-- Row Actions -->
-            <button @click="moveRow(rowIndex, -1)" class="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-all" title="Monter" :disabled="rowIndex === 0">
-              <iconify-icon icon="solar:arrow-up-outline" width="14"></iconify-icon>
-            </button>
-            <button @click="moveRow(rowIndex, 1)" class="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/10 transition-all" title="Descendre" :disabled="rowIndex === formLayout.rows.length - 1">
-              <iconify-icon icon="solar:arrow-down-outline" width="14"></iconify-icon>
-            </button>
-            <button @click="duplicateRow(rowIndex)" class="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-info hover:bg-info/10 transition-all" title="Dupliquer">
-              <iconify-icon icon="solar:copy-bold" width="14"></iconify-icon>
-            </button>
-            <div class="w-px h-4 bg-gray-200 dark:bg-gray-700"></div>
-            <button @click="deleteRow(rowIndex)" class="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-danger hover:bg-danger/10 transition-all" title="Supprimer">
-              <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="14"></iconify-icon>
-            </button>
-          </div>
 
-          <!-- Row Grid -->
-          <div class="grid gap-3 bg-white dark:bg-[#0e1726] rounded-xl border border-gray-200 dark:border-gray-700 p-3 transition-colors"
-               :class="builderState.hoveredRowId === row.id && 'border-primary/30'"
-               :style="'grid-template-columns: repeat(12, 1fr)'">
-            
-            <template x-for="(col, colIndex) in row.columns" :key="row.id + '-col-' + colIndex">
-              <div class="fb-drop-zone relative rounded-lg border border-dashed border-gray-200 dark:border-gray-700 p-2 min-h-[60px]"
-                   :style="'grid-column: span ' + col.width"
-                   :data-row-index="rowIndex"
-                   :data-col-index="colIndex">
-                
-                <!-- Column width badge -->
-                <div class="absolute -top-2.5 left-3 fb-col-badge" x-text="col.width + '/12'"></div>
+            <!-- Row Grid -->
+            <div class="grid gap-4"
+                 :style="'grid-template-columns: repeat(' + row.columns.reduce((s, c) => s + c.width, 0) + ', minmax(0, 1fr))'">
+              
+              <template x-for="(col, colIndex) in row.columns" :key="row.id + '-col-' + colIndex">
+                <div class="fb-column"
+                     :style="'grid-column: span ' + col.width"
+                     :data-row-index="rowIndex"
+                     :data-col-index="colIndex">
+                  
+                  <div class="fb-col-badge" x-text="col.width + '/12'"></div>
 
-                <!-- Fields in this column -->
-                <div class="space-y-2 mt-1"
-                     data-sortable-column
-                     :data-row-id="row.id"
-                     :data-col-index="colIndex"
-                     x-init="initSortableColumn($el, row.id, colIndex)">
-                  <template x-for="(field, fieldIndex) in col.fields" :key="field.id">
-                    <div class="fb-field-item group/field relative bg-white dark:bg-[#0e1726] border border-gray-100 dark:border-gray-700 rounded-lg p-3 cursor-grab hover:border-primary/30 hover:shadow-sm transition-all"
-                         :data-field-id="field.id"
-                         :class="builderState.selectedFieldId === field.id && 'ring-2 ring-primary/50 border-primary/30 shadow-md'"
-                         @click.stop="selectField(field.id)">
-                      
-                      <!-- Block Action Popover (appears on selection, same as cockpit) -->
-                      <div x-show="builderState.selectedFieldId === field.id" x-cloak
-                           class="absolute -top-3 right-2 flex items-center gap-0.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-lg rounded-lg px-1 py-0.5 z-10"
-                           @click.stop>
-                        <button @click="openFieldSettings(field.id)" class="p-1.5 text-gray-400 hover:text-primary rounded transition-colors" title="Paramètres">
-                          <iconify-icon icon="solar:settings-bold" width="14"></iconify-icon>
-                        </button>
-                        <button @click="duplicateFieldInPlace(rowIndex, colIndex, fieldIndex)" class="p-1.5 text-gray-400 hover:text-info rounded transition-colors" title="Dupliquer">
-                          <iconify-icon icon="solar:copy-bold" width="14"></iconify-icon>
-                        </button>
-                        <div class="w-px h-3.5 bg-gray-200 dark:bg-gray-600"></div>
-                        <button @click.stop="removeField(rowIndex, colIndex, fieldIndex)" class="p-1.5 text-gray-400 hover:text-danger rounded transition-colors" title="Retirer">
-                          <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="14"></iconify-icon>
-                        </button>
+                  <div class="flex flex-col gap-2"
+                       data-sortable-column
+                       :data-row-id="row.id"
+                       :data-col-index="colIndex"
+                       x-init="initSortableColumn($el, row.id, colIndex)">
+                    <template x-for="(field, fieldIndex) in col.fields" :key="field.id">
+                      <div class="fb-field-card"
+                           :data-field-id="field.id"
+                           :class="builderState.selectedFieldId === field.id && 'is-selected'"
+                           @click.stop="selectField(field.id)">
+                        
+                        <div x-show="builderState.selectedFieldId === field.id" x-cloak
+                             class="fb-field-actions" @click.stop>
+                          <button @click="openFieldSettings(field.id)" title="Paramètres">
+                            <iconify-icon icon="solar:settings-linear" width="14"></iconify-icon>
+                          </button>
+                          <button @click="duplicateFieldInPlace(rowIndex, colIndex, fieldIndex)" title="Dupliquer">
+                            <iconify-icon icon="solar:copy-linear" width="14"></iconify-icon>
+                          </button>
+                          <button @click.stop="removeField(rowIndex, colIndex, fieldIndex)" title="Retirer" class="btn-danger">
+                            <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon>
+                          </button>
+                        </div>
+                        
+                        <div x-html="renderPreviewField(field)"></div>
                       </div>
-                      
-                      <!-- Field Preview -->
-                      <div x-html="renderFieldPreview(field)"></div>
-                    </div>
-                  </template>
+                    </template>
 
-                  <!-- Empty column placeholder -->
-                  <template x-if="col.fields.length === 0">
-                    <div class="flex flex-col items-center justify-center h-14 text-gray-300 dark:text-gray-600 text-xs rounded-lg border border-dashed border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30">
-                      <iconify-icon icon="solar:add-circle-linear" width="18" class="mb-0.5"></iconify-icon>
-                      Glissez un champ ici
+                    <template x-if="col.fields.length === 0">
+                      <div class="fb-empty-col">
+                        <iconify-icon icon="solar:add-circle-linear" width="16" class="mb-0.5"></iconify-icon>
+                        <span style="font-size: 10px;">Glissez ici</span>
+                      </div>
+                    </template>
+                  </div>
+
+                  <template x-if="colIndex < row.columns.length - 1">
+                    <div class="fb-col-resize"
+                         @mousedown="startResize($event, rowIndex, colIndex)"
+                         :class="resizing && resizing.rowIndex === rowIndex && resizing.colIndex === colIndex && 'active'">
                     </div>
                   </template>
                 </div>
-
-                <!-- Column resize handle -->
-                <template x-if="colIndex < row.columns.length - 1">
-                  <div class="fb-col-resize" 
-                       :style="'right: -10px;'"
-                       @mousedown="startResize($event, rowIndex, colIndex)"
-                       :class="resizing && resizing.rowIndex === rowIndex && resizing.colIndex === colIndex && 'active'">
-                  </div>
-                </template>
-              </div>
-            </template>
+              </template>
+            </div>
           </div>
-        </div>
-      </template>
+        </template>
+      </div>
     </div>
 
-    <!-- Add Row Button (bottom, same as cockpit) -->
+    <!-- Add Row Button -->
     <template x-if="formLayout.rows.length > 0">
-      <div class="mt-6 flex justify-center">
+      <div class="mt-5 flex justify-center">
         <button @click="addRow(1)" 
-                class="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-500 dark:text-gray-400 hover:border-primary hover:text-primary hover:shadow-md transition-all">
-          <iconify-icon icon="solar:add-circle-bold" width="18"></iconify-icon>
+                class="flex items-center gap-2 px-5 py-2 bg-white/80 dark:bg-gray-800/60 border border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-xs font-medium text-gray-400 dark:text-gray-500 hover:border-primary hover:text-primary hover:bg-white hover:shadow-sm transition-all">
+          <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
           Ajouter une ligne
         </button>
       </div>

@@ -107,6 +107,13 @@ module.exports = {
       if (req.body["type_config.allowCustomText"] !== undefined) {
         type_config.allowCustomText = req.body["type_config.allowCustomText"] === 'on' || req.body["type_config.allowCustomText"] === true || req.body["type_config.allowCustomText"] === 'true';
       }
+      // Date: includeTime + defaultValue
+      if (req.body["type_config.includeTime"] !== undefined) {
+        type_config.includeTime = req.body["type_config.includeTime"] === 'on' || req.body["type_config.includeTime"] === true || req.body["type_config.includeTime"] === 'true';
+      }
+      if (req.body["type_config.defaultValue"]) {
+        type_config.defaultValue = req.body["type_config.defaultValue"];
+      }
 
       const ui = {};
       if (req.body["ui.placeholder"]) {
@@ -197,6 +204,13 @@ module.exports = {
       }
       if (req.body["type_config.allowCustomText"] !== undefined) {
         type_config.allowCustomText = req.body["type_config.allowCustomText"] === 'on' || req.body["type_config.allowCustomText"] === true || req.body["type_config.allowCustomText"] === 'true';
+      }
+      // Date: includeTime + defaultValue
+      if (req.body["type_config.includeTime"] !== undefined) {
+        type_config.includeTime = req.body["type_config.includeTime"] === 'on' || req.body["type_config.includeTime"] === true || req.body["type_config.includeTime"] === 'true';
+      }
+      if (req.body["type_config.defaultValue"]) {
+        type_config.defaultValue = req.body["type_config.defaultValue"];
       }
 
       const ui = {};

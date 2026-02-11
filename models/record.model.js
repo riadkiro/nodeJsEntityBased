@@ -44,6 +44,12 @@ const RecordSchema = new mongoose.Schema({
     value: mongoose.Schema.Types.Mixed
   }],
 
+  // 🔗 Relations (stored separately from customFields because relation keys are UUIDs, not ObjectIds)
+  relations: [{
+    relationKey: { type: String, required: true },  // UUID key from entity.relations[].key
+    value: mongoose.Schema.Types.Mixed               // ObjectId or [ObjectId] of related record(s)
+  }],
+
   // 👤 Suivi
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }

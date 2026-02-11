@@ -16,3 +16,4 @@
 
 <!-- Ajoute tes prochaines missions ici, exemple : -->
 <!-- - **Nom de la mission** — Description courte -->
+Mission : cree moi un systeme de chat complet avec websocket et seed avec un autre compte user pour tester le systeme, le ui on a deja un island il doit etre fonctionnel, le UI super UX/UI avec possibilité d integrer le chat dans un widget ou une sorte de conversation fixe en bas de la page qu'on toggle et reouvre comme facebook messenger, utilise tjr le style css et tailwind en mode light et dark, teste tout , corrige les bugs et ajoute des logs pour debugguer et des commentaires pour expliquer le code, utilise le navigateur pour tester, cree les seed qu'il faut etc, il faut que tout operationel, partage de fichier etc UI ultra moderne dans le style que nous avons deja, clean et propre check les rules UI... fais ca en mode autopilote

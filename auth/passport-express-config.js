@@ -2,16 +2,17 @@ const session = require("express-session");
 const express = require("express");
 const passport = require("passport");
 
+// Create session middleware (exported for Socket.IO sharing)
+const sessionMiddleware = session({
+  secret: "12hhGYIUJI87!!7",
+  resave: true,
+  saveUninitialized: true,
+});
+
 //Express configuration for passport
 module.exports = function (app) {
   // Express session
-  app.use(
-    session({
-      secret: "12hhGYIUJI87!!7",
-      resave: true,
-      saveUninitialized: true,
-    })
-  );
+  app.use(sessionMiddleware);
   app.use(passport.initialize());
   app.use(passport.session());
   // Express body parser, it allows you to parse req.body,
@@ -25,3 +26,6 @@ module.exports = function (app) {
     next();
   });
 };
+
+// Export session middleware for Socket.IO
+module.exports.sessionMiddleware = sessionMiddleware;

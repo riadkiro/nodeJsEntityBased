@@ -99,14 +99,8 @@ router.get("/tasks", (req, res) => {
     });
 });
 
-// Chat Page
-router.get("/chat", (req, res) => {
-    res.render("record/record-chat", {
-        layout: "layout-app",
-        user: req.user,
-        account_number: req.account_number
-    });
-});
+// Chat System (WebSocket + REST API)
+router.use("/chat", require("./chat.router.js"));
 
 // Media Page
 router.get("/media", (req, res) => {

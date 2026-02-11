@@ -20,6 +20,11 @@ startPassport(app);
 const PORT = 3000;
 var server = app.listen(PORT, console.log(`Server started on port ${PORT}`));
 
+// Initialize Socket.IO for real-time chat
+const { sessionMiddleware } = require("./auth/passport-express-config");
+const { initSocketIO } = require("./src/chat/socketServer");
+const io = initSocketIO(server, sessionMiddleware);
+
 // DB Config
 const db = require("./config/db").globalDbUri;
 

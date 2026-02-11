@@ -115,6 +115,7 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
                 viewId
             }).lean()
             preferences = prefs?.preferences || null
+            console.log('[API] Load preferences - showSidebar:', preferences?.showSidebar, 'viewId:', viewId)
         }
 
         // Build columns from entity custom fields (which are now populated)
@@ -160,6 +161,7 @@ router.post('/api/user/view-preferences', async (req, res) => {
     try {
         const UserPreferences = await tenantCollection(req, "UserPreferences")
         const { viewId, preferences } = req.body
+        console.log('[API] Save preferences - showSidebar:', preferences?.showSidebar, 'viewId:', viewId)
 
         if (!viewId) {
             return res.status(400).json({ error: 'viewId is required' })
@@ -179,7 +181,8 @@ router.post('/api/user/view-preferences', async (req, res) => {
                     sort: preferences.sort || { field: 'createdAt', direction: 'desc' },
                     density: preferences.density || 'normal',
                     pageSize: preferences.pageSize || 25,
-                    titleDisplay: preferences.titleDisplay || 'avatar'
+                    titleDisplay: preferences.titleDisplay || 'avatar',
+                    showSidebar: preferences.showSidebar !== undefined ? preferences.showSidebar : true
                 },
                 updatedAt: new Date()
             },

@@ -97,7 +97,7 @@ export default function RecordsToolbar({
                 {/* Expandable Add Button - pill style */}
                 <a
                     href={`/account/${accountNumber}/record/${entitySlug}/add`}
-                    className="btn-add-expandable"
+                    className="btn-add-expandable block rounded-full p-2 bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
                     title="Ajouter"
                 >
                     <svg className="btn-add-icon" viewBox="0 0 24 24" fill="none">
@@ -192,7 +192,7 @@ export default function RecordsToolbar({
                 <button
                     type="button"
                     onClick={onToggleSidebar}
-                    className="btn-sidebar-toggle"
+                    className="btn-sidebar-toggle block rounded-full p-2 bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
                     title={showSidebar ? 'Masquer le panneau' : 'Afficher le panneau'}
                 >
                     <svg className="btn-sidebar-icon" viewBox="0 0 24 24" fill="none">
@@ -423,88 +423,47 @@ export default function RecordsToolbar({
                     from { opacity: 0; transform: translateY(-4px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
-                /* Expandable Add Button */
-                .btn-add-expandable {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 0;
-                    height: 34px;
-                    padding: 0 10px;
-                    border-radius: 9999px;
-                    background-color: #1b2e4b;
-                    color: rgba(255, 255, 255, 0.5);
-                    font-size: 13px;
-                    font-weight: 600;
-                    white-space: nowrap;
-                    cursor: pointer;
-                    text-decoration: none;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    overflow: hidden;
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                }
-                .btn-add-expandable:hover {
-                    gap: 6px;
-                    padding: 0 16px;
-                    background-color: #22bce9;
-                    color: #fff;
-                    box-shadow: 0 4px 12px rgba(34, 188, 233, 0.4);
-                    transform: translateY(-1px);
-                    border-color: transparent;
-                }
-                .btn-add-icon {
-                    width: 16px;
-                    height: 16px;
-                    flex-shrink: 0;
-                }
-                .btn-add-label {
-                    max-width: 0;
-                    opacity: 0;
-                    overflow: hidden;
-                    transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
-                }
-                .btn-add-expandable:hover .btn-add-label {
-                    max-width: 80px;
-                    opacity: 1;
-                }
-                /* Sidebar Toggle Button - expandable pill */
+                /* Expandable pill buttons - only animation overrides, colors from Tailwind classes */
+                .btn-add-expandable,
                 .btn-sidebar-toggle {
                     display: inline-flex;
                     align-items: center;
                     gap: 0;
                     height: 34px;
-                    padding: 0 10px;
-                    border-radius: 9999px;
-                    background-color: #1b2e4b;
-                    color: rgba(255, 255, 255, 0.5);
-                    font-size: 13px;
-                    font-weight: 600;
-                    white-space: nowrap;
+                    padding: 0 9px;
                     cursor: pointer;
                     text-decoration: none;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                     overflow: hidden;
-                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    white-space: nowrap;
+                    font-size: 13px;
+                    font-weight: 600;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    border: none;
                 }
+                .btn-add-expandable:hover,
                 .btn-sidebar-toggle:hover {
                     gap: 6px;
+                    height: 34px;
                     padding: 0 16px;
-                    background-color: #22bce9;
-                    color: #fff;
+                    background-color: #22bce9 !important;
+                    color: #fff !important;
                     box-shadow: 0 4px 12px rgba(34, 188, 233, 0.4);
                     transform: translateY(-1px);
-                    border-color: transparent;
                 }
+                .btn-add-icon,
                 .btn-sidebar-icon {
                     width: 16px;
                     height: 16px;
                     flex-shrink: 0;
                 }
+                .btn-add-label,
                 .btn-sidebar-label {
                     max-width: 0;
                     opacity: 0;
                     overflow: hidden;
                     transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
                 }
+                .btn-add-expandable:hover .btn-add-label,
                 .btn-sidebar-toggle:hover .btn-sidebar-label {
                     max-width: 80px;
                     opacity: 1;

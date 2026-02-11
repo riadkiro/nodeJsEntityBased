@@ -40,6 +40,10 @@ const userPreferencesSchema = new mongoose.Schema({
             type: String,
             enum: ['avatar', 'icon', 'none'],
             default: 'avatar'
+        },
+        showSidebar: {
+            type: Boolean,
+            default: true
         }
     },
     updatedAt: {

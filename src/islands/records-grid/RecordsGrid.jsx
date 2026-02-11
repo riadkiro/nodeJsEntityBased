@@ -82,6 +82,7 @@ export default function RecordsGrid({
 
             // Merge server preferences with local
             if (data.preferences) {
+                console.log('[RecordsGrid] Server preferences loaded - showSidebar:', data.preferences.showSidebar)
                 setPreferences(prev => ({
                     ...prev,
                     ...data.preferences,
@@ -396,7 +397,7 @@ export default function RecordsGrid({
                     </div>
 
                     {/* Pagination footer */}
-                    <div className="dataTable-bottom mt-4 flex items-center justify-between border-t pt-4 dark:border-gray-800">
+                    <div className="dataTable-bottom flex items-center justify-between border-t pt-4 dark:border-gray-800">
                         <div className="dataTable-info text-gray-500 dark:text-gray-400">
                             Affichage de {((pagination.page - 1) * pagination.limit) + 1} à {Math.min(pagination.page * pagination.limit, pagination.total)} sur {pagination.total}
                         </div>

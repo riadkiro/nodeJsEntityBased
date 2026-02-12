@@ -15,6 +15,7 @@
   <link rel="stylesheet" type="text/css" media="screen" href="/css/app/main.css" />
   <link defer rel="stylesheet" type="text/css" media="screen" href="/themes/default/assets/css/animate.css" />
   <link rel="stylesheet" type="text/css" media="screen" href="/css/picker.css" />
+  <link rel="stylesheet" type="text/css" media="screen" href="/assets/css/ai-assistant.css" />
   <script src="/themes/default/assets/js/perfect-scrollbar.min.js"></script>
   <script defer src="/themes/default/assets/js/popper.min.js"></script>
   <script defer src="/themes/default/assets/js/tippy-bundle.umd.min.js"></script>
@@ -343,6 +344,18 @@
           });
         </script>
         <script src="/js/delete.js"></script>
+
+        <!-- AI Assistant Island (floating chat widget) -->
+        <% if (typeof account_number !== 'undefined' && account_number && typeof user !== 'undefined' && user) { %>
+        <div
+            data-island="ai-assistant"
+            data-account-number="<%= account_number %>"
+            data-user-id="<%= user._id %>"
+            data-user-name="<%= user.name || user.email %>"
+            data-user-avatar="<%= user.avatar || '' %>"
+        ></div>
+        <script type="module" src="/dist/aiAssistant.js"></script>
+        <% } %>
 </body>
 
 </html>

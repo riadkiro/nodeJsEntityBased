@@ -6,6 +6,9 @@ router.use("/dashboard", require("./account.router.js"));
 // Admin Panel
 router.use("/admin", require("./admin.router.js"));
 
+// AI Assistant
+router.use("/", require("./ai-assistant.router.js"));
+
 // Home Page
 router.get("/home", (req, res) => {
     res.render("home/home", {

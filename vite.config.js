@@ -19,6 +19,7 @@ export default defineConfig({
                 timelineWidget: path.resolve(__dirname, 'src/islands/timeline-widget/entry.jsx'),
                 widgetLibrary: path.resolve(__dirname, 'src/islands/widget-library/entry.jsx'),
                 calendarWidget: path.resolve(__dirname, 'src/islands/calendar-widget/entry.jsx'),
+                aiAssistant: path.resolve(__dirname, 'src/islands/ai-assistant/entry.jsx'),
                 // Future islands:
                 // pageBuilder: path.resolve(__dirname, 'src/islands/page-builder/entry.jsx'),
             },

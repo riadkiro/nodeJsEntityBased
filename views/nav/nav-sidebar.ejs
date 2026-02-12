@@ -502,6 +502,16 @@
             <li x-data="{ hovered: false }">
               <div class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
                 @mouseenter="hovered = true" @mouseleave="hovered = false">
+                <iconify-icon icon="solar:compass-bold-duotone" class="ml-2" width="16" height="16" style="color: #4361ee"></iconify-icon>
+                <a href="/account/<%= account_number %>/showcase" 
+                  class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors flex-1"
+                  :class="window.location.pathname.includes('/showcase') ? '!text-primary font-bold' : ''">Showcase</a>
+                <span class="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded mr-2">All</span>
+              </div>
+            </li>
+            <li x-data="{ hovered: false }">
+              <div class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
+                @mouseenter="hovered = true" @mouseleave="hovered = false">
                 <iconify-icon icon="solar:widget-5-bold-duotone" class="ml-2" width="16" height="16"></iconify-icon>
                 <a href="/account/<%= account_number %>/page-builder/list" class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors flex-1">Page Builder</a>
               </div>

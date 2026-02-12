@@ -11,9 +11,9 @@
 - ~~**Tasks System** — Entity Tâches + seed (35 records) + classifications (Progression, Priorité, Tags) + API + DataGrid~~
 - ~~**Mission 1 — Entity Settings Page** — Page full-page add/edit entity ultra UX/UI (entity-settings.ejs + controller + routes /settings & /settings/:id). Sections accordion, champs standard/personnalisés, relations, classifications, reference title tokens, preview sidebar, icon/color pickers, dark mode.~~
 - ~~**Mission 2 — Icon Picker React Island** — Composant React Island pixel-perfect du IconPicker vanilla JS (src/islands/icon-picker/). Solar/MDI/Tabler, search, pagination, portal rendering, custom events pour Alpine.js integration.~~
+- ~~**Mission 3 — Timeline Widgets & Widget Library** — 4 variantes Timeline (Profile, Modern, Basic, Images) en React Islands pixel-perfect + Bibliothèque de widgets drag & drop (13 widgets catalogués) pour Page Builder & Cockpit Builder. Demo page `/timeline-widgets`, API seed data, système réutilisable avec catégories, recherche, grid/list view, dark mode.~~
 
 ## 🔲 À faire
 
 <!-- Ajoute tes prochaines missions ici, exemple : -->
 <!-- - **Nom de la mission** — Description courte -->
-Mission : met toi en autopilote et va dans la partie tasksn assure toi que tout fonctionne comme une app pro, avec filtre par tag, ajout crud, l'affichage datatable doit avoir une icon setting qui permet d'ajuster le mode d'affichage, on deja table grid et kanban, on doit ajouter checklist avec possibilité de barré les tâches, et un mode calendrier, et un mode timeline, tout ca c des composant react island, on peu jongler entre type d'affichage sans recharger la page en instantané, tout ca dans un style app pro UX/UI avec design ultra UX, respecte les class css et tailwind que nous avons deja, je veux un systeme complet et foncionnel, fais tout les tests necessaire pour que tout fonctionne parfaitement, et ajoute des commentaire pour que je puisse comprendre le code.

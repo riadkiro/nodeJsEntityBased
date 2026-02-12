@@ -1,0 +1,488 @@
+
+<div class="panel p-0 overflow-hidden">
+  <!-- Hero Header -->
+  <div class="relative px-8 py-10 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent dark:from-primary/20 dark:via-primary/10 dark:to-transparent">
+    <div class="relative z-10">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/25">
+          <svg class="text-white" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" stroke-width="1.5"/>
+            <path opacity="0.5" d="M8 12H16M12 8V16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Showcase</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Toutes les pages et vues du projet</p>
+        </div>
+      </div>
+      <p class="text-gray-600 dark:text-gray-300 max-w-2xl text-sm leading-relaxed">
+        Index complet de toutes les pages, vues, composants et modules créés dans l'application. 
+        Cliquez sur une carte pour accéder directement à la page correspondante.
+      </p>
+    </div>
+    <!-- Decorative dots -->
+    <div class="absolute right-8 top-8 grid grid-cols-3 gap-2 opacity-10">
+      <div class="w-2 h-2 rounded-full bg-primary"></div>
+      <div class="w-2 h-2 rounded-full bg-primary"></div>
+      <div class="w-2 h-2 rounded-full bg-primary"></div>
+      <div class="w-2 h-2 rounded-full bg-primary"></div>
+      <div class="w-2 h-2 rounded-full bg-primary"></div>
+      <div class="w-2 h-2 rounded-full bg-primary"></div>
+      <div class="w-2 h-2 rounded-full bg-primary"></div>
+      <div class="w-2 h-2 rounded-full bg-primary"></div>
+      <div class="w-2 h-2 rounded-full bg-primary"></div>
+    </div>
+  </div>
+
+  <div class="p-6 space-y-8">
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SECTION: Core Modules -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div>
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-1.5 h-6 rounded-full bg-primary"></div>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white">Modules principaux</h2>
+        <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">Core</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+        <!-- Dashboard -->
+        <a href="/account/<%= account_number %>/dashboard" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:chart-square-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-primary transition-colors">Dashboard</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Tableau de bord principal avec statistiques et vue d'ensemble du workspace.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Doctor Dashboard -->
+        <a href="/account/<%= account_number %>/doctor" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:stethoscope-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-primary transition-colors">Doctor Dashboard</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Centre de commande clinique pour médecins — consultations du jour, patients, statistiques.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Doctor Cockpit -->
+        <a href="/account/<%= account_number %>/doctor/cockpit" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:monitor-smartphone-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-primary transition-colors">Doctor Cockpit</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Cockpit opérationnel configurable avec widgets pour gérer les consultations en temps réel.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SECTION: Records & Data Views -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div>
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-1.5 h-6 rounded-full bg-success"></div>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white">Records & Données</h2>
+        <span class="text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium">Data Views</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+        <!-- Records Grid (Progressive Table + Kanban) -->
+        <a href="/account/<%= account_number %>/test-progressive/consultation" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-success/50 dark:hover:border-success/50 hover:shadow-lg hover:shadow-success/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:widget-6-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-success transition-colors">Records Grid <span class="text-xs bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 px-1.5 py-0.5 rounded font-normal ml-1">React</span></h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Vue progressive avec switch Table/Kanban, tri, pagination, recherche, colonnes configurables et virtualisation.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-success group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- HTMX DataTable -->
+        <a href="/account/<%= account_number %>/test-datatable/consultation" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-success/50 dark:hover:border-success/50 hover:shadow-lg hover:shadow-success/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:database-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-success transition-colors">HTMX DataTable</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Table de données HTMX avec partials HTML côté serveur, tri et pagination server-side.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-success group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- DataTable (demo) -->
+        <a href="/account/<%= account_number %>/datatable" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-success/50 dark:hover:border-success/50 hover:shadow-lg hover:shadow-success/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:sort-by-time-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-success transition-colors">Data Table Demo</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Démo standalone du DataGrid React Island — sélection d'entité, colonnes dynamiques, densité.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-success group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Entity Record List -->
+        <a href="/account/<%= account_number %>/record/consultation/list" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-success/50 dark:hover:border-success/50 hover:shadow-lg hover:shadow-success/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:list-check-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-success transition-colors">Record List (Classic)</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Liste classique des enregistrements d'une entité avec formulaire d'ajout, édition, suppression.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-success group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SECTION: Productivity -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div>
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-1.5 h-6 rounded-full bg-warning"></div>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white">Productivité</h2>
+        <span class="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded-full font-medium">Productivity</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+        <!-- Tasks Hub -->
+        <a href="/account/<%= account_number %>/tasks" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-warning/50 dark:hover:border-warning/50 hover:shadow-lg hover:shadow-warning/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:clipboard-list-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-warning transition-colors">Tasks Hub <span class="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-normal ml-1">React</span></h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Gestionnaire de tâches avec vues Table, Kanban et sidebar de filtres par classification.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-warning group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Notes -->
+        <a href="/account/<%= account_number %>/notes" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-warning/50 dark:hover:border-warning/50 hover:shadow-lg hover:shadow-warning/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:notes-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-warning transition-colors">Notes</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Application de notes avec cards colorées, étoiles favoris, tags et recherche.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-warning group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Chat -->
+        <a href="/account/<%= account_number %>/chat" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-warning/50 dark:hover:border-warning/50 hover:shadow-lg hover:shadow-warning/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:chat-round-dots-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-warning transition-colors">Chat <span class="text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 px-1.5 py-0.5 rounded font-normal ml-1">React</span></h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Messagerie temps réel WebSocket avec conversations, panel de chat intégré et liste d'utilisateurs.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-warning group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Media -->
+        <a href="/account/<%= account_number %>/media" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-warning/50 dark:hover:border-warning/50 hover:shadow-lg hover:shadow-warning/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:gallery-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-warning transition-colors">Media Library</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Bibliothèque multimédia avec upload, galerie et gestion des fichiers du workspace.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-warning group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Team -->
+        <a href="/account/<%= account_number %>/team" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-warning/50 dark:hover:border-warning/50 hover:shadow-lg hover:shadow-warning/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:users-group-rounded-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-warning transition-colors">Team</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Gestion de l'équipe — membres, rôles, invitations et collaborateurs du workspace.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-warning group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SECTION: Builders & Editors -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div>
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-1.5 h-6 rounded-full bg-secondary"></div>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white">Builders & Éditeurs</h2>
+        <span class="text-xs bg-secondary/10 text-secondary px-2 py-0.5 rounded-full font-medium">Builders</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+        <!-- Document Editor -->
+        <a href="/account/<%= account_number %>/documents" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-secondary/50 dark:hover:border-secondary/50 hover:shadow-lg hover:shadow-secondary/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:document-text-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-secondary transition-colors">Document Editor <span class="text-xs bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 px-1.5 py-0.5 rounded font-normal ml-1">React</span></h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Éditeur WYSIWYG A4 avec pagination, AI assistant, templates et export PDF.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-secondary group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Page Builder -->
+        <a href="/account/<%= account_number %>/page-builder/list" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-secondary/50 dark:hover:border-secondary/50 hover:shadow-lg hover:shadow-secondary/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-fuchsia-500 to-fuchsia-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:widget-5-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-secondary transition-colors">Page Builder</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Constructeur de pages drag & drop avec blocs visuels, lignes et sections configurables.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-secondary group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Cockpit Builder -->
+        <a href="/account/<%= account_number %>/page-builder/cockpit/new" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-secondary/50 dark:hover:border-secondary/50 hover:shadow-lg hover:shadow-secondary/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:monitor-smartphone-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-secondary transition-colors">Cockpit Builder <span class="text-xs bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded font-normal ml-1">New</span></h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Constructeur de cockpits opérationnels avec widgets data-bound, preview live et responsive.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-secondary group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Entity Form Builder -->
+        <a href="/account/<%= account_number %>/entity/list" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-secondary/50 dark:hover:border-secondary/50 hover:shadow-lg hover:shadow-secondary/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-lime-500 to-lime-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:checklist-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-secondary transition-colors">Entity Form Builder</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Constructeur de formulaires pour les entités — champs personnalisés, drag & drop, rows/sections.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-secondary group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Ordonnance (LineBuilder) -->
+        <a href="/account/<%= account_number %>/ordonnance" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-secondary/50 dark:hover:border-secondary/50 hover:shadow-lg hover:shadow-secondary/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:clipboard-text-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-secondary transition-colors">Ordonnance</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Éditeur de prescriptions médicales avec le LineBuilder — schéma dynamique, lignes de médicaments.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-secondary group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Timeline Widgets & Widget Library -->
+        <a href="/account/<%= account_number %>/timeline-widgets" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-secondary/50 dark:hover:border-secondary/50 hover:shadow-lg hover:shadow-secondary/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-indigo-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:sort-by-time-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-secondary transition-colors">Timeline Widgets <span class="text-xs bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 px-1.5 py-0.5 rounded font-normal ml-1">React</span></h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Bibliothèque de widgets Timeline (Profil, Moderne, Basique, Images) + Widget Library drag & drop pour builders.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-secondary group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SECTION: Configuration & Admin -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div>
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-1.5 h-6 rounded-full bg-danger"></div>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white">Configuration & Admin</h2>
+        <span class="text-xs bg-danger/10 text-danger px-2 py-0.5 rounded-full font-medium">Admin</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+        <!-- Collections -->
+        <a href="/account/<%= account_number %>/entity/list" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-danger/50 dark:hover:border-danger/50 hover:shadow-lg hover:shadow-danger/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:box-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-danger transition-colors">Collections (Entités)</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Liste et gestion des entités — créer, éditer, configurer les champs et classifications.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-danger group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Classifications -->
+        <a href="/account/<%= account_number %>/classification/list" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-danger/50 dark:hover:border-danger/50 hover:shadow-lg hover:shadow-danger/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:tag-horizontal-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-danger transition-colors">Classifications</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Gestion des classifications — tags, statuts, priorités, catégories avec options colorées.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-danger group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Field Templates -->
+        <a href="/account/<%= account_number %>/field-template/list" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-danger/50 dark:hover:border-danger/50 hover:shadow-lg hover:shadow-danger/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:tuning-square-2-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-danger transition-colors">Bibliothèque de champs</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Templates de champs réutilisables — texte, nombre, date, relation, récurrence, etc.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-danger group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Field Types -->
+        <a href="/account/<%= account_number %>/field-type/list" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-danger/50 dark:hover:border-danger/50 hover:shadow-lg hover:shadow-danger/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:code-square-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-danger transition-colors">Field Types <span class="text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded font-normal ml-1">Admin</span></h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Types de champs système — configuration avancée des renderers et validateurs de champs.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-danger group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Line Schemas -->
+        <a href="/account/<%= account_number %>/line-schemas" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-danger/50 dark:hover:border-danger/50 hover:shadow-lg hover:shadow-danger/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-stone-500 to-stone-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:document-text-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-danger transition-colors">Line Schemas</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Schémas de lignes pour le LineBuilder — colonnes, types, catalogue et configuration.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-danger group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Database -->
+        <a href="/account/<%= account_number %>/db/list" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-danger/50 dark:hover:border-danger/50 hover:shadow-lg hover:shadow-danger/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-600 to-zinc-700 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:server-square-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-danger transition-colors">Base de données</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Explorateur de la base MongoDB — collections, documents, tree view et inspection des données.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-danger group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Automations -->
+        <a href="/account/<%= account_number %>/workflows" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-danger/50 dark:hover:border-danger/50 hover:shadow-lg hover:shadow-danger/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-violet-700 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:bolt-circle-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-danger transition-colors">Automations (Workflows)</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Workflows no-code avec triggers, actions, boucles et intégrations API externes.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-danger group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Integrations -->
+        <a href="/account/<%= account_number %>/integrations" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-danger/50 dark:hover:border-danger/50 hover:shadow-lg hover:shadow-danger/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-700 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:settings-minimalistic-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-danger transition-colors">Integrations</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Connecteurs API avec providers, OAuth2, gestion des secrets et connexions multi-tenant.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-danger group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+        <!-- Profile Settings -->
+        <a href="/account/<%= account_number %>/profile" class="group block p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-danger/50 dark:hover:border-danger/50 hover:shadow-lg hover:shadow-danger/5 transition-all duration-300 bg-white dark:bg-[#1b2e4b]">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-600 to-cyan-700 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <iconify-icon icon="solar:user-bold-duotone" class="text-white" width="20"></iconify-icon>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-danger transition-colors">Profil & Réglages</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Page de profil utilisateur avec paramètres, préférences et gestion du compte.</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-danger group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
+  </div>
+</div>

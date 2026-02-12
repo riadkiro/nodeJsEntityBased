@@ -31,9 +31,11 @@ description: Commands that are safe to auto-run without user approval
 
 - all node -e
 
-- Remove-Item
+- Remove-Item *
 
-- taskkill
+- cd *
+
+- taskkill *
 
 ### Dev / Read-Only
 - `npm run dev`, `npm run build`, `npm start`

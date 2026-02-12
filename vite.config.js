@@ -16,6 +16,8 @@ export default defineConfig({
                 dataGrid: path.resolve(__dirname, 'src/islands/data-grid/entry.jsx'),
                 iconPicker: path.resolve(__dirname, 'src/islands/icon-picker/entry.jsx'),
                 tasksHub: path.resolve(__dirname, 'src/islands/tasks-hub/entry.jsx'),
+                timelineWidget: path.resolve(__dirname, 'src/islands/timeline-widget/entry.jsx'),
+                widgetLibrary: path.resolve(__dirname, 'src/islands/widget-library/entry.jsx'),
                 // Future islands:
                 // pageBuilder: path.resolve(__dirname, 'src/islands/page-builder/entry.jsx'),
             },

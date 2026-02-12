@@ -163,6 +163,18 @@ router.get("/doctor/cockpit", async (req, res) => {
 // Demo API for Cockpit
 router.use("/api/demo", require("./api/api-demo.router.js"));
 
+// Demo API for Timeline Widgets
+router.use("/api/demo", require("./api/api-timeline-demo.router.js"));
+
+// Timeline Widgets Demo Page
+router.get("/timeline-widgets", (req, res) => {
+    res.render("account/demo/timeline-widgets", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
 // Team Page
 router.get("/team", (req, res) => {
     res.render("account/account-team", {
@@ -184,6 +196,15 @@ router.get("/notes", (req, res) => {
 // Data Table Page
 router.get("/datatable", (req, res) => {
     res.render("record/record-demo-datatable", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
+// Showcase — Index of all pages/views/modules
+router.get("/showcase", (req, res) => {
+    res.render("showcase/showcase", {
         layout: "layout-app",
         user: req.user,
         account_number: req.account_number

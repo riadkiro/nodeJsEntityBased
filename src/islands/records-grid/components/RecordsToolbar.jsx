@@ -1,9 +1,46 @@
 /**
  * RecordsToolbar - Clean minimalist toolbar
- * Search + Icon buttons for settings
+ * Search + Icon buttons for settings + View switcher (table/kanban/notes)
  */
 import React, { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+
+// ─── View definitions with icons ────────────────────────────────────
+const VIEW_MODES = [
+    {
+        id: 'table',
+        label: 'Tableau',
+        icon: (
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                <path d="M3 7H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M3 12H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M3 17H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+        ),
+    },
+    {
+        id: 'kanban',
+        label: 'Kanban',
+        icon: (
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                <rect x="3" y="3" width="5" height="18" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                <rect x="10" y="3" width="5" height="12" rx="1" stroke="currentColor" strokeWidth="1.5" />
+                <rect x="17" y="3" width="4" height="15" rx="1" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+        ),
+    },
+    {
+        id: 'notes',
+        label: 'Notes',
+        icon: (
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                <path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" strokeWidth="1.5" />
+                <path opacity="0.5" d="M2 12H22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path opacity="0.5" d="M12 2V22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+        ),
+    },
+]
 
 export default function RecordsToolbar({
     searchQuery,
@@ -16,7 +53,9 @@ export default function RecordsToolbar({
     entitySlug,
     viewId,
     showSidebar,
-    onToggleSidebar
+    onToggleSidebar,
+    activeView,
+    onViewChange,
 }) {
     const [displayPopover, setDisplayPopover] = useState(false)
     const [sortPopover, setSortPopover] = useState(false)
@@ -138,10 +177,31 @@ export default function RecordsToolbar({
                     )}
                 </div>
             </div>
-            {/* Icons group - RIGHT */}
+
+
+            {/* Icons group - RIGHT (view switcher + settings) */}
             <div className="flex items-center gap-2">
-                {/* Sort button */}
-                {(() => {
+                {/* View switcher buttons - round buttons matching theme */}
+                {VIEW_MODES.map(mode => (
+                    <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => onViewChange(mode.id)}
+                        title={mode.label}
+                        className={`block rounded-full p-2 transition-all ${activeView === mode.id
+                                ? 'bg-primary/20 text-primary'
+                                : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60'
+                            }`}
+                    >
+                        {mode.icon}
+                    </button>
+                ))}
+
+                {/* Separator */}
+                <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-0.5" />
+
+                {/* Sort button (only for table view) */}
+                {activeView === 'table' && (() => {
                     const isSortActive = preferences.sort?.field !== 'createdAt' || preferences.sort?.direction !== 'desc'
                     return (
                         <button
@@ -178,23 +238,25 @@ export default function RecordsToolbar({
                     </svg>
                 </button>
 
-                {/* Columns visibility button */}
-                <button
-                    ref={columnsBtnRef}
-                    type="button"
-                    onClick={() => { setColumnsPopover(!columnsPopover); setDisplayPopover(false); setSortPopover(false) }}
-                    className={`block rounded-full p-2 transition-all ${columnsPopover
-                        ? 'bg-primary/20 text-primary'
-                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60'}`}
-                    title="Colonnes visibles"
-                >
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                        <path d="M9 3H4C3.44772 3 3 3.44772 3 4V11C3 11.5523 3.44772 12 4 12H9C9.55228 12 10 11.5523 10 11V4C10 3.44772 9.55228 3 9 3Z" stroke="currentColor" strokeWidth="1.5" />
-                        <path d="M20 3H15C14.4477 3 14 3.44772 14 4V7C14 7.55228 14.4477 8 15 8H20C20.5523 8 21 7.55228 21 7V4C21 3.44772 20.5523 3 20 3Z" stroke="currentColor" strokeWidth="1.5" />
-                        <path d="M20 12H15C14.4477 12 14 12.4477 14 13V20C14 20.5523 14.4477 21 15 21H20C20.5523 21 21 20.5523 21 20V13C21 12.4477 20.5523 12 20 12Z" stroke="currentColor" strokeWidth="1.5" />
-                        <path d="M9 16H4C3.44772 16 3 16.4477 3 17V20C3 20.5523 3.44772 21 4 21H9C9.55228 21 10 20.5523 10 20V17C10 16.4477 9.55228 16 9 16Z" stroke="currentColor" strokeWidth="1.5" />
-                    </svg>
-                </button>
+                {/* Columns visibility button (only for table view) */}
+                {activeView === 'table' && (
+                    <button
+                        ref={columnsBtnRef}
+                        type="button"
+                        onClick={() => { setColumnsPopover(!columnsPopover); setDisplayPopover(false); setSortPopover(false) }}
+                        className={`block rounded-full p-2 transition-all ${columnsPopover
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60'}`}
+                        title="Colonnes visibles"
+                    >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 3H4C3.44772 3 3 3.44772 3 4V11C3 11.5523 3.44772 12 4 12H9C9.55228 12 10 11.5523 10 11V4C10 3.44772 9.55228 3 9 3Z" stroke="currentColor" strokeWidth="1.5" />
+                            <path d="M20 3H15C14.4477 3 14 3.44772 14 4V7C14 7.55228 14.4477 8 15 8H20C20.5523 8 21 7.55228 21 7V4C21 3.44772 20.5523 3 20 3Z" stroke="currentColor" strokeWidth="1.5" />
+                            <path d="M20 12H15C14.4477 12 14 12.4477 14 13V20C14 20.5523 14.4477 21 15 21H20C20.5523 21 21 20.5523 21 20V13C21 12.4477 20.5523 12 20 12Z" stroke="currentColor" strokeWidth="1.5" />
+                            <path d="M9 16H4C3.44772 16 3 16.4477 3 17V20C3 20.5523 3.44772 21 4 21H9C9.55228 21 10 20.5523 10 20V17C10 16.4477 9.55228 16 9 16Z" stroke="currentColor" strokeWidth="1.5" />
+                        </svg>
+                    </button>
+                )}
 
                 {/* Sidebar toggle button - expandable pill */}
                 <button

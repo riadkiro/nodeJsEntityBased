@@ -502,27 +502,37 @@ Pour les questions sur les données (combien de patients, emails, etc.), répond
 
 // ── Parse AI response for actions/plans ──────────────────────
 function parseAIResponse(text) {
-    const result = { response: text, actions: null, plan: null };
+    const result = { response: text, actions: null, plan: null, hadActionsBlock: false };
 
     // Extract ```actions block
     const actionsMatch = text.match(/```actions\s*\n([\s\S]*?)```/);
     if (actionsMatch) {
+        result.hadActionsBlock = true;
+        // ALWAYS remove the block from displayed text (even if JSON parse fails)
+        result.response = text.replace(/```actions\s*\n[\s\S]*?```/, "").trim();
         try {
-            result.actions = JSON.parse(actionsMatch[1]);
-            result.response = text.replace(/```actions\s*\n[\s\S]*?```/, "").trim();
+            // Strip JS-style comments before parsing (AI often adds // comments)
+            const cleanJson = actionsMatch[1]
+                .replace(/\/\/.*$/gm, '')  // remove // comments
+                .replace(/,\s*([}\]])/g, '$1');  // remove trailing commas
+            result.actions = JSON.parse(cleanJson);
         } catch (e) {
-            console.error("[AIAssistant] Failed to parse actions:", e);
+            console.error("[AIAssistant] Failed to parse actions JSON:", e.message);
+            console.error("[AIAssistant] Raw actions text:", actionsMatch[1].substring(0, 200));
         }
     }
 
     // Extract ```plan block
     const planMatch = text.match(/```plan\s*\n([\s\S]*?)```/);
     if (planMatch) {
+        result.response = result.response.replace(/```plan\s*\n[\s\S]*?```/, "").trim();
         try {
-            result.plan = JSON.parse(planMatch[1]);
-            result.response = text.replace(/```plan\s*\n[\s\S]*?```/, "").trim();
+            const cleanJson = planMatch[1]
+                .replace(/\/\/.*$/gm, '')
+                .replace(/,\s*([}\]])/g, '$1');
+            result.plan = JSON.parse(cleanJson);
         } catch (e) {
-            console.error("[AIAssistant] Failed to parse plan:", e);
+            console.error("[AIAssistant] Failed to parse plan JSON:", e.message);
         }
     }
 
@@ -662,7 +672,8 @@ module.exports = {
             console.log("[AIAssistant] Parsed result — actions:", parsed.actions ? JSON.stringify(parsed.actions).substring(0, 200) : "null", "| plan:", parsed.plan ? "yes" : "null");
 
             // ── Fallback: auto-detect navigate intent if AI forgot the actions block ──
-            if (!parsed.actions && workspaceContext?.entities?.length) {
+            // Only trigger if AI didn't include any actions block at all
+            if (!parsed.actions && !parsed.hadActionsBlock && workspaceContext?.entities?.length) {
                 const accountNum = workspaceContext.accountNumber || req.params.accountNumber;
                 let navUrl = null;
                 let pageName = null;
@@ -932,12 +943,23 @@ module.exports = {
                 }
 
                 case "email-detail": {
-                    const { emailId } = action.data || {};
+                    let { emailId } = action.data || {};
                     console.log("[AIAssistant] Execute email-detail:", { emailId });
 
-                    if (!emailId) {
-                        response = "❌ ID d'email manquant.";
-                        break;
+                    // If emailId is missing, not a valid ObjectId, or a placeholder like "1", "latest"
+                    // → fetch the most recent email instead
+                    const isValidObjectId = emailId && /^[0-9a-fA-F]{24}$/.test(emailId);
+
+                    if (!isValidObjectId) {
+                        console.log("[AIAssistant] Invalid emailId, fetching latest email instead");
+                        const latestEmail = await Mail.findOne({ type: "inbox" })
+                            .sort({ date: -1 })
+                            .lean();
+                        if (!latestEmail) {
+                            response = "❌ Aucun email trouvé dans la boîte de réception.";
+                            break;
+                        }
+                        emailId = latestEmail._id.toString();
                     }
 
                     const emailDetail = await buildEmailContext({ emailId });

@@ -12,14 +12,37 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import ChatPanel from './components/ChatPanel'
 import ChatFAB from './components/ChatFAB'
 
+// ── SessionStorage keys for conversation persistence across page navigations ──
+const STORAGE_KEY = 'ai-assistant-session'
+
+function saveSession(data) {
+    try {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    } catch (e) { /* quota exceeded — silently fail */ }
+}
+
+function loadSession() {
+    try {
+        const raw = sessionStorage.getItem(STORAGE_KEY)
+        return raw ? JSON.parse(raw) : null
+    } catch (e) { return null }
+}
+
+function clearSession() {
+    sessionStorage.removeItem(STORAGE_KEY)
+}
+
 export default function AIAssistant({ accountNumber, userId, userName, userAvatar, currentPath }) {
-    const [isOpen, setIsOpen] = useState(false)
-    const [messages, setMessages] = useState([])
+    // ── Restore session from sessionStorage ──────────────────
+    const savedSession = useMemo(() => loadSession(), [])
+
+    const [isOpen, setIsOpen] = useState(savedSession?.isOpen || false)
+    const [messages, setMessages] = useState(savedSession?.messages || [])
     const [isLoading, setIsLoading] = useState(false)
-    const [conversationId, setConversationId] = useState(null)
+    const [conversationId, setConversationId] = useState(savedSession?.conversationId || null)
     const [context, setContext] = useState(null)
     const [unreadCount, setUnreadCount] = useState(0)
-    const [hasGreeted, setHasGreeted] = useState(false)
+    const [hasGreeted, setHasGreeted] = useState(savedSession?.hasGreeted || false)
 
     // ── Auto-detect context from current page ─────────────────
     const detectedContext = useMemo(() => {
@@ -162,8 +185,49 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
         }
     }, [accountNumber, conversationId, context, detectedContext, isLoading, isOpen, messages])
 
+    // ── Handle navigate action (client-side) ─────────────────
+    // NOTE: This function reads from sessionStorage directly to avoid
+    // stale closure issues with `messages` state on repeated navigations
+    const handleNavigate = useCallback((action) => {
+        const { url, pageName } = action.data || {}
+        if (!url) {
+            console.warn('[AIAssistant] No URL in navigate action')
+            return
+        }
+
+        // Read CURRENT session from storage (not from stale state closure)
+        const currentSession = loadSession() || {}
+        const currentMessages = currentSession.messages || []
+
+        // Add navigation system message
+        const navMsg = {
+            id: Date.now(),
+            role: 'system',
+            content: `🧭 Navigation vers **${pageName || url}**...`,
+            timestamp: new Date().toISOString(),
+            actionType: 'navigating',
+        }
+
+        // Save session synchronously BEFORE navigating
+        saveSession({
+            messages: [...currentMessages, navMsg].slice(-50),
+            conversationId: currentSession.conversationId || conversationId,
+            isOpen: true,
+            hasGreeted: true,
+        })
+
+        // Navigate immediately — no React state update needed
+        window.location.href = url
+    }, [conversationId])
+
     // ── Execute action (from action card) ──────────────────────
     const executeAction = useCallback(async (action) => {
+        // Handle navigate actions client-side (no backend call needed)
+        if (action.type === 'navigate') {
+            handleNavigate(action)
+            return
+        }
+
         setIsLoading(true)
 
         // Add system message showing action execution
@@ -208,7 +272,26 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
         } finally {
             setIsLoading(false)
         }
-    }, [accountNumber, conversationId, context, detectedContext])
+    }, [accountNumber, conversationId, context, detectedContext, handleNavigate])
+
+    // ── Save session on every state change ────────────────────
+    useEffect(() => {
+        if (messages.length > 0 || hasGreeted) {
+            saveSession({
+                messages: messages.slice(-50), // Keep last 50 messages max
+                conversationId,
+                isOpen,
+                hasGreeted,
+            })
+        }
+    }, [messages, conversationId, isOpen, hasGreeted])
+
+    // ── Auto-fetch context if panel was restored open ────────
+    useEffect(() => {
+        if (isOpen && !context) {
+            fetchContext()
+        }
+    }, []) // only on mount
 
     // ── Validate/modify plan ───────────────────────────────────
     const validatePlan = useCallback(async (plan, modifications = null) => {
@@ -306,6 +389,7 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
         setMessages([])
         setConversationId(null)
         setHasGreeted(false)
+        clearSession()
     }, [])
 
     return (

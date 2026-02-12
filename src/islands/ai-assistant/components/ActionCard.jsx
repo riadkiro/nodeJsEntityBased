@@ -9,11 +9,13 @@ const ICONS = {
     update: '✏️',
     delete: '🗑️',
     search: '🔍',
-    navigate: '🔗',
+    navigate: '🧭',
     confirm: '✅',
     cancel: '❌',
     schedule: '📅',
     email: '📧',
+    'email-search': '🔍',
+    'email-detail': '📨',
     default: '⚡',
 }
 

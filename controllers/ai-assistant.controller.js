@@ -89,6 +89,36 @@ async function buildWorkspaceContext(req) {
                     }
                 }
 
+                // Get last 5 recent records for each entity (so AI can reference them)
+                let recentRecords = [];
+                try {
+                    const lastRecords = await Record.find({ entityId: entity._id })
+                        .sort({ createdAt: -1 })
+                        .limit(5)
+                        .select("title fieldValues createdAt updatedAt")
+                        .lean();
+                    recentRecords = lastRecords.map(r => {
+                        // Extract key field values
+                        const fields = {};
+                        if (r.fieldValues) {
+                            for (const [key, val] of Object.entries(r.fieldValues)) {
+                                if (val && typeof val === 'string' && val.length < 100) {
+                                    fields[key] = val;
+                                } else if (val && typeof val !== 'object') {
+                                    fields[key] = String(val).substring(0, 100);
+                                }
+                            }
+                        }
+                        return {
+                            title: r.title || "(sans titre)",
+                            fields: Object.keys(fields).length > 0 ? fields : undefined,
+                            createdAt: r.createdAt,
+                        };
+                    });
+                } catch (e) {
+                    // Silently skip if query fails
+                }
+
                 return {
                     id: entity._id,
                     name: entity.name,
@@ -102,6 +132,7 @@ async function buildWorkspaceContext(req) {
                     totalRecords,
                     todayRecords,
                     statusBreakdown,
+                    recentRecords,
                 };
             })
         );
@@ -358,6 +389,9 @@ ${(context.emailContext.emails || []).map((e, i) =>
 
 ## Tes capacités:
 1. **Interroger les données** — Répondre aux questions sur les fiches, statistiques, etc.
+   - Tu as accès aux 5 dernières fiches de chaque collection dans le contexte (champ \`recentRecords\`)
+   - Quand on te demande "mes dernières fiches" ou "mes dernières tâches", utilise ces données DIRECTEMENT dans ta réponse
+   - **INTERDIT**: Ne dis JAMAIS "un instant" ou "patientez" sans fournir immédiatement les données ou une action. Tu as déjà toutes les données nécessaires dans le contexte ci-dessus.
 2. **Créer des fiches** — L'utilisateur peut te demander de créer des fiches dans n'importe quelle collection. Tu DOIS alors:
    - Identifier la collection cible
    - Demander les informations manquantes obligatoires
@@ -368,6 +402,19 @@ ${(context.emailContext.emails || []).map((e, i) =>
    - Pour chercher un email: action \`email-search\` avec le champ \`query\`
    - Pour lire un email: action \`email-detail\` avec le champ \`emailId\`
    - Pour les statistiques: utilise les données du contexte ci-dessus
+6. **🧭 Navigation** — Naviguer vers n'importe quelle page de l'application:
+   - Tu peux ouvrir une collection, la page d'accueil, les tâches, la messagerie, les réglages, etc.
+   - URLs disponibles:
+     - Page d'accueil: \`/account/${context?.accountNumber}/home\`
+     - Collection (liste des fiches): \`/account/${context?.accountNumber}/record/{slug}/list\`
+     - Gestion des collections: \`/account/${context?.accountNumber}/entity/list\`
+     - Tâches: \`/account/${context?.accountNumber}/tasks\`
+     - Messagerie: \`/account/${context?.accountNumber}/mailbox/1\`
+     - Réglages: \`/account/${context?.accountNumber}/studio\`
+     - Admin: \`/account/${context?.accountNumber}/admin\`
+${context?.entities?.length ? `   - Collections disponibles (utilise le slug exact pour l'URL): ${context.entities.map(e => `${e.name} → \`${e.slug}\``).join(', ')}` : ''}
+   - Utilise TOUJOURS une action \`navigate\` quand l'utilisateur demande d'ouvrir, afficher, aller vers, montrer ou naviguer vers quelque chose
+   - **OBLIGATOIRE**: Chaque demande de navigation DOIT TOUJOURS contenir un bloc actions JSON navigate, même si tu as déjà navigué avant dans la conversation. Ne JAMAIS répondre uniquement avec du texte pour une navigation. Le bloc actions est INDISPENSABLE pour que la navigation fonctionne côté client.
 
 ## Format de réponse:
 - Réponds en français, de manière concise et professionnelle
@@ -376,6 +423,20 @@ ${(context.emailContext.emails || []).map((e, i) =>
 - Pour les PLANS complexes, retourne un bloc \`\`\`plan avec le JSON
 
 ### Actions (exemples):
+\`\`\`actions
+[
+  {
+    "type": "navigate",
+    "label": "Ouvrir les Consultations",
+    "description": "Naviguer vers la liste des consultations",
+    "data": {
+      "url": "/account/${context?.accountNumber}/record/consultation/list",
+      "pageName": "Consultations"
+    }
+  }
+]
+\`\`\`
+
 \`\`\`actions
 [
   {
@@ -592,19 +653,87 @@ module.exports = {
             aiMessages.push({ role: "user", content: message });
 
             // Call AI
+            console.log("[AIAssistant] Sending chat to AI, message:", message.substring(0, 80));
             const aiResponse = await callAI(req, aiMessages);
+            console.log("[AIAssistant] Raw AI response:", aiResponse.substring(0, 300));
 
             // Parse response for actions/plans
             const parsed = parseAIResponse(aiResponse);
+            console.log("[AIAssistant] Parsed result — actions:", parsed.actions ? JSON.stringify(parsed.actions).substring(0, 200) : "null", "| plan:", parsed.plan ? "yes" : "null");
+
+            // ── Fallback: auto-detect navigate intent if AI forgot the actions block ──
+            if (!parsed.actions && workspaceContext?.entities?.length) {
+                const accountNum = workspaceContext.accountNumber || req.params.accountNumber;
+                let navUrl = null;
+                let pageName = null;
+
+                // Build dynamic pattern from entity names
+                const entityNames = workspaceContext.entities.map(e => e.name.toLowerCase());
+                const responseText = parsed.response.toLowerCase();
+
+                // Check if response mentions navigation intent
+                const hasNavIntent = /\b(naviguer|diriger|ouvrir?|aller|accéder|afficher|montrer|vers la liste|liste des|redirig)/i.test(parsed.response);
+
+                if (hasNavIntent) {
+                    console.log("[AIAssistant] Fallback: nav intent detected, checking entities:", entityNames.join(', '));
+
+                    // Check against all known entities dynamically
+                    for (const entity of workspaceContext.entities) {
+                        const name = entity.name.toLowerCase();
+                        // Match entity name with/without trailing 's' (pluralization)
+                        const nameBase = name.replace(/s$/, '');
+                        if (responseText.includes(name) || responseText.includes(nameBase)) {
+                            navUrl = `/account/${accountNum}/record/${entity.slug}/list`;
+                            pageName = entity.name;
+                            break;
+                        }
+                    }
+
+                    // Check static routes
+                    if (!navUrl) {
+                        if (/accueil|home/i.test(parsed.response)) {
+                            navUrl = `/account/${accountNum}/home`;
+                            pageName = "Accueil";
+                        } else if (/tâche|task/i.test(parsed.response)) {
+                            navUrl = `/account/${accountNum}/tasks`;
+                            pageName = "Tâches";
+                        } else if (/messagerie|mailbox|mail/i.test(parsed.response)) {
+                            navUrl = `/account/${accountNum}/mailbox/1`;
+                            pageName = "Messagerie";
+                        } else if (/studio|réglage|setting/i.test(parsed.response)) {
+                            navUrl = `/account/${accountNum}/studio`;
+                            pageName = "Studio";
+                        } else if (/admin/i.test(parsed.response)) {
+                            navUrl = `/account/${accountNum}/admin`;
+                            pageName = "Admin";
+                        }
+                    }
+
+                    if (navUrl) {
+                        console.log(`[AIAssistant] Auto-generated navigate action: ${pageName} → ${navUrl}`);
+                        parsed.actions = [{
+                            type: "navigate",
+                            label: `Ouvrir ${pageName}`,
+                            description: `Naviguer vers ${pageName}`,
+                            data: { url: navUrl, pageName }
+                        }];
+                    } else {
+                        console.log("[AIAssistant] Fallback: nav intent found but no matching entity/route");
+                    }
+                }
+            }
 
             const newConversationId = conversationId || `conv_${Date.now()}`;
 
-            res.json({
+            const finalResponse = {
                 response: parsed.response,
                 actions: parsed.actions,
                 plan: parsed.plan,
                 conversationId: newConversationId,
-            });
+            };
+            console.log("[AIAssistant] Sending response — hasActions:", !!parsed.actions, "| hasPlan:", !!parsed.plan, "| responseLength:", parsed.response.length);
+
+            res.json(finalResponse);
         } catch (error) {
             console.error("[AIAssistant] Chat error:", error);
 
@@ -790,6 +919,15 @@ module.exports = {
                             response += `   💬 ${e.preview || "(vide)"}\n\n`;
                         });
                     }
+                    break;
+                }
+
+                case "navigate": {
+                    // Navigate is handled client-side, but provide a confirmation
+                    const { url, pageName } = action.data || {};
+                    console.log("[AIAssistant] Execute navigate:", { url, pageName });
+                    response = `🧭 **Navigation vers ${pageName || url}**`;
+                    result = { url, pageName };
                     break;
                 }
 

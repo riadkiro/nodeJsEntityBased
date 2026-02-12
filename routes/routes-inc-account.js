@@ -166,9 +166,21 @@ router.use("/api/demo", require("./api/api-demo.router.js"));
 // Demo API for Timeline Widgets
 router.use("/api/demo", require("./api/api-timeline-demo.router.js"));
 
+// Demo API for Calendar Widgets
+router.use("/api/demo", require("./api/api-calendar-demo.router.js"));
+
 // Timeline Widgets Demo Page
 router.get("/timeline-widgets", (req, res) => {
     res.render("account/demo/timeline-widgets", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
+// Calendar Widgets Demo Page
+router.get("/calendar-widgets", (req, res) => {
+    res.render("account/demo/calendar-widgets", {
         layout: "layout-app",
         user: req.user,
         account_number: req.account_number

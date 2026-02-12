@@ -18,6 +18,7 @@ export default defineConfig({
                 tasksHub: path.resolve(__dirname, 'src/islands/tasks-hub/entry.jsx'),
                 timelineWidget: path.resolve(__dirname, 'src/islands/timeline-widget/entry.jsx'),
                 widgetLibrary: path.resolve(__dirname, 'src/islands/widget-library/entry.jsx'),
+                calendarWidget: path.resolve(__dirname, 'src/islands/calendar-widget/entry.jsx'),
                 // Future islands:
                 // pageBuilder: path.resolve(__dirname, 'src/islands/page-builder/entry.jsx'),
             },

@@ -1,3 +1,16 @@
+/**
+ * KanbanBoard - Enhanced ClickUp-style Kanban Board
+ * 
+ * Features:
+ * - Toolbar with search, record count, add button
+ * - Drag & drop between columns (dnd-kit)
+ * - Drag-to-scroll horizontal panning
+ * - Quick-add modal with status + classification selection
+ * - Inline column add (title input)
+ * - Card detail slide-over panel
+ * - Collapsible columns
+ * - Dark mode compatible
+ */
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
     DndContext,
@@ -17,6 +30,8 @@ import {
 
 import KanbanColumn from './components/KanbanColumn'
 import KanbanCard from './components/KanbanCard'
+import QuickAddModal from './components/QuickAddModal'
+import CardDetailPanel from './components/CardDetailPanel'
 
 export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlug, kanbanFieldId = 'status' }) {
     const [columns, setColumns] = useState([])
@@ -25,8 +40,21 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
     const [orderByColumn, setOrderByColumn] = useState({})
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [entityData, setEntityData] = useState(null)
 
     const [activeId, setActiveId] = useState(null)
+
+    // Search
+    const [searchQuery, setSearchQuery] = useState('')
+
+    // Quick add modal
+    const [showAddModal, setShowAddModal] = useState(false)
+    const [addModalDefaultColumn, setAddModalDefaultColumn] = useState(null)
+    const [addLoading, setAddLoading] = useState(false)
+
+    // Card detail panel
+    const [selectedRecord, setSelectedRecord] = useState(null)
+    const [showDetailPanel, setShowDetailPanel] = useState(false)
 
     const saveTimeoutRef = useRef(null)
     const scrollContainerRef = useRef(null)
@@ -38,12 +66,10 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
 
     // Drag-to-scroll handlers
     const handleMouseDown = useCallback((e) => {
-        // Don't scroll when dragging a card
         if (activeId) return
-        // Only left click and not on interactive elements
         if (e.button !== 0) return
         const target = e.target
-        if (target.closest('button, a, input, [data-draggable], [draggable="true"], .kanban-card')) return
+        if (target.closest('button, a, input, textarea, [data-draggable], [draggable="true"], .kanban-card')) return
 
         const container = scrollContainerRef.current
         if (!container) return
@@ -55,7 +81,6 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
     }, [activeId])
 
     const handleMouseMove = useCallback((e) => {
-        // Stop scroll if a card drag started
         if (activeId) {
             isDraggingToScroll.current = false
             return
@@ -67,7 +92,7 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
         if (!container) return
 
         const x = e.pageX - container.offsetLeft
-        const walk = (x - startX.current) * 1.5 // Multiplier for scroll speed
+        const walk = (x - startX.current) * 1.5
         container.scrollLeft = scrollLeft.current - walk
     }, [activeId])
 
@@ -102,6 +127,7 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
 
             let cols = []
             const entity = data.entity || {}
+            setEntityData(entity)
 
             if (kanbanFieldId === 'status') {
                 if (entity.statusClassification?.options) {
@@ -141,7 +167,6 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
 
     const getRecordColumnId = useCallback((record) => {
         if (kanbanFieldId === 'status') {
-            // Read from classificationValues using statusClassification ID
             if (statusClassificationId && record.classificationValues) {
                 const cv = record.classificationValues.find(v => String(v.classificationId) === String(statusClassificationId))
                 if (cv?.optionId) {
@@ -149,7 +174,6 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
                     return typeof opt === 'object' ? String(opt._id || opt.id || 'none') : String(opt)
                 }
             }
-            // Fallback to record.status for legacy records
             const s = record.status
             if (!s) return 'none'
             if (typeof s === 'string') return String(s)
@@ -164,12 +188,23 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
         return 'none'
     }, [kanbanFieldId, statusClassificationId])
 
-    // Group records by column, then apply saved order
+    // Filter records by search
+    const filteredRecords = useMemo(() => {
+        if (!searchQuery.trim()) return records
+        const q = searchQuery.toLowerCase()
+        return records.filter(r => {
+            const title = (r.referenceTitle || r.computedTitle || r.title || '').toLowerCase()
+            const desc = (r.description || '').toLowerCase()
+            return title.includes(q) || desc.includes(q)
+        })
+    }, [records, searchQuery])
+
+    // Group filtered records by column
     const recordsByColumn = useMemo(() => {
         const grouped = {}
         columns.forEach(c => (grouped[c.id] = []))
 
-        for (const r of records) {
+        for (const r of filteredRecords) {
             const colId = getRecordColumnId(r)
                 ; (grouped[colId] || grouped['none'] || []).push(r)
         }
@@ -188,9 +223,8 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
         }
 
         return grouped
-    }, [columns, records, orderByColumn, getRecordColumnId])
+    }, [columns, filteredRecords, orderByColumn, getRecordColumnId])
 
-    // Helper: return recordId array per column (for SortableContext items)
     const idsByColumn = useMemo(() => {
         const out = {}
         for (const col of columns) {
@@ -215,29 +249,23 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
 
     const updateRecordField = useCallback(async (recordId, newColumnId) => {
         let url, body
-        console.log('[Kanban] updateRecordField called', { recordId, newColumnId, kanbanFieldId, statusClassificationId })
         if (kanbanFieldId === 'status' && statusClassificationId) {
-            // Use update-classification with the statusClassification ID
             url = `/account/${accountNumber}/api/record/update-classification`
             body = { recordId, classificationId: statusClassificationId, optionId: newColumnId }
         } else if (kanbanFieldId === 'status') {
-            // Legacy fallback
             url = `/account/${accountNumber}/api/record/update-status`
             body = { recordId, status: newColumnId }
         } else {
             url = `/account/${accountNumber}/api/record/update-classification`
             body = { recordId, classificationId: kanbanFieldId, optionId: newColumnId }
         }
-        console.log('[Kanban] Sending request:', { url, body })
         try {
-            const res = await fetch(url, {
+            await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify(body)
             })
-            const data = await res.json()
-            console.log('[Kanban] Response:', data)
         } catch (err) {
             console.error('[Kanban] Error:', err)
         }
@@ -248,7 +276,6 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
         return records.find(r => String(r._id) === String(activeId)) || null
     }, [activeId, records])
 
-    // Find which column contains an item id
     const findColumnOfItem = useCallback((itemId) => {
         const id = String(itemId)
         for (const colId of Object.keys(idsByColumn)) {
@@ -274,14 +301,12 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
         const overId = String(over.id)
 
         const fromCol = findColumnOfItem(activeRecordId)
-        // over peut être une colonne (droppable) OU une card (sortable)
         const toCol = columns.some(c => String(c.id) === overId)
             ? overId
             : findColumnOfItem(overId)
 
         if (!fromCol || !toCol) return
 
-        // 1) Reorder dans la même colonne
         if (fromCol === toCol) {
             const items = idsByColumn[fromCol] || []
             const oldIndex = items.indexOf(activeRecordId)
@@ -295,7 +320,6 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
             return
         }
 
-        // 2) Move vers autre colonne (insert avant la card survolée, sinon fin de colonne)
         const fromItems = [...(idsByColumn[fromCol] || [])].filter(id => id !== activeRecordId)
         const toItems = [...(idsByColumn[toCol] || [])]
 
@@ -313,11 +337,9 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
         setOrderByColumn(newOrderByColumn)
         savePreferences(newOrderByColumn)
 
-        // Optimistic record field update (status/classification) + API
         setRecords(prev => prev.map(r => {
             if (String(r._id) !== activeRecordId) return r
             if (kanbanFieldId === 'status') {
-                // Update classificationValues using statusClassification ID
                 const clsId = statusClassificationId
                 if (clsId) {
                     const next = (r.classificationValues || []).filter(cv => String(cv.classificationId) !== String(clsId))
@@ -334,57 +356,247 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
         updateRecordField(activeRecordId, toCol)
     }
 
-    if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
-    if (error) return <div className="flex items-center justify-center h-64 text-danger">Erreur: {error}</div>
+    // Quick Add Modal handler
+    const handleAddRecord = useCallback(async ({ title, description, columnId, classifications }) => {
+        setAddLoading(true)
+        try {
+            // Build classification values
+            const classificationValues = {}
+            if (columnId && columnId !== 'none' && statusClassificationId) {
+                classificationValues[statusClassificationId] = columnId
+            }
+            // Merge other classification selections
+            Object.entries(classifications || {}).forEach(([clsId, optId]) => {
+                classificationValues[clsId] = optId
+            })
+
+            const res = await fetch(`/account/${accountNumber}/record/${entitySlug}/add`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    title,
+                    description,
+                    entityId,
+                    classificationValues
+                })
+            })
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+            setShowAddModal(false)
+            // Refresh data
+            await fetchData()
+        } catch (err) {
+            console.error('[Kanban] Add record error:', err)
+        } finally {
+            setAddLoading(false)
+        }
+    }, [accountNumber, entitySlug, entityId, statusClassificationId, fetchData])
+
+    // Inline add handler (from column)
+    const handleInlineAdd = useCallback(async (title, columnId) => {
+        try {
+            const res = await fetch(`/account/${accountNumber}/record/${entitySlug}/add`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    title,
+                    entityId
+                })
+            })
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            const data = await res.json()
+
+            // Set the status for the new record
+            if (columnId && columnId !== 'none' && statusClassificationId) {
+                await updateRecordField(data._id, columnId)
+            }
+
+            // Refresh data
+            await fetchData()
+        } catch (err) {
+            console.error('[Kanban] Inline add error:', err)
+            throw err
+        }
+    }, [accountNumber, entitySlug, entityId, statusClassificationId, fetchData, updateRecordField])
+
+    // Card click handler
+    const handleCardClick = useCallback((record) => {
+        setSelectedRecord(record)
+        setShowDetailPanel(true)
+    }, [])
+
+    // Open modal from column
+    const handleColumnAddClick = useCallback((columnId) => {
+        setAddModalDefaultColumn(columnId)
+        setShowAddModal(true)
+    }, [])
+
+    // Total records count
+    const totalCount = filteredRecords.length
+    const totalAll = records.length
+
+    if (loading) return (
+        <div className="flex items-center justify-center h-64">
+            <div className="flex flex-col items-center gap-3">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <span className="text-xs text-gray-400">Chargement du kanban...</span>
+            </div>
+        </div>
+    )
+    if (error) return (
+        <div className="flex items-center justify-center h-64 text-danger">
+            <div className="flex flex-col items-center gap-2">
+                <iconify-icon icon="solar:danger-triangle-bold-duotone" width="32"></iconify-icon>
+                <span className="text-sm">Erreur: {error}</span>
+                <button onClick={fetchData} className="text-xs text-primary hover:underline mt-1">Réessayer</button>
+            </div>
+        </div>
+    )
 
     return (
-        <div
-            ref={scrollContainerRef}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseLeave}
-            style={{
-                height: '100%',
-                width: '100%',
-                minWidth: 0,
-                overflowX: 'auto',
-                overflowY: 'auto',
-                cursor: 'grab',
-                userSelect: 'none',
-                WebkitUserSelect: 'none'
-            }}
-        >
-            <DndContext
-                sensors={sensors}
-                collisionDetection={closestCorners}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                onDragCancel={handleDragCancel}
-            >
-                <div style={{
-                    display: 'flex',
-                    flexWrap: 'nowrap',
-                    alignItems: 'flex-start',
-                    gap: '1.25rem',
-                    padding: '0.5rem',
-                    width: 'max-content',
-                    minHeight: '100%'
-                }}>
-                    {columns.map(col => (
-                        <KanbanColumn
-                            key={col.id}
-                            column={col}
-                            recordIds={idsByColumn[col.id] || []}
-                            records={recordsByColumn[col.id] || []}
-                        />
-                    ))}
+        <div className="flex flex-col h-full">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between px-1 pb-3 flex-shrink-0">
+                <div className="flex items-center gap-3">
+                    {/* Record count */}
+                    <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+                        <iconify-icon icon="solar:layers-bold-duotone" class="text-primary" width="16"></iconify-icon>
+                        <span className="font-medium">{totalCount}</span>
+                        {searchQuery && totalCount !== totalAll && (
+                            <span className="text-xs text-gray-400">/ {totalAll}</span>
+                        )}
+                        <span className="text-xs">éléments</span>
+                    </div>
                 </div>
 
-                <DragOverlay>
-                    {activeRecord ? <KanbanCard record={activeRecord} isDragging /> : null}
-                </DragOverlay>
-            </DndContext>
+                <div className="flex items-center gap-2">
+                    {/* Search */}
+                    <div className="relative">
+                        <iconify-icon
+                            icon="solar:magnifer-bold"
+                            class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                            width="14"
+                        ></iconify-icon>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            placeholder="Rechercher..."
+                            className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-[#1b2e4b] text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none w-48 transition-colors"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Add button */}
+                    <button
+                        onClick={() => { setAddModalDefaultColumn(columns[0]?.id || null); setShowAddModal(true) }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-primary hover:bg-primary/90 transition-all shadow-sm"
+                    >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 6V18M6 12H18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                        </svg>
+                        Ajouter
+                    </button>
+                </div>
+            </div>
+
+            {/* Board */}
+            <div
+                ref={scrollContainerRef}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
+                style={{
+                    flex: 1,
+                    minHeight: 0,
+                    width: '100%',
+                    minWidth: 0,
+                    overflowX: 'auto',
+                    overflowY: 'auto',
+                    cursor: 'grab',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none'
+                }}
+            >
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCorners}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    onDragCancel={handleDragCancel}
+                >
+                    <div style={{
+                        display: 'flex',
+                        flexWrap: 'nowrap',
+                        alignItems: 'flex-start',
+                        gap: '0.75rem',
+                        padding: '0.25rem',
+                        width: 'max-content',
+                        minHeight: '100%'
+                    }}>
+                        {columns.map(col => (
+                            <KanbanColumn
+                                key={col.id}
+                                column={col}
+                                recordIds={idsByColumn[col.id] || []}
+                                records={recordsByColumn[col.id] || []}
+                                onAddClick={handleColumnAddClick}
+                                onCardClick={handleCardClick}
+                                onInlineAdd={handleInlineAdd}
+                                entitySlug={entitySlug}
+                                accountNumber={accountNumber}
+                            />
+                        ))}
+                    </div>
+
+                    <DragOverlay>
+                        {activeRecord ? (
+                            <KanbanCard
+                                record={activeRecord}
+                                isDragging
+                                entitySlug={entitySlug}
+                                accountNumber={accountNumber}
+                            />
+                        ) : null}
+                    </DragOverlay>
+                </DndContext>
+            </div>
+
+            {/* Quick Add Modal */}
+            <QuickAddModal
+                isOpen={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                onSubmit={handleAddRecord}
+                columns={columns}
+                classifications={entityData?.classifications || []}
+                defaultColumnId={addModalDefaultColumn}
+                entityName={entityData?.name || 'Record'}
+                loading={addLoading}
+            />
+
+            {/* Card Detail Panel */}
+            <CardDetailPanel
+                record={selectedRecord}
+                isOpen={showDetailPanel}
+                onClose={() => { setShowDetailPanel(false); setSelectedRecord(null) }}
+                columns={columns}
+                entitySlug={entitySlug}
+                accountNumber={accountNumber}
+            />
         </div>
     )
 }

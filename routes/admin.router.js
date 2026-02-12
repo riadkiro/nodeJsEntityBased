@@ -1,39 +1,68 @@
+/**
+ * Tenant Admin Routes - Workspace-Level Administration
+ * ─────────────────────────────────────────────────────
+ * Accessible to workspace owner/admin
+ * Mounted at /account/:account_id/admin
+ */
 const express = require("express");
 const router = express.Router();
+const Account = require("../models/account.model");
 const adminController = require("../controllers/admin.controller");
 
-// Middleware: Check admin role
-const ensureAdmin = (req, res, next) => {
+// Middleware: Require owner or admin role IN THIS workspace
+const ensureTenantAdmin = async (req, res, next) => {
     if (!req.user) return res.redirect('/auth/login');
-    if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
-        return res.status(403).render("admin/admin-403", {
-            layout: "layout-app",
-            user: req.user,
-            account_number: req.account_number,
-        });
+
+    try {
+        const account = await Account.findOne({ account_number: req.account_number });
+        if (!account) {
+            return res.status(404).render("admin/admin-403", {
+                layout: "layout-app",
+                user: req.user,
+                account_number: req.account_number,
+                message: "Workspace introuvable",
+            });
+        }
+
+        const memberEntry = account.users.find(
+            u => String(u.userId) === String(req.user._id) && u.status === 'active'
+        );
+
+        // Allow superadmin to access any workspace admin
+        const isSuperAdmin = req.user.role === 'superadmin';
+        const isWorkspaceAdmin = memberEntry && (memberEntry.role === 'owner' || memberEntry.role === 'admin');
+
+        if (!isSuperAdmin && !isWorkspaceAdmin) {
+            return res.status(403).render("admin/admin-403", {
+                layout: "layout-app",
+                user: req.user,
+                account_number: req.account_number,
+                message: "Vous devez être administrateur de ce workspace",
+            });
+        }
+
+        // Attach role info for views
+        req.workspaceRole = memberEntry?.role || (isSuperAdmin ? 'superadmin' : null);
+        next();
+    } catch (error) {
+        console.error("[TenantAdmin] Auth check error:", error);
+        res.status(500).send("Server Error");
     }
-    next();
 };
 
+// Apply to all routes
+router.use(ensureTenantAdmin);
+
 // ── Pages ────────────────────────────────────────────────────
-router.get("/", ensureAdmin, adminController.dashboard);
-router.get("/users", ensureAdmin, adminController.usersList);
-router.get("/users/:userId", ensureAdmin, adminController.userDetail);
-router.get("/accounts", ensureAdmin, adminController.accountsList);
+router.get("/", adminController.dashboard);
+router.get("/members", adminController.membersList);
+router.get("/settings", adminController.settings);
 
 // ── API ──────────────────────────────────────────────────────
-router.post("/api/users/create", ensureAdmin, adminController.createUser);
-router.post("/api/users/status", ensureAdmin, adminController.updateUserStatus);
-router.post("/api/users/role", ensureAdmin, adminController.updateUserRole);
-router.post("/api/users/membership", ensureAdmin, adminController.updateMembership);
-router.post("/api/users/delete", ensureAdmin, adminController.deleteUser);
-router.post("/api/accounts/status", ensureAdmin, adminController.updateAccountStatus);
-router.post("/api/accounts/invite", ensureAdmin, adminController.inviteToAccount);
-router.post("/api/accounts/share", ensureAdmin, adminController.shareSpace);
-
-// JSON APIs
-router.get("/api/users", ensureAdmin, adminController.usersApi);
-router.get("/api/accounts", ensureAdmin, adminController.accountsApi);
-router.get("/api/stats", ensureAdmin, adminController.statsApi);
+router.post("/api/members/invite", adminController.inviteMember);
+router.post("/api/members/role", adminController.changeMemberRole);
+router.post("/api/members/remove", adminController.removeMember);
+router.post("/api/invites/cancel", adminController.cancelInvite);
+router.post("/api/settings", adminController.updateSettings);
 
 module.exports = router;

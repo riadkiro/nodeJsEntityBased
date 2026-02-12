@@ -1,0 +1,136 @@
+<!-- SuperAdmin Accounts List -->
+<div>
+    <!-- Header -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+        <div>
+            <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0;">Comptes / Workspaces</h1>
+            <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 0;"><%= pagination.total %> workspaces sur la plateforme</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="sa-panel" style="margin-bottom: 20px;">
+        <div style="padding: 16px 20px;">
+            <form method="GET" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px; position: relative;">
+                    <iconify-icon icon="solar:magnifer-bold" width="16" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></iconify-icon>
+                    <input type="text" name="search" value="<%= filters.search %>" placeholder="Rechercher par nom ou numéro..." class="sa-input" style="padding-left: 36px;" />
+                </div>
+                <select name="status" class="sa-select">
+                    <option value="">Tous les statuts</option>
+                    <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>Actif</option>
+                    <option value="suspended" <%= filters.status === 'suspended' ? 'selected' : '' %>>Suspendu</option>
+                    <option value="inactive" <%= filters.status === 'inactive' ? 'selected' : '' %>>Inactif</option>
+                    <option value="trial" <%= filters.status === 'trial' ? 'selected' : '' %>>Essai</option>
+                </select>
+                <button type="submit" class="sa-btn sa-btn-outline">
+                    <iconify-icon icon="solar:filter-bold" width="14"></iconify-icon>
+                    Filtrer
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Accounts Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px;">
+        <% accounts.forEach(acc => { %>
+        <div class="sa-panel" style="transition: all 0.2s; cursor: default;">
+            <div style="padding: 20px;">
+                <!-- Top row -->
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="sa-avatar" style="width: 44px; height: 44px; border-radius: 12px; background: rgba(8,145,178,0.1); color: #0891b2; font-size: 20px;">
+                            <iconify-icon icon="<%= acc.icon || 'solar:home-2-bold-duotone' %>" width="22"></iconify-icon>
+                        </div>
+                        <div>
+                            <div style="font-size: 15px; font-weight: 700; color: #0f172a;"><%= acc.name %></div>
+                            <div style="font-size: 12px; color: #94a3b8; font-family: monospace;">#<%= acc.account_number %></div>
+                        </div>
+                    </div>
+                    <span class="sa-badge <%= acc.status === 'active' ? 'sa-badge-green' : acc.status === 'suspended' ? 'sa-badge-red' : acc.status === 'trial' ? 'sa-badge-yellow' : 'sa-badge-gray' %>">
+                        <%= acc.status %>
+                    </span>
+                </div>
+
+                <!-- Stats -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div style="text-align: center; padding: 10px; background: #f8fafc; border-radius: 8px;">
+                        <div style="font-size: 18px; font-weight: 800; color: #0f172a;"><%= acc.users?.filter(u => u.status === 'active').length || 0 %></div>
+                        <div style="font-size: 10px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Membres</div>
+                    </div>
+                    <div style="text-align: center; padding: 10px; background: #f8fafc; border-radius: 8px;">
+                        <div style="font-size: 18px; font-weight: 800; color: #0f172a;"><%= acc.invitations?.filter(i => i.status === 'pending').length || 0 %></div>
+                        <div style="font-size: 10px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Invitations</div>
+                    </div>
+                    <div style="text-align: center; padding: 10px; background: #f8fafc; border-radius: 8px;">
+                        <div style="font-size: 18px; font-weight: 800; color: #0f172a;"><%= acc.sharing?.sharedSpaces?.length || 0 %></div>
+                        <div style="font-size: 10px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Partages</div>
+                    </div>
+                </div>
+
+                <!-- Owner -->
+                <% if (acc._owner) { %>
+                <div style="display: flex; align-items: center; gap: 8px; padding: 10px; background: #f8fafc; border-radius: 8px; margin-bottom: 12px;">
+                    <div class="sa-avatar sa-avatar-sm" style="background: rgba(67,97,238,0.1); color: #4361ee;">
+                        <%= acc._owner.name ? acc._owner.name.charAt(0).toUpperCase() : '?' %>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 12px; font-weight: 600; color: #334155;"><%= acc._owner.name || '—' %></div>
+                        <div style="font-size: 10px; color: #94a3b8;"><%= acc._owner.email %></div>
+                    </div>
+                    <span class="sa-badge sa-badge-purple" style="font-size: 9px;">OWNER</span>
+                </div>
+                <% } %>
+
+                <!-- Created + Actions -->
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="font-size: 11px; color: #94a3b8;">
+                        <iconify-icon icon="solar:calendar-bold" width="12" style="margin-right: 4px; vertical-align: -2px;"></iconify-icon>
+                        Créé le <%= new Date(acc.created_on).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                    </div>
+                    <div style="display: flex; gap: 4px;">
+                        <% if (acc.status === 'active') { %>
+                            <button onclick="updateAccountStatus('<%= acc._id %>', 'suspended')" class="sa-btn-icon" title="Suspendre" style="color: #dc2626;">
+                                <iconify-icon icon="solar:shield-cross-bold" width="16"></iconify-icon>
+                            </button>
+                        <% } else { %>
+                            <button onclick="updateAccountStatus('<%= acc._id %>', 'active')" class="sa-btn-icon" title="Activer" style="color: #16a34a;">
+                                <iconify-icon icon="solar:shield-check-bold" width="16"></iconify-icon>
+                            </button>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <% }); %>
+    </div>
+
+    <!-- Pagination -->
+    <% if (pagination.pages > 1) { %>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 24px;">
+        <% for (let p = 1; p <= pagination.pages; p++) { %>
+            <a href="?page=<%= p %>&search=<%= filters.search %>&status=<%= filters.status %>"
+               style="width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; text-decoration: none;
+                      <%= p === pagination.page ? 'background: #4361ee; color: #fff;' : 'color: #64748b; background: #fff; border: 1px solid #e2e8f0;' %>
+                      transition: all 0.15s;">
+                <%= p %>
+            </a>
+        <% } %>
+    </div>
+    <% } %>
+</div>
+
+<script>
+async function updateAccountStatus(accountId, status) {
+    if (!confirm('Confirmer le changement de statut ?')) return;
+    const res = await fetch('/superadmin/api/accounts/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ accountId, status })
+    });
+    const data = await res.json();
+    if (data.success) location.reload();
+    else alert(data.error || 'Error');
+}
+</script>

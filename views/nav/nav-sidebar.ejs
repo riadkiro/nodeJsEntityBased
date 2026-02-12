@@ -481,18 +481,38 @@
           </ul>
         </li>
 
-        <!-- 🛡️ Admin Panel (admin/superadmin only) -->
-        <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'superadmin')) { %>
+        <!-- 🔧 Workspace Admin (owner/admin of this workspace) -->
+        <% 
+          const userAccountEntry = typeof user !== 'undefined' && user && user.accounts 
+            ? user.accounts.find(a => a.account_number === String(account_number)) 
+            : null;
+          const isWorkspaceAdmin = userAccountEntry && (userAccountEntry.role === 'owner' || userAccountEntry.role === 'admin');
+          const isSuperAdmin = typeof user !== 'undefined' && user && user.role === 'superadmin';
+        %>
+        <% if (isWorkspaceAdmin || isSuperAdmin) { %>
         <li class="menu nav-item">
           <div class="nav-link group flex items-center justify-between -mx-4 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
-            :class="window.location.pathname.includes('/admin') ? 'bg-gray-100 dark:bg-gray-800' : ''">
+            :class="window.location.pathname.includes('/admin') && !window.location.pathname.includes('/superadmin') ? 'bg-gray-100 dark:bg-gray-800' : ''">
             <a href="/account/<%= account_number %>/admin" class="flex items-center mx-2 cursor-pointer flex-1">
-              <iconify-icon icon="solar:shield-star-bold-duotone" class="ml-1" width="18" height="18" style="color: #e11d48"></iconify-icon>
-              <span class="text-sm text-gray-700 dark:text-gray-400 group-hover:text-primary transition-all ltr:pl-2 rtl:pr-2">Admin</span>
+              <iconify-icon icon="solar:settings-bold-duotone" class="ml-1" width="18" height="18" style="color: #4361ee"></iconify-icon>
+              <span class="text-sm text-gray-700 dark:text-gray-400 group-hover:text-primary transition-all ltr:pl-2 rtl:pr-2">Workspace Admin</span>
             </a>
           </div>
         </li>
         <% } %>
+
+        <!-- 🛡️ SuperAdmin (SaaS platform owner) -->
+        <% if (isSuperAdmin) { %>
+        <li class="menu nav-item">
+          <div class="nav-link group flex items-center justify-between -mx-4 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+            <a href="/superadmin" class="flex items-center mx-2 cursor-pointer flex-1">
+              <iconify-icon icon="solar:shield-star-bold-duotone" class="ml-1" width="18" height="18" style="color: #e11d48"></iconify-icon>
+              <span class="text-sm text-gray-700 dark:text-gray-400 group-hover:text-primary transition-all ltr:pl-2 rtl:pr-2">SuperAdmin</span>
+            </a>
+          </div>
+        </li>
+        <% } %>
+
 
         <!-- Section Pages -->
         <li class="menu nav-item">

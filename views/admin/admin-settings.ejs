@@ -1,0 +1,114 @@
+<!-- Tenant Admin - Workspace Settings -->
+<div>
+    <!-- Header -->
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
+        <a href="/account/<%= account_number %>/admin" style="display: flex; align-items: center; gap: 6px; color: #4361ee; text-decoration: none; font-size: 13px; font-weight: 500; padding: 6px 14px; border-radius: 8px; background: rgba(67,97,238,0.08);">
+            <iconify-icon icon="solar:arrow-left-bold" width="14"></iconify-icon>
+            Retour
+        </a>
+        <div>
+            <h1 style="font-size: 22px; font-weight: 800; color: #0e1726; margin: 0;">Paramètres du workspace</h1>
+            <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 0;"><%= account.name %></p>
+        </div>
+    </div>
+
+    <!-- Settings Form -->
+    <div style="background: #fff; border: 1px solid #e0e6ed; border-radius: 12px; overflow: hidden; max-width: 640px;">
+        <div style="padding: 20px 24px; border-bottom: 1px solid #f1f5f9;">
+            <h2 style="font-size: 15px; font-weight: 700; color: #0e1726; margin: 0;">
+                <iconify-icon icon="solar:settings-bold-duotone" width="18" style="color: #4361ee; margin-right: 6px; vertical-align: -3px;"></iconify-icon>
+                Informations générales
+            </h2>
+        </div>
+        <form id="settingsForm" style="padding: 24px;">
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px;">Nom du workspace</label>
+                <input name="name" type="text" value="<%= account.name %>" style="width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 13.5px; color: #0f172a; outline: none; box-sizing: border-box;" />
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px;">Description</label>
+                <textarea name="description" rows="3" style="width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 13.5px; color: #0f172a; outline: none; resize: vertical; box-sizing: border-box;"><%= account.description || '' %></textarea>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px;">Icône (Iconify)</label>
+                <input name="icon" type="text" value="<%= account.icon || '' %>" placeholder="solar:home-2-bold-duotone" style="width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 13.5px; color: #0f172a; outline: none; box-sizing: border-box;" />
+                <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(8,145,178,0.1); display: flex; align-items: center; justify-content: center;">
+                        <iconify-icon icon="<%= account.icon || 'solar:home-2-bold-duotone' %>" width="20" style="color: #0891b2;"></iconify-icon>
+                    </div>
+                    <span style="font-size: 11px; color: #94a3b8;">Aperçu de l'icône actuelle</span>
+                </div>
+            </div>
+        </form>
+        <div style="padding: 16px 24px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end;">
+            <button onclick="saveSettings()" id="saveBtn" style="padding: 9px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; background: linear-gradient(135deg, #4361ee, #3b82f6); color: #fff; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                <iconify-icon icon="solar:diskette-bold" width="16"></iconify-icon>
+                Sauvegarder
+            </button>
+        </div>
+    </div>
+
+    <!-- Info card -->
+    <div style="background: #fff; border: 1px solid #e0e6ed; border-radius: 12px; max-width: 640px; margin-top: 20px; padding: 20px 24px;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #0e1726; margin: 0 0 12px;">
+            <iconify-icon icon="solar:info-circle-bold-duotone" width="16" style="color: #94a3b8; margin-right: 6px; vertical-align: -2px;"></iconify-icon>
+            Informations
+        </h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div>
+                <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 4px;">N° compte</div>
+                <div style="font-size: 14px; font-weight: 600; color: #0e1726; font-family: monospace;"><%= account.account_number %></div>
+            </div>
+            <div>
+                <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 4px;">Statut</div>
+                <div>
+                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: <%= account.status === 'active' ? '#dcfce7; color: #16a34a' : '#f1f5f9; color: #64748b' %>;">
+                        <%= account.status %>
+                    </span>
+                </div>
+            </div>
+            <% if (owner) { %>
+            <div>
+                <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 4px;">Propriétaire</div>
+                <div style="font-size: 13px; font-weight: 600; color: #0e1726;"><%= owner.name || '—' %> · <span style="color: #94a3b8;"><%= owner.email %></span></div>
+            </div>
+            <% } %>
+            <div>
+                <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 4px;">Créé le</div>
+                <div style="font-size: 13px; font-weight: 600; color: #0e1726;"><%= new Date(account.created_on).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) %></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function saveSettings() {
+    const form = document.getElementById('settingsForm');
+    const fd = new FormData(form);
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<iconify-icon icon="svg-spinners:ring-resize" width="16"></iconify-icon> Sauvegarde...';
+    try {
+        const res = await fetch('/account/<%= account_number %>/admin/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(Object.fromEntries(fd))
+        });
+        const data = await res.json();
+        if (data.success) {
+            btn.innerHTML = '<iconify-icon icon="solar:check-circle-bold" width="16"></iconify-icon> Sauvegardé !';
+            btn.style.background = '#16a34a';
+            setTimeout(() => location.reload(), 800);
+        } else {
+            alert(data.error || 'Erreur');
+            btn.disabled = false;
+            btn.innerHTML = '<iconify-icon icon="solar:diskette-bold" width="16"></iconify-icon> Sauvegarder';
+        }
+    } catch (e) {
+        alert('Erreur');
+        btn.disabled = false;
+        btn.innerHTML = '<iconify-icon icon="solar:diskette-bold" width="16"></iconify-icon> Sauvegarder';
+    }
+}
+</script>

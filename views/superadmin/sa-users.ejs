@@ -1,0 +1,258 @@
+<!-- SuperAdmin Users List -->
+<div>
+    <!-- Header -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+        <div>
+            <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0;">Utilisateurs</h1>
+            <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 0;"><%= pagination.total %> utilisateurs sur la plateforme</p>
+        </div>
+        <button onclick="document.getElementById('createUserModal').showModal()" class="sa-btn sa-btn-primary">
+            <iconify-icon icon="solar:user-plus-bold" width="16"></iconify-icon>
+            Nouvel utilisateur
+        </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="sa-panel" style="margin-bottom: 20px;">
+        <div style="padding: 16px 20px;">
+            <form method="GET" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px; position: relative;">
+                    <iconify-icon icon="solar:magnifer-bold" width="16" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></iconify-icon>
+                    <input type="text" name="search" value="<%= filters.search %>" placeholder="Rechercher par nom ou email..." class="sa-input" style="padding-left: 36px;" />
+                </div>
+                <select name="status" class="sa-select">
+                    <option value="">Tous les statuts</option>
+                    <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>Actif</option>
+                    <option value="suspended" <%= filters.status === 'suspended' ? 'selected' : '' %>>Suspendu</option>
+                    <option value="inactive" <%= filters.status === 'inactive' ? 'selected' : '' %>>Inactif</option>
+                </select>
+                <select name="plan" class="sa-select">
+                    <option value="">Tous les plans</option>
+                    <option value="free" <%= filters.plan === 'free' ? 'selected' : '' %>>Free</option>
+                    <option value="basic" <%= filters.plan === 'basic' ? 'selected' : '' %>>Basic</option>
+                    <option value="premium" <%= filters.plan === 'premium' ? 'selected' : '' %>>Premium</option>
+                    <option value="enterprise" <%= filters.plan === 'enterprise' ? 'selected' : '' %>>Enterprise</option>
+                </select>
+                <select name="role" class="sa-select">
+                    <option value="">Tous les rôles</option>
+                    <option value="user" <%= filters.role === 'user' ? 'selected' : '' %>>Utilisateur</option>
+                    <option value="admin" <%= filters.role === 'admin' ? 'selected' : '' %>>Admin</option>
+                    <option value="superadmin" <%= filters.role === 'superadmin' ? 'selected' : '' %>>SuperAdmin</option>
+                </select>
+                <button type="submit" class="sa-btn sa-btn-outline">
+                    <iconify-icon icon="solar:filter-bold" width="14"></iconify-icon>
+                    Filtrer
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="sa-panel">
+        <table class="sa-table">
+            <thead>
+                <tr>
+                    <th>Utilisateur</th>
+                    <th>Rôle</th>
+                    <th>Plan</th>
+                    <th>Statut</th>
+                    <th>Workspaces</th>
+                    <th>Dernière connexion</th>
+                    <th>Inscrit le</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% users.forEach(u => { %>
+                <tr>
+                    <td>
+                        <a href="/superadmin/users/<%= u._id %>" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit;">
+                            <div class="sa-avatar" style="background: rgba(67,97,238,0.1); color: #4361ee;">
+                                <%= u.name ? u.name.charAt(0).toUpperCase() : '?' %>
+                            </div>
+                            <div>
+                                <div style="font-weight: 600; color: #0f172a; font-size: 13px;"><%= u.name || '—' %></div>
+                                <div style="font-size: 11px; color: #94a3b8;"><%= u.email %></div>
+                            </div>
+                        </a>
+                    </td>
+                    <td>
+                        <% if (u.role === 'superadmin') { %>
+                            <span class="sa-badge sa-badge-red">
+                                <iconify-icon icon="solar:shield-star-bold" width="12"></iconify-icon>
+                                SuperAdmin
+                            </span>
+                        <% } else if (u.role === 'admin') { %>
+                            <span class="sa-badge sa-badge-cyan">Admin</span>
+                        <% } else { %>
+                            <span style="font-size: 12px; color: #94a3b8;">Utilisateur</span>
+                        <% } %>
+                    </td>
+                    <td>
+                        <% const planBadge = {
+                            free: 'sa-badge-gray', basic: 'sa-badge-blue',
+                            premium: 'sa-badge-yellow', enterprise: 'sa-badge-purple'
+                        }; %>
+                        <span class="sa-badge <%= planBadge[u.membership?.plan] || 'sa-badge-gray' %>">
+                            <%= (u.membership?.plan || 'free').toUpperCase() %>
+                        </span>
+                    </td>
+                    <td>
+                        <% if (u.status === 'active') { %>
+                            <span class="sa-badge sa-badge-green">
+                                <span style="width: 6px; height: 6px; border-radius: 50%; background: #16a34a; display: inline-block;"></span>
+                                actif
+                            </span>
+                        <% } else if (u.status === 'suspended') { %>
+                            <span class="sa-badge sa-badge-red">suspendu</span>
+                        <% } else { %>
+                            <span class="sa-badge sa-badge-gray"><%= u.status %></span>
+                        <% } %>
+                    </td>
+                    <td style="text-align: center; font-weight: 600;">
+                        <%= u.accounts?.length || 0 %>
+                    </td>
+                    <td style="font-size: 12px; color: #94a3b8;">
+                        <% if (u.lastLogin) { %>
+                            <%= new Date(u.lastLogin).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) %>
+                        <% } else { %>
+                            <span style="color: #cbd5e1;">—</span>
+                        <% } %>
+                    </td>
+                    <td style="font-size: 12px; color: #94a3b8;">
+                        <%= new Date(u.created_on).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px;">
+                            <a href="/superadmin/users/<%= u._id %>" class="sa-btn-icon" title="Voir">
+                                <iconify-icon icon="solar:eye-bold" width="16"></iconify-icon>
+                            </a>
+                            <% if (u.status === 'active') { %>
+                                <button onclick="updateStatus('<%= u._id %>', 'suspended')" class="sa-btn-icon" title="Suspendre" style="color: #dc2626;">
+                                    <iconify-icon icon="solar:shield-cross-bold" width="16"></iconify-icon>
+                                </button>
+                            <% } else { %>
+                                <button onclick="updateStatus('<%= u._id %>', 'active')" class="sa-btn-icon" title="Activer" style="color: #16a34a;">
+                                    <iconify-icon icon="solar:shield-check-bold" width="16"></iconify-icon>
+                                </button>
+                            <% } %>
+                        </div>
+                    </td>
+                </tr>
+                <% }); %>
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <% if (pagination.pages > 1) { %>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid #f1f5f9;">
+            <div style="font-size: 12px; color: #94a3b8;">
+                Page <%= pagination.page %> sur <%= pagination.pages %> · <%= pagination.total %> résultats
+            </div>
+            <div style="display: flex; gap: 4px;">
+                <% for (let p = 1; p <= pagination.pages; p++) { %>
+                    <a href="?page=<%= p %>&search=<%= filters.search %>&status=<%= filters.status %>&plan=<%= filters.plan %>&role=<%= filters.role %>"
+                       style="width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; text-decoration: none;
+                              <%= p === pagination.page ? 'background: #4361ee; color: #fff;' : 'color: #64748b; background: transparent;' %>
+                              transition: all 0.15s;">
+                        <%= p %>
+                    </a>
+                <% } %>
+            </div>
+        </div>
+        <% } %>
+    </div>
+</div>
+
+<!-- Create User Modal -->
+<dialog id="createUserModal" class="sa-modal">
+    <div class="sa-modal-header" style="background: linear-gradient(135deg, #4361ee, #06b6d4); padding: 24px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">
+                    <iconify-icon icon="solar:user-plus-bold-duotone" width="22" style="color: #fff;"></iconify-icon>
+                </div>
+                <div>
+                    <h3 style="font-size: 17px; font-weight: 700; color: #fff; margin: 0;">Nouvel utilisateur</h3>
+                    <p style="font-size: 12px; color: rgba(255,255,255,0.7); margin: 2px 0 0;">Créer un compte sur la plateforme</p>
+                </div>
+            </div>
+            <button onclick="this.closest('dialog').close()" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.15); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <iconify-icon icon="solar:close-circle-bold" width="20" style="color: #fff;"></iconify-icon>
+            </button>
+        </div>
+    </div>
+    <form id="createUserForm" class="sa-modal-body" style="padding-top: 24px;">
+        <div style="margin-bottom: 16px;">
+            <label class="sa-label">Nom complet <span style="color: #dc2626;">*</span></label>
+            <input name="name" type="text" required class="sa-input" placeholder="John Doe" />
+        </div>
+        <div style="margin-bottom: 16px;">
+            <label class="sa-label">Adresse email <span style="color: #dc2626;">*</span></label>
+            <input name="email" type="email" required class="sa-input" placeholder="john@example.com" />
+        </div>
+        <div style="margin-bottom: 16px;">
+            <label class="sa-label">Mot de passe <span style="color: #dc2626;">*</span></label>
+            <input name="password" type="password" required class="sa-input" minlength="6" placeholder="Minimum 6 caractères" />
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            <div>
+                <label class="sa-label">Rôle global</label>
+                <select name="role" class="sa-select" style="width: 100%;">
+                    <option value="user">Utilisateur</option>
+                    <option value="admin">Admin</option>
+                    <option value="superadmin">SuperAdmin</option>
+                </select>
+            </div>
+            <div>
+                <label class="sa-label">Plan</label>
+                <select name="plan" class="sa-select" style="width: 100%;">
+                    <option value="free">Free</option>
+                    <option value="basic">Basic</option>
+                    <option value="premium">Premium</option>
+                    <option value="enterprise">Enterprise</option>
+                </select>
+            </div>
+        </div>
+    </form>
+    <div class="sa-modal-footer">
+        <button onclick="this.closest('dialog').close()" class="sa-btn sa-btn-outline">Annuler</button>
+        <button onclick="createUser()" class="sa-btn sa-btn-primary" id="createUserBtn">
+            <iconify-icon icon="solar:user-plus-bold" width="16"></iconify-icon>
+            Créer l'utilisateur
+        </button>
+    </div>
+</dialog>
+
+<script>
+async function updateStatus(userId, status) {
+    if (!confirm('Confirmer le changement de statut ?')) return;
+    const res = await fetch('/superadmin/api/users/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ userId, status })
+    });
+    const data = await res.json();
+    if (data.success) location.reload();
+    else alert(data.error || 'Error');
+}
+
+async function createUser() {
+    const form = document.getElementById('createUserForm');
+    const fd = new FormData(form);
+    const btn = document.getElementById('createUserBtn');
+    btn.disabled = true;
+    try {
+        const res = await fetch('/superadmin/api/users/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(Object.fromEntries(fd))
+        });
+        const data = await res.json();
+        if (data.success) location.reload();
+        else { alert(data.error || 'Error'); btn.disabled = false; }
+    } catch (e) { alert('Error'); btn.disabled = false; }
+}
+</script>

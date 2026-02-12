@@ -1,15 +1,14 @@
-<!-- 403 Forbidden -->
-<div class="flex items-center justify-center min-h-[60vh]">
-    <div class="text-center">
-        <div class="w-20 h-20 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-5">
-            <iconify-icon icon="solar:shield-warning-bold-duotone" width="40" class="text-danger"></iconify-icon>
-        </div>
-        <h1 class="text-4xl font-bold text-danger mb-2">403</h1>
-        <h2 class="text-xl font-semibold dark:text-white mb-2">Accès refusé</h2>
-        <p class="text-gray-500 mb-6">Vous n'avez pas les permissions nécessaires pour accéder à cette page.</p>
-        <a href="/account/<%= account_number %>/home" class="btn btn-primary">
-            <iconify-icon icon="solar:home-2-bold" width="16" class="mr-1.5"></iconify-icon>
-            Retour à l'accueil
-        </a>
+<!-- Tenant Admin - 403 Forbidden -->
+<div class="flex flex-col items-center justify-center" style="min-height: 60vh; text-align: center;">
+    <div style="width: 80px; height: 80px; border-radius: 20px; background: rgba(239,68,68,0.1); display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+        <iconify-icon icon="solar:shield-cross-bold-duotone" width="40" style="color: #dc2626;"></iconify-icon>
     </div>
+    <h1 style="font-size: 28px; font-weight: 800; color: #0e1726; margin: 0;">Accès refusé</h1>
+    <p style="font-size: 15px; color: #64748b; margin: 12px 0 28px; max-width: 400px;">
+        <%= typeof message !== 'undefined' && message ? message : "Vous devez être administrateur de ce workspace pour y accéder." %>
+    </p>
+    <a href="/account/<%= account_number %>/home" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; background: linear-gradient(135deg, #4361ee, #3b82f6); color: #fff; text-decoration: none;">
+        <iconify-icon icon="solar:arrow-left-bold" width="16"></iconify-icon>
+        Retour au workspace
+    </a>
 </div>

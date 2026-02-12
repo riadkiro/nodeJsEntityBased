@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>SuperAdmin | Cyberbox SaaS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" type="text/css" href="/themes/default/assets/css/style.css" />
+  <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.0/dist/cdn.min.js"></script>
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    body { background: #f0f4f8; margin: 0; }
+    .sa-layout { display: flex; min-height: 100vh; }
+    .sa-sidebar { width: 260px; background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); color: #fff; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; display: flex; flex-direction: column; }
+    .sa-sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .sa-sidebar-logo a { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; }
+    .sa-sidebar-logo .logo-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #4361ee, #06b6d4); display: flex; align-items: center; justify-content: center; }
+    .sa-sidebar-logo .logo-text { font-weight: 800; font-size: 18px; }
+    .sa-sidebar-logo .logo-badge { font-size: 9px; background: rgba(239,68,68,0.2); color: #f87171; padding: 2px 8px; border-radius: 999px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+    .sa-sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .sa-nav-section { margin-bottom: 20px; }
+    .sa-nav-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.35); padding: 0 12px; margin-bottom: 8px; font-weight: 700; }
+    .sa-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 13.5px; font-weight: 500; transition: all 0.15s; margin-bottom: 2px; }
+    .sa-nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .sa-nav-item.active { background: rgba(67,97,238,0.15); color: #93bbff; }
+    .sa-nav-item.active iconify-icon { color: #4361ee; }
+    .sa-nav-item iconify-icon { font-size: 20px; color: rgba(255,255,255,0.4); }
+    .sa-nav-item:hover iconify-icon { color: rgba(255,255,255,0.7); }
+    .sa-sidebar-footer { padding: 16px 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .sa-user-card { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; }
+    .sa-user-avatar { width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, #4361ee, #06b6d4); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 13px; }
+    .sa-user-info { flex: 1; min-width: 0; }
+    .sa-user-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sa-user-email { font-size: 11px; color: rgba(255,255,255,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sa-main { flex: 1; margin-left: 260px; }
+    .sa-topbar { height: 64px; background: #fff; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; position: sticky; top: 0; z-index: 40; }
+    .sa-topbar-left { display: flex; align-items: center; gap: 12px; }
+    .sa-topbar-breadcrumb { font-size: 13px; color: #64748b; }
+    .sa-topbar-breadcrumb a { color: #94a3b8; text-decoration: none; }
+    .sa-topbar-breadcrumb a:hover { color: #4361ee; }
+    .sa-topbar-right { display: flex; align-items: center; gap: 16px; }
+    .sa-content { padding: 28px; }
+    .sa-back-link { display: inline-flex; align-items: center; gap: 6px; color: #4361ee; font-size: 13px; font-weight: 500; text-decoration: none; padding: 6px 14px; border-radius: 8px; background: rgba(67,97,238,0.08); transition: all 0.15s; }
+    .sa-back-link:hover { background: rgba(67,97,238,0.15); }
+
+    /* Panel cards */
+    .sa-panel { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; }
+    .sa-panel-header { padding: 20px 24px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+    .sa-panel-body { padding: 24px; }
+
+    /* Stat cards */
+    .sa-stat-card { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; padding: 20px 24px; display: flex; align-items: center; gap: 16px; transition: all 0.2s; }
+    .sa-stat-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.06); transform: translateY(-1px); }
+    .sa-stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+    .sa-stat-value { font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1; }
+    .sa-stat-label { font-size: 12px; color: #94a3b8; font-weight: 500; margin-top: 4px; }
+
+    /* Tables */
+    .sa-table { width: 100%; border-collapse: collapse; }
+    .sa-table th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: 600; padding: 12px 16px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+    .sa-table td { padding: 14px 16px; border-bottom: 1px solid #f8fafc; font-size: 13.5px; color: #334155; }
+    .sa-table tbody tr:hover { background: #f8fafc; }
+    .sa-table tbody tr:last-child td { border-bottom: none; }
+
+    /* Badges */
+    .sa-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+    .sa-badge-green { background: #dcfce7; color: #16a34a; }
+    .sa-badge-red { background: #fee2e2; color: #dc2626; }
+    .sa-badge-yellow { background: #fef3c7; color: #d97706; }
+    .sa-badge-gray { background: #f1f5f9; color: #64748b; }
+    .sa-badge-blue { background: #dbeafe; color: #2563eb; }
+    .sa-badge-purple { background: #ede9fe; color: #7c3aed; }
+    .sa-badge-cyan { background: #cffafe; color: #0891b2; }
+
+    /* Button styles */
+    .sa-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all 0.15s; text-decoration: none; }
+    .sa-btn-primary { background: linear-gradient(135deg, #4361ee, #3b82f6); color: #fff; }
+    .sa-btn-primary:hover { box-shadow: 0 4px 12px rgba(67,97,238,0.35); transform: translateY(-1px); }
+    .sa-btn-outline { background: #fff; color: #334155; border: 1px solid #e2e8f0; }
+    .sa-btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .sa-btn-danger { background: #fee2e2; color: #dc2626; }
+    .sa-btn-danger:hover { background: #fecaca; }
+    .sa-btn-sm { padding: 5px 12px; font-size: 12px; }
+    .sa-btn-icon { width: 32px; height: 32px; border-radius: 8px; padding: 0; display: flex; align-items: center; justify-content: center; background: transparent; color: #94a3b8; border: none; cursor: pointer; transition: all 0.15s; }
+    .sa-btn-icon:hover { background: #f1f5f9; color: #334155; }
+
+    /* Avatar */
+    .sa-avatar { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+    .sa-avatar-sm { width: 28px; height: 28px; font-size: 11px; border-radius: 8px; }
+
+    /* Forms */
+    .sa-input { width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 13.5px; color: #0f172a; background: #fff; outline: none; transition: border-color 0.15s; }
+    .sa-input:focus { border-color: #4361ee; box-shadow: 0 0 0 3px rgba(67,97,238,0.1); }
+    .sa-input::placeholder { color: #94a3b8; }
+    .sa-select { padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 13.5px; color: #0f172a; background: #fff; outline: none; cursor: pointer; }
+    .sa-select:focus { border-color: #4361ee; }
+    .sa-label { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px; }
+
+    /* Modal dialog */
+    dialog.sa-modal { border: none; border-radius: 16px; padding: 0; max-width: 520px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.15); overflow: hidden; }
+    dialog.sa-modal::backdrop { background: rgba(15,23,42,0.6); }
+    .sa-modal-header { padding: 24px; }
+    .sa-modal-body { padding: 0 24px 24px; }
+    .sa-modal-footer { padding: 16px 24px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sa-sidebar { display: none; }
+      .sa-main { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sa-layout">
+    <!-- Sidebar -->
+    <aside class="sa-sidebar">
+      <div class="sa-sidebar-logo">
+        <a href="/superadmin">
+          <div class="logo-icon">
+            <iconify-icon icon="solar:shield-star-bold" width="20" style="color: #fff;"></iconify-icon>
+          </div>
+          <div>
+            <div class="logo-text">Cyberbox</div>
+            <span class="logo-badge">SuperAdmin</span>
+          </div>
+        </a>
+      </div>
+
+      <nav class="sa-sidebar-nav">
+        <div class="sa-nav-section">
+          <div class="sa-nav-label">Vue d'ensemble</div>
+          <a href="/superadmin" class="sa-nav-item" id="nav-dashboard">
+            <iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon>
+            Dashboard
+          </a>
+        </div>
+
+        <div class="sa-nav-section">
+          <div class="sa-nav-label">Gestion</div>
+          <a href="/superadmin/users" class="sa-nav-item" id="nav-users">
+            <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
+            Utilisateurs
+          </a>
+          <a href="/superadmin/accounts" class="sa-nav-item" id="nav-accounts">
+            <iconify-icon icon="solar:buildings-bold-duotone"></iconify-icon>
+            Comptes / Workspaces
+          </a>
+        </div>
+
+        <div class="sa-nav-section">
+          <div class="sa-nav-label">Plateforme</div>
+          <a href="#" class="sa-nav-item" style="opacity: 0.4; pointer-events: none;">
+            <iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon>
+            Facturation
+            <span class="sa-badge sa-badge-gray" style="margin-left: auto; font-size: 9px;">Bientôt</span>
+          </a>
+          <a href="#" class="sa-nav-item" style="opacity: 0.4; pointer-events: none;">
+            <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon>
+            Paramètres
+            <span class="sa-badge sa-badge-gray" style="margin-left: auto; font-size: 9px;">Bientôt</span>
+          </a>
+          <a href="#" class="sa-nav-item" style="opacity: 0.4; pointer-events: none;">
+            <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
+            Logs d'audit
+            <span class="sa-badge sa-badge-gray" style="margin-left: auto; font-size: 9px;">Bientôt</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sa-sidebar-footer">
+        <a href="/user/accounts" class="sa-back-link" style="width: 100%; justify-content: center;">
+          <iconify-icon icon="solar:arrow-left-bold" width="14"></iconify-icon>
+          Retour à l'application
+        </a>
+        <div class="sa-user-card" style="margin-top: 12px;">
+          <div class="sa-user-avatar">
+            <%= typeof user !== 'undefined' && user ? (user.name ? user.name.charAt(0).toUpperCase() : '?') : '?' %>
+          </div>
+          <div class="sa-user-info">
+            <div class="sa-user-name"><%= typeof user !== 'undefined' && user ? (user.name || 'Admin') : 'Admin' %></div>
+            <div class="sa-user-email"><%= typeof user !== 'undefined' && user ? user.email : '' %></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="sa-main">
+      <div class="sa-topbar">
+        <div class="sa-topbar-left">
+          <div class="sa-topbar-breadcrumb">
+            <a href="/superadmin">SuperAdmin</a>
+          </div>
+        </div>
+        <div class="sa-topbar-right">
+          <a href="/user/accounts" class="sa-btn-icon" title="Retour à l'app">
+            <iconify-icon icon="solar:square-arrow-left-bold-duotone" width="22"></iconify-icon>
+          </a>
+        </div>
+      </div>
+
+      <div class="sa-content">
+        <%- body %>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Highlight active nav item
+    document.addEventListener('DOMContentLoaded', () => {
+      const path = window.location.pathname;
+      document.querySelectorAll('.sa-nav-item').forEach(item => {
+        const href = item.getAttribute('href');
+        if (href === '/superadmin' && path === '/superadmin') {
+          item.classList.add('active');
+        } else if (href !== '/superadmin' && path.startsWith(href)) {
+          item.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

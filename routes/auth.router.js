@@ -20,7 +20,7 @@ router.get("/google/callback", loginController.googleCallback);
 router.get("/logout", loginController.logout);
 
 // Accept invitation
-const adminController = require("../controllers/admin.controller");
-router.get("/invite/:token", adminController.acceptInvitation);
+const superadminController = require("../controllers/superadmin.controller");
+router.get("/invite/:token", superadminController.acceptInvitation);
 
 module.exports = router;

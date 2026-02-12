@@ -1,0 +1,270 @@
+<!-- SuperAdmin Dashboard -->
+<div>
+    <!-- Page Header -->
+    <div style="margin-bottom: 28px;">
+        <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0;">Dashboard</h1>
+        <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 0;">Vue d'ensemble de la plateforme SaaS</p>
+    </div>
+
+    <!-- Stats Row -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px;">
+        <!-- Total Users -->
+        <div class="sa-stat-card">
+            <div class="sa-stat-icon" style="background: rgba(67,97,238,0.1);">
+                <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="24" style="color: #4361ee;"></iconify-icon>
+            </div>
+            <div>
+                <div class="sa-stat-value"><%= stats.totalUsers %></div>
+                <div class="sa-stat-label">Utilisateurs</div>
+            </div>
+        </div>
+
+        <!-- Active Users -->
+        <div class="sa-stat-card">
+            <div class="sa-stat-icon" style="background: rgba(22,163,74,0.1);">
+                <iconify-icon icon="solar:shield-check-bold-duotone" width="24" style="color: #16a34a;"></iconify-icon>
+            </div>
+            <div>
+                <div class="sa-stat-value"><%= stats.activeUsers %></div>
+                <div class="sa-stat-label">Actifs</div>
+            </div>
+        </div>
+
+        <!-- Total Accounts -->
+        <div class="sa-stat-card">
+            <div class="sa-stat-icon" style="background: rgba(8,145,178,0.1);">
+                <iconify-icon icon="solar:buildings-bold-duotone" width="24" style="color: #0891b2;"></iconify-icon>
+            </div>
+            <div>
+                <div class="sa-stat-value"><%= stats.totalAccounts %></div>
+                <div class="sa-stat-label">Workspaces</div>
+            </div>
+        </div>
+
+        <!-- New This Month -->
+        <div class="sa-stat-card">
+            <div class="sa-stat-icon" style="background: rgba(124,58,237,0.1);">
+                <iconify-icon icon="solar:graph-up-bold-duotone" width="24" style="color: #7c3aed;"></iconify-icon>
+            </div>
+            <div>
+                <div class="sa-stat-value">+<%= stats.newUsersThisMonth %></div>
+                <div class="sa-stat-label">Ce mois</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plans + Recent Row -->
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; margin-bottom: 28px;">
+        <!-- Plan Distribution -->
+        <div class="sa-panel">
+            <div class="sa-panel-header">
+                <div style="font-size: 15px; font-weight: 700; color: #0f172a;">
+                    <iconify-icon icon="solar:crown-bold-duotone" width="18" style="color: #d97706; margin-right: 6px; vertical-align: -3px;"></iconify-icon>
+                    Répartition des plans
+                </div>
+            </div>
+            <div class="sa-panel-body">
+                <% const plans = [
+                    { key: 'free', label: 'Free', color: '#94a3b8', bg: '#f1f5f9' },
+                    { key: 'basic', label: 'Basic', color: '#2563eb', bg: '#dbeafe' },
+                    { key: 'premium', label: 'Premium', color: '#d97706', bg: '#fef3c7' },
+                    { key: 'enterprise', label: 'Enterprise', color: '#7c3aed', bg: '#ede9fe' }
+                ]; %>
+                <% plans.forEach(p => { %>
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f8fafc;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 8px; height: 8px; border-radius: 50%; background: <%= p.color %>;"></div>
+                        <span style="font-size: 13px; font-weight: 500; color: #334155;"><%= p.label %></span>
+                    </div>
+                    <span style="font-size: 15px; font-weight: 700; color: #0f172a;"><%= stats.planCounts[p.key] || 0 %></span>
+                </div>
+                <% }); %>
+            </div>
+        </div>
+
+        <!-- Recent Users -->
+        <div class="sa-panel">
+            <div class="sa-panel-header">
+                <div style="font-size: 15px; font-weight: 700; color: #0f172a;">
+                    <iconify-icon icon="solar:user-plus-bold-duotone" width="18" style="color: #4361ee; margin-right: 6px; vertical-align: -3px;"></iconify-icon>
+                    Derniers inscrits
+                </div>
+                <a href="/superadmin/users" class="sa-btn sa-btn-outline sa-btn-sm">Voir tout</a>
+            </div>
+            <div style="padding: 0;">
+                <table class="sa-table">
+                    <thead>
+                        <tr>
+                            <th>Utilisateur</th>
+                            <th>Plan</th>
+                            <th>Rôle</th>
+                            <th>Statut</th>
+                            <th>Inscrit le</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% recentUsers.forEach(u => { %>
+                        <tr>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="sa-avatar" style="background: rgba(67,97,238,0.1); color: #4361ee;">
+                                        <%= u.name ? u.name.charAt(0).toUpperCase() : '?' %>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 600; color: #0f172a; font-size: 13px;"><%= u.name || '—' %></div>
+                                        <div style="font-size: 11px; color: #94a3b8;"><%= u.email %></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <% const planBadge = {
+                                    free: 'sa-badge-gray', basic: 'sa-badge-blue',
+                                    premium: 'sa-badge-yellow', enterprise: 'sa-badge-purple'
+                                }; %>
+                                <span class="sa-badge <%= planBadge[u.membership?.plan] || 'sa-badge-gray' %>">
+                                    <%= (u.membership?.plan || 'free').toUpperCase() %>
+                                </span>
+                            </td>
+                            <td>
+                                <% if (u.role === 'superadmin') { %>
+                                    <span class="sa-badge sa-badge-red">SUPERADMIN</span>
+                                <% } else if (u.role === 'admin') { %>
+                                    <span class="sa-badge sa-badge-cyan">ADMIN</span>
+                                <% } else { %>
+                                    <span style="font-size: 12px; color: #94a3b8;">user</span>
+                                <% } %>
+                            </td>
+                            <td>
+                                <% if (u.status === 'active') { %>
+                                    <span class="sa-badge sa-badge-green">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #16a34a;"></span>
+                                        actif
+                                    </span>
+                                <% } else if (u.status === 'suspended') { %>
+                                    <span class="sa-badge sa-badge-red">suspendu</span>
+                                <% } else { %>
+                                    <span class="sa-badge sa-badge-gray"><%= u.status %></span>
+                                <% } %>
+                            </td>
+                            <td style="font-size: 12px; color: #94a3b8;">
+                                <%= new Date(u.created_on).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                            </td>
+                        </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="sa-panel">
+        <div class="sa-panel-header">
+            <div style="font-size: 15px; font-weight: 700; color: #0f172a;">
+                <iconify-icon icon="solar:bolt-bold-duotone" width="18" style="color: #f59e0b; margin-right: 6px; vertical-align: -3px;"></iconify-icon>
+                Actions rapides
+            </div>
+        </div>
+        <div class="sa-panel-body" style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <a href="/superadmin/users" class="sa-btn sa-btn-outline">
+                <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="18"></iconify-icon>
+                Gérer les utilisateurs
+            </a>
+            <a href="/superadmin/accounts" class="sa-btn sa-btn-outline">
+                <iconify-icon icon="solar:buildings-bold-duotone" width="18"></iconify-icon>
+                Gérer les comptes
+            </a>
+            <button onclick="document.getElementById('createUserModal').showModal()" class="sa-btn sa-btn-primary">
+                <iconify-icon icon="solar:user-plus-bold" width="18"></iconify-icon>
+                Créer un utilisateur
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Create User Modal -->
+<dialog id="createUserModal" class="sa-modal">
+    <div class="sa-modal-header" style="background: linear-gradient(135deg, #4361ee, #06b6d4); padding: 24px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">
+                    <iconify-icon icon="solar:user-plus-bold-duotone" width="22" style="color: #fff;"></iconify-icon>
+                </div>
+                <div>
+                    <h3 style="font-size: 17px; font-weight: 700; color: #fff; margin: 0;">Nouvel utilisateur</h3>
+                    <p style="font-size: 12px; color: rgba(255,255,255,0.7); margin: 2px 0 0;">Créer un compte sur la plateforme</p>
+                </div>
+            </div>
+            <button onclick="this.closest('dialog').close()" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.15); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <iconify-icon icon="solar:close-circle-bold" width="20" style="color: #fff;"></iconify-icon>
+            </button>
+        </div>
+    </div>
+    <form id="createUserForm" class="sa-modal-body" style="padding-top: 24px;">
+        <div style="margin-bottom: 16px;">
+            <label class="sa-label">Nom complet <span style="color: #dc2626;">*</span></label>
+            <input name="name" type="text" required class="sa-input" placeholder="John Doe" />
+        </div>
+        <div style="margin-bottom: 16px;">
+            <label class="sa-label">Adresse email <span style="color: #dc2626;">*</span></label>
+            <input name="email" type="email" required class="sa-input" placeholder="john@example.com" />
+        </div>
+        <div style="margin-bottom: 16px;">
+            <label class="sa-label">Mot de passe <span style="color: #dc2626;">*</span></label>
+            <input name="password" type="password" required class="sa-input" minlength="6" placeholder="Minimum 6 caractères" />
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            <div>
+                <label class="sa-label">Rôle global</label>
+                <select name="role" class="sa-select" style="width: 100%;">
+                    <option value="user">Utilisateur</option>
+                    <option value="admin">Admin</option>
+                    <option value="superadmin">SuperAdmin</option>
+                </select>
+            </div>
+            <div>
+                <label class="sa-label">Plan</label>
+                <select name="plan" class="sa-select" style="width: 100%;">
+                    <option value="free">Free</option>
+                    <option value="basic">Basic</option>
+                    <option value="premium">Premium</option>
+                    <option value="enterprise">Enterprise</option>
+                </select>
+            </div>
+        </div>
+    </form>
+    <div class="sa-modal-footer">
+        <button onclick="this.closest('dialog').close()" class="sa-btn sa-btn-outline">Annuler</button>
+        <button onclick="createUser()" class="sa-btn sa-btn-primary" id="createUserBtn">
+            <iconify-icon icon="solar:user-plus-bold" width="16"></iconify-icon>
+            Créer l'utilisateur
+        </button>
+    </div>
+</dialog>
+
+<script>
+async function createUser() {
+    const form = document.getElementById('createUserForm');
+    const fd = new FormData(form);
+    const btn = document.getElementById('createUserBtn');
+
+    btn.disabled = true;
+    btn.innerHTML = '<iconify-icon icon="svg-spinners:ring-resize" width="16"></iconify-icon> Création...';
+
+    try {
+        const res = await fetch('/superadmin/api/users/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(Object.fromEntries(fd))
+        });
+        const data = await res.json();
+        if (data.success) location.reload();
+        else { alert(data.error || 'Error'); btn.disabled = false; btn.innerHTML = '<iconify-icon icon="solar:user-plus-bold" width="16"></iconify-icon> Créer l\'utilisateur'; }
+    } catch (e) {
+        alert('Error');
+        btn.disabled = false;
+        btn.innerHTML = '<iconify-icon icon="solar:user-plus-bold" width="16"></iconify-icon> Créer l\'utilisateur';
+    }
+}
+</script>

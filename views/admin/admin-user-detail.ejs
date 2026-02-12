@@ -1,0 +1,268 @@
+<!-- Admin User Detail -->
+<div class="min-h-screen" x-data="userDetail()">
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-6">
+        <a href="/account/<%= account_number %>/admin/users" class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-[#1b2e4b] flex items-center justify-center hover:bg-primary/10 transition-colors">
+            <iconify-icon icon="solar:arrow-left-bold" width="16" class="text-gray-500"></iconify-icon>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold dark:text-white">Détail utilisateur</h1>
+            <p class="text-sm text-gray-500"><%= targetUser.email %></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+        <!-- Profile Card -->
+        <div class="panel">
+            <div class="text-center pb-5 border-b border-gray-100 dark:border-[#1b2e4b]">
+                <% if (targetUser.avatar) { %>
+                    <img src="<%= targetUser.avatar %>" class="w-20 h-20 rounded-full object-cover mx-auto ring-4 ring-gray-100 dark:ring-[#1b2e4b] mb-3" alt="" />
+                <% } else { %>
+                    <div class="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3 text-primary font-bold text-2xl">
+                        <%= targetUser.name ? targetUser.name.charAt(0).toUpperCase() : '?' %>
+                    </div>
+                <% } %>
+                <h3 class="text-lg font-bold dark:text-white"><%= targetUser.name || '—' %></h3>
+                <p class="text-sm text-gray-500"><%= targetUser.email %></p>
+                <div class="mt-2 flex items-center justify-center gap-2">
+                    <% if (targetUser.authProvider === 'google') { %>
+                        <span class="px-2 py-0.5 rounded bg-red-50 text-red-500 text-[10px] font-bold">GOOGLE</span>
+                    <% } else { %>
+                        <span class="px-2 py-0.5 rounded bg-gray-100 text-gray-500 text-[10px] font-bold dark:bg-gray-700 dark:text-gray-300">LOCAL</span>
+                    <% } %>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase
+                        <%= targetUser.role === 'superadmin' ? 'bg-purple-100 text-purple-600' : targetUser.role === 'admin' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300' %>">
+                        <%= targetUser.role %>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Info Grid -->
+            <div class="mt-4 space-y-3">
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-500">Statut</span>
+                    <span class="inline-flex items-center gap-1.5 font-semibold
+                        <%= targetUser.status === 'active' ? 'text-success' : targetUser.status === 'suspended' ? 'text-danger' : 'text-gray-400' %>">
+                        <span class="w-2 h-2 rounded-full <%= targetUser.status === 'active' ? 'bg-success' : targetUser.status === 'suspended' ? 'bg-danger' : 'bg-gray-300' %>"></span>
+                        <%= targetUser.status || 'active' %>
+                    </span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-500">Connexions</span>
+                    <span class="font-semibold dark:text-white"><%= targetUser.loginCount || 0 %></span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-500">Dernière connexion</span>
+                    <span class="text-xs dark:text-gray-400">
+                        <% if (targetUser.lastLogin) { %>
+                            <%= new Date(targetUser.lastLogin).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+                        <% } else { %>
+                            Jamais
+                        <% } %>
+                    </span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-500">Inscrit le</span>
+                    <span class="text-xs dark:text-gray-400">
+                        <%= new Date(targetUser.created_on).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Status Actions -->
+            <div class="mt-5 pt-4 border-t border-gray-100 dark:border-[#1b2e4b] space-y-2">
+                <% if (targetUser.status !== 'active') { %>
+                    <button onclick="updateStatus('<%= targetUser._id %>', 'active')" class="btn btn-success btn-sm w-full">
+                        <iconify-icon icon="solar:shield-check-bold" width="16" class="mr-1.5"></iconify-icon>
+                        Activer le compte
+                    </button>
+                <% } %>
+                <% if (targetUser.status !== 'suspended') { %>
+                    <button onclick="updateStatus('<%= targetUser._id %>', 'suspended')" class="btn btn-outline-danger btn-sm w-full">
+                        <iconify-icon icon="solar:shield-cross-bold" width="16" class="mr-1.5"></iconify-icon>
+                        Suspendre le compte
+                    </button>
+                <% } %>
+                <% if (targetUser.status !== 'inactive') { %>
+                    <button onclick="updateStatus('<%= targetUser._id %>', 'inactive')" class="btn btn-outline-dark btn-sm w-full">
+                        <iconify-icon icon="solar:forbidden-bold" width="16" class="mr-1.5"></iconify-icon>
+                        Désactiver
+                    </button>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Membership & Role Panel -->
+        <div class="xl:col-span-2 space-y-5">
+            <!-- Membership Card -->
+            <div class="panel">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="font-bold text-lg dark:text-white">
+                        <iconify-icon icon="solar:crown-bold-duotone" width="20" class="text-warning mr-1"></iconify-icon>
+                        Abonnement
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+                    <% const plans = ['free', 'basic', 'premium', 'enterprise']; %>
+                    <% const planIcons = { free: 'solar:star-bold', basic: 'solar:star-shine-bold', premium: 'solar:crown-bold', enterprise: 'solar:crown-star-bold' }; %>
+                    <% const planColorsBg = { free: 'border-gray-300 bg-gray-50', basic: 'border-blue-400 bg-blue-50', premium: 'border-amber-400 bg-amber-50', enterprise: 'border-purple-400 bg-purple-50' }; %>
+                    <% const planColorsText = { free: 'text-gray-600', basic: 'text-blue-600', premium: 'text-amber-700', enterprise: 'text-purple-600' }; %>
+                    <% plans.forEach(function(p) { %>
+                        <button onclick="updateMembership('<%= targetUser._id %>', '<%= p %>')"
+                                class="relative p-4 rounded-xl border-2 transition-all text-center
+                                    <%= (targetUser.membership?.plan || 'free') === p ? planColorsBg[p] + ' shadow-sm' : 'border-gray-200 dark:border-[#1b2e4b] hover:border-gray-300' %>">
+                            <% if ((targetUser.membership?.plan || 'free') === p) { %>
+                                <div class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-success flex items-center justify-center">
+                                    <iconify-icon icon="solar:check-read-bold" width="12" class="text-white"></iconify-icon>
+                                </div>
+                            <% } %>
+                            <iconify-icon icon="<%= planIcons[p] %>" width="24" class="<%= planColorsText[p] %> mb-1"></iconify-icon>
+                            <div class="font-bold text-sm capitalize <%= planColorsText[p] %>"><%= p %></div>
+                        </button>
+                    <% }); %>
+                </div>
+
+                <% if (targetUser.membership?.plan && targetUser.membership.plan !== 'free') { %>
+                <div class="grid grid-cols-2 gap-4 p-4 rounded-xl bg-gray-50 dark:bg-[#1b2e4b]">
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">Début</div>
+                        <div class="text-sm font-semibold dark:text-white">
+                            <%= targetUser.membership.startDate ? new Date(targetUser.membership.startDate).toLocaleDateString('fr-FR') : '—' %>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">Expiration</div>
+                        <div class="text-sm font-semibold <%= targetUser.membership.expiresAt && new Date(targetUser.membership.expiresAt) < new Date() ? 'text-danger' : 'dark:text-white' %>">
+                            <%= targetUser.membership.expiresAt ? new Date(targetUser.membership.expiresAt).toLocaleDateString('fr-FR') : '—' %>
+                            <% if (targetUser.membership.expiresAt && new Date(targetUser.membership.expiresAt) < new Date()) { %>
+                                <span class="text-[10px] ml-1 text-danger font-bold">EXPIRÉ</span>
+                            <% } %>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">Max Workspaces</div>
+                        <div class="text-sm font-semibold dark:text-white"><%= targetUser.membership.maxAccounts || 1 %></div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">Max Users / Workspace</div>
+                        <div class="text-sm font-semibold dark:text-white"><%= targetUser.membership.maxUsersPerAccount || 3 %></div>
+                    </div>
+                </div>
+                <% } %>
+            </div>
+
+            <!-- Role Management -->
+            <div class="panel">
+                <h3 class="font-bold text-lg dark:text-white mb-4">
+                    <iconify-icon icon="solar:shield-user-bold-duotone" width="20" class="text-primary mr-1"></iconify-icon>
+                    Rôle système
+                </h3>
+                <div class="grid grid-cols-3 gap-3">
+                    <% ['user', 'admin', 'superadmin'].forEach(function(r) { %>
+                        <button onclick="updateRole('<%= targetUser._id %>', '<%= r %>')"
+                                class="p-3 rounded-xl border-2 transition-all text-center
+                                    <%= targetUser.role === r ? 'border-primary bg-primary/5 shadow-sm' : 'border-gray-200 dark:border-[#1b2e4b] hover:border-gray-300' %>">
+                            <iconify-icon icon="<%= r === 'superadmin' ? 'solar:shield-star-bold' : r === 'admin' ? 'solar:shield-check-bold' : 'solar:user-bold' %>" 
+                                         width="24" class="<%= targetUser.role === r ? 'text-primary' : 'text-gray-400' %> mb-1"></iconify-icon>
+                            <div class="text-xs font-bold capitalize <%= targetUser.role === r ? 'text-primary' : 'text-gray-500' %>"><%= r %></div>
+                        </button>
+                    <% }); %>
+                </div>
+            </div>
+
+            <!-- Workspaces -->
+            <div class="panel">
+                <h3 class="font-bold text-lg dark:text-white mb-4">
+                    <iconify-icon icon="solar:buildings-2-bold-duotone" width="20" class="text-success mr-1"></iconify-icon>
+                    Workspaces (<%= userAccounts.length %>)
+                </h3>
+                <div class="space-y-2">
+                    <% userAccounts.forEach(function(acc) { %>
+                    <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-[#1b2e4b]">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-lg bg-success/10 flex items-center justify-center">
+                                <iconify-icon icon="<%= acc.icon || 'solar:home-2-bold-duotone' %>" width="18" class="text-success"></iconify-icon>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-sm dark:text-white"><%= acc.name %></div>
+                                <div class="text-xs text-gray-500">#<%= acc.account_number %></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1 text-xs font-semibold
+                                <%= acc.status === 'active' ? 'text-success' : acc.status === 'suspended' ? 'text-danger' : 'text-gray-400' %>">
+                                <span class="w-1.5 h-1.5 rounded-full <%= acc.status === 'active' ? 'bg-success' : acc.status === 'suspended' ? 'bg-danger' : 'bg-gray-300' %>"></span>
+                                <%= acc.status %>
+                            </span>
+                            <span class="text-xs text-gray-400"><%= acc.users?.length || 0 %> membres</span>
+                        </div>
+                    </div>
+                    <% }); %>
+                    <% if (userAccounts.length === 0) { %>
+                        <div class="text-center py-6 text-gray-400 text-sm">Aucun workspace</div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="panel !border-danger/30">
+                <h3 class="font-bold text-danger mb-3">
+                    <iconify-icon icon="solar:danger-triangle-bold" width="18" class="mr-1"></iconify-icon>
+                    Zone dangereuse
+                </h3>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm font-semibold dark:text-white">Supprimer cet utilisateur</div>
+                        <div class="text-xs text-gray-500">Cette action est irréversible</div>
+                    </div>
+                    <button onclick="deleteUser('<%= targetUser._id %>')" class="btn btn-danger btn-sm">
+                        <iconify-icon icon="solar:trash-bin-trash-bold" width="14" class="mr-1"></iconify-icon>
+                        Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function userDetail() { return {}; }
+
+async function apiCall(url, body) {
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'include',
+        body: JSON.stringify(body)
+    });
+    return res.json();
+}
+
+async function updateStatus(userId, status) {
+    if (!confirm('Confirmer ?')) return;
+    const data = await apiCall('/account/<%= account_number %>/admin/api/users/status', { userId, status });
+    if (data.success) location.reload();
+    else alert(data.error);
+}
+
+async function updateRole(userId, role) {
+    const data = await apiCall('/account/<%= account_number %>/admin/api/users/role', { userId, role });
+    if (data.success) location.reload();
+    else alert(data.error);
+}
+
+async function updateMembership(userId, plan) {
+    const data = await apiCall('/account/<%= account_number %>/admin/api/users/membership', { userId, plan });
+    if (data.success) location.reload();
+    else alert(data.error);
+}
+
+async function deleteUser(userId) {
+    if (!confirm('ATTENTION: Supprimer cet utilisateur définitivement ?')) return;
+    if (!confirm('Êtes-vous vraiment sûr ? Cette action est irréversible.')) return;
+    const data = await apiCall('/account/<%= account_number %>/admin/api/users/delete', { userId });
+    if (data.success) window.location.href = '/account/<%= account_number %>/admin/users';
+    else alert(data.error);
+}
+</script>

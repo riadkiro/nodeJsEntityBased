@@ -41,6 +41,17 @@ const connectToTenantDb = async (req, res, next) => {
           (account) => account.account_number === req.account_number
         )
       ) {
+        // Check account is not suspended
+        const Account = require('../models/account.model');
+        const account = await Account.findOne({ account_number: req.account_number });
+        if (account && account.status === 'suspended') {
+          return res.status(403).render('admin/admin-403', {
+            layout: false,
+            user: req.user,
+            account_number: req.account_number,
+          });
+        }
+
         const tenantId = req.account_number;
         const dbUrl = `${dbConfig.uri}saas_app_rb_${tenantId}`;
 

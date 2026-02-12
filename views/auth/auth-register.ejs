@@ -3,9 +3,9 @@
     <head>
         <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <title>Connexion | Cyberbox</title>
+        <title>Créer un compte | Cyberbox</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="description" content="Connectez-vous à Cyberbox pour accéder à votre espace de travail." />
+        <meta name="description" content="Créez votre compte Cyberbox et accédez à votre espace de travail dédié." />
         <link rel="icon" type="image/x-icon" href="/favicon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -42,26 +42,18 @@
                     <!-- Logo & Title -->
                     <div class="text-center mb-6">
                         <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-3">
-                            <iconify-icon icon="solar:lock-keyhole-bold-duotone" width="28" class="text-primary"></iconify-icon>
+                            <iconify-icon icon="solar:user-plus-bold-duotone" width="28" class="text-primary"></iconify-icon>
                         </div>
-                        <h2 class="text-2xl font-bold">Connexion</h2>
-                        <p class="text-gray-500 dark:text-gray-400 mt-1">Entrez vos identifiants pour accéder à votre espace</p>
+                        <h2 class="text-2xl font-bold">Créer un compte</h2>
+                        <p class="text-gray-500 dark:text-gray-400 mt-1">Inscrivez-vous pour accéder à votre espace</p>
                     </div>
-                    
+
                     <% if (locals.error_msg && locals.error_msg.length > 0) { %>
                         <div class="relative flex items-center border p-3.5 rounded before:inline-block before:absolute before:top-1/2 before:bottom-0 before:-translate-y-1/2 before:left-0 before:w-1 before:h-full before:bg-danger border-danger bg-danger-light text-danger dark:bg-danger-dark-light mb-4">
                             <span class="absolute inset-y-0 ltr:pl-3 rtl:pr-3 flex items-center">
                                 <iconify-icon icon="solar:danger-triangle-bold" width="20"></iconify-icon>
                             </span>
                             <span class="ltr:pl-9 rtl:pr-9"><%= error_msg %></span>
-                        </div>
-                    <% } %>
-                    <% if (locals.error && locals.error.length > 0) { %>
-                        <div class="relative flex items-center border p-3.5 rounded before:inline-block before:absolute before:top-1/2 before:bottom-0 before:-translate-y-1/2 before:left-0 before:w-1 before:h-full before:bg-danger border-danger bg-danger-light text-danger dark:bg-danger-dark-light mb-4">
-                             <span class="absolute inset-y-0 ltr:pl-3 rtl:pr-3 flex items-center">
-                                <iconify-icon icon="solar:danger-triangle-bold" width="20"></iconify-icon>
-                            </span>
-                            <span class="ltr:pl-9 rtl:pr-9"><%= error %></span>
                         </div>
                     <% } %>
 
@@ -80,14 +72,23 @@
                         <div class="relative z-[1] inline-block bg-white px-2 font-bold text-white-dark dark:bg-[#0e1726]"><span>OU</span></div>
                     </div>
 
-                    <form class="space-y-4" action="/auth/login" method="POST" id="loginForm">
+                    <form class="space-y-4" action="/auth/register" method="POST" id="registerForm">
+                        <div>
+                            <label for="name" class="block text-sm font-semibold mb-1">Nom complet</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                    <iconify-icon icon="solar:user-bold" width="16"></iconify-icon>
+                                </span>
+                                <input id="name" name="name" type="text" class="form-input pl-9" placeholder="John Doe" required value="<%= locals.name || '' %>" />
+                            </div>
+                        </div>
                         <div>
                             <label for="email" class="block text-sm font-semibold mb-1">Email</label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
                                     <iconify-icon icon="solar:letter-bold" width="16"></iconify-icon>
                                 </span>
-                                <input id="email" name="email" type="email" class="form-input pl-9" placeholder="email@exemple.com" required />
+                                <input id="email" name="email" type="email" class="form-input pl-9" placeholder="email@exemple.com" required value="<%= locals.email || '' %>" />
                             </div>
                         </div>
                         <div>
@@ -96,28 +97,57 @@
                                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
                                     <iconify-icon icon="solar:lock-password-bold" width="16"></iconify-icon>
                                 </span>
-                                <input id="password" name="password" type="password" class="form-input pl-9" placeholder="Entrez votre mot de passe" required />
+                                <input id="password" name="password" type="password" class="form-input pl-9" placeholder="Minimum 6 caractères" required minlength="6" />
+                            </div>
+                        </div>
+                        <div>
+                            <label for="confirmPassword" class="block text-sm font-semibold mb-1">Confirmer le mot de passe</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                    <iconify-icon icon="solar:lock-keyhole-bold" width="16"></iconify-icon>
+                                </span>
+                                <input id="confirmPassword" name="confirmPassword" type="password" class="form-input pl-9" placeholder="Retapez votre mot de passe" required />
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-between">
-                            <label class="cursor-pointer flex items-center gap-2">
-                                <input type="checkbox" class="form-checkbox" />
-                                <span class="text-white-dark text-xs">Se souvenir de moi</span>
-                            </label>
-                            <a href="#" class="text-xs text-primary hover:underline">Mot de passe oublié ?</a>
+                        <!-- Plan Selection -->
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Choisir un plan</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="plan" value="free" class="peer hidden" checked />
+                                    <div class="p-3 rounded-lg border-2 border-gray-200 dark:border-[#1b2e4b] peer-checked:border-primary peer-checked:bg-primary/5 transition-all text-center">
+                                        <div class="font-bold text-primary text-sm">Free</div>
+                                        <div class="text-[10px] text-gray-500">1 workspace</div>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="plan" value="basic" class="peer hidden" />
+                                    <div class="p-3 rounded-lg border-2 border-gray-200 dark:border-[#1b2e4b] peer-checked:border-success peer-checked:bg-success/5 transition-all text-center">
+                                        <div class="font-bold text-success text-sm">Basic</div>
+                                        <div class="text-[10px] text-gray-500">3 workspaces</div>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-full">
-                            <iconify-icon icon="solar:login-2-bold" width="18" class="mr-2"></iconify-icon>
-                            SE CONNECTER
+                        <div>
+                            <label class="cursor-pointer flex items-start gap-2">
+                                <input type="checkbox" class="form-checkbox mt-0.5" required />
+                                <span class="text-xs text-gray-500 dark:text-gray-400">J'accepte les <a href="#" class="text-primary hover:underline">conditions d'utilisation</a> et la <a href="#" class="text-primary hover:underline">politique de confidentialité</a></span>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-full !mt-5">
+                            <iconify-icon icon="solar:user-plus-bold" width="18" class="mr-2"></iconify-icon>
+                            CRÉER MON COMPTE
                         </button>
                     </form>
 
                     <div class="mt-6 text-center">
                         <p class="text-sm text-gray-500 dark:text-gray-400">
-                            Pas encore de compte ?
-                            <a href="/auth/register" class="font-bold text-primary hover:underline ml-1">Créer un compte</a>
+                            Déjà un compte ?
+                            <a href="/auth/login" class="font-bold text-primary hover:underline ml-1">Se connecter</a>
                         </p>
                     </div>
                 </div>

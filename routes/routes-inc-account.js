@@ -3,6 +3,9 @@ const router = express.Router();
 
 router.use("/dashboard", require("./account.router.js"));
 
+// Admin Panel
+router.use("/admin", require("./admin.router.js"));
+
 // Home Page
 router.get("/home", (req, res) => {
     res.render("home/home", {

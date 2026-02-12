@@ -1,4 +1,5 @@
 const User = require("../models/user.model");
+const Account = require("../models/account.model");
 
 module.exports = {
   addForm: async (req, res) => {
@@ -6,106 +7,62 @@ module.exports = {
   },
 
   delete: async (req, res) => {
-    let query = { _id: req.params.id };
-    User.findById(req.params.id, function (err, user) {
-      User.remove(query, function (err) {
-        if (err) {
-          console.log(err);
-        }
-        res.send("Deleted");
-      });
-    });
+    try {
+      await User.findByIdAndDelete(req.params.id);
+      res.send("Deleted");
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Error");
+    }
   },
 
   delete_Api: async (req, res) => {
-    let query = { _id: req.params.id };
-    User.findById(req.params.id, function (err, user) {
-      User.remove(query, function (err) {
-        if (err) {
-          console.log(err);
-        }
-        res.send("Deleted");
-      });
-    });
+    try {
+      await User.findByIdAndDelete(req.params.id);
+      res.json({ success: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Error" });
+    }
   },
 
   editForm: async (req, res) => {
-    User.findById(req.params.id, function (err, user) {
-      res.render("user/user-edit", {
-        user,
-      });
-    });
+    const user = await User.findById(req.params.id);
+    res.render("user/user-edit", { user });
   },
 
   list: async (req, res) => {
-    User.find({}, function (err, userAll) {
-      if (err) {
-        console.log(err);
-      } else {
-        res.send({
-          userAll,
-        });
-      }
-    });
+    const userAll = await User.find({});
+    res.send({ userAll });
   },
+
   list_Api: async (req, res) => {
-    User.find({}, function (err, userAll) {
-      if (err) {
-        console.log(err);
-      } else {
-        res.send({
-          userAll,
-        });
-      }
-    });
+    const userAll = await User.find({});
+    res.send({ userAll });
   },
 
   save: async (req, res) => {
     const user = req.body;
-    let errors = [];
-    if (errors.length > 0) {
-      res.render("user/user-add", {
-        errors,
-      });
-    } else {
-      const newUser = new User(user);
-      newUser.save().then((user) => {
-        res.redirect("/user/list");
-      });
-    }
+    const newUser = new User(user);
+    await newUser.save();
+    res.redirect("/user/list");
   },
 
   save_Api: async (req, res) => {
     const user = req.body;
-    let errors = [];
-    if (errors.length > 0) {
-      res.send({ errors });
-    } else {
-      const newUser = new User(user);
-      newUser.save().then((user) => {
-        res.send(`${user} saved in databse`);
-      });
-    }
+    const newUser = new User(user);
+    await newUser.save();
+    res.json({ success: true, user: newUser });
   },
 
   singlePage: async (req, res) => {
-    User.findById(req.params.id, function (err, user) {
-      if (err) {
-        console.log(err);
-      } else {
-        res.send("User single Page");
-      }
-    });
+    const user = await User.findById(req.params.id);
+    res.send("User single Page");
   },
 
   singlePage_Api: async (req, res) => {
-    User.findById(req.params.id, function (err, user) {
-      if (err) {
-        console.log(err);
-      } else {
-        res.send(user);
-      }
-    });
+    const user = await User.findById(req.params.id);
+    res.json(user);
   },
 
   update: async (req, res) => {
@@ -120,10 +77,11 @@ module.exports = {
     if (req.user) {
       res.render("user/user-accounts", {
         accounts: req.user.accounts,
+        user: req.user,
         layout: false,
       });
     } else {
-      res.send("You are not logged in !");
+      res.redirect("/auth/login");
     }
   },
 
@@ -139,15 +97,20 @@ module.exports = {
         return res.redirect("/user/accounts?error=Name is required");
       }
 
-      const Account = require("../models/account.model");
+      // Check plan limits
+      const currentAccountCount = req.user.accounts?.length || 0;
+      const maxAccounts = req.user.membership?.maxAccounts || 1;
+      if (maxAccounts > 0 && currentAccountCount >= maxAccounts) {
+        return res.redirect("/user/accounts?error=Limite d'espaces atteinte pour votre plan. Passez en Premium.");
+      }
 
-      // Generate unique account number (5xxx format)
+      // Generate unique account number (5xxx-9xxx format)
       let account_number;
       let attempts = 0;
       const maxAttempts = 100;
 
       do {
-        account_number = (5000 + Math.floor(Math.random() * 1000)).toString();
+        account_number = (5000 + Math.floor(Math.random() * 5000)).toString();
         const existing = await Account.findOne({ account_number });
         if (!existing) break;
         attempts++;
@@ -160,8 +123,14 @@ module.exports = {
       // Create the Account document
       const newAccount = new Account({
         name: name.trim(),
-        icon: icon?.trim() || 'solar:settings-bold-duotone',
-        users: [req.user._id.toString()],
+        icon: icon?.trim() || 'solar:home-2-bold-duotone',
+        ownerId: req.user._id,
+        users: [{
+          userId: req.user._id.toString(),
+          email: req.user.email,
+          role: 'owner',
+          status: 'active',
+        }],
         account_number,
         status: 'active',
         created_on: new Date()
@@ -175,12 +144,12 @@ module.exports = {
           accounts: {
             name: name.trim(),
             account_number,
-            icon: icon?.trim() || 'solar:settings-bold-duotone'
+            icon: icon?.trim() || 'solar:home-2-bold-duotone',
+            role: 'owner',
           }
         }
       });
 
-      // Redirect to accounts page
       res.redirect("/user/accounts");
 
     } catch (error) {

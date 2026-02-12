@@ -481,6 +481,19 @@
           </ul>
         </li>
 
+        <!-- 🛡️ Admin Panel (admin/superadmin only) -->
+        <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'superadmin')) { %>
+        <li class="menu nav-item">
+          <div class="nav-link group flex items-center justify-between -mx-4 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+            :class="window.location.pathname.includes('/admin') ? 'bg-gray-100 dark:bg-gray-800' : ''">
+            <a href="/account/<%= account_number %>/admin" class="flex items-center mx-2 cursor-pointer flex-1">
+              <iconify-icon icon="solar:shield-star-bold-duotone" class="ml-1" width="18" height="18" style="color: #e11d48"></iconify-icon>
+              <span class="text-sm text-gray-700 dark:text-gray-400 group-hover:text-primary transition-all ltr:pl-2 rtl:pr-2">Admin</span>
+            </a>
+          </div>
+        </li>
+        <% } %>
+
         <!-- Section Pages -->
         <li class="menu nav-item">
           <div class="nav-link group flex items-center justify-between -mx-4 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors" 

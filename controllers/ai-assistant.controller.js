@@ -13,6 +13,7 @@
  */
 const { tenantCollection } = require("../middleware/tenant");
 const IntegrationService = require("../src/integrations/services/IntegrationService");
+const Mail = require("../models/mail.model");
 
 // ── Global models (Provider & Action live in global DB) ──────
 const IntegrationProvider = require("../src/integrations/models/IntegrationProvider.model");
@@ -116,6 +117,162 @@ async function buildWorkspaceContext(req) {
     }
 }
 
+// ── Email context builder (secure) ──────────────────────────
+/**
+ * Fetch a safe, sanitized summary of the user's recent emails.
+ * SECURITY:
+ *  - No credentials or raw HTML are ever sent to the AI
+ *  - Email bodies are stripped to plain text and truncated
+ *  - Only metadata + preview is included
+ */
+async function buildEmailContext(options = {}) {
+    const {
+        limit = 20,
+        searchQuery = null,
+        emailId = null,
+        type = "inbox",
+        unreadOnly = false,
+    } = options;
+
+    try {
+        // Single email detail
+        if (emailId) {
+            const email = await Mail.findById(emailId).lean();
+            if (!email) return { error: "Email introuvable" };
+            return {
+                email: sanitizeEmail(email, true), // full body for detail view
+            };
+        }
+
+        // Build query
+        const query = {};
+        if (type) query.type = type;
+        if (unreadOnly) query.isUnread = true;
+        if (searchQuery) {
+            query.$or = [
+                { title: { $regex: searchQuery, $options: "i" } },
+                { email: { $regex: searchQuery, $options: "i" } },
+                { firstName: { $regex: searchQuery, $options: "i" } },
+                { lastName: { $regex: searchQuery, $options: "i" } },
+                { displayDescription: { $regex: searchQuery, $options: "i" } },
+            ];
+        }
+
+        const emails = await Mail.find(query)
+            .sort({ date: -1 })
+            .limit(limit)
+            .lean();
+
+        // Stats
+        const totalInbox = await Mail.countDocuments({ type: "inbox" });
+        const totalUnread = await Mail.countDocuments({ type: "inbox", isUnread: true });
+        const totalSent = await Mail.countDocuments({ type: "sent_mail" });
+        const totalDraft = await Mail.countDocuments({ type: "draft" });
+        const totalSpam = await Mail.countDocuments({ type: "spam" });
+        const totalTrash = await Mail.countDocuments({ type: "trash" });
+
+        return {
+            stats: {
+                inbox: totalInbox,
+                unread: totalUnread,
+                sent: totalSent,
+                draft: totalDraft,
+                spam: totalSpam,
+                trash: totalTrash,
+            },
+            emails: emails.map((e) => sanitizeEmail(e, false)),
+            searchQuery: searchQuery || null,
+            resultCount: emails.length,
+        };
+    } catch (error) {
+        console.error("[AIAssistant] Email context error:", error);
+        return { error: error.message };
+    }
+}
+
+/**
+ * Strip sensitive data and HTML from an email for AI consumption.
+ * @param {Object} email - Raw email document
+ * @param {boolean} fullBody - If true, include full body text (for detail view)
+ */
+function sanitizeEmail(email, fullBody = false) {
+    // Strip HTML tags to plain text
+    const stripHtml = (html) => {
+        if (!html) return "";
+        return html
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "") // Remove style blocks
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "") // Remove script blocks
+            .replace(/<[^>]+>/g, " ")                         // Remove HTML tags
+            .replace(/&nbsp;/g, " ")                           // Replace &nbsp;
+            .replace(/&amp;/g, "&")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"')
+            .replace(/\s+/g, " ")                              // Collapse whitespace
+            .trim();
+    };
+
+    const plainBody = stripHtml(email.description || "");
+
+    const sanitized = {
+        id: email._id?.toString(),
+        from: `${email.firstName || ""} ${email.lastName || ""}`.trim() || email.email,
+        fromEmail: email.email,
+        subject: email.title || "(sans objet)",
+        date: email.date ? new Date(email.date).toLocaleDateString("fr-FR", {
+            weekday: "long", year: "numeric", month: "long", day: "numeric"
+        }) : "Date inconnue",
+        time: email.time || "",
+        isUnread: email.isUnread,
+        isImportant: email.isImportant,
+        isStar: email.isStar,
+        type: email.type,
+        group: email.group || "",
+        hasAttachments: (email.attachments || []).length > 0,
+        attachmentCount: (email.attachments || []).length,
+    };
+
+    if (fullBody) {
+        // Full body for detail view, but capped at 3000 chars for token safety
+        sanitized.body = plainBody.substring(0, 3000);
+        if (plainBody.length > 3000) sanitized.body += "\n... (tronqué)";
+        if (email.attachments?.length) {
+            sanitized.attachments = email.attachments.map((a) => ({
+                name: a.name,
+                size: a.size,
+                type: a.type,
+            }));
+        }
+    } else {
+        // Preview only (first 150 chars)
+        sanitized.preview = plainBody.substring(0, 150);
+    }
+
+    return sanitized;
+}
+
+/**
+ * Detect if a user message is about emails/mailbox.
+ */
+function isEmailRelatedQuery(message) {
+    const keywords = [
+        "email", "mail", "e-mail", "courriel", "courrier",
+        "message", "messages",
+        "inbox", "boîte", "boite", "réception", "reception",
+        "envoyé", "envoye", "envoi",
+        "spam", "brouillon", "corbeille",
+        "pièce jointe", "piece jointe", "attachement",
+        "non lu", "lu", "unread",
+        "expéditeur", "expediteur", "destinataire",
+        "objet", "sujet",
+        "reçu", "recu", "recevoir",
+        "répondre", "repondre", "transférer", "transferer",
+        "newsletter", "notification",
+    ];
+    const lower = message.toLowerCase();
+    return keywords.some((kw) => lower.includes(kw));
+}
+
 // ── System prompt builder ────────────────────────────────────
 function buildSystemPrompt(context, pageContext) {
     const now = new Date();
@@ -178,6 +335,27 @@ ${pageHint}
 ## Collections disponibles dans ce workspace:
 ${entityList}
 
+## 📧 Accès Mailbox:
+Tu as accès à la boîte mail de l'utilisateur. Tu peux:
+- **Consulter les emails récents** — Résumer, lister, compter
+- **Chercher des emails** — Par expéditeur, sujet, contenu
+- **Lire un email** — Afficher le contenu complet d'un email
+- **Analyser les emails** — Identifier les emails importants, non lus, urgents
+${context?.emailContext ? `
+### Statistiques email actuelles:
+- 📥 Inbox: ${context.emailContext.stats?.inbox || 0} emails (${context.emailContext.stats?.unread || 0} non lus)
+- 📤 Envoyés: ${context.emailContext.stats?.sent || 0}
+- 📝 Brouillons: ${context.emailContext.stats?.draft || 0}
+- 🗑️ Corbeille: ${context.emailContext.stats?.trash || 0}
+- ⚠️ Spam: ${context.emailContext.stats?.spam || 0}
+
+### Emails récents:
+${(context.emailContext.emails || []).map((e, i) =>
+        `${i + 1}. ${e.isUnread ? "🔵" : "⚪"} **${e.subject}** — de ${e.from} (${e.fromEmail}) — ${e.date}${e.hasAttachments ? " 📎" : ""}
+   Aperçu: ${e.preview || "(vide)"}`
+    ).join("\n") || "Aucun email"}
+` : "\n📧 Les emails n'ont pas été chargés pour cette requête. Si l'utilisateur parle d'emails, utilise une action \`email-search\` pour chercher."}
+
 ## Tes capacités:
 1. **Interroger les données** — Répondre aux questions sur les fiches, statistiques, etc.
 2. **Créer des fiches** — L'utilisateur peut te demander de créer des fiches dans n'importe quelle collection. Tu DOIS alors:
@@ -186,6 +364,10 @@ ${entityList}
    - Proposer une ACTION de type \`create\` avec les données à créer
 3. **Chercher des fiches** — Trouver des fiches par critères
 4. **Planifier des tâches complexes** — Pour les demandes complexes (multi-étapes), propose un PLAN avec les étapes à valider
+5. **📧 Emails** — Consulter, chercher, résumer, analyser les emails:
+   - Pour chercher un email: action \`email-search\` avec le champ \`query\`
+   - Pour lire un email: action \`email-detail\` avec le champ \`emailId\`
+   - Pour les statistiques: utilise les données du contexte ci-dessus
 
 ## Format de réponse:
 - Réponds en français, de manière concise et professionnelle
@@ -193,7 +375,7 @@ ${entityList}
 - Pour les ACTIONS simples, retourne un bloc \`\`\`actions avec le JSON
 - Pour les PLANS complexes, retourne un bloc \`\`\`plan avec le JSON
 
-### Actions (exemple):
+### Actions (exemples):
 \`\`\`actions
 [
   {
@@ -203,6 +385,33 @@ ${entityList}
     "data": {
       "entitySlug": "patients",
       "fields": { "title": "Karim Ali", "cin": "12345" }
+    }
+  }
+]
+\`\`\`
+
+\`\`\`actions
+[
+  {
+    "type": "email-search",
+    "label": "Chercher les emails de Jean",
+    "description": "Recherche dans la boîte mail",
+    "data": {
+      "query": "Jean",
+      "type": "inbox"
+    }
+  }
+]
+\`\`\`
+
+\`\`\`actions
+[
+  {
+    "type": "email-detail",
+    "label": "Lire l'email",
+    "description": "Afficher le contenu complet",
+    "data": {
+      "emailId": "ID_DE_LEMAIL"
     }
   }
 ]
@@ -220,8 +429,14 @@ ${entityList}
 }
 \`\`\`
 
+## ⚠️ RÈGLES DE SÉCURITÉ EMAIL:
+- Ne JAMAIS afficher de données sensibles (mots de passe, tokens, liens de connexion)
+- Ne JAMAIS tenter de répondre ou transférer des emails
+- Tu es en LECTURE SEULE sur la boîte mail
+- Si un email contient des liens suspects, préviens l'utilisateur
+
 Ne mets les blocs actions/plan QUE quand l'utilisateur demande une action concrète, pas pour les questions simples.
-Pour les questions sur les données (combien de patients, etc.), réponds directement avec les chiffres que tu connais du contexte.`;
+Pour les questions sur les données (combien de patients, emails, etc.), réponds directement avec les chiffres que tu connais du contexte.`;
 }
 
 // ── Parse AI response for actions/plans ──────────────────────
@@ -344,6 +559,20 @@ module.exports = {
             const workspaceContext = clientContext?.workspace || (await buildWorkspaceContext(req));
             const pageContext = clientContext || {};
 
+            // ── Auto-detect email queries and inject email context ──
+            const needsEmailContext = isEmailRelatedQuery(message) ||
+                pageContext?.page === "mailbox" ||
+                history?.some((msg) => isEmailRelatedQuery(msg.content || ""));
+
+            if (needsEmailContext && !workspaceContext.emailContext) {
+                console.log("[AIAssistant] Email-related query detected, loading email context...");
+                try {
+                    workspaceContext.emailContext = await buildEmailContext({ limit: 20 });
+                } catch (e) {
+                    console.error("[AIAssistant] Failed to load email context:", e.message);
+                }
+            }
+
             // Build conversation history for AI
             const systemPrompt = buildSystemPrompt(workspaceContext, pageContext);
 
@@ -405,6 +634,8 @@ module.exports = {
             switch (action.type) {
                 case "create": {
                     const { entitySlug, fields } = action.data || {};
+                    console.log("[AIAssistant] Execute create:", { entitySlug, fields });
+
                     if (!entitySlug || !fields) {
                         return res.json({
                             response: "❌ Données insuffisantes pour créer la fiche.",
@@ -414,10 +645,20 @@ module.exports = {
 
                     const Entity = await tenantCollection(req, "Entity");
                     const Record = await tenantCollection(req, "Record");
+                    const FieldTemplate = await tenantCollection(req, "FieldTemplate");
 
-                    const entity = await Entity.findOne({ slug: entitySlug })
-                        .populate("customFields")
-                        .lean();
+                    // Flexible entity matching: try slug, then name (case-insensitive)
+                    let entity = await Entity.findOne({ slug: entitySlug }).lean();
+                    if (!entity) {
+                        entity = await Entity.findOne({
+                            slug: { $regex: new RegExp(`^${entitySlug}$`, "i") },
+                        }).lean();
+                    }
+                    if (!entity) {
+                        entity = await Entity.findOne({
+                            name: { $regex: new RegExp(`^${entitySlug}$`, "i") },
+                        }).lean();
+                    }
 
                     if (!entity) {
                         return res.json({
@@ -426,25 +667,64 @@ module.exports = {
                         });
                     }
 
-                    // Build field values
-                    const fieldValues = {};
-                    if (entity.customFields) {
-                        for (const field of entity.customFields) {
+                    // Fetch field templates for this entity
+                    let entityFields = [];
+                    try {
+                        entityFields = await FieldTemplate.find({
+                            entityId: entity._id,
+                        }).lean();
+                    } catch (e) {
+                        console.warn("[AIAssistant] Could not load field templates:", e.message);
+                    }
+
+                    // Build customFields array [{field_id, value}]
+                    const customFields = [];
+                    if (entityFields.length > 0) {
+                        for (const field of entityFields) {
                             const key = field.fieldId || field.name?.toLowerCase();
+                            let val = undefined;
+                            // Try matching by fieldId, name (exact), or name (case-insensitive)
                             if (fields[key] !== undefined) {
-                                fieldValues[field._id.toString()] = fields[key];
+                                val = fields[key];
                             } else if (fields[field.name] !== undefined) {
-                                fieldValues[field._id.toString()] = fields[field.name];
+                                val = fields[field.name];
+                            } else {
+                                // Case-insensitive name matching
+                                const matchKey = Object.keys(fields).find(
+                                    (k) => k.toLowerCase() === (field.name || "").toLowerCase()
+                                );
+                                if (matchKey) val = fields[matchKey];
+                            }
+                            if (val !== undefined) {
+                                customFields.push({
+                                    field_id: field._id,
+                                    value: val,
+                                });
                             }
                         }
                     }
 
-                    const newRecord = await Record.create({
+                    // Build Record document
+                    const recordTitle = fields.title || fields.titre || fields.nom || fields.name || "Sans titre";
+                    const recordData = {
                         entityId: entity._id,
-                        title: fields.title || fields.nom || fields.name || "Sans titre",
-                        fieldValues,
+                        title: recordTitle,
                         createdBy: req.user._id,
-                    });
+                    };
+
+                    // Add optional standard fields
+                    if (fields.description) recordData.description = fields.description;
+                    if (fields.content || fields.contenu) recordData.content = fields.content || fields.contenu;
+                    if (fields.date) recordData.date = new Date(fields.date);
+                    if (fields.status || fields.statut) recordData.status = fields.status || fields.statut;
+
+                    // Add custom fields if any
+                    if (customFields.length > 0) {
+                        recordData.customFields = customFields;
+                    }
+
+                    console.log("[AIAssistant] Creating record:", JSON.stringify(recordData, null, 2));
+                    const newRecord = await Record.create(recordData);
 
                     result = { recordId: newRecord._id, title: newRecord.title };
                     response = `✅ **Fiche créée avec succès !**\n\n📄 **${newRecord.title}** dans ${entity.name}\n🔗 ID: \`${newRecord._id}\``;
@@ -477,6 +757,74 @@ module.exports = {
                     } else {
                         response = `🔍 **${records.length} résultat(s) trouvé(s) :**\n\n${records.map((r, i) => `${i + 1}. **${r.title}** — ${new Date(r.createdAt).toLocaleDateString("fr-FR")}`).join("\n")}`;
                     }
+                    break;
+                }
+
+                case "email-search": {
+                    const { query, type: mailType, unreadOnly } = action.data || {};
+                    console.log("[AIAssistant] Execute email-search:", { query, mailType, unreadOnly });
+
+                    const emailContext = await buildEmailContext({
+                        searchQuery: query || null,
+                        type: mailType || "inbox",
+                        unreadOnly: unreadOnly || false,
+                        limit: 15,
+                    });
+
+                    if (emailContext.error) {
+                        response = `❌ Erreur lors de la recherche d'emails: ${emailContext.error}`;
+                        break;
+                    }
+
+                    result = emailContext;
+                    const emails = emailContext.emails || [];
+
+                    if (emails.length === 0) {
+                        response = `🔍 Aucun email trouvé${query ? ` pour "${query}"` : ""}.`;
+                    } else {
+                        response = `📧 **${emails.length} email(s) trouvé(s)${query ? ` pour "${query}"` : ""} :**\n\n`;
+                        emails.forEach((e, i) => {
+                            response += `${i + 1}. ${e.isUnread ? "🔵" : "⚪"} **${e.subject}**\n`;
+                            response += `   📤 De: ${e.from} (${e.fromEmail})\n`;
+                            response += `   📅 ${e.date}${e.hasAttachments ? " 📎" : ""}\n`;
+                            response += `   💬 ${e.preview || "(vide)"}\n\n`;
+                        });
+                    }
+                    break;
+                }
+
+                case "email-detail": {
+                    const { emailId } = action.data || {};
+                    console.log("[AIAssistant] Execute email-detail:", { emailId });
+
+                    if (!emailId) {
+                        response = "❌ ID d'email manquant.";
+                        break;
+                    }
+
+                    const emailDetail = await buildEmailContext({ emailId });
+
+                    if (emailDetail.error) {
+                        response = `❌ ${emailDetail.error}`;
+                        break;
+                    }
+
+                    const email = emailDetail.email;
+                    result = emailDetail;
+
+                    response = `📧 **${email.subject}**\n\n`;
+                    response += `📤 **De:** ${email.from} (${email.fromEmail})\n`;
+                    response += `📅 **Date:** ${email.date} ${email.time}\n`;
+                    if (email.hasAttachments) {
+                        response += `📎 **Pièces jointes:** ${email.attachmentCount} fichier(s)\n`;
+                        if (email.attachments) {
+                            email.attachments.forEach((a) => {
+                                response += `   - ${a.name} (${a.size || "?"})`;
+                            });
+                            response += "\n";
+                        }
+                    }
+                    response += `\n---\n\n${email.body || "(contenu vide)"}`;
                     break;
                 }
 

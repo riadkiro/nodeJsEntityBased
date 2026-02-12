@@ -29,6 +29,12 @@ description: Commands that are safe to auto-run without user approval
 ### NPX
 - All `npx` commands (especially with `-y` flag)
 
+- all node -e
+
+- Remove-Item
+
+- taskkill
+
 ### Dev / Read-Only
 - `npm run dev`, `npm run build`, `npm start`
 - `node scripts/*`

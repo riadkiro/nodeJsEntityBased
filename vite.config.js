@@ -15,6 +15,7 @@ export default defineConfig({
                 chatPanel: path.resolve(__dirname, 'src/islands/chat-panel/entry.jsx'),
                 dataGrid: path.resolve(__dirname, 'src/islands/data-grid/entry.jsx'),
                 iconPicker: path.resolve(__dirname, 'src/islands/icon-picker/entry.jsx'),
+                tasksHub: path.resolve(__dirname, 'src/islands/tasks-hub/entry.jsx'),
                 // Future islands:
                 // pageBuilder: path.resolve(__dirname, 'src/islands/page-builder/entry.jsx'),
             },

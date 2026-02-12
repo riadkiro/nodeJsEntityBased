@@ -267,16 +267,22 @@ router.get('/api/datagrid/tasks', async (req, res) => {
 
             cvs.forEach(cv => {
                 const cls = classMap[cv.classificationId]
-                if (!cls) return
-                const opt = (cls.options || []).find(o => o._id.toString() === cv.optionId)
+                if (!cls) {
+                    // Fallback: use cv.label if the classification is not in the entity's list
+                    // This handles cases where records reference a different classification ID
+                    if (cv.label && !statusLabel) statusLabel = cv.label
+                    return
+                }
+                const opt = (cls.options || []).find(o => o._id.toString() === (cv.optionId?.toString() || cv.optionId))
                 if (!opt) return
-                if (cls.key === 'tache_progression') {
+                // Match both old (tache_progression) and new (task_status) classification keys
+                if (cls.key === 'tache_progression' || cls.key === 'task_status') {
                     statusLabel = opt.label
                     statusColor = opt.color
-                } else if (cls.key === 'tache_priority') {
+                } else if (cls.key === 'tache_priority' || cls.key === 'task_priority') {
                     priorityLabel = opt.label
                     priorityColor = opt.color
-                } else if (cls.key === 'tache_tags') {
+                } else if (cls.key === 'tache_tags' || cls.key === 'task_tags') {
                     tags.push({ label: opt.label, color: opt.color })
                 }
             })
@@ -343,9 +349,10 @@ router.get('/api/datagrid/tasks', async (req, res) => {
             // Determine the row field this classification maps to
             let field = ''
             let type = 'list'
-            if (cls.key === 'tache_progression') { field = 'status' }
-            else if (cls.key === 'tache_priority') { field = 'priority' }
-            else if (cls.key === 'tache_tags') { field = 'tags'; type = 'tags' }
+            // Support both old (tache_xxx) and new (task_xxx) classification key names
+            if (cls.key === 'tache_progression' || cls.key === 'task_status') { field = 'status' }
+            else if (cls.key === 'tache_priority' || cls.key === 'task_priority') { field = 'priority' }
+            else if (cls.key === 'tache_tags' || cls.key === 'task_tags') { field = 'tags'; type = 'tags' }
 
             return {
                 id: cls._id.toString(),
@@ -361,18 +368,92 @@ router.get('/api/datagrid/tasks', async (req, res) => {
             }
         }).filter(f => f.field) // Only include filters that map to a row field
 
+        // Deduplicate filter groups that map to the same field
+        // Keep the one with more total option counts (more data)
+        const deduped = []
+        const seenFields = {}
+        filterGroups.forEach(fg => {
+            const totalCount = fg.options.reduce((sum, o) => sum + o.count, 0)
+            if (!seenFields[fg.field]) {
+                seenFields[fg.field] = { index: deduped.length, count: totalCount }
+                deduped.push(fg)
+            } else {
+                // Replace if this one has more data
+                if (totalCount > seenFields[fg.field].count) {
+                    deduped[seenFields[fg.field].index] = fg
+                    seenFields[fg.field].count = totalCount
+                }
+            }
+        })
+        const dedupedFilters = deduped
+
         res.json({
             rows,
             columns,
             defaultSort: { field: 'createdAt', direction: 'desc' },
             preferences,
-            filters: filterGroups,
+            filters: dedupedFilters,
             entityId: entity._id.toString(),
             entitySlug: entity.slug
         })
 
     } catch (error) {
         console.error('[API] Tasks fetch error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * POST /account/:account_number/api/tasks/:taskId/toggle
+ * Toggle a task's completion status (for the checklist view)
+ * Switches between "Terminée" and "À faire" using the statusClassification
+ */
+router.post('/api/tasks/:taskId/toggle', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, "Record")
+        const Entity = await tenantCollection(req, "Entity")
+        const Classification = await tenantCollection(req, "Classification")
+
+        const { taskId } = req.params
+        const { status: newStatusLabel } = req.body
+
+        // Find the Tâches entity to get the statusClassification
+        const entity = await Entity.findOne({
+            $or: [
+                { slug: 'taches' },
+                { slug: 'tache' },
+                { name: { $regex: /tâche/i } }
+            ]
+        }).lean()
+
+        if (!entity) return res.status(404).json({ error: 'Tâches entity not found' })
+
+        // Find the status classification
+        const statusCls = await Classification.findById(entity.statusClassification).lean()
+        if (!statusCls) return res.status(404).json({ error: 'Status classification not found' })
+
+        // Find the option matching the new status label
+        const targetOption = statusCls.options.find(o => o.label === newStatusLabel)
+        if (!targetOption) return res.status(400).json({ error: `Status option "${newStatusLabel}" not found` })
+
+        // Update the record's classificationValues
+        const record = await Record.findById(taskId)
+        if (!record) return res.status(404).json({ error: 'Record not found' })
+
+        // Remove old value for this classification, add new one
+        const cvs = (record.classificationValues || []).filter(
+            cv => cv.classificationId?.toString() !== statusCls._id.toString()
+        )
+        cvs.push({
+            classificationId: statusCls._id.toString(),
+            optionId: targetOption._id.toString()
+        })
+        record.classificationValues = cvs
+        await record.save()
+
+        res.json({ success: true, status: newStatusLabel })
+    } catch (error) {
+        console.error('[API] Task toggle error:', error)
         res.status(500).json({ error: error.message })
     }
 })
@@ -406,7 +487,8 @@ router.post('/api/user/view-preferences', async (req, res) => {
                     density: preferences.density || 'normal',
                     pageSize: preferences.pageSize || 25,
                     titleDisplay: preferences.titleDisplay || 'avatar',
-                    showSidebar: preferences.showSidebar !== undefined ? preferences.showSidebar : true
+                    showSidebar: preferences.showSidebar !== undefined ? preferences.showSidebar : true,
+                    viewMode: preferences.viewMode || null
                 },
                 updatedAt: new Date()
             },

@@ -1,18 +1,16 @@
 <div class="animate__animated p-6" :class="[$store.app.animation]">
-    <!-- DataGrid React Island for Tasks -->
+    <!-- TasksHub React Island — Multi-view Tasks Manager -->
     <div 
-        data-island="data-grid"
+        data-island="tasks-hub"
         data-account-number="<%= account_number %>"
-        data-grid-id="tasks-list"
         data-data-url="/account/<%= account_number %>/api/datagrid/tasks"
         data-title="Tâches"
         data-icon="solar:checklist-minimalistic-bold-duotone"
-        data-add-url="/account/<%= account_number %>/record/taches/add"
+        data-add-url="/account/<%= account_number %>/record/tache/add"
         data-add-label="Nouvelle tâche"
-        data-density="comfortable"
-        data-page-size="25"
-        data-show-sidebar="true"
+        data-initial-view="table"
+        data-entity-slug="taches"
         style="min-height: 600px;"
     ></div>
-    <script src="/dist/dataGrid.js" type="module"></script>
+    <script src="/dist/tasksHub.js" type="module"></script>
 </div>

@@ -14,6 +14,28 @@
 const { tenantCollection } = require("../middleware/tenant");
 const IntegrationService = require("../src/integrations/services/IntegrationService");
 
+// ── Global models (Provider & Action live in global DB) ──────
+const IntegrationProvider = require("../src/integrations/models/IntegrationProvider.model");
+const IntegrationAction = require("../src/integrations/models/IntegrationAction.model");
+const IntegrationConnectionSchema = require("../src/integrations/models/IntegrationConnection.model").schema;
+const IntegrationLogSchema = require("../src/integrations/models/IntegrationLog.model").schema;
+
+/**
+ * Get tenant-specific Connection and Log models
+ * Mirrors the loadTenantModels middleware from tenant.integrations.routes.js
+ */
+function getTenantIntegrationModels(req) {
+    const conn = req.tenantDbConnection;
+    if (!conn) throw new Error("Tenant DB not connected");
+
+    const ConnectionModel = conn.models.IntegrationConnection ||
+        conn.model("IntegrationConnection", IntegrationConnectionSchema);
+    const LogModel = conn.models.IntegrationLog ||
+        conn.model("IntegrationLog", IntegrationLogSchema);
+
+    return { ConnectionModel, LogModel };
+}
+
 // ── Context builder ──────────────────────────────────────────
 async function buildWorkspaceContext(req) {
     try {
@@ -23,11 +45,20 @@ async function buildWorkspaceContext(req) {
         if (!Entity || !Record) return { error: "DB not ready" };
 
         // Fetch all entities for this workspace
-        const entities = await Entity.find()
-            .select("name slug icon color customFields statusClassification")
-            .populate("customFields", "name fieldId type")
-            .populate("statusClassification", "name items")
-            .lean();
+        let entities;
+        try {
+            entities = await Entity.find()
+                .select("name slug icon color customFields statusClassification")
+                .populate("customFields", "name fieldId type")
+                .populate("statusClassification", "name items")
+                .lean();
+        } catch (popError) {
+            // FieldTemplate schema may not be registered yet — fetch without populate
+            console.warn("[AIAssistant] Populate failed, fetching without:", popError.message);
+            entities = await Entity.find()
+                .select("name slug icon color")
+                .lean();
+        }
 
         // Build entity summary with record counts
         const entitySummaries = await Promise.all(
@@ -225,36 +256,38 @@ function parseAIResponse(text) {
 // ── Call OpenAI via Integration Engine ────────────────────────
 async function callAI(req, messages) {
     try {
-        const ProviderModel = await tenantCollection(req, "IntegrationProvider");
-        const ActionModel = await tenantCollection(req, "IntegrationAction");
-        const ConnectionModel = await tenantCollection(req, "IntegrationConnection");
-        const LogModel = await tenantCollection(req, "IntegrationLog");
+        // Provider & Action are GLOBAL models (not in tenant DB)
+        // Connection & Log are TENANT models (registered on tenant connection)
+        const { ConnectionModel, LogModel } = getTenantIntegrationModels(req);
 
-        if (!ProviderModel || !ActionModel || !ConnectionModel) {
-            throw new Error("Integration models not available");
-        }
-
-        // Find OpenAI provider
-        const provider = await ProviderModel.findOne({ key: "openai" });
+        // Find OpenAI provider (global DB)
+        const provider = await IntegrationProvider.findOne({ key: "openai" });
         if (!provider) {
             throw new Error("OpenAI provider not configured. Please set up the OpenAI integration first.");
         }
 
-        // Find chat-completion action
-        const action = await ActionModel.findOne({
-            providerId: provider._id,
+        // Find chat-completion action (global DB) — support both actionKey formats
+        let action = await IntegrationAction.findOne({
+            providerKey: "openai",
             actionKey: "chat-completion",
         });
+        // Fallback: try "chat_completion" or "chat/completions"
         if (!action) {
-            throw new Error("Chat completion action not found.");
+            action = await IntegrationAction.findOne({
+                providerKey: "openai",
+                actionKey: { $in: ["chat_completion", "chat-completions", "chat/completions"] },
+            });
+        }
+        if (!action) {
+            throw new Error("Chat completion action not found. Please seed the OpenAI actions.");
         }
 
         // Execute via Integration Service
         const result = await IntegrationService.executeAction({
-            ProviderModel,
-            ActionModel,
-            ConnectionModel,
-            LogModel,
+            ProviderModel: IntegrationProvider,   // Global
+            ActionModel: IntegrationAction,       // Global
+            ConnectionModel,                      // Tenant
+            LogModel,                             // Tenant
             workspaceId: req.account_number,
             providerKey: "openai",
             actionId: action._id.toString(),
@@ -267,13 +300,16 @@ async function callAI(req, messages) {
         });
 
         if (!result.success) {
-            throw new Error(result.error || "AI call failed");
+            console.error("[AIAssistant] Integration call failed:", JSON.stringify(result, null, 2));
+            throw new Error(result.error || result.errorMessage || "AI call failed");
         }
 
-        // Extract content from response
+        // IntegrationService returns { success, data: { mapped fields }, raw: { original response } }
+        // data = mapped response (content, role, model, usage, finishReason)
+        // raw = original API response
         const content =
-            result.data?.mapped?.content ||
-            result.data?.raw?.choices?.[0]?.message?.content ||
+            result.data?.content ||
+            result.raw?.choices?.[0]?.message?.content ||
             "Pas de réponse";
 
         return content;

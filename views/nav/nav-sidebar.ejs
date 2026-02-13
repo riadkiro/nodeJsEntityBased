@@ -2,15 +2,99 @@
   <nav x-data="{ sidebar }"
     class="sidebar fixed top-0 bottom-0 z-50 col-span-1 grid h-full min-h-screen w-[248px] grid-cols-12 shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] transition-all duration-300">
     <style>
-      .mini-rail {
+      /* ═══════════════════════════════════════════
+         THEME 1: Galaxy Gray (Samsung S11+ File Manager)
+         Clean, minimal, light gray surface
+         ═══════════════════════════════════════════ */
+      .mini-rail[data-theme="galaxy"] {
+        --rail-bg: #f0f2f5;
+        --rail-bg-gradient: none;
+        --rail-icon: #6b7280;
+        --rail-icon-hover: #1f2937;
+        --rail-active-bg: #e5e7eb;
+        --rail-active-icon: #111827;
+        --rail-hover-bg: rgba(0,0,0,0.04);
+        --rail-divider: rgba(0,0,0,0.06);
+        --rail-indicator: #111827;
+        --rail-label: #6b7280;
+        --rail-label-active: #111827;
+        --rail-border: rgba(0,0,0,0.06);
+        --rail-shadow: none;
+      }
+
+      /* ═══════════════════════════════════════════
+         THEME 2: Aurora Gradient (Modern gradient)
+         Soft blue-to-indigo vertical gradient
+         ═══════════════════════════════════════════ */
+      .mini-rail[data-theme="aurora"] {
+        --rail-bg: linear-gradient(180deg, #eef2ff 0%, #e0e7ff 30%, #ede9fe 70%, #faf5ff 100%);
+        --rail-bg-gradient: linear-gradient(180deg, #eef2ff 0%, #e0e7ff 30%, #ede9fe 70%, #faf5ff 100%);
+        --rail-icon: #7c7fa8;
+        --rail-icon-hover: #4338ca;
+        --rail-active-bg: rgba(99, 102, 241, 0.12);
+        --rail-active-icon: #4338ca;
+        --rail-hover-bg: rgba(99, 102, 241, 0.06);
+        --rail-divider: rgba(99, 102, 241, 0.1);
+        --rail-indicator: #6366f1;
+        --rail-label: #7c7fa8;
+        --rail-label-active: #4338ca;
+        --rail-border: rgba(99, 102, 241, 0.08);
+        --rail-shadow: 0 0 20px rgba(99, 102, 241, 0.06);
+      }
+
+      /* ═══════════════════════════════════════════
+         THEME 3: Frosted Glass (Glassmorphism)
+         Semi-transparent white with blur
+         ═══════════════════════════════════════════ */
+      .mini-rail[data-theme="frost"] {
+        --rail-bg: rgba(255,255,255,0.72);
+        --rail-bg-gradient: none;
+        --rail-icon: #64748b;
+        --rail-icon-hover: #0f172a;
+        --rail-active-bg: rgba(59, 130, 246, 0.08);
+        --rail-active-icon: #2563eb;
+        --rail-hover-bg: rgba(0,0,0,0.03);
+        --rail-divider: rgba(0,0,0,0.06);
+        --rail-indicator: #2563eb;
+        --rail-label: #64748b;
+        --rail-label-active: #2563eb;
+        --rail-border: rgba(255,255,255,0.5);
+        --rail-shadow: 0 0 30px rgba(0,0,0,0.04);
+      }
+      .mini-rail[data-theme="frost"] {
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        border-right: 1px solid rgba(255,255,255,0.4);
+      }
+
+      /* ═══════════════════════════════════════════
+         DARK MODE OVERRIDE (keeps dark for all themes)
+         ═══════════════════════════════════════════ */
+      .dark .mini-rail,
+      .dark .mini-rail[data-theme="galaxy"],
+      .dark .mini-rail[data-theme="aurora"],
+      .dark .mini-rail[data-theme="frost"] {
         --rail-bg: #0f1521;
+        --rail-bg-gradient: none;
         --rail-icon: rgba(255,255,255,0.55);
         --rail-icon-hover: rgba(255,255,255,0.9);
         --rail-active-bg: rgba(255,255,255,0.12);
         --rail-active-icon: #fff;
         --rail-hover-bg: rgba(255,255,255,0.07);
         --rail-divider: rgba(255,255,255,0.06);
+        --rail-indicator: #fff;
+        --rail-label: rgba(255,255,255,0.5);
+        --rail-label-active: #fff;
+        --rail-border: transparent;
+        --rail-shadow: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        border-right: none;
       }
+
+      /* ═══════════════════════════════════════════
+         SHARED COMPONENT STYLES
+         ═══════════════════════════════════════════ */
       .mini-rail-item {
         display: flex;
         flex-direction: column;
@@ -41,14 +125,15 @@
         width: 3px;
         height: 20px;
         border-radius: 0 3px 3px 0;
-        background: #fff;
+        background: var(--rail-indicator, #fff);
       }
       .mini-rail-label {
         font-size: 9px;
         font-weight: 500;
         letter-spacing: 0.02em;
         line-height: 1.1;
-        opacity: 0.7;
+        color: var(--rail-label, inherit);
+        opacity: 0.85;
         white-space: nowrap;
         overflow: hidden;
         max-height: 0;
@@ -56,11 +141,14 @@
       }
       .mini-rail--expanded .mini-rail-label {
         max-height: 20px;
-        opacity: 0.7;
+        opacity: 0.85;
         margin-top: 2px;
       }
-      .mini-rail-item:hover .mini-rail-label,
+      .mini-rail-item:hover .mini-rail-label {
+        opacity: 1;
+      }
       .mini-rail-item[data-active="true"] .mini-rail-label {
+        color: var(--rail-label-active, inherit);
         opacity: 1;
       }
       .mini-rail-divider {
@@ -69,11 +157,72 @@
         background: var(--rail-divider);
         margin: 4px auto;
       }
+
+      /* ═══════════════════════════════════════════
+         THEME SWITCH BUTTON
+         ═══════════════════════════════════════════ */
+      .rail-theme-switch {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: var(--rail-icon);
+        background: var(--rail-hover-bg);
+        border: 1px solid var(--rail-divider);
+        margin-bottom: 2px;
+      }
+      .rail-theme-switch:hover {
+        color: var(--rail-icon-hover);
+        background: var(--rail-active-bg);
+        transform: rotate(30deg);
+      }
+
+      /* Theme indicator dots */
+      .rail-theme-dots {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 6px;
+        transition: all 0.3s ease;
+      }
+      .rail-theme-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1.5px solid var(--rail-divider);
+        opacity: 0.5;
+      }
+      .rail-theme-dot:hover {
+        opacity: 0.8;
+        transform: scale(1.3);
+      }
+      .rail-theme-dot.active {
+        opacity: 1;
+        transform: scale(1.2);
+        border-color: var(--rail-indicator, currentColor);
+        box-shadow: 0 0 4px var(--rail-indicator, currentColor);
+      }
     </style>
     <div
+      x-data="{
+        railTheme: localStorage.getItem('railTheme') || 'galaxy',
+        themes: ['galaxy', 'aurora', 'frost'],
+        themeColors: { galaxy: '#9ca3af', aurora: '#818cf8', frost: '#60a5fa' },
+        cycleTheme() {
+          const idx = this.themes.indexOf(this.railTheme);
+          this.railTheme = this.themes[(idx + 1) % this.themes.length];
+          localStorage.setItem('railTheme', this.railTheme);
+        }
+      }"
+      :data-theme="railTheme"
       :class="$store.app.sidebar ? 'col-span-12 mini-rail--expanded' : 'col-span-2'"
       class="mini-rail h-full flex flex-col items-center justify-between pt-2 pb-4"
-      style="background: var(--rail-bg);">
+      :style="railTheme === 'aurora' && !document.documentElement.classList.contains('dark') ? 'background:' + 'linear-gradient(180deg, #eef2ff 0%, #e0e7ff 30%, #ede9fe 70%, #faf5ff 100%)' : 'background: var(--rail-bg)'">
       <!-- Toggle button -->
       <a href="javascript:;"
         class="mini-rail-item"
@@ -318,6 +467,26 @@
         </svg>
         <span class="mini-rail-label">Équipe</span>
       </a>
+      </div>
+
+      <!-- Theme Switch (dots + cycle button) -->
+      <div class="flex flex-col items-center gap-1 mt-auto mb-2">
+        <div class="rail-theme-dots">
+          <template x-for="t in themes" :key="t">
+            <div class="rail-theme-dot"
+              :class="railTheme === t ? 'active' : ''"
+              :style="'background:' + themeColors[t]"
+              @click="railTheme = t; localStorage.setItem('railTheme', t)"
+              :title="t.charAt(0).toUpperCase() + t.slice(1)">
+            </div>
+          </template>
+        </div>
+        <div class="rail-theme-switch" @click="cycleTheme()" title="Changer le thème">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.5"/>
+            <path opacity="0.5" d="M12 2V4M12 20V22M4 12H2M22 12H20M19.778 4.222L17.556 6.444M6.444 17.556L4.222 19.778M19.778 19.778L17.556 17.556M6.444 6.444L4.222 4.222" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
       </div>
 
       <!-- BOTTOM: Réglages -->

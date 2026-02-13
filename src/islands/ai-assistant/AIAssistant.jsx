@@ -43,6 +43,7 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
     const [context, setContext] = useState(null)
     const [unreadCount, setUnreadCount] = useState(0)
     const [emailContext, setEmailContext] = useState(null) // email context from mailbox IA button
+    const emailContextRef = useRef(null) // ref to avoid stale closures
     const [hasGreeted, setHasGreeted] = useState(savedSession?.hasGreeted || false)
 
     // ── Auto-detect context from current page ─────────────────
@@ -134,6 +135,8 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
         setIsLoading(true)
 
         try {
+            // Read email context from ref to avoid stale closure
+            const currentEmailCtx = emailContextRef.current
             const res = await fetch(`/account/${accountNumber}/api/ai-assistant/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -144,7 +147,7 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
                     context: {
                         ...detectedContext,
                         workspace: context,
-                        ...(emailContext ? { emailDetail: emailContext } : {}),
+                        ...(currentEmailCtx ? { emailDetail: currentEmailCtx } : {}),
                     },
                     history: messages.slice(-10).map(m => ({
                         role: m.role,
@@ -187,7 +190,7 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
         } finally {
             setIsLoading(false)
         }
-    }, [accountNumber, conversationId, context, detectedContext, emailContext, isLoading, isOpen, messages])
+    }, [accountNumber, conversationId, context, detectedContext, isLoading, isOpen, messages])
 
     // ── Handle navigate action (client-side) ─────────────────
     // NOTE: This function reads from sessionStorage directly to avoid
@@ -303,10 +306,10 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
             const detail = e.detail || {}
             console.log('[AIAssistant] Received open-with-context event:', detail)
 
-            // Store the email context
-            if (detail.emailContext) {
-                setEmailContext(detail.emailContext)
-            }
+            // Store the email context in BOTH ref (immediate) and state
+            const newEmailCtx = detail.emailContext || null
+            emailContextRef.current = newEmailCtx
+            setEmailContext(newEmailCtx)
 
             // Clear previous conversation to start fresh with email context
             setMessages([])
@@ -407,8 +410,10 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
             let contextHint = ''
             let capabilities = ''
 
-            if (emailContext) {
-                contextHint = `📧 J'ai chargé l'email **"${emailContext.subject || '(sans objet)'}"** de ${emailContext.from || emailContext.fromEmail || 'expéditeur inconnu'}. `
+            // Read from ref for latest email context (avoids stale closure)
+            const currentEmail = emailContextRef.current
+            if (currentEmail) {
+                contextHint = `📧 J'ai chargé l'email **"${currentEmail.subject || '(sans objet)'}"** de ${currentEmail.from || currentEmail.fromEmail || 'expéditeur inconnu'}. `
                 capabilities = `\n\n• 📋 **Résumer** — Obtenir les points clés du mail\n• ✍️ **Répondre** — Rédiger une réponse professionnelle\n• 🔍 **Analyser** — Évaluer le ton et l'urgence\n• 🌐 **Traduire** — Traduire le mail en anglais`
             } else {
                 contextHint = detectedContext.entitySlug

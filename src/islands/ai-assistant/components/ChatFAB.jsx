@@ -1,19 +1,25 @@
 /**
  * ChatFAB - Floating Action Button for AI Assistant
  * Sits in bottom-right corner. Pulse animation when idle, loading ring when processing.
+ * Shows a contextual email indicator when an email is selected in the mailbox.
  */
 import React from 'react'
 
-export default function ChatFAB({ isOpen, onClick, unreadCount, isLoading }) {
+export default function ChatFAB({ isOpen, onClick, unreadCount, isLoading, hasEmailContext }) {
     return (
         <button
-            className={`ai-fab ${isOpen ? 'ai-fab--open' : ''} ${isLoading ? 'ai-fab--loading' : ''}`}
+            className={`ai-fab ${isOpen ? 'ai-fab--open' : ''} ${isLoading ? 'ai-fab--loading' : ''} ${hasEmailContext && !isOpen ? 'ai-fab--has-context' : ''}`}
             onClick={onClick}
             aria-label={isOpen ? 'Fermer l\'assistant' : 'Ouvrir l\'assistant IA'}
         >
             {/* Pulse ring */}
-            {!isOpen && !isLoading && (
+            {!isOpen && !isLoading && !hasEmailContext && (
                 <span className="ai-fab__pulse" />
+            )}
+
+            {/* Context pulse (email detected) */}
+            {!isOpen && !isLoading && hasEmailContext && (
+                <span className="ai-fab__context-pulse" />
             )}
 
             {/* Loading ring */}
@@ -36,6 +42,13 @@ export default function ChatFAB({ isOpen, onClick, unreadCount, isLoading }) {
                     </svg>
                 )}
             </span>
+
+            {/* Email context badge */}
+            {hasEmailContext && !isOpen && !unreadCount && (
+                <span className="ai-fab__context-badge" title="Email détecté — cliquez pour des suggestions IA">
+                    📧
+                </span>
+            )}
 
             {/* Unread badge */}
             {unreadCount > 0 && !isOpen && (

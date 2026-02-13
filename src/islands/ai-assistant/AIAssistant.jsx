@@ -334,6 +334,35 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
         return () => window.removeEventListener('ai-assistant:open-with-context', handler)
     }, [context, fetchContext, sendMessage])
 
+    // ── Listen for passive email context changes (smart detection, no panel open) ──
+    useEffect(() => {
+        const handler = (e) => {
+            const detail = e.detail || {}
+            const newEmailCtx = detail.emailContext || null
+            const prevCtx = emailContextRef.current
+
+            // Update refs and state
+            emailContextRef.current = newEmailCtx
+            setEmailContext(newEmailCtx)
+
+            // ALWAYS reset conversation when the email context changes
+            // (regardless of panel open/closed), so that:
+            // 1. Quick actions re-appear for the new email
+            // 2. The AI doesn't respond in the previous email's context
+            const prevId = prevCtx?.id
+            const newId = newEmailCtx?.id
+            if (prevId !== newId) {
+                setMessages([])
+                setConversationId(null)
+                setHasGreeted(false)
+                clearSession()
+            }
+        }
+
+        window.addEventListener('ai-assistant:email-context-changed', handler)
+        return () => window.removeEventListener('ai-assistant:email-context-changed', handler)
+    }, [])
+
     // ── Validate/modify plan ───────────────────────────────────
     const validatePlan = useCallback(async (plan, modifications = null) => {
         setIsLoading(true)
@@ -453,6 +482,7 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
                 onClick={toggleOpen}
                 unreadCount={unreadCount}
                 isLoading={isLoading}
+                hasEmailContext={!!emailContext}
             />
 
             {isOpen && (

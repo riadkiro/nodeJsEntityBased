@@ -224,6 +224,7 @@ document.addEventListener('alpine:init', () => {
             this.activeGroupFilter = '';
             this.searchMails();
             this.isShowMailMenu = false;
+            this._clearEmailContext();
         },
 
         selectMail(mail) {
@@ -236,7 +237,39 @@ document.addEventListener('alpine:init', () => {
                 this.isShowMailMenu = false;
                 // Persist read status
                 this._apiCall('/read-status', { ids: [mail.id], isUnread: false });
+
+                // ── Auto-notify AI assistant of email context ──
+                this._dispatchEmailContext(mail);
             }
+        },
+
+        // ── Dispatch email context to AI assistant (smart detection) ──
+        _dispatchEmailContext(mail) {
+            if (!mail) {
+                window.dispatchEvent(new CustomEvent('ai-assistant:email-context-changed', {
+                    detail: { emailContext: null }
+                }));
+                return;
+            }
+            const emailData = {
+                id: mail.id || mail._id,
+                from: ((mail.firstName || '') + ' ' + (mail.lastName || '')).trim(),
+                fromEmail: mail.email,
+                subject: mail.title,
+                body: mail.description ? mail.description.replace(/<[^>]*>/g, '').substring(0, 3000) : '',
+                date: mail.date,
+                hasAttachments: (mail.attachments || []).length > 0
+            };
+            window.dispatchEvent(new CustomEvent('ai-assistant:email-context-changed', {
+                detail: { emailContext: emailData }
+            }));
+        },
+
+        // ── Clear email context when leaving mail detail ──
+        _clearEmailContext() {
+            window.dispatchEvent(new CustomEvent('ai-assistant:email-context-changed', {
+                detail: { emailContext: null }
+            }));
         },
 
         // ===== STAR (persisted) =====
@@ -374,6 +407,7 @@ document.addEventListener('alpine:init', () => {
             this.selectedMail = null;
             this.showTemplates = false;
             this.showSignature = false;
+            this._clearEmailContext();
 
             if (type === 'add') {
                 this.params = { ...this.defaultParams, attachments: [] };

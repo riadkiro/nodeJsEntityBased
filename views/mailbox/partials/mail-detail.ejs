@@ -1,7 +1,8 @@
 <!-- ========== MAIL DETAIL VIEW ========== -->
 <template x-if="selectedMail && !isEdit">
-    <div>
-        <div class="flex flex-wrap items-center justify-between gap-4 p-4">
+    <div class="flex flex-col h-full">
+        <!-- Top toolbar (Back, Star, Important) -->
+        <div class="flex flex-wrap items-center justify-between gap-4 p-4 shrink-0">
             <div class="flex items-center">
                 <button type="button" class="flex items-center hover:text-primary ltr:mr-2 rtl:ml-2" @click="selectedMail = null">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
@@ -26,79 +27,110 @@
             </div>
         </div>
         <div class="h-px border-b border-[#e0e6ed] dark:border-[#1b2e4b]"></div>
-        <!-- Mail Header -->
-        <div class="relative p-5">
-            <div class="flex flex-wrap justify-between lg:flex-nowrap">
-                <div class="flex w-max items-center">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary ltr:mr-4 rtl:ml-4">
-                        <span class="text-lg font-semibold" x-text="(selectedMail.firstName ? selectedMail.firstName[0] : '') + (selectedMail.lastName ? selectedMail.lastName[0] : '')"></span>
+
+        <!-- Scrollable mail content -->
+        <div class="flex-1 overflow-auto min-h-0">
+            <!-- Mail Header -->
+            <div class="relative p-5">
+                <div class="flex flex-wrap justify-between lg:flex-nowrap">
+                    <div class="flex w-max items-center">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary ltr:mr-4 rtl:ml-4">
+                            <span class="text-lg font-semibold" x-text="(selectedMail.firstName ? selectedMail.firstName[0] : '') + (selectedMail.lastName ? selectedMail.lastName[0] : '')"></span>
+                        </div>
+                        <div>
+                            <h4 class="text-base font-semibold dark:text-gray-300" x-text="selectedMail.firstName + ' ' + (selectedMail.lastName || '')"></h4>
+                            <span class="text-white-dark" x-text="selectedMail.email"></span>
+                        </div>
                     </div>
-                    <div>
-                        <h4 class="text-base font-semibold dark:text-gray-300" x-text="selectedMail.firstName + ' ' + (selectedMail.lastName || '')"></h4>
-                        <span class="text-white-dark" x-text="selectedMail.email"></span>
+                    <div class="flex items-center text-white-dark">
+                        <span x-text="showTime(selectedMail)"></span>
                     </div>
                 </div>
-                <div class="flex items-center text-white-dark">
-                    <span x-text="showTime(selectedMail)"></span>
-                </div>
+                <h4 class="mt-6 text-lg font-medium dark:text-gray-300" x-text="selectedMail.title"></h4>
+                <!-- Group badge -->
+                <template x-if="selectedMail.group">
+                    <span class="mt-2 inline-block rounded-full px-3 py-0.5 text-xs font-semibold"
+                        :class="{
+                            'bg-primary/10 text-primary': selectedMail.group === 'personal',
+                            'bg-warning/10 text-warning': selectedMail.group === 'work',
+                            'bg-success/10 text-success': selectedMail.group === 'social',
+                            'bg-danger/10 text-danger': selectedMail.group === 'private'
+                        }"
+                        x-text="selectedMail.group.charAt(0).toUpperCase() + selectedMail.group.slice(1)">
+                    </span>
+                </template>
+                <!-- Mail body -->
+                <div class="prose mt-8 max-w-full dark:prose-invert" x-html="selectedMail.description"></div>
+                <!-- Attachments -->
+                <template x-if="selectedMail.attachments && selectedMail.attachments.length">
+                    <div class="mt-8">
+                        <div class="mb-4 text-base font-semibold dark:text-gray-300">Attachments</div>
+                        <div class="flex flex-wrap gap-4">
+                            <template x-for="(attachment, i) in selectedMail.attachments" :key="i">
+                                <div class="flex items-center gap-3 rounded-md border border-[#e0e6ed] px-4 py-2.5 dark:border-[#1b2e4b]">
+                                    <div class="rounded-md bg-primary/10 p-2">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary">
+                                            <path d="M15.3929 4.05365L14.8912 4.61112L15.3929 4.05365ZM19.3517 7.61654L18.85 8.17402L19.3517 7.61654ZM14 21.25H10V22.75H14V21.25ZM2.75 14V10H1.25V14H2.75ZM21.25 13.5629V14H22.75V13.5629H21.25Z" fill="currentColor" />
+                                            <path opacity="0.5" d="M13 2.5V5C13 7.35702 13 8.53553 13.7322 9.26777C14.4645 10 15.643 10 18 10H22" stroke="currentColor" stroke-width="1.5" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-semibold dark:text-gray-300" x-text="attachment.name"></div>
+                                        <div class="text-xs text-white-dark" x-text="attachment.size"></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
             </div>
-            <h4 class="mt-6 text-lg font-medium dark:text-gray-300" x-text="selectedMail.title"></h4>
-            <!-- Group badge -->
-            <template x-if="selectedMail.group">
-                <span class="mt-2 inline-block rounded-full px-3 py-0.5 text-xs font-semibold"
-                    :class="{
-                        'bg-primary/10 text-primary': selectedMail.group === 'personal',
-                        'bg-warning/10 text-warning': selectedMail.group === 'work',
-                        'bg-success/10 text-success': selectedMail.group === 'social',
-                        'bg-danger/10 text-danger': selectedMail.group === 'private'
-                    }"
-                    x-text="selectedMail.group.charAt(0).toUpperCase() + selectedMail.group.slice(1)">
-                </span>
-            </template>
-            <!-- Mail body -->
-            <div class="prose mt-8 max-w-full dark:prose-invert" x-html="selectedMail.description"></div>
-            <!-- Attachments -->
-            <template x-if="selectedMail.attachments && selectedMail.attachments.length">
-                <div class="mt-8">
-                    <div class="mb-4 text-base font-semibold dark:text-gray-300">Attachments</div>
-                    <div class="flex flex-wrap gap-4">
-                        <template x-for="(attachment, i) in selectedMail.attachments" :key="i">
-                            <div class="flex items-center gap-3 rounded-md border border-[#e0e6ed] px-4 py-2.5 dark:border-[#1b2e4b]">
-                                <div class="rounded-md bg-primary/10 p-2">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary">
-                                        <path d="M15.3929 4.05365L14.8912 4.61112L15.3929 4.05365ZM19.3517 7.61654L18.85 8.17402L19.3517 7.61654ZM14 21.25H10V22.75H14V21.25ZM2.75 14V10H1.25V14H2.75ZM21.25 13.5629V14H22.75V13.5629H21.25Z" fill="currentColor" />
-                                        <path opacity="0.5" d="M13 2.5V5C13 7.35702 13 8.53553 13.7322 9.26777C14.4645 10 15.643 10 18 10H22" stroke="currentColor" stroke-width="1.5" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div class="text-sm font-semibold dark:text-gray-300" x-text="attachment.name"></div>
-                                    <div class="text-xs text-white-dark" x-text="attachment.size"></div>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-            </template>
         </div>
-        <!-- Reply / Forward Actions -->
-        <div class="h-px border-b border-[#e0e6ed] dark:border-[#1b2e4b]"></div>
-        <div class="flex flex-wrap items-center gap-3 p-4">
-            <button type="button" class="btn btn-outline-primary btn-sm flex items-center gap-2" @click="openMail('reply', selectedMail)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 7L4.5 12L9.5 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 12H14.5C17.2614 12 19.5 14.2386 19.5 17V19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Reply
-            </button>
-            <button type="button" class="btn btn-outline-primary btn-sm flex items-center gap-2" @click="openMail('forward', selectedMail)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 7L19.5 12L14.5 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.5 12H9.5C6.73858 12 4.5 14.2386 4.5 17V19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Forward
-            </button>
-            <button type="button" class="btn btn-outline-danger btn-sm flex items-center gap-2" @click="ids = [selectedMail.id]; setAction('trash'); selectedMail = null;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20.5 6H3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M18.833 8.5L18.374 15.399C18.197 18.054 18.108 19.382 17.243 20.191C16.378 21 15.048 21 12.387 21H11.613C8.953 21 7.622 21 6.757 20.191C5.892 19.382 5.804 18.054 5.627 15.399L5.167 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                Delete
-            </button>
-            <button type="button" class="btn btn-outline-secondary btn-sm flex items-center gap-2" @click="window.print()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 17H4C2.89543 17 2 16.1046 2 15V11C2 9.89543 2.89543 9 4 9H20C21.1046 9 22 9.89543 22 11V15C22 16.1046 21.1046 17 20 17H18" stroke="currentColor" stroke-width="1.5"/><path d="M6 9V4C6 2.89543 6.89543 2 8 2H16C17.1046 2 18 2.89543 18 4V9" stroke="currentColor" stroke-width="1.5"/><path d="M6 14H18V20C18 21.1046 17.1046 22 16 22H8C6.89543 22 6 21.1046 6 20V14Z" stroke="currentColor" stroke-width="1.5"/></svg>
-                Print
-            </button>
+
+        <!-- Fixed Bottom Action Bar -->
+        <div class="shrink-0 border-t border-[#e0e6ed] dark:border-[#1b2e4b] bg-white dark:bg-[#0e1726]">
+            <div class="flex flex-wrap items-center gap-3 p-4">
+                <button type="button" class="btn btn-outline-primary btn-sm flex items-center gap-2" @click="openMail('reply', selectedMail)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 7L4.5 12L9.5 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 12H14.5C17.2614 12 19.5 14.2386 19.5 17V19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Reply
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-sm flex items-center gap-2" @click="openMail('forward', selectedMail)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 7L19.5 12L14.5 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.5 12H9.5C6.73858 12 4.5 14.2386 4.5 17V19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Forward
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm flex items-center gap-2" @click="ids = [selectedMail.id]; setAction('trash'); selectedMail = null;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20.5 6H3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M18.833 8.5L18.374 15.399C18.197 18.054 18.108 19.382 17.243 20.191C16.378 21 15.048 21 12.387 21H11.613C8.953 21 7.622 21 6.757 20.191C5.892 19.382 5.804 18.054 5.627 15.399L5.167 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    Delete
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm flex items-center gap-2" @click="window.print()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 17H4C2.89543 17 2 16.1046 2 15V11C2 9.89543 2.89543 9 4 9H20C21.1046 9 22 9.89543 22 11V15C22 16.1046 21.1046 17 20 17H18" stroke="currentColor" stroke-width="1.5"/><path d="M6 9V4C6 2.89543 6.89543 2 8 2H16C17.1046 2 18 2.89543 18 4V9" stroke="currentColor" stroke-width="1.5"/><path d="M6 14H18V20C18 21.1046 17.1046 22 16 22H8C6.89543 22 6 21.1046 6 20V14Z" stroke="currentColor" stroke-width="1.5"/></svg>
+                    Print
+                </button>
+                <!-- AI Assistant Button -->
+                <button type="button" class="btn btn-sm flex items-center gap-2 border border-purple-300 text-purple-600 hover:bg-purple-600 hover:text-white dark:border-purple-700 dark:text-purple-400 dark:hover:bg-purple-600 dark:hover:text-white transition-all"
+                    @click="(function() {
+                        var emailData = selectedMail ? {
+                            id: selectedMail.id || selectedMail._id,
+                            from: ((selectedMail.firstName || '') + ' ' + (selectedMail.lastName || '')).trim(),
+                            fromEmail: selectedMail.email,
+                            subject: selectedMail.title,
+                            body: selectedMail.description ? selectedMail.description.replace(/<[^>]*>/g, '').substring(0, 3000) : '',
+                            date: selectedMail.date,
+                            hasAttachments: (selectedMail.attachments || []).length > 0
+                        } : null;
+                        window.dispatchEvent(new CustomEvent('ai-assistant:open-with-context', {
+                            detail: { page: 'mailbox', emailContext: emailData }
+                        }));
+                    })()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 2C6.38 2 4.25 4.13 4.25 6.75C4.25 9.32 6.26 11.4 8.81 11.49C8.94 11.48 9.07 11.48 9.16 11.49C9.17 11.49 9.18 11.49 9.18 11.49C9.19 11.49 9.19 11.49 9.19 11.49C11.73 11.4 13.74 9.32 13.75 6.75C13.75 4.13 11.62 2 9 2Z" fill="currentColor" opacity="0.5"/>
+                        <path d="M14.08 14.15C11.29 12.29 6.74 12.29 3.93 14.15C2.66 14.99 1.96 16.15 1.96 17.38C1.96 18.61 2.66 19.76 3.92 20.59C5.32 21.53 7.16 22 9 22C10.84 22 12.68 21.53 14.08 20.59C15.34 19.75 16.04 18.6 16.04 17.36C16.03 16.13 15.34 14.98 14.08 14.15Z" fill="currentColor" opacity="0.5"/>
+                        <path d="M21.99 7.16C22.15 9.06 20.77 10.72 18.91 10.94C18.9 10.94 18.9 10.94 18.89 10.94H18.86C18.8 10.94 18.74 10.94 18.69 10.96C17.73 11.01 16.85 10.68 16.19 10.11C17.17 9.23 17.73 7.94 17.62 6.55C17.55 5.79 17.28 5.1 16.87 4.52C17.2 4.35 17.59 4.24 17.99 4.21C19.9 4.06 21.63 5.44 21.82 7.34L21.99 7.16Z" fill="currentColor"/>
+                        <path d="M23.97 16.56C23.84 17.56 23.17 18.4 22.04 18.97C20.96 19.52 19.62 19.78 18.29 19.75C19.07 19.1 19.52 18.29 19.59 17.43C19.68 16.19 19.07 15 17.87 14.05C17.19 13.52 16.41 13.1 15.56 12.79C17.86 12.15 20.76 12.58 22.47 13.96C23.48 14.78 23.99 15.78 23.97 16.56Z" fill="currentColor"/>
+                    </svg>
+                    IA
+                </button>
+            </div>
         </div>
     </div>
+
 </template>

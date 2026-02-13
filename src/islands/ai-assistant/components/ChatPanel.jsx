@@ -17,6 +17,7 @@ export default function ChatPanel({
     userName,
     userAvatar,
     detectedContext,
+    emailContext,
 }) {
     const [input, setInput] = useState('')
     const [showContext, setShowContext] = useState(false)
@@ -53,7 +54,12 @@ export default function ChatPanel({
     }, [input, onSendMessage])
 
     // ── Quick actions ────────────────────────────────────────
-    const quickActions = [
+    const quickActions = emailContext ? [
+        { label: "📋 Résumer", prompt: "Résume ce mail en quelques points clés" },
+        { label: "✍️ Répondre", prompt: "Rédige une réponse professionnelle à ce mail" },
+        { label: "🔍 Analyser", prompt: "Quel est le ton de ce mail ? Est-ce urgent ?" },
+        { label: "🌐 Traduire", prompt: "Traduis ce mail en anglais" },
+    ] : [
         { label: "📊 Stats du jour", prompt: "Donne-moi un résumé de l'activité d'aujourd'hui" },
         { label: "➕ Nouveau patient", prompt: "Je veux créer un nouveau patient" },
         { label: "🔍 Chercher", prompt: "Je cherche un dossier" },
@@ -61,10 +67,12 @@ export default function ChatPanel({
 
     // ── Context label ────────────────────────────────────────
     const contextLabel = (() => {
+        if (emailContext) return `📧 ${emailContext.subject ? emailContext.subject.substring(0, 30) + (emailContext.subject.length > 30 ? '...' : '') : 'Email'}`
         if (!detectedContext) return null
         if (detectedContext.entitySlug) return `📂 ${detectedContext.entitySlug}`
         if (detectedContext.page === 'home') return '🏠 Accueil'
         if (detectedContext.page === 'tasks') return '📋 Tâches'
+        if (detectedContext.page === 'mailbox') return '📧 Messagerie'
         if (detectedContext.page === 'admin') return '⚙️ Admin'
         if (detectedContext.page === 'superadmin') return '🛡️ SuperAdmin'
         if (detectedContext.page === 'dashboard') return '📊 Dashboard'

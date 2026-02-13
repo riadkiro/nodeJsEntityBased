@@ -42,6 +42,7 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
     const [conversationId, setConversationId] = useState(savedSession?.conversationId || null)
     const [context, setContext] = useState(null)
     const [unreadCount, setUnreadCount] = useState(0)
+    const [emailContext, setEmailContext] = useState(null) // email context from mailbox IA button
     const [hasGreeted, setHasGreeted] = useState(savedSession?.hasGreeted || false)
 
     // ── Auto-detect context from current page ─────────────────
@@ -86,6 +87,8 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
                 ctx.section = parts[accountIdx + 3] || null
             } else if (section === 'tasks') {
                 ctx.page = 'tasks'
+            } else if (section === 'mailbox') {
+                ctx.page = 'mailbox'
             } else if (section === 'settings' || section === 'studio') {
                 ctx.page = section
             } else {
@@ -141,6 +144,7 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
                     context: {
                         ...detectedContext,
                         workspace: context,
+                        ...(emailContext ? { emailDetail: emailContext } : {}),
                     },
                     history: messages.slice(-10).map(m => ({
                         role: m.role,
@@ -183,7 +187,7 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
         } finally {
             setIsLoading(false)
         }
-    }, [accountNumber, conversationId, context, detectedContext, isLoading, isOpen, messages])
+    }, [accountNumber, conversationId, context, detectedContext, emailContext, isLoading, isOpen, messages])
 
     // ── Handle navigate action (client-side) ─────────────────
     // NOTE: This function reads from sessionStorage directly to avoid
@@ -293,6 +297,40 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
         }
     }, []) // only on mount
 
+    // ── Listen for external open-with-context event (from mailbox IA button) ──
+    useEffect(() => {
+        const handler = (e) => {
+            const detail = e.detail || {}
+            console.log('[AIAssistant] Received open-with-context event:', detail)
+
+            // Store the email context
+            if (detail.emailContext) {
+                setEmailContext(detail.emailContext)
+            }
+
+            // Clear previous conversation to start fresh with email context
+            setMessages([])
+            setConversationId(null)
+            setHasGreeted(false)
+            clearSession()
+
+            // Open the panel
+            setIsOpen(true)
+            setUnreadCount(0)
+            if (!context) fetchContext()
+
+            // If there's an auto-send prompt, send it after a small delay
+            if (detail.autoSend) {
+                setTimeout(() => {
+                    sendMessage(detail.autoSend)
+                }, 300)
+            }
+        }
+
+        window.addEventListener('ai-assistant:open-with-context', handler)
+        return () => window.removeEventListener('ai-assistant:open-with-context', handler)
+    }, [context, fetchContext, sendMessage])
+
     // ── Validate/modify plan ───────────────────────────────────
     const validatePlan = useCallback(async (plan, modifications = null) => {
         setIsLoading(true)
@@ -366,23 +404,34 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
             const greeting = detectedContext.timeOfDay === 'morning' ? 'Bonjour' :
                 detectedContext.timeOfDay === 'afternoon' ? 'Bon après-midi' : 'Bonsoir'
 
-            const contextHint = detectedContext.entitySlug
-                ? `Je vois que vous êtes sur **${detectedContext.entitySlug}**. `
-                : detectedContext.page === 'home'
-                    ? "Vous êtes sur la page d'accueil. "
-                    : detectedContext.page === 'tasks'
-                        ? "Vous êtes dans les tâches. "
-                        : ''
+            let contextHint = ''
+            let capabilities = ''
+
+            if (emailContext) {
+                contextHint = `📧 J'ai chargé l'email **"${emailContext.subject || '(sans objet)'}"** de ${emailContext.from || emailContext.fromEmail || 'expéditeur inconnu'}. `
+                capabilities = `\n\n• 📋 **Résumer** — Obtenir les points clés du mail\n• ✍️ **Répondre** — Rédiger une réponse professionnelle\n• 🔍 **Analyser** — Évaluer le ton et l'urgence\n• 🌐 **Traduire** — Traduire le mail en anglais`
+            } else {
+                contextHint = detectedContext.entitySlug
+                    ? `Je vois que vous êtes sur **${detectedContext.entitySlug}**. `
+                    : detectedContext.page === 'home'
+                        ? "Vous êtes sur la page d'accueil. "
+                        : detectedContext.page === 'tasks'
+                            ? "Vous êtes dans les tâches. "
+                            : detectedContext.page === 'mailbox'
+                                ? "Vous êtes dans la messagerie. "
+                                : ''
+                capabilities = `\n\n• 📊 **Interroger vos données** — "Combien de patients aujourd'hui ?"\n• ✏️ **Créer des fiches** — "Crée un patient nommé Karim Ali"\n• 🔍 **Chercher** — "Trouve le dossier de François Dupont"\n• 📅 **Planifier** — "Planifie un suivi pour demain"`
+            }
 
             setMessages([{
                 id: 1,
                 role: 'assistant',
-                content: `${greeting} ${userName ? userName.split(' ')[0] : ''} ! 👋\n\n${contextHint}Comment puis-je vous aider ? Je peux :\n\n• 📊 **Interroger vos données** — "Combien de patients aujourd'hui ?"\n• ✏️ **Créer des fiches** — "Crée un patient nommé Karim Ali"\n• 🔍 **Chercher** — "Trouve le dossier de François Dupont"\n• 📅 **Planifier** — "Planifie un suivi pour demain"`,
+                content: `${greeting} ${userName ? userName.split(' ')[0] : ''} ! 👋\n\n${contextHint}Comment puis-je vous aider ?${capabilities}`,
                 timestamp: new Date().toISOString(),
             }])
             setHasGreeted(true)
         }
-    }, [isOpen, messages.length, hasGreeted, detectedContext, userName])
+    }, [isOpen, messages.length, hasGreeted, detectedContext, userName, emailContext])
 
     // ── Clear conversation ────────────────────────────────────
     const clearConversation = useCallback(() => {
@@ -413,6 +462,7 @@ export default function AIAssistant({ accountNumber, userId, userName, userAvata
                     userName={userName}
                     userAvatar={userAvatar}
                     detectedContext={detectedContext}
+                    emailContext={emailContext}
                 />
             )}
         </>

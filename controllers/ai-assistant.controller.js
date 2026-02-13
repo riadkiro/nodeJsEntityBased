@@ -386,6 +386,17 @@ ${(context.emailContext.emails || []).map((e, i) =>
    Aperçu: ${e.preview || "(vide)"}`
     ).join("\n") || "Aucun email"}
 ` : "\n📧 Les emails n'ont pas été chargés pour cette requête. Si l'utilisateur parle d'emails, utilise une action \`email-search\` pour chercher."}
+${context?.currentEmailDetail ? `
+## 📩 EMAIL ACTUELLEMENT OUVERT PAR L'UTILISATEUR:
+L'utilisateur consulte actuellement cet email. UTILISE CE CONTENU DIRECTEMENT quand il demande de résumer, traduire, analyser ou répondre à "ce mail":
+- **De:** ${context.currentEmailDetail.from || ''} (${context.currentEmailDetail.fromEmail || ''})
+- **Objet:** ${context.currentEmailDetail.subject || '(sans objet)'}
+- **Date:** ${context.currentEmailDetail.date || 'Inconnue'}
+- **Pièces jointes:** ${context.currentEmailDetail.hasAttachments ? 'Oui' : 'Non'}
+
+### Contenu du mail:
+${context.currentEmailDetail.body || '(contenu vide)'}
+` : ''}
 
 ## Tes capacités:
 1. **Interroger les données** — Répondre aux questions sur les fiches, statistiques, etc.
@@ -642,6 +653,13 @@ module.exports = {
                 } catch (e) {
                     console.error("[AIAssistant] Failed to load email context:", e.message);
                 }
+            }
+
+            // ── Inject specific email detail from mailbox IA button ──
+            // When user clicks IA from mail detail, the full email context is passed
+            if (clientContext?.emailDetail) {
+                console.log("[AIAssistant] Email detail injected from mailbox:", clientContext.emailDetail.subject);
+                workspaceContext.currentEmailDetail = clientContext.emailDetail;
             }
 
             // Build conversation history for AI

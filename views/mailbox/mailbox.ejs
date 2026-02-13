@@ -9,7 +9,7 @@
         <!-- ========== SIDEBAR ========== -->
         <div class="panel dark:gray-50 absolute z-10 hidden h-full w-[250px] max-w-full flex-none space-y-3 overflow-hidden p-4 ltr:rounded-r-none rtl:rounded-l-none xl:relative xl:block xl:h-auto ltr:xl:rounded-r-md rtl:xl:rounded-l-md"
             :class="{'!block' : isShowMailMenu}">
-            <div class="flex h-full flex-col pb-16">
+            <div class="flex h-full flex-col">
                 <div class="pb-5">
                     <button class="btn btn-primary w-full" type="button" @click="openMail('add')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 ltr:mr-2 rtl:ml-2">
@@ -20,7 +20,7 @@
                     </button>
 
                 </div>
-                <div class="perfect-scrollbar relative -mr-3.5 h-full grow pr-3.5">
+                <div class="perfect-scrollbar relative -mr-3.5 flex-1 min-h-0 overflow-y-auto pr-3.5">
                     <div class="space-y-1">
                         <!-- Inbox -->
                         <button type="button"
@@ -164,7 +164,7 @@
                     </div>
                 </div>
                 <!-- Connected Accounts + Add Account (fixed bottom) -->
-                <div class="absolute bottom-0 w-full ltr:left-0 rtl:right-0" style="background: inherit;">
+                <div class="shrink-0 w-full" style="background: inherit;">
                     <!-- Separator -->
                     <div class="h-px border-b border-[#e0e6ed] dark:border-[#1b2e4b] mx-4"></div>
 
@@ -204,7 +204,7 @@
 
                     <!-- Other accounts list -->
                     <template x-if="otherAccounts.length > 0">
-                        <div class="max-h-[70px] overflow-y-auto px-4 pt-1 space-y-0.5">
+                        <div class="max-h-[60px] overflow-y-auto px-4 pt-1 space-y-0.5">
                             <template x-for="(acc, i) in otherAccounts" :key="acc._id">
                                 <div class="flex items-center gap-2 rounded-md p-1.5 text-xs hover:bg-white-dark/10 dark:hover:bg-[#181F32] group cursor-pointer"
                                      @click="switchAccount(acc._id)">
@@ -243,6 +243,8 @@
             <%- include('partials/mail-signature') %>
         </div>
     </div>
+
+
 
     <!-- ========== ADD/EDIT ACCOUNT MODAL ========== -->
     <div x-show="showAccountModal" x-cloak class="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 p-4" @click.self="showAccountModal = false">

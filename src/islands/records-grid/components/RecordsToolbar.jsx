@@ -56,24 +56,30 @@ export default function RecordsToolbar({
     onToggleSidebar,
     activeView,
     onViewChange,
+    enabledViews = ['table', 'kanban', 'notes'],
+    onEnabledViewsChange,
 }) {
     const [displayPopover, setDisplayPopover] = useState(false)
     const [sortPopover, setSortPopover] = useState(false)
     const [columnsPopover, setColumnsPopover] = useState(false)
+    const [viewConfigPopover, setViewConfigPopover] = useState(false)
     const [columnSearch, setColumnSearch] = useState('')
 
     const displayBtnRef = useRef(null)
     const sortBtnRef = useRef(null)
     const columnsBtnRef = useRef(null)
+    const viewConfigBtnRef = useRef(null)
     const displayPanelRef = useRef(null)
     const sortPanelRef = useRef(null)
     const columnsPanelRef = useRef(null)
+    const viewConfigPanelRef = useRef(null)
 
     // Close all popovers
     const closeAll = () => {
         setDisplayPopover(false)
         setSortPopover(false)
         setColumnsPopover(false)
+        setViewConfigPopover(false)
     }
 
     // Close popovers on ESC
@@ -105,6 +111,24 @@ export default function RecordsToolbar({
     useOutsideClick(displayPopover, displayPanelRef, displayBtnRef, setDisplayPopover)
     useOutsideClick(sortPopover, sortPanelRef, sortBtnRef, setSortPopover)
     useOutsideClick(columnsPopover, columnsPanelRef, columnsBtnRef, setColumnsPopover)
+    useOutsideClick(viewConfigPopover, viewConfigPanelRef, viewConfigBtnRef, setViewConfigPopover)
+
+    // Toggle a view in enabledViews
+    const toggleEnabledView = (viewId) => {
+        // Cannot disable table view — it's the fallback
+        if (viewId === 'table') return
+        const newViews = enabledViews.includes(viewId)
+            ? enabledViews.filter(v => v !== viewId)
+            : [...enabledViews, viewId]
+        onEnabledViewsChange(newViews)
+        // If the current active view was disabled, switch to table
+        if (activeView === viewId && !newViews.includes(viewId)) {
+            onViewChange('table')
+        }
+    }
+
+    // Only show enabled views in the toolbar
+    const visibleViewModes = VIEW_MODES.filter(m => enabledViews.includes(m.id))
 
     // Toggle column visibility
     const toggleColumn = (columnId) => {
@@ -182,20 +206,36 @@ export default function RecordsToolbar({
             {/* Icons group - RIGHT (view switcher + settings) */}
             <div className="flex items-center gap-2">
                 {/* View switcher buttons - round buttons matching theme */}
-                {VIEW_MODES.map(mode => (
+                {visibleViewModes.map(mode => (
                     <button
                         key={mode.id}
                         type="button"
                         onClick={() => onViewChange(mode.id)}
                         title={mode.label}
                         className={`block rounded-full p-2 transition-all ${activeView === mode.id
-                                ? 'bg-primary/20 text-primary'
-                                : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60'
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60'
                             }`}
                     >
                         {mode.icon}
                     </button>
                 ))}
+
+                {/* View Config button */}
+                <button
+                    ref={viewConfigBtnRef}
+                    type="button"
+                    onClick={() => { setViewConfigPopover(!viewConfigPopover); setDisplayPopover(false); setSortPopover(false); setColumnsPopover(false) }}
+                    className={`block rounded-full p-2 transition-all ${viewConfigPopover
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60'}`}
+                    title="Configurer les vues"
+                >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
+                        <path d="M12 2V4M12 20V22M2 12H4M20 12H22M4.93 4.93L6.34 6.34M17.66 17.66L19.07 19.07M4.93 19.07L6.34 17.66M17.66 6.34L19.07 4.93" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                </button>
 
                 {/* Separator */}
                 <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-0.5" />
@@ -207,7 +247,7 @@ export default function RecordsToolbar({
                         <button
                             ref={sortBtnRef}
                             type="button"
-                            onClick={() => { setSortPopover(!sortPopover); setDisplayPopover(false); setColumnsPopover(false) }}
+                            onClick={() => { setSortPopover(!sortPopover); setDisplayPopover(false); setColumnsPopover(false); setViewConfigPopover(false) }}
                             className={`block rounded-full p-2 transition-all ${sortPopover || isSortActive
                                 ? 'bg-primary/20 text-primary'
                                 : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60'}`}
@@ -225,7 +265,7 @@ export default function RecordsToolbar({
                 <button
                     ref={displayBtnRef}
                     type="button"
-                    onClick={() => { setDisplayPopover(!displayPopover); setSortPopover(false); setColumnsPopover(false) }}
+                    onClick={() => { setDisplayPopover(!displayPopover); setSortPopover(false); setColumnsPopover(false); setViewConfigPopover(false) }}
                     className={`block rounded-full p-2 transition-all ${displayPopover
                         ? 'bg-primary/20 text-primary'
                         : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60'}`}
@@ -243,7 +283,7 @@ export default function RecordsToolbar({
                     <button
                         ref={columnsBtnRef}
                         type="button"
-                        onClick={() => { setColumnsPopover(!columnsPopover); setDisplayPopover(false); setSortPopover(false) }}
+                        onClick={() => { setColumnsPopover(!columnsPopover); setDisplayPopover(false); setSortPopover(false); setViewConfigPopover(false) }}
                         className={`block rounded-full p-2 transition-all ${columnsPopover
                             ? 'bg-primary/20 text-primary'
                             : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60'}`}
@@ -482,6 +522,57 @@ export default function RecordsToolbar({
                                     </button>
                                 ))}
                             </div>
+                        </div>
+                    </div>
+                </>,
+                document.body
+            )}
+
+            {/* View Config Popover */}
+            {viewConfigPopover && createPortal(
+                <>
+                    <div
+                        className="fixed inset-0"
+                        style={{ zIndex: 9998 }}
+                        onClick={() => setViewConfigPopover(false)}
+                    />
+                    <div
+                        ref={viewConfigPanelRef}
+                        className="fixed rounded-xl shadow-xl p-4 w-64 bg-white dark:bg-[#0e1726] border border-gray-100 dark:border-white/10"
+                        style={{
+                            zIndex: 9999,
+                            top: getPosition(viewConfigBtnRef).top,
+                            right: getPosition(viewConfigBtnRef).right,
+                            animation: 'popoverSlide 0.15s ease-out'
+                        }}
+                    >
+                        <div className="text-xs font-medium text-gray-500 dark:text-white-dark mb-3">Vues disponibles</div>
+                        <div className="space-y-1">
+                            {VIEW_MODES.map(mode => {
+                                const isEnabled = enabledViews.includes(mode.id)
+                                const isTable = mode.id === 'table'
+                                return (
+                                    <label
+                                        key={mode.id}
+                                        className={`flex items-center gap-3 cursor-pointer px-2 py-2 rounded-lg transition-all ${isTable ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={isEnabled}
+                                            onChange={() => toggleEnabledView(mode.id)}
+                                            disabled={isTable}
+                                            className="form-checkbox text-primary w-4 h-4 rounded"
+                                        />
+                                        <span className={`flex items-center gap-2 text-sm ${isEnabled ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600'}`}>
+                                            {mode.icon}
+                                            {mode.label}
+                                        </span>
+                                    </label>
+                                )
+                            })}
+                        </div>
+                        <div className="border-t border-gray-100 dark:border-white/10 mt-3 pt-2">
+                            <p className="text-[10px] text-gray-400 dark:text-gray-600">Le tableau est toujours activé par défaut.</p>
                         </div>
                     </div>
                 </>,

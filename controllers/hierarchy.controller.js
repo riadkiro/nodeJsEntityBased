@@ -178,6 +178,7 @@ module.exports = {
                         } else {
                             // Regular entity view
                             const entity = entities.find(e => e.id === v.entity.toString());
+                            const entitySlug = entity ? entity.slug : v.slug;
                             results.push({
                                 type: 'entity',
                                 id: v.id,
@@ -185,8 +186,9 @@ module.exports = {
                                 icon: v.icon || (entity ? entity.icon : 'solar:database-bold'),
                                 color: v.color,
                                 order: v.order,
-                                link: `/account/${req.account_number}/view/${v.id}`,
+                                link: `/account/${req.account_number}/record/${entitySlug}/list`,
                                 entityId: v.entity,
+                                entitySlug: entitySlug,
                                 viewType: v.viewType || 'list',
                                 filters: v.filters || []
                             });

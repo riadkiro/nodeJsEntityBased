@@ -11,6 +11,7 @@
  * - API calls to persist status/classification changes
  */
 import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react'
+import QuickViewModal from './QuickViewModal'
 import {
     DndContext,
     DragOverlay,
@@ -38,7 +39,9 @@ function hexToRgba(hex, alpha = 0.1) {
 }
 
 // ─── Sortable Kanban Card ────────────────────────────────────────────
-function KanbanCard({ record, accountNumber, entitySlug, isDragging: isDragProp = false }) {
+function KanbanCard({ record, accountNumber, entitySlug, isDragging: isDragProp = false, onQuickView }) {
+    const pointerStart = useRef(null)
+    const didDrag = useRef(false)
     const id = String(record._id?.$oid || record._id)
 
     const {
@@ -77,12 +80,33 @@ function KanbanCard({ record, accountNumber, entitySlug, isDragging: isDragProp 
 
     const tags = record.tags || []
 
+    const handlePointerDown = (e) => {
+        pointerStart.current = { x: e.clientX, y: e.clientY }
+        didDrag.current = false
+    }
+    const handlePointerMove = (e) => {
+        if (pointerStart.current) {
+            const dx = Math.abs(e.clientX - pointerStart.current.x)
+            const dy = Math.abs(e.clientY - pointerStart.current.y)
+            if (dx > 5 || dy > 5) didDrag.current = true
+        }
+    }
+    const handlePointerUp = (e) => {
+        if (!didDrag.current && onQuickView && !e.target.closest('a, button')) {
+            onQuickView(record)
+        }
+        pointerStart.current = null
+    }
+
     return (
         <div
             ref={setNodeRef}
             style={style}
-            className={`kanban-card cursor-move rounded-lg shadow-sm transition-all group bg-white-light/40 hover:bg-white-light/90 border border-gray-100 dark:border-0 dark:bg-dark/40 dark:hover:bg-dark/60 ${(isDragProp || dragging) ? 'shadow-lg ring-2 ring-primary/30' : ''}`}
+            className={`kanban-card cursor-pointer rounded-lg transition-all group bg-white hover:shadow-md border border-gray-200/80 dark:border-0 dark:bg-dark/40 dark:hover:bg-dark/60 ${(isDragProp || dragging) ? 'shadow-lg ring-2 ring-primary/30 cursor-move' : 'shadow-sm'}`}
             data-dnd="card"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
             {...attributes}
             {...listeners}
         >
@@ -193,7 +217,7 @@ function KanbanCard({ record, accountNumber, entitySlug, isDragging: isDragProp 
 }
 
 // ─── Droppable Kanban Column ─────────────────────────────────────────
-function KanbanColumnView({ column, records, recordIds, accountNumber, entitySlug }) {
+function KanbanColumnView({ column, records, recordIds, accountNumber, entitySlug, onQuickView }) {
     const { setNodeRef, isOver } = useDroppable({
         id: String(column.id),
     })
@@ -205,8 +229,10 @@ function KanbanColumnView({ column, records, recordIds, accountNumber, entitySlu
     return (
         <div
             ref={setNodeRef}
-            className={`w-72 flex-none rounded-lg overflow-hidden transition-all ${isOver ? 'ring-2 ring-primary/50 ring-offset-2' : ''}`}
+            className={`flex-none rounded-lg overflow-hidden transition-all ${isOver ? 'ring-2 ring-primary/50 ring-offset-2' : ''}`}
             style={{
+                width: '300px',
+                maxWidth: '320px',
                 backgroundColor: isOver ? hexToRgba(column.color, 0.15) : bgColor,
                 border: `1px solid ${borderColor}`
             }}
@@ -243,6 +269,7 @@ function KanbanColumnView({ column, records, recordIds, accountNumber, entitySlu
                                     record={r}
                                     accountNumber={accountNumber}
                                     entitySlug={entitySlug}
+                                    onQuickView={onQuickView}
                                 />
                             ))
                         )}
@@ -281,6 +308,13 @@ export default function RecordsKanban({
     const [records, setRecords] = useState(initialRecords)
     const [orderByColumn, setOrderByColumn] = useState({})
     const [activeId, setActiveId] = useState(null)
+
+    // Quick view modal state
+    const [quickViewRecord, setQuickViewRecord] = useState(null)
+
+    const handleQuickView = useCallback((record) => {
+        setQuickViewRecord(record)
+    }, [])
 
     // Sync with parent when initialRecords change
     useEffect(() => {
@@ -599,6 +633,7 @@ export default function RecordsKanban({
                                 recordIds={idsByColumn[col.id] || []}
                                 accountNumber={accountNumber}
                                 entitySlug={entitySlug}
+                                onQuickView={handleQuickView}
                             />
                         )
                     })}
@@ -608,6 +643,17 @@ export default function RecordsKanban({
                     {activeRecord ? <KanbanCard record={activeRecord} accountNumber={accountNumber} entitySlug={entitySlug} isDragging /> : null}
                 </DragOverlay>
             </DndContext>
+
+            {/* Quick View Modal */}
+            {quickViewRecord && (
+                <QuickViewModal
+                    record={quickViewRecord}
+                    columns={dataColumns}
+                    accountNumber={accountNumber}
+                    entitySlug={entitySlug}
+                    onClose={() => setQuickViewRecord(null)}
+                />
+            )}
         </div>
     )
 }

@@ -24,14 +24,34 @@ module.exports = {
                 layout: "layout-app"
             });
 
-            const records = await RecordModel.find({ entityId: entity._id }).populate('customFields.field_id');
+            // Get total count for mode decision
+            const totalRecords = await RecordModel.countDocuments({ entityId: entity._id });
 
-            res.render("record/record-list", {
+            // viewType from query param (table by default — RecordsGrid handles switching internally)
+            const viewType = req.query.viewType || 'table';
+
+            // Create view object for progressive template compatibility
+            const view = {
+                _id: entity._id,
+                viewType: viewType,
+                entity: entity._id,
+                virtualize: totalRecords > 5000
+            };
+
+            res.render("record/record-view-progressive", {
                 entity,
-                records,
+                records: [],
+                view,
+                totalRecords,
+                limit: 0,
+                pagination: {
+                    page: 1,
+                    limit: 25,
+                    total: totalRecords,
+                    pages: Math.ceil(totalRecords / 25)
+                },
+                layout: "layout-app-progressive",
                 account_number: req.account_number,
-                preferences: req.user ? (req.user.preferences || {}) : {},
-                layout: "layout-app"
             });
         } catch (error) {
             console.error(error);

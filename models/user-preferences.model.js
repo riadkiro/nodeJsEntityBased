@@ -44,6 +44,15 @@ const userPreferencesSchema = new mongoose.Schema({
         showSidebar: {
             type: Boolean,
             default: true
+        },
+        viewMode: {
+            type: String,
+            enum: ['table', 'kanban', 'notes', null],
+            default: null
+        },
+        enabledViews: {
+            type: [String],
+            default: ['table', 'kanban', 'notes']
         }
     },
     updatedAt: {

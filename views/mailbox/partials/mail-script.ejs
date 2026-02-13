@@ -1,0 +1,563 @@
+document.addEventListener('alpine:init', () => {
+    Alpine.data('mailbox', () => ({
+        // ===== STATE =====
+        defaultParams: {
+            id: null,
+            from: 'vristo@mail.com',
+            to: '',
+            cc: '',
+            title: '',
+            file: null,
+            description: '',
+            attachments: [],
+        },
+        quillEditor: null,
+        isShowMailMenu: false,
+        isEdit: false,
+        selectedTab: 'inbox',
+        filteredMailList: [],
+        ids: [],
+        searchText: '',
+        selectedMail: null,
+        params: null,
+        mailList: [],
+        activeGroupFilter: '', // For label filter chips at top
+        // Base URL for API calls
+        apiBase: '',
+        // Pagination
+        pager: {
+            currentPage: 1,
+            totalPages: 0,
+            pageSize: 10,
+            startIndex: 0,
+            endIndex: 0,
+        },
+        // Templates
+        showTemplates: false,
+        templates: [
+            { name: 'Welcome Email', subject: 'Welcome to our platform!', body: '<p>Dear User,</p><p>Welcome to our platform! We are excited to have you on board.</p><p>Best regards,<br>The Team</p>' },
+            { name: 'Follow Up', subject: 'Following up on our conversation', body: '<p>Hi,</p><p>I wanted to follow up on our recent conversation. Please let me know if you have any questions.</p><p>Best regards</p>' },
+            { name: 'Meeting Request', subject: 'Meeting Request', body: '<p>Hi,</p><p>I would like to schedule a meeting to discuss our upcoming project. Please let me know your availability.</p><p>Thank you</p>' },
+        ],
+        editingTemplate: null,
+        // Signatures
+        showSignature: false,
+        signatures: [
+            { name: 'Professional', content: '<p style="margin:0"><strong>Best regards,</strong></p><p style="margin:0;color:#666">Your Name | Company Inc.</p><p style="margin:0;color:#999;font-size:12px">Phone: +1 234 567 890 | Web: example.com</p>', isDefault: true },
+        ],
+        editingSignature: null,
+        selectedSignatureIdx: -1,
+
+        // ===== INIT =====
+        init() {
+            this.params = { ...this.defaultParams };
+
+            // Determine API base from current URL
+            const pathParts = window.location.pathname.split('/');
+            const accountIdx = pathParts.indexOf('account');
+            if (accountIdx >= 0 && pathParts[accountIdx + 1]) {
+                this.apiBase = '/account/' + pathParts[accountIdx + 1] + '/mailbox/api';
+            }
+
+            // Load mails from server
+            const initialMails = <%- JSON.stringify(initialMails || []) %>;
+            this.mailList = initialMails.map((m, i) => ({
+                ...m,
+                id: m.id || i + 1,
+                isStar: m.isStar || false,
+                isImportant: m.isImportant || false,
+                isUnread: m.isUnread !== undefined ? m.isUnread : false,
+                group: m.group || '',
+                type: m.type || 'inbox',
+                attachments: m.attachments || [],
+                displayDescription: m.displayDescription || m.description?.replace(/<[^>]*>/g, '').substring(0, 100) || '',
+            }));
+
+            this.searchMails();
+
+            // Init Quill (delay to ensure DOM ready)
+            this.$nextTick(() => {
+                const editorEl = document.getElementById('editor');
+                if (editorEl && typeof Quill !== 'undefined') {
+                    this.quillEditor = new Quill('#editor', {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: [
+                                [{ header: [1, 2, 3, false] }],
+                                ['bold', 'italic', 'underline', 'strike'],
+                                [{ list: 'ordered' }, { list: 'bullet' }],
+                                ['link', 'blockquote', 'code-block'],
+                                [{ color: [] }, { background: [] }],
+                                ['clean'],
+                            ],
+                        },
+                    });
+                    this.quillEditor.on('text-change', () => {
+                        this.params.description = this.quillEditor.root.innerHTML;
+                    });
+                }
+            });
+        },
+
+        // ===== COMPUTED =====
+        get pagedMails() {
+            const start = this.pager.startIndex;
+            const end = this.pager.endIndex + 1;
+            return this.filteredMailList.slice(start, end);
+        },
+
+        // ===== LABEL FILTER CHIPS =====
+        toggleGroupFilter(group) {
+            if (this.activeGroupFilter === group) {
+                this.activeGroupFilter = '';
+            } else {
+                this.activeGroupFilter = group;
+            }
+            this.searchMails();
+        },
+
+        // ===== MAIL ACTIONS =====
+        refreshMails() {
+            this.searchMails();
+            this.showMessage('Mail refreshed');
+        },
+
+        searchMails(resetPage = true) {
+            if (resetPage) {
+                this.pager.currentPage = 1;
+            }
+
+            let res = this.mailList.filter((d) => {
+                // Tab filter
+                if (this.selectedTab === 'star') return d.isStar;
+                if (this.selectedTab === 'important') return d.isImportant;
+                return d.type === this.selectedTab;
+            });
+
+            // Group filter (label chips at top)
+            if (this.activeGroupFilter) {
+                res = res.filter((d) => d.group === this.activeGroupFilter);
+            }
+
+            // Search filter
+            if (this.searchText) {
+                const txt = this.searchText.toLowerCase();
+                res = res.filter((d) =>
+                    (d.firstName && d.firstName.toLowerCase().includes(txt)) ||
+                    (d.lastName && d.lastName.toLowerCase().includes(txt)) ||
+                    (d.email && d.email.toLowerCase().includes(txt)) ||
+                    (d.title && d.title.toLowerCase().includes(txt)) ||
+                    (d.displayDescription && d.displayDescription.toLowerCase().includes(txt))
+                );
+            }
+
+            this.filteredMailList = res;
+
+            // Pagination
+            if (this.filteredMailList.length) {
+                this.pager.totalPages = Math.ceil(this.filteredMailList.length / this.pager.pageSize) || 1;
+                if (this.pager.currentPage > this.pager.totalPages) this.pager.currentPage = 1;
+                this.pager.startIndex = (this.pager.currentPage - 1) * this.pager.pageSize;
+                this.pager.endIndex = Math.min(this.pager.startIndex + this.pager.pageSize - 1, this.filteredMailList.length - 1);
+            } else {
+                this.pager.startIndex = -1;
+                this.pager.endIndex = -1;
+                this.pager.totalPages = 0;
+            }
+            this.ids = [];
+        },
+
+        tabChanged(tab) {
+            this.selectedTab = tab;
+            this.selectedMail = null;
+            this.isEdit = false;
+            this.showTemplates = false;
+            this.showSignature = false;
+            this.searchText = '';
+            this.activeGroupFilter = '';
+            this.searchMails();
+            this.isShowMailMenu = false;
+        },
+
+        selectMail(mail) {
+            if (mail) {
+                mail.isUnread = false;
+                this.selectedMail = mail;
+                this.isEdit = false;
+                this.showTemplates = false;
+                this.showSignature = false;
+                this.isShowMailMenu = false;
+                // Persist read status
+                this._apiCall('/read-status', { ids: [mail.id], isUnread: false });
+            }
+        },
+
+        // ===== STAR (persisted) =====
+        async setStar(id) {
+            const mail = this.mailList.find((d) => d.id === id);
+            if (mail) {
+                mail.isStar = !mail.isStar;
+                // Persist to DB
+                this._apiCall('/star/' + id, null, 'POST');
+            }
+        },
+
+        // ===== IMPORTANT (persisted) =====
+        async setImportant(id) {
+            const mail = this.mailList.find((d) => d.id === id);
+            if (mail) {
+                mail.isImportant = !mail.isImportant;
+                // Persist to DB
+                this._apiCall('/important/' + id, null, 'POST');
+            }
+        },
+
+        // ===== ARCHIVE (persisted) =====
+        setArchive() {
+            if (!this.ids.length) { this.showMessage('Select at least one mail', 'error'); return; }
+            this.ids.forEach((id) => {
+                const mail = this.mailList.find((d) => d.id === id);
+                if (mail) mail.type = 'archive';
+            });
+            this._apiCall('/type', { ids: this.ids, type: 'archive' });
+            this.showMessage(this.ids.length + ' mail(s) archived');
+            this.ids = [];
+            this.searchMails();
+        },
+
+        // ===== SPAM (persisted) =====
+        setSpam() {
+            if (!this.ids.length) { this.showMessage('Select at least one mail', 'error'); return; }
+            this.ids.forEach((id) => {
+                const mail = this.mailList.find((d) => d.id === id);
+                if (mail) mail.type = 'spam';
+            });
+            this._apiCall('/type', { ids: this.ids, type: 'spam' });
+            this.showMessage(this.ids.length + ' mail(s) marked as spam');
+            this.ids = [];
+            this.searchMails();
+        },
+
+        // ===== GROUP / LABELS (persisted) =====
+        setGroup(group) {
+            if (!this.ids.length) { this.showMessage('Select at least one mail', 'error'); return; }
+            this.ids.forEach((id) => {
+                const mail = this.mailList.find((d) => d.id === id);
+                if (mail) mail.group = group;
+            });
+            this._apiCall('/group', { ids: this.ids, group });
+            this.showMessage(this.ids.length + ' mail(s) grouped as ' + group);
+            this.ids = [];
+            this.searchMails();
+        },
+
+        // ===== ACTIONS (persisted) =====
+        setAction(action) {
+            if (!this.ids.length) { this.showMessage('Select at least one mail', 'error'); return; }
+            if (action === 'trash') {
+                this.ids.forEach((id) => {
+                    const mail = this.mailList.find((d) => d.id === id);
+                    if (mail) mail.type = 'trash';
+                });
+                this._apiCall('/type', { ids: this.ids, type: 'trash' });
+                this.showMessage(this.ids.length + ' mail(s) moved to trash');
+            } else if (action === 'read') {
+                this.ids.forEach((id) => {
+                    const mail = this.mailList.find((d) => d.id === id);
+                    if (mail) mail.isUnread = false;
+                });
+                this._apiCall('/read-status', { ids: this.ids, isUnread: false });
+                this.showMessage(this.ids.length + ' mail(s) marked as read');
+            } else if (action === 'unread') {
+                this.ids.forEach((id) => {
+                    const mail = this.mailList.find((d) => d.id === id);
+                    if (mail) mail.isUnread = true;
+                });
+                this._apiCall('/read-status', { ids: this.ids, isUnread: true });
+                this.showMessage(this.ids.length + ' mail(s) marked as unread');
+            } else if (action === 'delete') {
+                this._apiCall('/delete', { ids: this.ids });
+                this.mailList = this.mailList.filter((d) => !this.ids.includes(d.id));
+                this.showMessage(this.ids.length + ' mail(s) permanently deleted');
+            } else if (action === 'restore') {
+                this.ids.forEach((id) => {
+                    const mail = this.mailList.find((d) => d.id === id);
+                    if (mail) mail.type = 'inbox';
+                });
+                this._apiCall('/type', { ids: this.ids, type: 'inbox' });
+                this.showMessage(this.ids.length + ' mail(s) restored');
+            }
+            this.ids = [];
+            this.searchMails();
+        },
+
+        // ===== API HELPER =====
+        async _apiCall(endpoint, body, method = 'POST') {
+            try {
+                await fetch(this.apiBase + endpoint, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: body ? JSON.stringify(body) : undefined,
+                });
+            } catch (e) {
+                console.error('API call failed:', endpoint, e);
+            }
+        },
+
+        // ===== CHECK ALL =====
+        isAllChecked() {
+            if (this.pagedMails.length && this.ids.length) {
+                return this.pagedMails.every((d) => this.ids.includes(d.id));
+            }
+            return false;
+        },
+
+        checkAll(isChecked) {
+            if (isChecked) {
+                this.ids = this.pagedMails.map((d) => d.id);
+            } else {
+                this.ids = [];
+            }
+        },
+
+        // ===== COMPOSE / REPLY / FORWARD =====
+        openMail(type, mail) {
+            this.isShowMailMenu = false;
+            this.selectedMail = null;
+            this.showTemplates = false;
+            this.showSignature = false;
+
+            if (type === 'add') {
+                this.params = { ...this.defaultParams, attachments: [] };
+            } else if (type === 'reply') {
+                this.params = {
+                    ...this.defaultParams,
+                    to: mail.email,
+                    title: 'Re: ' + mail.title,
+                    description: '<br><br><blockquote style="border-left: 3px solid #ccc; padding-left: 10px; color: #666;">' + (mail.description || '') + '</blockquote>',
+                    attachments: [],
+                };
+            } else if (type === 'forward') {
+                this.params = {
+                    ...this.defaultParams,
+                    title: 'Fwd: ' + mail.title,
+                    description: '<br><br>---------- Forwarded message ----------<br>' + (mail.description || ''),
+                    attachments: mail.attachments ? [...mail.attachments] : [],
+                };
+            }
+
+            this.isEdit = true;
+            this.selectedSignatureIdx = -1;
+
+            // Set Quill content
+            this.$nextTick(() => {
+                if (this.quillEditor) {
+                    if (this.params.description) {
+                        this.quillEditor.root.innerHTML = this.params.description;
+                    } else {
+                        this.quillEditor.setContents([]);
+                    }
+                }
+            });
+        },
+
+        saveMail(type, id) {
+            if (!this.params.to && type === 'send') {
+                this.showMessage('Recipient is required', 'error');
+                return;
+            }
+            if (!this.params.title) {
+                this.showMessage('Subject is required', 'error');
+                return;
+            }
+
+            const mail = {
+                ...this.params,
+                id: id || (this.mailList.length ? Math.max(...this.mailList.map(m => m.id)) + 1 : 1),
+                firstName: 'Me',
+                lastName: '',
+                email: this.params.from,
+                date: new Date().toLocaleDateString(),
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                type: type === 'draft' ? 'draft' : 'sent_mail',
+                isUnread: false,
+                isStar: false,
+                isImportant: false,
+                group: '',
+                displayDescription: this.params.description?.replace(/<[^>]*>/g, '').substring(0, 100) || '',
+            };
+
+            if (id) {
+                const idx = this.mailList.findIndex((d) => d.id === id);
+                if (idx >= 0) this.mailList[idx] = mail;
+            } else {
+                this.mailList.unshift(mail);
+            }
+
+            this.showMessage(type === 'draft' ? 'Draft saved' : 'Mail sent successfully');
+            this.closeMsgPopUp();
+            this.searchMails();
+        },
+
+        closeMsgPopUp() {
+            this.isEdit = false;
+            this.params = { ...this.defaultParams, attachments: [] };
+            if (this.quillEditor) this.quillEditor.setContents([]);
+        },
+
+        // ===== FILE HANDLING =====
+        handleFiles(event) {
+            const files = event.target.files;
+            if (!this.params.attachments) this.params.attachments = [];
+            for (const file of files) {
+                this.params.attachments.push({
+                    name: file.name,
+                    size: (file.size / 1024).toFixed(1) + 'KB',
+                    type: file.type.includes('image') ? 'image' : 'file',
+                });
+            }
+        },
+
+        // ===== TEMPLATES =====
+        addTemplate() {
+            this.editingTemplate = { name: '', subject: '', body: '' };
+        },
+
+        editTemplate(idx) {
+            this.editingTemplate = { ...this.templates[idx], _idx: idx };
+        },
+
+        saveTemplate() {
+            if (!this.editingTemplate.name) { this.showMessage('Template name is required', 'error'); return; }
+            if (this.editingTemplate._idx !== undefined) {
+                this.templates[this.editingTemplate._idx] = {
+                    name: this.editingTemplate.name,
+                    subject: this.editingTemplate.subject,
+                    body: this.editingTemplate.body,
+                };
+            } else {
+                this.templates.push({
+                    name: this.editingTemplate.name,
+                    subject: this.editingTemplate.subject,
+                    body: this.editingTemplate.body,
+                });
+            }
+            this.editingTemplate = null;
+            this.showMessage('Template saved');
+        },
+
+        deleteTemplate(idx) {
+            this.templates.splice(idx, 1);
+            this.showMessage('Template deleted');
+        },
+
+        useTemplate(idx) {
+            const tpl = this.templates[idx];
+            this.params = {
+                ...this.defaultParams,
+                title: tpl.subject,
+                description: tpl.body,
+                attachments: [],
+            };
+            this.isEdit = true;
+            this.showTemplates = false;
+            this.selectedMail = null;
+            this.$nextTick(() => {
+                if (this.quillEditor) {
+                    this.quillEditor.root.innerHTML = tpl.body;
+                }
+            });
+        },
+
+        applyTemplate(idx) {
+            if (idx === '' || idx === undefined) return;
+            const tpl = this.templates[parseInt(idx)];
+            if (tpl) {
+                this.params.title = tpl.subject;
+                this.params.description = tpl.body;
+                if (this.quillEditor) {
+                    this.quillEditor.root.innerHTML = tpl.body;
+                }
+            }
+        },
+
+        // ===== SIGNATURES =====
+        addSignature() {
+            this.editingSignature = { name: '', content: '', isDefault: false };
+        },
+
+        editSignature(idx) {
+            this.editingSignature = { ...this.signatures[idx], _idx: idx };
+        },
+
+        saveSignature() {
+            if (!this.editingSignature.name) { this.showMessage('Signature name is required', 'error'); return; }
+            if (this.editingSignature._idx !== undefined) {
+                this.signatures[this.editingSignature._idx] = {
+                    name: this.editingSignature.name,
+                    content: this.editingSignature.content,
+                    isDefault: this.editingSignature.isDefault || false,
+                };
+            } else {
+                this.signatures.push({
+                    name: this.editingSignature.name,
+                    content: this.editingSignature.content,
+                    isDefault: this.signatures.length === 0,
+                });
+            }
+            this.editingSignature = null;
+            this.showMessage('Signature saved');
+        },
+
+        deleteSignature(idx) {
+            this.signatures.splice(idx, 1);
+            this.showMessage('Signature deleted');
+        },
+
+        setDefaultSignature(idx) {
+            this.signatures.forEach((s, i) => s.isDefault = (i === idx));
+            this.showMessage('Default signature updated');
+        },
+
+        applySignature() {
+            const idx = parseInt(this.selectedSignatureIdx);
+            if (idx >= 0 && this.signatures[idx] && this.quillEditor) {
+                const currentContent = this.quillEditor.root.innerHTML;
+                // Remove old signatures (marked by sentinel)
+                const cleaned = currentContent.replace(/<div class="email-signature">[\s\S]*<\/div>$/i, '');
+                const sigHtml = '<br><div class="email-signature" style="border-top: 1px solid #ddd; margin-top: 20px; padding-top: 10px;">' + this.signatures[idx].content + '</div>';
+                this.quillEditor.root.innerHTML = cleaned + sigHtml;
+                this.params.description = this.quillEditor.root.innerHTML;
+            }
+        },
+
+        // ===== UTILITIES =====
+        showTime(mail) {
+            if (!mail || !mail.date) return '';
+            const d = mail.date instanceof Date ? mail.date : new Date(mail.date);
+            const now = new Date();
+            const isToday = d.toDateString() === now.toDateString();
+            if (isToday) {
+                return mail.time || d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + (mail.time ? ', ' + mail.time : '');
+        },
+
+        showMessage(msg, type = 'success') {
+            if (typeof Swal !== 'undefined') {
+                const toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                });
+                toast.fire({
+                    icon: type,
+                    title: msg,
+                    padding: '10px 20px',
+                });
+            }
+        },
+    }));
+});

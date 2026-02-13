@@ -95,6 +95,7 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
                 viewId
             }).lean()
             preferences = prefs?.preferences || null
+
         }
 
         // Build columns from entity fields
@@ -130,12 +131,59 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             { id: 'actions', name: 'Actions', sortable: false }
         ]
 
+        // Build filter groups from entity classifications (for sidebar filtering)
+        // Deduplicate: statusClassification may also appear in classifications array
+        const seenClassIds = new Set()
+        const allClassifications = [
+            ...(entity.statusClassification ? [entity.statusClassification] : []),
+            ...(entity.classifications || [])
+        ].filter(c => {
+            if (!c || !c._id) return false
+            const id = c._id.toString()
+            if (seenClassIds.has(id)) return false
+            seenClassIds.add(id)
+            return true
+        })
+
+        // Get ALL records for counting (we already have them if limit was high enough, otherwise count separately)
+        const allRecordsForCounts = await Record.find({ entityId }).select('classificationValues').lean()
+
+        const filterGroups = allClassifications.map(cls => {
+            // Count records per option
+            const optionCounts = {}
+            allRecordsForCounts.forEach(r => {
+                const cvs = r.classificationValues || []
+                cvs.forEach(cv => {
+                    if (cv.classificationId?.toString() === cls._id.toString()) {
+                        const key = cv.optionId?.toString()
+                        if (key) optionCounts[key] = (optionCounts[key] || 0) + 1
+                    }
+                })
+            })
+
+            // Determine display type: tags show as chips, others as list
+            const isTagType = (cls.key || '').toLowerCase().includes('tag')
+
+            return {
+                id: cls._id.toString(),
+                name: cls.name || cls.key || 'Classification',
+                classificationId: cls._id.toString(),
+                type: isTagType ? 'tags' : 'list',
+                options: (cls.options || []).map(opt => ({
+                    id: opt._id.toString(),
+                    label: opt.label,
+                    color: opt.color || '#9ca3af',
+                    count: optionCounts[opt._id.toString()] || 0
+                }))
+            }
+        })
 
         res.json({
             records,
             columns,
             preferences,
             entity, // Include entity for Kanban (statusClassification, classifications)
+            filters: filterGroups,
             pagination: {
                 page: pageNum,
                 limit: limitNum,
@@ -466,7 +514,7 @@ router.post('/api/user/view-preferences', async (req, res) => {
     try {
         const UserPreferences = await tenantCollection(req, "UserPreferences")
         const { viewId, preferences } = req.body
-        console.log('[API] Save preferences - showSidebar:', preferences?.showSidebar, 'viewId:', viewId)
+
 
         if (!viewId) {
             return res.status(400).json({ error: 'viewId is required' })
@@ -488,7 +536,8 @@ router.post('/api/user/view-preferences', async (req, res) => {
                     pageSize: preferences.pageSize || 25,
                     titleDisplay: preferences.titleDisplay || 'avatar',
                     showSidebar: preferences.showSidebar !== undefined ? preferences.showSidebar : true,
-                    viewMode: preferences.viewMode || null
+                    viewMode: preferences.viewMode || null,
+                    enabledViews: preferences.enabledViews || ['table', 'kanban', 'notes']
                 },
                 updatedAt: new Date()
             },

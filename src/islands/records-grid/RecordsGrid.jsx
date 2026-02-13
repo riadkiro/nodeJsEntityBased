@@ -22,7 +22,7 @@ export default function RecordsGrid({
 }) {
     // State - CLIENT-SIDE SEARCH
     const [allRecords, setAllRecords] = useState([])  // All fetched records (immutable after load)
-    const [filteredRecords, setFilteredRecords] = useState([])  // After search filter
+    const [filteredRecords, setFilteredRecords] = useState([])  // After search + classification filter
     const [displayRecords, setDisplayRecords] = useState([])  // Current page slice
     const [columns, setColumns] = useState([])
     const [loading, setLoading] = useState(true)
@@ -32,6 +32,10 @@ export default function RecordsGrid({
     const [activeView, setActiveView] = useState('table')
     const [entityIcon, setEntityIcon] = useState('')
 
+    // Filter state (classification-based)
+    const [sidebarFilters, setSidebarFilters] = useState([])
+    const [activeFilters, setActiveFilters] = useState({})
+
     // Preferences state
     const [preferences, setPreferences] = useState({
         columns: [],
@@ -39,7 +43,9 @@ export default function RecordsGrid({
         density: 'normal',
         pageSize: 10,
         titleDisplay: 'avatar',
-        showSidebar: true
+        showSidebar: true,
+        viewMode: null,
+        enabledViews: ['table', 'kanban', 'notes']
     })
 
     // Pagination state
@@ -83,9 +89,13 @@ export default function RecordsGrid({
                 setEntityIcon(data.entity.icon)
             }
 
+            // Store sidebar filters from API
+            if (data.filters) {
+                setSidebarFilters(data.filters)
+            }
+
             // Merge server preferences with local
             if (data.preferences) {
-                console.log('[RecordsGrid] Server preferences loaded - showSidebar:', data.preferences.showSidebar)
                 setPreferences(prev => ({
                     ...prev,
                     ...data.preferences,
@@ -96,6 +106,10 @@ export default function RecordsGrid({
                 // Sync pagination.limit with saved pageSize
                 if (data.preferences.pageSize) {
                     setPagination(prev => ({ ...prev, limit: data.preferences.pageSize }))
+                }
+                // Restore saved view mode (Mission 2)
+                if (data.preferences.viewMode) {
+                    setActiveView(data.preferences.viewMode)
                 }
 
                 // Reorder columns based on saved preferences order
@@ -188,39 +202,60 @@ export default function RecordsGrid({
         }))
     }, [sortedRecords])
 
-    // CLIENT-SIDE SEARCH - Instant local filtering
+    // CLIENT-SIDE SEARCH + CLASSIFICATION FILTER
+    const applyFilters = useCallback((records, query, classifFilters) => {
+        let result = records
+
+        // Apply search
+        if (query && query.trim()) {
+            const lowerQuery = query.toLowerCase()
+            result = result.filter(record =>
+                record._searchIndex.includes(lowerQuery)
+            )
+        }
+
+        // Apply classification filters
+        const filterKeys = Object.keys(classifFilters).filter(k => k !== '__favourites')
+        if (filterKeys.length > 0) {
+            result = result.filter(record => {
+                const cvs = record.classificationValues || []
+                // Record must match ALL active filter groups (AND between groups)
+                return filterKeys.every(classifId => {
+                    const selectedOptionIds = classifFilters[classifId]
+                    if (!selectedOptionIds || selectedOptionIds.length === 0) return true
+                    // Record must match ANY selected option within a group (OR within group)
+                    return cvs.some(cv =>
+                        cv.classificationId?.toString() === classifId &&
+                        selectedOptionIds.includes(cv.optionId?.toString())
+                    )
+                })
+            })
+        }
+
+        return result
+    }, [])
+
+    // Handle search
     const handleSearch = useCallback((queryOrEvent) => {
         const query = typeof queryOrEvent === 'string'
             ? queryOrEvent
             : queryOrEvent?.target?.value || ''
 
         setSearchQuery(query)
-        setPagination(prev => ({ ...prev, page: 1 }))  // Reset to page 1
+        setPagination(prev => ({ ...prev, page: 1 }))
+    }, [])
 
-        if (!query.trim()) {
-            setFilteredRecords(recordsWithSearchIndex)
-            return
-        }
+    // Handle classification filter change
+    const handleFilterChange = useCallback((newFilters) => {
+        setActiveFilters(newFilters)
+        setPagination(prev => ({ ...prev, page: 1 }))
+    }, [])
 
-        const lowerQuery = query.toLowerCase()
-        const filtered = recordsWithSearchIndex.filter(record =>
-            record._searchIndex.includes(lowerQuery)
-        )
-        setFilteredRecords(filtered)
-    }, [recordsWithSearchIndex])
-
-    // Update filteredRecords when sort changes
+    // Recompute filtered records when search or filters change
     useEffect(() => {
-        if (!searchQuery.trim()) {
-            setFilteredRecords(recordsWithSearchIndex)
-        } else {
-            const lowerQuery = searchQuery.toLowerCase()
-            const filtered = recordsWithSearchIndex.filter(record =>
-                record._searchIndex.includes(lowerQuery)
-            )
-            setFilteredRecords(filtered)
-        }
-    }, [recordsWithSearchIndex])
+        const filtered = applyFilters(recordsWithSearchIndex, searchQuery, activeFilters)
+        setFilteredRecords(filtered)
+    }, [recordsWithSearchIndex, searchQuery, activeFilters, applyFilters])
 
     // LOCAL PAGINATION - Slice filtered records
     useEffect(() => {
@@ -266,6 +301,17 @@ export default function RecordsGrid({
         }
         // Sort changes are handled by useEffect
     }, [preferences, savePreferences])
+
+    // Handle view change (Mission 2 - persist viewMode)
+    const handleViewChange = useCallback((newView) => {
+        setActiveView(newView)
+        // Save viewMode to preferences - use functional update to avoid stale closure
+        setPreferences(prev => {
+            const newPrefs = { ...prev, viewMode: newView }
+            savePreferences(newPrefs)
+            return newPrefs
+        })
+    }, [savePreferences])
 
     // Handle page change
     const handlePageChange = useCallback((newPage) => {
@@ -361,10 +407,14 @@ export default function RecordsGrid({
             <RecordsSidebar
                 entityName={entityName}
                 entityNamePlural={entityNamePlural}
+                entityIcon={entityIcon}
                 accountNumber={accountNumber}
                 entitySlug={entitySlug}
                 showSidebar={preferences.showSidebar !== false}
                 onToggleSidebar={() => handlePreferencesChange('showSidebar', !preferences.showSidebar)}
+                filters={sidebarFilters}
+                activeFilters={activeFilters}
+                onFilterChange={handleFilterChange}
             />
 
             {/* Main content panel */}
@@ -383,7 +433,9 @@ export default function RecordsGrid({
                     showSidebar={preferences.showSidebar !== false}
                     onToggleSidebar={() => handlePreferencesChange('showSidebar', !preferences.showSidebar)}
                     activeView={activeView}
-                    onViewChange={setActiveView}
+                    onViewChange={handleViewChange}
+                    enabledViews={preferences.enabledViews || ['table', 'kanban', 'notes']}
+                    onEnabledViewsChange={(views) => handlePreferencesChange('enabledViews', views)}
                 />
 
                 {/* View content */}

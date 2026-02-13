@@ -1,0 +1,104 @@
+<!-- ========== MAIL DETAIL VIEW ========== -->
+<template x-if="selectedMail && !isEdit">
+    <div>
+        <div class="flex flex-wrap items-center justify-between gap-4 p-4">
+            <div class="flex items-center">
+                <button type="button" class="flex items-center hover:text-primary ltr:mr-2 rtl:ml-2" @click="selectedMail = null">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
+                        <path d="M15 5L9 12L15 19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <span class="ltr:ml-1 rtl:mr-1">Back</span>
+                </button>
+            </div>
+            <div class="flex items-center gap-3">
+                <button type="button" class="flex items-center gap-2 rounded-md border border-[#e0e6ed] px-3 py-1.5 text-sm hover:bg-primary hover:text-white dark:border-[#1b2e4b] dark:hover:bg-primary" @click="setStar(selectedMail.id)" :class="{ 'text-warning': selectedMail.isStar }">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" :class="{ 'fill-warning': selectedMail.isStar }">
+                        <path d="M9.15316 5.40838C10.4198 3.13613 11.0531 2 12 2C12.9469 2 13.5802 3.13612 14.8468 5.40837L15.1745 5.99623C15.5345 6.64193 15.7144 6.96479 15.9951 7.17781C16.2757 7.39083 16.6251 7.4699 17.3241 7.62805L17.9605 7.77203C20.4201 8.32856 21.65 8.60682 21.9426 9.54773C22.2352 10.4886 21.3968 11.4691 19.7199 13.4299L19.2861 13.9372C18.8096 14.4944 18.5713 14.773 18.4641 15.1177C18.357 15.4624 18.393 15.8341 18.465 16.5776L18.5306 17.2544C18.7841 19.8706 18.9109 21.1787 18.1449 21.7602C17.3788 22.3417 16.2273 21.8115 13.9243 20.7512L13.3285 20.4768C12.6741 20.1755 12.3469 20.0248 12 20.0248C11.6531 20.0248 11.3259 20.1755 10.6715 20.4768L10.0757 20.7512C7.77268 21.8115 6.62118 22.3417 5.85515 21.7602C5.08912 21.1787 5.21588 19.8706 5.4694 17.2544L5.53498 16.5776C5.60703 15.8341 5.64305 15.4624 5.53586 15.1177C5.42868 14.773 5.19043 14.4944 4.71392 13.9372L4.2801 13.4299C2.60325 11.4691 1.76482 10.4886 2.05742 9.54773C2.35002 8.60682 3.57986 8.32856 6.03954 7.77203L6.67589 7.62805C7.37485 7.4699 7.72433 7.39083 8.00494 7.17781C8.28555 6.96479 8.46553 6.64194 8.82547 5.99623L9.15316 5.40838Z" stroke="currentColor" stroke-width="1.5" />
+                    </svg>
+                    Star
+                </button>
+                <button type="button" class="flex items-center gap-2 rounded-md border border-[#e0e6ed] px-3 py-1.5 text-sm hover:bg-primary hover:text-white dark:border-[#1b2e4b] dark:hover:bg-primary" @click="setImportant(selectedMail.id)" :class="{ 'text-primary': selectedMail.isImportant }">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" :class="{ 'fill-primary': selectedMail.isImportant }">
+                        <path d="M21 16.0909V11.0975C21 6.80891 21 4.6646 19.682 3.3323C18.364 2 16.2426 2 12 2C7.75736 2 5.63604 2 4.31802 3.3323C3 4.6646 3 6.80891 3 11.0975V16.0909C3 19.1875 3 20.7358 3.73411 21.4123C4.08421 21.735 4.52615 21.9377 4.99692 21.9915C5.98402 22.1045 7.13673 21.0849 9.44216 19.0458C10.4612 18.1445 10.9708 17.6938 11.5603 17.5751C11.8506 17.5166 12.1494 17.5166 12.4397 17.5751C13.0292 17.6938 13.5388 18.1445 14.5578 19.0458C16.8633 21.0849 18.016 22.1045 19.0031 21.9915C19.4739 21.9377 19.9158 21.735 20.2659 21.4123C21 20.7358 21 19.1875 21 16.0909Z" stroke="currentColor" stroke-width="1.5" />
+                    </svg>
+                    Important
+                </button>
+            </div>
+        </div>
+        <div class="h-px border-b border-[#e0e6ed] dark:border-[#1b2e4b]"></div>
+        <!-- Mail Header -->
+        <div class="relative p-5">
+            <div class="flex flex-wrap justify-between lg:flex-nowrap">
+                <div class="flex w-max items-center">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary ltr:mr-4 rtl:ml-4">
+                        <span class="text-lg font-semibold" x-text="(selectedMail.firstName ? selectedMail.firstName[0] : '') + (selectedMail.lastName ? selectedMail.lastName[0] : '')"></span>
+                    </div>
+                    <div>
+                        <h4 class="text-base font-semibold dark:text-gray-300" x-text="selectedMail.firstName + ' ' + (selectedMail.lastName || '')"></h4>
+                        <span class="text-white-dark" x-text="selectedMail.email"></span>
+                    </div>
+                </div>
+                <div class="flex items-center text-white-dark">
+                    <span x-text="showTime(selectedMail)"></span>
+                </div>
+            </div>
+            <h4 class="mt-6 text-lg font-medium dark:text-gray-300" x-text="selectedMail.title"></h4>
+            <!-- Group badge -->
+            <template x-if="selectedMail.group">
+                <span class="mt-2 inline-block rounded-full px-3 py-0.5 text-xs font-semibold"
+                    :class="{
+                        'bg-primary/10 text-primary': selectedMail.group === 'personal',
+                        'bg-warning/10 text-warning': selectedMail.group === 'work',
+                        'bg-success/10 text-success': selectedMail.group === 'social',
+                        'bg-danger/10 text-danger': selectedMail.group === 'private'
+                    }"
+                    x-text="selectedMail.group.charAt(0).toUpperCase() + selectedMail.group.slice(1)">
+                </span>
+            </template>
+            <!-- Mail body -->
+            <div class="prose mt-8 max-w-full dark:prose-invert" x-html="selectedMail.description"></div>
+            <!-- Attachments -->
+            <template x-if="selectedMail.attachments && selectedMail.attachments.length">
+                <div class="mt-8">
+                    <div class="mb-4 text-base font-semibold dark:text-gray-300">Attachments</div>
+                    <div class="flex flex-wrap gap-4">
+                        <template x-for="(attachment, i) in selectedMail.attachments" :key="i">
+                            <div class="flex items-center gap-3 rounded-md border border-[#e0e6ed] px-4 py-2.5 dark:border-[#1b2e4b]">
+                                <div class="rounded-md bg-primary/10 p-2">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary">
+                                        <path d="M15.3929 4.05365L14.8912 4.61112L15.3929 4.05365ZM19.3517 7.61654L18.85 8.17402L19.3517 7.61654ZM14 21.25H10V22.75H14V21.25ZM2.75 14V10H1.25V14H2.75ZM21.25 13.5629V14H22.75V13.5629H21.25Z" fill="currentColor" />
+                                        <path opacity="0.5" d="M13 2.5V5C13 7.35702 13 8.53553 13.7322 9.26777C14.4645 10 15.643 10 18 10H22" stroke="currentColor" stroke-width="1.5" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-semibold dark:text-gray-300" x-text="attachment.name"></div>
+                                    <div class="text-xs text-white-dark" x-text="attachment.size"></div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+        <!-- Reply / Forward Actions -->
+        <div class="h-px border-b border-[#e0e6ed] dark:border-[#1b2e4b]"></div>
+        <div class="flex flex-wrap items-center gap-3 p-4">
+            <button type="button" class="btn btn-outline-primary btn-sm flex items-center gap-2" @click="openMail('reply', selectedMail)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 7L4.5 12L9.5 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 12H14.5C17.2614 12 19.5 14.2386 19.5 17V19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Reply
+            </button>
+            <button type="button" class="btn btn-outline-primary btn-sm flex items-center gap-2" @click="openMail('forward', selectedMail)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 7L19.5 12L14.5 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.5 12H9.5C6.73858 12 4.5 14.2386 4.5 17V19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Forward
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm flex items-center gap-2" @click="ids = [selectedMail.id]; setAction('trash'); selectedMail = null;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20.5 6H3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M18.833 8.5L18.374 15.399C18.197 18.054 18.108 19.382 17.243 20.191C16.378 21 15.048 21 12.387 21H11.613C8.953 21 7.622 21 6.757 20.191C5.892 19.382 5.804 18.054 5.627 15.399L5.167 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                Delete
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm flex items-center gap-2" @click="window.print()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 17H4C2.89543 17 2 16.1046 2 15V11C2 9.89543 2.89543 9 4 9H20C21.1046 9 22 9.89543 22 11V15C22 16.1046 21.1046 17 20 17H18" stroke="currentColor" stroke-width="1.5"/><path d="M6 9V4C6 2.89543 6.89543 2 8 2H16C17.1046 2 18 2.89543 18 4V9" stroke="currentColor" stroke-width="1.5"/><path d="M6 14H18V20C18 21.1046 17.1046 22 16 22H8C6.89543 22 6 21.1046 6 20V14Z" stroke="currentColor" stroke-width="1.5"/></svg>
+                Print
+            </button>
+        </div>
+    </div>
+</template>

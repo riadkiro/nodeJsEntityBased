@@ -1,0 +1,98 @@
+<!-- ========== COMPOSE / EDIT VIEW ========== -->
+<div x-show="isEdit" style="display: none;">
+    <div class="flex items-center px-6 py-4">
+        <button type="button" class="flex items-center hover:text-primary ltr:mr-2 rtl:ml-2" @click="isEdit = false; selectedMail = null;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
+                <path d="M15 5L9 12L15 19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span class="ltr:ml-1 rtl:mr-1">Back</span>
+        </button>
+        <h4 class="text-lg font-medium dark:text-gray-300" x-text="params.id ? 'Edit Message' : 'New Message'"></h4>
+    </div>
+    <div class="h-px border-b border-[#e0e6ed] dark:border-[#1b2e4b]"></div>
+    <div class="p-6">
+        <form @submit.prevent="saveMail('send', params.id)">
+            <div class="space-y-5">
+                <!-- To -->
+                <div>
+                    <label for="to" class="mb-1 block text-sm font-semibold dark:text-gray-300">To:</label>
+                    <input id="to" type="email" class="form-input" placeholder="Enter recipient email" x-model="params.to" required />
+                </div>
+                <!-- CC -->
+                <div>
+                    <label for="cc" class="mb-1 block text-sm font-semibold dark:text-gray-300">Cc:</label>
+                    <input id="cc" type="text" class="form-input" placeholder="Enter Cc" x-model="params.cc" />
+                </div>
+                <!-- Subject -->
+                <div>
+                    <label for="title" class="mb-1 block text-sm font-semibold dark:text-gray-300">Subject:</label>
+                    <input id="title" type="text" class="form-input" placeholder="Enter subject" x-model="params.title" required />
+                </div>
+                <!-- Template selector -->
+                <template x-if="templates.length > 0">
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold dark:text-gray-300">Use Template:</label>
+                        <select class="form-select" @change="applyTemplate($event.target.value)">
+                            <option value="">-- Select a template --</option>
+                            <template x-for="(tpl, idx) in templates" :key="idx">
+                                <option :value="idx" x-text="tpl.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                </template>
+                <!-- Signature selector -->
+                <template x-if="signatures.length > 0">
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold dark:text-gray-300">Signature:</label>
+                        <select class="form-select" x-model="selectedSignatureIdx" @change="applySignature()">
+                            <option value="-1">-- No signature --</option>
+                            <template x-for="(sig, idx) in signatures" :key="idx">
+                                <option :value="idx" x-text="sig.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                </template>
+                <!-- Editor -->
+                <div>
+                    <label class="mb-1 block text-sm font-semibold dark:text-gray-300">Message:</label>
+                    <div id="editor" class="quill-editor" style="min-height: 200px;"></div>
+                </div>
+                <!-- File attachment -->
+                <div>
+                    <label class="mb-1 block text-sm font-semibold dark:text-gray-300">Attachments:</label>
+                    <input type="file" class="form-input p-0 file:border-0 file:bg-primary/90 file:px-4 file:py-2 file:font-semibold file:text-white file:hover:bg-primary ltr:file:mr-5 rtl:file:ml-5" multiple @change="handleFiles($event)" />
+                    <!-- Show attached files -->
+                    <template x-if="params.attachments && params.attachments.length > 0">
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            <template x-for="(file, i) in params.attachments" :key="i">
+                                <span class="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-sm text-primary">
+                                    <span x-text="file.name"></span>
+                                    <button type="button" class="hover:text-danger" @click="params.attachments.splice(i, 1)">&times;</button>
+                                </span>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            <!-- Buttons -->
+            <div class="mt-8 flex items-center gap-3">
+                <button type="submit" class="btn btn-primary gap-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17.4975 18.4851L20.6281 9.09373C21.8764 5.34874 22.5006 3.47624 21.5122 2.48782C20.5237 1.49939 18.6511 2.12356 14.906 3.37189L5.57477 6.48218C3.49295 7.1761 2.45203 7.52305 2.13608 8.28637C2.06182 8.46577 2.01692 8.65596 2.00311 8.84963C1.94433 9.67365 2.72018 10.4495 4.27188 12.0011L4.55451 12.2837C4.80921 12.5384 4.93655 12.6658 5.03282 12.8075C5.22269 13.0871 5.33046 13.4143 5.34393 13.7519C5.35076 13.9232 5.32403 14.1013 5.27057 14.4574C5.07488 15.7612 4.97703 16.4131 5.0923 16.9147C5.32205 17.9146 6.09599 18.6995 7.09257 18.9433C7.59255 19.0656 8.24576 18.977 9.5522 18.7997L9.62363 18.79C9.99191 18.74 10.1761 18.715 10.3529 18.7257C10.6738 18.745 10.9838 18.8496 11.251 19.0285C11.3981 19.1271 11.5295 19.2585 11.7923 19.5213L12.0436 19.7725C13.5539 21.2828 14.309 22.0379 15.1101 21.9985C15.3309 21.9877 15.5479 21.9365 15.7503 21.8474C16.4844 21.5244 16.8221 20.5113 17.4975 18.4851Z" stroke="currentColor" stroke-width="1.5" />
+                        <path opacity="0.5" d="M6 18L21 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                    Send
+                </button>
+                <button type="button" class="btn btn-outline-warning gap-2" @click="saveMail('draft', params.id)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path opacity="0.5" d="M13 2.5V5C13 7.35702 13 8.53553 13.7322 9.26777C14.4645 10 15.643 10 18 10H22" stroke="currentColor" stroke-width="1.5" />
+                    </svg>
+                    Save Draft
+                </button>
+                <button type="button" class="btn btn-outline-danger" @click="closeMsgPopUp()">
+                    Discard
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

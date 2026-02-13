@@ -1,0 +1,64 @@
+<!-- ========== TEMPLATES PANEL ========== -->
+<div x-show="showTemplates" style="display: none;">
+    <div class="flex items-center justify-between px-6 py-4">
+        <h4 class="text-lg font-semibold dark:text-gray-300">Email Templates</h4>
+        <button type="button" class="btn btn-primary btn-sm gap-1" @click="addTemplate()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Add Template
+        </button>
+    </div>
+    <div class="h-px border-b border-[#e0e6ed] dark:border-[#1b2e4b]"></div>
+
+    <!-- Template Form (add/edit) -->
+    <template x-if="editingTemplate !== null">
+        <div class="p-6">
+            <div class="space-y-4">
+                <div>
+                    <label class="mb-1 block text-sm font-semibold dark:text-gray-300">Template Name:</label>
+                    <input type="text" class="form-input" x-model="editingTemplate.name" placeholder="e.g. Welcome Email" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-semibold dark:text-gray-300">Subject:</label>
+                    <input type="text" class="form-input" x-model="editingTemplate.subject" placeholder="Email subject line" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-semibold dark:text-gray-300">Body:</label>
+                    <textarea class="form-textarea" rows="6" x-model="editingTemplate.body" placeholder="Write your template content..."></textarea>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button type="button" class="btn btn-primary" @click="saveTemplate()">Save Template</button>
+                    <button type="button" class="btn btn-outline-danger" @click="editingTemplate = null">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Templates List -->
+    <template x-if="editingTemplate === null">
+        <div class="p-6">
+            <template x-if="templates.length === 0">
+                <div class="grid min-h-[200px] place-content-center text-lg font-semibold text-white-dark">
+                    No templates yet. Click "Add Template" to create one.
+                </div>
+            </template>
+            <div class="space-y-4">
+                <template x-for="(tpl, idx) in templates" :key="idx">
+                    <div class="rounded-md border border-[#e0e6ed] p-4 dark:border-[#1b2e4b]">
+                        <div class="flex items-center justify-between">
+                            <h5 class="text-base font-semibold dark:text-gray-300" x-text="tpl.name"></h5>
+                            <div class="flex items-center gap-2">
+                                <button type="button" class="btn btn-outline-primary btn-sm" @click="editTemplate(idx)">Edit</button>
+                                <button type="button" class="btn btn-outline-success btn-sm" @click="useTemplate(idx)">Use</button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" @click="deleteTemplate(idx)">Delete</button>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-sm text-white-dark">
+                            <strong>Subject:</strong> <span x-text="tpl.subject"></span>
+                        </div>
+                        <div class="mt-1 text-sm text-white-dark line-clamp-2" x-text="tpl.body.replace(/<[^>]*>/g, '')"></div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+</div>

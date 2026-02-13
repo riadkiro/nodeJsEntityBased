@@ -443,7 +443,7 @@
               <div class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
                 @mouseenter="hovered = true" @mouseleave="hovered = false">
                 <iconify-icon icon="solar:mailbox-bold-duotone" class="ml-2" width="16" height="16"></iconify-icon>
-                <a href="/account/<%= account_number %>/mailbox/1" 
+                <a href="/account/<%= account_number %>/mailbox/inbox" 
                   class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors flex-1"
                   :class="window.location.pathname.includes('/mailbox') ? '!text-primary font-bold' : ''">Mailbox</a>
               </div>

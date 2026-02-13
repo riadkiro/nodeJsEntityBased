@@ -1,3 +1,9 @@
+<!-- Compact density CSS -->
+<style>
+    .mail-compact td { padding: 4px 8px !important; font-size: 13px; }
+    .mail-compact .form-checkbox { width: 14px; height: 14px; }
+</style>
+
 <!-- ========== MAIL LIST VIEW ========== -->
 <div x-show="!selectedMail && !isEdit && !showTemplates && !showSignature" class="flex h-full flex-col">
     <!-- Toolbar -->
@@ -57,20 +63,74 @@
                             </ul>
                         </div>
                     </li>
-                    <!-- Settings dropdown (with Signature) -->
+                    <!-- Settings dropdown (Density, Page Size) - Premium Design -->
                     <li>
-                        <div x-data="{ open: false }" @click.outside="open = false" class="dropdown relative">
-                            <button type="button" class="flex items-center hover:text-primary" @click="open = !open" title="Settings">
+                        <div x-data="{ open: false }" class="dropdown relative">
+                            <button type="button" class="flex items-center hover:text-primary" @click="open = !open" title="Display settings">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
-                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" />
-                                    <path opacity="0.5" d="M13.765 2.152C13.398 2 12.932 2 12 2c-.932 0-1.398 0-1.765.152a2 2 0 00-1.083 1.083c-.092.223-.129.484-.143.863a1.617 1.617 0 01-.79 1.353 1.617 1.617 0 01-1.567.008c-.336-.178-.579-.276-.82-.308a2 2 0 00-1.478.396C4.045 5.787 3.812 6.19 3.346 6.997c-.466.807-.7 1.21-.751 1.616a2 2 0 00.396 1.478c.148.192.37.35.737.545a1.617 1.617 0 01.79 1.364 1.617 1.617 0 01-.79 1.364c-.367.195-.59.353-.737.545a2 2 0 00-.396 1.478c.052.407.285.81.751 1.616.466.807.699 1.21 1.008 1.453a2 2 0 001.478.396c.241-.032.484-.13.82-.308a1.617 1.617 0 011.567.008c.483.28.77.795.79 1.353.014.38.05.64.143.863a2 2 0 001.083 1.083C10.602 22 11.068 22 12 22c.932 0 1.398 0 1.765-.152a2 2 0 001.083-1.083c.092-.223.129-.484.143-.863.02-.558.307-1.074.79-1.353a1.617 1.617 0 011.567-.008c.336.178.579.276.82.308a2 2 0 001.478-.396c.309-.243.542-.646 1.008-1.453.466-.807.7-1.21.751-1.616a2 2 0 00-.396-1.478c-.148-.192-.37-.35-.737-.545a1.617 1.617 0 01-.79-1.364c0-.56.301-1.08.79-1.364.367-.195.59-.353.737-.545a2 2 0 00.396-1.478c-.052-.407-.285-.81-.751-1.616-.466-.807-.699-1.21-1.008-1.453a2 2 0 00-1.478-.396c-.241.032-.484.13-.82.308a1.617 1.617 0 01-1.567-.008 1.617 1.617 0 01-.79-1.353c-.014-.38-.05-.64-.143-.863a2 2 0 00-1.083-1.083z" stroke="currentColor" stroke-width="1.5" />
+                                    <path d="M3 6.5H21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                                    <path d="M3 12H21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                                    <path d="M3 17.5H21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                                    <circle cx="8" cy="6.5" r="2" fill="currentColor" opacity="0.5" />
+                                    <circle cx="16" cy="12" r="2" fill="currentColor" opacity="0.5" />
+                                    <circle cx="10" cy="17.5" r="2" fill="currentColor" opacity="0.5" />
                                 </svg>
                             </button>
-                            <ul x-cloak x-show="open" x-transition x-transition.duration.300ms class="ltr:right-0 rtl:left-0 absolute z-50 mt-1 w-48 rounded-md border border-[#e0e6ed] bg-white py-1 shadow-md dark:border-[#1b2e4b] dark:bg-[#1b2e4b]">
-                                <li><button type="button" class="flex w-full items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#253b5c]" @click="open = false; showSignature = true; isEdit = false; selectedMail = null; showTemplates = false">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="ltr:mr-2 rtl:ml-2"><path d="M12 19H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M16.5 3.50001C16.7626 3.23737 17.0744 3.02902 17.4176 2.88688C17.7608 2.74474 18.1286 2.67157 18.5 2.67157C18.8714 2.67157 19.2392 2.74474 19.5824 2.88688C19.9256 3.02902 20.2374 3.23737 20.5 3.50001C20.7626 3.76265 20.971 4.07446 21.1131 4.41765C21.2553 4.76084 21.3284 5.12862 21.3284 5.50001C21.3284 5.87141 21.2553 6.23919 21.1131 6.58238C20.971 6.92556 20.7626 7.23737 20.5 7.50001L7.5 20.5L2 22L3.5 16.5L16.5 3.50001Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                    Signatures</button></li>
-                            </ul>
+                            <!-- Backdrop -->
+                            <div x-show="open" x-cloak 
+                                x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                                x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                                class="fixed inset-0 bg-black/20 dark:bg-black/40 z-[998]" @click="open = false"></div>
+                            <!-- Panel -->
+                            <div x-show="open" x-cloak
+                                x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                                x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0 scale-100" x-transition:leave-end="opacity-0 -translate-y-2 scale-95"
+                                class="absolute ltr:right-0 rtl:left-0 z-[999] mt-2 w-[280px] rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-[#0e1726] overflow-hidden"
+                                @keydown.escape.window="open = false">
+                                <!-- Header -->
+                                <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Paramètres d'affichage</h3>
+                                    <button type="button" @click="open = false" class="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                        <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <!-- Content -->
+                                <div class="p-4 space-y-5">
+
+                                    <!-- Density -->
+                                    <div>
+                                        <div class="text-[10px] font-semibold mb-2 text-gray-500 dark:text-gray-500 uppercase tracking-wider">Densité</div>
+                                        <div class="flex gap-2">
+                                            <button type="button" @click="setDensity('compact')"
+                                                class="flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition-all"
+                                                :class="mailDensity === 'compact' ? 'border-primary bg-primary/10 text-primary shadow-sm' : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800'">
+                                                Compact
+                                            </button>
+                                            <button type="button" @click="setDensity('normal')"
+                                                class="flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition-all"
+                                                :class="mailDensity === 'normal' ? 'border-primary bg-primary/10 text-primary shadow-sm' : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-800'">
+                                                Normal
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Rows per page -->
+                                    <div>
+                                        <div class="text-[10px] font-semibold mb-2 text-gray-500 dark:text-gray-500 uppercase tracking-wider">Lignes par page</div>
+                                        <div class="flex flex-wrap gap-2">
+                                            <template x-for="size in [10, 25, 50]" :key="size">
+                                                <button type="button" @click="setPageSize(size)"
+                                                    class="px-4 py-2 text-xs font-medium rounded-lg transition-all"
+                                                    :class="pager.pageSize === size ? 'bg-primary text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
+                                                    x-text="size">
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </li>
                     <!-- More Actions dropdown -->
@@ -84,6 +144,10 @@
                                 </svg>
                             </button>
                             <ul x-cloak x-show="open" x-transition x-transition.duration.300ms class="whitespace-nowrap ltr:right-0 rtl:left-0 absolute z-50 mt-1 w-44 rounded-md border border-[#e0e6ed] bg-white py-1 shadow-md dark:border-[#1b2e4b] dark:bg-[#1b2e4b]">
+                                <li><button type="button" class="flex w-full items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#253b5c]" @click="open = false; showSignature = true; isEdit = false; selectedMail = null; showTemplates = false">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="ltr:mr-2 rtl:ml-2"><path d="M12 19H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M16.5 3.50001C16.7626 3.23737 17.0744 3.02902 17.4176 2.88688C17.7608 2.74474 18.1286 2.67157 18.5 2.67157C18.8714 2.67157 19.2392 2.74474 19.5824 2.88688C19.9256 3.02902 20.2374 3.23737 20.5 3.50001C20.7626 3.76265 20.971 4.07446 21.1131 4.41765C21.2553 4.76084 21.3284 5.12862 21.3284 5.50001C21.3284 5.87141 21.2553 6.23919 21.1131 6.58238C20.971 6.92556 20.7626 7.23737 20.5 7.50001L7.5 20.5L2 22L3.5 16.5L16.5 3.50001Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    Signatures</button></li>
+                                <li class="border-b border-[#e0e6ed] dark:border-[#1b2e4b] my-1"></li>
                                 <li><button type="button" class="flex w-full items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#253b5c]" @click="open = false; setAction('read')">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="ltr:mr-2 rtl:ml-2"><path d="M3 18L3 6C3 4.34315 4.34315 3 6 3H18C19.6569 3 21 4.34315 21 6V18C21 19.6569 19.6569 21 18 21H6C4.34315 21 3 19.6569 3 18Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M6 8L8.1589 9.79908C9.99553 11.3296 10.9139 12.0949 12 12.0949C13.0861 12.0949 14.0045 11.3296 15.8411 9.79908L18 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
                                     Mark as Read</button></li>
@@ -117,7 +181,7 @@
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6"><path d="M20 7L4 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><path d="M20 12L4 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><path d="M20 17L4 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
                 </button>
                 <div class="group relative">
-                    <input type="text" class="peer form-input ltr:pr-8 rtl:pl-8" placeholder="Search Mail" x-model="searchText" @keyup="searchMails()" />
+                    <input type="search" name="mail-search-filter" class="peer form-input ltr:pr-8 rtl:pl-8" placeholder="Search Mail" x-model="searchText" @keyup="searchMails()" autocomplete="new-password" />
                     <div class="absolute top-1/2 -translate-y-1/2 peer-focus:text-primary ltr:right-[11px] rtl:left-[11px]">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11.5" cy="11.5" r="9.5" stroke="currentColor" stroke-width="1.5" opacity="0.5" /><path d="M18.5 18.5L22 22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
                     </div>
@@ -170,10 +234,10 @@
     <!-- Mail Table -->
     <template x-if="pagedMails.length">
         <div class="table-responsive min-h-[300px] grow overflow-y-auto sm:min-h-[400px]">
-            <table class="table-hover">
+            <table class="table-hover" :class="{ 'mail-compact': mailDensity === 'compact' }">
                 <tbody>
                     <template x-for="mail in pagedMails" :key="mail.id">
-                        <tr class="cursor-pointer" :class="{'font-semibold' : mail.isUnread}" @click="selectMail(mail)">
+                        <tr class="cursor-pointer" :class="{'font-semibold' : mail.isUnread}" @click="selectMail(mail)" :style="mailDensity === 'compact' ? 'height: 36px' : ''">
                             <td>
                                 <div class="flex items-center whitespace-nowrap">
                                     <div class="ltr:mr-3 rtl:ml-3">
@@ -195,8 +259,11 @@
                                     </div>
                                     <!-- Avatar or initial -->
                                     <div class="ltr:mr-3 rtl:ml-3">
-                                        <div class="flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold"
-                                            :class="mail.isStar ? 'bg-warning/20 text-warning' : 'bg-primary/10 text-primary'">
+                                        <div class="flex items-center justify-center rounded-full text-sm font-semibold"
+                                            :class="[
+                                                mail.isStar ? 'bg-warning/20 text-warning' : 'bg-primary/10 text-primary',
+                                                mailDensity === 'compact' ? 'h-6 w-6 text-xs' : 'h-8 w-8'
+                                            ]">
                                             <span x-text="(mail.firstName ? mail.firstName[0] : '') + (mail.lastName ? mail.lastName[0] : '')"></span>
                                         </div>
                                     </div>

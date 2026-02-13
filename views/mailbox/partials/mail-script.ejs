@@ -24,6 +24,7 @@ document.addEventListener('alpine:init', () => {
         activeGroupFilter: '', // For label filter chips at top
         // Base URL for API calls
         apiBase: '',
+        accountBase: '', // e.g. /account/5001
         // Pagination
         pager: {
             currentPage: 1,
@@ -47,6 +48,16 @@ document.addEventListener('alpine:init', () => {
         ],
         editingSignature: null,
         selectedSignatureIdx: -1,
+        // Mail Accounts
+        mailAccounts: [],
+        showAccountModal: false,
+        editingAccount: { name: '', email: '', color: '#4361ee', imap: { host: '', port: 993, user: '', password: '', tls: true }, smtp: { host: '', port: 587, user: '', password: '' } },
+        accountTesting: false,
+        selectedAccountId: null, // Currently viewed account
+        syncing: false, // Is currently syncing
+        syncInterval: null, // Auto-sync interval ref
+        // View settings
+        mailDensity: 'compact', // 'compact' or 'normal'
 
         // ===== INIT =====
         init() {
@@ -56,11 +67,16 @@ document.addEventListener('alpine:init', () => {
             const pathParts = window.location.pathname.split('/');
             const accountIdx = pathParts.indexOf('account');
             if (accountIdx >= 0 && pathParts[accountIdx + 1]) {
-                this.apiBase = '/account/' + pathParts[accountIdx + 1] + '/mailbox/api';
+                this.accountBase = '/account/' + pathParts[accountIdx + 1];
+                this.apiBase = this.accountBase + '/mailbox/api';
             }
 
+            // Load mail accounts from server data
+            this.mailAccounts = <%- JSON.stringify(mailAccounts || []).replace(/<\//g, '<\\/') %>;
+            this.selectedAccountId = '<%= selectedAccountId || "" %>' || null;
+
             // Load mails from server
-            const initialMails = <%- JSON.stringify(initialMails || []) %>;
+            const initialMails = <%- JSON.stringify(initialMails || []).replace(/<\//g, '<\\/') %>;
             this.mailList = initialMails.map((m, i) => ({
                 ...m,
                 id: m.id || i + 1,
@@ -72,6 +88,9 @@ document.addEventListener('alpine:init', () => {
                 attachments: m.attachments || [],
                 displayDescription: m.displayDescription || m.description?.replace(/<[^>]*>/g, '').substring(0, 100) || '',
             }));
+
+            // Load user preferences from server
+            this.loadMailPreferences();
 
             this.searchMails();
 
@@ -97,6 +116,22 @@ document.addEventListener('alpine:init', () => {
                     });
                 }
             });
+
+            // Auto-sync on page load if there's an active account
+            if (this.activeAccount) {
+                this.syncMails();
+            }
+
+            // Auto-sync every 60 seconds
+            this.syncInterval = setInterval(() => {
+                if (this.activeAccount && !this.syncing) {
+                    this.syncMails(true); // silent = true (no spinner for background sync)
+                }
+            }, 60000);
+        },
+
+        destroy() {
+            if (this.syncInterval) clearInterval(this.syncInterval);
         },
 
         // ===== COMPUTED =====
@@ -104,6 +139,18 @@ document.addEventListener('alpine:init', () => {
             const start = this.pager.startIndex;
             const end = this.pager.endIndex + 1;
             return this.filteredMailList.slice(start, end);
+        },
+
+        get activeAccount() {
+            if (this.selectedAccountId) {
+                return this.mailAccounts.find(a => a._id === this.selectedAccountId) || this.mailAccounts.find(a => a.isDefault) || this.mailAccounts[0] || null;
+            }
+            return this.mailAccounts.find(a => a.isDefault) || this.mailAccounts[0] || null;
+        },
+
+        get otherAccounts() {
+            const activeId = this.activeAccount?._id;
+            return this.mailAccounts.filter(a => a._id !== activeId);
         },
 
         // ===== LABEL FILTER CHIPS =====
@@ -557,6 +604,271 @@ document.addEventListener('alpine:init', () => {
                     title: msg,
                     padding: '10px 20px',
                 });
+            }
+        },
+
+        // ===== MAIL ACCOUNTS =====
+        openAccountModal() {
+            this.editingAccount = {
+                name: '', email: '', color: '#4361ee',
+                imap: { host: '', port: 993, user: '', password: '', tls: true },
+                smtp: { host: '', port: 587, user: '', password: '' },
+            };
+            this.showAccountModal = true;
+        },
+
+        editAccount(acc) {
+            this.editingAccount = {
+                ...acc,
+                imap: { host: '', port: 993, user: '', password: '', tls: true, ...(acc.imap || {}) },
+                smtp: { host: '', port: 587, user: '', password: '', ...(acc.smtp || {}) },
+            };
+            this.showAccountModal = true;
+        },
+
+        async saveAccount() {
+            const acc = this.editingAccount;
+            if (!acc.name || !acc.email) {
+                this.showMessage('Name and email are required', 'error');
+                return;
+            }
+            if (!acc.imap.host || !acc.imap.user || !acc.imap.password) {
+                this.showMessage('IMAP credentials are required', 'error');
+                return;
+            }
+
+            try {
+                let url = this.apiBase + '/accounts';
+                let method = 'POST';
+                if (acc._id) {
+                    url += '/' + acc._id;
+                    method = 'PUT';
+                }
+
+                const resp = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(acc),
+                });
+                const data = await resp.json();
+
+                if (data.success) {
+                    const isNew = !acc._id;
+                    this.showMessage(isNew ? 'Account added' : 'Account updated');
+                    this.showAccountModal = false;
+                    // Refresh accounts list
+                    await this.loadAccounts();
+                    // Auto-sync after first config of a new account
+                    if (isNew && data.account) {
+                        this.selectedAccountId = data.account._id;
+                        this.syncMails();
+                    }
+                } else {
+                    this.showMessage(data.error || 'Failed to save account', 'error');
+                }
+            } catch (e) {
+                console.error('saveAccount Error:', e);
+                this.showMessage('Failed to save account', 'error');
+            }
+        },
+
+        async deleteAccount() {
+            if (!this.editingAccount._id) return;
+            if (!confirm('Are you sure you want to delete this account?')) return;
+
+            try {
+                const resp = await fetch(this.apiBase + '/accounts/' + this.editingAccount._id, {
+                    method: 'DELETE',
+                    credentials: 'include',
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    this.showMessage('Account deleted');
+                    this.showAccountModal = false;
+                    await this.loadAccounts();
+                }
+            } catch (e) {
+                console.error('deleteAccount Error:', e);
+                this.showMessage('Failed to delete account', 'error');
+            }
+        },
+
+        async testAccountConnection() {
+            const imap = this.editingAccount.imap;
+            if (!imap.host || !imap.user || !imap.password) {
+                this.showMessage('Fill in IMAP credentials first', 'error');
+                return;
+            }
+            this.accountTesting = true;
+            try {
+                const resp = await fetch(this.apiBase + '/accounts/test-connection', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(imap),
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    this.showMessage('Connection successful!');
+                } else {
+                    this.showMessage(data.error || 'Connection failed', 'error');
+                }
+            } catch (e) {
+                this.showMessage('Connection failed: ' + e.message, 'error');
+            } finally {
+                this.accountTesting = false;
+            }
+        },
+
+        async loadAccounts() {
+            try {
+                const resp = await fetch(this.apiBase + '/accounts', { credentials: 'include' });
+                const data = await resp.json();
+                if (data.success) {
+                    this.mailAccounts = data.accounts.map(a => ({
+                        _id: a._id,
+                        name: a.name,
+                        email: a.email,
+                        color: a.color,
+                        isDefault: a.isDefault,
+                        isActive: a.isActive,
+                        lastSync: a.lastSync,
+                    }));
+                }
+            } catch (e) {
+                console.error('loadAccounts Error:', e);
+            }
+        },
+
+        async disconnectAccount(acc) {
+            if (!acc || !acc._id) return;
+            if (!confirm('Disconnect account "' + acc.name + '"? This will remove the account from your mailbox.')) return;
+            try {
+                const resp = await fetch(this.apiBase + '/accounts/' + acc._id, {
+                    method: 'DELETE',
+                    credentials: 'include',
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    this.showMessage('Account disconnected');
+                    await this.loadAccounts();
+                }
+            } catch (e) {
+                console.error('disconnectAccount Error:', e);
+                this.showMessage('Failed to disconnect account', 'error');
+            }
+        },
+
+        // ===== SYNC =====
+        async syncMails(silent = false) {
+            if (this.syncing) return; // prevent concurrent syncs
+            const account = this.activeAccount;
+            if (!account) return;
+
+            if (!silent) this.syncing = true;
+
+            try {
+                const resp = await fetch(this.apiBase + '/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ accountId: account._id }),
+                });
+                const data = await resp.json();
+
+                if (data.success && data.mails) {
+                    // Update mail list in-place
+                    this.mailList = data.mails.map((m, i) => ({
+                        ...m,
+                        id: m.id || i + 1,
+                        isStar: m.isStar || false,
+                        isImportant: m.isImportant || false,
+                        isUnread: m.isUnread !== undefined ? m.isUnread : false,
+                        group: m.group || '',
+                        type: m.type || 'inbox',
+                        attachments: m.attachments || [],
+                        displayDescription: m.displayDescription || m.description?.replace(/<[^>]*>/g, '').substring(0, 100) || '',
+                    }));
+                    this.searchMails();
+
+                    if (!silent && data.addedCount > 0) {
+                        this.showMessage(`${data.addedCount} new email(s) synced`);
+                    }
+                } else if (data.error && !silent) {
+                    this.showMessage(data.error, 'error');
+                }
+            } catch (e) {
+                console.error('syncMails Error:', e);
+                if (!silent) this.showMessage('Sync failed', 'error');
+            } finally {
+                this.syncing = false;
+            }
+        },
+
+        // ===== ACCOUNT SWITCHING =====
+        switchAccount(accountId) {
+            const pathParts = window.location.pathname.split('/');
+            const accountIdx = pathParts.indexOf('account');
+            const accNo = pathParts[accountIdx + 1];
+            window.location.href = '/account/' + accNo + '/mailbox/inbox?accountId=' + accountId;
+        },
+
+        // ===== VIEW SETTINGS =====
+        setDensity(density) {
+            this.mailDensity = density;
+            this.saveMailPreferences();
+        },
+
+        setPageSize(size) {
+            this.pager.pageSize = size;
+            this.pager.currentPage = 1;
+            this.searchMails(false);
+            this.saveMailPreferences();
+        },
+
+        // Load mail preferences from server
+        async loadMailPreferences() {
+            if (!this.accountBase) return;
+            try {
+                const resp = await fetch(this.accountBase + '/api/user/view-preferences/mailbox', {
+                    credentials: 'include'
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.preferences) {
+                        if (data.preferences.density) {
+                            this.mailDensity = data.preferences.density;
+                        }
+                        if (data.preferences.pageSize) {
+                            this.pager.pageSize = data.preferences.pageSize;
+                            this.searchMails(false);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('[Mailbox] Could not load preferences:', e);
+            }
+        },
+
+        // Save mail preferences to server
+        async saveMailPreferences() {
+            if (!this.accountBase) return;
+            try {
+                await fetch(this.accountBase + '/api/user/view-preferences', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        viewId: 'mailbox',
+                        preferences: {
+                            density: this.mailDensity,
+                            pageSize: this.pager.pageSize
+                        }
+                    })
+                });
+            } catch (e) {
+                console.warn('[Mailbox] Could not save preferences:', e);
             }
         },
     }));

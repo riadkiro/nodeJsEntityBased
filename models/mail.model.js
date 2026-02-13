@@ -33,6 +33,7 @@ const mailSchema = new Schema({
         default: ''
     },
     attachments: [attachmentSchema],
+    accountId: { type: Schema.Types.ObjectId, ref: 'MailAccount' }, // Which mail account this belongs to
     tenantId: { type: Schema.Types.ObjectId, ref: 'Account' } // Logical separation if needed
 }, { timestamps: true });
 

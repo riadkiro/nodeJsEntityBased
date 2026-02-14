@@ -158,11 +158,17 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const editorRootRef = useRef(null)
     const docRef = useRef(doc) // Always current doc for callbacks
     const isMergingRef = useRef(false) // Prevents race conditions during merge
+    const isGlobalSelectionRef = useRef(false) // Ref mirror for stale-closure-safe access
 
     // Keep docRef in sync
     useEffect(() => {
         docRef.current = doc
     }, [doc])
+
+    // Keep isGlobalSelectionRef in sync
+    useEffect(() => {
+        isGlobalSelectionRef.current = isGlobalSelection
+    }, [isGlobalSelection])
 
     // ========== AUTOSAVE ==========
     const triggerSave = useCallback(() => {
@@ -837,12 +843,14 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     // Visual: select the editor content (not the canvas UI)
                     selectAllDocument(editorRootRef.current, pageRefs.current)
                     setIsGlobalSelection(true)
+                    isGlobalSelectionRef.current = true // sync ref immediately (no stale closure)
                     return
                 }
             }
 
             // Delete/Backspace with global selection — DOM-first clear
-            if (isGlobalSelection && (e.key === 'Delete' || e.key === 'Backspace')) {
+            // CRITICAL: use ref, NOT closure-captured state (avoids stale closure)
+            if (isGlobalSelectionRef.current && (e.key === 'Delete' || e.key === 'Backspace')) {
                 e.preventDefault()
                 e.stopPropagation()
                 // 1) Clear DOM immediately (uncontrolled contenteditable)
@@ -862,6 +870,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     return { ...prev, pages: [page0] }
                 })
                 setIsGlobalSelection(false)
+                isGlobalSelectionRef.current = false
                 // 3) Focus first page
                 requestAnimationFrame(() => {
                     const el = pageRefs.current?.[0]
@@ -872,7 +881,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             }
 
             // Any other key while global selection is active — cancel selection
-            if (isGlobalSelection && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+            if (isGlobalSelectionRef.current && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
                 // Typing replaces the selection — clear all then let the key through
                 Object.values(pageRefs.current || {}).forEach(el => {
                     if (el) el.innerHTML = ''
@@ -889,6 +898,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     return { ...prev, pages: [page0] }
                 })
                 setIsGlobalSelection(false)
+                isGlobalSelectionRef.current = false
                 // Focus first page so the typed character goes there
                 const el = pageRefs.current?.[0]
                 if (el) el.focus()
@@ -898,14 +908,15 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         }
 
         const handleCopy = (e) => {
-            if (isGlobalSelection) {
+            if (isGlobalSelectionRef.current) {
                 handleGlobalCopy(e)
             }
         }
 
         const handleClick = () => {
-            if (isGlobalSelection) {
+            if (isGlobalSelectionRef.current) {
                 setIsGlobalSelection(false)
+                isGlobalSelectionRef.current = false
             }
         }
 
@@ -918,7 +929,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             window.removeEventListener('copy', handleCopy)
             window.removeEventListener('click', handleClick)
         }
-    }, [editorMode, isGlobalSelection, handleGlobalCopy, triggerSave])
+    }, [editorMode, handleGlobalCopy, triggerSave]) // removed isGlobalSelection — using ref instead
 
     // ========== PAGE MANAGEMENT ==========
     const addPage = useCallback(() => {

@@ -1,6 +1,7 @@
 <div :class="{'dark text-white-dark' : $store.app.semidark}">
   <nav x-data="{ sidebar }"
-    class="sidebar fixed top-0 bottom-0 z-50 col-span-1 grid h-full min-h-screen w-[248px] grid-cols-12 shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] transition-all duration-300">
+    class="sidebar fixed top-0 bottom-0 z-50 h-full min-h-screen transition-all duration-300"
+    style="width:248px;display:flex;flex-direction:row;overflow:hidden;box-shadow:5px 0 25px 0 rgba(94,92,154,0.1);">
     <style>
       /* ═══════════════════════════════════════════
          THEME 1: Galaxy Gray (Samsung S11+ File Manager)
@@ -220,9 +221,9 @@
         }
       }"
       :data-theme="railTheme"
-      :class="$store.app.sidebar ? 'col-span-12 mini-rail--expanded' : 'col-span-2'"
-      class="mini-rail h-full flex flex-col items-center justify-between pt-2 pb-4"
-      :style="railTheme === 'aurora' && !document.documentElement.classList.contains('dark') ? 'background:' + 'linear-gradient(180deg, #eef2ff 0%, #e0e7ff 30%, #ede9fe 70%, #faf5ff 100%)' : 'background: var(--rail-bg)'">
+      :class="$store.app.sidebar ? 'mini-rail--expanded' : ''"
+      :style="($store.app.sidebar ? 'width:248px;flex:none;' : 'width:48px;flex:none;') + (railTheme === 'aurora' && !document.documentElement.classList.contains('dark') ? 'background:linear-gradient(180deg, #eef2ff 0%, #e0e7ff 30%, #ede9fe 70%, #faf5ff 100%);' : 'background:var(--rail-bg);')"
+      class="mini-rail h-full flex flex-col items-center justify-between pt-2 pb-4">
       <!-- Toggle button -->
       <a href="javascript:;"
         class="mini-rail-item"
@@ -241,233 +242,82 @@
         </svg>
       </a>
 
-      <!-- MIDDLE: Navigation icons -->
-      <div class="flex flex-col items-center gap-y-1 flex-1 mt-2">
-        <!-- Dashboard -->
-      <a href="/account/<%= account_number %>/dashboard"
-         data-active="<%= (typeof path !== 'undefined' ? path : '').includes('/dashboard') %>"
-         class="mini-rail-item">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M2 12.2039C2 9.91549 2 8.77128 2.5192 7.82274C3.0384 6.87421 3.98695 6.28551 5.88403 5.10813L7.88403 3.86687C9.88939 2.62229 10.8921 2 12 2C13.1079 2 14.1106 2.62229 16.116 3.86687L18.116 5.10812C20.0131 6.28551 20.9616 6.87421 21.4808 7.82274C22 8.77128 22 9.91549 22 12.2039V13.725C22 17.6258 22 19.5763 20.8284 20.7881C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.7881C2 19.5763 2 17.6258 2 13.725V12.2039Z" stroke="currentColor" stroke-width="1.5"/>
-          <path opacity="0.5" d="M12 15V18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <span class="mini-rail-label">Dashboard</span>
-      </a>
+      <!-- MIDDLE: Dynamic Environment icons -->
+      <div class="flex flex-col items-center gap-y-1 flex-1 mt-2 overflow-y-auto overflow-x-hidden env-rail-list"
+           x-data="environmentRail()"
+           x-init="await init()"
+           @contextmenu.prevent="showRailContextMenu($event)"
+           @environment-updated.window="await refreshEnvironments()"
+           style="scrollbar-width: none; -ms-overflow-style: none;">
 
-      <!-- Données (Create popup) -->
-      <div x-data="{ createPopupOpen: false }" class="relative">
-        <div @click="createPopupOpen = !createPopupOpen"
+        <!-- Dynamic Environment Icons -->
+        <template x-for="env in environments" :key="env.id">
+          <a href="javascript:;"
+             @click="selectEnvironment(env)"
+             @contextmenu.prevent.stop="showEnvContextMenu($event, env)"
+             :data-active="activeEnvId === env.id"
              class="mini-rail-item"
-             :data-active="createPopupOpen">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M17.5777 4.43152L15.5777 3.38197C13.8221 2.46066 12.9443 2 12 2C11.0557 2 10.1779 2.46066 8.42229 3.38197L6.42229 4.43152C4.27063 5.53552 3.19479 6.09982 2.5974 7.07264C2 8.04547 2 9.30798 2 11.833V12.167C2 14.692 2 15.9545 2.5974 16.9274C3.19479 17.9002 4.27063 18.4645 6.42229 19.5931L8.42229 20.618C10.1779 21.5394 11.0557 22 12 22C12.9443 22 13.8221 21.5394 15.5777 20.618L17.5777 19.5685C19.7294 18.4395 20.8052 17.8749 21.4026 16.9021C22 15.9292 22 14.6667 22 12.1418V11.8582C22 9.33327 22 8.07081 21.4026 7.09797C20.8052 6.12512 19.7294 5.56054 17.5777 4.43152Z" stroke="currentColor" stroke-width="1.5"/>
-            <path opacity="0.5" d="M12 2V22" stroke="currentColor" stroke-width="1.5"/>
-            <path opacity="0.5" d="M22 12L2 12" stroke="currentColor" stroke-width="1.5"/>
+             :title="env.name"
+             :style="activeEnvId === env.id ? 'color:' + env.color : ''">
+            <iconify-icon :icon="env.icon" width="22" height="22"
+              :style="activeEnvId === env.id ? 'color:' + env.color : ''"></iconify-icon>
+            <span class="mini-rail-label" x-text="env.name.substring(0, 8)"></span>
+          </a>
+        </template>
+
+        <!-- Add Environment Button -->
+        <a href="javascript:;"
+           @click="openCreateModal()"
+           class="mini-rail-item"
+           title="Ajouter un environnement"
+           style="opacity: 0.5; border: 1px dashed var(--rail-divider); margin-top: 4px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 6V18M6 12H18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
-          <span class="mini-rail-label">Données</span>
+        </a>
+
+        <!-- ═══ Right-Click Context Menu (on rail background) ═══ -->
+        <div x-show="railMenuOpen" x-cloak
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-100"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             @click.away="railMenuOpen = false"
+             :style="'position:fixed; top:' + menuY + 'px; left:' + menuX + 'px; z-index: 9999'"
+             class="w-52 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1b2e4b] shadow-xl py-1.5">
+          <button @click="openCreateModal(); railMenuOpen = false"
+                  class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <iconify-icon icon="solar:add-circle-bold-duotone" width="18" class="text-primary"></iconify-icon>
+            Nouvel environnement
+          </button>
         </div>
-        
-        <!-- Create Popup Modal -->
-        <div x-show="createPopupOpen" x-cloak
-          x-transition:enter="transition ease-out duration-200"
-          x-transition:enter-start="opacity-0 scale-95"
-          x-transition:enter-end="opacity-100 scale-100"
-          x-transition:leave="transition ease-in duration-150"
-          x-transition:leave-start="opacity-100 scale-100"
-          x-transition:leave-end="opacity-0 scale-95"
-          @click.away="createPopupOpen = false"
-          class="fixed top-1/2 -translate-y-1/2 w-[278px] left-[55px] rounded-xl p-5 z-[60]
-            bg-white dark:bg-[#0e1726]
-            border border-[#ebedf2] dark:border-[#1b2e4b]
-            shadow-[5px_0_25px_0_rgba(94,92,154,0.1)]">
-          
-          <!-- Header -->
-          <div class="flex items-center justify-between mb-5">
-            <div class="flex items-center gap-3">
-              <!-- Sidebar panel icon -->
-              <div class="w-8 h-8 rounded-lg bg-[#1b2e4b] flex items-center justify-center">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="3" y="3" width="18" height="18" rx="2" stroke="#4f83cc" stroke-width="1.5"/>
-                  <path d="M9 3V21" stroke="#4f83cc" stroke-width="1.5"/>
-                </svg>
-              </div>
-              <span class="text-gray-800 dark:text-white-light text-lg font-semibold">Create</span>
-            </div>
-            <button @click="createPopupOpen = false" class="text-gray-500 dark:text-white-dark hover:text-gray-800 dark:hover:text-white transition-colors">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </div>
 
-          <!-- Quick Create Section -->
-          <div class="mb-5">
-            <h3 class="text-gray-500 dark:text-gray-500 text-xs font-medium mb-3">Quick Create</h3>
-            <div class="grid grid-cols-3 gap-2">
-              <!-- Facture -->
-              <a href="/account/<%= account_number %>/create/facture" class="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-[#ebedf2] dark:hover:bg-[#253b5c] transition-all cursor-pointer group">
-                <div class="w-11 h-11 rounded shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] flex items-center justify-center bg-[#f6f8fa] dark:bg-[#1b2e4b] backdrop-blur-sm">
-                  <svg class="text-gray-600 dark:text-gray-300" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/>
-                    <path opacity="0.5" d="M8 10H16M8 14H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                  </svg>
-                </div>
-                <span class="text-xs text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Facture</span>
-              </a>
-              
-              <!-- Client -->
-              <a href="/account/<%= account_number %>/create/client" class="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-[#ebedf2] dark:hover:bg-[#253b5c] transition-all cursor-pointer group">
-                <div class="w-11 h-11 rounded shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] flex items-center justify-center bg-[#f6f8fa] dark:bg-[#1b2e4b] backdrop-blur-sm">
-                  <svg class="text-gray-600 dark:text-gray-300" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="6" r="4" stroke="currentColor" stroke-width="1.5"/>
-                    <path opacity="0.5" d="M20 17.5C20 19.9853 20 22 12 22C4 22 4 19.9853 4 17.5C4 15.0147 7.58172 13 12 13C16.4183 13 20 15.0147 20 17.5Z" stroke="currentColor" stroke-width="1.5"/>
-                  </svg>
-                </div>
-                <span class="text-xs text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Client</span>
-              </a>
-              
-              <!-- Projet -->
-              <a href="/account/<%= account_number %>/create/projet" class="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-[#ebedf2] dark:hover:bg-[#253b5c] transition-all cursor-pointer group">
-                <div class="w-11 h-11 rounded shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] flex items-center justify-center bg-[#f6f8fa] dark:bg-[#1b2e4b] backdrop-blur-sm">
-                  <svg class="text-gray-600 dark:text-gray-300" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 6.94975C2 6.06722 2 5.62595 2.06935 5.25839C2.37464 3.64031 3.64031 2.37464 5.25839 2.06935C5.62595 2 6.06722 2 6.94975 2C7.33642 2 7.52976 2 7.71557 2.01738C8.51665 2.09229 9.27652 2.40704 9.89594 2.92051C10.0396 3.03961 10.1763 3.17633 10.4497 3.44975L11 4C11.8158 4.81578 12.2237 5.22367 12.7121 5.49543C12.9804 5.64471 13.2651 5.7626 13.5604 5.84678C14.0979 6 14.6747 6 15.8284 6H16.2021C18.8345 6 20.1506 6 21.0062 6.76946C21.0849 6.84024 21.1598 6.91514 21.2305 6.99383C22 7.84935 22 9.16554 22 11.7979V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V6.94975Z" stroke="currentColor" stroke-width="1.5"/>
-                    <path opacity="0.5" d="M2 6.94975C2 6.06722 2 5.62595 2.06935 5.25839C2.37464 3.64031 3.64031 2.37464 5.25839 2.06935C5.62595 2 6.06722 2 6.94975 2" stroke="currentColor" stroke-width="1.5"/>
-                  </svg>
-                </div>
-                <span class="text-xs text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Projet</span>
-              </a>
-              
-              <!-- Document -->
-              <a href="/account/<%= account_number %>/create/document" class="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-[#ebedf2] dark:hover:bg-[#253b5c] transition-all cursor-pointer group">
-                <div class="w-11 h-11 rounded shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] flex items-center justify-center bg-[#f6f8fa] dark:bg-[#1b2e4b] backdrop-blur-sm">
-                  <svg class="text-gray-600 dark:text-gray-300" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/>
-                    <path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                  </svg>
-                </div>
-                <span class="text-xs text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Document</span>
-              </a>
-              
-              <!-- Tâche -->
-              <a href="/account/<%= account_number %>/create/tache" class="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-[#ebedf2] dark:hover:bg-[#253b5c] transition-all cursor-pointer group">
-                <div class="w-11 h-11 rounded shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] flex items-center justify-center bg-[#f6f8fa] dark:bg-[#1b2e4b] backdrop-blur-sm">
-                  <svg class="text-gray-600 dark:text-gray-300" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" stroke-width="1.5"/>
-                    <path opacity="0.5" d="M8.5 12.5L10.5 14.5L15.5 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </div>
-                <span class="text-xs text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Tâche</span>
-              </a>
-              
-              <!-- Import -->
-              <a href="/account/<%= account_number %>/import" class="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-[#ebedf2] dark:hover:bg-[#253b5c] transition-all cursor-pointer group">
-                <div class="w-11 h-11 rounded shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] flex items-center justify-center bg-[#f6f8fa] dark:bg-[#1b2e4b] backdrop-blur-sm">
-                  <svg class="text-gray-600 dark:text-gray-300" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 14V4M12 4L15 7M12 4L9 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path opacity="0.5" d="M2 17L2.621 19.485C2.72915 19.9177 2.78323 20.1341 2.87076 20.3128C3.08429 20.7455 3.43793 21.0927 3.874 21.2988C4.05476 21.3839 4.27318 21.4348 4.71 21.5366L12 23L19.29 21.5366C19.7268 21.4348 19.9452 21.3839 20.126 21.2988C20.5621 21.0927 20.9157 20.7455 21.1292 20.3128C21.2168 20.1341 21.2709 19.9177 21.379 19.485L22 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                  </svg>
-                </div>
-                <span class="text-xs text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Import</span>
-              </a>
-            </div>
-          </div>
-
-          <!-- From Template Section -->
-          <div>
-            <h3 class="text-gray-500 dark:text-gray-500 text-xs font-medium mb-3">From Template</h3>
-            <div class="space-y-2">
-              <!-- Template 1 -->
-              <a href="/account/<%= account_number %>/template/facture-hotel" class="flex items-center justify-between p-3 rounded-xl bg-[#f6f8fa] dark:bg-[#1b2e4b] hover:bg-[#ebedf2] dark:hover:bg-[#253b5c] transition-all cursor-pointer group">
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-700 flex items-center justify-center">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="4" y="3" width="16" height="18" rx="2" stroke="white" stroke-width="1.5"/>
-                      <path d="M8 7H16M8 11H16M8 15H12" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-                    </svg>
-                  </div>
-                  <span class="text-sm text-gray-700 dark:text-white-dark group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Facture Hôtel Standard</span>
-                </div>
-                <svg class="text-gray-500 dark:text-white-dark group-hover:text-gray-900 dark:group-hover:text-white transition-colors" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </a>
-              
-              <!-- Template 2 -->
-              <a href="/account/<%= account_number %>/template/devis" class="flex items-center justify-between p-3 rounded-xl bg-[#f6f8fa] dark:bg-[#1b2e4b] hover:bg-[#ebedf2] dark:hover:bg-[#253b5c] transition-all cursor-pointer group">
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="4" y="3" width="16" height="18" rx="2" stroke="white" stroke-width="1.5"/>
-                      <path d="M8 7H16M8 11H16M8 15H12" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-                    </svg>
-                  </div>
-                  <span class="text-sm text-gray-700 dark:text-white-dark group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Devis nettoyage</span>
-                </div>
-                <svg class="text-gray-500 dark:text-white-dark group-hover:text-gray-900 dark:group-hover:text-white transition-colors" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </a>
-              
-              <!-- Template 3 -->
-              <a href="/account/<%= account_number %>/template/relance" class="flex items-center justify-between p-3 rounded-xl bg-[#f6f8fa] dark:bg-[#1b2e4b] hover:bg-[#ebedf2] dark:hover:bg-[#253b5c] transition-all cursor-pointer group">
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-600 to-cyan-800 flex items-center justify-center">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="4" y="3" width="16" height="18" rx="2" stroke="white" stroke-width="1.5"/>
-                      <path d="M8 7H16M8 11H16M8 15H12" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-                    </svg>
-                  </div>
-                  <span class="text-sm text-gray-700 dark:text-white-dark group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Relance paiement</span>
-                </div>
-                <svg class="text-gray-500 dark:text-white-dark group-hover:text-gray-900 dark:group-hover:text-white transition-colors" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </a>
-            </div>
-          </div>
+        <!-- ═══ Context Menu for specific env ═══ -->
+        <div x-show="envMenuOpen" x-cloak
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-100"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             @click.away="envMenuOpen = false"
+             :style="'position:fixed; top:' + menuY + 'px; left:' + menuX + 'px; z-index: 9999'"
+             class="w-52 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1b2e4b] shadow-xl py-1.5">
+          <button @click="openEditModal(menuEnv); envMenuOpen = false"
+                  class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <iconify-icon icon="solar:pen-new-square-bold-duotone" width="18" class="text-blue-500"></iconify-icon>
+            Modifier
+          </button>
+          <button @click="deleteEnvironment(menuEnv); envMenuOpen = false"
+                  class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+            <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="18"></iconify-icon>
+            Supprimer
+          </button>
         </div>
-      </div>
 
-      <div class="mini-rail-divider"></div>
-
-      <!-- Contacts -->
-      <a href="/account/<%= account_number %>/contacts"
-         data-active="<%= (typeof path !== 'undefined' ? path : '').includes('/contacts') %>"
-         class="mini-rail-item">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="6" r="4" stroke="currentColor" stroke-width="1.5"/>
-          <path opacity="0.5" d="M20 17.5C20 19.9853 20 22 12 22C4 22 4 19.9853 4 17.5C4 15.0147 7.58172 13 12 13C16.4183 13 20 15.0147 20 17.5Z" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-        <span class="mini-rail-label">Contacts</span>
-      </a>
-
-      <!-- Dossiers -->
-      <a href="/account/<%= account_number %>/dossiers"
-         data-active="<%= (typeof path !== 'undefined' ? path : '').includes('/dossiers') %>"
-         class="mini-rail-item">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M2 6.94975C2 6.06722 2 5.62595 2.06935 5.25839C2.37464 3.64031 3.64031 2.37464 5.25839 2.06935C5.62595 2 6.06722 2 6.94975 2C7.33642 2 7.52976 2 7.71557 2.01738C8.51665 2.09229 9.27652 2.40704 9.89594 2.92051C10.0396 3.03961 10.1763 3.17633 10.4497 3.44975L11 4C11.8158 4.81578 12.2237 5.22367 12.7121 5.49543C12.9804 5.64471 13.2651 5.7626 13.5604 5.84678C14.0979 6 14.6747 6 15.8284 6H16.2021C18.8345 6 20.1506 6 21.0062 6.76946C21.0849 6.84024 21.1598 6.91514 21.2305 6.99383C22 7.84935 22 9.16554 22 11.7979V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V6.94975Z" stroke="currentColor" stroke-width="1.5"/>
-          <path opacity="0.5" d="M10 13H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <path opacity="0.5" d="M10 17H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <span class="mini-rail-label">Dossiers</span>
-      </a>
-
-      <!-- Équipe -->
-      <a href="/account/<%= account_number %>/team"
-         data-active="<%= (typeof path !== 'undefined' ? path : '').includes('/team') %>"
-         class="mini-rail-item">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="6" r="4" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M18 17.5C18 19.433 15.3137 21 12 21C8.68629 21 6 19.433 6 17.5C6 15.567 8.68629 14 12 14C15.3137 14 18 15.567 18 17.5Z" stroke="currentColor" stroke-width="1.5"/>
-          <path opacity="0.5" d="M20 11C21.1046 11 22 10.1046 22 9C22 7.89543 21.1046 7 20 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <path opacity="0.5" d="M4 11C2.89543 11 2 10.1046 2 9C2 7.89543 2.89543 7 4 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <path opacity="0.5" d="M20 20C21.7542 19.6153 23 18.6411 23 17.5C23 16.3589 21.7542 15.3847 20 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <path opacity="0.5" d="M4 20C2.24575 19.6153 1 18.6411 1 17.5C1 16.3589 2.24575 15.3847 4 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <span class="mini-rail-label">Équipe</span>
-      </a>
-      </div>
+      </div> <!-- close env-rail-list -->
 
       <!-- Theme Switch (dots + cycle button) -->
       <div class="flex flex-col items-center gap-1 mt-auto mb-2">
@@ -504,7 +354,8 @@
         <span class="mini-rail-label">Admin</span>
       </a>
     </div>
-    <div class="col-span-10 h-full bg-white dark:bg-[#0e1726]">
+    <div class="h-full bg-white dark:bg-[#0e1726]" style="flex:1;min-width:0;overflow:hidden;"
+      x-show="!$store.app.sidebar" x-transition>
       <div class="flex items-center justify-between px-4 py-3">
         <a href="index.html" class="main-logo flex shrink-0 items-center">
           <!-- <img class="ml-[5px] flex-none" src="assets/images/logo-v1.jpg" alt="image" /> -->
@@ -1223,6 +1074,7 @@
               savePrefsTimeout: null,
               dragOverFolderId: null,
               sortableInstances: [],
+              activeEnvironmentId: null,
               showCreateModal: false,
               creationName: '',
               creationType: 'folder',
@@ -1257,6 +1109,12 @@
                 });
                 this.$watch('selectedLibrary', () => {
                   this.loadIcons(true);
+                });
+
+                // Listen for environment changes from the mini-rail
+                window.addEventListener('environment-changed', (e) => {
+                  this.activeEnvironmentId = e.detail.environmentId;
+                  this.fetchHierarchy();
                 });
               },
 
@@ -1346,7 +1204,9 @@
                 const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
                 console.log(`[Sidebar] Fetching hierarchy for account: ${accountNum}`);
                 try {
-                  const res = await fetch(`/account/${accountNum}/api/hierarchy/list?t=${Date.now()}`, {
+                  let url = `/account/${accountNum}/api/hierarchy/list?t=${Date.now()}`;
+                  if (this.activeEnvironmentId) url += `&environmentId=${this.activeEnvironmentId}`;
+                  const res = await fetch(url, {
                     cache: 'no-store'
                   });
                   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -2007,6 +1867,102 @@
           });
         </script>
 
+        <!-- Environment Rail Alpine Component -->
+        <script>
+          function environmentRail() {
+            return {
+              environments: [],
+              activeEnvId: null,
+
+              // Context menus
+              railMenuOpen: false,
+              envMenuOpen: false,
+              menuX: 0,
+              menuY: 0,
+              menuEnv: null,
+
+              async init() {
+                await this.refreshEnvironments();
+                // Listen for modal save events to refresh the list
+                window.addEventListener('env-modal-saved', async (e) => {
+                  const detail = e.detail || {};
+                  await this.refreshEnvironments();
+                  // Auto-select newly created environment
+                  if (detail.newEnv) {
+                    this.selectEnvironment(detail.newEnv);
+                  }
+                });
+              },
+
+              async refreshEnvironments() {
+                const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                try {
+                  const res = await fetch(`/account/${accountNum}/api/hierarchy/environments?t=${Date.now()}`);
+                  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                  const data = await res.json();
+                  this.environments = data.environments || [];
+
+                  // Auto-select the first environment if none is active
+                  if (this.environments.length > 0 && !this.activeEnvId) {
+                    this.selectEnvironment(this.environments[0]);
+                  }
+                } catch (err) {
+                  console.error('[EnvironmentRail] Error:', err);
+                }
+              },
+
+              selectEnvironment(env) {
+                this.activeEnvId = env.id;
+                window.dispatchEvent(new CustomEvent('environment-changed', {
+                  detail: { environmentId: env.id, environment: env }
+                }));
+              },
+
+              showRailContextMenu(e) {
+                this.envMenuOpen = false;
+                this.menuX = e.clientX;
+                this.menuY = e.clientY;
+                this.railMenuOpen = true;
+              },
+
+              showEnvContextMenu(e, env) {
+                this.railMenuOpen = false;
+                this.menuX = e.clientX;
+                this.menuY = e.clientY;
+                this.menuEnv = env;
+                this.envMenuOpen = true;
+              },
+
+              openCreateModal() {
+                window.dispatchEvent(new CustomEvent('open-env-modal', { detail: { env: null } }));
+              },
+
+              openEditModal(env) {
+                window.dispatchEvent(new CustomEvent('open-env-modal', { detail: { env } }));
+              },
+
+              async deleteEnvironment(env) {
+                if (!confirm(`Supprimer l'environnement "${env.name}" ?`)) return;
+                const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                try {
+                  const res = await fetch(`/account/${accountNum}/api/hierarchy/environment/delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: env.id })
+                  });
+                  const data = await res.json();
+                  if (data.error) { alert(data.error); return; }
+                  if (this.activeEnvId === env.id) this.activeEnvId = null;
+                  await this.refreshEnvironments();
+                } catch (err) {
+                  console.error('[EnvironmentRail] Delete error:', err);
+                  alert('Erreur lors de la suppression');
+                }
+              }
+            };
+          }
+        </script>
+
         <!-- POPUP MENU -->
         <div x-show="$store.sidebar.showMenu" @click.outside="$store.sidebar.showMenu = false" x-transition @click.stop
           style="min-width: 248px; margin-left: 248px; top: 56px; border-left:0px;"
@@ -2426,3 +2382,231 @@
 </div>
 </nav>
 </div>
+
+<!-- ═══ Standalone Environment Modal (outside nav to avoid transform issues) ═══ -->
+<div x-data="envModalComponent()">
+  <div :style="modalOpen ? 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;display:flex;align-items:center;justify-content:center;' : 'display:none;'"
+       @keydown.escape.window="modalOpen && (modalOpen = false)">
+    <!-- Backdrop -->
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);" @click="modalOpen = false"></div>
+    <!-- Dialog -->
+    <div style="position:relative;width:380px;max-height:90vh;overflow-y:auto;overflow-x:hidden;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);background:#fff;"
+         class="dark:bg-[#1b2e4b]">
+
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white" x-text="editingEnv ? 'Modifier' : 'Nouvel environnement'"></h3>
+        <button @click="modalOpen = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+          <iconify-icon icon="solar:close-circle-bold" width="22"></iconify-icon>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="px-6 py-5 space-y-5">
+        <!-- Preview -->
+        <div class="flex items-center justify-center">
+          <div class="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300"
+               :style="'background:' + formColor + '20; border: 2px solid ' + formColor + '40'">
+            <iconify-icon :icon="formIcon" width="32" height="32" :style="'color:' + formColor"></iconify-icon>
+          </div>
+        </div>
+
+        <!-- Name -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nom</label>
+          <input type="text" x-model="formName" x-ref="envNameInput"
+                 placeholder="Ex: Production, CRM, RH..."
+                 class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all text-sm">
+        </div>
+
+        <!-- Icon -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Icône</label>
+          <div class="relative">
+            <input type="text" x-model="iconSearch" placeholder="Rechercher une icône..."
+                   @input.debounce.300ms="searchIcons()"
+                   class="w-full px-4 py-2.5 pl-10 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all text-sm">
+            <iconify-icon icon="solar:magnifer-linear" width="16" class="absolute left-3 top-3 text-gray-400"></iconify-icon>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:8px;max-height:128px;overflow-y:auto;padding:4px;border-radius:12px;border:1px solid #f3f4f6;" class="custom-scrollbar dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+            <template x-for="ic in iconResults" :key="ic">
+              <button @click="formIcon = ic"
+                      class="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-all hover:bg-white dark:hover:bg-gray-700"
+                      :class="formIcon === ic ? 'ring-2 ring-primary bg-primary/10' : ''">
+                <iconify-icon :icon="ic" width="18" :style="formIcon === ic ? 'color:' + formColor : ''"></iconify-icon>
+              </button>
+            </template>
+          </div>
+        </div>
+
+        <!-- Color -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Couleur</label>
+          <div class="flex items-center gap-2 flex-wrap">
+            <template x-for="c in presetColors" :key="c">
+              <button @click="formColor = c"
+                      class="w-7 h-7 rounded-full cursor-pointer transition-all hover:scale-110 border-2"
+                      :style="'background:' + c"
+                      :class="formColor === c ? 'border-gray-900 dark:border-white scale-110 shadow-lg' : 'border-transparent'">
+              </button>
+            </template>
+            <div class="relative w-7 h-7 rounded-full border-2 border-dashed border-gray-300 cursor-pointer overflow-hidden flex items-center justify-center hover:border-gray-400 transition-colors">
+              <iconify-icon icon="solar:palette-bold" width="14" class="text-gray-400 pointer-events-none"></iconify-icon>
+              <input type="color" x-model="formColor" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
+        <button @click="modalOpen = false"
+                class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+          Annuler
+        </button>
+        <button @click="saveEnvironment()"
+                class="px-5 py-2 text-sm font-semibold text-white rounded-xl transition-all hover:shadow-lg"
+                :style="'background:' + formColor"
+                :disabled="!formName.trim()">
+          <span x-text="editingEnv ? 'Enregistrer' : 'Créer'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function envModalComponent() {
+    return {
+      modalOpen: false,
+      editingEnv: null,
+      formName: '',
+      formIcon: 'solar:planet-3-bold-duotone',
+      formColor: '#6366f1',
+      iconSearch: '',
+      iconResults: [],
+
+      presetColors: [
+        '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f97316',
+        '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6',
+        '#6d28d9', '#dc2626', '#059669', '#0891b2', '#7c3aed'
+      ],
+
+      defaultIcons: [
+        'solar:planet-3-bold-duotone',
+        'solar:star-bold-duotone',
+        'solar:home-2-bold-duotone',
+        'solar:buildings-3-bold-duotone',
+        'solar:chart-square-bold-duotone',
+        'solar:users-group-rounded-bold-duotone',
+        'solar:inbox-bold-duotone',
+        'solar:rocket-2-bold-duotone',
+        'solar:folder-favourite-bookmark-bold-duotone',
+        'solar:widget-5-bold-duotone',
+        'solar:heart-pulse-bold-duotone',
+        'solar:diploma-verified-bold-duotone',
+        'solar:bookmark-square-bold-duotone',
+        'solar:database-bold-duotone',
+        'solar:shield-check-bold-duotone',
+        'solar:fire-bold-duotone',
+        'solar:bill-list-bold-duotone',
+        'solar:shop-2-bold-duotone',
+        'solar:laptop-minimalistic-bold-duotone',
+        'solar:case-round-bold-duotone',
+        'solar:pie-chart-2-bold-duotone',
+        'solar:bolt-circle-bold-duotone',
+        'solar:medal-ribbon-bold-duotone',
+        'solar:compass-big-bold-duotone'
+      ],
+
+      init() {
+        this.iconResults = [...this.defaultIcons];
+        // Listen for open-env-modal events from the mini-rail
+        window.addEventListener('open-env-modal', (e) => {
+          const env = e.detail?.env || null;
+          if (env) {
+            // Edit mode
+            this.editingEnv = env;
+            this.formName = env.name;
+            this.formIcon = env.icon;
+            this.formColor = env.color;
+          } else {
+            // Create mode
+            this.editingEnv = null;
+            this.formName = '';
+            this.formIcon = 'solar:planet-3-bold-duotone';
+            this.formColor = this.presetColors[Math.floor(Math.random() * this.presetColors.length)];
+          }
+          this.iconSearch = '';
+          this.iconResults = [...this.defaultIcons];
+          this.modalOpen = true;
+          this.$nextTick(() => {
+            if (this.$refs.envNameInput) this.$refs.envNameInput.focus();
+          });
+        });
+      },
+
+      async saveEnvironment() {
+        if (!this.formName.trim()) return;
+        const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+
+        try {
+          if (this.editingEnv) {
+            await fetch(`/account/${accountNum}/api/hierarchy/environment/update`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: this.editingEnv.id,
+                name: this.formName.trim(),
+                icon: this.formIcon,
+                color: this.formColor
+              })
+            });
+            this.modalOpen = false;
+            window.dispatchEvent(new CustomEvent('env-modal-saved', { detail: {} }));
+          } else {
+            const res = await fetch(`/account/${accountNum}/api/hierarchy/environment`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: this.formName.trim(),
+                icon: this.formIcon,
+                color: this.formColor
+              })
+            });
+            const data = await res.json();
+            this.modalOpen = false;
+            if (data.success && data.environment) {
+              window.dispatchEvent(new CustomEvent('env-modal-saved', { detail: { newEnv: data.environment } }));
+            } else {
+              window.dispatchEvent(new CustomEvent('env-modal-saved', { detail: {} }));
+            }
+          }
+        } catch (err) {
+          console.error('[EnvModal] Save error:', err);
+          alert('Erreur lors de la sauvegarde');
+        }
+      },
+
+      async searchIcons() {
+        if (!this.iconSearch.trim()) {
+          this.iconResults = [...this.defaultIcons];
+          return;
+        }
+        const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+        try {
+          const res = await fetch(`/account/${accountNum}/api/hierarchy/icons?library=solar&search=${encodeURIComponent(this.iconSearch.trim())}&page=1&limit=32`);
+          if (res.ok) {
+            const data = await res.json();
+            this.iconResults = (data.icons || []).map(ic => ic.name);
+            if (this.iconResults.length === 0) {
+              this.iconResults = [...this.defaultIcons];
+            }
+          }
+        } catch (err) {
+          console.error('[EnvModal] Icon search error:', err);
+        }
+      }
+    };
+  }
+</script>

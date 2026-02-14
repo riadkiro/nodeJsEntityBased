@@ -24,6 +24,12 @@ router.get('/:id', accountController.singlePage_Api)
 router.delete('/:id', accountController.delete_Api);
 
 router.get('/hierarchy/list', hierarchyController.getHierarchy);
+// Environment CRUD
+router.get('/hierarchy/environments', hierarchyController.listEnvironments);
+router.post('/hierarchy/environment', hierarchyController.createEnvironment);
+router.post('/hierarchy/environment/update', hierarchyController.updateEnvironment);
+router.post('/hierarchy/environment/delete', hierarchyController.deleteEnvironment);
+router.post('/hierarchy/environment/reorder', hierarchyController.reorderEnvironments);
 router.post('/hierarchy/move', hierarchyController.move);
 router.post('/hierarchy/reorder', hierarchyController.reorder);
 router.post('/hierarchy/space', hierarchyController.createSpace);

@@ -15,7 +15,13 @@ const SpaceSchema = new mongoose.Schema({
   color: String,
   order: { type: Number, default: 0 },
 
-  // Propriétaire de l’espace
+  // Parent environment
+  environmentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Environment'
+  },
+
+  // Propriétaire de l'espace
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -35,7 +41,7 @@ const SpaceSchema = new mongoose.Schema({
     }
   }],
 
-  // Config de l’espace
+  // Config de l'espace
   settings: {
     theme: String,
     locale: String

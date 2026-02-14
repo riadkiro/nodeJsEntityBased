@@ -98,6 +98,156 @@ module.exports = {
             res.status(500).json({ error: "Internal Error" });
         }
     },
+    // ═══════════════════════════════════════════
+    // ENVIRONMENTS
+    // ═══════════════════════════════════════════
+    listEnvironments: async (req, res) => {
+        try {
+            const EnvironmentModel = await tenantCollection(req, "Environment");
+            const envs = await EnvironmentModel.find({}).sort({ order: 1 }).lean();
+
+            // If no environments exist, create a default one
+            if (envs.length === 0) {
+                const SpaceModel = await tenantCollection(req, "Space");
+                const defaultEnv = new EnvironmentModel({
+                    name: 'Mon espace',
+                    slug: 'mon-espace',
+                    icon: 'solar:planet-3-bold-duotone',
+                    color: '#6366f1',
+                    order: 0,
+                    isDefault: true,
+                    createdBy: req.user._id
+                });
+                await defaultEnv.save();
+
+                // Assign all existing spaces to this default environment
+                await SpaceModel.updateMany(
+                    { environmentId: { $exists: false } },
+                    { $set: { environmentId: defaultEnv._id } }
+                );
+                await SpaceModel.updateMany(
+                    { environmentId: null },
+                    { $set: { environmentId: defaultEnv._id } }
+                );
+
+                return res.json({
+                    success: true,
+                    environments: [{
+                        id: defaultEnv._id.toString(),
+                        name: defaultEnv.name,
+                        slug: defaultEnv.slug,
+                        icon: defaultEnv.icon,
+                        color: defaultEnv.color,
+                        order: defaultEnv.order,
+                        isDefault: true
+                    }]
+                });
+            }
+
+            res.json({
+                success: true,
+                environments: envs.map(e => ({
+                    id: e._id.toString(),
+                    name: e.name,
+                    slug: e.slug,
+                    icon: e.icon,
+                    color: e.color,
+                    order: e.order,
+                    isDefault: e.isDefault || false
+                }))
+            });
+        } catch (error) {
+            console.error("[Hierarchy] listEnvironments Error:", error);
+            res.status(500).json({ error: "Internal error" });
+        }
+    },
+
+    createEnvironment: async (req, res) => {
+        try {
+            const EnvironmentModel = await tenantCollection(req, "Environment");
+            const { name, icon, color } = req.body;
+            const count = await EnvironmentModel.countDocuments();
+            const slug = await uniqueSlug(EnvironmentModel, name);
+            const newEnv = new EnvironmentModel({
+                name,
+                slug,
+                icon: icon || 'solar:planet-3-bold-duotone',
+                color: color || '#6366f1',
+                order: count,
+                createdBy: req.user._id
+            });
+            await newEnv.save();
+            res.json({
+                success: true,
+                environment: {
+                    id: newEnv._id.toString(),
+                    name: newEnv.name,
+                    slug: newEnv.slug,
+                    icon: newEnv.icon,
+                    color: newEnv.color,
+                    order: newEnv.order
+                }
+            });
+        } catch (error) {
+            console.error("[Hierarchy] createEnvironment Error:", error);
+            res.status(500).json({ error: "Failed to create environment" });
+        }
+    },
+
+    updateEnvironment: async (req, res) => {
+        try {
+            const EnvironmentModel = await tenantCollection(req, "Environment");
+            const { id, name, icon, color } = req.body;
+            const update = {};
+            if (name !== undefined) update.name = name;
+            if (icon !== undefined) update.icon = icon;
+            if (color !== undefined) update.color = color;
+            await EnvironmentModel.findByIdAndUpdate(id, update);
+            res.json({ success: true });
+        } catch (error) {
+            console.error("[Hierarchy] updateEnvironment Error:", error);
+            res.status(500).json({ error: "Failed to update environment" });
+        }
+    },
+
+    deleteEnvironment: async (req, res) => {
+        try {
+            const EnvironmentModel = await tenantCollection(req, "Environment");
+            const SpaceModel = await tenantCollection(req, "Space");
+            const { id } = req.body;
+            // Don't delete if it's the last environment
+            const count = await EnvironmentModel.countDocuments();
+            if (count <= 1) {
+                return res.status(400).json({ error: "Cannot delete the last environment" });
+            }
+            // Unlink spaces from this environment
+            await SpaceModel.updateMany({ environmentId: id }, { $unset: { environmentId: '' } });
+            await EnvironmentModel.findByIdAndDelete(id);
+            res.json({ success: true });
+        } catch (error) {
+            console.error("[Hierarchy] deleteEnvironment Error:", error);
+            res.status(500).json({ error: "Failed to delete environment" });
+        }
+    },
+
+    reorderEnvironments: async (req, res) => {
+        try {
+            const EnvironmentModel = await tenantCollection(req, "Environment");
+            const { items } = req.body; // [{ id, order }]
+            if (!Array.isArray(items)) return res.status(400).json({ error: "Invalid format" });
+            await Promise.all(items.map(item =>
+                EnvironmentModel.findByIdAndUpdate(item.id, { order: item.order })
+            ));
+            res.json({ success: true });
+        } catch (error) {
+            console.error("[Hierarchy] reorderEnvironments Error:", error);
+            res.status(500).json({ error: "Reorder failed" });
+        }
+    },
+
+    // ═══════════════════════════════════════════
+    // HIERARCHY (scoped to environment)
+    // ═══════════════════════════════════════════
     getHierarchy: async (req, res) => {
         try {
             const SpaceModel = await tenantCollection(req, "Space");
@@ -109,8 +259,12 @@ module.exports = {
                 return res.status(500).json({ error: "Models not ready" });
             }
 
+            // Optional: filter by environmentId
+            const envId = req.query.environmentId;
+            const spaceQuery = envId ? { environmentId: envId } : {};
+
             const [rawSpaces, rawFolders, rawEntities, rawViews] = await Promise.all([
-                SpaceModel.find({}).sort({ order: 1 }).lean(),
+                SpaceModel.find(spaceQuery).sort({ order: 1 }).lean(),
                 FolderModel.find({}).sort({ order: 1 }).lean(),
                 EntityModel.find({}).sort({ order: 1 }).lean(),
                 ViewModel.find({}).sort({ order: 1 }).lean()
@@ -296,17 +450,19 @@ module.exports = {
 
     createSpace: async (req, res) => {
         const SpaceModel = await tenantCollection(req, "Space");
-        const { name, color, icon } = req.body;
+        const { name, color, icon, environmentId } = req.body;
         // Default order to end
         const count = await SpaceModel.countDocuments();
-        const newSpace = new SpaceModel({
+        const spaceData = {
             name,
             slug: await uniqueSlug(SpaceModel, name),
             owner: req.user._id,
             color,
             icon,
             order: count
-        });
+        };
+        if (environmentId) spaceData.environmentId = environmentId;
+        const newSpace = new SpaceModel(spaceData);
         await newSpace.save();
         res.json(newSpace);
     },

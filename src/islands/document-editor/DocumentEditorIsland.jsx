@@ -18,13 +18,43 @@ import { formatDoc, detectCurrentStyles, applyFontSize, applyLineSpacing, applyL
 const isMod = (e) => e.ctrlKey || e.metaKey
 
 // ========== WORD-LIKE SELECTION HELPERS ==========
-function selectAllDocument(editorRootEl) {
+function selectAllDocument(editorRootEl, pageRefs) {
     const sel = window.getSelection()
-    if (!sel || !editorRootEl) return
-    const range = document.createRange()
-    range.selectNodeContents(editorRootEl)
-    sel.removeAllRanges()
-    sel.addRange(range)
+    if (!sel) return
+
+    // Get all page contenteditable elements (sorted by index)
+    const pages = pageRefs ? Object.entries(pageRefs)
+        .sort(([a], [b]) => Number(a) - Number(b))
+        .map(([, el]) => el)
+        .filter(Boolean) : []
+
+    if (pages.length === 0 && editorRootEl) {
+        // Fallback: select editorRoot contents
+        const range = document.createRange()
+        range.selectNodeContents(editorRootEl)
+        sel.removeAllRanges()
+        sel.addRange(range)
+        return
+    }
+
+    if (pages.length === 1) {
+        // Single page: select all within that contenteditable
+        const range = document.createRange()
+        range.selectNodeContents(pages[0])
+        sel.removeAllRanges()
+        sel.addRange(range)
+        return
+    }
+
+    // Multi-page: select from start of first page to end of last page
+    // Note: Selection ranges may only span within a single contenteditable,
+    // so we select the editorRoot container which wraps all pages
+    if (editorRootEl) {
+        const range = document.createRange()
+        range.selectNodeContents(editorRootEl)
+        sel.removeAllRanges()
+        sel.addRange(range)
+    }
 }
 
 function isSelectionCoversAll(editorRootEl) {
@@ -383,23 +413,10 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         triggerSave()
     }, [triggerSave])
 
-    // Global keyboard handler - handles document-wide shortcuts
+    // Global keyboard handler - handles document-wide shortcuts (div-level, bubble phase)
+    // NOTE: Ctrl+A and Delete with global selection are handled in the window-level useEffect
     const handleGlobalKeyDown = useCallback((e) => {
         const key = e.key?.toLowerCase()
-
-        // Ctrl+A => Select all pages
-        if (isMod(e) && key === 'a' && !e.shiftKey && !e.altKey) {
-            e.preventDefault()
-            selectAllDocument(editorRootRef.current)
-            return
-        }
-
-        // Delete/Backspace when entire document is selected => Word-like clear
-        if ((e.key === 'Backspace' || e.key === 'Delete') && isSelectionCoversAll(editorRootRef.current)) {
-            e.preventDefault()
-            clearDocumentKeepFirstPage()
-            return
-        }
 
         // Ctrl+S - Save
         if (isMod(e) && key === 's' && !e.shiftKey && !e.altKey) {
@@ -413,7 +430,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             e.preventDefault()
             return
         }
-    }, [triggerSave, clearDocumentKeepFirstPage])
+    }, [triggerSave])
 
     // ========== CARET HELPERS ==========
     function isCaretAtStart(el) {
@@ -540,6 +557,100 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         const el = pageRefs.current[pageIndex]
         if (!el) return
 
+        // ========== BLOCK ESCAPE LOGIC ==========
+        // When cursor is inside a block element (blockquote, div[style], pre),
+        // handle Enter to escape the block (Word/Google Docs behavior).
+        //
+        // KEY INSIGHT: Browsers create SIBLING blocks on Enter, not child elements.
+        // E.g. <blockquote>text</blockquote> + Enter → 
+        //   <blockquote>text</blockquote><blockquote><br></blockquote>
+        //
+        // So we detect: is the cursor in a BLOCK that is EMPTY?
+        // If yes → replace that block with a plain <p> (escape the styling).
+        const BLOCK_SELECTORS = 'blockquote, div[style], pre'
+
+        if (e.key === 'Enter' && !e.shiftKey) {
+            const sel = window.getSelection()
+            if (sel && sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0)
+                let node = range.startContainer
+                if (node.nodeType === 3) node = node.parentNode
+                const block = node.closest?.(BLOCK_SELECTORS)
+
+                if (block && block.parentElement === el) {
+                    // CASE 1: Cursor is in an EMPTY block → escape immediately
+                    // This happens after the browser splits a block on Enter
+                    const blockText = block.textContent.trim()
+                    const blockHtml = block.innerHTML.trim()
+                    const isEmpty = blockText === '' || blockHtml === '<br>' || blockHtml === ''
+
+                    if (isEmpty) {
+                        e.preventDefault()
+                        e.stopPropagation()
+
+                        // Replace the empty block with a plain paragraph
+                        const p = document.createElement('p')
+                        p.innerHTML = '<br>'
+                        block.replaceWith(p)
+
+                        // Place cursor in the new paragraph
+                        const newRange = document.createRange()
+                        newRange.selectNodeContents(p)
+                        newRange.collapse(true)
+                        sel.removeAllRanges()
+                        sel.addRange(newRange)
+
+                        if (handlePageInput) {
+                            handlePageInput({ target: el }, pageIndex)
+                        }
+                        return
+                    }
+
+                    // CASE 2: Cursor is at the VERY END of a non-empty block
+                    // → let the browser create the new empty sibling block,
+                    //   and on the NEXT Enter (Case 1 above) we'll escape it.
+                    // No special handling needed here — the browser's default is correct.
+                }
+            }
+        }
+
+        // ArrowDown at end of page content: if last child is a block, create escape paragraph
+        if (e.key === 'ArrowDown') {
+            const sel = window.getSelection()
+            if (sel && sel.rangeCount > 0) {
+                const range = sel.getRangeAt(0)
+                let node = range.startContainer
+                if (node.nodeType === 3) node = node.parentNode
+                const block = node.closest?.(BLOCK_SELECTORS)
+
+                if (block && block.parentElement === el && !block.nextElementSibling) {
+                    // Cursor is in the last block element and there's nothing after it
+                    const testRange = document.createRange()
+                    testRange.selectNodeContents(block)
+                    testRange.setStart(range.endContainer, range.endOffset)
+                    const frag = testRange.cloneContents()
+                    const temp = document.createElement('div')
+                    temp.appendChild(frag)
+                    if (temp.textContent.trim().length === 0) {
+                        e.preventDefault()
+                        const p = document.createElement('p')
+                        p.innerHTML = '<br>'
+                        block.insertAdjacentElement('afterend', p)
+                        const newRange = document.createRange()
+                        newRange.selectNodeContents(p)
+                        newRange.collapse(true)
+                        sel.removeAllRanges()
+                        sel.addRange(newRange)
+                        if (handlePageInput) {
+                            handlePageInput({ target: el }, pageIndex)
+                        }
+                        return
+                    }
+                }
+            }
+        }
+
+
         // ✅ Backspace at start of page => merge into previous (Word-like)
         if (e.key === 'Backspace' && pageIndex > 0 && isCaretAtStart(el)) {
             e.preventDefault()
@@ -637,7 +748,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             triggerSave()
             return
         }
-    }, [triggerSave, reflowDocument])
+    }, [triggerSave, reflowDocument, handlePageInput])
 
     // ========== TOKEN INSERTION ==========
     const insertVariableToken = useCallback((variablePath, fieldMetadata = {}) => {
@@ -715,25 +826,74 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     }, [isGlobalSelection])
 
     // ========== GLOBAL KEYBOARD HANDLERS ==========
+    // Unified window-level handler: Ctrl+A selects all, Delete/Backspace clears (DOM-first)
     useEffect(() => {
-        const handleKeyDown = (e) => {
-            // Ctrl+A for global selection
-            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        const handleWindowKeyDown = (e) => {
+            // Ctrl+A for global selection — select all text across pages
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && !e.shiftKey && !e.altKey) {
                 if (editorMode === 'edition') {
                     e.preventDefault()
-                    handleGlobalSelection()
+                    e.stopPropagation()
+                    // Visual: select the editor content (not the canvas UI)
+                    selectAllDocument(editorRootRef.current, pageRefs.current)
+                    setIsGlobalSelection(true)
+                    return
                 }
             }
 
-            // Delete/Backspace with global selection
+            // Delete/Backspace with global selection — DOM-first clear
             if (isGlobalSelection && (e.key === 'Delete' || e.key === 'Backspace')) {
                 e.preventDefault()
-                setDoc(prev => ({
-                    ...prev,
-                    pages: prev.pages.map(page => ({ ...page, content: '' }))
-                }))
+                e.stopPropagation()
+                // 1) Clear DOM immediately (uncontrolled contenteditable)
+                Object.values(pageRefs.current || {}).forEach(el => {
+                    if (el) el.innerHTML = ''
+                })
+                // 2) Clear state (keep only first page)
+                setDoc(prev => {
+                    const first = prev.pages?.[0] ? { ...prev.pages[0] } : null
+                    const page0 = first || {
+                        content: '', elements: [], rows: [],
+                        mode: 'edition', background: '#ffffff', order: 0,
+                    }
+                    page0.content = ''
+                    page0.elements = []
+                    page0.rows = []
+                    return { ...prev, pages: [page0] }
+                })
                 setIsGlobalSelection(false)
+                // 3) Focus first page
+                requestAnimationFrame(() => {
+                    const el = pageRefs.current?.[0]
+                    if (el) el.focus()
+                })
                 triggerSave()
+                return
+            }
+
+            // Any other key while global selection is active — cancel selection
+            if (isGlobalSelection && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+                // Typing replaces the selection — clear all then let the key through
+                Object.values(pageRefs.current || {}).forEach(el => {
+                    if (el) el.innerHTML = ''
+                })
+                setDoc(prev => {
+                    const first = prev.pages?.[0] ? { ...prev.pages[0] } : null
+                    const page0 = first || {
+                        content: '', elements: [], rows: [],
+                        mode: 'edition', background: '#ffffff', order: 0,
+                    }
+                    page0.content = ''
+                    page0.elements = []
+                    page0.rows = []
+                    return { ...prev, pages: [page0] }
+                })
+                setIsGlobalSelection(false)
+                // Focus first page so the typed character goes there
+                const el = pageRefs.current?.[0]
+                if (el) el.focus()
+                triggerSave()
+                // Don't prevent default — let the character be typed
             }
         }
 
@@ -749,16 +909,16 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             }
         }
 
-        window.addEventListener('keydown', handleKeyDown)
+        window.addEventListener('keydown', handleWindowKeyDown, true) // capture phase!
         window.addEventListener('copy', handleCopy)
         window.addEventListener('click', handleClick)
 
         return () => {
-            window.removeEventListener('keydown', handleKeyDown)
+            window.removeEventListener('keydown', handleWindowKeyDown, true)
             window.removeEventListener('copy', handleCopy)
             window.removeEventListener('click', handleClick)
         }
-    }, [editorMode, isGlobalSelection, handleGlobalSelection, handleGlobalCopy, triggerSave])
+    }, [editorMode, isGlobalSelection, handleGlobalCopy, triggerSave])
 
     // ========== PAGE MANAGEMENT ==========
     const addPage = useCallback(() => {
@@ -1488,6 +1648,73 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     border-left: 4px solid #d1d5db;
                     color: #6b7280;
                     font-style: italic;
+                }
+
+                /* ===== BLOCK INTERACTION SYSTEM ===== */
+                /* Block containers: blockquote, table, div with style, pre */
+                [contenteditable="true"] > blockquote,
+                [contenteditable="true"] > table,
+                [contenteditable="true"] > div[style],
+                [contenteditable="true"] > pre {
+                    position: relative;
+                }
+                /* Hover outline for blocks */
+                [contenteditable="true"] > blockquote:hover,
+                [contenteditable="true"] > table:hover,
+                [contenteditable="true"] > div[style]:hover,
+                [contenteditable="true"] > pre:hover {
+                    outline: 2px solid rgba(59, 130, 246, 0.3);
+                    outline-offset: 2px;
+                    border-radius: 4px;
+                }
+
+                /* Delete button for blocks (injected by JS on mouseenter) */
+                .doc-block-delete-btn {
+                    position: absolute;
+                    top: -10px;
+                    right: -10px;
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 50%;
+                    background: #ef4444;
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 14px;
+                    font-weight: bold;
+                    line-height: 1;
+                    cursor: pointer;
+                    z-index: 10;
+                    border: 2px solid white;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+                    transition: transform 0.15s, background 0.15s;
+                    pointer-events: auto;
+                    opacity: 0;
+                    animation: doc-block-fadein 0.15s ease forwards;
+                }
+                .doc-block-delete-btn:hover {
+                    background: #dc2626;
+                    transform: scale(1.15);
+                }
+                @keyframes doc-block-fadein {
+                    from { opacity: 0; transform: scale(0.8); }
+                    to   { opacity: 1; transform: scale(1); }
+                }
+
+                /* Template token styles */
+                .template-token {
+                    display: inline;
+                    background: #dbeafe;
+                    color: #1d4ed8;
+                    padding: 1px 6px;
+                    border-radius: 4px;
+                    font-family: inherit;
+                    font-size: inherit;
+                    border: 1px solid #93c5fd;
+                    cursor: default;
+                    user-select: none;
+                    white-space: nowrap;
                 }
             ` }} />
             {/* Header with Toolbar */}

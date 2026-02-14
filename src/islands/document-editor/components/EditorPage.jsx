@@ -53,6 +53,75 @@ export default function EditorPage({
 
     useImageResize(contentRef, handleContentChange)
 
+    // ========== BLOCK INTERACTION: Hover Delete Button ==========
+    useEffect(() => {
+        const el = contentRef.current
+        if (!el || page.mode !== 'edition') return
+
+        const BLOCK_SELECTORS = 'blockquote, table, div[style], pre'
+
+        const handleMouseOver = (e) => {
+            // Find the closest block element that is a direct child of the page
+            const block = e.target.closest(BLOCK_SELECTORS)
+            if (!block || block.parentElement !== el) return
+
+            // Don't add duplicate buttons
+            if (block.querySelector('.doc-block-delete-btn')) return
+
+            // Create delete button
+            const btn = document.createElement('span')
+            btn.className = 'doc-block-delete-btn'
+            btn.innerHTML = '×'
+            btn.contentEditable = 'false'
+            btn.title = 'Supprimer ce bloc'
+            btn.setAttribute('data-no-drag', 'true')
+
+            btn.addEventListener('mousedown', (ev) => {
+                ev.preventDefault()
+                ev.stopPropagation()
+                // Insert a <p><br></p> where the block was, so cursor has somewhere to go
+                const p = document.createElement('p')
+                p.innerHTML = '<br>'
+                block.replaceWith(p)
+                // Place cursor in the new paragraph
+                const sel = window.getSelection()
+                const range = document.createRange()
+                range.selectNodeContents(p)
+                range.collapse(true)
+                sel.removeAllRanges()
+                sel.addRange(range)
+                // Trigger save
+                if (handlePageInput) {
+                    handlePageInput({ target: el }, pageIndex)
+                }
+            })
+
+            block.appendChild(btn)
+        }
+
+        const handleMouseOut = (e) => {
+            const block = e.target.closest(BLOCK_SELECTORS)
+            if (!block || block.parentElement !== el) return
+
+            // Check if mouse is still inside the block
+            const related = e.relatedTarget
+            if (related && block.contains(related)) return
+
+            // Remove delete button
+            const btn = block.querySelector('.doc-block-delete-btn')
+            if (btn) btn.remove()
+        }
+
+        el.addEventListener('mouseover', handleMouseOver)
+        el.addEventListener('mouseout', handleMouseOut)
+
+        return () => {
+            el.removeEventListener('mouseover', handleMouseOver)
+            el.removeEventListener('mouseout', handleMouseOut)
+        }
+    }, [page.mode, pageIndex, handlePageInput])
+
+
     // Handle edition mode drop from sidebar
     const handleEditionDrop = useCallback((e) => {
         e.preventDefault()

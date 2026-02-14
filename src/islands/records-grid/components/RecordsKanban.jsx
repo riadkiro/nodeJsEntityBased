@@ -72,9 +72,9 @@ function KanbanCard({ record, accountNumber, entitySlug, isDragging: isDragProp 
 
     // Classification badges
     const classLabels = (record.classificationValues || [])
-        .filter(cv => cv.optionLabel)
+        .filter(cv => cv.optionLabel || cv.label)
         .map(cv => ({
-            label: cv.optionLabel,
+            label: cv.optionLabel || cv.label,
             color: cv.optionColor || cv.color || '#6366f1'
         }))
 

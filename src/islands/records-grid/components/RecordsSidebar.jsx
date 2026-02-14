@@ -186,7 +186,7 @@ export default function RecordsSidebar({
                                                         }}
                                                         onClick={() => handleFilterClick(filterGroup.id, option.id)}
                                                     >
-                                                        {option.label}
+                                                        {option.label}{option.count !== undefined && <span style={{ opacity: 0.7, marginLeft: '2px' }}>{option.count}</span>}
                                                     </button>
                                                 )
                                             })}

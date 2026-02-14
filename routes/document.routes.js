@@ -137,6 +137,25 @@ router.get('/:id/edit-react', async (req, res) => {
 
 // API Routes
 
+// GET - API templates list (for React modal)
+router.get('/api/templates', async (req, res) => {
+    try {
+        const Document = await tenantCollection(req, 'Document');
+        if (!Document) {
+            return res.status(500).json({ success: false, error: 'Erreur de connexion base de données' });
+        }
+
+        const templates = await Document.find({ isTemplate: true })
+            .sort({ updatedAt: -1 })
+            .lean();
+
+        res.json({ success: true, templates });
+    } catch (error) {
+        console.error('[Documents] Error loading templates API:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // POST - Créer un document
 router.post('/api', async (req, res) => {
     try {

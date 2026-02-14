@@ -114,9 +114,9 @@ export default function QuickViewModal({ record, columns, accountNumber, entityS
 
     // Classification values
     const classLabels = (record.classificationValues || [])
-        .filter(cv => cv.optionLabel)
+        .filter(cv => cv.optionLabel || cv.label)
         .map(cv => ({
-            label: cv.optionLabel,
+            label: cv.optionLabel || cv.label,
             color: cv.optionColor || cv.color || '#6366f1',
             classificationName: cv.classificationName || 'Classification'
         }))

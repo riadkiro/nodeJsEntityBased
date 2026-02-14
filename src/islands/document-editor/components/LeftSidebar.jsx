@@ -1,10 +1,53 @@
 /**
  * LeftSidebar Component
  * Icon buttons for text, gallery, layout, dynamic content panels
- * 1:1 parity with editor-left-sidebar.ejs
+ * Enhanced with: more draggable blocks, professional content elements,
+ * table templates, callout boxes, signature blocks
  */
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import SettingsPanel from './SettingsPanel'
+
+// Detect dark mode reliably - checks localStorage first (Alpine.$persist stores theme there)
+// then falls back to DOM class detection. Uses MutationObserver for reactivity.
+function useDarkMode() {
+    const [isDark, setIsDark] = useState(() => {
+        // Check localStorage first - Alpine.$persist stores theme as '_x_theme'
+        // This is available immediately, even before Alpine processes :class bindings
+        try {
+            const stored = localStorage.getItem('_x_theme');
+            if (stored) {
+                // Alpine.$persist wraps values in quotes: '"dark"'
+                const parsed = JSON.parse(stored);
+                return parsed === 'dark';
+            }
+        } catch (e) { /* ignore */ }
+        // Fallback to DOM class check
+        return document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
+    });
+
+    useEffect(() => {
+        // Watch for Alpine adding/removing 'dark' class on body
+        const observer = new MutationObserver(() => {
+            const dark = document.body.classList.contains('dark') || document.documentElement.classList.contains('dark');
+            setIsDark(dark);
+        });
+        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+        // Also do an immediate re-check after a short delay (Alpine init)
+        const timer = setTimeout(() => {
+            const dark = document.body.classList.contains('dark') || document.documentElement.classList.contains('dark');
+            setIsDark(dark);
+        }, 100);
+
+        return () => {
+            observer.disconnect();
+            clearTimeout(timer);
+        };
+    }, []);
+
+    return isDark;
+}
 
 export default function LeftSidebar({
     activeTab,
@@ -18,8 +61,14 @@ export default function LeftSidebar({
         setActiveTab(activeTab === tab ? null : tab)
     }
 
+    // Detect dark mode reactively - works even before Alpine applies :class
+    const isDark = useDarkMode();
+    const panelBg = isDark ? '#0e1726' : '#ffffff';
+    const borderColor = isDark ? '#1b2e4b' : '#e0e6ed';
+    const textColor = isDark ? '#e0e6ed' : '#374151';
+
     return (
-        <div className="relative flex">
+        <div className="relative flex" style={{ zIndex: 30 }}>
             {/* Toolbar (Left) */}
             <div className="w-16 bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col items-center py-4 gap-4">
                 {/* Text Tool */}
@@ -48,18 +97,28 @@ export default function LeftSidebar({
 
                 <div className="h-px w-8 bg-gray-200 dark:bg-gray-700"></div>
 
-                {/* Layout Tools */}
+                {/* Blocks Tool */}
                 <button
-                    className="w-10 h-10 rounded-full bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 flex items-center justify-center text-gray-400"
-                    title="Layout 2 colonnes"
-                >
-                    <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="24"></iconify-icon>
-                </button>
-                <button
-                    className="w-10 h-10 rounded-full bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 flex items-center justify-center text-gray-400"
-                    title="Layout 3 colonnes"
+                    className={`w-10 h-10 rounded-full transition-colors flex items-center justify-center ${activeTab === 'blocks'
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                        }`}
+                    title="Blocs de contenu"
+                    onClick={() => toggleTab('blocks')}
                 >
                     <iconify-icon icon="solar:widget-4-bold-duotone" width="24"></iconify-icon>
+                </button>
+
+                {/* Layout Tools */}
+                <button
+                    className={`w-10 h-10 rounded-full transition-colors flex items-center justify-center ${activeTab === 'layouts'
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
+                        }`}
+                    title="Mises en page"
+                    onClick={() => toggleTab('layouts')}
+                >
+                    <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="24"></iconify-icon>
                 </button>
 
                 <div className="h-px w-8 bg-gray-200 dark:bg-gray-700"></div>
@@ -94,29 +153,37 @@ export default function LeftSidebar({
 
             {/* Panel Content */}
             {activeTab && (
-                <div className="absolute top-0 bottom-0 bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col z-20 shadow-xl" style={{ width: '204px', marginLeft: '65px' }}>
+                <div className="absolute top-0 bottom-0 flex flex-col shadow-xl" style={{ width: '240px', marginLeft: '65px', background: panelBg, borderRight: `1px solid ${borderColor}`, zIndex: 50 }}>
                     {/* Panel Header */}
-                    <div className="p-4 border-b dark:border-gray-800 flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-gray-200">
+                    <div style={{ padding: '16px', borderBottom: `1px solid ${borderColor}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <h3 style={{ fontSize: '13px', fontWeight: 600, color: textColor, margin: 0 }}>
                             {activeTab === 'text' && 'Texte et Contenu'}
                             {activeTab === 'gallery' && 'Médiathèque'}
+                            {activeTab === 'blocks' && 'Blocs de contenu'}
+                            {activeTab === 'layouts' && 'Mises en page'}
                             {activeTab === 'dynamic-nav' && 'Contenu Dynamique'}
                         </h3>
                         <button
                             onClick={() => setActiveTab(null)}
-                            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400"
+                            style={{ padding: '4px', borderRadius: '4px', cursor: 'pointer', border: 'none', background: 'transparent', color: isDark ? '#6b7280' : '#9ca3af' }}
                         >
                             <iconify-icon icon="tabler:x" width="16"></iconify-icon>
                         </button>
                     </div>
 
                     {/* Panel Body */}
-                    <div className="flex-1 overflow-auto p-4 bg-white dark:bg-gray-900" style={{ scrollbarColor: '#64748b transparent', scrollbarWidth: 'thin' }}>
+                    <div className="flex-1 overflow-auto" style={{ padding: '16px', scrollbarColor: '#64748b transparent', scrollbarWidth: 'thin', background: panelBg }}>
                         {activeTab === 'text' && (
                             <TextPanel />
                         )}
                         {activeTab === 'gallery' && (
                             <GalleryPanel />
+                        )}
+                        {activeTab === 'blocks' && (
+                            <BlocksPanel />
+                        )}
+                        {activeTab === 'layouts' && (
+                            <LayoutsPanel />
                         )}
                         {activeTab === 'dynamic-nav' && (
                             <DynamicNavPanel insertVariableToken={insertVariableToken} />
@@ -130,69 +197,409 @@ export default function LeftSidebar({
     )
 }
 
-// Text Panel Component
+// Draggable block component - uses inline styles for guaranteed visibility
+function DraggableBlock({ icon, label, description, html, plainText }) {
+    const isDark = useDarkMode();
+    return (
+        <div
+            className="sortable-source"
+            style={{
+                padding: '10px 12px',
+                border: `1px dashed ${isDark ? '#4b5563' : '#d1d5db'}`,
+                borderRadius: '8px',
+                cursor: 'move',
+                transition: 'border-color 0.15s, background-color 0.15s',
+                marginBottom: '6px'
+            }}
+            draggable="true"
+            onDragStart={(e) => {
+                e.dataTransfer.setData('text/html', html)
+                e.dataTransfer.setData('text/plain', plainText || label)
+                e.dataTransfer.effectAllowed = 'copy'
+            }}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#4361ee';
+                e.currentTarget.style.backgroundColor = 'rgba(67,97,238,0.05)';
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = isDark ? '#4b5563' : '#d1d5db';
+                e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                    width: '32px', height: '32px', borderRadius: '8px',
+                    background: isDark ? '#1f2937' : '#f3f4f6',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: isDark ? '#9ca3af' : '#6b7280', flexShrink: 0
+                }}>
+                    <iconify-icon icon={icon} width="18"></iconify-icon>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                    <span style={{
+                        fontSize: '13px', fontWeight: 500, display: 'block',
+                        color: isDark ? '#e5e7eb' : '#374151'
+                    }}>{label}</span>
+                    {description && (
+                        <span style={{
+                            fontSize: '10px', display: 'block', marginTop: '2px',
+                            color: isDark ? '#6b7280' : '#9ca3af'
+                        }}>{description}</span>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// Text Panel Component - Basic text elements
 function TextPanel() {
     return (
-        <div className="space-y-4">
-            <p className="text-xs text-gray-500">
+        <div>
+            <p style={{ fontSize: '11px', color: '#888ea8', marginBottom: '12px' }}>
                 Glissez un élément sur la page pour l'ajouter.
             </p>
 
-            <div className="space-y-2">
-                <div
-                    className="sortable-source px-3 py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-move hover:border-primary hover:bg-primary/5 transition-colors"
-                    data-element-type="heading"
-                    draggable="true"
-                    onDragStart={(e) => {
-                        e.dataTransfer.setData('text/html', '<h1>Titre</h1><br><br>')
-                        e.dataTransfer.setData('text/plain', 'Titre')
-                        e.dataTransfer.effectAllowed = 'copy'
-                    }}
-                >
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                        <iconify-icon icon="tabler:heading" width="20"></iconify-icon>
-                        <span className="text-sm font-medium">Titre</span>
-                    </div>
-                </div>
+            <DraggableBlock
+                icon="tabler:heading"
+                label="Titre"
+                description="Titre principal H1"
+                html='<h1 style="font-size:2em;font-weight:bold;margin-bottom:0.5em;">Titre</h1><p><br></p>'
+                plainText="Titre"
+            />
 
-                <div
-                    className="sortable-source px-3 py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-move hover:border-primary hover:bg-primary/5 transition-colors"
-                    data-element-type="paragraph"
-                    draggable="true"
-                    onDragStart={(e) => {
-                        e.dataTransfer.setData('text/html', '<p>Paragraphe de texte...</p><br><br>')
-                        e.dataTransfer.setData('text/plain', 'Paragraphe de texte...')
-                        e.dataTransfer.effectAllowed = 'copy'
-                    }}
-                >
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                        <iconify-icon icon="tabler:text-size" width="20"></iconify-icon>
-                        <span className="text-sm font-medium">Paragraphe</span>
-                    </div>
-                </div>
+            <DraggableBlock
+                icon="tabler:h-2"
+                label="Sous-titre"
+                description="Titre secondaire H2"
+                html='<h2 style="font-size:1.5em;font-weight:bold;margin-bottom:0.5em;">Sous-titre</h2><p><br></p>'
+                plainText="Sous-titre"
+            />
 
-                <div
-                    className="sortable-source px-3 py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-move hover:border-primary hover:bg-primary/5 transition-colors"
-                    data-element-type="divider"
-                    draggable="true"
-                    onDragStart={(e) => {
-                        // Container 100% width qui réagit aux alignements, avec élément resizable à l'intérieur
-                        const html = `<div class="doc-separator-container" style="width: 100%; display: block; margin: 16px 0;" tabindex="0">
-                            <div class="doc-separator-line" style="border-top: 2px solid #e5e7eb; display: inline-block; position: relative; min-height: 8px; width: 100%; cursor: pointer;">
-                                <div class="doc-resize-handle" style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 8px; height: 20px; background: #3b82f6; border-radius: 4px; cursor: ew-resize; opacity: 0; transition: opacity 0.2s;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'" onmousedown="(function(e){e.preventDefault();e.stopPropagation();const line=e.target.parentElement;const startX=e.clientX;const startW=line.offsetWidth;const onMouseMove=function(ev){const dx=ev.clientX-startX;const newW=Math.max(50,startW+dx);line.style.width=newW+'px';};const onMouseUp=function(){document.removeEventListener('mousemove',onMouseMove);document.removeEventListener('mouseup',onMouseUp);};document.addEventListener('mousemove',onMouseMove);document.addEventListener('mouseup',onMouseUp);})(event)"></div>
-                            </div>
-                        </div><br><br>`
-                        e.dataTransfer.setData('text/html', html)
-                        e.dataTransfer.setData('text/plain', '---')
-                        e.dataTransfer.effectAllowed = 'copy'
-                    }}
-                >
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                        <iconify-icon icon="tabler:separator-horizontal" width="20"></iconify-icon>
-                        <span className="text-sm font-medium">Séparateur</span>
+            <DraggableBlock
+                icon="tabler:text-size"
+                label="Paragraphe"
+                description="Bloc de texte standard"
+                html='<p style="margin-bottom:1em;line-height:1.6;">Paragraphe de texte. Cliquez pour modifier le contenu.</p>'
+                plainText="Paragraphe"
+            />
+
+            <DraggableBlock
+                icon="tabler:list"
+                label="Liste à puces"
+                description="Liste non ordonnée"
+                html='<ul style="padding-left:2em;margin-bottom:1em;"><li style="margin-bottom:0.3em;">Premier élément</li><li style="margin-bottom:0.3em;">Deuxième élément</li><li style="margin-bottom:0.3em;">Troisième élément</li></ul><p><br></p>'
+                plainText="Liste"
+            />
+
+            <DraggableBlock
+                icon="tabler:list-numbers"
+                label="Liste numérotée"
+                description="Liste ordonnée"
+                html='<ol style="padding-left:2em;margin-bottom:1em;"><li style="margin-bottom:0.3em;">Premier élément</li><li style="margin-bottom:0.3em;">Deuxième élément</li><li style="margin-bottom:0.3em;">Troisième élément</li></ol><p><br></p>'
+                plainText="Liste numérotée"
+            />
+
+            <DraggableBlock
+                icon="tabler:separator-horizontal"
+                label="Séparateur"
+                description="Ligne horizontale"
+                html={`<div class="doc-separator-container" style="width: 100%; display: block; margin: 16px 0;" tabindex="0">
+                    <div class="doc-separator-line" style="border-top: 2px solid #e5e7eb; display: inline-block; position: relative; min-height: 8px; width: 100%; cursor: pointer;">
+                        <div class="doc-resize-handle" style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 8px; height: 20px; background: #3b82f6; border-radius: 4px; cursor: ew-resize; opacity: 0; transition: opacity 0.2s;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'" onmousedown="(function(e){e.preventDefault();e.stopPropagation();const line=e.target.parentElement;const startX=e.clientX;const startW=line.offsetWidth;const onMouseMove=function(ev){const dx=ev.clientX-startX;const newW=Math.max(50,startW+dx);line.style.width=newW+'px';};const onMouseUp=function(){document.removeEventListener('mousemove',onMouseMove);document.removeEventListener('mouseup',onMouseUp);};document.addEventListener('mousemove',onMouseMove);document.addEventListener('mouseup',onMouseUp);})(event)"></div>
                     </div>
-                </div>
-            </div>
+                </div><br><br>`}
+                plainText="---"
+            />
+        </div>
+    )
+}
+
+// Blocks Panel - Professional content blocks
+function BlocksPanel() {
+    return (
+        <div>
+            <p style={{ fontSize: '11px', color: '#888ea8', marginBottom: '12px' }}>
+                Blocs professionnels prêts à l'emploi.
+            </p>
+
+            <DraggableBlock
+                icon="tabler:table"
+                label="Tableau simple"
+                description="3 colonnes × 4 lignes"
+                html={`<table style="width:100%;border-collapse:collapse;margin:16px 0;">
+                    <thead><tr>
+                        <th style="border:1px solid #d1d5db;padding:8px 12px;background:#f3f4f6;text-align:left;font-weight:600;font-size:14px;">Colonne 1</th>
+                        <th style="border:1px solid #d1d5db;padding:8px 12px;background:#f3f4f6;text-align:left;font-weight:600;font-size:14px;">Colonne 2</th>
+                        <th style="border:1px solid #d1d5db;padding:8px 12px;background:#f3f4f6;text-align:left;font-weight:600;font-size:14px;">Colonne 3</th>
+                    </tr></thead>
+                    <tbody>
+                        <tr><td style="border:1px solid #d1d5db;padding:8px 12px;font-size:14px;">&nbsp;</td><td style="border:1px solid #d1d5db;padding:8px 12px;font-size:14px;">&nbsp;</td><td style="border:1px solid #d1d5db;padding:8px 12px;font-size:14px;">&nbsp;</td></tr>
+                        <tr><td style="border:1px solid #d1d5db;padding:8px 12px;font-size:14px;">&nbsp;</td><td style="border:1px solid #d1d5db;padding:8px 12px;font-size:14px;">&nbsp;</td><td style="border:1px solid #d1d5db;padding:8px 12px;font-size:14px;">&nbsp;</td></tr>
+                        <tr><td style="border:1px solid #d1d5db;padding:8px 12px;font-size:14px;">&nbsp;</td><td style="border:1px solid #d1d5db;padding:8px 12px;font-size:14px;">&nbsp;</td><td style="border:1px solid #d1d5db;padding:8px 12px;font-size:14px;">&nbsp;</td></tr>
+                    </tbody>
+                </table><p><br></p>`}
+                plainText="Tableau"
+            />
+
+            <DraggableBlock
+                icon="tabler:blockquote"
+                label="Citation"
+                description="Bloc citation avec bordure"
+                html={`<blockquote style="margin:1em 0;padding:12px 16px;border-left:4px solid #3b82f6;background:#eff6ff;font-style:italic;color:#374151;border-radius:0 8px 8px 0;">
+                    <p style="margin:0;">Insérez votre citation ici. Les mots ont le pouvoir de changer le monde.</p>
+                    <footer style="margin-top:8px;font-style:normal;font-size:0.85em;color:#6b7280;">— Auteur</footer>
+                </blockquote><p><br></p>`}
+                plainText="Citation"
+            />
+
+            <DraggableBlock
+                icon="tabler:alert-triangle"
+                label="Encadré attention"
+                description="Bloc d'avertissement jaune"
+                html={`<div style="margin:16px 0;padding:16px;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;display:flex;align-items:flex-start;gap:12px;">
+                    <span style="font-size:20px;">⚠️</span>
+                    <div>
+                        <p style="margin:0 0 4px 0;font-weight:600;color:#92400e;">Attention</p>
+                        <p style="margin:0;color:#78350f;font-size:14px;">Description de l'avertissement ou note importante.</p>
+                    </div>
+                </div><p><br></p>`}
+                plainText="Attention"
+            />
+
+            <DraggableBlock
+                icon="tabler:info-circle"
+                label="Note d'info"
+                description="Bloc informatif bleu"
+                html={`<div style="margin:16px 0;padding:16px;background:#dbeafe;border:1px solid #3b82f6;border-radius:8px;display:flex;align-items:flex-start;gap:12px;">
+                    <span style="font-size:20px;">ℹ️</span>
+                    <div>
+                        <p style="margin:0 0 4px 0;font-weight:600;color:#1e40af;">Information</p>
+                        <p style="margin:0;color:#1e3a5f;font-size:14px;">Information complémentaire ou note explicative.</p>
+                    </div>
+                </div><p><br></p>`}
+                plainText="Info"
+            />
+
+            <DraggableBlock
+                icon="tabler:circle-check"
+                label="Note de succès"
+                description="Bloc de confirmation vert"
+                html={`<div style="margin:16px 0;padding:16px;background:#dcfce7;border:1px solid #22c55e;border-radius:8px;display:flex;align-items:flex-start;gap:12px;">
+                    <span style="font-size:20px;">✅</span>
+                    <div>
+                        <p style="margin:0 0 4px 0;font-weight:600;color:#166534;">Validé</p>
+                        <p style="margin:0;color:#14532d;font-size:14px;">Cette action a été confirmée avec succès.</p>
+                    </div>
+                </div><p><br></p>`}
+                plainText="Succès"
+            />
+
+            <DraggableBlock
+                icon="tabler:signature"
+                label="Bloc signature"
+                description="Zone de signature professionnelle"
+                html={`<div style="margin:40px 0 16px 0;">
+                    <div style="display:flex;justify-content:space-between;gap:40px;">
+                        <div style="flex:1;text-align:center;">
+                            <div style="border-bottom:1px solid #9ca3af;margin-bottom:8px;min-height:60px;"></div>
+                            <p style="margin:0;font-size:12px;color:#6b7280;">Signature</p>
+                            <p style="margin:4px 0 0;font-size:12px;color:#6b7280;">Date : ___/___/______</p>
+                        </div>
+                        <div style="flex:1;text-align:center;">
+                            <div style="border-bottom:1px solid #9ca3af;margin-bottom:8px;min-height:60px;"></div>
+                            <p style="margin:0;font-size:12px;color:#6b7280;">Signature</p>
+                            <p style="margin:4px 0 0;font-size:12px;color:#6b7280;">Date : ___/___/______</p>
+                        </div>
+                    </div>
+                </div><p><br></p>`}
+                plainText="Signature"
+            />
+
+            <DraggableBlock
+                icon="tabler:code"
+                label="Bloc de code"
+                description="Zone de code avec fond gris"
+                html={`<pre style="margin:16px 0;padding:16px;background:#1f2937;color:#e5e7eb;border-radius:8px;font-family:'Courier New',monospace;font-size:13px;line-height:1.6;overflow-x:auto;white-space:pre-wrap;"><code>// Votre code ici
+function example() {
+    return "Hello World";
+}</code></pre><p><br></p>`}
+                plainText="Code"
+            />
+
+            <DraggableBlock
+                icon="tabler:checklist"
+                label="Liste de validation"
+                description="Checklist avec cases à cocher"
+                html={`<div style="margin:16px 0;padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
+                    <p style="margin:0 0 12px;font-weight:600;font-size:14px;">Checklist</p>
+                    <p style="margin:0 0 6px;font-size:14px;">☐ Premier point à vérifier</p>
+                    <p style="margin:0 0 6px;font-size:14px;">☐ Deuxième point à vérifier</p>
+                    <p style="margin:0 0 6px;font-size:14px;">☐ Troisième point à vérifier</p>
+                    <p style="margin:0;font-size:14px;">☐ Quatrième point à vérifier</p>
+                </div><p><br></p>`}
+                plainText="Checklist"
+            />
+
+            <DraggableBlock
+                icon="tabler:columns-2"
+                label="Deux colonnes"
+                description="Texte en 2 colonnes côte à côte"
+                html={`<div style="display:flex;gap:24px;margin:16px 0;">
+                    <div style="flex:1;">
+                        <p style="margin:0;font-size:14px;line-height:1.6;">Contenu de la première colonne. Modifiez ce texte selon vos besoins.</p>
+                    </div>
+                    <div style="flex:1;">
+                        <p style="margin:0;font-size:14px;line-height:1.6;">Contenu de la deuxième colonne. Modifiez ce texte selon vos besoins.</p>
+                    </div>
+                </div><p><br></p>`}
+                plainText="2 colonnes"
+            />
+
+            <DraggableBlock
+                icon="tabler:receipt-2"
+                label="Tableau de prix"
+                description="Tableau tarifaire professionnel"
+                html={`<table style="width:100%;border-collapse:collapse;margin:16px 0;">
+                    <thead><tr>
+                        <th style="border:1px solid #d1d5db;padding:10px 14px;background:#1e40af;color:white;text-align:left;font-weight:600;font-size:14px;">Désignation</th>
+                        <th style="border:1px solid #d1d5db;padding:10px 14px;background:#1e40af;color:white;text-align:center;font-weight:600;font-size:14px;width:80px;">Qté</th>
+                        <th style="border:1px solid #d1d5db;padding:10px 14px;background:#1e40af;color:white;text-align:right;font-weight:600;font-size:14px;width:120px;">Prix unit.</th>
+                        <th style="border:1px solid #d1d5db;padding:10px 14px;background:#1e40af;color:white;text-align:right;font-weight:600;font-size:14px;width:120px;">Total</th>
+                    </tr></thead>
+                    <tbody>
+                        <tr><td style="border:1px solid #d1d5db;padding:8px 14px;font-size:14px;">Service / Produit 1</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:center;font-size:14px;">1</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-size:14px;">0,00 €</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-size:14px;">0,00 €</td></tr>
+                        <tr><td style="border:1px solid #d1d5db;padding:8px 14px;font-size:14px;">Service / Produit 2</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:center;font-size:14px;">1</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-size:14px;">0,00 €</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-size:14px;">0,00 €</td></tr>
+                    </tbody>
+                    <tfoot>
+                        <tr><td colspan="3" style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-weight:600;font-size:14px;">Sous-total HT</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-weight:600;font-size:14px;">0,00 €</td></tr>
+                        <tr><td colspan="3" style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-size:14px;">TVA (20%)</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-size:14px;">0,00 €</td></tr>
+                        <tr><td colspan="3" style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-weight:700;font-size:15px;background:#f3f4f6;">Total TTC</td><td style="border:1px solid #d1d5db;padding:8px 14px;text-align:right;font-weight:700;font-size:15px;background:#f3f4f6;">0,00 €</td></tr>
+                    </tfoot>
+                </table><p><br></p>`}
+                plainText="Tableau de prix"
+            />
+        </div>
+    )
+}
+
+// Layouts Panel - Pre-built page section layouts
+function LayoutsPanel() {
+    return (
+        <div>
+            <p style={{ fontSize: '11px', color: '#888ea8', marginBottom: '12px' }}>
+                Mises en page prédéfinies pour votre document.
+            </p>
+
+            <DraggableBlock
+                icon="tabler:layout-navbar"
+                label="En-tête de page"
+                description="Logo + coordonnées alignés"
+                html={`<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;border-bottom:2px solid #1e40af;margin-bottom:24px;">
+                    <div>
+                        <h2 style="margin:0;font-size:24px;font-weight:700;color:#1e40af;">Nom de l'entreprise</h2>
+                        <p style="margin:4px 0 0;font-size:12px;color:#6b7280;">Slogan ou activité</p>
+                    </div>
+                    <div style="text-align:right;font-size:12px;color:#6b7280;">
+                        <p style="margin:0;">123 Rue Exemple, 75000 Paris</p>
+                        <p style="margin:2px 0;">Tél : 01 23 45 67 89</p>
+                        <p style="margin:0;">contact@entreprise.fr</p>
+                    </div>
+                </div>`}
+                plainText="En-tête"
+            />
+
+            <DraggableBlock
+                icon="tabler:layout-bottombar"
+                label="Pied de page"
+                description="Coordonnées et mentions légales"
+                html={`<div style="border-top:1px solid #e5e7eb;padding-top:12px;margin-top:40px;text-align:center;font-size:11px;color:#9ca3af;">
+                    <p style="margin:0;">Nom de l'entreprise — SIRET : 000 000 000 00000 — TVA : FR00 000000000</p>
+                    <p style="margin:4px 0 0;">123 Rue Exemple, 75000 Paris — Tél : 01 23 45 67 89 — contact@entreprise.fr</p>
+                </div>`}
+                plainText="Pied de page"
+            />
+
+            <DraggableBlock
+                icon="tabler:file-invoice"
+                label="En-tête de facture"
+                description="Émetteur + Destinataire + N° facture"
+                html={`<div style="margin-bottom:32px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:24px;">
+                        <div>
+                            <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1e40af;">ENTREPRISE</h2>
+                            <p style="margin:0;font-size:13px;color:#374151;">123 Rue Exemple</p>
+                            <p style="margin:0;font-size:13px;color:#374151;">75000 Paris, France</p>
+                            <p style="margin:4px 0 0;font-size:13px;color:#374151;">contact@entreprise.fr</p>
+                        </div>
+                        <div style="text-align:right;">
+                            <h1 style="margin:0 0 8px;font-size:28px;font-weight:700;color:#374151;">FACTURE</h1>
+                            <p style="margin:0;font-size:13px;color:#6b7280;">N° : FAC-2026-001</p>
+                            <p style="margin:0;font-size:13px;color:#6b7280;">Date : ../../....</p>
+                            <p style="margin:0;font-size:13px;color:#6b7280;">Échéance : ../../....</p>
+                        </div>
+                    </div>
+                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;">
+                        <p style="margin:0 0 4px;font-weight:600;font-size:13px;color:#64748b;">FACTURER À :</p>
+                        <p style="margin:0;font-size:14px;font-weight:600;color:#1e293b;">Nom du client</p>
+                        <p style="margin:2px 0 0;font-size:13px;color:#475569;">Adresse du client</p>
+                        <p style="margin:0;font-size:13px;color:#475569;">Code postal, Ville</p>
+                    </div>
+                </div>`}
+                plainText="En-tête facture"
+            />
+
+            <DraggableBlock
+                icon="tabler:file-description"
+                label="En-tête de devis"
+                description="Structure devis avec conditions"
+                html={`<div style="margin-bottom:32px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:24px;">
+                        <div>
+                            <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#059669;">ENTREPRISE</h2>
+                            <p style="margin:0;font-size:13px;color:#374151;">123 Rue Exemple</p>
+                            <p style="margin:0;font-size:13px;color:#374151;">75000 Paris, France</p>
+                        </div>
+                        <div style="text-align:right;">
+                            <h1 style="margin:0 0 8px;font-size:28px;font-weight:700;color:#374151;">DEVIS</h1>
+                            <p style="margin:0;font-size:13px;color:#6b7280;">Réf : DEV-2026-001</p>
+                            <p style="margin:0;font-size:13px;color:#6b7280;">Date : ../../....</p>
+                            <p style="margin:0;font-size:13px;color:#6b7280;">Validité : 30 jours</p>
+                        </div>
+                    </div>
+                    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;">
+                        <p style="margin:0 0 4px;font-weight:600;font-size:13px;color:#16a34a;">DESTINATAIRE :</p>
+                        <p style="margin:0;font-size:14px;font-weight:600;color:#1e293b;">Nom du client</p>
+                        <p style="margin:2px 0 0;font-size:13px;color:#475569;">Adresse du client</p>
+                    </div>
+                </div>`}
+                plainText="En-tête devis"
+            />
+
+            <DraggableBlock
+                icon="tabler:mail"
+                label="Bloc de coordonnées"
+                description="Carte de contact avec icônes"
+                html={`<div style="margin:16px 0;padding:20px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
+                    <p style="margin:0 0 12px;font-weight:700;font-size:16px;color:#1e293b;">Coordonnées</p>
+                    <p style="margin:0 0 6px;font-size:14px;color:#475569;">📍 123 Rue Exemple, 75000 Paris</p>
+                    <p style="margin:0 0 6px;font-size:14px;color:#475569;">📞 01 23 45 67 89</p>
+                    <p style="margin:0 0 6px;font-size:14px;color:#475569;">✉️ contact@entreprise.fr</p>
+                    <p style="margin:0;font-size:14px;color:#475569;">🌐 www.entreprise.fr</p>
+                </div><p><br></p>`}
+                plainText="Coordonnées"
+            />
+
+            <DraggableBlock
+                icon="tabler:writing"
+                label="Conditions générales"
+                description="Bloc CGV/CGA compact"
+                html={`<div style="margin:24px 0 0;padding:16px;background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;font-size:10px;color:#9ca3af;line-height:1.5;">
+                    <p style="margin:0 0 4px;font-weight:600;font-size:11px;color:#6b7280;">CONDITIONS GÉNÉRALES</p>
+                    <p style="margin:0;">Paiement à réception de facture. Tout retard de paiement entraînera des pénalités de retard au taux de 3 fois le taux d'intérêt légal, ainsi qu'une indemnité forfaitaire de 40€ pour frais de recouvrement (Art. L.441-10 du Code de commerce). Pas d'escompte pour paiement anticipé.</p>
+                </div>`}
+                plainText="CGV"
+            />
         </div>
     )
 }

@@ -51,11 +51,7 @@ export default function RecordsTable({
 
     const config = densityConfig[density] || densityConfig.comfortable
 
-    console.log('[RecordsTable] Rendering with:', {
-        recordsCount: records.length,
-        virtualRowsCount: virtualRows.length,
-        density
-    })
+
 
     return (
         <table className="table-hover whitespace-nowrap dataTable-table w-full">
@@ -323,7 +319,10 @@ function renderCellValue(record, col, accountNumber, entitySlug, config, titleDi
             if (col.id.startsWith('classif:')) {
                 const classifId = col.id.substring(8)
                 const cv = (record.classificationValues || []).find(
-                    c => c.classificationId?.toString() === classifId
+                    c => {
+                        const cId = c.classificationId?.$oid || c.classificationId?.toString?.() || c.classificationId
+                        return cId === classifId
+                    }
                 )
                 if (cv?.label) {
                     const color = cv.color || '#888'

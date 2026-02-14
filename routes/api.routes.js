@@ -83,9 +83,49 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             .limit(limitNum)
             .lean()
 
-        // Use pre-computed title (denormalized at save time)
+        // Build classification list (deduplicated) — used for enrichment + filter groups
+        const seenClassIds = new Set()
+        const allClassifications = [
+            ...(entity.statusClassification ? [entity.statusClassification] : []),
+            ...(entity.classifications || [])
+        ].filter(c => {
+            if (!c || !c._id) return false
+            const id = c._id.toString()
+            if (seenClassIds.has(id)) return false
+            seenClassIds.add(id)
+            return true
+        })
+
+        // Build classification option lookup for enrichment
+        const classifOptionMap = {}
+        allClassifications.forEach(cls => {
+            (cls.options || []).forEach(opt => {
+                classifOptionMap[opt._id.toString()] = {
+                    label: opt.label,
+                    color: opt.color || '#9ca3af'
+                }
+            })
+        })
+
+        // Enrich records
         records.forEach(record => {
+            // Use pre-computed title (denormalized at save time)
             record.referenceTitle = record.computedTitle || record.title || 'Sans titre';
+
+            // Enrich classificationValues with label/color from classification options
+            if (record.classificationValues) {
+                record.classificationValues = record.classificationValues.map(cv => {
+                    const optId = cv.optionId?.toString()
+                    const optInfo = optId ? classifOptionMap[optId] : null
+                    return {
+                        ...cv,
+                        label: cv.label || optInfo?.label || '',
+                        color: cv.color || optInfo?.color || '#9ca3af',
+                        optionLabel: cv.label || optInfo?.label || '',
+                        optionColor: cv.color || optInfo?.color || '#9ca3af'
+                    }
+                })
+            }
         });
 
         let preferences = null
@@ -114,8 +154,8 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             sortable: false
         }))
 
-        // Classification columns
-        const classificationColumns = (entity.classifications || []).filter(c => c && c.name).map(c => ({
+        // Classification columns (use allClassifications for deduplication)
+        const classificationColumns = allClassifications.filter(c => c && c.name).map(c => ({
             id: `classif:${c._id.toString()}`,
             name: c.name,
             type: 'classification',
@@ -132,18 +172,7 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
         ]
 
         // Build filter groups from entity classifications (for sidebar filtering)
-        // Deduplicate: statusClassification may also appear in classifications array
-        const seenClassIds = new Set()
-        const allClassifications = [
-            ...(entity.statusClassification ? [entity.statusClassification] : []),
-            ...(entity.classifications || [])
-        ].filter(c => {
-            if (!c || !c._id) return false
-            const id = c._id.toString()
-            if (seenClassIds.has(id)) return false
-            seenClassIds.add(id)
-            return true
-        })
+        // allClassifications already defined above (deduplicated)
 
         // Get ALL records for counting (we already have them if limit was high enough, otherwise count separately)
         const allRecordsForCounts = await Record.find({ entityId }).select('classificationValues').lean()
@@ -161,8 +190,8 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
                 })
             })
 
-            // Determine display type: tags show as chips, others as list
-            const isTagType = (cls.key || '').toLowerCase().includes('tag')
+            // All classification filters use tag badge/chip style
+            const isTagType = true
 
             return {
                 id: cls._id.toString(),

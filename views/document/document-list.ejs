@@ -54,13 +54,13 @@
               <h1 class="text-lg font-bold mb-1">Mes Documents</h1>
               <p class="text-white/80 text-xs mb-3">Créez et partagez</p>
               <div class="flex flex-wrap gap-2">
-                <a href="/account/<%= account_number %>/documents/new" class="btn btn-xs btn-outline-primary border-white/50 text-white hover:bg-white/10">
+                <button @click="openTemplateModal()" class="btn btn-xs btn-outline-primary border-white/50 text-white hover:bg-white/10">
                   <svg class="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                   Nouveau
-                </a>
-                <a href="/account/<%= account_number %>/documents/templates" class="btn btn-xs btn-outline-light border-white/30 text-white hover:bg-white/10">
+                </button>
+                <button @click="openTemplateModal()" class="btn btn-xs btn-outline-light border-white/30 text-white hover:bg-white/10">
                   Templates
-                </a>
+                </button>
               </div>
             </div>
           </div>
@@ -540,6 +540,114 @@
       </div>
     </div>
   </template>
+  <!-- ============================================ -->
+  <!-- TEMPLATE CHOOSER MODAL -->
+  <!-- ============================================ -->
+  <template x-teleport="body">
+    <div x-show="showTemplateModal" 
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 backdrop-blur-sm" 
+         @click.self="showTemplateModal = false" style="display:none;">
+      <div x-show="showTemplateModal" 
+           x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+           x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+           class="panel w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col" @click.stop>
+        
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-5 border-b border-[#e0e6ed] dark:border-[#1b2e4b]">
+          <div>
+            <h3 class="text-lg font-bold dark:text-white-light">Créer un document</h3>
+            <p class="text-sm text-[#888ea8] mt-1">Commencez avec un document vierge ou choisissez un modèle professionnel</p>
+          </div>
+          <button @click="showTemplateModal = false" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        <!-- Category Tabs -->
+        <div class="px-5 pt-4 pb-2 flex items-center gap-2 flex-wrap border-b border-[#e0e6ed] dark:border-[#1b2e4b]">
+          <button @click="templateCategory = 'all'" class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+                  :class="templateCategory === 'all' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800 text-[#888ea8] hover:bg-gray-200 dark:hover:bg-gray-700'">
+            Tous
+          </button>
+          <template x-for="cat in templateCategories" :key="cat.id">
+            <button @click="templateCategory = cat.id" class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5"
+                    :class="templateCategory === cat.id ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800 text-[#888ea8] hover:bg-gray-200 dark:hover:bg-gray-700'">
+              <span class="w-2 h-2 rounded-full" :style="'background:' + cat.color"></span>
+              <span x-text="cat.label"></span>
+            </button>
+          </template>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="flex-1 overflow-y-auto p-5" style="scrollbar-width: thin;">
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            
+            <!-- Blank Document Card -->
+            <a href="/account/<%= account_number %>/documents/new" 
+               class="group border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 flex flex-col items-center justify-center gap-3 hover:border-primary hover:bg-primary/5 transition-all min-h-[200px]">
+              <div class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:scale-110 transition-all">
+                <svg class="w-7 h-7 text-primary group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+              <div class="text-center">
+                <p class="font-semibold text-sm dark:text-white-light">Document vierge</p>
+                <p class="text-xs text-[#888ea8] mt-1">Page blanche A4</p>
+              </div>
+            </a>
+
+            <!-- Template Cards -->
+            <template x-for="tpl in filteredTemplates()" :key="tpl._id">
+              <a :href="'/account/<%= account_number %>/documents/new?template=' + tpl._id" 
+                 class="group relative bg-white dark:bg-[#1b2e4b] rounded-xl border border-[#e0e6ed] dark:border-[#1b2e4b] overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all min-h-[200px] flex flex-col">
+                
+                <!-- Color Bar -->
+                <div class="h-1.5 w-full" :style="'background:' + (tpl.metadata?.color || '#6366f1')"></div>
+                
+                <!-- Template Preview (scaled down content) -->
+                <div class="flex-1 p-4 overflow-hidden relative">
+                  <div class="absolute inset-0 p-3 overflow-hidden opacity-25 pointer-events-none" style="transform: scale(0.35); transform-origin: top left; width: 286%; height: 286%;">
+                    <div x-html="tpl.pages?.[0]?.content?.substring(0, 600) || ''"></div>
+                  </div>
+                  
+                  <!-- Center Icon -->
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform" :style="'background:' + (tpl.metadata?.color || '#6366f1') + '20'">
+                      <iconify-icon :icon="tpl.metadata?.icon || 'tabler:file-text'" width="24" :style="'color:' + (tpl.metadata?.color || '#6366f1')"></iconify-icon>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Template Info -->
+                <div class="p-3 border-t border-[#e0e6ed] dark:border-gray-700/50 bg-[#f8f9fa] dark:bg-[#0e1726]/50">
+                  <p class="font-semibold text-sm dark:text-white-light truncate" x-text="tpl.name"></p>
+                  <p class="text-[11px] text-[#888ea8] mt-0.5 line-clamp-1" x-text="tpl.metadata?.description || 'Modèle de document'"></p>
+                </div>
+
+                <!-- Hover Overlay -->
+                <div class="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors pointer-events-none"></div>
+              </a>
+            </template>
+          </div>
+
+          <!-- Loading State -->
+          <template x-if="templatesLoading">
+            <div class="flex items-center justify-center py-12">
+              <svg class="animate-spin h-8 w-8 text-primary" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+            </div>
+          </template>
+
+          <!-- Empty state for filtered -->
+          <template x-if="!templatesLoading && filteredTemplates().length === 0 && templateCategory !== 'all'">
+            <div class="text-center py-12">
+              <iconify-icon icon="tabler:template-off" width="48" class="text-[#888ea8] mx-auto mb-3"></iconify-icon>
+              <p class="text-sm text-[#888ea8]">Aucun modèle dans cette catégorie</p>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </template>
 </div>
 
 <script>
@@ -551,6 +659,42 @@ document.addEventListener('alpine:init', () => {
     layoutMode: 'dashboard',
     selectedTab: 'all',
     isShowDocMenu: false,
+    showTemplateModal: false,
+    templates: [],
+    templatesLoading: false,
+    templatesLoaded: false,
+    templateCategory: 'all',
+    templateCategories: [
+      { id: 'finance', label: 'Finance', color: '#1e40af' },
+      { id: 'commercial', label: 'Commercial', color: '#059669' },
+      { id: 'notes', label: 'Notes', color: '#7c3aed' },
+      { id: 'courrier', label: 'Courrier', color: '#dc2626' },
+      { id: 'rapport', label: 'Rapport', color: '#0891b2' }
+    ],
+
+    async openTemplateModal() {
+      this.showTemplateModal = true;
+      if (!this.templatesLoaded) {
+        this.templatesLoading = true;
+        try {
+          const res = await fetch('/account/<%= account_number %>/documents/api/templates', { credentials: 'include' });
+          const data = await res.json();
+          if (data.success) {
+            this.templates = data.templates;
+          }
+        } catch (e) {
+          console.error('Error loading templates:', e);
+        } finally {
+          this.templatesLoading = false;
+          this.templatesLoaded = true;
+        }
+      }
+    },
+
+    filteredTemplates() {
+      if (this.templateCategory === 'all') return this.templates;
+      return this.templates.filter(t => t.metadata?.category === this.templateCategory);
+    },
     
     formatDate(dateString) {
       if (!dateString) return '';

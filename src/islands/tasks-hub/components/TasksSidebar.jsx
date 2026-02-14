@@ -128,26 +128,40 @@ export default function TasksSidebar({
 
                             {/* Options */}
                             {!isCollapsed && (
-                                <div className="space-y-0.5 mt-1">
+                                <div className="flex flex-wrap gap-1.5 mt-2 px-1">
                                     {filter.options.map(opt => {
                                         const isActive = (activeFilters[filter.id] || []).includes(opt.id)
+                                        const tagColor = opt.color || '#9ca3af'
                                         return (
                                             <button
                                                 key={opt.id}
                                                 type="button"
                                                 onClick={() => toggleFilterOption(filter.id, opt.id)}
-                                                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-all ${isActive
-                                                        ? 'bg-primary/10 text-primary font-medium'
-                                                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'
-                                                    }`}
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-200"
+                                                style={{
+                                                    backgroundColor: isActive ? tagColor + '20' : 'transparent',
+                                                    color: isActive ? tagColor : '#6b7280',
+                                                    border: `1.5px solid ${isActive ? tagColor + '60' : '#e5e7eb'}`,
+                                                    boxShadow: isActive ? `0 1px 4px ${tagColor}15` : 'none',
+                                                }}
                                             >
                                                 {/* Color dot */}
                                                 <span
-                                                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                                                    style={{ backgroundColor: opt.color || '#9ca3af' }}
+                                                    className="w-2 h-2 rounded-full flex-shrink-0"
+                                                    style={{ backgroundColor: tagColor }}
                                                 />
-                                                <span className="flex-1 text-left truncate">{opt.label}</span>
-                                                <span className="text-[10px] text-gray-400 tabular-nums">{opt.count}</span>
+                                                {opt.label}
+                                                <span
+                                                    className="text-[10px] tabular-nums font-semibold ml-0.5"
+                                                    style={{ opacity: 0.6 }}
+                                                >
+                                                    {opt.count}
+                                                </span>
+                                                {isActive && (
+                                                    <svg className="w-3 h-3 ml-0.5" viewBox="0 0 24 24" fill="none" style={{ color: tagColor }}>
+                                                        <path d="M5 12L10 17L19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                    </svg>
+                                                )}
                                             </button>
                                         )
                                     })}
@@ -155,8 +169,11 @@ export default function TasksSidebar({
                                         <button
                                             type="button"
                                             onClick={() => clearGroup(filter.id)}
-                                            className="text-[10px] text-gray-400 hover:text-primary px-2 py-1"
+                                            className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] text-gray-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
                                         >
+                                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none">
+                                                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                            </svg>
                                             Effacer
                                         </button>
                                     )}

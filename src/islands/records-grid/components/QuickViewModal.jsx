@@ -139,7 +139,8 @@ export default function QuickViewModal({ record, columns, accountNumber, entityS
             <div
                 className={`fixed inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity duration-250 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
                 style={{ zIndex: 10000 }}
-                onClick={handleClose}
+                onMouseDown={handleClose}
+                onTouchEnd={(e) => { e.preventDefault(); handleClose() }}
             />
 
             {/* Panel */}

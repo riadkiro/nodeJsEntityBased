@@ -103,6 +103,48 @@ const handleMouseLeave = useCallback(() => {
 
 ---
 
+## Touch / Mobile Support (CRITICAL)
+
+### Problem
+`PointerSensor` captures BOTH mouse and touch events, which prevents native horizontal scrolling on touch devices.
+
+### Solution: MouseSensor + TouchSensor
+Use `MouseSensor` for desktop and `TouchSensor` for mobile. Never use `PointerSensor` on kanban boards.
+
+```jsx
+import {
+    MouseSensor,
+    TouchSensor,
+    KeyboardSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core'
+
+const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 500, tolerance: 10 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+)
+```
+
+### Card touch-action
+- **NEVER use `touch-action: none`** on cards — it blocks native scrolling
+- **Use `touch-action: manipulation`** — allows scroll but prevents double-tap zoom
+
+```jsx
+const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    touchAction: 'manipulation', // ← NOT 'none'
+}
+```
+
+### Behavior
+- **Single finger swipe** → native horizontal/vertical scroll (default browser behavior)
+- **500ms long-press** (finger stays within 10px) → drag activates
+- **Mouse drag** → activates after 8px movement (desktop)
+
 ## Status Badge Styling Rule
 
 The status/classification badge in column headers must always use:

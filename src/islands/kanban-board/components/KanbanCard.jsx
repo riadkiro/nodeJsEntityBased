@@ -3,7 +3,7 @@
  * Shows: title, description, priority badge, tags, relations, 
  * attachments, dates, progress, assignee avatar, quick actions
  */
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
@@ -19,6 +19,10 @@ export default function KanbanCard({ record, isDragging = false, onCardClick, en
     const id = String(record._id)
     const [showActions, setShowActions] = useState(false)
 
+    // Track pointer to distinguish taps from drags
+    const pointerStart = useRef(null)
+    const didDrag = useRef(false)
+
     const {
         attributes,
         listeners,
@@ -31,7 +35,8 @@ export default function KanbanCard({ record, isDragging = false, onCardClick, en
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
-        opacity: (isDragging || dragging) ? 0.5 : 1
+        opacity: (isDragging || dragging) ? 0.5 : 1,
+        touchAction: 'manipulation',
     }
 
     const title = record.referenceTitle || record.computedTitle || record.title || 'Sans titre'
@@ -81,11 +86,28 @@ export default function KanbanCard({ record, isDragging = false, onCardClick, en
     })
     const progress = progressField ? parseInt(progressField.value) || 0 : null
 
-    // Handle card click to open detail
-    const handleClick = (e) => {
-        // Don't open if clicking action buttons
-        if (e.target.closest('button') || e.target.closest('a')) return
-        if (onCardClick) onCardClick(record)
+    // Handle card tap to open detail (distinguish tap vs drag)
+    const handlePointerDown = (e) => {
+        pointerStart.current = { x: e.clientX, y: e.clientY, time: Date.now() }
+        didDrag.current = false
+    }
+    const handlePointerMove = (e) => {
+        if (!pointerStart.current) return
+        const dx = Math.abs(e.clientX - pointerStart.current.x)
+        const dy = Math.abs(e.clientY - pointerStart.current.y)
+        if (dx > 5 || dy > 5) didDrag.current = true
+    }
+    const handlePointerUp = (e) => {
+        if (!pointerStart.current) return
+        const elapsed = Date.now() - pointerStart.current.time
+        // Only open detail on a short, stationary tap (< 400ms, no drag)
+        if (!didDrag.current && elapsed < 400 && !e.target.closest('button, a')) {
+            // Delay opening to avoid the mobile "ghost click" on the backdrop:
+            // touchend → pointerup (here) → browser synthesizes click ~300ms later
+            // If the panel opens instantly, the ghost click hits the backdrop and closes it
+            if (onCardClick) setTimeout(() => onCardClick(record), 50)
+        }
+        pointerStart.current = null
     }
 
     // Open in edit page
@@ -105,7 +127,9 @@ export default function KanbanCard({ record, isDragging = false, onCardClick, en
                     : 'shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-md'
                 }`}
             data-dnd="card"
-            onClick={handleClick}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
             {...attributes}
             {...listeners}
         >

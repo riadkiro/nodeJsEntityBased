@@ -16,7 +16,8 @@ import {
     DndContext,
     DragOverlay,
     closestCorners,
-    PointerSensor,
+    MouseSensor,
+    TouchSensor,
     KeyboardSensor,
     useSensor,
     useSensors,
@@ -56,7 +57,8 @@ function KanbanCard({ record, accountNumber, entitySlug, isDragging: isDragProp 
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
-        opacity: (isDragProp || dragging) ? 0.7 : 1
+        opacity: (isDragProp || dragging) ? 0.7 : 1,
+        touchAction: 'manipulation',
     }
 
     const recordId = record._id?.$oid || record._id
@@ -81,7 +83,7 @@ function KanbanCard({ record, accountNumber, entitySlug, isDragging: isDragProp 
     const tags = record.tags || []
 
     const handlePointerDown = (e) => {
-        pointerStart.current = { x: e.clientX, y: e.clientY }
+        pointerStart.current = { x: e.clientX, y: e.clientY, time: Date.now() }
         didDrag.current = false
     }
     const handlePointerMove = (e) => {
@@ -92,8 +94,12 @@ function KanbanCard({ record, accountNumber, entitySlug, isDragging: isDragProp 
         }
     }
     const handlePointerUp = (e) => {
-        if (!didDrag.current && onQuickView && !e.target.closest('a, button')) {
-            onQuickView(record)
+        if (!pointerStart.current) return
+        const elapsed = Date.now() - pointerStart.current.time
+        // Only open on a short, stationary tap (< 400ms) — not after a long press / drag
+        if (!didDrag.current && elapsed < 400 && onQuickView && !e.target.closest('a, button')) {
+            // Delay opening to avoid the mobile "ghost click" on the backdrop
+            setTimeout(() => onQuickView(record), 50)
         }
         pointerStart.current = null
     }
@@ -356,7 +362,8 @@ export default function RecordsKanban({
 
     // DnD sensors
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 500, tolerance: 10 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     )
 

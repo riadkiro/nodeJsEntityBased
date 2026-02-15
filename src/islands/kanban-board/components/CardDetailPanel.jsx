@@ -67,7 +67,8 @@ export default function CardDetailPanel({
             <div
                 className="fixed inset-0 z-[998] bg-black/30"
                 style={{ backdropFilter: 'blur(2px)' }}
-                onClick={onClose}
+                onMouseDown={onClose}
+                onTouchEnd={(e) => { e.preventDefault(); onClose() }}
             />
 
             {/* Panel */}

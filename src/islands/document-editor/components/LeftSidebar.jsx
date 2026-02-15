@@ -6,6 +6,7 @@
  */
 import React, { useState, useEffect } from 'react'
 import SettingsPanel from './SettingsPanel'
+import useTouchDrag from '../hooks/useTouchDrag'
 
 // Detect dark mode reliably - checks localStorage first (Alpine.$persist stores theme there)
 // then falls back to DOM class detection. Uses MutationObserver for reactivity.
@@ -197,19 +198,25 @@ export default function LeftSidebar({
     )
 }
 
-// Draggable block component - uses inline styles for guaranteed visibility
+// Draggable block component - supports both mouse drag (HTML5) and touch drag (long press)
 function DraggableBlock({ icon, label, description, html, plainText }) {
     const isDark = useDarkMode();
+    const { elRef, touchHandlers } = useTouchDrag({ html, label, icon, isDark });
+
     return (
         <div
+            ref={elRef}
             className="sortable-source"
             style={{
                 padding: '10px 12px',
                 border: `1px dashed ${isDark ? '#4b5563' : '#d1d5db'}`,
                 borderRadius: '8px',
                 cursor: 'move',
-                transition: 'border-color 0.15s, background-color 0.15s',
-                marginBottom: '6px'
+                transition: 'border-color 0.15s, background-color 0.15s, transform 0.2s, box-shadow 0.2s, opacity 0.2s',
+                marginBottom: '6px',
+                WebkitUserSelect: 'none',
+                userSelect: 'none',
+                touchAction: 'auto',
             }}
             draggable="true"
             onDragStart={(e) => {
@@ -217,6 +224,7 @@ function DraggableBlock({ icon, label, description, html, plainText }) {
                 e.dataTransfer.setData('text/plain', plainText || label)
                 e.dataTransfer.effectAllowed = 'copy'
             }}
+            {...touchHandlers}
             onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = '#4361ee';
                 e.currentTarget.style.backgroundColor = 'rgba(67,97,238,0.05)';
@@ -252,7 +260,35 @@ function DraggableBlock({ icon, label, description, html, plainText }) {
     )
 }
 
-// Text Panel Component - Basic text elements
+// Touchable image wrapper for gallery items — adds touch drag support
+function TouchableImage({ html, children, className, style, title }) {
+    const isDark = useDarkMode();
+    const { elRef, touchHandlers } = useTouchDrag({
+        html,
+        label: '📷 Image',
+        icon: 'tabler:photo',
+        isDark,
+    });
+
+    return (
+        <div
+            ref={elRef}
+            draggable="true"
+            onDragStart={(e) => {
+                e.dataTransfer.setData('text/html', html)
+                e.dataTransfer.effectAllowed = 'copy'
+            }}
+            {...touchHandlers}
+            className={className}
+            style={{ ...style, touchAction: 'auto', WebkitUserSelect: 'none' }}
+            title={title}
+        >
+            {children}
+        </div>
+    )
+}
+
+
 function TextPanel() {
     return (
         <div>
@@ -759,33 +795,32 @@ function GalleryPanel() {
                         Résultats Unsplash — Glissez une image sur la page.
                     </p>
                     <div className="grid grid-cols-2 gap-2">
-                        {photos.map((photo) => (
-                            <div
-                                key={photo.id}
-                                draggable="true"
-                                onDragStart={(e) => {
-                                    const html = `<img src="${photo.url}" alt="${photo.alt}" style="max-width: 100%; height: auto; display: block;" /><br><br>`
-                                    e.dataTransfer.setData('text/html', html)
-                                    e.dataTransfer.effectAllowed = 'copy'
-                                }}
-                                className="relative group cursor-move rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-primary transition-colors aspect-video"
-                                title={`Photo par ${photo.author}`}
-                            >
-                                <img
-                                    src={photo.thumb}
-                                    alt={photo.alt}
-                                    className="w-full h-full object-cover"
-                                    loading="lazy"
-                                />
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                                    <iconify-icon
-                                        icon="tabler:grip-horizontal"
-                                        width="20"
-                                        className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg"
-                                    ></iconify-icon>
-                                </div>
-                            </div>
-                        ))}
+                        {photos.map((photo) => {
+                            const imgHtml = `<img src="${photo.url}" alt="${photo.alt}" style="max-width: 100%; height: auto; display: block;" /><br><br>`
+                            return (
+                                <TouchableImage
+                                    key={photo.id}
+                                    html={imgHtml}
+                                    className="relative group cursor-move rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-primary transition-colors aspect-video"
+                                    title={`Photo par ${photo.author}`}
+                                >
+                                    <img
+                                        src={photo.thumb}
+                                        alt={photo.alt}
+                                        className="w-full h-full object-cover"
+                                        loading="lazy"
+                                        style={{ pointerEvents: 'none' }}
+                                    />
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center" style={{ pointerEvents: 'none' }}>
+                                        <iconify-icon
+                                            icon="tabler:grip-horizontal"
+                                            width="20"
+                                            className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg"
+                                        ></iconify-icon>
+                                    </div>
+                                </TouchableImage>
+                            )
+                        })}
                     </div>
 
                     {/* Load More Button */}
@@ -835,31 +870,30 @@ function GalleryPanel() {
 
                     {/* Demo Images Grid */}
                     <div className="grid grid-cols-4 gap-2 mt-4">
-                        {demoImages.map((imageSrc, index) => (
-                            <div
-                                key={index}
-                                draggable="true"
-                                onDragStart={(e) => {
-                                    const html = `<img src="${imageSrc}" style="max-width: 100%; height: auto; display: block;" /><br><br>`
-                                    e.dataTransfer.setData('text/html', html)
-                                    e.dataTransfer.effectAllowed = 'copy'
-                                }}
-                                className="relative group cursor-move rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-primary transition-colors aspect-video"
-                            >
-                                <img
-                                    src={imageSrc}
-                                    alt={`Demo ${index + 1}`}
-                                    className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                    <iconify-icon
-                                        icon="tabler:grip-horizontal"
-                                        width="20"
-                                        className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                                    ></iconify-icon>
-                                </div>
-                            </div>
-                        ))}
+                        {demoImages.map((imageSrc, index) => {
+                            const imgHtml = `<img src="${imageSrc}" style="max-width: 100%; height: auto; display: block;" /><br><br>`
+                            return (
+                                <TouchableImage
+                                    key={index}
+                                    html={imgHtml}
+                                    className="relative group cursor-move rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-primary transition-colors aspect-video"
+                                >
+                                    <img
+                                        src={imageSrc}
+                                        alt={`Demo ${index + 1}`}
+                                        className="w-full h-full object-cover"
+                                        style={{ pointerEvents: 'none' }}
+                                    />
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center" style={{ pointerEvents: 'none' }}>
+                                        <iconify-icon
+                                            icon="tabler:grip-horizontal"
+                                            width="20"
+                                            className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                        ></iconify-icon>
+                                    </div>
+                                </TouchableImage>
+                            )
+                        })}
                     </div>
                 </>
             )}

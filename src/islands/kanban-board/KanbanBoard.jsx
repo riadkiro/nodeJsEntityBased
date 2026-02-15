@@ -15,7 +15,9 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
     DndContext,
     DragOverlay,
-    closestCorners,
+    closestCenter,
+    pointerWithin,
+    rectIntersection,
     KeyboardSensor,
     MouseSensor,
     TouchSensor,
@@ -33,6 +35,7 @@ import KanbanColumn from './components/KanbanColumn'
 import KanbanCard from './components/KanbanCard'
 import QuickAddModal from './components/QuickAddModal'
 import CardDetailPanel from './components/CardDetailPanel'
+
 
 export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlug, kanbanFieldId = 'status' }) {
     const [columns, setColumns] = useState([])
@@ -59,6 +62,9 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
 
     const saveTimeoutRef = useRef(null)
     const scrollContainerRef = useRef(null)
+
+    // Track the active card's current column synchronously (prevents stale closure)
+    const activeColRef = useRef(null)
 
     // Drag-to-scroll state
     const isDraggingToScroll = useRef(false)
@@ -235,6 +241,45 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
         return out
     }, [columns, recordsByColumn])
 
+    // Build a set of column IDs for fast lookup
+    const columnIdSet = useMemo(() => {
+        return new Set(columns.map(c => String(c.id)))
+    }, [columns])
+
+    // Custom collision detection — must be inside component to access columnIdSet
+    const collisionDetection = useCallback((args) => {
+        const activeId = args.active?.id ? String(args.active.id) : null
+
+        // First try pointerWithin to find all droppables the pointer is inside
+        const pointerCollisions = pointerWithin(args)
+
+        if (pointerCollisions.length > 0) {
+            // CRITICAL: Filter out the active/dragged card itself — it must never be a drop target
+            const filtered = pointerCollisions.filter(c => String(c.id) !== activeId)
+
+            // Separate column droppables from card droppables
+            const columnHits = filtered.filter(c => columnIdSet.has(String(c.id)))
+            const cardHits = filtered.filter(c => !columnIdSet.has(String(c.id)))
+
+            // If we have card hits (other cards), prefer them (for within-column reordering)
+            if (cardHits.length > 0) return cardHits
+
+            // If only column hits (empty column), return those — essential for cross-column moves
+            if (columnHits.length > 0) return columnHits
+
+            // If everything was the active card itself, return original (dnd-kit handles it)
+            if (filtered.length === 0) return pointerCollisions
+            return filtered
+        }
+
+        // Fallback to closestCenter for edge cases (also filter out active)
+        const fallback = closestCenter(args).filter(c => String(c.id) !== activeId)
+        if (fallback.length > 0) {
+            return fallback
+        }
+        return closestCenter(args)
+    }, [columnIdSet])
+
     const savePreferences = useCallback((newOrderByColumn) => {
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
         saveTimeoutRef.current = setTimeout(async () => {
@@ -278,6 +323,7 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
         return records.find(r => String(r._id) === String(activeId)) || null
     }, [activeId, records])
 
+    // Find which column contains a given card ID
     const findColumnOfItem = useCallback((itemId) => {
         const id = String(itemId)
         for (const colId of Object.keys(idsByColumn)) {
@@ -287,58 +333,44 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
     }, [idsByColumn])
 
     const handleDragStart = (event) => {
-        setActiveId(String(event.active.id))
+        const id = String(event.active.id)
+        setActiveId(id)
+        // Initialize the ref with the card's current column
+        activeColRef.current = findColumnOfItem(id)
     }
 
     const handleDragCancel = () => {
         setActiveId(null)
+        activeColRef.current = null
     }
 
-    const handleDragEnd = (event) => {
+    // Handle real-time dragging between columns
+    const handleDragOver = (event) => {
         const { active, over } = event
-        setActiveId(null)
-        if (!over) return
+        if (!over || !active) return
 
         const activeRecordId = String(active.id)
         const overId = String(over.id)
 
-        const fromCol = findColumnOfItem(activeRecordId)
-        const toCol = columns.some(c => String(c.id) === overId)
-            ? overId
-            : findColumnOfItem(overId)
+        // Use the ref for the active card's current column (stale-closure safe)
+        const fromCol = activeColRef.current
+        if (!fromCol) return
 
-        if (!fromCol || !toCol) return
-
-        if (fromCol === toCol) {
-            const items = idsByColumn[fromCol] || []
-            const oldIndex = items.indexOf(activeRecordId)
-            const newIndex = items.indexOf(overId)
-            if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
-
-            const newItems = arrayMove(items, oldIndex, newIndex)
-            const newOrderByColumn = { ...orderByColumn, [fromCol]: newItems }
-            setOrderByColumn(newOrderByColumn)
-            savePreferences(newOrderByColumn)
-            return
+        // Determine destination column
+        let toCol
+        if (columnIdSet.has(overId)) {
+            // Dragging over a column droppable directly
+            toCol = overId
+        } else {
+            // Dragging over another card — find that card's column
+            toCol = findColumnOfItem(overId)
         }
+        if (!toCol || fromCol === toCol) return
 
-        const fromItems = [...(idsByColumn[fromCol] || [])].filter(id => id !== activeRecordId)
-        const toItems = [...(idsByColumn[toCol] || [])]
+        // Update the ref SYNCHRONOUSLY before any async state updates
+        activeColRef.current = toCol
 
-        const overIsColumn = columns.some(c => String(c.id) === overId)
-        const insertIndex = overIsColumn ? toItems.length : Math.max(0, toItems.indexOf(overId))
-
-        toItems.splice(insertIndex, 0, activeRecordId)
-
-        const newOrderByColumn = {
-            ...orderByColumn,
-            [fromCol]: fromItems,
-            [toCol]: toItems
-        }
-
-        setOrderByColumn(newOrderByColumn)
-        savePreferences(newOrderByColumn)
-
+        // Move the record to the new column in state (optimistic update during drag)
         setRecords(prev => prev.map(r => {
             if (String(r._id) !== activeRecordId) return r
             if (kanbanFieldId === 'status') {
@@ -355,7 +387,60 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
             return { ...r, classificationValues: next }
         }))
 
-        updateRecordField(activeRecordId, toCol)
+        // Update order arrays to reflect the transfer
+        setOrderByColumn(prev => {
+            const fromItems = (prev[fromCol] || []).filter(id => id !== activeRecordId)
+            const toItems = [...(prev[toCol] || [])].filter(id => id !== activeRecordId)
+
+            // Determine insertion index
+            if (columnIdSet.has(overId)) {
+                // Dropped on column droppable → append
+                toItems.push(activeRecordId)
+            } else {
+                const overIndex = toItems.indexOf(overId)
+                if (overIndex >= 0) {
+                    toItems.splice(overIndex, 0, activeRecordId)
+                } else {
+                    toItems.push(activeRecordId)
+                }
+            }
+
+            return { ...prev, [fromCol]: fromItems, [toCol]: toItems }
+        })
+    }
+
+    const handleDragEnd = (event) => {
+        const { active, over } = event
+        // Read the current column from the ref (always up-to-date)
+        const currentCol = activeColRef.current
+        setActiveId(null)
+        activeColRef.current = null
+        if (!over || !active || !currentCol) return
+
+        const activeRecordId = String(active.id)
+        const overId = String(over.id)
+
+        // Same-column reorder
+        if (!columnIdSet.has(overId)) {
+            const overCol = findColumnOfItem(overId)
+            if (overCol === currentCol) {
+                const items = idsByColumn[currentCol] || []
+                const oldIndex = items.indexOf(activeRecordId)
+                const newIndex = items.indexOf(overId)
+                if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+                    const newItems = arrayMove(items, oldIndex, newIndex)
+                    const newOrderByColumn = { ...orderByColumn, [currentCol]: newItems }
+                    setOrderByColumn(newOrderByColumn)
+                    savePreferences(newOrderByColumn)
+                    return
+                }
+            }
+        }
+
+        // Cross-column move was already handled by handleDragOver
+        // Just persist preferences and send API call
+        savePreferences(orderByColumn)
+        updateRecordField(activeRecordId, currentCol)
     }
 
     // Quick Add Modal handler
@@ -536,8 +621,14 @@ export default function KanbanBoard({ accountNumber, entityId, viewId, entitySlu
             >
                 <DndContext
                     sensors={sensors}
-                    collisionDetection={closestCorners}
+                    collisionDetection={collisionDetection}
+                    autoScroll={{
+                        threshold: { x: 0.15, y: 0.15 },
+                        interval: 10,
+                        acceleration: 5,
+                    }}
                     onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
                     onDragEnd={handleDragEnd}
                     onDragCancel={handleDragCancel}
                 >

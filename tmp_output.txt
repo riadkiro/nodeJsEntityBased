@@ -1,0 +1,18 @@
+﻿=== RAW classification from DB ===
+Classification _id: 6989923bcf4f1191d69f8b29
+Options:
+  [0] _id=6989923bcf4f1191d69f8b2a id=undefined label=Salle d'attente
+  [1] _id=6989923bcf4f1191d69f8b2b id=undefined label=Patient suivant
+  [2] _id=6989923bcf4f1191d69f8b2c id=undefined label=En cours
+  [3] _id=6989923bcf4f1191d69f8b2d id=undefined label=Termin├®
+  [4] _id=6989923bcf4f1191d69f8b2e id=undefined label=Absent
+
+=== POPULATED entity.statusClassification (API-like) ===
+statusClassification._id: new ObjectId("6989923bcf4f1191d69f8b29")
+statusClassification.id: undefined
+Options:
+  [0] _id=6989923bcf4f1191d69f8b2a id=undefined label=Salle d'attente color=#fde386
+  [1] _id=6989923bcf4f1191d69f8b2b id=undefined label=Patient suivant color=#7ff0d4
+  [2] _id=6989923bcf4f1191d69f8b2c id=undefined label=En cours color=#56f5f3
+  [3] _id=6989923bcf4f1191d69f8b2d id=undefined label=Termin├® color=#25b12f
+  [4] _id=6989923bcf4f1191d69f8b2e id=undefined label=Absent color=#f74e3b

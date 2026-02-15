@@ -185,8 +185,8 @@ export default function KanbanColumn({
                 }}
             >
                 <SortableContext items={recordIds} strategy={verticalListSortingStrategy}>
-                    <div className={`space-y-2 min-h-[60px] rounded-lg transition-all ${isOver ? 'bg-primary/5 p-1.5' : ''
-                        }`}>
+                    <div className={`space-y-2 rounded-lg transition-all ${isOver ? 'bg-primary/5 p-1.5' : ''
+                        }`} style={{ minHeight: records.length === 0 ? '200px' : '60px' }}>
                         {records.map(r => (
                             <KanbanCard
                                 key={r._id}
@@ -196,16 +196,19 @@ export default function KanbanColumn({
                                 accountNumber={accountNumber}
                             />
                         ))}
+
+                        {/* Empty state / drop hint */}
+                        {records.length === 0 && (
+                            <div className={`flex flex-col items-center justify-center h-full py-10 rounded-lg border-2 border-dashed transition-all ${isOver
+                                    ? 'border-primary/40 bg-primary/5 text-primary'
+                                    : 'border-transparent text-gray-400 dark:text-gray-600'
+                                }`}>
+                                <iconify-icon icon={isOver ? 'solar:add-circle-bold-duotone' : 'solar:inbox-bold-duotone'} width="28" style={{ opacity: isOver ? 0.8 : 0.5 }}></iconify-icon>
+                                <span className="text-[11px] mt-1">{isOver ? 'Déposer ici' : 'Aucun élément'}</span>
+                            </div>
+                        )}
                     </div>
                 </SortableContext>
-
-                {/* Empty state */}
-                {records.length === 0 && !isOver && (
-                    <div className="flex flex-col items-center justify-center py-6 text-gray-400 dark:text-gray-600">
-                        <iconify-icon icon="solar:inbox-bold-duotone" width="28" style={{ opacity: 0.5 }}></iconify-icon>
-                        <span className="text-[11px] mt-1">Aucun élément</span>
-                    </div>
-                )}
             </div>
 
             {/* Inline quick-add */}

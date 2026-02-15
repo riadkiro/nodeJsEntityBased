@@ -1,0 +1,141 @@
+{
+  "statusClassification": {
+    "id": "6989923bcf4f1191d69f8b29",
+    "name": "Progression consultation",
+    "options": [
+      {
+        "id": "6989923bcf4f1191d69f8b2a",
+        "label": "Salle d'attente"
+      },
+      {
+        "id": "6989923bcf4f1191d69f8b2b",
+        "label": "Patient suivant"
+      },
+      {
+        "id": "6989923bcf4f1191d69f8b2c",
+        "label": "En cours"
+      },
+      {
+        "id": "6989923bcf4f1191d69f8b2d",
+        "label": "Terminé"
+      },
+      {
+        "id": "6989923bcf4f1191d69f8b2e",
+        "label": "Absent"
+      }
+    ]
+  },
+  "classifications": [
+    {
+      "id": "698af7f4f2100f0facaafa82",
+      "name": "Niveau Urgence",
+      "options": [
+        {
+          "id": "698af7f4f2100f0facaafa83",
+          "label": "Normal"
+        },
+        {
+          "id": "698af7f4f2100f0facaafa84",
+          "label": "Prioritaire"
+        },
+        {
+          "id": "698af7f4f2100f0facaafa85",
+          "label": "Urgent"
+        }
+      ]
+    },
+    {
+      "id": "6989923bcf4f1191d69f8b29",
+      "name": "Progression consultation",
+      "options": [
+        {
+          "id": "6989923bcf4f1191d69f8b2a",
+          "label": "Salle d'attente"
+        },
+        {
+          "id": "6989923bcf4f1191d69f8b2b",
+          "label": "Patient suivant"
+        },
+        {
+          "id": "6989923bcf4f1191d69f8b2c",
+          "label": "En cours"
+        },
+        {
+          "id": "6989923bcf4f1191d69f8b2d",
+          "label": "Terminé"
+        },
+        {
+          "id": "6989923bcf4f1191d69f8b2e",
+          "label": "Absent"
+        }
+      ]
+    }
+  ],
+  "sampleRecords": [
+    {
+      "title": "Consultation Chaoui Jamal - 2026-02-11",
+      "cvs": [
+        {
+          "cid": "698af7f4f2100f0facaafa82",
+          "oid": "698af7f4f2100f0facaafa83"
+        },
+        {
+          "cid": "6989923bcf4f1191d69f8b29",
+          "oid": "6989923bcf4f1191d69f8b2a"
+        }
+      ]
+    },
+    {
+      "title": "Consultation Benkirane Nadia - 2026-02-11",
+      "cvs": [
+        {
+          "cid": "6989923bcf4f1191d69f8b29",
+          "oid": "6989923bcf4f1191d69f8b2a"
+        },
+        {
+          "cid": "698af7f4f2100f0facaafa82",
+          "oid": "698af7f4f2100f0facaafa83"
+        }
+      ]
+    },
+    {
+      "title": "Consultation BenjellounAicha - 2026-02-11",
+      "cvs": [
+        {
+          "cid": "6989923bcf4f1191d69f8b29",
+          "oid": "6989923bcf4f1191d69f8b2a"
+        },
+        {
+          "cid": "698af7f4f2100f0facaafa82",
+          "oid": "698af7f4f2100f0facaafa83"
+        }
+      ]
+    },
+    {
+      "title": "Chaoui - Fatima - 2026-02-11",
+      "cvs": [
+        {
+          "cid": "6989923bcf4f1191d69f8b29",
+          "oid": "6989923bcf4f1191d69f8b2a"
+        },
+        {
+          "cid": "698af7f4f2100f0facaafa82",
+          "oid": "698af7f4f2100f0facaafa83"
+        }
+      ]
+    },
+    {
+      "title": "Consultation - LahlouMustapha - 2026-02-11",
+      "cvs": [
+        {
+          "cid": "6989923bcf4f1191d69f8b29",
+          "oid": "6989923bcf4f1191d69f8b2a"
+        },
+        {
+          "cid": "698af7f4f2100f0facaafa82",
+          "oid": "698af7f4f2100f0facaafa84"
+        }
+      ]
+    }
+  ]
+}

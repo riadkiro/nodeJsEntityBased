@@ -31,6 +31,7 @@ export default function RecordsGrid({
     const [searchQuery, setSearchQuery] = useState('')
     const [activeView, setActiveView] = useState('table')
     const [entityIcon, setEntityIcon] = useState('')
+    const [entityData, setEntityData] = useState(null)
 
     // Filter state (classification-based)
     const [sidebarFilters, setSidebarFilters] = useState([])
@@ -84,9 +85,12 @@ export default function RecordsGrid({
             setAllRecords(data.records || [])
             setFilteredRecords(data.records || [])
 
-            // Store entity icon
-            if (data.entity?.icon) {
-                setEntityIcon(data.entity.icon)
+            // Store entity data for Kanban classification columns
+            if (data.entity) {
+                setEntityData(data.entity)
+                if (data.entity.icon) {
+                    setEntityIcon(data.entity.icon)
+                }
             }
 
             // Store sidebar filters from API
@@ -447,6 +451,7 @@ export default function RecordsGrid({
                             accountNumber={accountNumber}
                             entitySlug={entitySlug}
                             viewId={viewId}
+                            entityData={entityData}
                         />
                     ) : activeView === 'notes' ? (
                         <RecordsNotes

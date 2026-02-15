@@ -1,0 +1,66 @@
+{
+  "_id": "6989923bcf4f1191d69f8b29",
+  "name": "Progression consultation",
+  "key": "progression-consultation",
+  "description": "",
+  "isShared": true,
+  "type": "simple",
+  "allowMultiple": false,
+  "options": [
+    {
+      "label": "Salle d'attente",
+      "color": "#fde386",
+      "icon": "solar:info-circle-bold",
+      "badgeStyle": "dot",
+      "type": "normal",
+      "parentId": null,
+      "order": 0,
+      "_id": "6989923bcf4f1191d69f8b2a"
+    },
+    {
+      "label": "Patient suivant",
+      "color": "#7ff0d4",
+      "icon": "solar:info-circle-bold",
+      "badgeStyle": "dot",
+      "type": "normal",
+      "parentId": null,
+      "order": 1,
+      "_id": "6989923bcf4f1191d69f8b2b"
+    },
+    {
+      "label": "En cours",
+      "color": "#56f5f3",
+      "icon": "solar:info-circle-bold",
+      "badgeStyle": "dot",
+      "type": "normal",
+      "parentId": null,
+      "order": 2,
+      "_id": "6989923bcf4f1191d69f8b2c"
+    },
+    {
+      "label": "Terminé",
+      "color": "#25b12f",
+      "icon": "solar:info-circle-bold",
+      "badgeStyle": "dot",
+      "type": "normal",
+      "parentId": null,
+      "order": 3,
+      "_id": "6989923bcf4f1191d69f8b2d"
+    },
+    {
+      "label": "Absent",
+      "color": "#f74e3b",
+      "icon": "solar:info-circle-bold",
+      "badgeStyle": "dot",
+      "type": "normal",
+      "parentId": null,
+      "order": 4,
+      "_id": "6989923bcf4f1191d69f8b2e"
+    }
+  ],
+  "createdBy": "643c0b36fbde1ceb1bdc97bb",
+  "createdAt": "2026-02-09T07:52:27.763Z",
+  "updatedAt": "2026-02-11T16:30:17.704Z",
+  "__v": 0,
+  "defaultOptionId": "6989923bcf4f1191d69f8b2a"
+}

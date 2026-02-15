@@ -145,6 +145,34 @@ const style = {
 - **500ms long-press** (finger stays within 10px) → drag activates
 - **Mouse drag** → activates after 8px movement (desktop)
 
+### Ghost Click Prevention (CRITICAL)
+On touch devices, the browser synthesizes a `click` event ~300ms after `touchend`. If a card tap opens a panel immediately, the ghost click hits the backdrop and closes it.
+
+**Card tap handler fix:**
+```jsx
+const handlePointerUp = (e) => {
+    if (!pointerStart.current) return
+    const elapsed = Date.now() - pointerStart.current.time
+    if (!didDrag.current && elapsed < 400 && !e.target.closest('button, a')) {
+        // Delay opening to avoid the ghost click hitting the backdrop
+        if (onCardClick) setTimeout(() => onCardClick(record), 50)
+    }
+    pointerStart.current = null
+}
+```
+
+**Backdrop handler fix:**
+```jsx
+// ❌ WRONG — onClick fires from ghost clicks
+<div onClick={onClose} />
+
+// ✅ CORRECT — onMouseDown doesn't fire from synthesized events
+<div
+    onMouseDown={onClose}
+    onTouchEnd={(e) => { e.preventDefault(); onClose() }}
+/>
+```
+
 ## Status Badge Styling Rule
 
 The status/classification badge in column headers must always use:

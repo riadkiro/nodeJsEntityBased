@@ -306,6 +306,7 @@ export default function RecordsKanban({
     accountNumber,
     entitySlug,
     viewId,
+    entityData,
 }) {
     const scrollRef = useRef(null)
     const saveTimeoutRef = useRef(null)
@@ -367,8 +368,40 @@ export default function RecordsKanban({
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     )
 
-    // ─── Build columns from classification values ────────────────────
+    // ─── Build columns from entity classification options ────────────
     const kanbanColumns = useMemo(() => {
+        // 1) Try to build from entity classification data (shows ALL columns, even empty)
+        if (entityData) {
+            // Prefer statusClassification
+            const statusCls = entityData.statusClassification
+            if (statusCls && statusCls.options && statusCls.options.length > 0) {
+                const cols = statusCls.options.map(opt => ({
+                    id: String(opt._id),
+                    title: opt.label,
+                    color: opt.color || '#6366f1',
+                    optionId: String(opt._id),
+                }))
+                cols.push({ id: '__none__', title: 'Sans Statut', color: '#9ca3af', optionId: 'none' })
+                return { classId: String(statusCls._id), columns: cols }
+            }
+
+            // Fallback to first classification with options
+            const classifications = entityData.classifications || []
+            for (const cls of classifications) {
+                if (cls.options && cls.options.length > 0) {
+                    const cols = cls.options.map(opt => ({
+                        id: String(opt._id),
+                        title: opt.label,
+                        color: opt.color || '#6366f1',
+                        optionId: String(opt._id),
+                    }))
+                    cols.push({ id: '__none__', title: 'Non classé', color: '#9ca3af', optionId: 'none' })
+                    return { classId: String(cls._id), columns: cols }
+                }
+            }
+        }
+
+        // 2) Fallback: infer from record data (old behavior)
         const classStats = {}
         records.forEach(r => {
             (r.classificationValues || []).forEach(cv => {
@@ -411,7 +444,7 @@ export default function RecordsKanban({
             classId: null,
             columns: [{ id: '__all__', title: 'Tous les enregistrements', color: '#4361ee', optionId: null }]
         }
-    }, [records])
+    }, [records, entityData])
 
     // ─── Group records by column ─────────────────────────────────────
     const recordsByColumn = useMemo(() => {
@@ -421,6 +454,19 @@ export default function RecordsKanban({
         if (!kanbanColumns.classId) {
             grouped['__all__'] = records
         } else {
+            // Build a lookup: optionId → column.id (for entity-based columns)
+            const optionIdToColId = {}
+            kanbanColumns.columns.forEach(col => {
+                if (col.optionId && col.optionId !== 'none') {
+                    optionIdToColId[String(col.optionId)] = col.id
+                }
+            })
+            // Also build label → column.id lookup (for fallback dynamic columns)
+            const labelToColId = {}
+            kanbanColumns.columns.forEach(col => {
+                labelToColId[col.title] = col.id
+            })
+
             records.forEach(r => {
                 const cvs = r.classificationValues || []
                 const matchingCv = cvs.find(cv => {
@@ -428,11 +474,19 @@ export default function RecordsKanban({
                     return classId === kanbanColumns.classId
                 })
                 if (matchingCv) {
-                    const label = matchingCv.optionLabel || matchingCv.label || 'Sans label'
-                    if (grouped[label]) {
-                        grouped[label].push(r)
-                    } else if (grouped['__none__']) {
-                        grouped['__none__'].push(r)
+                    // Try matching by optionId first (entity-data columns use optionId as column.id)
+                    const optId = String(matchingCv.optionId?.$oid || matchingCv.optionId || '')
+                    const colByOptId = optionIdToColId[optId]
+                    if (colByOptId && grouped[colByOptId]) {
+                        grouped[colByOptId].push(r)
+                    } else {
+                        // Fallback: try matching by label (dynamic-inferred columns use label as column.id)
+                        const label = matchingCv.optionLabel || matchingCv.label || 'Sans label'
+                        if (grouped[label]) {
+                            grouped[label].push(r)
+                        } else if (grouped['__none__']) {
+                            grouped['__none__'].push(r)
+                        }
                     }
                 } else if (grouped['__none__']) {
                     grouped['__none__'].push(r)
@@ -613,6 +667,11 @@ export default function RecordsKanban({
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCorners}
+                autoScroll={{
+                    threshold: { x: 0.15, y: 0.15 },
+                    interval: 10,
+                    acceleration: 5,
+                }}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onDragCancel={handleDragCancel}

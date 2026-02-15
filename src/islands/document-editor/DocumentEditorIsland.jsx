@@ -11,7 +11,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { saveDocument, exportPdf, uploadImage } from './services/documentApi'
 import { cleanWordHtml } from './utils/cleanWordHtml'
 import { parseWordHtml, hasBase64Images } from './utils/parseWordHtml'
-import { checkOverflow, checkUnderflow, pullFromNextPageInto } from './utils/paginationUtils'
+import { checkOverflow, checkUnderflow, pullFromNextPageInto, reflowAllPages } from './utils/paginationUtils'
 import { formatDoc, detectCurrentStyles, applyFontSize, applyLineSpacing, applyLetterSpacing, FONT_FAMILIES, FONT_SIZES } from './utils/formatUtils'
 
 // Native keyboard detection - NO external library, CANNOT fail
@@ -159,6 +159,8 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const docRef = useRef(doc) // Always current doc for callbacks
     const isMergingRef = useRef(false) // Prevents race conditions during merge
     const isGlobalSelectionRef = useRef(false) // Ref mirror for stale-closure-safe access
+    const isPastingRef = useRef(false) // Prevents double-reflow during paste (insertHTML triggers onInput)
+    const reflowInProgressRef = useRef(false) // Prevents concurrent reflow execution
 
     // Keep docRef in sync
     useEffect(() => {
@@ -288,33 +290,32 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
     // ========== REFLOW ORCHESTRATOR (Word-like) ==========
     // After each input, reflow entire document: overflow forward, then underflow backward
+    // For large pastes, overflow may cascade through multiple new pages
+    //
+    // CRITICAL: Guard against concurrent execution!
+    // insertHTML triggers both onPaste and onInput, which would start two parallel reflows.
+    // Two reflows extracting from the same DOM causes content loss.
     const reflowDocument = useCallback(() => {
-        requestAnimationFrame(() => {
-            const d = docRef.current
-            if (!d?.pages?.length) return
+        // Prevent concurrent reflows - only one can run at a time
+        if (reflowInProgressRef.current) {
+            console.log('[reflowDocument] Skipped: reflow already in progress')
+            return
+        }
+        reflowInProgressRef.current = true
 
-            console.log('[Reflow] Starting overflow pass for', d.pages.length, 'pages')
+        // Use reflowAllPages for iterative multi-page overflow handling
+        // Pass a callback to clear the guard when done
+        reflowAllPages(docRef, setDoc, pageRefs, 100, () => {
+            reflowInProgressRef.current = false
 
-            // 1) Overflow forward pass (push content forward)
-            for (let i = 0; i < d.pages.length; i++) {
-                const el = pageRefs.current[i]
-                if (el) {
-                    console.log('[Reflow] Checking overflow for page', i, 'scrollHeight:', el.scrollHeight, 'clientHeight:', el.clientHeight)
-                    checkOverflow(el, i, docRef.current, setDoc, pageRefs)
-                }
-            }
-
-            // 2) Underflow backward pass (pull content back) - after a frame to let overflow settle
+            // Underflow backward pass - after overflow is fully stable
             requestAnimationFrame(() => {
                 const d2 = docRef.current
                 if (!d2?.pages?.length) return
 
-                console.log('[Reflow] Starting underflow pass for', d2.pages.length, 'pages')
-
                 for (let i = 0; i < d2.pages.length - 1; i++) {
                     const el = pageRefs.current[i]
                     if (el) {
-                        console.log('[Reflow] Checking underflow for page', i)
                         checkUnderflow(el, i, docRef.current, setDoc, pageRefs)
                     }
                 }
@@ -324,11 +325,14 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
     // ========== PAGE INPUT HANDLING ==========
     const handlePageInput = useCallback((e, pageIndex) => {
-        console.log('📝 INPUT triggered on page', pageIndex)
         saveSelection()
 
-        // Trigger full document reflow (Word-like)
-        reflowDocument()
+        // CRITICAL: Skip reflow if we're in the middle of a paste operation
+        // insertHTML triggers onInput, but handlePaste already calls reflowDocument
+        // Running two concurrent reflows causes content loss!
+        if (!isPastingRef.current) {
+            reflowDocument()
+        }
 
         triggerSave()
     }, [saveSelection, triggerSave, reflowDocument])
@@ -343,7 +347,16 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         // Plain text mode - always use text/plain
         if (pasteMode === 'plain') {
             content = clipboardData.getData('text/plain')
-            content = content.replace(/\n/g, '<br>')
+            // Wrap in <p> tags for proper editing behavior
+            const lines = content.split(/\n\n/)
+            content = lines
+                .map(line => {
+                    const trimmed = line.trim()
+                    if (!trimmed) return ''
+                    return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`
+                })
+                .filter(Boolean)
+                .join('')
         } else {
             // Try HTML first
             content = clipboardData.getData('text/html')
@@ -362,25 +375,39 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     content = cleanWordHtml(content, pasteMode)
                 }
             } else {
-                // Fallback to plain text
+                // Fallback to plain text — wrap in <p> tags
                 content = clipboardData.getData('text/plain')
-                content = content.replace(/\n/g, '<br>')
+                const lines = content.split(/\n\n/)
+                content = lines
+                    .map(line => {
+                        const trimmed = line.trim()
+                        if (!trimmed) return ''
+                        return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`
+                    })
+                    .filter(Boolean)
+                    .join('')
             }
         }
+
+        // Guard: don't insert empty content
+        if (!content || !content.trim()) return
+
+        // Set pasting flag to prevent onInput from triggering a concurrent reflow
+        // insertHTML fires an input event, but we handle reflow ourselves below
+        isPastingRef.current = true
 
         // Insert at cursor using execCommand
         document.execCommand('insertHTML', false, content)
 
-        // Trigger save and pagination check
-        requestAnimationFrame(() => {
-            const pageRef = pageRefs.current[pageIndex]
-            if (pageRef) {
-                checkOverflow(pageRef, pageIndex, docRef.current, setDoc, pageRefs)
-            }
-        })
+        // Clear pasting flag after a microtask (input event fires synchronously)
+        // Use setTimeout(0) to clear after the input event has been processed
+        setTimeout(() => { isPastingRef.current = false }, 0)
+
+        // Trigger full document reflow (handles multi-page overflow from large pastes)
+        reflowDocument()
 
         triggerSave()
-    }, [pasteMode, triggerSave, doc._id, accountNumber])
+    }, [pasteMode, triggerSave, doc._id, accountNumber, reflowDocument])
 
     // ========== KEYBOARD HANDLING ==========
     // Word-like: Ctrl+A selects all pages, Delete clears but keeps page 1

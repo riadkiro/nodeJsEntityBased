@@ -36,101 +36,93 @@
 
         <div class="main-container min-h-screen text-black dark:text-white-dark">
             <div class="flex min-h-screen items-center justify-center bg-[url('../images/map.svg')] bg-cover bg-center dark:bg-[url('../images/map-dark.svg')]">
-                <div class="m-6 w-full max-w-2xl">
-                    <!-- User Info Card -->
-                    <div class="panel mb-5">
-                        <div class="flex items-center gap-4">
-                            <% if (user.avatar) { %>
-                                <img src="<%= user.avatar %>" class="w-12 h-12 rounded-full object-cover ring-2 ring-primary/20" alt="" />
-                            <% } else { %>
-                                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
-                                    <%= user.name ? user.name.charAt(0).toUpperCase() : '?' %>
-                                </div>
-                            <% } %>
-                            <div class="flex-1">
-                                <h2 class="text-lg font-bold dark:text-white">Bonjour, <%= user.name || user.email %> 👋</h2>
-                                <p class="text-xs text-gray-500"><%= user.email %></p>
-                            </div>
-                            <div class="text-right">
-                                <% const planBadge = { free: 'bg-gray-100 text-gray-600', basic: 'bg-blue-100 text-blue-600', premium: 'bg-amber-100 text-amber-700', enterprise: 'bg-purple-100 text-purple-600' }; %>
-                                <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase <%= planBadge[user.membership?.plan] || planBadge.free %>">
-                                    <iconify-icon icon="<%= user.membership?.plan === 'premium' ? 'solar:crown-bold' : user.membership?.plan === 'enterprise' ? 'solar:crown-star-bold' : 'solar:star-bold' %>" width="12" class="mr-0.5"></iconify-icon>
-                                    <%= user.membership?.plan || 'free' %>
-                                </span>
-                            </div>
+                <div class="panel m-6 w-full max-w-lg sm:w-[480px]">
+                    <!-- Icon & Title (same pattern as login) -->
+                    <div class="text-center mb-6">
+                        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-3">
+                            <iconify-icon icon="solar:buildings-2-bold-duotone" width="28" class="text-primary"></iconify-icon>
                         </div>
+                        <h2 class="text-2xl font-bold">Vos espaces de travail</h2>
+                        <p class="text-gray-500 dark:text-gray-400 mt-1">Sélectionnez un espace pour continuer</p>
                     </div>
 
-                    <!-- Title -->
-                    <div class="panel">
-                        <h2 class="text-xl font-bold text-center dark:text-white mb-1">Vos espaces de travail</h2>
-                        <p class="text-center text-sm text-gray-500 mb-6">Sélectionnez un espace pour continuer</p>
-                        
-                        <div class="grid gap-3">
-                            <% if (locals.accounts && accounts.length > 0) { %>
-                                <% for (let i = 0; i < accounts.length; i++) { %>
-                                    <a href="/account/<%= accounts[i].account_number %>/home" 
-                                       class="flex items-center p-4 border rounded-xl border-white-light dark:border-[#1b2e4b] hover:border-primary hover:shadow-lg dark:hover:border-primary bg-white dark:bg-[#1b2e4b] transition-all group">
-                                        <div class="bg-primary/10 text-primary rounded-xl p-3 mr-4 group-hover:bg-primary group-hover:text-white transition-colors">
-                                            <iconify-icon icon="<%= accounts[i].icon || 'solar:home-2-bold-duotone' %>" width="24"></iconify-icon>
-                                        </div>
-                                        <div class="flex-1">
-                                            <h4 class="font-bold text-base text-black dark:text-white-light group-hover:text-primary transition-colors"><%= accounts[i].name %></h4>
-                                            <div class="flex items-center gap-2 mt-0.5">
-                                                <span class="text-xs text-gray-500 font-mono">#<%= accounts[i].account_number %></span>
-                                                <% if (accounts[i].role) { %>
-                                                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase
-                                                        <%= accounts[i].role === 'owner' ? 'bg-amber-100 text-amber-700' : accounts[i].role === 'admin' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500' %>">
-                                                        <%= accounts[i].role %>
-                                                    </span>
-                                                <% } %>
-                                            </div>
-                                        </div>
-                                        <div class="ml-auto text-gray-400 group-hover:text-primary transition-colors">
-                                            <iconify-icon icon="solar:arrow-right-bold" width="20"></iconify-icon>
-                                        </div>
-                                    </a>
-                                <% } %>
-                            <% } else { %>
-                                <div class="text-center py-8">
-                                    <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-[#1b2e4b] flex items-center justify-center mx-auto mb-3">
-                                        <iconify-icon icon="solar:buildings-2-bold-duotone" width="32" class="text-gray-400"></iconify-icon>
+                    <!-- User Info Bar -->
+                    <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-[#1b2e4b] mb-5">
+                        <% if (user.avatar) { %>
+                            <img src="<%= user.avatar %>" class="w-10 h-10 rounded-full object-cover ring-2 ring-primary/20" alt="" />
+                        <% } else { %>
+                            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-base">
+                                <%= user.name ? user.name.charAt(0).toUpperCase() : '?' %>
+                            </div>
+                        <% } %>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-semibold text-sm dark:text-white truncate"><%= user.name || user.email %></h3>
+                            <p class="text-xs text-gray-400 truncate"><%= user.email %></p>
+                        </div>
+                        <% const planBadge = { free: 'bg-gray-100 text-gray-600', basic: 'bg-blue-100 text-blue-600', premium: 'bg-amber-100 text-amber-700', enterprise: 'bg-purple-100 text-purple-600' }; %>
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase shrink-0 <%= planBadge[user.membership?.plan] || planBadge.free %>">
+                            <iconify-icon icon="<%= user.membership?.plan === 'premium' ? 'solar:crown-bold' : user.membership?.plan === 'enterprise' ? 'solar:crown-star-bold' : 'solar:star-bold' %>" width="11" class="mr-0.5"></iconify-icon>
+                            <%= user.membership?.plan || 'free' %>
+                        </span>
+                    </div>
+
+                    <!-- Workspace List -->
+                    <div class="space-y-2.5 mb-4">
+                        <% if (locals.accounts && accounts.length > 0) { %>
+                            <% for (let i = 0; i < accounts.length; i++) { %>
+                                <a href="/account/<%= accounts[i].account_number %>/home" 
+                                   class="flex items-center p-3.5 rounded-lg border border-white-light dark:border-[#1b2e4b] hover:border-primary hover:shadow-md dark:hover:border-primary bg-white dark:bg-[#1b2e4b] transition-all group">
+                                    <div class="bg-primary/10 text-primary rounded-lg p-2.5 mr-3 group-hover:bg-primary group-hover:text-white transition-colors">
+                                        <iconify-icon icon="<%= accounts[i].icon || 'solar:home-2-bold-duotone' %>" width="20"></iconify-icon>
                                     </div>
-                                    <p class="text-gray-500 mb-1">Aucun espace de travail</p>
-                                    <p class="text-xs text-gray-400">Créez votre premier workspace</p>
-                                </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="font-bold text-sm text-black dark:text-white-light group-hover:text-primary transition-colors truncate"><%= accounts[i].name %></h4>
+                                        <div class="flex items-center gap-2 mt-0.5">
+                                            <span class="text-[11px] text-gray-400 font-mono">#<%= accounts[i].account_number %></span>
+                                            <% if (accounts[i].role) { %>
+                                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase
+                                                    <%= accounts[i].role === 'owner' ? 'bg-amber-100 text-amber-700' : accounts[i].role === 'admin' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500' %>">
+                                                    <%= accounts[i].role %>
+                                                </span>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                    <div class="ml-auto text-gray-300 group-hover:text-primary transition-colors">
+                                        <iconify-icon icon="solar:arrow-right-linear" width="18"></iconify-icon>
+                                    </div>
+                                </a>
                             <% } %>
-                        </div>
-
-                        <!-- Create New Account -->
-                        <div class="mt-4">
-                            <button @click="$refs.createModal.showModal()" 
-                                    class="flex items-center w-full p-4 border-2 border-dashed rounded-xl border-white-light dark:border-[#1b2e4b] hover:border-primary hover:bg-primary/5 dark:hover:border-primary transition-all group">
-                                <div class="bg-success/10 text-success rounded-xl p-3 mr-4 group-hover:bg-success group-hover:text-white transition-colors">
-                                    <iconify-icon icon="solar:add-circle-bold" width="24"></iconify-icon>
+                        <% } else { %>
+                            <div class="text-center py-8">
+                                <div class="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-[#1b2e4b] flex items-center justify-center mx-auto mb-3">
+                                    <iconify-icon icon="solar:buildings-2-bold-duotone" width="28" class="text-gray-400"></iconify-icon>
                                 </div>
-                                <div>
-                                    <h4 class="font-bold text-base text-black dark:text-white-light group-hover:text-primary transition-colors">New workspace</h4>
-                                    <p class="text-xs text-gray-500">Créer un nouvel espace de travail</p>
-                                </div>
-                            </button>
-                        </div>
+                                <p class="text-gray-500 mb-1">Aucun espace de travail</p>
+                                <p class="text-xs text-gray-400">Créez votre premier workspace</p>
+                            </div>
+                        <% } %>
+                    </div>
 
-                        <!-- Footer -->
-                        <div class="mt-6 pt-4 border-t border-gray-100 dark:border-[#1b2e4b] flex items-center justify-between">
-                            <a href="/auth/logout" class="text-xs text-gray-400 hover:text-danger flex items-center gap-1 transition-colors">
-                                <iconify-icon icon="solar:logout-2-bold" width="14"></iconify-icon>
-                                Déconnexion
-                            </a>
-                            <% if (user.role === 'admin' || user.role === 'superadmin') { %>
-                                <% if (accounts && accounts.length > 0) { %>
-                                    <a href="/account/<%= accounts[0].account_number %>/admin" class="text-xs text-primary hover:underline flex items-center gap-1">
-                                        <iconify-icon icon="solar:shield-star-bold" width="14"></iconify-icon>
-                                        Admin Panel
-                                    </a>
-                                <% } %>
+                    <!-- Create New Workspace Button -->
+                    <button @click="$refs.createModal.showModal()" class="btn btn-outline-primary w-full mb-5">
+                        <iconify-icon icon="solar:add-circle-bold" width="18" class="mr-2"></iconify-icon>
+                        Créer un nouvel espace
+                    </button>
+
+                    <!-- Footer -->
+                    <div class="pt-4 border-t border-gray-100 dark:border-[#1b2e4b] flex items-center justify-between">
+                        <a href="/auth/logout" class="text-xs text-gray-400 hover:text-danger flex items-center gap-1.5 transition-colors">
+                            <iconify-icon icon="solar:logout-2-bold" width="14"></iconify-icon>
+                            Déconnexion
+                        </a>
+                        <% if (user.role === 'admin' || user.role === 'superadmin') { %>
+                            <% if (accounts && accounts.length > 0) { %>
+                                <a href="/account/<%= accounts[0].account_number %>/admin" class="text-xs text-primary hover:underline flex items-center gap-1">
+                                    <iconify-icon icon="solar:shield-star-bold" width="14"></iconify-icon>
+                                    Admin Panel
+                                </a>
                             <% } %>
-                        </div>
+                        <% } %>
                     </div>
                 </div>
             </div>

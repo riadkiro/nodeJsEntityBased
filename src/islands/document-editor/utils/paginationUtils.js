@@ -2,10 +2,14 @@
  * Pagination Utilities
  * DOM-first approach: manipulate DOM, then sync state
  * Operates on real DOM measurements after paint
+ * 
+ * CRITICAL: Uses Range.getClientRects() for accurate overflow detection 
+ * instead of scrollHeight which is unreliable for contenteditable.
  */
 
 const UNDERFLOW_THRESHOLD_PX = 5
 const MAX_PULL_ITERATIONS = 50
+const MAX_OVERFLOW_ITERATIONS = 100 // Safety limit for overflow extraction
 
 /**
  * Check if HTML content is effectively empty
@@ -37,9 +41,40 @@ function getVerticalPaddings(el) {
 }
 
 /**
+ * Check if content overflows the page box using Range-based measurement.
+ * More reliable than scrollHeight for contenteditable elements.
+ * 
+ * @param {HTMLElement} pageEl - The contenteditable page element
+ * @returns {boolean} true if content overflows
+ */
+function doesContentOverflow(pageEl) {
+    // Primary: scrollHeight check (works in most cases since overflow:hidden is set)
+    if (pageEl.scrollHeight > pageEl.clientHeight + 1) return true
+
+    // Secondary: Range-based measurement for edge cases
+    if (!pageEl.firstChild) return false
+
+    const { pb } = getVerticalPaddings(pageEl)
+    const pageRect = pageEl.getBoundingClientRect()
+    const maxBottom = pageRect.bottom - pb
+
+    const range = document.createRange()
+    range.selectNodeContents(pageEl)
+    const rects = range.getClientRects()
+
+    if (!rects || rects.length === 0) return false
+
+    for (let i = 0; i < rects.length; i++) {
+        if (rects[i].bottom > maxBottom + 1) return true
+    }
+
+    return false
+}
+
+/**
  * Returns available vertical space (px) between the bottom of rendered content
  * and the bottom of the page box.
- * Works even when scrollHeight == clientHeight (Word-like measurement).
+ * Uses Range.getClientRects() for accurate measurement.
  */
 function getAvailableSpacePx(pageEl) {
     const pageRect = pageEl.getBoundingClientRect()
@@ -69,89 +104,236 @@ function getAvailableSpacePx(pageEl) {
 }
 
 /**
- * Check if page content overflows and move excess to next page
- * Must be called after DOM paint (via requestAnimationFrame)
+ * Check if content fits within the page (for underflow pull tests)
+ * Uses both scrollHeight and Range measurement for reliability
+ */
+function doesContentFit(pageEl) {
+    if (pageEl.scrollHeight > pageEl.clientHeight + 1) return false
+    return !doesContentOverflow(pageEl)
+}
+
+/**
+ * Check if page content overflows and move excess to next page.
+ * Must be called after DOM paint (via requestAnimationFrame).
+ * 
+ * This function handles a SINGLE page overflow:
+ * - Extracts overflow content from the given page
+ * - Injects it into the next page's DOM (if exists)
+ * - Updates state to create a new page if needed
+ * 
+ * Returns true if overflow was detected and handled (caller should continue iterating).
  */
 export function checkOverflow(element, pageIndex, doc, setDoc, pageRefs) {
-    if (!element) return
+    if (!element) return false
 
-    console.log('[checkOverflow] Page', pageIndex, 'scrollHeight:', element.scrollHeight, 'clientHeight:', element.clientHeight, 'overflow:', element.scrollHeight > element.clientHeight)
+    if (!doesContentOverflow(element)) return false
 
-    if (element.scrollHeight > element.clientHeight) {
-        const overflowContent = extractOverflow(element)
-        console.log('[checkOverflow] Extracted content:', overflowContent ? overflowContent.substring(0, 100) + '...' : '(empty)')
+    const overflowContent = extractOverflow(element)
 
-        if (overflowContent) {
-            // Get or create next page ref for DOM injection
-            let nextPageRef = pageRefs.current[pageIndex + 1]
+    if (!overflowContent) return false
 
-            // If next page exists, inject content directly into DOM (uncontrolled contenteditable)
-            if (nextPageRef) {
-                console.log('[checkOverflow] Injecting into existing page', pageIndex + 1)
-                nextPageRef.innerHTML = overflowContent + nextPageRef.innerHTML
+    // Get next page ref for DOM injection
+    let nextPageRef = pageRefs.current[pageIndex + 1]
+
+    // If next page exists, inject content directly into DOM (uncontrolled contenteditable)
+    if (nextPageRef) {
+        nextPageRef.innerHTML = overflowContent + nextPageRef.innerHTML
+    }
+
+    setDoc(prevDoc => {
+        // Guard against stale index/ref mismatches
+        if (pageRefs.current[pageIndex] !== element) return prevDoc
+
+        const newDoc = { ...prevDoc, pages: [...prevDoc.pages] }
+
+        // Guard: pageIndex must still exist
+        if (!newDoc.pages[pageIndex]) return prevDoc
+
+        // Sync current page from DOM
+        const current = { ...newDoc.pages[pageIndex], content: element.innerHTML }
+        newDoc.pages[pageIndex] = current
+
+        if (pageIndex === newDoc.pages.length - 1) {
+            // Create new page with overflow content
+            newDoc.pages.push({
+                content: overflowContent,
+                elements: [],
+                rows: [],
+                mode: 'edition',
+                background: '#ffffff',
+                order: newDoc.pages.length
+            })
+        } else {
+            // Sync next page from DOM (we already injected content)
+            const nextRef = pageRefs.current[pageIndex + 1]
+            if (nextRef) {
+                newDoc.pages[pageIndex + 1] = { ...newDoc.pages[pageIndex + 1], content: nextRef.innerHTML }
+            }
+        }
+
+        return newDoc
+    })
+
+    return true // overflow was handled
+}
+
+/**
+ * Iteratively reflow ALL pages until no more overflow exists.
+ * This is the solution for large pastes (e.g. 17 pages of content).
+ * 
+ * The problem: checkOverflow creates new pages via setDoc, but React hasn't rendered
+ * them yet, so pageRefs for new pages don't exist. We need to wait for React to render
+ * each new page before we can continue cascading.
+ * 
+ * Solution: Use a loop that:
+ * 1. Processes all existing pages for overflow
+ * 2. Waits for React to render any new pages (via requestAnimationFrame + setTimeout)
+ * 3. Repeats until stable (no more overflows detected)
+ * 
+ * @param {Object} docRef - React ref containing current doc state
+ * @param {Function} setDoc - React state setter for doc
+ * @param {Object} pageRefs - React ref containing page DOM elements
+ * @param {number} maxPasses - Safety limit for total passes (default 100 = ~100 pages max)
+ */
+export function reflowAllPages(docRef, setDoc, pageRefs, maxPasses = 100, onComplete = null) {
+    let pass = 0
+
+    function doPass() {
+        if (pass >= maxPasses) {
+            console.warn('[reflowAllPages] Hit max passes limit:', maxPasses)
+            if (onComplete) onComplete()
+            return
+        }
+        pass++
+
+        const d = docRef.current
+        if (!d?.pages?.length) {
+            if (onComplete) onComplete()
+            return
+        }
+
+        let anyOverflowHandled = false
+
+        // Debug: log current state
+        const refsAvailable = Object.keys(pageRefs.current).map(Number).sort((a, b) => a - b)
+        console.log(`[reflowAllPages] Pass ${pass}: ${d.pages.length} pages in state, refs available: [${refsAvailable.join(',')}]`)
+
+        // Process all pages that currently have refs
+        for (let i = 0; i < d.pages.length; i++) {
+            const el = pageRefs.current[i]
+            if (!el) {
+                console.log(`  Page ${i}: NO REF (skipped)`)
+                continue
             }
 
+            const overflows = doesContentOverflow(el)
+            if (!overflows) continue
+
+            console.log(`  Page ${i}: OVERFLOWS (scrollH=${el.scrollHeight}, clientH=${el.clientHeight}, children=${el.childNodes.length})`)
+
+            const overflowContent = extractOverflow(el)
+            if (!overflowContent) {
+                console.log(`  Page ${i}: extractOverflow returned empty!`)
+                continue
+            }
+
+            anyOverflowHandled = true
+            const overflowLen = overflowContent.length
+            console.log(`  Page ${i}: extracted ${overflowLen} chars of overflow`)
+
+            // Inject into next page DOM if it exists
+            const nextEl = pageRefs.current[i + 1]
+            if (nextEl) {
+                const beforeLen = nextEl.innerHTML.length
+                nextEl.innerHTML = overflowContent + nextEl.innerHTML
+                console.log(`  Page ${i}: injected into page ${i + 1} DOM (before: ${beforeLen} chars, after: ${nextEl.innerHTML.length} chars)`)
+            } else {
+                console.log(`  Page ${i}: next page ${i + 1} has no ref, will create via setDoc`)
+            }
+
+            // Update state
+            const capturedIndex = i
+            const capturedEl = el
+            const capturedOverflow = overflowContent
             setDoc(prevDoc => {
-                // Guard against stale index/ref mismatches
-                if (pageRefs.current[pageIndex] !== element) return prevDoc
+                if (pageRefs.current[capturedIndex] !== capturedEl) return prevDoc
 
                 const newDoc = { ...prevDoc, pages: [...prevDoc.pages] }
-
-                // Guard: pageIndex must still exist
-                if (!newDoc.pages[pageIndex]) return prevDoc
+                if (!newDoc.pages[capturedIndex]) return prevDoc
 
                 // Sync current page from DOM
-                const current = { ...newDoc.pages[pageIndex], content: element.innerHTML }
-                newDoc.pages[pageIndex] = current
+                newDoc.pages[capturedIndex] = {
+                    ...newDoc.pages[capturedIndex],
+                    content: capturedEl.innerHTML
+                }
 
-                if (pageIndex === newDoc.pages.length - 1) {
-                    // Create new page with overflow content
+                if (capturedIndex === newDoc.pages.length - 1) {
+                    // Create new page
                     newDoc.pages.push({
-                        content: overflowContent,
+                        content: capturedOverflow,
                         elements: [],
                         rows: [],
                         mode: 'edition',
                         background: '#ffffff',
                         order: newDoc.pages.length
                     })
+                    console.log(`  [setDoc] Created page ${newDoc.pages.length - 1} with ${capturedOverflow.length} chars`)
                 } else {
-                    // Sync next page from DOM (we already injected content)
-                    const nextRef = pageRefs.current[pageIndex + 1]
+                    // Sync next page from DOM
+                    const nextRef = pageRefs.current[capturedIndex + 1]
                     if (nextRef) {
-                        newDoc.pages[pageIndex + 1] = { ...newDoc.pages[pageIndex + 1], content: nextRef.innerHTML }
+                        newDoc.pages[capturedIndex + 1] = {
+                            ...newDoc.pages[capturedIndex + 1],
+                            content: nextRef.innerHTML
+                        }
                     }
                 }
 
                 return newDoc
             })
 
+            // Only process one overflow per pass to avoid batching issues
+            // Each new page needs a full React render cycle before we can continue
+            break
+        }
+
+        if (anyOverflowHandled) {
+            // Wait for React to render new pages, then do another pass
             requestAnimationFrame(() => {
-                const nextPageRef = pageRefs.current[pageIndex + 1]
-                if (nextPageRef) {
-                    checkOverflow(nextPageRef, pageIndex + 1, doc, setDoc, pageRefs)
-                }
+                setTimeout(doPass, 50)
             })
+        } else {
+            console.log(`[reflowAllPages] Stable after ${pass} passes, ${docRef.current?.pages?.length} pages`)
+            if (onComplete) onComplete()
         }
     }
+
+    // Start first pass after current frame
+    requestAnimationFrame(doPass)
 }
 
 /**
  * Extract overflow content from page
  * Removes or splits nodes from end until content fits
+ * 
+ * IMPROVED: Uses Range-based detection, handles text node splitting better,
+ * preserves block-level element integrity
  */
 export function extractOverflow(element) {
     const overflowParts = []
+    let iterations = 0
 
-    while (element.scrollHeight > element.clientHeight && element.childNodes.length > 0) {
+    while (doesContentOverflow(element) && element.childNodes.length > 0 && iterations < MAX_OVERFLOW_ITERATIONS) {
+        iterations++
         const lastNode = element.lastChild
         if (!lastNode) break
 
-        // If text node, try to split it
+        // If text node, try to split it word by word
         if (lastNode.nodeType === 3) {
             const words = lastNode.textContent.split(' ')
             const extractedWords = []
 
-            while (element.scrollHeight > element.clientHeight && words.length > 1) {
+            while (doesContentOverflow(element) && words.length > 1) {
                 extractedWords.unshift(words.pop())
                 lastNode.textContent = words.join(' ')
             }
@@ -160,11 +342,25 @@ export function extractOverflow(element) {
                 overflowParts.unshift(extractedWords.join(' '))
             }
 
-            if (element.scrollHeight <= element.clientHeight) break
+            if (!doesContentOverflow(element)) break
         }
 
-        // If still overflowing, remove the whole node
-        if (element.scrollHeight > element.clientHeight) {
+        // If an element-level node, try to split block content
+        if (lastNode.nodeType === 1 && doesContentOverflow(element)) {
+            // For block elements (p, div, blockquote, etc.), try splitting content inside
+            const blockTags = ['P', 'DIV', 'BLOCKQUOTE', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'PRE']
+            if (blockTags.includes(lastNode.tagName) && lastNode.childNodes.length > 1) {
+                const splitResult = splitBlockNode(element, lastNode)
+                if (splitResult) {
+                    overflowParts.unshift(splitResult)
+                    if (!doesContentOverflow(element)) break
+                    continue
+                }
+            }
+        }
+
+        // Still overflowing: remove the whole node
+        if (doesContentOverflow(element)) {
             if (lastNode.nodeType === 1) overflowParts.unshift(lastNode.outerHTML)
             else if (lastNode.nodeType === 3) overflowParts.unshift(lastNode.textContent)
             element.removeChild(lastNode)
@@ -172,6 +368,50 @@ export function extractOverflow(element) {
     }
 
     return overflowParts.join('')
+}
+
+/**
+ * Try to split a block-level node (e.g. <p>) to extract overflow content.
+ * Returns the HTML of the extracted portion, or null if splitting wasn't possible.
+ * 
+ * This preserves the block tag and any inline formatting (spans, bold, etc.)
+ */
+function splitBlockNode(pageEl, blockNode) {
+    const childNodes = Array.from(blockNode.childNodes)
+    if (childNodes.length <= 1) return null
+
+    const extractedNodes = []
+
+    // Remove children from end until the page fits
+    while (doesContentOverflow(pageEl) && blockNode.childNodes.length > 1) {
+        const lastChild = blockNode.lastChild
+        if (!lastChild) break
+        extractedNodes.unshift(lastChild)
+        blockNode.removeChild(lastChild)
+    }
+
+    if (extractedNodes.length === 0) return null
+
+    // Try word-level split on the remaining last child (if it's text)
+    const remainingLast = blockNode.lastChild
+    if (remainingLast && remainingLast.nodeType === 3 && doesContentOverflow(pageEl)) {
+        const words = remainingLast.textContent.split(' ')
+        const spillWords = []
+        while (doesContentOverflow(pageEl) && words.length > 1) {
+            spillWords.unshift(words.pop())
+            remainingLast.textContent = words.join(' ')
+        }
+        if (spillWords.length > 0) {
+            // Prepend spilled text to extracted nodes
+            extractedNodes.unshift(document.createTextNode(spillWords.join(' ') + ' '))
+        }
+    }
+
+    // Build the overflow fragment as a clone of the block with extracted content
+    const overflowBlock = blockNode.cloneNode(false) // clone tag + attributes, not children
+    extractedNodes.forEach(n => overflowBlock.appendChild(n))
+
+    return overflowBlock.outerHTML
 }
 
 /**
@@ -212,7 +452,7 @@ function pullTextChunkFromNextPage(element, nextPageRef) {
         if (cloneTextNode) cloneTextNode.textContent = candidateWords
 
         element.appendChild(testClone)
-        const fits = element.scrollHeight <= element.clientHeight + 1
+        const fits = doesContentFit(element)
         element.removeChild(testClone)
 
         if (fits) {
@@ -290,7 +530,7 @@ export function tryPullFromNextPage(element, pageIndex, doc, setDoc, pageRefs) {
         const clone = firstNode.cloneNode(true)
         element.appendChild(clone)
 
-        const fits = element.scrollHeight <= element.clientHeight + 1
+        const fits = doesContentFit(element)
 
         if (fits) {
             // Commit move: remove real node from next page
@@ -371,7 +611,7 @@ export function pullFromNextPageInto(prevEl, curEl) {
         const clone = firstNode.cloneNode(true)
         prevEl.appendChild(clone)
 
-        const fits = prevEl.scrollHeight <= prevEl.clientHeight + 1
+        const fits = doesContentFit(prevEl)
 
         if (fits) {
             curEl.removeChild(firstNode)
@@ -418,7 +658,7 @@ function pullTextChunkBetweenElements(prevEl, curEl) {
         if (cloneTextNode) cloneTextNode.textContent = candidateWords
 
         prevEl.appendChild(testClone)
-        const fits = prevEl.scrollHeight <= prevEl.clientHeight + 1
+        const fits = doesContentFit(prevEl)
         prevEl.removeChild(testClone)
 
         if (fits) {

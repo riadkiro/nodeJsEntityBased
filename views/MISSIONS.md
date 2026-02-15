@@ -29,9 +29,9 @@ ctr+a + supprimer ne surpeime pas le contenu, normalement ctr+a ca doit selectio
 
 également, les bloques qu'on rajoute dans le document meme en mode edition, genre citation etc, je dois avoir une petite icon delete, la comme ça impossible de supprimer le bloc, et quand je clique sur le bloque a droite je dois pouvoir mettre le curceur en dehor du bloque pour passer al la ligne suivante sans creer un espace a linterioeur du bloc, enfin ces comportement sont intuitif normalement, tu dois juste reflechir comme quelqu'un qui cree des documents stylé, il ne doit pas etre bloqué, donc stp, donne moi un systeme ready to use en v1, pret a la production, qu ipermet vraiment de creer des documents stylé et professionnel.
 
-Mission de 14/02 - 03
+~~Mission de 14/02 - 03~~ ✅
 
-http://localhost:3000/account/5001/tasks ici dans la vue checklist, par defaut quand on clique la checkbox ca fait decsendre en bas l'element,je ne veux pas ca, je eux deux panels, celui de droite affiche les taches terminées donc quand c checked ca va a droite en style barré, et mettre les elements dragble pour reorder, ![alt text](image-3.png) la side barre doit avoir le style tag visuelement, 
+~~http://localhost:3000/account/5001/tasks ici dans la vue checklist, par defaut quand on clique la checkbox ca fait decsendre en bas l'element,je ne veux pas ca, je eux deux panels, celui de droite affiche les taches terminées donc quand c checked ca va a droite en style barré, et mettre les elements dragble pour reorder, ![alt text](image-3.png) la side barre doit avoir le style tag visuelement,~~ 
 
 Mission de 14/02 - 04
 http://localhost:3000/account/5001/documents

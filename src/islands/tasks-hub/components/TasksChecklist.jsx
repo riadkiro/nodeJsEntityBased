@@ -149,8 +149,9 @@ export default function TasksChecklist({
             >
                 {/* Drag handle (active tasks only) */}
                 {draggable && (
-                    <div className="flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-40 transition-opacity cursor-grab">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-gray-400">
+                    <div style={{ flexShrink: 0, marginTop: 2, opacity: 0.25, cursor: 'grab', transition: 'opacity 0.2s' }}
+                        className="group-hover:!opacity-60">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style={{ color: '#9ca3af' }}>
                             <circle cx="8" cy="4" r="2" /><circle cx="16" cy="4" r="2" />
                             <circle cx="8" cy="12" r="2" /><circle cx="16" cy="12" r="2" />
                             <circle cx="8" cy="20" r="2" /><circle cx="16" cy="20" r="2" />
@@ -165,19 +166,27 @@ export default function TasksChecklist({
                         e.stopPropagation()
                         handleToggle(task._id)
                     }}
-                    className={`
-                        w-[22px] h-[22px] rounded-lg border-2 flex-shrink-0 mt-0.5
-                        flex items-center justify-center
-                        transition-all duration-200
-                        ${isCompleted
-                            ? 'bg-emerald-500 border-emerald-500 shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30'
-                            : 'border-gray-300 dark:border-gray-600 hover:border-primary hover:shadow-sm hover:shadow-primary/10'
-                        }
-                    `}
+                    style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: 8,
+                        border: `2px solid ${isCompleted ? '#10b981' : '#d1d5db'}`,
+                        backgroundColor: isCompleted ? '#10b981' : 'transparent',
+                        flexShrink: 0,
+                        marginTop: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: isCompleted ? '0 1px 3px rgba(16,185,129,0.3)' : 'none',
+                        padding: 0,
+                        outline: 'none',
+                    }}
                 >
                     {isCompleted && (
-                        <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none">
-                            <path d="M5 12L10 17L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                            <path d="M5 12L10 17L19 7" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     )}
                 </button>
@@ -188,10 +197,14 @@ export default function TasksChecklist({
                     onClick={() => window.location.href = `/account/${accountNumber}/record/${entitySlug}/${task._id}`}
                 >
                     <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-sm font-medium transition-all duration-300 ${isCompleted
-                            ? 'line-through text-gray-400 dark:text-gray-500'
-                            : 'text-gray-800 dark:text-white'
-                            }`}>
+                        <span
+                            className="text-sm font-medium"
+                            style={{
+                                transition: 'all 0.3s',
+                                textDecoration: isCompleted ? 'line-through' : 'none',
+                                color: isCompleted ? '#9ca3af' : undefined,
+                            }}
+                        >
                             {task.title || 'Sans titre'}
                         </span>
 
@@ -216,8 +229,8 @@ export default function TasksChecklist({
                         {/* Due date */}
                         {task.dueDate && (
                             <span className={`text-[11px] flex items-center gap-1 px-1.5 py-0.5 rounded-md ${new Date(task.dueDate) < new Date() && !isCompleted
-                                    ? 'text-red-600 bg-red-50 dark:bg-red-950/20'
-                                    : 'text-gray-400 bg-gray-50 dark:bg-gray-800'
+                                ? 'text-red-600 bg-red-50 dark:bg-red-950/20'
+                                : 'text-gray-400 bg-gray-50 dark:bg-gray-800'
                                 }`}>
                                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none">
                                     <rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" strokeWidth="1.5" />
@@ -289,11 +302,11 @@ export default function TasksChecklist({
                 <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                     {/* Panel header */}
                     <div className="flex items-center gap-2 mb-3 px-1">
-                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#3b82f6' }} />
                         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                             À faire
                         </h3>
-                        <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 tabular-nums">
+                        <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 9999, backgroundColor: '#eff6ff', color: '#2563eb', fontVariantNumeric: 'tabular-nums' }}>
                             {orderedActiveTasks.length}
                         </span>
                     </div>
@@ -319,17 +332,17 @@ export default function TasksChecklist({
                 </div>
 
                 {/* ─── DIVIDER ─── */}
-                <div className="w-px bg-gray-100 dark:bg-gray-700/50 flex-shrink-0 self-stretch my-2" />
+                <div style={{ width: 1, backgroundColor: '#e5e7eb', flexShrink: 0, alignSelf: 'stretch', margin: '8px 0' }} />
 
                 {/* ─── RIGHT PANEL: Completed Tasks ─── */}
                 <div className="flex-1 flex flex-col min-w-0 overflow-hidden" style={{ maxWidth: '45%' }}>
                     {/* Panel header */}
                     <div className="flex items-center gap-2 mb-3 px-1">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#10b981' }} />
                         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                             Terminées
                         </h3>
-                        <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 tabular-nums">
+                        <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 9999, backgroundColor: '#ecfdf5', color: '#059669', fontVariantNumeric: 'tabular-nums' }}>
                             {completedTasks.length}
                         </span>
                     </div>

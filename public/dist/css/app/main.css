@@ -46,37 +46,21 @@ body {
   -webkit-backdrop-filter: blur(20px);
 }
 
-/* Keep col-span-2 (left icon bar) visible when sidebar is collapsed */
+/* Mini-rail sidebar: when toggled (closed), show only the 48px icon rail */
 .toggle-sidebar .sidebar {
-  width: 56px !important;
+  width: 48px !important;
   left: 0 !important;
   right: auto !important;
-  display: block !important;
-  /* Remove grid */
+  overflow: visible !important;
 }
 
-.toggle-sidebar .sidebar .col-span-2 {
-  display: flex !important;
-  width: 100% !important;
-  /* Full width instead of 2/12 */
-  justify-content: flex-start !important;
-  /* Keep icons at top vertically */
-  align-items: center !important;
-  /* Center icons horizontally */
-}
-
-/* Hide col-span-10 (logo + hamburger) when sidebar is collapsed */
-.toggle-sidebar .sidebar .col-span-10 {
-  display: none !important;
-}
-
-/* Hide horizontal-logo in topbar when sidebar is collapsed */
+/* Hide horizontal-logo in topbar when sidebar is toggled */
 .toggle-sidebar .horizontal-logo {
   display: none !important;
 }
 
 .toggle-sidebar .main-container .main-content {
-  margin-left: 56px !important;
+  margin-left: 48px !important;
 }
 
 hr {

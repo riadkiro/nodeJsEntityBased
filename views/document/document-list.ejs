@@ -42,24 +42,18 @@
     <div class="pt-5">
       <!-- Compact Header -->
       <div class="mb-5 flex flex-col gap-4">
-        <!-- Top row: Stats + Actions -->
+        <!-- Top row: Actions -->
         <div class="flex items-center justify-between gap-4">
-          <div class="flex items-center gap-5">
-            <!-- Compact stats -->
-            <div class="flex items-center gap-2 text-sm">
-              <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/5 text-primary font-semibold">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                <span x-text="documents.length">0</span> docs
-              </span>
-              <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-warning/5 text-warning font-medium">
-                <span class="w-2 h-2 rounded-full bg-warning"></span>
-                <span x-text="documents.filter(d => d.status === 'draft').length">0</span> brouillons
-              </span>
-              <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success/5 text-success font-medium">
-                <span class="w-2 h-2 rounded-full bg-success"></span>
-                <span x-text="documents.filter(d => d.status === 'published').length">0</span> publiés
-              </span>
-            </div>
+          <div class="flex items-center gap-3">
+            <template x-if="activeFolder !== null">
+              <button @click="activeFolder = null; folderTab = 'all'" class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-[#888ea8] hover:text-primary hover:bg-primary/5 transition-all">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M5 12L11 6M5 12L11 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Dossiers
+              </button>
+            </template>
+            <template x-if="activeFolder !== null">
+              <h3 class="text-base font-semibold dark:text-white-light" x-text="getFolderLabel(activeFolder)"></h3>
+            </template>
           </div>
           <div class="flex items-center gap-3">
             <!-- Search -->
@@ -71,7 +65,7 @@
               </svg>
             </div>
             <!-- View toggle -->
-            <div class="flex gap-0.5 bg-gray-100 dark:bg-[#1b2e4b] p-0.5 rounded-lg">
+            <div class="flex gap-0.5 bg-gray-100 dark:bg-[#1b2e4b] p-0.5 rounded-lg" x-show="activeFolder !== null" x-cloak>
               <button @click="viewMode = 'grid'" class="p-1.5 rounded-md transition-all" :class="viewMode === 'grid' ? 'bg-white dark:bg-dark shadow-sm text-primary' : 'text-[#888ea8] hover:text-primary'">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M2 6.5C2 4.37868 2 3.31802 2.65901 2.65901C3.31802 2 4.37868 2 6.5 2C8.62132 2 9.68198 2 10.341 2.65901C11 3.31802 11 4.37868 11 6.5C11 8.62132 11 9.68198 10.341 10.341C9.68198 11 8.62132 11 6.5 11C4.37868 11 3.31802 11 2.65901 10.341C2 9.68198 2 8.62132 2 6.5Z" stroke="currentColor" stroke-width="1.5"/><path d="M13 6.5C13 4.37868 13 3.31802 13.659 2.65901C14.318 2 15.3787 2 17.5 2C19.6213 2 20.682 2 21.341 2.65901C22 3.31802 22 4.37868 22 6.5C22 8.62132 22 9.68198 21.341 10.341C20.682 11 19.6213 11 17.5 11C15.3787 11 14.318 11 13.659 10.341C13 9.68198 13 8.62132 13 6.5Z" stroke="currentColor" stroke-width="1.5"/><path d="M2 17.5C2 15.3787 2 14.318 2.65901 13.659C3.31802 13 4.37868 13 6.5 13C8.62132 13 9.68198 13 10.341 13.659C11 14.318 11 15.3787 11 17.5C11 19.6213 11 20.682 10.341 21.341C9.68198 22 8.62132 22 6.5 22C4.37868 22 3.31802 22 2.65901 21.341C2 20.682 2 19.6213 2 17.5Z" stroke="currentColor" stroke-width="1.5"/><path d="M13 17.5C13 15.3787 13 14.318 13.659 13.659C14.318 13 15.3787 13 17.5 13C19.6213 13 20.682 13 21.341 13.659C22 14.318 22 15.3787 22 17.5C22 19.6213 22 20.682 21.341 21.341C20.682 22 19.6213 22 17.5 22C15.3787 22 14.318 22 13.659 21.341C13 20.682 13 19.6213 13 17.5Z" stroke="currentColor" stroke-width="1.5"/></svg>
               </button>
@@ -87,64 +81,119 @@
           </div>
         </div>
 
-        <!-- Folder category tabs -->
-        <div class="flex items-center gap-1 border-b border-[#e0e6ed] dark:border-[#1b2e4b]">
-          <button @click="folderTab = 'all'" class="px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px flex items-center gap-2"
-                  :class="folderTab === 'all' ? 'border-primary text-primary' : 'border-transparent text-[#888ea8] hover:text-gray-600 dark:hover:text-gray-300'">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            Tous
-            <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 tabular-nums" x-text="documents.length"></span>
-          </button>
-          <button @click="folderTab = 'created'" class="px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px flex items-center gap-2"
-                  :class="folderTab === 'created' ? 'border-primary text-primary' : 'border-transparent text-[#888ea8] hover:text-gray-600 dark:hover:text-gray-300'">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M16 2H8C5.17157 2 3.75736 2 2.87868 2.87868C2 3.75736 2 5.17157 2 8V16C2 18.8284 2 20.2426 2.87868 21.1213C3.75736 22 5.17157 22 8 22H16C18.8284 22 20.2426 22 21.1213 21.1213C22 20.2426 22 18.8284 22 16V8C22 5.17157 22 3.75736 21.1213 2.87868C20.2426 2 18.8284 2 16 2Z" stroke="currentColor" stroke-width="1.5"/><path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            Créés
-            <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 tabular-nums" x-text="documents.filter(d => !d.isTemplate).length"></span>
-          </button>
-          <button @click="folderTab = 'draft'" class="px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px flex items-center gap-2"
-                  :class="folderTab === 'draft' ? 'border-warning text-warning' : 'border-transparent text-[#888ea8] hover:text-gray-600 dark:hover:text-gray-300'">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            Brouillons
-            <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning tabular-nums" x-text="documents.filter(d => d.status === 'draft').length"></span>
-          </button>
-          <button @click="folderTab = 'published'" class="px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px flex items-center gap-2"
-                  :class="folderTab === 'published' ? 'border-success text-success' : 'border-transparent text-[#888ea8] hover:text-gray-600 dark:hover:text-gray-300'">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Publiés
-            <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-success/10 text-success tabular-nums" x-text="documents.filter(d => d.status === 'published').length"></span>
-          </button>
-          <button @click="folderTab = 'fav'" class="px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px flex items-center gap-2"
-                  :class="folderTab === 'fav' ? 'border-warning text-warning' : 'border-transparent text-[#888ea8] hover:text-gray-600 dark:hover:text-gray-300'">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M9.15316 5.40838C10.4198 3.13613 11.0531 2 12 2C12.9469 2 13.5802 3.13612 14.8468 5.40837L15.1745 5.99623C15.5345 6.64193 15.7144 6.96479 15.9951 7.17781C16.2757 7.39083 16.6251 7.4699 17.3241 7.62805L17.9605 7.77203C20.4201 8.32856 21.65 8.60682 21.9426 9.54773C22.2352 10.4886 21.3968 11.4691 19.7199 13.4299L19.2861 13.9372C18.8096 14.4944 18.5713 14.773 18.4641 15.1177C18.357 15.4624 18.393 15.8341 18.465 16.5776L18.5306 17.2544C18.7841 19.8706 18.9109 21.1787 18.1449 21.7602C17.3788 22.3417 16.2273 21.8115 13.9243 20.7512L13.3285 20.4768C12.6741 20.1755 12.3469 20.0248 12 20.0248C11.6531 20.0248 11.3259 20.1755 10.6715 20.4768L10.0757 20.7512C7.77268 21.8115 6.62118 22.3417 5.85515 21.7602C5.08912 21.1787 5.21588 19.8706 5.4694 17.2544L5.53498 16.5776C5.60703 15.8341 5.64305 15.4624 5.53586 15.1177C5.42868 14.773 5.19043 14.4944 4.71392 13.9372L4.2801 13.4299C2.60325 11.4691 1.76482 10.4886 2.05742 9.54773C2.35002 8.60682 3.57986 8.32856 6.03954 7.77203L6.67589 7.62805C7.37485 7.4699 7.72433 7.39083 8.00494 7.17781C8.28555 6.96479 8.46553 6.64194 8.82547 5.99623L9.15316 5.40838Z" stroke="currentColor" stroke-width="1.5"/></svg>
-            Favoris
-          </button>
-        </div>
-      </div>
+        <!-- Windows-style Folder Icons (landing page) -->
+        <template x-if="activeFolder === null">
+          <div class="flex flex-wrap gap-2 pt-2">
+            <!-- + Nouveau -->
+            <button @click="openTemplateModal()" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-primary/5 dark:hover:bg-primary/10 transition-all cursor-pointer">
+              <div class="relative mb-2">
+                <svg class="w-16 h-16 text-primary/70 group-hover:text-primary transition-colors" viewBox="0 0 64 64" fill="none">
+                  <rect x="12" y="8" width="40" height="48" rx="3" fill="currentColor" opacity="0.08" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M32 24V40M24 32H40" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <span class="text-xs font-medium text-primary/80 group-hover:text-primary text-center leading-tight transition-colors">Nouveau</span>
+            </button>
 
+            <!-- Récents folder -->
+            <button @click="activeFolder = 'recent'; folderTab = 'all'" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-[#eef2ff] dark:hover:bg-[#1b2e4b]/60 transition-all cursor-pointer">
+              <div class="relative mb-2">
+                <svg class="w-16 h-16 drop-shadow-sm" viewBox="0 0 64 64" fill="none">
+                  <path d="M6 18C6 15.8 6 14.7 6.654 13.91C6.8 13.73 6.965 13.565 7.145 13.419C7.935 12.765 9.035 12.765 11.235 12.765H15.5C16.44 12.765 16.91 12.765 17.34 12.9C17.77 13.035 18.135 13.295 18.865 13.815L21.135 15.39C21.865 15.91 22.23 16.17 22.66 16.305C23.09 16.44 23.56 16.44 24.5 16.44H42C46.4 16.44 48.6 16.44 50 17.84C51.4 19.24 51.4 21.44 51.4 25.84V26" stroke="#e2a03f" stroke-width="2"/>
+                  <rect x="4" y="22" width="56" height="32" rx="4" fill="#f5c542" stroke="#e2a03f" stroke-width="1.5"/>
+                  <rect x="4" y="22" width="56" height="8" rx="4" fill="#e2a03f" opacity="0.3"/>
+                </svg>
+                <span class="absolute -top-1 -right-1 text-[10px] min-w-[20px] h-[20px] flex items-center justify-center px-1 rounded-full bg-primary text-white font-bold shadow-sm" x-text="getRecentDocs().length"></span>
+              </div>
+              <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary text-center leading-tight transition-colors">Récents</span>
+            </button>
+
+            <!-- Brouillons folder -->
+            <button @click="activeFolder = 'draft'; folderTab = 'draft'" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-[#fff8ed] dark:hover:bg-[#1b2e4b]/60 transition-all cursor-pointer">
+              <div class="relative mb-2">
+                <svg class="w-16 h-16 drop-shadow-sm" viewBox="0 0 64 64" fill="none">
+                  <path d="M6 18C6 15.8 6 14.7 6.654 13.91C6.8 13.73 6.965 13.565 7.145 13.419C7.935 12.765 9.035 12.765 11.235 12.765H15.5C16.44 12.765 16.91 12.765 17.34 12.9C17.77 13.035 18.135 13.295 18.865 13.815L21.135 15.39C21.865 15.91 22.23 16.17 22.66 16.305C23.09 16.44 23.56 16.44 24.5 16.44H42C46.4 16.44 48.6 16.44 50 17.84C51.4 19.24 51.4 21.44 51.4 25.84V26" stroke="#e2a03f" stroke-width="2"/>
+                  <rect x="4" y="22" width="56" height="32" rx="4" fill="#f5c542" stroke="#e2a03f" stroke-width="1.5"/>
+                  <rect x="4" y="22" width="56" height="8" rx="4" fill="#e2a03f" opacity="0.3"/>
+                </svg>
+                <span class="absolute -top-1 -right-1 text-[10px] min-w-[20px] h-[20px] flex items-center justify-center px-1 rounded-full bg-warning text-white font-bold shadow-sm" x-text="documents.filter(d => d.status === 'draft').length"></span>
+              </div>
+              <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-warning text-center leading-tight transition-colors">Brouillons</span>
+            </button>
+
+            <!-- Publiés folder -->
+            <button @click="activeFolder = 'published'; folderTab = 'published'" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-[#edfff5] dark:hover:bg-[#1b2e4b]/60 transition-all cursor-pointer">
+              <div class="relative mb-2">
+                <svg class="w-16 h-16 drop-shadow-sm" viewBox="0 0 64 64" fill="none">
+                  <path d="M6 18C6 15.8 6 14.7 6.654 13.91C6.8 13.73 6.965 13.565 7.145 13.419C7.935 12.765 9.035 12.765 11.235 12.765H15.5C16.44 12.765 16.91 12.765 17.34 12.9C17.77 13.035 18.135 13.295 18.865 13.815L21.135 15.39C21.865 15.91 22.23 16.17 22.66 16.305C23.09 16.44 23.56 16.44 24.5 16.44H42C46.4 16.44 48.6 16.44 50 17.84C51.4 19.24 51.4 21.44 51.4 25.84V26" stroke="#00ab55" stroke-width="2"/>
+                  <rect x="4" y="22" width="56" height="32" rx="4" fill="#34d399" stroke="#00ab55" stroke-width="1.5"/>
+                  <rect x="4" y="22" width="56" height="8" rx="4" fill="#00ab55" opacity="0.3"/>
+                </svg>
+                <span class="absolute -top-1 -right-1 text-[10px] min-w-[20px] h-[20px] flex items-center justify-center px-1 rounded-full bg-success text-white font-bold shadow-sm" x-text="documents.filter(d => d.status === 'published').length"></span>
+              </div>
+              <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-success text-center leading-tight transition-colors">Publiés</span>
+            </button>
+
+            <!-- Favoris folder -->
+            <button @click="activeFolder = 'fav'; folderTab = 'fav'" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-[#fef3f2] dark:hover:bg-[#1b2e4b]/60 transition-all cursor-pointer">
+              <div class="relative mb-2">
+                <svg class="w-16 h-16 drop-shadow-sm" viewBox="0 0 64 64" fill="none">
+                  <path d="M6 18C6 15.8 6 14.7 6.654 13.91C6.8 13.73 6.965 13.565 7.145 13.419C7.935 12.765 9.035 12.765 11.235 12.765H15.5C16.44 12.765 16.91 12.765 17.34 12.9C17.77 13.035 18.135 13.295 18.865 13.815L21.135 15.39C21.865 15.91 22.23 16.17 22.66 16.305C23.09 16.44 23.56 16.44 24.5 16.44H42C46.4 16.44 48.6 16.44 50 17.84C51.4 19.24 51.4 21.44 51.4 25.84V26" stroke="#e7515a" stroke-width="2"/>
+                  <rect x="4" y="22" width="56" height="32" rx="4" fill="#fca5a5" stroke="#e7515a" stroke-width="1.5"/>
+                  <rect x="4" y="22" width="56" height="8" rx="4" fill="#e7515a" opacity="0.3"/>
+                  <!-- Star icon inside -->
+                  <path d="M32 30L34.5 35.5L40.5 36L36 40L37.5 46L32 43L26.5 46L28 40L23.5 36L29.5 35.5Z" fill="#e7515a" opacity="0.5"/>
+                </svg>
+                <span class="absolute -top-1 -right-1 text-[10px] min-w-[20px] h-[20px] flex items-center justify-center px-1 rounded-full bg-danger text-white font-bold shadow-sm" x-text="documents.filter(d => d.isFav).length"></span>
+              </div>
+              <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-danger text-center leading-tight transition-colors">Favoris</span>
+            </button>
+
+            <!-- Tous les documents folder -->
+            <button @click="activeFolder = 'all'; folderTab = 'all'" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-[#eff6ff] dark:hover:bg-[#1b2e4b]/60 transition-all cursor-pointer">
+              <div class="relative mb-2">
+                <svg class="w-16 h-16 drop-shadow-sm" viewBox="0 0 64 64" fill="none">
+                  <path d="M6 18C6 15.8 6 14.7 6.654 13.91C6.8 13.73 6.965 13.565 7.145 13.419C7.935 12.765 9.035 12.765 11.235 12.765H15.5C16.44 12.765 16.91 12.765 17.34 12.9C17.77 13.035 18.135 13.295 18.865 13.815L21.135 15.39C21.865 15.91 22.23 16.17 22.66 16.305C23.09 16.44 23.56 16.44 24.5 16.44H42C46.4 16.44 48.6 16.44 50 17.84C51.4 19.24 51.4 21.44 51.4 25.84V26" stroke="#2196f3" stroke-width="2"/>
+                  <rect x="4" y="22" width="56" height="32" rx="4" fill="#64b5f6" stroke="#2196f3" stroke-width="1.5"/>
+                  <rect x="4" y="22" width="56" height="8" rx="4" fill="#2196f3" opacity="0.3"/>
+                </svg>
+                <span class="absolute -top-1 -right-1 text-[10px] min-w-[20px] h-[20px] flex items-center justify-center px-1 rounded-full bg-info text-white font-bold shadow-sm" x-text="documents.length"></span>
+              </div>
+              <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-info text-center leading-tight transition-colors">Tous</span>
+            </button>
+          </div>
+        </template>
+
+        <!-- Recent documents preview (landing page only) -->
+        <template x-if="activeFolder === null">
+          <div class="mt-6">
+            <h3 class="text-sm font-semibold text-[#888ea8] mb-3 flex items-center gap-2">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M12 8V12L14.5 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Modifiés récemment
+            </h3>
+            <div class="panel p-0 overflow-hidden">
+              <template x-for="(doc, idx) in getRecentDocs().slice(0, 5)" :key="doc._id">
+                <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="flex items-center gap-3 px-4 py-3 hover:bg-[#f8f9fa] dark:hover:bg-[#1b2e4b]/50 transition-colors" :class="idx < 4 ? 'border-b border-[#e0e6ed] dark:border-[#1b2e4b]' : ''">
+                  <div class="flex h-9 w-9 items-center justify-center rounded-lg flex-shrink-0" :class="doc.status === 'published' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-sm dark:text-white-light truncate" x-text="doc.name || 'Document sans titre'"></div>
+                    <div class="text-[11px] text-[#888ea8]" x-text="formatDate(doc.updatedAt)"></div>
+                  </div>
+                  <span class="badge text-[10px]" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
+                </a>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+      <!-- Document contents (shown when a folder is active) -->
+      <template x-if="activeFolder !== null">
+      <div class="space-y-6">
       <!-- Grid View with Time Grouping -->
       <template x-if="viewMode === 'grid'">
         <div class="space-y-6">
-          <!-- Action Cards Row -->
-          <div class="flex items-center gap-3">
-            <button @click="openTemplateModal()" class="group flex items-center gap-3 px-5 py-3.5 rounded-xl text-white shadow-sm hover:shadow-lg transition-all" style="background: linear-gradient(135deg, #4361ee 0%, #2541b2 100%);">
-              <div class="flex items-center justify-center w-9 h-9 rounded-lg transition-colors" style="background: rgba(255,255,255,0.2);">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
-              </div>
-              <div class="text-left">
-                <div class="text-sm font-semibold text-white">Nouveau document</div>
-                <div class="text-[11px]" style="color: rgba(255,255,255,0.7);">Créer ou utiliser un template</div>
-              </div>
-            </button>
-            <button class="group flex items-center gap-3 px-5 py-3.5 rounded-xl bg-white dark:bg-[#1b2e4b] border border-[#e0e6ed] dark:border-[#253b5c] hover:border-primary/40 hover:shadow-md transition-all">
-              <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-secondary/10 text-secondary group-hover:bg-secondary/20 transition-colors">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M12 15L12 2M12 2L15 5.5M12 2L9 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 22H16C18.8284 22 20.2426 22 21.1213 21.1213C22 20.2426 22 18.8284 22 16V15C22 12.1716 22 10.7574 21.1213 9.87868C20.2426 9 18.8284 9 16 9H8C5.17157 9 3.75736 9 2.87868 9.87868C2 10.7574 2 12.1716 2 15V16C2 18.8284 2 20.2426 2.87868 21.1213C3.75736 22 5.17157 22 8 22Z" stroke="currentColor" stroke-width="1.5"/></svg>
-              </div>
-              <div class="text-left">
-                <div class="text-sm font-semibold dark:text-white-light">Uploader</div>
-                <div class="text-[11px] text-[#888ea8]">Importer un fichier</div>
-              </div>
-            </button>
-          </div>
 
           <!-- Today -->
           <template x-if="getDocumentsByPeriod('today').length > 0">
@@ -463,6 +512,8 @@
           </template>
         </div>
       </template>
+      </div>
+      </template>
     </div>
   </template>
 
@@ -727,6 +778,7 @@ document.addEventListener('alpine:init', () => {
     layoutMode: 'dashboard',
     selectedTab: 'all',
     folderTab: 'all',
+    activeFolder: null,
     isShowDocMenu: false,
     showAllDocs: false,
     showTemplateModal: false,
@@ -781,7 +833,11 @@ document.addEventListener('alpine:init', () => {
       
       // Apply folder tab filter (used in dashboard layout)
       if (this.layoutMode === 'dashboard') {
-        if (this.folderTab === 'draft') {
+        if (this.activeFolder === 'recent') {
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          docs = docs.filter(d => new Date(d.updatedAt) >= sevenDaysAgo);
+        } else if (this.folderTab === 'draft') {
           docs = docs.filter(d => d.status === 'draft');
         } else if (this.folderTab === 'published') {
           docs = docs.filter(d => d.status === 'published');
@@ -813,6 +869,19 @@ document.addEventListener('alpine:init', () => {
       return docs;
     },
     
+    getRecentDocs() {
+      const now = new Date();
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      return this.documents.filter(d => new Date(d.updatedAt) >= sevenDaysAgo)
+        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    },
+
+    getFolderLabel(folder) {
+      const labels = { recent: 'Récents', draft: 'Brouillons', published: 'Publiés', fav: 'Favoris', all: 'Tous les documents' };
+      return labels[folder] || 'Documents';
+    },
+
     toggleFav(doc) {
       doc.isFav = !doc.isFav;
     },

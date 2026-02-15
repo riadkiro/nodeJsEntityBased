@@ -209,7 +209,22 @@ const DocumentSchema = new mongoose.Schema({
     // Dynamic Template System Fields
     // ============================================
     collections: [CollectionSchema],        // Data sources (single/query)
-    contentBlocks: [ContentBlockSchema]     // Structured content blocks
+    contentBlocks: [ContentBlockSchema],    // Structured content blocks
+
+    // Folder organization
+    folderId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'DocumentFolder',
+        default: null
+    },
+
+    // Uploaded file info (for uploaded documents, not editor-created)
+    uploadedFile: {
+        originalName: String,
+        mimeType: String,
+        size: Number,                        // in bytes
+        path: String                         // relative URL
+    }
 }, {
     timestamps: true
 });
@@ -219,6 +234,7 @@ DocumentSchema.index({ name: 'text' });
 DocumentSchema.index({ createdBy: 1, createdAt: -1 });
 DocumentSchema.index({ isTemplate: 1 });
 DocumentSchema.index({ entityId: 1 });
+DocumentSchema.index({ folderId: 1 });
 
 // Virtual pour compter les pages
 DocumentSchema.virtual('pageCount').get(function () {

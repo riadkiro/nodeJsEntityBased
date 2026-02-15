@@ -83,7 +83,8 @@
 
         <!-- Windows-style Folder Icons (landing page) -->
         <template x-if="activeFolder === null">
-          <div class="flex flex-wrap gap-2 pt-2">
+          <div class="relative" @contextmenu.prevent="contextMenu = { show: true, x: $event.clientX, y: $event.clientY, folderId: null, folderName: null }">
+            <div class="flex flex-wrap gap-2 pt-2">
             <!-- + Nouveau -->
             <button @click="openTemplateModal()" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-primary/5 dark:hover:bg-primary/10 transition-all cursor-pointer">
               <div class="relative mb-2">
@@ -161,29 +162,129 @@
               </div>
               <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-info text-center leading-tight transition-colors">Tous</span>
             </button>
-          </div>
-        </template>
 
-        <!-- Recent documents preview (landing page only) -->
-        <template x-if="activeFolder === null">
-          <div class="mt-6">
-            <h3 class="text-sm font-semibold text-[#888ea8] mb-3 flex items-center gap-2">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M12 8V12L14.5 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Modifiés récemment
-            </h3>
-            <div class="panel p-0 overflow-hidden">
-              <template x-for="(doc, idx) in getRecentDocs().slice(0, 5)" :key="doc._id">
-                <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="flex items-center gap-3 px-4 py-3 hover:bg-[#f8f9fa] dark:hover:bg-[#1b2e4b]/50 transition-colors" :class="idx < 4 ? 'border-b border-[#e0e6ed] dark:border-[#1b2e4b]' : ''">
-                  <div class="flex h-9 w-9 items-center justify-center rounded-lg flex-shrink-0" :class="doc.status === 'published' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="font-medium text-sm dark:text-white-light truncate" x-text="doc.name || 'Document sans titre'"></div>
-                    <div class="text-[11px] text-[#888ea8]" x-text="formatDate(doc.updatedAt)"></div>
-                  </div>
-                  <span class="badge text-[10px]" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
-                </a>
+            <!-- User-created custom folders -->
+            <template x-for="folder in customFolders" :key="folder._id">
+              <button @click="activeFolder = 'custom-' + folder._id; folderTab = 'all'" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-[#fff8ed] dark:hover:bg-[#1b2e4b]/60 transition-all cursor-pointer" @contextmenu.prevent.stop="contextMenu = { show: true, x: $event.clientX, y: $event.clientY, folderId: folder._id, folderName: folder.name }">
+                <div class="relative mb-2">
+                  <svg class="w-16 h-16 drop-shadow-sm" viewBox="0 0 64 64" fill="none">
+                    <path d="M6 18C6 15.8 6 14.7 6.654 13.91C6.8 13.73 6.965 13.565 7.145 13.419C7.935 12.765 9.035 12.765 11.235 12.765H15.5C16.44 12.765 16.91 12.765 17.34 12.9C17.77 13.035 18.135 13.295 18.865 13.815L21.135 15.39C21.865 15.91 22.23 16.17 22.66 16.305C23.09 16.44 23.56 16.44 24.5 16.44H42C46.4 16.44 48.6 16.44 50 17.84C51.4 19.24 51.4 21.44 51.4 25.84V26" :stroke="folder.color || '#e2a03f'" stroke-width="2"/>
+                    <rect x="4" y="22" width="56" height="32" rx="4" :fill="folder.color || '#f5c542'" :stroke="folder.color || '#e2a03f'" stroke-width="1.5" opacity="0.7"/>
+                    <rect x="4" y="22" width="56" height="8" rx="4" :fill="folder.color || '#e2a03f'" opacity="0.3"/>
+                  </svg>
+                  <span class="absolute -top-1 -right-1 text-[10px] min-w-[20px] h-[20px] flex items-center justify-center px-1 rounded-full bg-gray-500 text-white font-bold shadow-sm" x-text="documents.filter(d => d.folderId === folder._id).length"></span>
+                </div>
+                <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white text-center leading-tight transition-colors truncate max-w-[90px]" x-text="folder.name"></span>
+              </button>
+            </template>
+            </div>
+
+            <!-- Right-click Context Menu -->
+            <div x-show="contextMenu.show" x-cloak
+              @click.outside="contextMenu.show = false"
+              :style="'left:' + contextMenu.x + 'px; top:' + contextMenu.y + 'px'"
+              class="fixed z-50 bg-white dark:bg-[#1b2e4b] border border-[#e0e6ed] dark:border-gray-700 rounded-lg shadow-xl py-1.5 min-w-[180px]"
+              x-transition:enter="transition ease-out duration-100"
+              x-transition:enter-start="opacity-0 scale-95"
+              x-transition:enter-end="opacity-100 scale-100">
+              <template x-if="!contextMenu.folderId">
+                <div>
+                  <button @click="createFolder(); contextMenu.show = false" class="flex items-center gap-2.5 w-full px-3.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#f4f4f4] dark:hover:bg-[#253b5c] transition-colors">
+                    <svg class="w-4 h-4 text-warning" viewBox="0 0 24 24" fill="none"><path d="M2 6.95c0-.883 0-1.324.07-1.692A4 4 0 015.257 2.07C5.626 2 6.068 2 6.95 2c.386 0 .58 0 .766.017a4 4 0 012.18.904c.144.119.28.255.554.529L11 4h5c1.886 0 2.828 0 3.414.586C20 5.172 20 6.114 20 8v1" stroke="currentColor" stroke-width="1.5"/><path d="M2 10c0-1.886 0-2.828.586-3.414C3.172 6 4.114 6 6 6h12c1.886 0 2.828 0 3.414.586C22 7.172 22 8.114 22 10v5c0 1.886 0 2.828-.586 3.414C20.828 19 19.886 19 18 19H6c-1.886 0-2.828 0-3.414-.586C2 17.828 2 16.886 2 15v-5z" stroke="currentColor" stroke-width="1.5"/></svg>
+                    Nouveau dossier
+                  </button>
+                  <button @click="openTemplateModal(); contextMenu.show = false" class="flex items-center gap-2.5 w-full px-3.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#f4f4f4] dark:hover:bg-[#253b5c] transition-colors">
+                    <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    Nouveau document
+                  </button>
+                </div>
               </template>
+              <template x-if="contextMenu.folderId">
+                <div>
+                  <button @click="renameFolder(contextMenu.folderId, contextMenu.folderName); contextMenu.show = false" class="flex items-center gap-2.5 w-full px-3.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#f4f4f4] dark:hover:bg-[#253b5c] transition-colors">
+                    <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none"><path d="M15.6287 5.12132L4.31497 16.435C4.18538 16.5646 4.09816 16.7304 4.06417 16.9108L3.54167 19.6667C3.48335 19.9735 3.73482 20.2425 4.04497 20.2012L6.8675 19.8243C7.03693 19.8017 7.19326 19.7258 7.31639 19.6068L18.5355 8.71751" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12.5 7.5L16.5 11.5" stroke="currentColor" stroke-width="1.5"/></svg>
+                    Renommer
+                  </button>
+                  <button @click="deleteFolder(contextMenu.folderId); contextMenu.show = false" class="flex items-center gap-2.5 w-full px-3.5 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M20.5 6H3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M18.833 8.5L18.373 15.4C18.197 18.054 18.109 19.381 17.243 20.19C16.378 21 15.048 21 12.388 21H11.612C8.952 21 7.622 21 6.757 20.19C5.891 19.381 5.803 18.054 5.627 15.4L5.167 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    Supprimer
+                  </button>
+                </div>
+              </template>
+            </div>
+
+            <!-- Upload zone -->
+            <div class="mt-8">
+              <h3 class="text-sm font-semibold text-[#888ea8] mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M12 15V3M12 3L8 7.5M12 3L16 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17L2.621 19.485C2.72 19.878 2.769 20.074 2.871 20.226C2.96 20.361 3.082 20.471 3.224 20.545C3.385 20.63 3.585 20.66 3.984 20.72L11.326 21.82C11.549 21.854 11.661 21.87 11.774 21.876C11.874 21.881 11.974 21.881 12.074 21.876C12.187 21.87 12.298 21.854 12.522 21.82L19.864 20.72C20.263 20.66 20.462 20.63 20.624 20.545C20.766 20.471 20.888 20.361 20.977 20.226C21.079 20.074 21.128 19.878 21.227 19.485L21.848 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                Documents uploadés
+                <span class="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full" x-text="uploadedDocs.length"></span>
+              </h3>
+              <div class="border-2 border-dashed rounded-xl p-6 text-center transition-all"
+                :class="isDraggingFile ? 'border-primary bg-primary/5 dark:bg-primary/10' : 'border-[#e0e6ed] dark:border-gray-700 hover:border-primary/40'"
+                @dragover.prevent="isDraggingFile = true"
+                @dragleave.prevent="isDraggingFile = false"
+                @drop.prevent="handleFileDrop($event); isDraggingFile = false">
+                <template x-if="uploadedDocs.length === 0 && !isUploading">
+                  <div>
+                    <svg class="w-10 h-10 mx-auto mb-2 text-[#888ea8]/50" viewBox="0 0 24 24" fill="none"><path d="M12 15V3M12 3L8 7.5M12 3L16 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17L2.621 19.485C2.72 19.878 2.769 20.074 2.871 20.226C2.96 20.361 3.082 20.471 3.224 20.545C3.385 20.63 3.585 20.66 3.984 20.72L11.326 21.82C11.549 21.854 11.661 21.87 11.774 21.876C11.874 21.881 11.974 21.881 12.074 21.876C12.187 21.87 12.298 21.854 12.522 21.82L19.864 20.72C20.263 20.66 20.462 20.63 20.624 20.545C20.766 20.471 20.888 20.361 20.977 20.226C21.079 20.074 21.128 19.878 21.227 19.485L21.848 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    <p class="text-sm text-[#888ea8] mb-1">Glissez-déposez vos fichiers ici</p>
+                    <p class="text-[11px] text-[#888ea8]/70 mb-3">PDF, Word, Images, Excel...</p>
+                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium cursor-pointer hover:bg-primary/20 transition-colors">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><path d="M12 15V3M12 3L8 7.5M12 3L16 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      Parcourir
+                      <input type="file" multiple class="hidden" @change="handleFileSelect($event)">
+                    </label>
+                  </div>
+                </template>
+                <template x-if="uploadedDocs.length > 0 || isUploading">
+                  <div class="text-left">
+                    <div class="flex flex-wrap gap-3">
+                      <template x-for="udoc in uploadedDocs" :key="udoc._id">
+                        <a :href="udoc.uploadedFile?.path" target="_blank" class="group flex flex-col items-center w-[80px] py-2 px-1 rounded-lg hover:bg-gray-50 dark:hover:bg-[#1b2e4b]/40 transition-colors">
+                          <div class="w-10 h-12 rounded-md flex items-center justify-center mb-1.5" :class="getFileIconClass(udoc.uploadedFile?.mimeType)">
+                            <span class="text-[10px] font-bold uppercase" x-text="getFileExt(udoc.uploadedFile?.originalName)"></span>
+                          </div>
+                          <span class="text-[11px] text-gray-600 dark:text-gray-400 truncate w-full text-center" x-text="udoc.name"></span>
+                        </a>
+                      </template>
+                      <label class="flex flex-col items-center justify-center w-[80px] py-2 px-1 rounded-lg border border-dashed border-[#e0e6ed] dark:border-gray-700 hover:border-primary/40 cursor-pointer transition-colors">
+                        <svg class="w-6 h-6 text-[#888ea8]/50 mb-1" viewBox="0 0 24 24" fill="none"><path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        <span class="text-[10px] text-[#888ea8]">Ajouter</span>
+                        <input type="file" multiple class="hidden" @change="handleFileSelect($event)">
+                      </label>
+                    </div>
+                    <template x-if="isUploading">
+                      <div class="mt-3 flex items-center gap-2 text-xs text-primary">
+                        <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                        Upload en cours...
+                      </div>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Recent documents preview -->
+            <div class="mt-6" x-show="getRecentDocs().length > 0">
+              <h3 class="text-sm font-semibold text-[#888ea8] mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M12 8V12L14.5 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Modifiés récemment
+              </h3>
+              <div class="panel p-0 overflow-hidden">
+                <template x-for="(doc, idx) in getRecentDocs().slice(0, 5)" :key="doc._id">
+                  <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="flex items-center gap-3 px-4 py-3 hover:bg-[#f8f9fa] dark:hover:bg-[#1b2e4b]/50 transition-colors" :class="idx < 4 ? 'border-b border-[#e0e6ed] dark:border-[#1b2e4b]' : ''">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-lg flex-shrink-0" :class="doc.status === 'published' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="font-medium text-sm dark:text-white-light truncate" x-text="doc.name || 'Document sans titre'"></div>
+                      <div class="text-[11px] text-[#888ea8]" x-text="formatDate(doc.updatedAt)"></div>
+                    </div>
+                    <span class="badge text-[10px]" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
+                  </a>
+                </template>
+              </div>
             </div>
           </div>
         </template>
@@ -793,6 +894,12 @@ document.addEventListener('alpine:init', () => {
       { id: 'courrier', label: 'Courrier', color: '#dc2626' },
       { id: 'rapport', label: 'Rapport', color: '#0891b2' }
     ],
+    // New: custom folders, uploads, context menu
+    customFolders: <%- JSON.stringify(folders || []) %>,
+    uploadedDocs: <%- JSON.stringify(uploadedDocs || []) %>,
+    contextMenu: { show: false, x: 0, y: 0, folderId: null, folderName: null },
+    isDraggingFile: false,
+    isUploading: false,
 
     async openTemplateModal() {
       this.showTemplateModal = true;
@@ -816,6 +923,125 @@ document.addEventListener('alpine:init', () => {
     filteredTemplates() {
       if (this.templateCategory === 'all') return this.templates;
       return this.templates.filter(t => t.metadata?.category === this.templateCategory);
+    },
+
+    // ==========================================
+    // Folder CRUD
+    // ==========================================
+    async createFolder() {
+      const name = prompt('Nom du nouveau dossier :');
+      if (!name || !name.trim()) return;
+      try {
+        const res = await fetch('/account/<%= account_number %>/documents/api/folders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name: name.trim() })
+        });
+        const data = await res.json();
+        if (data.success) {
+          this.customFolders.push(data.folder);
+        }
+      } catch (e) {
+        console.error('Error creating folder:', e);
+      }
+    },
+
+    async renameFolder(folderId, currentName) {
+      const name = prompt('Nouveau nom du dossier :', currentName);
+      if (!name || !name.trim() || name.trim() === currentName) return;
+      try {
+        const res = await fetch(`/account/<%= account_number %>/documents/api/folders/${folderId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name: name.trim() })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const idx = this.customFolders.findIndex(f => f._id === folderId);
+          if (idx !== -1) this.customFolders[idx].name = name.trim();
+        }
+      } catch (e) {
+        console.error('Error renaming folder:', e);
+      }
+    },
+
+    async deleteFolder(folderId) {
+      if (!confirm('Supprimer ce dossier ? Les documents seront déplacés à la racine.')) return;
+      try {
+        const res = await fetch(`/account/<%= account_number %>/documents/api/folders/${folderId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        const data = await res.json();
+        if (data.success) {
+          this.customFolders = this.customFolders.filter(f => f._id !== folderId);
+          // Move docs back to root in local state
+          this.documents.forEach(d => {
+            if (d.folderId === folderId) d.folderId = null;
+          });
+        }
+      } catch (e) {
+        console.error('Error deleting folder:', e);
+      }
+    },
+
+    // ==========================================
+    // File Upload
+    // ==========================================
+    handleFileDrop(event) {
+      const files = event.dataTransfer?.files;
+      if (files && files.length > 0) {
+        this.uploadFiles(files);
+      }
+    },
+
+    handleFileSelect(event) {
+      const files = event.target?.files;
+      if (files && files.length > 0) {
+        this.uploadFiles(files);
+        event.target.value = ''; // reset input
+      }
+    },
+
+    async uploadFiles(fileList) {
+      this.isUploading = true;
+      try {
+        const formData = new FormData();
+        for (const file of fileList) {
+          formData.append('files', file);
+        }
+        const res = await fetch('/account/<%= account_number %>/documents/api/upload-files', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success && data.documents) {
+          this.uploadedDocs = [...data.documents, ...this.uploadedDocs];
+        }
+      } catch (e) {
+        console.error('Error uploading files:', e);
+      } finally {
+        this.isUploading = false;
+      }
+    },
+
+    getFileIconClass(mimeType) {
+      if (!mimeType) return 'bg-gray-100 dark:bg-gray-800 text-gray-500';
+      if (mimeType.includes('pdf')) return 'bg-red-50 dark:bg-red-900/20 text-red-500';
+      if (mimeType.includes('word') || mimeType.includes('document')) return 'bg-blue-50 dark:bg-blue-900/20 text-blue-500';
+      if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'bg-green-50 dark:bg-green-900/20 text-green-600';
+      if (mimeType.includes('image')) return 'bg-purple-50 dark:bg-purple-900/20 text-purple-500';
+      if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return 'bg-orange-50 dark:bg-orange-900/20 text-orange-500';
+      return 'bg-gray-100 dark:bg-gray-800 text-gray-500';
+    },
+
+    getFileExt(filename) {
+      if (!filename) return '?';
+      const parts = filename.split('.');
+      return parts.length > 1 ? parts.pop() : '?';
     },
     
     formatDate(dateString) {

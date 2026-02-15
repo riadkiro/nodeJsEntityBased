@@ -1,11 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const { tenantCollection } = require('../middleware/tenant');
+const uploadToDynamic = require('../middleware/upload');
+const path = require('path');
+const fs = require('fs');
+
+// Upload middleware for document files
+const uploadDocFiles = uploadToDynamic((req) => `public/uploads/documents/files/${req.account_number}`);
 
 // GET - Liste des documents
 router.get('/', async (req, res) => {
     try {
         const Document = await tenantCollection(req, 'Document');
+        const DocumentFolder = await tenantCollection(req, 'DocumentFolder');
         if (!Document) {
             return res.status(500).send('Erreur de connexion base de données');
         }
@@ -17,9 +24,27 @@ router.get('/', async (req, res) => {
             .sort({ updatedAt: -1 })
             .lean();
 
+        // Fetch user-created folders
+        let folders = [];
+        if (DocumentFolder) {
+            folders = await DocumentFolder.find({ createdBy: req.user._id })
+                .sort({ order: 1 })
+                .lean();
+        }
+
+        // Fetch uploaded documents (files with uploadedFile.path)
+        const uploadedDocs = await Document.find({
+            createdBy: req.user._id,
+            'uploadedFile.path': { $exists: true, $ne: null }
+        })
+            .sort({ createdAt: -1 })
+            .lean();
+
         res.render('document/document-list', {
             title: 'Documents',
             documents,
+            folders,
+            uploadedDocs,
             account_number: req.account_number,
             layout: 'layout-app'
         });
@@ -413,6 +438,140 @@ router.post('/api/:id/pdf', async (req, res) => {
         if (browser) {
             await browser.close();
         }
+    }
+});
+
+// ============================================
+// FOLDER API Routes
+// ============================================
+
+// POST - Create a folder
+router.post('/api/folders', async (req, res) => {
+    try {
+        const DocumentFolder = await tenantCollection(req, 'DocumentFolder');
+        if (!DocumentFolder) {
+            return res.status(500).json({ success: false, error: 'DB error' });
+        }
+
+        const { name, color } = req.body;
+        if (!name || !name.trim()) {
+            return res.status(400).json({ success: false, error: 'Nom requis' });
+        }
+
+        const count = await DocumentFolder.countDocuments({ createdBy: req.user._id });
+        const folder = await DocumentFolder.create({
+            name: name.trim(),
+            color: color || '#e2a03f',
+            createdBy: req.user._id,
+            order: count
+        });
+
+        res.json({ success: true, folder });
+    } catch (error) {
+        console.error('[Documents] Error creating folder:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// PUT - Rename a folder
+router.put('/api/folders/:id', async (req, res) => {
+    try {
+        const DocumentFolder = await tenantCollection(req, 'DocumentFolder');
+        if (!DocumentFolder) {
+            return res.status(500).json({ success: false, error: 'DB error' });
+        }
+
+        const { name, color } = req.body;
+        const update = {};
+        if (name) update.name = name.trim();
+        if (color) update.color = color;
+
+        const folder = await DocumentFolder.findOneAndUpdate(
+            { _id: req.params.id, createdBy: req.user._id },
+            update,
+            { new: true }
+        );
+
+        if (!folder) {
+            return res.status(404).json({ success: false, error: 'Dossier introuvable' });
+        }
+
+        res.json({ success: true, folder });
+    } catch (error) {
+        console.error('[Documents] Error updating folder:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// DELETE - Delete a folder (documents inside go back to root)
+router.delete('/api/folders/:id', async (req, res) => {
+    try {
+        const DocumentFolder = await tenantCollection(req, 'DocumentFolder');
+        const Document = await tenantCollection(req, 'Document');
+        if (!DocumentFolder || !Document) {
+            return res.status(500).json({ success: false, error: 'DB error' });
+        }
+
+        // Move documents from folder back to root
+        await Document.updateMany(
+            { folderId: req.params.id, createdBy: req.user._id },
+            { $set: { folderId: null } }
+        );
+
+        const result = await DocumentFolder.deleteOne({
+            _id: req.params.id,
+            createdBy: req.user._id
+        });
+
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ success: false, error: 'Dossier introuvable' });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[Documents] Error deleting folder:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ============================================
+// FILE UPLOAD API Routes
+// ============================================
+
+// POST - Upload document files (PDF, Word, images, etc.)
+router.post('/api/upload-files', uploadDocFiles.array('files', 20), async (req, res) => {
+    try {
+        const Document = await tenantCollection(req, 'Document');
+        if (!Document) {
+            return res.status(500).json({ success: false, error: 'DB error' });
+        }
+
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ success: false, error: 'Aucun fichier' });
+        }
+
+        const created = [];
+        for (const file of req.files) {
+            const relativePath = `/uploads/documents/files/${req.account_number}/${file.filename}`;
+            const doc = await Document.create({
+                name: file.originalname.replace(/\.[^/.]+$/, ''),  // Remove extension for display name
+                createdBy: req.user._id,
+                status: 'draft',
+                isTemplate: false,
+                uploadedFile: {
+                    originalName: file.originalname,
+                    mimeType: file.mimetype,
+                    size: file.size,
+                    path: relativePath
+                }
+            });
+            created.push(doc);
+        }
+
+        res.json({ success: true, documents: created });
+    } catch (error) {
+        console.error('[Documents] Error uploading files:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 

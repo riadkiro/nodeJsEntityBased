@@ -38,6 +38,6 @@ http://localhost:3000/account/5001/documents
 
 Ici je veux une améliorations visuelle, c trop surchargé, propose uun meilleure truck ![alt text](image-4.png) , genre afficher des dossiers, et un dossier tout les documents et c'est lui qui sera surcharché, pou rl'organisation on peut trouver documents uploadé, modèles, documents créés, documents partagés, ou ce que tu voix d'interessant... et corrige aussi le style visuel des element qui sont completement en white...
 
-mission 5
+~~mission 5~~ ✅
 
 quand je suis en mode tactile, j arrive pas a glisser les element dragable trouve mô la meklleure facon pour gerer le drag and drop en mode tactile 

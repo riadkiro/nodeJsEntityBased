@@ -71,6 +71,41 @@
         <!-- RB -->
         <!-- Avant le script principal -->
         <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+        <script>
+        // Global touch support for SortableJS
+        // Patches both Sortable.create() and new Sortable() to inject touch-friendly defaults
+        (function() {
+          function injectTouchDefaults(opts) {
+            opts = opts || {};
+            if (opts.delay === undefined) opts.delay = 150;
+            if (opts.delayOnTouchOnly === undefined) opts.delayOnTouchOnly = true;
+            if (opts.touchStartThreshold === undefined) opts.touchStartThreshold = 5;
+            return opts;
+          }
+
+          // Patch Sortable.create
+          var _origCreate = Sortable.create;
+          Sortable.create = function(el, opts) {
+            return _origCreate.call(Sortable, el, injectTouchDefaults(opts));
+          };
+
+          // Patch new Sortable() constructor
+          var _OrigSortable = window.Sortable;
+          var PatchedSortable = function(el, opts) {
+            return new _OrigSortable(el, injectTouchDefaults(opts));
+          };
+          // Copy all static methods/properties
+          Object.keys(_OrigSortable).forEach(function(key) {
+            if (key === 'create') {
+              PatchedSortable.create = Sortable.create; // use already-patched create
+            } else {
+              PatchedSortable[key] = _OrigSortable[key];
+            }
+          });
+          PatchedSortable.prototype = _OrigSortable.prototype;
+          window.Sortable = PatchedSortable;
+        })();
+        </script>
 
         <script src="/themes/default/assets/js/alpine-collaspe.min.js"></script>
         <script src="/themes/default/assets/js/alpine-persist.min.js"></script>

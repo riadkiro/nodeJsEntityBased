@@ -1059,7 +1059,11 @@ document.addEventListener('alpine:init', () => {
       
       // Apply folder tab filter (used in dashboard layout)
       if (this.layoutMode === 'dashboard') {
-        if (this.activeFolder === 'recent') {
+        // Custom folder filter
+        if (this.activeFolder && this.activeFolder.startsWith('custom-')) {
+          const folderId = this.activeFolder.replace('custom-', '');
+          docs = docs.filter(d => d.folderId === folderId);
+        } else if (this.activeFolder === 'recent') {
           const sevenDaysAgo = new Date();
           sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
           docs = docs.filter(d => new Date(d.updatedAt) >= sevenDaysAgo);
@@ -1105,6 +1109,11 @@ document.addEventListener('alpine:init', () => {
 
     getFolderLabel(folder) {
       const labels = { recent: 'Récents', draft: 'Brouillons', published: 'Publiés', fav: 'Favoris', all: 'Tous les documents' };
+      if (folder && folder.startsWith('custom-')) {
+        const folderId = folder.replace('custom-', '');
+        const found = this.customFolders.find(f => f._id === folderId);
+        return found ? found.name : 'Dossier';
+      }
       return labels[folder] || 'Documents';
     },
 

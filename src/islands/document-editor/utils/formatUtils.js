@@ -68,31 +68,29 @@ export function detectCurrentStyles() {
             styles.fontFamily = fontName.replace(/['"]/g, '')
         }
 
-        const fontSize = document.queryCommandValue('fontSize')
-        if (fontSize) {
-            // Map browser fontSize (1-7) to px
-            const sizeMap = { '1': 10, '2': 13, '3': 16, '4': 18, '5': 24, '6': 32, '7': 48 }
-            styles.fontSize = sizeMap[fontSize] || 16
-        }
-
         // Detect alignment
         if (document.queryCommandState('justifyLeft')) styles.alignment = 'left'
         else if (document.queryCommandState('justifyCenter')) styles.alignment = 'center'
         else if (document.queryCommandState('justifyRight')) styles.alignment = 'right'
         else if (document.queryCommandState('justifyFull')) styles.alignment = 'justify'
 
-        // Get line-height and letter-spacing from selection
+        // Get font-size, line-height, letter-spacing from computed styles at cursor
         const sel = window.getSelection()
         if (sel && sel.rangeCount > 0) {
             const range = sel.getRangeAt(0)
-            let node = range.commonAncestorContainer
+            let node = range.startContainer
             if (node.nodeType === 3) node = node.parentElement
 
             if (node && node.nodeType === 1) {
                 const computed = window.getComputedStyle(node)
 
-                const lh = parseFloat(computed.lineHeight)
+                // Read actual computed fontSize in px (much more reliable than queryCommandValue)
                 const fs = parseFloat(computed.fontSize)
+                if (!isNaN(fs) && fs > 0) {
+                    styles.fontSize = Math.round(fs)
+                }
+
+                const lh = parseFloat(computed.lineHeight)
                 if (!isNaN(lh) && !isNaN(fs) && fs > 0) {
                     styles.lineHeight = Math.round((lh / fs) * 10) / 10
                 }
@@ -122,21 +120,53 @@ export function applyFontSize(size) {
     const range = sel.getRangeAt(0)
 
     if (range.collapsed) {
-        // No selection - create a span for future typing
-        const span = document.createElement('span')
-        span.style.fontSize = size + 'px'
-        span.innerHTML = '\u200B' // Zero-width space
-        range.insertNode(span)
-        range.setStartAfter(span)
-        range.collapse(true)
-        sel.removeAllRanges()
-        sel.addRange(range)
+        // No selection — find the nearest parent element and set its font-size
+        // If we're inside an inline span, just update it
+        let node = range.startContainer
+        if (node.nodeType === 3) node = node.parentElement
+
+        // If the current node is an inline <span> or <font>, update it directly
+        if (node && node !== node.closest('[contenteditable="true"]') &&
+            ['SPAN', 'FONT'].includes(node.tagName)) {
+            node.style.fontSize = size + 'px'
+            node.removeAttribute('size') // clean up <font size> attr
+        } else {
+            // Create a new span for future typing
+            const span = document.createElement('span')
+            span.style.fontSize = size + 'px'
+            span.innerHTML = '\u200B' // Zero-width space
+            range.insertNode(span)
+            // Place cursor inside the span
+            const newRange = document.createRange()
+            newRange.setStart(span.firstChild, 1)
+            newRange.collapse(true)
+            sel.removeAllRanges()
+            sel.addRange(newRange)
+        }
     } else {
-        // Wrap selection in span
-        const span = document.createElement('span')
-        span.style.fontSize = size + 'px'
-        span.appendChild(range.extractContents())
-        range.insertNode(span)
+        // Has selection — use execCommand fontSize trick then fix up
+        // Step 1: Use execCommand to wrap selection (reliable cross-browser)
+        document.execCommand('fontSize', false, '7')
+
+        // Step 2: Find all <font size="7"> created by execCommand and replace with proper style
+        const container = range.commonAncestorContainer
+        const root = container.nodeType === 3 ? container.parentElement : container
+        const editableRoot = root.closest('[contenteditable="true"]') || root
+
+        const fontTags = editableRoot.querySelectorAll('font[size="7"]')
+        fontTags.forEach(font => {
+            font.removeAttribute('size')
+            font.style.fontSize = size + 'px'
+        })
+
+        // Also handle <span style="font-size: xxx-large"> that some browsers create
+        const spans = editableRoot.querySelectorAll('span')
+        spans.forEach(span => {
+            const fs = span.style.fontSize
+            if (fs === '-webkit-xxx-large' || fs === 'xxx-large' || fs === '48px') {
+                span.style.fontSize = size + 'px'
+            }
+        })
     }
 }
 

@@ -44,6 +44,43 @@ export default function EditorPage({
         }
     }, [])
 
+    // ========== CARET VISIBILITY: Scroll cursor into view after typing ==========
+    // The page has overflow:hidden + maxHeight, so the cursor can go below the visible area.
+    // After each key action, we check if the caret rect is below the page and scroll the
+    // outer canvas container to keep it visible.
+    useEffect(() => {
+        const el = contentRef.current
+        if (!el || page.mode !== 'edition') return
+
+        const scrollCaretIntoView = () => {
+            requestAnimationFrame(() => {
+                const sel = window.getSelection()
+                if (!sel || sel.rangeCount === 0) return
+
+                const range = sel.getRangeAt(0)
+                const rect = range.getBoundingClientRect()
+                if (!rect || (rect.top === 0 && rect.bottom === 0)) return
+
+                // Get the page container's visible rect
+                const pageRect = el.getBoundingClientRect()
+                const margin = 80
+
+                // If cursor is below the page's visible bottom (overflow:hidden clips it)
+                if (rect.bottom > pageRect.bottom) {
+                    // Scroll the canvas container so cursor is visible
+                    window.scrollBy({ top: rect.bottom - pageRect.bottom + margin, behavior: 'instant' })
+                }
+                // If cursor is above the viewport
+                else if (rect.top < margin) {
+                    window.scrollBy({ top: rect.top - margin, behavior: 'instant' })
+                }
+            })
+        }
+
+        el.addEventListener('keyup', scrollCaretIntoView)
+        return () => el.removeEventListener('keyup', scrollCaretIntoView)
+    }, [page.mode])
+
     // Image resize functionality for edition mode
     const handleContentChange = useCallback(() => {
         if (handlePageInput) {
@@ -60,13 +97,36 @@ export default function EditorPage({
 
         const BLOCK_SELECTORS = 'blockquote, table, div[style], pre'
 
+        // Find the top-level block ancestor within the contenteditable
+        const findTopBlock = (target) => {
+            const block = target.closest(BLOCK_SELECTORS)
+            if (!block) return null
+            // Walk up to find the outermost block that is still inside the contenteditable
+            let topBlock = block
+            let parent = block.parentElement
+            while (parent && parent !== el) {
+                if (parent.matches(BLOCK_SELECTORS)) {
+                    topBlock = parent
+                }
+                parent = parent.parentElement
+            }
+            // Must be inside the contenteditable
+            if (!el.contains(topBlock)) return null
+            return topBlock
+        }
+
         const handleMouseOver = (e) => {
-            // Find the closest block element that is a direct child of the page
-            const block = e.target.closest(BLOCK_SELECTORS)
-            if (!block || block.parentElement !== el) return
+            const block = findTopBlock(e.target)
+            if (!block) return
 
             // Don't add duplicate buttons
             if (block.querySelector('.doc-block-delete-btn')) return
+
+            // Ensure the block has position:relative so the absolute delete button works
+            const pos = window.getComputedStyle(block).position
+            if (pos === 'static') {
+                block.style.position = 'relative'
+            }
 
             // Create delete button
             const btn = document.createElement('span')
@@ -100,14 +160,14 @@ export default function EditorPage({
         }
 
         const handleMouseOut = (e) => {
-            const block = e.target.closest(BLOCK_SELECTORS)
-            if (!block || block.parentElement !== el) return
+            const block = findTopBlock(e.target)
+            if (!block) return
 
             // Check if mouse is still inside the block
             const related = e.relatedTarget
             if (related && block.contains(related)) return
 
-            // Remove delete button
+            // Remove delete button and reset position
             const btn = block.querySelector('.doc-block-delete-btn')
             if (btn) btn.remove()
         }
@@ -119,6 +179,171 @@ export default function EditorPage({
             el.removeEventListener('mouseover', handleMouseOver)
             el.removeEventListener('mouseout', handleMouseOut)
         }
+    }, [page.mode, pageIndex, handlePageInput])
+
+    // ========== BLOCK ESCAPE: Enter at end of block exits it ==========
+    useEffect(() => {
+        const el = contentRef.current
+        if (!el || page.mode !== 'edition') return
+
+        const ESCAPE_BLOCKS = 'blockquote, pre, div[style], table'
+
+        const handleKeyDown = (e) => {
+            if (e.key !== 'Enter' || e.shiftKey) return
+
+            const sel = window.getSelection()
+            if (!sel || sel.rangeCount === 0) return
+
+            let node = sel.getRangeAt(0).commonAncestorContainer
+            if (node.nodeType === 3) node = node.parentElement
+
+            // Find the outermost escape block
+            const block = node.closest(ESCAPE_BLOCKS)
+            if (!block || !el.contains(block)) return
+
+            // Check if cursor is at the end of the block content
+            const range = sel.getRangeAt(0)
+            const testRange = document.createRange()
+            testRange.selectNodeContents(block)
+            testRange.setStart(range.endContainer, range.endOffset)
+            const remainingContent = testRange.cloneContents()
+            const remainingText = remainingContent.textContent || ''
+
+            // If there's no meaningful text after the cursor, exit the block
+            if (remainingText.trim() === '') {
+                e.preventDefault()
+                e.stopPropagation()
+
+                // Create a new paragraph after the block
+                const p = document.createElement('p')
+                p.innerHTML = '<br>'
+                block.after(p)
+
+                // Place cursor in the new paragraph
+                const newRange = document.createRange()
+                newRange.selectNodeContents(p)
+                newRange.collapse(true)
+                sel.removeAllRanges()
+                sel.addRange(newRange)
+
+                // Trigger save
+                if (handlePageInput) {
+                    handlePageInput({ target: el }, pageIndex)
+                }
+            }
+        }
+
+        el.addEventListener('keydown', handleKeyDown)
+        return () => el.removeEventListener('keydown', handleKeyDown)
+    }, [page.mode, pageIndex, handlePageInput])
+
+    // ========== CLICK OUTSIDE BLOCK: Place cursor in free area ==========
+    useEffect(() => {
+        const el = contentRef.current
+        if (!el || page.mode !== 'edition') return
+
+        const BLOCK_SELECTORS = 'blockquote, table, div[style], pre'
+
+        const handleClick = (e) => {
+            // Only handle direct clicks on the contenteditable itself
+            // (clicks on the padding/empty area, not on children)
+            const target = e.target
+
+            // If click is directly on the contenteditable container
+            // or on a simple <p>/<br> (non-block), no action needed - browser handles it
+            if (target !== el) {
+                // Check if click is inside a block
+                const clickedBlock = target.closest(BLOCK_SELECTORS)
+                if (!clickedBlock || !el.contains(clickedBlock)) return // not in a block, browser handles fine
+                // User clicked inside a block - that's normal editing, do nothing
+                return
+            }
+
+            // Click was on the contenteditable container itself (empty area)
+            // This happens when clicking in the padding or between/after blocks
+            e.preventDefault()
+
+            const clickY = e.clientY
+            const elRect = el.getBoundingClientRect()
+
+            // Find all top-level children
+            const children = Array.from(el.children)
+
+            if (children.length === 0) {
+                // No children at all - create a paragraph
+                const p = document.createElement('p')
+                p.innerHTML = '<br>'
+                el.appendChild(p)
+                placeCursorIn(p)
+                return
+            }
+
+            // Find the right position based on click Y coordinate
+            let insertBefore = null
+            let insertAfter = null
+
+            for (let i = 0; i < children.length; i++) {
+                const child = children[i]
+                const rect = child.getBoundingClientRect()
+
+                if (clickY < rect.top) {
+                    // Click is above this child — insert before it
+                    insertBefore = child
+                    break
+                }
+                insertAfter = child
+            }
+
+            // Check if there's already a non-block element at the target position we can use
+            if (insertBefore) {
+                // If the previous sibling is already a non-block paragraph, place cursor there
+                const prev = insertBefore.previousElementSibling
+                if (prev && !prev.matches(BLOCK_SELECTORS) && (prev.tagName === 'P' || prev.tagName === 'H1' || prev.tagName === 'H2' || prev.tagName === 'H3')) {
+                    placeCursorIn(prev)
+                    return
+                }
+                // Insert a new paragraph before the element
+                const p = document.createElement('p')
+                p.innerHTML = '<br>'
+                el.insertBefore(p, insertBefore)
+                placeCursorIn(p)
+            } else if (insertAfter) {
+                // Click is below the last element
+                // If the last element is not a block, reuse it
+                const next = insertAfter.nextElementSibling
+                if (next && !next.matches(BLOCK_SELECTORS) && (next.tagName === 'P' || next.tagName === 'H1' || next.tagName === 'H2' || next.tagName === 'H3')) {
+                    placeCursorIn(next)
+                    return
+                }
+                if (!insertAfter.matches(BLOCK_SELECTORS) && (insertAfter.tagName === 'P' || insertAfter.tagName === 'H1' || insertAfter.tagName === 'H2' || insertAfter.tagName === 'H3')) {
+                    placeCursorIn(insertAfter)
+                    return
+                }
+                // Append a new paragraph after the last element
+                const p = document.createElement('p')
+                p.innerHTML = '<br>'
+                insertAfter.after(p)
+                placeCursorIn(p)
+            }
+
+            // Trigger save
+            if (handlePageInput) {
+                handlePageInput({ target: el }, pageIndex)
+            }
+        }
+
+        function placeCursorIn(element) {
+            const sel = window.getSelection()
+            const range = document.createRange()
+            range.selectNodeContents(element)
+            range.collapse(true)
+            sel.removeAllRanges()
+            sel.addRange(range)
+            element.focus()
+        }
+
+        el.addEventListener('click', handleClick)
+        return () => el.removeEventListener('click', handleClick)
     }, [page.mode, pageIndex, handlePageInput])
 
 
@@ -171,7 +396,11 @@ export default function EditorPage({
                         minHeight: `${height}px`,
                         maxHeight: `${height}px`,
                         overflow: 'hidden',
-                        color: '#000000' // Force black text regardless of dark mode
+                        color: '#000000', // Force black text regardless of dark mode
+                        caretColor: '#000000', // Ensure cursor is always visible
+                        wordWrap: 'break-word',
+                        overflowWrap: 'break-word',
+                        lineHeight: '1.6'
                     }}
                     onInput={(e) => handlePageInput(e, pageIndex)}
                     onPaste={(e) => handlePaste(e, pageIndex)}

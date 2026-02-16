@@ -1059,6 +1059,23 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         updateFormattingState()
     }, [saveSelection, updateFormattingState])
 
+    // Update toolbar when selection changes (keyboard navigation, click, etc.)
+    useEffect(() => {
+        const handleSelectionChange = () => {
+            const sel = window.getSelection()
+            if (!sel || sel.rangeCount === 0) return
+            // Only update if selection is inside our editor
+            const node = sel.getRangeAt(0).commonAncestorContainer
+            const editorRoot = editorRootRef.current
+            if (editorRoot && editorRoot.contains(node)) {
+                saveSelection()
+                updateFormattingState()
+            }
+        }
+        document.addEventListener('selectionchange', handleSelectionChange)
+        return () => document.removeEventListener('selectionchange', handleSelectionChange)
+    }, [saveSelection, updateFormattingState])
+
     // ========== AI AGENT FUNCTIONS ==========
     /**
      * Get a snapshot of the document content for AI analysis

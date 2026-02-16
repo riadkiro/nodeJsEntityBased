@@ -200,3 +200,51 @@ marker.remove()
 - **Mesure de hauteur** : Lire `scrollHeight` avant de modifier le contenu
 - **Position pour drag & drop** : Capturer `getBoundingClientRect()` avant manipulation
 - **Animation de sortie** : Capturer position initiale avant de changer les classes
+
+## Word Paste & Pagination Cascade (CRITICAL)
+
+### Architecture
+Le paste depuis Word utilise 3 étapes :
+1. **`cleanWordHtml()`** nettoie le HTML Office (tags MSO, styles inutiles, `<o:p>`, `<font>`, etc.)
+2. **`document.execCommand('insertHTML')`** insère le contenu nettoyé dans le contenteditable
+3. **`reflowAllPages()`** cascade le contenu qui dépasse sur les pages suivantes
+
+### Problème résolu : Double Reflow Concurrent
+`insertHTML` déclenche **deux événements** : `onPaste` ET `onInput`. Chacun appelait `reflowDocument()`, causant deux reflows parallèles sur le même DOM → **perte de contenu** (les deux extraient du contenu mais un seul `setDoc` gagne).
+
+```jsx
+// ✅ BON - Guard contre les reflows concurrents
+const isPastingRef = useRef(false)        // Bloque onInput pendant paste
+const reflowInProgressRef = useRef(false)  // Empêche 2 reflows simultanés
+
+// Dans handlePaste :
+isPastingRef.current = true
+document.execCommand('insertHTML', false, content)
+setTimeout(() => { isPastingRef.current = false }, 0)
+reflowDocument()
+
+// Dans handlePageInput :
+if (!isPastingRef.current) reflowDocument()
+
+// Dans reflowDocument :
+if (reflowInProgressRef.current) return  // Skip si déjà en cours
+```
+
+### Précautions CSS Selectors pour le HTML Office
+Le HTML Word contient des tags namespacés comme `<o:p>`. **NE JAMAIS** utiliser `querySelectorAll` avec `:` dans le sélecteur (interprété comme pseudo-class CSS).
+
+```js
+// ❌ CRASH - ':' interprété comme pseudo-class
+temp.querySelectorAll('FONT,O:P')
+
+// ✅ BON - Séparer les sélecteurs normaux et namespacés
+temp.querySelectorAll('FONT').forEach(el => unwrap(el))
+Array.from(temp.querySelectorAll('*')).forEach(el => {
+    if (el.nodeName === 'O:P') unwrap(el)
+})
+```
+
+### reflowAllPages : Règles
+- **Un seul overflow par passe** : Chaque nouvelle page nécessite un cycle React complet (rAF + 50ms)
+- **`onComplete` callback** : L'underflow ne s'exécute qu'APRÈS la stabilisation complète du overflow
+- **`break` après chaque overflow traité** : Évite les problèmes de batching `setDoc`

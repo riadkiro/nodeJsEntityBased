@@ -59,20 +59,22 @@ export default function EditorPage({
 
                 const range = sel.getRangeAt(0)
                 const rect = range.getBoundingClientRect()
-                if (!rect || (rect.top === 0 && rect.bottom === 0)) return
+                if (!rect || (rect.top === 0 && rect.bottom === 0 && rect.left === 0)) return
 
-                // Get the page container's visible rect
-                const pageRect = el.getBoundingClientRect()
+                // Find the scrollable canvas container (.overflow-auto)
+                const canvas = el.closest('.overflow-auto')
+                if (!canvas) return
+
+                const canvasRect = canvas.getBoundingClientRect()
                 const margin = 80
 
-                // If cursor is below the page's visible bottom (overflow:hidden clips it)
-                if (rect.bottom > pageRect.bottom) {
-                    // Scroll the canvas container so cursor is visible
-                    window.scrollBy({ top: rect.bottom - pageRect.bottom + margin, behavior: 'instant' })
+                // If cursor is below the canvas visible area
+                if (rect.bottom > canvasRect.bottom - margin) {
+                    canvas.scrollBy({ top: rect.bottom - canvasRect.bottom + margin, behavior: 'instant' })
                 }
-                // If cursor is above the viewport
-                else if (rect.top < margin) {
-                    window.scrollBy({ top: rect.top - margin, behavior: 'instant' })
+                // If cursor is above the canvas visible area
+                else if (rect.top < canvasRect.top + margin) {
+                    canvas.scrollBy({ top: rect.top - canvasRect.top - margin, behavior: 'instant' })
                 }
             })
         }
@@ -201,6 +203,11 @@ export default function EditorPage({
             const block = node.closest(ESCAPE_BLOCKS)
             if (!block || !el.contains(block)) return
 
+            // CRITICAL: div[style] matches the contenteditable container itself!
+            // The contenteditable is a <div> with inline styles (padding, maxHeight, etc.)
+            // We must NOT treat it as a "block to escape" — that would create a <p> OUTSIDE the editor.
+            if (block === el) return
+
             // Check if cursor is at the end of the block content
             const range = sel.getRangeAt(0)
             const testRange = document.createRange()
@@ -244,7 +251,26 @@ export default function EditorPage({
 
         const BLOCK_SELECTORS = 'blockquote, table, div[style], pre'
 
+        // Track mousedown to distinguish genuine clicks from drag-selections
+        let mouseDownTarget = null
+        let mouseDownPos = { x: 0, y: 0 }
+
+        const handleMouseDown = (e) => {
+            mouseDownTarget = e.target
+            mouseDownPos = { x: e.clientX, y: e.clientY }
+        }
+
         const handleClick = (e) => {
+            // GUARD 1: If user has a text selection (non-collapsed), don't interfere
+            const sel = window.getSelection()
+            if (sel && !sel.isCollapsed) return
+
+            // GUARD 2: If mousedown was on a different target or far away, this is a drag — skip
+            if (mouseDownTarget !== e.target) return
+            const dx = Math.abs(e.clientX - mouseDownPos.x)
+            const dy = Math.abs(e.clientY - mouseDownPos.y)
+            if (dx > 5 || dy > 5) return // moved more than 5px = drag, not click
+
             // Only handle direct clicks on the contenteditable itself
             // (clicks on the padding/empty area, not on children)
             const target = e.target
@@ -264,7 +290,6 @@ export default function EditorPage({
             e.preventDefault()
 
             const clickY = e.clientY
-            const elRect = el.getBoundingClientRect()
 
             // Find all top-level children
             const children = Array.from(el.children)
@@ -342,8 +367,12 @@ export default function EditorPage({
             element.focus()
         }
 
+        el.addEventListener('mousedown', handleMouseDown)
         el.addEventListener('click', handleClick)
-        return () => el.removeEventListener('click', handleClick)
+        return () => {
+            el.removeEventListener('mousedown', handleMouseDown)
+            el.removeEventListener('click', handleClick)
+        }
     }, [page.mode, pageIndex, handlePageInput])
 
 

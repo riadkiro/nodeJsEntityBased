@@ -18,26 +18,13 @@
 - ~~**Mission 4 — URL Refactoring** — `/record/:entitySlug/list` as canonical URL, no ViewID in URL, entity ID as preference key.~~
 - ~~**Mission 5 — Kanban UX** — Colored columns (Niveau Urgence), classification badges on cards, QuickView modal (slide-in panel), drag & drop between columns, column max-width 320px, dark/light mode.~~
 
-Mission de 14/02 - 01
 
-dans la boite mail, en changeant la boite mail, l'ia ne detecte opas ca donc si je lui pose une question sur la boite actuel, elle me repond comme si j'etait encore dans la boite d'avant, met une fonction de detection du context vraiment robuste on va en avoir besoin, et fix en autopilote
+Mission de 16-02
 
-Mission de 14/02 - 02
-Le comportement d' l'éditeur de texte est un peu bizarre, essaire de creer un document avec les outils qu'on a en mode édition et tu vas voir : ce que j'ai decouvert c'est ca :
+Mission 1
+en fait non le comportementdu text editor n'est pas du tout intuitif, ce qui marche pour l²'instabnt c'est que si j'ecrit du textn apuier sur shift + entrer ca cree une nouvelle ligne et comportmement normal , mais si j'ouvre un nv doc,tape du text, apuie sur entrer, retape du text ca fonctionne pas, ilne se passe rien, fais ce test donc ouvre un dnv doc, Teape du text, apuie sur entrer , tape du text, si ca tape apuie encore une foie sur entrer, retapes du text, la marche pas du tout a 100% ca va buguer, tu ne pourra plus ecrir... tout ce que je veux c'est le basic d'un text editor quand il s'agit de taper du text ca nedoit pas etre tres compliqué non ? 
 
-ctr+a + supprimer ne surpeime pas le contenu, normalement ctr+a ca doit selection tout les textes, en plus on avait galérer pour le copier coller depuis word et la detection de l'overflow pour creer de nouvelles pages en fonction du contenu, plus le comportement de tirer le contenu de la page suivante si le contenu de la page en cours diminue et plein d'autres options mais les derniere modifications que tu as fait  ont fait disparaitre tout ces options, stp essaie de retrouver les options manquantes comme on l'avais validé, check dans ta memoire , github etc etc mais il faut qu'on retrouve toutes les options validé au paravant c tres important.
+Mission 2
 
-également, les bloques qu'on rajoute dans le document meme en mode edition, genre citation etc, je dois avoir une petite icon delete, la comme ça impossible de supprimer le bloc, et quand je clique sur le bloque a droite je dois pouvoir mettre le curceur en dehor du bloque pour passer al la ligne suivante sans creer un espace a linterioeur du bloc, enfin ces comportement sont intuitif normalement, tu dois juste reflechir comme quelqu'un qui cree des documents stylé, il ne doit pas etre bloqué, donc stp, donne moi un systeme ready to use en v1, pret a la production, qu ipermet vraiment de creer des documents stylé et professionnel.
+Quand j'essaie de selectionner du text , il cree des lignes en haut du text selectionné, donc stp check le comportement de l'éditeur et fais le minimum d'un editeur de text normal a savoir, taper, retour en ligne, selectioner text/images etc, repositioner image avec drag drop etc, les elements basic de chez basic d'un editeur de text 2026, merci d'avance...
 
-~~Mission de 14/02 - 03~~ ✅
-
-~~http://localhost:3000/account/5001/tasks ici dans la vue checklist, par defaut quand on clique la checkbox ca fait decsendre en bas l'element,je ne veux pas ca, je eux deux panels, celui de droite affiche les taches terminées donc quand c checked ca va a droite en style barré, et mettre les elements dragble pour reorder, ![alt text](image-3.png) la side barre doit avoir le style tag visuelement,~~ 
-
-Mission de 14/02 - 04
-http://localhost:3000/account/5001/documents
-
-Ici je veux une améliorations visuelle, c trop surchargé, propose uun meilleure truck ![alt text](image-4.png) , genre afficher des dossiers, et un dossier tout les documents et c'est lui qui sera surcharché, pou rl'organisation on peut trouver documents uploadé, modèles, documents créés, documents partagés, ou ce que tu voix d'interessant... et corrige aussi le style visuel des element qui sont completement en white...
-
-~~mission 5~~ ✅
-
-quand je suis en mode tactile, j arrive pas a glisser les element dragable trouve mô la meklleure facon pour gerer le drag and drop en mode tactile 

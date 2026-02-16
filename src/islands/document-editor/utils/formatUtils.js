@@ -3,16 +3,18 @@
  * EXACT COPY of Alpine.js formatting logic
  * Handles font detection, execCommand formatting, and style updates
  */
+import { getSelectedImage } from '../hooks/useImageResize'
 
 /**
  * Format document using execCommand
+ * Enhanced: When an image is selected and an alignment command is used,
+ * apply alignment to the image's parent block instead of using execCommand.
+ * 
  * @param {string} command - execCommand name (bold, italic, underline, etc)
  * @param {string|null} value - Optional value for the command
  */
 export function formatDoc(command, value = null) {
-    document.execCommand(command, false, value)
-
-    // Apply text-align to separator containers when alignment commands are used
+    // Alignment commands map
     const alignmentCommands = {
         'justifyLeft': 'left',
         'justifyCenter': 'center',
@@ -20,6 +22,50 @@ export function formatDoc(command, value = null) {
         'justifyFull': 'justify'
     }
 
+    // If an image is selected and this is an alignment command, handle it specially
+    if (alignmentCommands[command]) {
+        const selectedImg = getSelectedImage()
+        if (selectedImg) {
+            const alignment = alignmentCommands[command]
+            // Find block parent of image
+            let block = selectedImg.parentElement
+            const editableRoot = selectedImg.closest('[contenteditable="true"]')
+
+            while (block && block !== editableRoot) {
+                const display = window.getComputedStyle(block).display
+                if (display === 'block' || ['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(block.tagName)) {
+                    break
+                }
+                block = block.parentElement
+            }
+
+            if (!block || block === editableRoot) {
+                // Wrap image in a <p> if it's a direct child of contenteditable
+                const p = document.createElement('p')
+                selectedImg.parentNode.insertBefore(p, selectedImg)
+                p.appendChild(selectedImg)
+                block = p
+            }
+
+            // Apply alignment
+            block.style.textAlign = alignment
+
+            // Ensure image displays as inline-block so text-align works
+            if (selectedImg.style.display === 'block') {
+                selectedImg.style.display = 'inline-block'
+            }
+            selectedImg.style.float = 'none'
+
+            // Fire event so overlay repositions to new image position
+            document.dispatchEvent(new CustomEvent('image-align-changed'))
+
+            return // Don't run execCommand for images
+        }
+    }
+
+    document.execCommand(command, false, value)
+
+    // Apply text-align to separator containers when alignment commands are used
     if (alignmentCommands[command]) {
         const alignment = alignmentCommands[command]
         const sel = window.getSelection()

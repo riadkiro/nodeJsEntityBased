@@ -21,6 +21,7 @@ function isEffectivelyEmpty(html) {
         .replace(/\u00A0/g, ' ')
         .replace(/\u200B/g, '') // zero-width space (caret markers etc.)
         .replace(/<span[^>]*data-caret-marker[^>]*>.*?<\/span>/gi, '')
+        .replace(/<span[^>]*data-reflow-caret[^>]*>.*?<\/span>/gi, '')
         .replace(/<br\s*\/?>/gi, '')
         .replace(/<\/?p[^>]*>/gi, '')
         .replace(/<\/?div[^>]*>/gi, '')
@@ -47,7 +48,7 @@ function getVerticalPaddings(el) {
  * @param {HTMLElement} pageEl - The contenteditable page element
  * @returns {boolean} true if content overflows
  */
-function doesContentOverflow(pageEl) {
+export function doesContentOverflow(pageEl) {
     // Primary: scrollHeight check (works in most cases since overflow:hidden is set)
     if (pageEl.scrollHeight > pageEl.clientHeight + 1) return true
 

@@ -11,8 +11,9 @@ import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { saveDocument, exportPdf, uploadImage } from './services/documentApi'
 import { cleanWordHtml } from './utils/cleanWordHtml'
 import { parseWordHtml, hasBase64Images } from './utils/parseWordHtml'
-import { checkOverflow, checkUnderflow, pullFromNextPageInto, reflowAllPages } from './utils/paginationUtils'
+import { checkOverflow, checkUnderflow, pullFromNextPageInto, reflowAllPages, doesContentOverflow } from './utils/paginationUtils'
 import { formatDoc, detectCurrentStyles, applyFontSize, applyLineSpacing, applyLetterSpacing, FONT_FAMILIES, FONT_SIZES } from './utils/formatUtils'
+import { getSelectedImage } from './hooks/useImageResize'
 
 // Native keyboard detection - NO external library, CANNOT fail
 const isMod = (e) => e.ctrlKey || e.metaKey
@@ -169,7 +170,17 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     // Keep docRef in sync
     useEffect(() => {
         docRef.current = doc
-    }, [doc])
+    })
+
+    // ========== WORD-LIKE: Force <p> tags on Enter ==========
+    // Without this, Chrome creates <div> on Enter. With it, Enter always creates <p><br></p>.
+    useEffect(() => {
+        try {
+            document.execCommand('defaultParagraphSeparator', false, 'p')
+        } catch (e) {
+            // Safari may not support this, that's OK
+        }
+    }, [])
 
     // Keep isGlobalSelectionRef in sync
     useEffect(() => {
@@ -193,7 +204,11 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                 const pageRef = pageRefs.current[i]
                 if (page.mode === 'edition') {
                     if (pageRef) {
-                        return { ...page, content: pageRef.innerHTML }
+                        // Clean any temporary markers before saving
+                        let content = pageRef.innerHTML
+                        content = content.replace(/<span[^>]*data-reflow-caret[^>]*>.*?<\/span>/gi, '')
+                        content = content.replace(/<span[^>]*data-caret-marker[^>]*>.*?<\/span>/gi, '')
+                        return { ...page, content }
                     } else {
                         // CRITICAL: pageRef is null but page is in edition mode
                         // If state content is also empty, we might lose data
@@ -255,7 +270,14 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         restoreSelection()
         formatDoc(command, value)
         triggerSave()
-        updateFormattingState()
+
+        // If this was an alignment command on a selected image, update alignment state directly
+        const alignMap = { justifyLeft: 'left', justifyCenter: 'center', justifyRight: 'right', justifyFull: 'justify' }
+        if (alignMap[command] && getSelectedImage()) {
+            setCurrentAlignment(alignMap[command])
+        } else {
+            updateFormattingState()
+        }
     }, [restoreSelection, triggerSave])
 
     const updateFormattingState = useCallback(() => {
@@ -293,34 +315,169 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     }, [restoreSelection, triggerSave])
 
     // ========== REFLOW ORCHESTRATOR (Word-like) ==========
-    // After each input, reflow entire document: overflow forward, then underflow backward
-    // For large pastes, overflow may cascade through multiple new pages
+    // After each input, reflow entire document: overflow forward, then underflow backward.
+    // For large pastes, overflow may cascade through multiple new pages.
     //
     // CRITICAL: Guard against concurrent execution!
     // insertHTML triggers both onPaste and onInput, which would start two parallel reflows.
     // Two reflows extracting from the same DOM causes content loss.
+    //
+    // CARET PRESERVATION STRATEGY:
+    // 1. Before reflow, inject a zero-width <span data-reflow-caret> marker at cursor position.
+    //    This marker is inside the DOM structure, so when extractOverflow moves nodes to the
+    //    next page (as outerHTML strings or DOM moves), the marker travels with the content.
+    // 2. After reflow completes, search ALL pages for the marker.
+    // 3. Place cursor right after the marker, remove it, focus + scroll.
+    // This guarantees the cursor follows content even across page boundaries.
     const reflowDocument = useCallback(() => {
         // Prevent concurrent reflows - only one can run at a time
         if (reflowInProgressRef.current) {
             console.log('[reflowDocument] Skipped: reflow already in progress')
             return
         }
-        reflowInProgressRef.current = true
 
-        // Use reflowAllPages for iterative multi-page overflow handling
-        // Pass a callback to clear the guard when done
-        reflowAllPages(docRef, setDoc, pageRefs, 100, () => {
-            reflowInProgressRef.current = false
+        // === CARET MARKER: Clean up any stale markers first ===
+        document.querySelectorAll('[data-reflow-caret="1"]').forEach(m => m.remove())
 
-            // Underflow backward pass - after overflow is fully stable
+        // === QUICK CHECK: Does any page actually overflow? ===
+        // If no overflow, skip the heavy caret marker + reflow machinery.
+        // This is the common case for normal typing and Enter presses.
+        let hasOverflow = false
+        const d = docRef.current
+        if (d?.pages?.length) {
+            for (let i = 0; i < d.pages.length; i++) {
+                const el = pageRefs.current[i]
+                if (el && doesContentOverflow(el)) {
+                    hasOverflow = true
+                    break
+                }
+            }
+        }
+
+        if (!hasOverflow) {
+            // No overflow — nothing to reflow. Just let the browser handle the cursor natively.
+            // Still do underflow check in case content was deleted
             requestAnimationFrame(() => {
                 const d2 = docRef.current
                 if (!d2?.pages?.length) return
-
                 for (let i = 0; i < d2.pages.length - 1; i++) {
                     const el = pageRefs.current[i]
                     if (el) {
-                        checkUnderflow(el, i, docRef.current, setDoc, pageRefs)
+                        checkUnderflow(el, i, d2, setDoc, pageRefs)
+                    }
+                }
+            })
+            return
+        }
+
+        // === There IS overflow — engage the full reflow + caret marker system ===
+        reflowInProgressRef.current = true
+
+        // Insert caret marker so cursor follows content across page boundaries
+        let markerInserted = false
+        let focusedPageIndex = -1
+        const sel = window.getSelection()
+        if (sel && sel.rangeCount > 0 && sel.getRangeAt(0).collapsed) {
+            try {
+                const range = sel.getRangeAt(0)
+                const anchor = range.startContainer
+                for (const [idx, el] of Object.entries(pageRefs.current)) {
+                    if (el && el.contains(anchor)) {
+                        focusedPageIndex = parseInt(idx)
+                        break
+                    }
+                }
+                if (focusedPageIndex >= 0) {
+                    const marker = document.createElement('span')
+                    marker.setAttribute('data-reflow-caret', '1')
+                    marker.style.cssText = 'font-size:0;line-height:0;width:0;height:0;display:inline;overflow:hidden;'
+                    marker.textContent = '\u200B'
+                    range.insertNode(marker)
+                    range.setStartAfter(marker)
+                    range.collapse(true)
+                    sel.removeAllRanges()
+                    sel.addRange(range)
+                    markerInserted = true
+                }
+            } catch (err) {
+                // Silently ignore
+            }
+        }
+
+        const pageCountBefore = docRef.current?.pages?.length || 0
+
+        // Use reflowAllPages for iterative multi-page overflow handling
+        reflowAllPages(docRef, setDoc, pageRefs, 100, () => {
+            reflowInProgressRef.current = false
+
+            const pageCountAfter = docRef.current?.pages?.length || 0
+
+            // === CARET RESTORE ===
+            requestAnimationFrame(() => {
+                let restored = false
+
+                if (markerInserted) {
+                    for (const [idx, el] of Object.entries(pageRefs.current)) {
+                        if (!el) continue
+                        const marker = el.querySelector('[data-reflow-caret="1"]')
+                        if (marker) {
+                            const s = window.getSelection()
+                            const r = document.createRange()
+                            r.setStartAfter(marker)
+                            r.collapse(true)
+                            s.removeAllRanges()
+                            s.addRange(r)
+                            marker.remove()
+                            el.focus()
+                            revealCaret(el)
+                            restored = true
+                            break
+                        }
+                    }
+                    if (!restored) {
+                        document.querySelectorAll('[data-reflow-caret="1"]').forEach(m => m.remove())
+                    }
+                }
+
+                if (!restored) {
+                    const currentSel = window.getSelection()
+                    let cursorValid = false
+                    if (currentSel && currentSel.rangeCount > 0) {
+                        const anchor = currentSel.anchorNode
+                        for (const [, el] of Object.entries(pageRefs.current)) {
+                            if (el && el.contains(anchor)) {
+                                cursorValid = true
+                                revealCaret(el)
+                                break
+                            }
+                        }
+                    }
+                    if (!cursorValid) {
+                        if (pageCountAfter > pageCountBefore) {
+                            const newPageEl = pageRefs.current[pageCountAfter - 1]
+                            if (newPageEl) {
+                                placeCaretAtStart(newPageEl)
+                                revealCaret(newPageEl)
+                            }
+                        } else if (focusedPageIndex >= 0) {
+                            const focusedEl = pageRefs.current[focusedPageIndex]
+                            if (focusedEl) {
+                                placeCaretAtEnd(focusedEl)
+                                revealCaret(focusedEl)
+                            }
+                        }
+                    }
+                }
+            })
+
+            // Underflow backward pass
+            requestAnimationFrame(() => {
+                const d2 = docRef.current
+                if (!d2?.pages?.length) return
+                for (let i = 0; i < d2.pages.length - 1; i++) {
+                    const el = pageRefs.current[i]
+                    if (el) {
+                        checkUnderflow(el, i, d2, setDoc, pageRefs)
                     }
                 }
             })
@@ -545,26 +702,33 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     function revealCaret(el) {
         requestAnimationFrame(() => {
             const sel = window.getSelection()
-            if (!sel || sel.rangeCount === 0) {
-                console.log('[revealCaret] No selection found')
+            if (!sel || sel.rangeCount === 0) return
+            const rect = sel.getRangeAt(0).getBoundingClientRect()
+            if (!rect || (rect.top === 0 && rect.bottom === 0 && rect.left === 0)) return
+
+            // Find the scrollable canvas container (.overflow-auto)
+            const canvas = el.closest('.overflow-auto')
+            if (!canvas) {
+                // Fallback to window scroll
+                const margin = 120
+                if (rect.bottom > window.innerHeight - margin) {
+                    window.scrollBy({ top: rect.bottom - window.innerHeight + margin, behavior: 'instant' })
+                } else if (rect.top < margin) {
+                    window.scrollBy({ top: rect.top - margin, behavior: 'instant' })
+                }
                 return
             }
-            const rect = sel.getRangeAt(0).getBoundingClientRect()
-            const margin = 120
 
-            console.log('[revealCaret] rect.top:', rect.top, 'rect.bottom:', rect.bottom, 'viewport:', window.innerHeight, 'margin:', margin)
+            const canvasRect = canvas.getBoundingClientRect()
+            const margin = 80
 
-            // If caret is below viewport, scroll down
-            if (rect.bottom > window.innerHeight - margin) {
-                console.log('[revealCaret] Scrolling DOWN by', rect.bottom - window.innerHeight + margin)
-                window.scrollBy({ top: rect.bottom - window.innerHeight + margin, behavior: 'instant' })
+            // If caret is below the canvas visible area, scroll down
+            if (rect.bottom > canvasRect.bottom - margin) {
+                canvas.scrollBy({ top: rect.bottom - canvasRect.bottom + margin, behavior: 'instant' })
             }
-            // If caret is above viewport, scroll up
-            else if (rect.top < margin) {
-                console.log('[revealCaret] Scrolling UP by', rect.top - margin)
-                window.scrollBy({ top: rect.top - margin, behavior: 'instant' })
-            } else {
-                console.log('[revealCaret] Caret already visible, no scroll needed')
+            // If caret is above the canvas visible area, scroll up
+            else if (rect.top < canvasRect.top + margin) {
+                canvas.scrollBy({ top: rect.top - canvasRect.top - margin, behavior: 'instant' })
             }
         })
     }
@@ -731,18 +895,15 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             return
         }
 
-        // ✅ Enter at end of page => move to start of next page (if next page exists)
-        if (e.key === 'Enter' && !e.shiftKey && pageIndex < docRef.current.pages.length - 1 && isCaretAtEnd(el)) {
-            e.preventDefault()
-            console.log('[Navigate] Enter at end, moving to page', pageIndex + 2)
-
-            const nextEl = pageRefs.current[pageIndex + 1]
-            if (nextEl) {
-                placeCaretAtStart(nextEl)
-                revealCaret(nextEl)
-            }
-            return
-        }
+        // ========== WORD-LIKE ENTER KEY ==========
+        // Let the browser handle Enter natively (creates <p><br></p>).
+        // The onInput handler will detect overflow and reflow content to the next page.
+        // The reflowDocument() caret marker system will move the cursor to follow.
+        // This gives us true Word-like behavior: Enter always creates a paragraph,
+        // even at the page boundary, and the cursor follows the new paragraph.
+        //
+        // NOTE: We do NOT prevent default here anymore — the previous code would
+        // prevent Enter and just jump to the next page, which skipped creating a line.
 
         // Only process modifier shortcuts from here
         if (!isMod(e)) return

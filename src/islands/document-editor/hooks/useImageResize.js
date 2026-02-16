@@ -3,14 +3,34 @@
  * Provides image selection and resize functionality for contenteditable elements
  * 
  * Pattern: document-level pointerdown capture for reliable single-click
+ * Enhanced: touch support for tablet resize, image alignment via toolbar
  */
 import { useEffect, useCallback, useRef, useState } from 'react'
+
+// Module-level ref for cross-component access (formatUtils reads this)
+let _globalSelectedImage = null
+export function getSelectedImage() { return _globalSelectedImage }
 
 export function useImageResize(containerRef, onContentChange) {
     const [selectedImage, setSelectedImage] = useState(null)
     const [isResizing, setIsResizing] = useState(false)
     const resizeDataRef = useRef(null)
     const overlayRef = useRef(null)
+
+    // Keep module-level ref in sync
+    useEffect(() => {
+        _globalSelectedImage = selectedImage
+        // Mark selected image with data attribute for CSS
+        if (selectedImage) {
+            selectedImage.setAttribute('data-image-selected', '1')
+        }
+        return () => {
+            _globalSelectedImage = null
+            if (selectedImage) {
+                selectedImage.removeAttribute('data-image-selected')
+            }
+        }
+    }, [selectedImage])
 
     const removeResizeOverlay = useCallback(() => {
         if (overlayRef.current) {
@@ -23,12 +43,15 @@ export function useImageResize(containerRef, onContentChange) {
         }
     }, [containerRef])
 
-    // Handle resize move - only when resizing is active
+    // Unified move handler - works with both pointer and touch events
     const handleResizeMove = useCallback((e) => {
         if (!resizeDataRef.current) return
 
+        // Get clientX from pointer or touch event
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX
+
         const { img, handle, startX, startWidth, aspectRatio } = resizeDataRef.current
-        const deltaX = e.clientX - startX
+        const deltaX = clientX - startX
 
         let newWidth = startWidth
         if (handle === 'se' || handle === 'ne') newWidth = Math.max(50, startWidth + deltaX)
@@ -45,6 +68,9 @@ export function useImageResize(containerRef, onContentChange) {
             overlayRef.current.style.width = `${newWidth}px`
             overlayRef.current.style.height = `${newHeight}px`
         }
+
+        // Prevent scrolling during resize on touch
+        if (e.cancelable) e.preventDefault()
     }, [])
 
     // Handle resize end - cleanup listeners
@@ -54,6 +80,15 @@ export function useImageResize(containerRef, onContentChange) {
         document.removeEventListener('pointermove', handleResizeMove)
         document.removeEventListener('pointerup', handleResizeEnd)
         document.removeEventListener('pointercancel', handleResizeEnd)
+        document.removeEventListener('touchmove', handleResizeMove)
+        document.removeEventListener('touchend', handleResizeEnd)
+        document.removeEventListener('touchcancel', handleResizeEnd)
+
+        // Reposition overlay to match new image size/position
+        const img = resizeDataRef.current.img
+        if (img && overlayRef.current) {
+            repositionOverlay(img)
+        }
 
         if (onContentChange) onContentChange()
 
@@ -61,23 +96,46 @@ export function useImageResize(containerRef, onContentChange) {
         setIsResizing(false)
     }, [handleResizeMove, onContentChange])
 
-    // Handle resize start
+    // Reposition overlay to match current image rect
+    const repositionOverlay = useCallback((img) => {
+        const container = containerRef.current
+        if (!container || !overlayRef.current) return
+
+        const imgRect = img.getBoundingClientRect()
+        const containerRect = container.getBoundingClientRect()
+
+        const left = imgRect.left - containerRect.left + container.scrollLeft
+        const top = imgRect.top - containerRect.top + container.scrollTop
+
+        overlayRef.current.style.left = `${left}px`
+        overlayRef.current.style.top = `${top}px`
+        overlayRef.current.style.width = `${imgRect.width}px`
+        overlayRef.current.style.height = `${imgRect.height}px`
+    }, [containerRef])
+
+    // Handle resize start - supports both pointer and touch
     const handleResizeStart = useCallback((e, img, handle) => {
         e.preventDefault()
         e.stopPropagation()
 
-        const startX = e.clientX
-        const startY = e.clientY
+        // Get clientX/Y from pointer or touch
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY
+
         const startWidth = img.offsetWidth
         const startHeight = img.offsetHeight
         const aspectRatio = startWidth / startHeight
 
-        resizeDataRef.current = { img, handle, startX, startY, startWidth, startHeight, aspectRatio }
+        resizeDataRef.current = { img, handle, startX: clientX, startY: clientY, startWidth, startHeight, aspectRatio }
         setIsResizing(true)
 
+        // Listen for both pointer and touch events
         document.addEventListener('pointermove', handleResizeMove)
         document.addEventListener('pointerup', handleResizeEnd)
         document.addEventListener('pointercancel', handleResizeEnd)
+        document.addEventListener('touchmove', handleResizeMove, { passive: false })
+        document.addEventListener('touchend', handleResizeEnd)
+        document.addEventListener('touchcancel', handleResizeEnd)
     }, [handleResizeMove, handleResizeEnd])
 
     const createResizeOverlay = useCallback((img) => {
@@ -118,21 +176,29 @@ export function useImageResize(containerRef, onContentChange) {
             handle.setAttribute('data-handle', pos)
             handle.style.cssText = `
         position: absolute;
-        width: 10px;
-        height: 10px;
+        width: 16px;
+        height: 16px;
         background: #3b82f6;
         border: 2px solid white;
-        border-radius: 2px;
+        border-radius: 3px;
         pointer-events: auto;
         cursor: ${pos === 'nw' || pos === 'se' ? 'nwse-resize' : 'nesw-resize'};
         box-sizing: border-box;
+        touch-action: none;
       `
-            if (pos.includes('n')) handle.style.top = '-6px'
-            if (pos.includes('s')) handle.style.bottom = '-6px'
-            if (pos.includes('w')) handle.style.left = '-6px'
-            if (pos.includes('e')) handle.style.right = '-6px'
+            if (pos.includes('n')) handle.style.top = '-9px'
+            if (pos.includes('s')) handle.style.bottom = '-9px'
+            if (pos.includes('w')) handle.style.left = '-9px'
+            if (pos.includes('e')) handle.style.right = '-9px'
 
+            // Pointer events (mouse + stylus)
             handle.addEventListener('pointerdown', (e) => handleResizeStart(e, img, pos))
+            // Touch events (tablet finger)
+            handle.addEventListener('touchstart', (e) => {
+                e.preventDefault() // Prevent scrolling
+                handleResizeStart(e, img, pos)
+            }, { passive: false })
+
             overlay.appendChild(handle)
         })
 
@@ -201,9 +267,72 @@ export function useImageResize(containerRef, onContentChange) {
         }
     }, [containerRef, createResizeOverlay, removeResizeOverlay, handleKeyDown, isResizing])
 
+    // Listen for alignment changes from toolbar (formatUtils dispatches this)
+    useEffect(() => {
+        const handleAlignChanged = () => {
+            if (selectedImage && overlayRef.current) {
+                requestAnimationFrame(() => {
+                    repositionOverlay(selectedImage)
+                })
+            }
+        }
+        document.addEventListener('image-align-changed', handleAlignChanged)
+        return () => document.removeEventListener('image-align-changed', handleAlignChanged)
+    }, [selectedImage, repositionOverlay])
+
+    /**
+     * Apply alignment to the selected image's parent block
+     * Called from EditorHeader alignment buttons when image is selected
+     */
+    const alignImage = useCallback((alignment) => {
+        if (!selectedImage) return false
+
+        // Find the parent block element (p, div, etc.) that contains the image
+        let block = selectedImage.parentElement
+        const container = containerRef.current
+
+        // Climb to the nearest block-level parent within the contenteditable
+        while (block && block !== container) {
+            const display = window.getComputedStyle(block).display
+            if (display === 'block' || display === 'flex' || ['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'LI'].includes(block.tagName)) {
+                break
+            }
+            block = block.parentElement
+        }
+
+        if (!block || block === container) {
+            // Image is a direct child of contenteditable — wrap it in a <p>
+            const p = document.createElement('p')
+            selectedImage.parentNode.insertBefore(p, selectedImage)
+            p.appendChild(selectedImage)
+            block = p
+        }
+
+        // Set text-align on the block (this naturally aligns inline/inline-block images)
+        block.style.textAlign = alignment
+
+        // Ensure image is inline-block so text-align works
+        if (selectedImage.style.display === 'block') {
+            selectedImage.style.display = 'inline-block'
+        }
+        // Remove any float that might conflict
+        selectedImage.style.float = 'none'
+
+        // Reposition overlay after alignment change
+        requestAnimationFrame(() => {
+            if (selectedImage && overlayRef.current) {
+                repositionOverlay(selectedImage)
+            }
+        })
+
+        if (onContentChange) onContentChange()
+        return true
+    }, [selectedImage, containerRef, onContentChange, repositionOverlay])
+
     return {
         selectedImage,
         isResizing,
+        alignImage,
         deselectImage: () => {
             setSelectedImage(null)
             removeResizeOverlay()

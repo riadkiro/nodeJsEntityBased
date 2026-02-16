@@ -373,6 +373,13 @@ export default function EditorPage({
     const { width, height } = doc.dimensions || { width: 794, height: 1123 }
     const { top, bottom, left, right } = doc.margins || { top: 40, bottom: 40, left: 40, right: 40 }
 
+    const hasHeader = !!doc.headerHtml
+    const hasFooter = !!doc.footerHtml
+
+    // Reduce contenteditable padding when header/footer is present (they have their own padding)
+    const contentPaddingTop = hasHeader ? 8 : top
+    const contentPaddingBottom = hasFooter ? 8 : bottom
+
     return (
         <div
             className={`bg-white shadow-2xl relative transition-shadow ${isSelected ? 'ring-2 ring-primary/20' : ''
@@ -380,24 +387,39 @@ export default function EditorPage({
             style={{
                 width: `${width}px`,
                 minHeight: `${height}px`,
-                backgroundColor: page.background || '#ffffff'
+                backgroundColor: page.background || '#ffffff',
+                display: 'flex',
+                flexDirection: 'column'
             }}
             onClick={onSelect}
         >
+            {/* Global Header (non-editable, all pages) */}
+            {hasHeader && page.mode === 'edition' && (
+                <DocHeaderFooter
+                    type="header"
+                    html={doc.headerHtml}
+                    onRemove={() => setDoc(prev => ({ ...prev, headerHtml: '' }))}
+                    paddingLeft={left}
+                    paddingRight={right}
+                    paddingTop={top}
+                />
+            )}
+
             {/* Edition Mode */}
             {page.mode === 'edition' && (
                 <div
                     ref={contentRef}
                     contentEditable
                     suppressContentEditableWarning
-                    className="outline-none min-h-full text-black"
+                    className="outline-none text-black"
                     style={{
-                        padding: `${top}px ${right}px ${bottom}px ${left}px`,
-                        minHeight: `${height}px`,
-                        maxHeight: `${height}px`,
+                        padding: `${contentPaddingTop}px ${right}px ${contentPaddingBottom}px ${left}px`,
+                        flex: 1,
+                        minHeight: 0,
+                        maxHeight: `${height - (hasHeader ? 0 : 0) - (hasFooter ? 0 : 0)}px`,
                         overflow: 'hidden',
-                        color: '#000000', // Force black text regardless of dark mode
-                        caretColor: '#000000', // Ensure cursor is always visible
+                        color: '#000000',
+                        caretColor: '#000000',
                         wordWrap: 'break-word',
                         overflowWrap: 'break-word',
                         lineHeight: '1.6'
@@ -407,6 +429,18 @@ export default function EditorPage({
                     onKeyDown={(e) => handleKeyDown?.(e, pageIndex, contentRef)}
                     onDrop={handleEditionDrop}
                     onDragOver={handleDragOver}
+                />
+            )}
+
+            {/* Global Footer (non-editable, all pages) */}
+            {hasFooter && page.mode === 'edition' && (
+                <DocHeaderFooter
+                    type="footer"
+                    html={doc.footerHtml}
+                    onRemove={() => setDoc(prev => ({ ...prev, footerHtml: '' }))}
+                    paddingLeft={left}
+                    paddingRight={right}
+                    paddingBottom={bottom}
                 />
             )}
 
@@ -443,6 +477,108 @@ export default function EditorPage({
                         doc={doc}
                         setDoc={setDoc}
                     />
+                </div>
+            )}
+        </div>
+    )
+}
+
+// ========== HEADER/FOOTER COMPONENT ==========
+// Non-editable, rendered on every page from doc-level headerHtml/footerHtml
+function DocHeaderFooter({ type, html, onRemove, paddingLeft, paddingRight, paddingTop, paddingBottom }) {
+    const [hovered, setHovered] = React.useState(false)
+
+    return (
+        <div
+            contentEditable={false}
+            style={{
+                position: 'relative',
+                padding: `${type === 'header' ? (paddingTop || 20) : 12}px ${paddingRight || 40}px ${type === 'footer' ? (paddingBottom || 20) : 12}px ${paddingLeft || 40}px`,
+                color: '#000000',
+                userSelect: 'none',
+                flexShrink: 0,
+                cursor: 'default'
+            }}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+        >
+            {/* Rendered HTML content */}
+            <div
+                dangerouslySetInnerHTML={{ __html: html }}
+                style={{ pointerEvents: 'none' }}
+            />
+
+            {/* Hover overlay with label + remove button */}
+            {hovered && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        inset: 0,
+                        border: '2px solid rgba(59,130,246,0.4)',
+                        borderRadius: '0',
+                        background: 'rgba(59,130,246,0.03)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        zIndex: 5,
+                        pointerEvents: 'none'
+                    }}
+                >
+                    {/* Label */}
+                    <span
+                        style={{
+                            position: 'absolute',
+                            top: type === 'header' ? '4px' : 'auto',
+                            bottom: type === 'footer' ? '4px' : 'auto',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            color: '#3b82f6',
+                            background: 'white',
+                            padding: '1px 8px',
+                            borderRadius: '4px',
+                            border: '1px solid rgba(59,130,246,0.3)',
+                            pointerEvents: 'none',
+                            whiteSpace: 'nowrap'
+                        }}
+                    >
+                        {type === 'header' ? 'En-tête (toutes les pages)' : 'Pied de page (toutes les pages)'}
+                    </span>
+
+                    {/* Remove button */}
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            onRemove()
+                        }}
+                        style={{
+                            position: 'absolute',
+                            top: '-10px',
+                            right: '-10px',
+                            width: '22px',
+                            height: '22px',
+                            borderRadius: '50%',
+                            background: '#ef4444',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            lineHeight: 1,
+                            cursor: 'pointer',
+                            zIndex: 10,
+                            border: '2px solid white',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                            pointerEvents: 'auto'
+                        }}
+                        title={`Supprimer ${type === 'header' ? "l'en-tête" : 'le pied de page'}`}
+                    >
+                        ×
+                    </button>
                 </div>
             )}
         </div>

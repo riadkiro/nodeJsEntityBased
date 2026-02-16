@@ -85,6 +85,8 @@ const createDefaultDoc = () => ({
     status: 'draft',
     dimensions: { width: 794, height: 1123 },
     margins: { top: 72, bottom: 72, left: 72, right: 72 },
+    headerHtml: '',  // Global header HTML applied to all pages
+    footerHtml: '',  // Global footer HTML applied to all pages
     pages: [{
         content: '',
         elements: [],
@@ -108,6 +110,8 @@ const mergeWithDefaults = (initialDoc) => {
         // Ensure nested objects have defaults
         dimensions: initialDoc.dimensions || defaults.dimensions,
         margins: initialDoc.margins || defaults.margins,
+        headerHtml: initialDoc.headerHtml || '',
+        footerHtml: initialDoc.footerHtml || '',
         // Ensure pages array exists and has at least one page
         pages: (initialDoc.pages && initialDoc.pages.length > 0)
             ? initialDoc.pages.map(page => ({
@@ -1810,6 +1814,9 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     insertVariableToken={insertVariableToken}
                     isSettingsOpen={isSettingsOpen}
                     onSettingsToggle={() => setIsSettingsOpen(!isSettingsOpen)}
+                    doc={doc}
+                    setDoc={setDoc}
+                    triggerSave={triggerSave}
                     settingsPanelProps={{
                         isOpen: isSettingsOpen,
                         onClose: () => setIsSettingsOpen(false),

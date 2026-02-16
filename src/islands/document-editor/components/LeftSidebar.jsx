@@ -56,7 +56,10 @@ export default function LeftSidebar({
     insertVariableToken,
     isSettingsOpen,
     onSettingsToggle,
-    settingsPanelProps
+    settingsPanelProps,
+    doc,
+    setDoc,
+    triggerSave
 }) {
     const toggleTab = (tab) => {
         setActiveTab(activeTab === tab ? null : tab)
@@ -184,7 +187,7 @@ export default function LeftSidebar({
                             <BlocksPanel />
                         )}
                         {activeTab === 'layouts' && (
-                            <LayoutsPanel />
+                            <LayoutsPanel doc={doc} setDoc={setDoc} triggerSave={triggerSave} />
                         )}
                         {activeTab === 'dynamic-nav' && (
                             <DynamicNavPanel insertVariableToken={insertVariableToken} />
@@ -520,41 +523,133 @@ function example() {
 }
 
 // Layouts Panel - Pre-built page section layouts
-function LayoutsPanel() {
+function LayoutsPanel({ doc, setDoc, triggerSave }) {
+    const isDark = useDarkMode()
+    const hasHeader = !!doc?.headerHtml
+    const hasFooter = !!doc?.footerHtml
+
+    const HEADER_HTML = `<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;border-bottom:2px solid #1e40af;margin-bottom:0;">
+        <div>
+            <h2 style="margin:0;font-size:24px;font-weight:700;color:#1e40af;">Nom de l'entreprise</h2>
+            <p style="margin:4px 0 0;font-size:12px;color:#6b7280;">Slogan ou activité</p>
+        </div>
+        <div style="text-align:right;font-size:12px;color:#6b7280;">
+            <p style="margin:0;">123 Rue Exemple, 75000 Paris</p>
+            <p style="margin:2px 0;">Tél : 01 23 45 67 89</p>
+            <p style="margin:0;">contact@entreprise.fr</p>
+        </div>
+    </div>`
+
+    const FOOTER_HTML = `<div style="border-top:1px solid #e5e7eb;padding-top:12px;margin-top:0;text-align:center;font-size:11px;color:#9ca3af;">
+        <p style="margin:0;">Nom de l'entreprise — SIRET : 000 000 000 00000 — TVA : FR00 000000000</p>
+        <p style="margin:4px 0 0;">123 Rue Exemple, 75000 Paris — Tél : 01 23 45 67 89 — contact@entreprise.fr</p>
+    </div>`
+
+    const setHeader = (html) => {
+        if (setDoc) {
+            setDoc(prev => ({ ...prev, headerHtml: html }))
+            triggerSave?.()
+        }
+    }
+
+    const setFooter = (html) => {
+        if (setDoc) {
+            setDoc(prev => ({ ...prev, footerHtml: html }))
+            triggerSave?.()
+        }
+    }
+
     return (
         <div>
             <p style={{ fontSize: '11px', color: '#888ea8', marginBottom: '12px' }}>
                 Mises en page prédéfinies pour votre document.
             </p>
 
-            <DraggableBlock
-                icon="tabler:layout-navbar"
-                label="En-tête de page"
-                description="Logo + coordonnées alignés"
-                html={`<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;border-bottom:2px solid #1e40af;margin-bottom:24px;">
-                    <div>
-                        <h2 style="margin:0;font-size:24px;font-weight:700;color:#1e40af;">Nom de l'entreprise</h2>
-                        <p style="margin:4px 0 0;font-size:12px;color:#6b7280;">Slogan ou activité</p>
-                    </div>
-                    <div style="text-align:right;font-size:12px;color:#6b7280;">
-                        <p style="margin:0;">123 Rue Exemple, 75000 Paris</p>
-                        <p style="margin:2px 0;">Tél : 01 23 45 67 89</p>
-                        <p style="margin:0;">contact@entreprise.fr</p>
-                    </div>
-                </div>`}
-                plainText="En-tête"
-            />
+            {/* ===== GLOBAL HEADER/FOOTER (click to set on all pages) ===== */}
+            <p style={{ fontSize: '10px', fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                En-tête / Pied de page global
+            </p>
 
-            <DraggableBlock
-                icon="tabler:layout-bottombar"
-                label="Pied de page"
-                description="Coordonnées et mentions légales"
-                html={`<div style="border-top:1px solid #e5e7eb;padding-top:12px;margin-top:40px;text-align:center;font-size:11px;color:#9ca3af;">
-                    <p style="margin:0;">Nom de l'entreprise — SIRET : 000 000 000 00000 — TVA : FR00 000000000</p>
-                    <p style="margin:4px 0 0;">123 Rue Exemple, 75000 Paris — Tél : 01 23 45 67 89 — contact@entreprise.fr</p>
-                </div>`}
-                plainText="Pied de page"
-            />
+            {/* Header toggle */}
+            <button
+                onClick={() => setHeader(hasHeader ? '' : HEADER_HTML)}
+                style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: `1px solid ${hasHeader ? '#3b82f6' : (isDark ? '#4b5563' : '#d1d5db')}`,
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    marginBottom: '6px',
+                    background: hasHeader ? 'rgba(59,130,246,0.08)' : 'transparent',
+                    textAlign: 'left',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
+                }}
+            >
+                <div style={{
+                    width: '32px', height: '32px', borderRadius: '8px',
+                    background: hasHeader ? '#3b82f6' : (isDark ? '#1f2937' : '#f3f4f6'),
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: hasHeader ? 'white' : (isDark ? '#9ca3af' : '#6b7280'), flexShrink: 0
+                }}>
+                    <iconify-icon icon={hasHeader ? 'tabler:check' : 'tabler:layout-navbar'} width="18"></iconify-icon>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                    <span style={{
+                        fontSize: '13px', fontWeight: 500, display: 'block',
+                        color: hasHeader ? '#3b82f6' : (isDark ? '#e5e7eb' : '#374151')
+                    }}>{hasHeader ? 'En-tête activé ✓' : 'Ajouter un en-tête'}</span>
+                    <span style={{
+                        fontSize: '10px', display: 'block', marginTop: '2px',
+                        color: isDark ? '#6b7280' : '#9ca3af'
+                    }}>{hasHeader ? 'Cliquez pour retirer' : 'Apparaît sur toutes les pages'}</span>
+                </div>
+            </button>
+
+            {/* Footer toggle */}
+            <button
+                onClick={() => setFooter(hasFooter ? '' : FOOTER_HTML)}
+                style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: `1px solid ${hasFooter ? '#3b82f6' : (isDark ? '#4b5563' : '#d1d5db')}`,
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    marginBottom: '16px',
+                    background: hasFooter ? 'rgba(59,130,246,0.08)' : 'transparent',
+                    textAlign: 'left',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
+                }}
+            >
+                <div style={{
+                    width: '32px', height: '32px', borderRadius: '8px',
+                    background: hasFooter ? '#3b82f6' : (isDark ? '#1f2937' : '#f3f4f6'),
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: hasFooter ? 'white' : (isDark ? '#9ca3af' : '#6b7280'), flexShrink: 0
+                }}>
+                    <iconify-icon icon={hasFooter ? 'tabler:check' : 'tabler:layout-bottombar'} width="18"></iconify-icon>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                    <span style={{
+                        fontSize: '13px', fontWeight: 500, display: 'block',
+                        color: hasFooter ? '#3b82f6' : (isDark ? '#e5e7eb' : '#374151')
+                    }}>{hasFooter ? 'Pied de page activé ✓' : 'Ajouter un pied de page'}</span>
+                    <span style={{
+                        fontSize: '10px', display: 'block', marginTop: '2px',
+                        color: isDark ? '#6b7280' : '#9ca3af'
+                    }}>{hasFooter ? 'Cliquez pour retirer' : 'Apparaît sur toutes les pages'}</span>
+                </div>
+            </button>
+
+            {/* ===== DRAGGABLE BLOCKS (dropped per-page) ===== */}
+            <p style={{ fontSize: '10px', fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Blocs de mise en page
+            </p>
 
             <DraggableBlock
                 icon="tabler:file-invoice"

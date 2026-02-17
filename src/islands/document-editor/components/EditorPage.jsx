@@ -10,6 +10,7 @@
  */
 import React, { useEffect, useRef, useCallback } from 'react'
 import { useImageResize } from '../hooks/useImageResize'
+import GridBuilder from '../../shared/GridBuilder'
 
 export default function EditorPage({
     page,
@@ -25,7 +26,6 @@ export default function EditorPage({
     isGlobalSelection
 }) {
     const contentRef = useRef(null)
-    const initialContentRef = useRef(page.content)
 
     // Register ref
     useEffect(() => {
@@ -37,12 +37,14 @@ export default function EditorPage({
         }
     }, [pageIndex, pageRefs])
 
-    // Set initial content only once
+    // Restore content when contenteditable appears (initial mount + mode switch back to edition)
+    // CRITICAL: page.mode is a dependency so that when switching from layout→edition,
+    // the contenteditable is recreated and needs its content restored from state.
     useEffect(() => {
-        if (contentRef.current && !contentRef.current.innerHTML) {
-            contentRef.current.innerHTML = initialContentRef.current || ''
+        if (contentRef.current && page.mode === 'edition') {
+            contentRef.current.innerHTML = page.content || ''
         }
-    }, [])
+    }, [page.mode])
 
     // ========== CARET VISIBILITY: Scroll cursor into view after typing ==========
     // The page has overflow:hidden + maxHeight, so the cursor can go below the visible area.
@@ -770,204 +772,113 @@ function DocHeaderFooter({ type, html, onRemove, paddingLeft, paddingRight, padd
     )
 }
 
-// Layout Mode Content
-function LayoutModeContent({ page, pageIndex, doc, setDoc }) {
-    const containerRef = useRef(null)
 
-    // Add row
-    const addRow = useCallback(() => {
+// Layout Mode Content — uses shared GridBuilder for unified grid editing
+function LayoutModeContent({ page, pageIndex, doc, setDoc }) {
+    const rows = page.rows || []
+
+    const handleRowsChange = useCallback((newRows) => {
+        setDoc(prev => {
+            const pages = [...prev.pages]
+            pages[pageIndex] = { ...pages[pageIndex], rows: newRows }
+            return { ...prev, pages }
+        })
+    }, [pageIndex, setDoc])
+
+    const handleDropInColumn = useCallback((rowIndex, colIndex, data) => {
+        if (!data.html && !data.text) return
+
         setDoc(prev => {
             const pages = [...prev.pages]
             const updatedPage = { ...pages[pageIndex] }
-            updatedPage.rows = [...(updatedPage.rows || []), {
-                id: Date.now(),
-                columns: [{ id: Date.now() + 1, elements: [], width: 100 }]
-            }]
+            const rows = [...(updatedPage.rows || [])]
+            const row = { ...rows[rowIndex] }
+            const columns = [...row.columns]
+            const column = { ...columns[colIndex] }
+
+            // Create a new block from the dropped content
+            const block = {
+                id: `block_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                type: 'html',
+                content: data.html || data.text
+            }
+
+            column.blocks = [...(column.blocks || []), block]
+            columns[colIndex] = column
+            row.columns = columns
+            rows[rowIndex] = row
+            updatedPage.rows = rows
             pages[pageIndex] = updatedPage
             return { ...prev, pages }
         })
     }, [pageIndex, setDoc])
 
-    return (
-        <div ref={containerRef} className="space-y-4">
-            {(page.rows || []).map((row, rowIndex) => (
-                <LayoutRow
-                    key={row.id || rowIndex}
-                    row={row}
-                    rowIndex={rowIndex}
-                    pageIndex={pageIndex}
-                    doc={doc}
-                    setDoc={setDoc}
-                />
-            ))}
+    const renderBlock = useCallback((block, colIndex, rowIndex, blockIndex) => {
+        const deleteBlock = (e) => {
+            e.stopPropagation()
+            setDoc(prev => {
+                const pages = [...prev.pages]
+                const updatedPage = { ...pages[pageIndex] }
+                const rows = [...updatedPage.rows]
+                const row = { ...rows[rowIndex] }
+                const columns = [...row.columns]
+                const column = { ...columns[colIndex] }
+                column.blocks = column.blocks.filter((_, i) => i !== blockIndex)
+                columns[colIndex] = column
+                row.columns = columns
+                rows[rowIndex] = row
+                updatedPage.rows = rows
+                pages[pageIndex] = updatedPage
+                return { ...prev, pages }
+            })
+        }
 
-            {/* Add Row Button */}
-            <button
-                onClick={addRow}
-                className="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-400 hover:text-primary hover:border-primary transition-colors flex items-center justify-center gap-2"
-            >
-                <iconify-icon icon="tabler:plus" width="18"></iconify-icon>
-                <span className="text-sm">Ajouter une ligne</span>
-            </button>
-        </div>
-    )
-}
+        return (
+            <div className="group/el relative p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-800">
+                {/* Element Controls */}
+                <div className="absolute -top-2 -right-2 opacity-0 group-hover/el:opacity-100 transition-opacity z-10">
+                    <button
+                        onClick={deleteBlock}
+                        className="p-0.5 rounded-full bg-danger text-white hover:bg-danger/80"
+                    >
+                        <iconify-icon icon="tabler:x" width="12"></iconify-icon>
+                    </button>
+                </div>
 
-// Layout Row
-function LayoutRow({ row, rowIndex, pageIndex, doc, setDoc }) {
-    // Delete row
-    const deleteRow = useCallback(() => {
-        setDoc(prev => {
-            const pages = [...prev.pages]
-            const updatedPage = { ...pages[pageIndex] }
-            updatedPage.rows = updatedPage.rows.filter((_, i) => i !== rowIndex)
-            pages[pageIndex] = updatedPage
-            return { ...prev, pages }
-        })
-    }, [pageIndex, rowIndex, setDoc])
-
-    // Add column
-    const addColumn = useCallback(() => {
-        setDoc(prev => {
-            const pages = [...prev.pages]
-            const updatedPage = { ...pages[pageIndex] }
-            const rows = [...updatedPage.rows]
-            const updatedRow = { ...rows[rowIndex] }
-            const columnCount = updatedRow.columns.length + 1
-            const columnWidth = Math.floor(100 / columnCount)
-
-            updatedRow.columns = [
-                ...updatedRow.columns.map(c => ({ ...c, width: columnWidth })),
-                { id: Date.now(), elements: [], width: columnWidth }
-            ]
-
-            rows[rowIndex] = updatedRow
-            updatedPage.rows = rows
-            pages[pageIndex] = updatedPage
-            return { ...prev, pages }
-        })
-    }, [pageIndex, rowIndex, setDoc])
-
-    return (
-        <div className="group/row relative">
-            {/* Row Controls */}
-            <div className="absolute -left-8 top-0 bottom-0 flex flex-col items-center justify-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                <button
-                    onClick={addColumn}
-                    className="p-1 rounded bg-primary/10 text-primary hover:bg-primary hover:text-white"
-                    title="Ajouter colonne"
-                >
-                    <iconify-icon icon="tabler:columns" width="14"></iconify-icon>
-                </button>
-                <button
-                    onClick={deleteRow}
-                    className="p-1 rounded bg-danger/10 text-danger hover:bg-danger hover:text-white"
-                    title="Supprimer ligne"
-                >
-                    <iconify-icon icon="tabler:trash" width="14"></iconify-icon>
-                </button>
-            </div>
-
-            {/* Columns */}
-            <div className="flex gap-4 min-h-[100px] border-2 border-dashed border-transparent hover:border-gray-200 dark:hover:border-gray-700 rounded-lg p-2">
-                {row.columns.map((column, colIndex) => (
-                    <LayoutColumn
-                        key={column.id || colIndex}
-                        column={column}
-                        colIndex={colIndex}
-                        rowIndex={rowIndex}
-                        pageIndex={pageIndex}
-                        doc={doc}
-                        setDoc={setDoc}
+                {/* Block Content */}
+                {block.type === 'text' && (
+                    <div
+                        dangerouslySetInnerHTML={{ __html: block.content || 'Texte...' }}
+                        className="text-sm"
                     />
-                ))}
+                )}
+                {block.type === 'html' && (
+                    <div
+                        dangerouslySetInnerHTML={{ __html: block.content || '' }}
+                        className="text-sm"
+                    />
+                )}
+                {block.type === 'image' && (
+                    <img
+                        src={block.src}
+                        alt={block.alt || ''}
+                        className="max-w-full h-auto rounded"
+                    />
+                )}
+                {!block.type && (
+                    <div className="text-xs text-gray-400">Élément</div>
+                )}
             </div>
-        </div>
-    )
-}
-
-// Layout Column
-function LayoutColumn({ column, colIndex, rowIndex, pageIndex, doc, setDoc }) {
-    return (
-        <div
-            className="flex-1 min-h-[80px] border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg p-2 hover:border-primary/50 transition-colors"
-            style={{ width: `${column.width}%` }}
-        >
-            {(column.elements || []).length === 0 ? (
-                <div className="h-full flex items-center justify-center text-gray-400 text-xs">
-                    Glissez un élément ici
-                </div>
-            ) : (
-                <div className="space-y-2">
-                    {column.elements.map((element, elIndex) => (
-                        <LayoutElement
-                            key={element.id || elIndex}
-                            element={element}
-                            elIndex={elIndex}
-                            colIndex={colIndex}
-                            rowIndex={rowIndex}
-                            pageIndex={pageIndex}
-                            doc={doc}
-                            setDoc={setDoc}
-                        />
-                    ))}
-                </div>
-            )}
-        </div>
-    )
-}
-
-// Layout Element
-function LayoutElement({ element, elIndex, colIndex, rowIndex, pageIndex, doc, setDoc }) {
-    // Delete element
-    const deleteElement = useCallback(() => {
-        setDoc(prev => {
-            const pages = [...prev.pages]
-            const updatedPage = { ...pages[pageIndex] }
-            const rows = [...updatedPage.rows]
-            const updatedRow = { ...rows[rowIndex] }
-            const columns = [...updatedRow.columns]
-            const updatedColumn = { ...columns[colIndex] }
-            updatedColumn.elements = updatedColumn.elements.filter((_, i) => i !== elIndex)
-            columns[colIndex] = updatedColumn
-            updatedRow.columns = columns
-            rows[rowIndex] = updatedRow
-            updatedPage.rows = rows
-            pages[pageIndex] = updatedPage
-            return { ...prev, pages }
-        })
-    }, [pageIndex, rowIndex, colIndex, elIndex, setDoc])
+        )
+    }, [pageIndex, setDoc])
 
     return (
-        <div className="group/el relative p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-800">
-            {/* Element Controls */}
-            <div className="absolute -top-2 -right-2 opacity-0 group-hover/el:opacity-100 transition-opacity">
-                <button
-                    onClick={deleteElement}
-                    className="p-0.5 rounded-full bg-danger text-white hover:bg-danger/80"
-                >
-                    <iconify-icon icon="tabler:x" width="12"></iconify-icon>
-                </button>
-            </div>
-
-            {/* Element Content */}
-            {element.type === 'text' && (
-                <div
-                    dangerouslySetInnerHTML={{ __html: element.content || 'Texte...' }}
-                    className="text-sm"
-                />
-            )}
-            {element.type === 'image' && (
-                <img
-                    src={element.src}
-                    alt={element.alt || ''}
-                    className="max-w-full h-auto rounded"
-                />
-            )}
-            {!element.type && (
-                <div className="text-xs text-gray-400">Élément</div>
-            )}
-        </div>
+        <GridBuilder
+            rows={rows}
+            onRowsChange={handleRowsChange}
+            renderBlock={renderBlock}
+            onDropInColumn={handleDropInColumn}
+        />
     )
 }
 

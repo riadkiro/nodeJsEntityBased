@@ -130,124 +130,131 @@ export default function GridBuilder({
     }, [rows, onRowsChange])
 
     // ===== COLUMN RESIZE =====
-    const resizeStateRef = useRef({
-        active: false, rowId: null, colIndex: null,
-        startX: 0, startWidths: [], gridWidth: 0
-    })
+    // Use a ref to always have fresh rows (avoids stale closures in event handlers)
+    const rowsRef = useRef(rows)
+    useEffect(() => { rowsRef.current = rows }, [rows])
 
-    const updateColumnWidths = useCallback((rowId, newWidths) => {
-        onRowsChange(rows.map(row => {
-            if (row.id !== rowId) return row
-            return {
-                ...row,
-                columns: row.columns.map((c, i) => ({
-                    ...c,
-                    width: newWidths[i] !== undefined ? newWidths[i] : c.width
-                }))
-            }
-        }))
-    }, [rows, onRowsChange])
+    // Visual indicator for resize preview
+    const [resizePreview, setResizePreview] = useState(null) // { rowId, colIndex, leftWidth, rightWidth, isNew }
 
     const startResize = useCallback((rowId, colIndex, event, gridElement) => {
         if (readOnly) return
         event.preventDefault()
-        const row = rows.find(r => r.id === rowId)
+
+        const currentRows = rowsRef.current
+        const row = currentRows.find(r => r.id === rowId)
         if (!row) return
 
-        resizeStateRef.current = {
-            active: true,
-            rowId,
-            colIndex,
-            startX: event.clientX,
-            startWidths: row.columns.map(c => c.width),
-            gridWidth: gridElement?.offsetWidth || 800
-        }
+        const isLastCol = colIndex === row.columns.length - 1
+        const gridWidth = gridElement?.offsetWidth || 800
+        const colUnitWidth = gridWidth / GRID_COLS
+        const startX = event.clientX
+        const originalWidth = row.columns[colIndex].width
+        const rightWidth = isLastCol ? 0 : row.columns[colIndex + 1].width
+        const totalPair = originalWidth + rightWidth
+
+        let lastDelta = 0
 
         const doResize = (e) => {
-            const state = resizeStateRef.current
-            if (!state.active) return
-
-            const colUnitWidth = state.gridWidth / GRID_COLS
-            const deltaX = e.clientX - state.startX
+            const deltaX = e.clientX - startX
             const deltaUnits = Math.round(deltaX / colUnitWidth)
-            if (deltaUnits === 0) return
+            if (deltaUnits === lastDelta) return
+            lastDelta = deltaUnits
 
-            const { colIndex: ci, startWidths, rowId: rid } = state
-            const row = rows.find(r => r.id === rid)
-            if (!row) return
-
-            const isLast = ci === row.columns.length - 1
-
-            if (isLast) {
-                // Shrinking last column creates a new empty column
-                let newWidth = startWidths[ci] + deltaUnits
-                if (newWidth < MIN_COL_WIDTH) newWidth = MIN_COL_WIDTH
-                const totalUsed = startWidths.reduce((s, w, i) =>
-                    s + (i === ci ? newWidth : w), 0)
-                const remaining = GRID_COLS - totalUsed
-
-                if (remaining > 0) {
-                    const newWidths = [...startWidths]
-                    newWidths[ci] = newWidth
-                    // Add new column width
-                    if (newWidths.length === startWidths.length) {
-                        newWidths.push(remaining)
-                    } else {
-                        newWidths[ci + 1] = remaining
-                    }
-                    // Need to add column to the row
-                    onRowsChange(rows.map(r => {
-                        if (r.id !== rid) return r
-                        const cols = [...r.columns]
-                        if (cols.length === startWidths.length && remaining > 0) {
-                            cols.push({ id: uid('col'), width: remaining, blocks: [] })
-                            state.startWidths.push(0)
-                        }
-                        return {
-                            ...r,
-                            columns: cols.map((c, i) => ({
-                                ...c,
-                                width: i === ci ? newWidth : (i === ci + 1 && i >= startWidths.length - 1 ? remaining : c.width)
-                            }))
-                        }
-                    }))
+            if (isLastCol) {
+                // Shrinking last column: show preview of split
+                let newLeft = originalWidth + deltaUnits
+                if (newLeft < MIN_COL_WIDTH) newLeft = MIN_COL_WIDTH
+                if (newLeft >= originalWidth) {
+                    // Can't grow the last column (no room)
+                    setResizePreview(null)
+                    return
                 }
+                const newRight = originalWidth - newLeft
+                setResizePreview({ rowId, colIndex, leftWidth: newLeft, rightWidth: newRight, isNew: true })
             } else {
                 // Normal resize between two adjacent columns
-                const leftW = startWidths[ci]
-                const rightW = startWidths[ci + 1]
-                let newLeft = leftW + deltaUnits
-                let newRight = rightW - deltaUnits
+                let newLeft = originalWidth + deltaUnits
+                let newRight = rightWidth - deltaUnits
 
                 if (newLeft < MIN_COL_WIDTH) {
                     newLeft = MIN_COL_WIDTH
-                    newRight = leftW + rightW - MIN_COL_WIDTH
+                    newRight = totalPair - MIN_COL_WIDTH
                 }
                 if (newRight < MIN_COL_WIDTH) {
                     newRight = MIN_COL_WIDTH
-                    newLeft = leftW + rightW - MIN_COL_WIDTH
+                    newLeft = totalPair - MIN_COL_WIDTH
                 }
 
-                const newWidths = startWidths.map((w, i) =>
-                    i === ci ? newLeft : (i === ci + 1 ? newRight : w)
-                )
-                updateColumnWidths(rid, newWidths)
+                setResizePreview({ rowId, colIndex, leftWidth: newLeft, rightWidth: newRight, isNew: false })
             }
         }
 
         const endResize = () => {
-            resizeStateRef.current.active = false
             document.removeEventListener('mousemove', doResize)
             document.removeEventListener('mouseup', endResize)
             document.body.style.cursor = ''
             document.body.style.userSelect = ''
+
+            // Read the final preview and apply it
+            const preview = resizePreview
+            setResizePreview(null)
+
+            // We need to recompute from lastDelta since resizePreview might be stale
+            const latestRows = rowsRef.current
+            const latestRow = latestRows.find(r => r.id === rowId)
+            if (!latestRow || lastDelta === 0) return
+
+            if (isLastCol) {
+                let newLeft = originalWidth + lastDelta
+                if (newLeft < MIN_COL_WIDTH) newLeft = MIN_COL_WIDTH
+                if (newLeft >= originalWidth) return // no change
+
+                const newRight = originalWidth - newLeft
+                if (newRight < MIN_COL_WIDTH) return
+
+                // Create new column
+                const updated = latestRows.map(r => {
+                    if (r.id !== rowId) return r
+                    const cols = r.columns.map((c, i) =>
+                        i === colIndex ? { ...c, width: newLeft } : c
+                    )
+                    cols.push({ id: uid('col'), width: newRight, blocks: [] })
+                    return { ...r, columns: cols }
+                })
+                onRowsChange(updated)
+            } else {
+                let newLeft = originalWidth + lastDelta
+                let newRight = rightWidth - lastDelta
+
+                if (newLeft < MIN_COL_WIDTH) {
+                    newLeft = MIN_COL_WIDTH
+                    newRight = totalPair - MIN_COL_WIDTH
+                }
+                if (newRight < MIN_COL_WIDTH) {
+                    newRight = MIN_COL_WIDTH
+                    newLeft = totalPair - MIN_COL_WIDTH
+                }
+
+                const updated = latestRows.map(r => {
+                    if (r.id !== rowId) return r
+                    return {
+                        ...r,
+                        columns: r.columns.map((c, i) => ({
+                            ...c,
+                            width: i === colIndex ? newLeft : (i === colIndex + 1 ? newRight : c.width)
+                        }))
+                    }
+                })
+                onRowsChange(updated)
+            }
         }
 
         document.addEventListener('mousemove', doResize)
         document.addEventListener('mouseup', endResize)
         document.body.style.cursor = 'col-resize'
         document.body.style.userSelect = 'none'
-    }, [rows, onRowsChange, readOnly, updateColumnWidths])
+    }, [readOnly, onRowsChange, resizePreview])
 
     // ===== RENDER =====
     return (
@@ -277,6 +284,7 @@ export default function GridBuilder({
                         emptyColumnContent={emptyColumnContent}
                         isFirst={rowIndex === 0}
                         isLast={rowIndex === rows.length - 1}
+                        resizePreview={resizePreview?.rowId === row.id ? resizePreview : null}
                     />
                 ))}
             </div>
@@ -304,7 +312,8 @@ function GridRow({
     onSetLayout, onAddColumn, onDeleteColumn, onToggleEqualHeight,
     onStartResize,
     renderBlock, onDropInColumn, emptyColumnContent,
-    isFirst, isLast
+    isFirst, isLast,
+    resizePreview
 }) {
     const [hovered, setHovered] = useState(false)
     const [layoutMode, setLayoutMode] = useState(false)
@@ -429,22 +438,41 @@ function GridRow({
                     gap: `${gap * 4}px`
                 }}
             >
-                {row.columns.map((column, colIndex) => (
-                    <GridColumn
-                        key={column.id || colIndex}
-                        column={column}
-                        colIndex={colIndex}
-                        rowIndex={rowIndex}
-                        row={row}
-                        readOnly={readOnly}
-                        hovered={hovered}
-                        onStartResize={(ci, e) => onStartResize(ci, e, gridRef.current)}
-                        onDeleteColumn={onDeleteColumn}
-                        renderBlock={renderBlock}
-                        onDropInColumn={onDropInColumn}
-                        emptyColumnContent={emptyColumnContent}
-                    />
-                ))}
+                {row.columns.map((column, colIndex) => {
+                    // If resize preview is active for this column, override the width
+                    const previewWidth = resizePreview
+                        ? (colIndex === resizePreview.colIndex ? resizePreview.leftWidth
+                            : (colIndex === resizePreview.colIndex + 1 ? resizePreview.rightWidth
+                                : column.width))
+                        : column.width
+
+                    return (
+                        <GridColumn
+                            key={column.id || colIndex}
+                            column={{ ...column, width: previewWidth }}
+                            colIndex={colIndex}
+                            rowIndex={rowIndex}
+                            row={row}
+                            readOnly={readOnly}
+                            hovered={hovered}
+                            onStartResize={(ci, e) => onStartResize(ci, e, gridRef.current)}
+                            onDeleteColumn={onDeleteColumn}
+                            renderBlock={renderBlock}
+                            onDropInColumn={onDropInColumn}
+                            emptyColumnContent={emptyColumnContent}
+                        />
+                    )
+                })}
+
+                {/* Ghost preview column when splitting the last column */}
+                {resizePreview?.isNew && (
+                    <div
+                        className="relative border-2 border-dashed border-primary/50 bg-primary/5 rounded-lg flex items-center justify-center"
+                        style={{ gridColumn: `span ${resizePreview.rightWidth}` }}
+                    >
+                        <span className="text-xs text-primary/60">Nouvelle colonne</span>
+                    </div>
+                )}
             </div>
         </div>
     )
@@ -508,25 +536,29 @@ function GridColumn({
             onDragLeave={!readOnly ? handleDragLeave : undefined}
             onDrop={!readOnly ? handleDrop : undefined}
         >
-            {/* Resize Handle */}
+            {/* Resize Handle — full-height clickable bar on the right edge */}
             {!readOnly && hovered && (
                 <div
                     onMouseDown={(e) => onStartResize(colIndex, e)}
                     style={{
                         position: 'absolute',
-                        right: 0,
-                        top: '50%',
-                        transform: 'translate(50%, -50%)',
+                        right: '-8px',
+                        top: 0,
+                        bottom: 0,
+                        width: '16px',
                         cursor: 'col-resize',
                         zIndex: 50,
                         display: 'flex',
                         alignItems: 'center',
-                        padding: '4px 0',
+                        justifyContent: 'center',
                     }}
-                    className="text-gray-400 dark:text-gray-500 hover:text-primary transition-colors"
+                    className="group/handle"
                 >
-                    <iconify-icon icon="solar:alt-arrow-left-bold" width="12"></iconify-icon>
-                    <iconify-icon icon="solar:alt-arrow-right-bold" width="12" style={{ marginLeft: '-4px' }}></iconify-icon>
+                    {/* Visible indicator line */}
+                    <div
+                        className="w-[3px] rounded-full bg-gray-300 dark:bg-gray-600 group-hover/handle:bg-primary transition-colors"
+                        style={{ height: '40px' }}
+                    />
                 </div>
             )}
 

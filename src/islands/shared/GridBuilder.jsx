@@ -39,7 +39,33 @@ export default function GridBuilder({
     readOnly = false,
     className = '',
     gap = 6, // gap in tailwind units (gap-6 = 24px)
+    initialPanelMode = false,
+    onPanelModeChange,
 }) {
+    // ===== CONFIG STATE =====
+    const [panelMode, setPanelMode] = useState(initialPanelMode)
+    const [showConfig, setShowConfig] = useState(false)
+    const configRef = useRef(null)
+
+    // Close config dropdown on outside click
+    useEffect(() => {
+        if (!showConfig) return
+        const handleClick = (e) => {
+            if (configRef.current && !configRef.current.contains(e.target)) {
+                setShowConfig(false)
+            }
+        }
+        document.addEventListener('mousedown', handleClick)
+        return () => document.removeEventListener('mousedown', handleClick)
+    }, [showConfig])
+
+    const togglePanelMode = useCallback(() => {
+        setPanelMode(prev => {
+            const next = !prev
+            onPanelModeChange?.(next)
+            return next
+        })
+    }, [onPanelModeChange])
     // ===== ROW OPERATIONS =====
     const addRow = useCallback(() => {
         const newRow = {
@@ -141,6 +167,10 @@ export default function GridBuilder({
         if (readOnly) return
         event.preventDefault()
 
+        // Support both mouse and touch events
+        const isTouch = event.type === 'touchstart'
+        const getClientX = (e) => isTouch ? e.touches[0].clientX : e.clientX
+
         const currentRows = rowsRef.current
         const row = currentRows.find(r => r.id === rowId)
         if (!row) return
@@ -148,7 +178,7 @@ export default function GridBuilder({
         const isLastCol = colIndex === row.columns.length - 1
         const gridWidth = gridElement?.offsetWidth || 800
         const colUnitWidth = gridWidth / GRID_COLS
-        const startX = event.clientX
+        const startX = isTouch ? event.touches[0].clientX : event.clientX
         const originalWidth = row.columns[colIndex].width
         const rightWidth = isLastCol ? 0 : row.columns[colIndex + 1].width
         const totalPair = originalWidth + rightWidth
@@ -156,7 +186,9 @@ export default function GridBuilder({
         let lastDelta = 0
 
         const doResize = (e) => {
-            const deltaX = e.clientX - startX
+            if (isTouch && e.cancelable) e.preventDefault()
+            const clientX = isTouch ? e.touches[0].clientX : e.clientX
+            const deltaX = clientX - startX
             const deltaUnits = Math.round(deltaX / colUnitWidth)
             if (deltaUnits === lastDelta) return
             lastDelta = deltaUnits
@@ -193,6 +225,8 @@ export default function GridBuilder({
         const endResize = () => {
             document.removeEventListener('mousemove', doResize)
             document.removeEventListener('mouseup', endResize)
+            document.removeEventListener('touchmove', doResize)
+            document.removeEventListener('touchend', endResize)
             document.body.style.cursor = ''
             document.body.style.userSelect = ''
 
@@ -252,6 +286,8 @@ export default function GridBuilder({
 
         document.addEventListener('mousemove', doResize)
         document.addEventListener('mouseup', endResize)
+        document.addEventListener('touchmove', doResize, { passive: false })
+        document.addEventListener('touchend', endResize)
         document.body.style.cursor = 'col-resize'
         document.body.style.userSelect = 'none'
     }, [readOnly, onRowsChange, resizePreview])
@@ -259,6 +295,48 @@ export default function GridBuilder({
     // ===== RENDER =====
     return (
         <div className={`grid-builder ${className}`}>
+            {/* Config Bar */}
+            {!readOnly && (
+                <div className="flex justify-end mb-3 relative" ref={configRef}>
+                    <button
+                        onClick={() => setShowConfig(!showConfig)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${showConfig
+                                ? 'bg-primary text-white shadow-sm'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                            }`}
+                    >
+                        <iconify-icon icon="solar:settings-bold" width="14"></iconify-icon>
+                        <span>Config</span>
+                    </button>
+
+                    {/* Config Dropdown */}
+                    {showConfig && (
+                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-30 p-3 min-w-[220px]">
+                            <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Options d'affichage</div>
+
+                            {/* Panel Mode Toggle */}
+                            <label className="flex items-center justify-between gap-3 cursor-pointer group">
+                                <div className="flex items-center gap-2">
+                                    <iconify-icon icon="solar:widget-4-bold-duotone" width="18" className="text-gray-500 group-hover:text-primary transition-colors"></iconify-icon>
+                                    <span className="text-sm text-gray-700 dark:text-gray-200">Mode Panels</span>
+                                </div>
+                                <div
+                                    onClick={(e) => { e.preventDefault(); togglePanelMode() }}
+                                    className={`relative w-10 h-[22px] rounded-full transition-colors cursor-pointer ${panelMode ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'
+                                        }`}
+                                >
+                                    <div className={`absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-sm transition-transform ${panelMode ? 'translate-x-[20px]' : 'translate-x-[2px]'
+                                        }`} />
+                                </div>
+                            </label>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5 ml-[26px]">
+                                {panelMode ? 'Éléments affichés en panels avec bordures' : 'Éléments compacts sans bordures'}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Rows */}
             <div className="space-y-6">
                 {rows.map((row, rowIndex) => (
@@ -268,6 +346,7 @@ export default function GridBuilder({
                         rowIndex={rowIndex}
                         readOnly={readOnly}
                         gap={gap}
+                        panelMode={panelMode}
                         // Row actions
                         onDelete={() => deleteRow(row.id)}
                         onDuplicate={() => duplicateRow(row.id)}
@@ -307,7 +386,7 @@ export default function GridBuilder({
 
 // ========== ROW COMPONENT ==========
 function GridRow({
-    row, rowIndex, readOnly, gap,
+    row, rowIndex, readOnly, gap, panelMode,
     onDelete, onDuplicate, onMoveUp, onMoveDown,
     onSetLayout, onAddColumn, onDeleteColumn, onToggleEqualHeight,
     onStartResize,
@@ -455,6 +534,7 @@ function GridRow({
                             row={row}
                             readOnly={readOnly}
                             hovered={hovered}
+                            panelMode={panelMode}
                             onStartResize={(ci, e) => onStartResize(ci, e, gridRef.current)}
                             onDeleteColumn={onDeleteColumn}
                             renderBlock={renderBlock}
@@ -480,11 +560,12 @@ function GridRow({
 
 // ========== COLUMN COMPONENT ==========
 function GridColumn({
-    column, colIndex, rowIndex, row, readOnly, hovered,
+    column, colIndex, rowIndex, row, readOnly, hovered, panelMode,
     onStartResize, onDeleteColumn,
     renderBlock, onDropInColumn, emptyColumnContent
 }) {
     const [dragOver, setDragOver] = useState(false)
+    const [touchFocused, setTouchFocused] = useState(false)
     const dragCounterRef = useRef(0)
 
     const handleDragOver = useCallback((e) => {
@@ -518,12 +599,20 @@ function GridColumn({
         }
     }, [rowIndex, colIndex, onDropInColumn])
 
+    // Touch: tap column to focus and show resize handle
+    const handleTouchTap = useCallback((e) => {
+        if (readOnly) return
+        setTouchFocused(prev => !prev)
+    }, [readOnly])
+
     const isEmpty = !column.blocks || column.blocks.length === 0
+    const showHandle = hovered || touchFocused
 
     return (
         <div
             className={`relative transition-all duration-200 group/col ${row.equalHeight ? 'flex flex-col h-full' : ''
                 } ${!readOnly && isEmpty ? 'border-2 border-dashed rounded-lg' : ''
+                } ${touchFocused && !isEmpty ? 'ring-2 ring-primary/30 rounded-lg' : ''
                 } ${dragOver
                     ? 'border-primary bg-primary/5'
                     : (!readOnly && isEmpty
@@ -535,11 +624,13 @@ function GridColumn({
             onDragEnter={!readOnly ? handleDragEnter : undefined}
             onDragLeave={!readOnly ? handleDragLeave : undefined}
             onDrop={!readOnly ? handleDrop : undefined}
+            onClick={handleTouchTap}
         >
             {/* Resize Handle — full-height clickable bar on the right edge */}
-            {!readOnly && hovered && (
+            {!readOnly && showHandle && (
                 <div
                     onMouseDown={(e) => onStartResize(colIndex, e)}
+                    onTouchStart={(e) => { e.stopPropagation(); onStartResize(colIndex, e) }}
                     style={{
                         position: 'absolute',
                         right: '-8px',
@@ -551,12 +642,16 @@ function GridColumn({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        touchAction: 'none',
                     }}
                     className="group/handle"
                 >
                     {/* Visible indicator line */}
                     <div
-                        className="w-[3px] rounded-full bg-gray-300 dark:bg-gray-600 group-hover/handle:bg-primary transition-colors"
+                        className={`w-[3px] rounded-full transition-colors ${touchFocused
+                                ? 'bg-primary'
+                                : 'bg-gray-300 dark:bg-gray-600 group-hover/handle:bg-primary'
+                            }`}
                         style={{ height: '40px' }}
                     />
                 </div>
@@ -564,7 +659,7 @@ function GridColumn({
 
             {/* Column Content */}
             <div
-                className={`${isEmpty ? 'h-full min-h-[90px]' : 'min-h-[150px]'} ${row.equalHeight ? 'flex-1 flex flex-col' : ''}`}
+                className={`${isEmpty ? 'h-full min-h-[90px]' : (panelMode ? 'min-h-[150px]' : 'min-h-[40px]')} ${row.equalHeight ? 'flex-1 flex flex-col' : ''}`}
             >
                 {isEmpty ? (
                     /* Empty Column Placeholder */
@@ -584,12 +679,19 @@ function GridColumn({
                         )}
                     </div>
                 ) : (
-                    /* Blocks */
-                    <div className="space-y-4">
+                    /* Blocks — spacing depends on panelMode */
+                    <div className={panelMode ? 'space-y-4' : 'space-y-1'}>
                         {column.blocks.map((block, blockIndex) => (
-                            <div key={block.id || blockIndex} className={row.equalHeight ? 'flex-1' : ''}>
+                            <div
+                                key={block.id || blockIndex}
+                                className={`${row.equalHeight ? 'flex-1' : ''
+                                    } ${panelMode
+                                        ? 'p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm'
+                                        : ''
+                                    }`}
+                            >
                                 {renderBlock ? renderBlock(block, colIndex, rowIndex, blockIndex) : (
-                                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                                    <div className={panelMode ? '' : 'py-1'}>
                                         <span className="text-sm text-gray-500">Block {blockIndex + 1}</span>
                                     </div>
                                 )}

@@ -19,12 +19,5 @@
 - ~~**Mission 5 — Kanban UX** — Colored columns (Niveau Urgence), classification badges on cards, QuickView modal (slide-in panel), drag & drop between columns, column max-width 320px, dark/light mode.~~
 
 
-Mission de 16-02
 
-Mission 1
-en fait non le comportementdu text editor n'est pas du tout intuitif, ce qui marche pour l²'instabnt c'est que si j'ecrit du textn apuier sur shift + entrer ca cree une nouvelle ligne et comportmement normal , mais si j'ouvre un nv doc,tape du text, apuie sur entrer, retape du text ca fonctionne pas, ilne se passe rien, fais ce test donc ouvre un dnv doc, Teape du text, apuie sur entrer , tape du text, si ca tape apuie encore une foie sur entrer, retapes du text, la marche pas du tout a 100% ca va buguer, tu ne pourra plus ecrir... tout ce que je veux c'est le basic d'un text editor quand il s'agit de taper du text ca nedoit pas etre tres compliqué non ? 
-
-Mission 2
-
-Quand j'essaie de selectionner du text , il cree des lignes en haut du text selectionné, donc stp check le comportement de l'éditeur et fais le minimum d'un editeur de text normal a savoir, taper, retour en ligne, selectioner text/images etc, repositioner image avec drag drop etc, les elements basic de chez basic d'un editeur de text 2026, merci d'avance...
 

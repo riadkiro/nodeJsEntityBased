@@ -8,7 +8,7 @@
  * - Content updates read from ref, NOT from state
  * - No re-render of contenteditable on state changes
  */
-import React, { useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useImageResize } from '../hooks/useImageResize'
 import GridBuilder from '../../shared/GridBuilder'
 
@@ -775,6 +775,240 @@ function DocHeaderFooter({ type, html, onRemove, paddingLeft, paddingRight, padd
 }
 
 
+// ========== LAYOUT BLOCK: Editable text/html block ==========
+function EditableBlock({ block, onUpdate, onDelete }) {
+    const contentRef = useRef(null)
+    const [focused, setFocused] = useState(false)
+    const [hovered, setHovered] = useState(false)
+
+    const handleBlur = useCallback(() => {
+        setFocused(false)
+        if (contentRef.current) {
+            const newContent = contentRef.current.innerHTML
+            if (newContent !== block.content) {
+                onUpdate({ ...block, content: newContent })
+            }
+        }
+    }, [block, onUpdate])
+
+    const handleFocus = useCallback(() => {
+        setFocused(true)
+    }, [])
+
+    const showBorder = hovered || focused
+
+    return (
+        <div
+            className="group/el relative"
+            style={{ position: 'relative' }}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+        >
+            {/* Floating controls — only on hover */}
+            <div
+                style={{
+                    position: 'absolute',
+                    top: '-10px',
+                    right: '-4px',
+                    display: 'flex',
+                    gap: '3px',
+                    opacity: hovered ? 1 : 0,
+                    transition: 'opacity 0.15s',
+                    zIndex: 20,
+                    pointerEvents: hovered ? 'auto' : 'none',
+                }}
+            >
+                <button
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); onDelete() }}
+                    style={{
+                        width: '22px', height: '22px',
+                        borderRadius: '6px',
+                        backgroundColor: '#fff',
+                        color: '#ef4444',
+                        border: '1px solid rgba(239,68,68,0.3)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '10px',
+                        lineHeight: 1,
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                    }}
+                    title="Supprimer"
+                >
+                    <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="12"></iconify-icon>
+                </button>
+            </div>
+
+            {/* Editable content */}
+            <div
+                ref={contentRef}
+                contentEditable
+                suppressContentEditableWarning
+                dangerouslySetInnerHTML={{ __html: block.content || '' }}
+                onBlur={handleBlur}
+                onFocus={handleFocus}
+                style={{
+                    outline: 'none',
+                    minHeight: '20px',
+                    borderRadius: '6px',
+                    padding: '6px 8px',
+                    transition: 'box-shadow 0.2s, border-color 0.2s',
+                    border: showBorder ? '1px solid rgba(67,97,238,0.3)' : '1px solid transparent',
+                    boxShadow: focused ? '0 0 0 3px rgba(67,97,238,0.12)' : 'none',
+                    cursor: 'text',
+                    background: showBorder ? 'rgba(67,97,238,0.02)' : 'transparent',
+                }}
+            />
+        </div>
+    )
+}
+
+// ========== LAYOUT BLOCK: Resizable image block ==========
+function ResizableImageBlock({ block, onUpdate, onDelete }) {
+    const [imgWidth, setImgWidth] = useState(block.width || null)
+    const [resizing, setResizing] = useState(false)
+    const [hovered, setHovered] = useState(false)
+    const imgRef = useRef(null)
+    const startRef = useRef({ x: 0, w: 0 })
+
+    const startResize = useCallback((e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX
+        const currentWidth = imgRef.current?.offsetWidth || 200
+        startRef.current = { x: clientX, w: currentWidth }
+        setResizing(true)
+
+        const doMove = (ev) => {
+            const cx = ev.touches ? ev.touches[0].clientX : ev.clientX
+            const delta = cx - startRef.current.x
+            const newW = Math.max(60, startRef.current.w + delta)
+            setImgWidth(newW)
+        }
+        const doEnd = () => {
+            document.removeEventListener('mousemove', doMove)
+            document.removeEventListener('mouseup', doEnd)
+            document.removeEventListener('touchmove', doMove)
+            document.removeEventListener('touchend', doEnd)
+            document.body.style.cursor = ''
+            document.body.style.userSelect = ''
+            setResizing(false)
+            // Save the final width
+            const finalW = imgRef.current?.offsetWidth
+            if (finalW) {
+                onUpdate({ ...block, width: finalW })
+            }
+        }
+
+        document.addEventListener('mousemove', doMove)
+        document.addEventListener('mouseup', doEnd)
+        document.addEventListener('touchmove', doMove, { passive: false })
+        document.addEventListener('touchend', doEnd)
+        document.body.style.cursor = 'nwse-resize'
+        document.body.style.userSelect = 'none'
+    }, [block, onUpdate])
+
+    const showBorder = hovered || resizing
+
+    return (
+        <div
+            className="group/el relative"
+            style={{
+                position: 'relative',
+                display: 'inline-block',
+                maxWidth: '100%',
+                borderRadius: '8px',
+                border: showBorder ? '1px solid rgba(67,97,238,0.3)' : '1px solid transparent',
+                padding: showBorder ? '4px' : '4px',
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+                boxShadow: showBorder ? '0 0 0 3px rgba(67,97,238,0.08)' : 'none',
+            }}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+        >
+            {/* Floating controls */}
+            <div
+                style={{
+                    position: 'absolute',
+                    top: '-10px',
+                    right: '-4px',
+                    display: 'flex',
+                    gap: '3px',
+                    opacity: hovered ? 1 : 0,
+                    transition: 'opacity 0.15s',
+                    zIndex: 20,
+                    pointerEvents: hovered ? 'auto' : 'none',
+                }}
+            >
+                <button
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); onDelete() }}
+                    style={{
+                        width: '22px', height: '22px',
+                        borderRadius: '6px',
+                        backgroundColor: '#fff',
+                        color: '#ef4444',
+                        border: '1px solid rgba(239,68,68,0.3)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '10px',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                    }}
+                    title="Supprimer"
+                >
+                    <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="12"></iconify-icon>
+                </button>
+            </div>
+
+            {/* Image */}
+            <img
+                ref={imgRef}
+                src={block.src}
+                alt={block.alt || ''}
+                style={{
+                    width: imgWidth ? `${imgWidth}px` : '100%',
+                    maxWidth: '100%',
+                    height: 'auto',
+                    display: 'block',
+                    borderRadius: '6px',
+                    outline: resizing ? '2px solid rgba(67,97,238,0.5)' : 'none',
+                }}
+            />
+
+            {/* Resize handle — bottom-right corner */}
+            <div
+                onMouseDown={startResize}
+                onTouchStart={startResize}
+                style={{
+                    position: 'absolute',
+                    bottom: '4px',
+                    right: '4px',
+                    width: '16px',
+                    height: '16px',
+                    cursor: 'nwse-resize',
+                    opacity: hovered ? 1 : 0,
+                    transition: 'opacity 0.15s',
+                    zIndex: 15,
+                    touchAction: 'none',
+                    background: 'rgba(255,255,255,0.9)',
+                    borderRadius: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                }}
+            >
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                    <path d="M12 2L2 12M12 6L6 12M12 10L10 12" stroke="rgba(67,97,238,0.7)" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+            </div>
+        </div>
+    )
+}
+
+
 // Layout Mode Content — uses shared GridBuilder for unified grid editing
 function LayoutModeContent({ page, pageIndex, doc, setDoc, panelMode }) {
     const rows = page.rows || []
@@ -815,70 +1049,119 @@ function LayoutModeContent({ page, pageIndex, doc, setDoc, panelMode }) {
         })
     }, [pageIndex, setDoc])
 
+    // Unified block update helper
+    const updateBlock = useCallback((rowIndex, colIndex, blockIndex, updatedBlock) => {
+        setDoc(prev => {
+            const pages = [...prev.pages]
+            const updatedPage = { ...pages[pageIndex] }
+            const rows = [...updatedPage.rows]
+            const row = { ...rows[rowIndex] }
+            const columns = [...row.columns]
+            const column = { ...columns[colIndex] }
+            const blocks = [...column.blocks]
+            blocks[blockIndex] = updatedBlock
+            column.blocks = blocks
+            columns[colIndex] = column
+            row.columns = columns
+            rows[rowIndex] = row
+            updatedPage.rows = rows
+            pages[pageIndex] = updatedPage
+            return { ...prev, pages }
+        })
+    }, [pageIndex, setDoc])
+
+    const deleteBlock = useCallback((rowIndex, colIndex, blockIndex) => {
+        setDoc(prev => {
+            const pages = [...prev.pages]
+            const updatedPage = { ...pages[pageIndex] }
+            const rows = [...updatedPage.rows]
+            const row = { ...rows[rowIndex] }
+            const columns = [...row.columns]
+            const column = { ...columns[colIndex] }
+            column.blocks = column.blocks.filter((_, i) => i !== blockIndex)
+            columns[colIndex] = column
+            row.columns = columns
+            rows[rowIndex] = row
+            updatedPage.rows = rows
+            pages[pageIndex] = updatedPage
+            return { ...prev, pages }
+        })
+    }, [pageIndex, setDoc])
+
     const renderBlock = useCallback((block, colIndex, rowIndex, blockIndex) => {
-        const deleteBlock = (e) => {
-            e.stopPropagation()
-            setDoc(prev => {
-                const pages = [...prev.pages]
-                const updatedPage = { ...pages[pageIndex] }
-                const rows = [...updatedPage.rows]
-                const row = { ...rows[rowIndex] }
-                const columns = [...row.columns]
-                const column = { ...columns[colIndex] }
-                column.blocks = column.blocks.filter((_, i) => i !== blockIndex)
-                columns[colIndex] = column
-                row.columns = columns
-                rows[rowIndex] = row
-                updatedPage.rows = rows
-                pages[pageIndex] = updatedPage
-                return { ...prev, pages }
-            })
+        const onUpdate = (updatedBlock) => updateBlock(rowIndex, colIndex, blockIndex, updatedBlock)
+        const onDel = () => deleteBlock(rowIndex, colIndex, blockIndex)
+
+        // Image blocks — resizable
+        if (block.type === 'image') {
+            return (
+                <ResizableImageBlock
+                    key={block.id || blockIndex}
+                    block={block}
+                    onUpdate={onUpdate}
+                    onDelete={onDel}
+                />
+            )
         }
 
-        return (
-            <div className="group/el relative p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-800">
-                {/* Element Controls */}
-                <div className="absolute -top-2 -right-2 opacity-0 group-hover/el:opacity-100 transition-opacity z-10">
-                    <button
-                        onClick={deleteBlock}
-                        className="p-0.5 rounded-full bg-danger text-white hover:bg-danger/80"
-                    >
-                        <iconify-icon icon="tabler:x" width="12"></iconify-icon>
-                    </button>
-                </div>
+        // Text / HTML blocks — inline editable
+        if (block.type === 'text' || block.type === 'html' || !block.type) {
+            return (
+                <EditableBlock
+                    key={block.id || blockIndex}
+                    block={block}
+                    onUpdate={onUpdate}
+                    onDelete={onDel}
+                />
+            )
+        }
 
-                {/* Block Content */}
-                {block.type === 'text' && (
-                    <div
-                        dangerouslySetInnerHTML={{ __html: block.content || 'Texte...' }}
-                        className="text-sm"
-                    />
-                )}
-                {block.type === 'html' && (
-                    <div
-                        dangerouslySetInnerHTML={{ __html: block.content || '' }}
-                        className="text-sm"
-                    />
-                )}
-                {block.type === 'image' && (
+        // Fallback
+        return (
+            <div className="group/el relative" style={{ position: 'relative' }}>
+                <div dangerouslySetInnerHTML={{ __html: block.content || '' }} />
+            </div>
+        )
+    }, [updateBlock, deleteBlock])
+
+    // Render a lightweight preview for the drag overlay ghost
+    const renderDragOverlay = useCallback((block) => {
+        if (block.type === 'image') {
+            return (
+                <div style={{ pointerEvents: 'none' }}>
                     <img
                         src={block.src}
                         alt={block.alt || ''}
-                        className="max-w-full h-auto rounded"
+                        style={{
+                            width: block.width ? `${block.width}px` : '100%',
+                            maxWidth: '300px',
+                            height: 'auto',
+                            borderRadius: '6px',
+                        }}
                     />
-                )}
-                {!block.type && (
-                    <div className="text-xs text-gray-400">Élément</div>
-                )}
-            </div>
+                </div>
+            )
+        }
+        return (
+            <div
+                style={{
+                    pointerEvents: 'none',
+                    fontSize: '13px',
+                    lineHeight: '1.6',
+                    maxHeight: '120px',
+                    overflow: 'hidden',
+                }}
+                dangerouslySetInnerHTML={{ __html: block.content || '<p>Block</p>' }}
+            />
         )
-    }, [pageIndex, setDoc])
+    }, [])
 
     return (
         <GridBuilder
             rows={rows}
             onRowsChange={handleRowsChange}
             renderBlock={renderBlock}
+            renderDragOverlay={renderDragOverlay}
             onDropInColumn={handleDropInColumn}
             panelMode={panelMode}
         />

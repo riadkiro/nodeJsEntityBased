@@ -376,9 +376,106 @@ export default function EditorPage({
     }, [page.mode, pageIndex, handlePageInput])
 
 
+    // ========== DROP INDICATOR (ghost line) ==========
+    const dropIndicatorRef = useRef(null)
+    const dragCounterRef = useRef(0) // track enter/leave for nested elements
+
+    const showDropIndicator = useCallback((x, y) => {
+        const el = contentRef.current
+        const indicator = dropIndicatorRef.current
+        if (!el || !indicator) return
+
+        // Get caret position from mouse coordinates
+        let range
+        if (document.caretRangeFromPoint) {
+            range = document.caretRangeFromPoint(x, y)
+        } else if (document.caretPositionFromPoint) {
+            const pos = document.caretPositionFromPoint(x, y)
+            if (pos) {
+                range = document.createRange()
+                range.setStart(pos.offsetNode, pos.offset)
+                range.collapse(true)
+            }
+        }
+
+        if (!range) {
+            indicator.style.display = 'none'
+            return
+        }
+
+        // Calculate position relative to the page wrapper (parent of contentRef)
+        const pageWrapper = el.parentElement
+        const pageRect = pageWrapper.getBoundingClientRect()
+        const elRect = el.getBoundingClientRect()
+
+        // Detect zoom level from ancestor transform: scale(N)
+        // getBoundingClientRect returns screen coords (post-transform),
+        // but position:absolute uses local coords (pre-transform)
+        let zoom = 1
+        const scaledAncestor = el.closest('[style*="scale"]')
+        if (scaledAncestor) {
+            const match = scaledAncestor.style.transform?.match(/scale\(([\d.]+)\)/)
+            if (match) zoom = parseFloat(match[1])
+        }
+
+        // Find the node and closest block element
+        let node = range.startContainer
+        if (node.nodeType === 3) node = node.parentNode
+
+        // CRITICAL: Do NOT include 'div' — it matches the contenteditable container itself
+        // which would position the indicator at the top of the entire editor
+        const BLOCK_SELECTOR = 'p, h1, h2, h3, h4, h5, h6, blockquote, pre, table, ul, ol, li, hr'
+        let blockEl = node?.closest?.(BLOCK_SELECTOR)
+
+        // Make sure the block is inside the contenteditable
+        if (blockEl && !el.contains(blockEl)) blockEl = null
+
+        let lineTop
+
+        if (blockEl) {
+            const blockRect = blockEl.getBoundingClientRect()
+            // Determine if cursor is in top half or bottom half of block
+            const midY = blockRect.top + blockRect.height / 2
+            if (y < midY) {
+                // Show indicator above the block
+                lineTop = (blockRect.top - pageRect.top) / zoom
+            } else {
+                // Show indicator below the block
+                lineTop = (blockRect.bottom - pageRect.top) / zoom
+            }
+        } else {
+            // No block found — use caret rect directly
+            const caretRect = range.getBoundingClientRect()
+            if (caretRect.height > 0) {
+                lineTop = (caretRect.bottom - pageRect.top) / zoom
+            } else {
+                // Collapsed range with no height — use mouse Y
+                lineTop = (y - pageRect.top) / zoom
+            }
+        }
+
+        const lineLeft = (elRect.left - pageRect.left) / zoom
+        const lineWidth = elRect.width / zoom
+
+        // Show the indicator
+        indicator.style.display = 'block'
+        indicator.style.top = `${lineTop}px`
+        indicator.style.left = `${lineLeft}px`
+        indicator.style.width = `${lineWidth}px`
+    }, [])
+
+    const hideDropIndicator = useCallback(() => {
+        if (dropIndicatorRef.current) {
+            dropIndicatorRef.current.style.display = 'none'
+        }
+    }, [])
+
     // Handle edition mode drop from sidebar
     const handleEditionDrop = useCallback((e) => {
         e.preventDefault()
+        dragCounterRef.current = 0
+        hideDropIndicator()
+
         const html = e.dataTransfer.getData('text/html')
         const text = e.dataTransfer.getData('text/plain')
 
@@ -392,11 +489,27 @@ export default function EditorPage({
                 document.execCommand('insertHTML', false, html || text)
             }
         }
-    }, [])
+    }, [hideDropIndicator])
 
     const handleDragOver = useCallback((e) => {
         e.preventDefault()
+        e.dataTransfer.dropEffect = 'copy'
+        showDropIndicator(e.clientX, e.clientY)
+    }, [showDropIndicator])
+
+    const handleDragEnter = useCallback((e) => {
+        e.preventDefault()
+        dragCounterRef.current++
     }, [])
+
+    const handleDragLeave = useCallback((e) => {
+        e.preventDefault()
+        dragCounterRef.current--
+        if (dragCounterRef.current <= 0) {
+            dragCounterRef.current = 0
+            hideDropIndicator()
+        }
+    }, [hideDropIndicator])
 
     // Calculate page dimensions
     const { width, height } = doc.dimensions || { width: 794, height: 1123 }
@@ -458,7 +571,50 @@ export default function EditorPage({
                     onKeyDown={(e) => handleKeyDown?.(e, pageIndex, contentRef)}
                     onDrop={handleEditionDrop}
                     onDragOver={handleDragOver}
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
                 />
+            )}
+
+            {/* Drop Position Indicator (ghost line) */}
+            {page.mode === 'edition' && (
+                <div
+                    ref={dropIndicatorRef}
+                    style={{
+                        display: 'none',
+                        position: 'absolute',
+                        height: '2px',
+                        background: '#4361ee',
+                        borderRadius: '1px',
+                        pointerEvents: 'none',
+                        zIndex: 50,
+                        transition: 'top 0.08s ease-out, left 0.08s ease-out, width 0.08s ease-out',
+                        boxShadow: '0 0 6px rgba(67, 97, 238, 0.4)',
+                    }}
+                >
+                    {/* Left endpoint circle */}
+                    <div style={{
+                        position: 'absolute',
+                        left: '-3px',
+                        top: '-3px',
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: '#4361ee',
+                        boxShadow: '0 0 4px rgba(67, 97, 238, 0.5)',
+                    }} />
+                    {/* Right endpoint circle */}
+                    <div style={{
+                        position: 'absolute',
+                        right: '-3px',
+                        top: '-3px',
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: '#4361ee',
+                        boxShadow: '0 0 4px rgba(67, 97, 238, 0.5)',
+                    }} />
+                </div>
             )}
 
             {/* Global Footer (non-editable, all pages) */}

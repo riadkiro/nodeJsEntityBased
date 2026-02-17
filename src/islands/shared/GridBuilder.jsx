@@ -39,33 +39,8 @@ export default function GridBuilder({
     readOnly = false,
     className = '',
     gap = 6, // gap in tailwind units (gap-6 = 24px)
-    initialPanelMode = false,
-    onPanelModeChange,
+    panelMode = false,
 }) {
-    // ===== CONFIG STATE =====
-    const [panelMode, setPanelMode] = useState(initialPanelMode)
-    const [showConfig, setShowConfig] = useState(false)
-    const configRef = useRef(null)
-
-    // Close config dropdown on outside click
-    useEffect(() => {
-        if (!showConfig) return
-        const handleClick = (e) => {
-            if (configRef.current && !configRef.current.contains(e.target)) {
-                setShowConfig(false)
-            }
-        }
-        document.addEventListener('mousedown', handleClick)
-        return () => document.removeEventListener('mousedown', handleClick)
-    }, [showConfig])
-
-    const togglePanelMode = useCallback(() => {
-        setPanelMode(prev => {
-            const next = !prev
-            onPanelModeChange?.(next)
-            return next
-        })
-    }, [onPanelModeChange])
     // ===== ROW OPERATIONS =====
     const addRow = useCallback(() => {
         const newRow = {
@@ -295,48 +270,6 @@ export default function GridBuilder({
     // ===== RENDER =====
     return (
         <div className={`grid-builder ${className}`}>
-            {/* Config Bar */}
-            {!readOnly && (
-                <div className="flex justify-end mb-3 relative" ref={configRef}>
-                    <button
-                        onClick={() => setShowConfig(!showConfig)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${showConfig
-                                ? 'bg-primary text-white shadow-sm'
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                            }`}
-                    >
-                        <iconify-icon icon="solar:settings-bold" width="14"></iconify-icon>
-                        <span>Config</span>
-                    </button>
-
-                    {/* Config Dropdown */}
-                    {showConfig && (
-                        <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-30 p-3 min-w-[220px]">
-                            <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Options d'affichage</div>
-
-                            {/* Panel Mode Toggle */}
-                            <label className="flex items-center justify-between gap-3 cursor-pointer group">
-                                <div className="flex items-center gap-2">
-                                    <iconify-icon icon="solar:widget-4-bold-duotone" width="18" className="text-gray-500 group-hover:text-primary transition-colors"></iconify-icon>
-                                    <span className="text-sm text-gray-700 dark:text-gray-200">Mode Panels</span>
-                                </div>
-                                <div
-                                    onClick={(e) => { e.preventDefault(); togglePanelMode() }}
-                                    className={`relative w-10 h-[22px] rounded-full transition-colors cursor-pointer ${panelMode ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'
-                                        }`}
-                                >
-                                    <div className={`absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-sm transition-transform ${panelMode ? 'translate-x-[20px]' : 'translate-x-[2px]'
-                                        }`} />
-                                </div>
-                            </label>
-                            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5 ml-[26px]">
-                                {panelMode ? 'Éléments affichés en panels avec bordures' : 'Éléments compacts sans bordures'}
-                            </p>
-                        </div>
-                    )}
-                </div>
-            )}
-
             {/* Rows */}
             <div className="space-y-6">
                 {rows.map((row, rowIndex) => (
@@ -649,8 +582,8 @@ function GridColumn({
                     {/* Visible indicator line */}
                     <div
                         className={`w-[3px] rounded-full transition-colors ${touchFocused
-                                ? 'bg-primary'
-                                : 'bg-gray-300 dark:bg-gray-600 group-hover/handle:bg-primary'
+                            ? 'bg-primary'
+                            : 'bg-gray-300 dark:bg-gray-600 group-hover/handle:bg-primary'
                             }`}
                         style={{ height: '40px' }}
                     />

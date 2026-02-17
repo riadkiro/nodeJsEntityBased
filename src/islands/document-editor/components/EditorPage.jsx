@@ -23,7 +23,8 @@ export default function EditorPage({
     handlePageInput,
     handlePaste,
     handleKeyDown,
-    isGlobalSelection
+    isGlobalSelection,
+    panelMode
 }) {
     const contentRef = useRef(null)
 
@@ -645,6 +646,7 @@ export default function EditorPage({
                         pageIndex={pageIndex}
                         doc={doc}
                         setDoc={setDoc}
+                        panelMode={panelMode}
                     />
                 </div>
             )}
@@ -774,7 +776,7 @@ function DocHeaderFooter({ type, html, onRemove, paddingLeft, paddingRight, padd
 
 
 // Layout Mode Content — uses shared GridBuilder for unified grid editing
-function LayoutModeContent({ page, pageIndex, doc, setDoc }) {
+function LayoutModeContent({ page, pageIndex, doc, setDoc, panelMode }) {
     const rows = page.rows || []
 
     const handleRowsChange = useCallback((newRows) => {
@@ -878,6 +880,7 @@ function LayoutModeContent({ page, pageIndex, doc, setDoc }) {
             onRowsChange={handleRowsChange}
             renderBlock={renderBlock}
             onDropInColumn={handleDropInColumn}
+            panelMode={panelMode}
         />
     )
 }

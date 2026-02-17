@@ -139,6 +139,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const [isGlobalSelection, setIsGlobalSelection] = useState(false)
     const [pasteMode, setPasteMode] = useState('match') // keep, match, plain
     const [isSettingsOpen, setIsSettingsOpen] = useState(false) // Settings popup state
+    const [zoomLevel, setZoomLevel] = useState(1) // Zoom level for document canvas (0.25 to 3)
 
     // Formatting state (for toolbar display)
     const [currentFont, setCurrentFont] = useState('Arial')
@@ -2009,6 +2010,8 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     handleKeyDown={handleKeyDown}
                     setPageMode={setPageMode}
                     addPage={addPage}
+                    zoomLevel={zoomLevel}
+                    setZoomLevel={setZoomLevel}
                 />
 
                 {/* AI Chat Sidebar */}

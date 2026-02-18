@@ -245,7 +245,8 @@
       }"
       :data-theme="railTheme"
       :style="'width:48px;flex:none;' + (railTheme === 'aurora' && !document.documentElement.classList.contains('dark') ? 'background:linear-gradient(180deg, #eef2ff 0%, #e0e7ff 30%, #ede9fe 70%, #faf5ff 100%);' : 'background:var(--rail-bg);')"
-      class="mini-rail h-full flex flex-col items-center justify-between pt-2 pb-4">
+      class="mini-rail h-full flex flex-col items-center justify-between pt-2 pb-4"
+      @contextmenu.prevent>
       <!-- Toggle button -->
       <a href="javascript:;"
         class="mini-rail-item"
@@ -265,7 +266,7 @@
       </a>
 
       <!-- MIDDLE: Dynamic Environment icons -->
-      <div class="flex flex-col items-center gap-y-1 flex-1 mt-2 overflow-y-auto overflow-x-visible env-rail-list"
+      <div class="flex flex-col items-center gap-y-1 flex-1 mt-2 overflow-y-auto overflow-x-hidden env-rail-list"
            x-data="environmentRail()"
            x-init="await init()"
            @contextmenu.prevent="showRailContextMenu($event)"
@@ -297,47 +298,6 @@
             <path d="M12 6V18M6 12H18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </a>
-
-        <!-- ═══ Right-Click Context Menu (on rail background) ═══ -->
-        <div x-show="railMenuOpen" x-cloak
-             x-transition:enter="transition ease-out duration-150"
-             x-transition:enter-start="opacity-0 scale-95"
-             x-transition:enter-end="opacity-100 scale-100"
-             x-transition:leave="transition ease-in duration-100"
-             x-transition:leave-start="opacity-100 scale-100"
-             x-transition:leave-end="opacity-0 scale-95"
-             @click.away="railMenuOpen = false"
-             :style="'position:fixed; top:' + menuY + 'px; left:' + menuX + 'px; z-index: 9999'"
-             class="w-52 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1b2e4b] shadow-xl py-1.5">
-          <button @click="openCreateModal(); railMenuOpen = false"
-                  class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-            <iconify-icon icon="solar:add-circle-bold-duotone" width="18" class="text-primary"></iconify-icon>
-            Nouvel environnement
-          </button>
-        </div>
-
-        <!-- ═══ Context Menu for specific env ═══ -->
-        <div x-show="envMenuOpen" x-cloak
-             x-transition:enter="transition ease-out duration-150"
-             x-transition:enter-start="opacity-0 scale-95"
-             x-transition:enter-end="opacity-100 scale-100"
-             x-transition:leave="transition ease-in duration-100"
-             x-transition:leave-start="opacity-100 scale-100"
-             x-transition:leave-end="opacity-0 scale-95"
-             @click.away="envMenuOpen = false"
-             :style="'position:fixed; top:' + menuY + 'px; left:' + menuX + 'px; z-index: 9999'"
-             class="w-52 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1b2e4b] shadow-xl py-1.5">
-          <button @click="openEditModal(menuEnv); envMenuOpen = false"
-                  class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-            <iconify-icon icon="solar:pen-new-square-bold-duotone" width="18" class="text-blue-500"></iconify-icon>
-            Modifier
-          </button>
-          <button @click="deleteEnvironment(menuEnv); envMenuOpen = false"
-                  class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-            <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="18"></iconify-icon>
-            Supprimer
-          </button>
-        </div>
 
       </div> <!-- close env-rail-list -->
 
@@ -677,7 +637,7 @@
             <div class="flex items-center gap-1 pr-2">
               <iconify-icon icon="solar:add-square-bold" width="18" height="18"
                 class="cursor-pointer text-primary hover:scale-110 transition-transform"
-                @click="createSpace()"></iconify-icon>
+                @click="window.dispatchEvent(new CustomEvent('open-space-modal', { detail: { space: null, environmentId: activeEnvironmentId } }))"></iconify-icon>
             </div>
           </h2>
 
@@ -1136,6 +1096,11 @@
                 // Listen for environment changes from the mini-rail
                 window.addEventListener('environment-changed', (e) => {
                   this.activeEnvironmentId = e.detail.environmentId;
+                  this.fetchHierarchy();
+                });
+
+                // Listen for space creation/edit from the Space modal
+                window.addEventListener('space-modal-saved', () => {
                   this.fetchHierarchy();
                 });
               },
@@ -1653,29 +1618,10 @@
                 Alpine.store('sidebar').showMenu = false;
               },
 
-              async createSpace() {
-                const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
-                const name = prompt("Nom de l'Espace :");
-                if (!name) return;
-                try {
-                  const res = await fetch(`/account/${accountNum}/api/hierarchy/space`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name })
-                  });
-                  if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.error || `HTTP ${res.status}`);
-                  }
-                  const newSpace = await res.json();
-                  this.hierarchy.push({
-                    id: newSpace._id,
-                    name: newSpace.name,
-                    type: 'space',
-                    children: []
-                  });
-                  this.startRename({ id: newSpace._id, name: newSpace.name });
-                } catch (e) { alert("Erreur: " + e.message); }
+              createSpace() {
+                window.dispatchEvent(new CustomEvent('open-space-modal', {
+                  detail: { space: null, environmentId: this.activeEnvironmentId }
+                }));
               },
 
               async createItem(type, viewType = 'list') {
@@ -1902,6 +1848,8 @@
               menuX: 0,
               menuY: 0,
               menuEnv: null,
+              _envCtxHandled: false,
+              _activePopup: null,
 
               async init() {
                 await this.refreshEnvironments();
@@ -1940,19 +1888,98 @@
                 }));
               },
 
+              // ═══ Pure JS Context Menu (renders at body level) ═══
+              _destroyPopup() {
+                if (this._activePopup) {
+                  this._activePopup.remove();
+                  this._activePopup = null;
+                }
+              },
+
+              _showPopupMenu(x, y, items) {
+                this._destroyPopup();
+
+                const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
+                const menu = document.createElement('div');
+                menu.style.cssText = `position:fixed; top:${y}px; left:${x}px; z-index:99999; min-width:208px; border-radius:12px; border:1px solid ${isDark ? '#374151' : '#e5e7eb'}; background:${isDark ? '#1b2e4b' : '#fff'}; box-shadow:0 10px 25px rgba(0,0,0,0.15); padding:6px 0;`;
+
+                items.forEach(item => {
+                  const btn = document.createElement('button');
+                  btn.style.cssText = 'width:100%; display:flex; align-items:center; gap:12px; padding:10px 16px; font-size:14px; border:none; background:none; cursor:pointer; transition:background 0.15s;';
+                  btn.style.color = item.danger ? '#ef4444' : (isDark ? '#d1d5db' : '#374151');
+                  btn.innerHTML = `<iconify-icon icon="${item.icon}" width="18" style="color:${item.iconColor || 'inherit'}"></iconify-icon> ${item.label}`;
+                  btn.addEventListener('mouseenter', () => {
+                    btn.style.background = item.danger 
+                      ? (isDark ? 'rgba(239,68,68,0.1)' : '#fef2f2')
+                      : (isDark ? '#1f2937' : '#f3f4f6');
+                  });
+                  btn.addEventListener('mouseleave', () => { btn.style.background = 'none'; });
+                  btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this._destroyPopup();
+                    item.action();
+                  });
+                  menu.appendChild(btn);
+                });
+
+                document.body.appendChild(menu);
+                this._activePopup = menu;
+
+                // Close on any click outside or right-click anywhere
+                const closeHandler = (evt) => {
+                  if (!menu.contains(evt.target)) {
+                    this._destroyPopup();
+                    document.removeEventListener('click', closeHandler, true);
+                    document.removeEventListener('contextmenu', closeHandler, true);
+                  }
+                };
+                // Use setTimeout to avoid the current event from immediately closing
+                setTimeout(() => {
+                  document.addEventListener('click', closeHandler, true);
+                  document.addEventListener('contextmenu', closeHandler, true);
+                }, 0);
+              },
+
               showRailContextMenu(e) {
-                this.envMenuOpen = false;
-                this.menuX = e.clientX;
-                this.menuY = e.clientY;
-                this.railMenuOpen = true;
+                // Don't show rail menu if right-clicking on an environment icon
+                if (this._envCtxHandled) {
+                  this._envCtxHandled = false;
+                  return;
+                }
+                if (e.target.closest('.mini-rail-item')) return;
+                e.stopPropagation();
+
+                const self = this;
+                this._showPopupMenu(e.clientX, e.clientY, [
+                  {
+                    icon: 'solar:add-circle-bold-duotone',
+                    iconColor: 'var(--primary)',
+                    label: 'Nouvel environnement',
+                    action: () => self.openCreateModal()
+                  }
+                ]);
               },
 
               showEnvContextMenu(e, env) {
-                this.railMenuOpen = false;
-                this.menuX = e.clientX;
-                this.menuY = e.clientY;
-                this.menuEnv = env;
-                this.envMenuOpen = true;
+                e.stopPropagation();
+                this._envCtxHandled = true;
+
+                const self = this;
+                this._showPopupMenu(e.clientX, e.clientY, [
+                  {
+                    icon: 'solar:pen-new-square-bold-duotone',
+                    iconColor: '#3b82f6',
+                    label: 'Modifier',
+                    action: () => self.openEditModal(env)
+                  },
+                  {
+                    icon: 'solar:trash-bin-trash-bold-duotone',
+                    iconColor: '#ef4444',
+                    label: 'Supprimer',
+                    danger: true,
+                    action: () => self.deleteEnvironment(env)
+                  }
+                ]);
               },
 
               openCreateModal() {
@@ -1964,7 +1991,9 @@
               },
 
               async deleteEnvironment(env) {
-                if (!confirm(`Supprimer l'environnement "${env.name}" ?`)) return;
+                // Close context menu immediately
+                this._destroyPopup();
+                if (!confirm(`Supprimer l'environnement "${env.name}" ?\nLes espaces seront réassignés au premier environnement restant.`)) return;
                 const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
                 try {
                   const res = await fetch(`/account/${accountNum}/api/hierarchy/environment/delete`, {
@@ -1974,8 +2003,19 @@
                   });
                   const data = await res.json();
                   if (data.error) { alert(data.error); return; }
-                  if (this.activeEnvId === env.id) this.activeEnvId = null;
+                  // Clear activeEnvId if we deleted the active one
+                  const wasActive = this.activeEnvId === env.id;
+                  if (wasActive) {
+                    this.activeEnvId = null;
+                  }
                   await this.refreshEnvironments();
+                  // If we deleted the active env, select the env that inherited the spaces
+                  if (wasActive && this.environments.length > 0) {
+                    const targetEnv = data.reassignedTo 
+                      ? this.environments.find(e => e.id === data.reassignedTo) 
+                      : null;
+                    this.selectEnvironment(targetEnv || this.environments[0]);
+                  }
                 } catch (err) {
                   console.error('[EnvironmentRail] Delete error:', err);
                   alert('Erreur lors de la suppression');
@@ -2444,11 +2484,20 @@
         <!-- Icon -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Icône</label>
-          <div class="relative">
-            <input type="text" x-model="iconSearch" placeholder="Rechercher une icône..."
-                   @input.debounce.300ms="searchIcons()"
-                   class="w-full px-4 py-2.5 pl-10 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all text-sm">
-            <iconify-icon icon="solar:magnifer-linear" width="16" class="absolute left-3 top-3 text-gray-400"></iconify-icon>
+          <!-- Library + Search -->
+          <div class="flex gap-2 mb-2">
+            <select x-model="selectedLibrary" @change="searchIcons()"
+                    class="w-1/3 px-2 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-xs outline-none">
+              <template x-for="lib in libraries" :key="lib.id">
+                <option :value="lib.id" x-text="lib.name"></option>
+              </template>
+            </select>
+            <div class="relative flex-1">
+              <input type="text" x-model="iconSearch" placeholder="Rechercher une icône..."
+                     @input.debounce.300ms="searchIcons()"
+                     class="w-full px-4 py-2 pl-9 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all">
+              <iconify-icon icon="solar:magnifer-linear" width="14" class="absolute left-3 top-2.5 text-gray-400"></iconify-icon>
+            </div>
           </div>
           <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:8px;max-height:128px;overflow-y:auto;padding:4px;border-radius:12px;border:1px solid #f3f4f6;" class="custom-scrollbar dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
             <template x-for="ic in iconResults" :key="ic">
@@ -2507,6 +2556,8 @@
       formColor: '#6366f1',
       iconSearch: '',
       iconResults: [],
+      selectedLibrary: 'solar',
+      libraries: [],
 
       presetColors: [
         '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f97316',
@@ -2543,6 +2594,7 @@
 
       init() {
         this.iconResults = [...this.defaultIcons];
+        this.loadLibraries();
         // Listen for open-env-modal events from the mini-rail
         window.addEventListener('open-env-modal', (e) => {
           const env = e.detail?.env || null;
@@ -2566,6 +2618,20 @@
             if (this.$refs.envNameInput) this.$refs.envNameInput.focus();
           });
         });
+      },
+
+      async loadLibraries() {
+        const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+        try {
+          const res = await fetch(`/account/${accountNum}/api/hierarchy/icon-libraries`);
+          if (res.ok) {
+            const data = await res.json();
+            this.libraries = data.libraries || [];
+            if (this.libraries.length > 0 && !this.libraries.find(l => l.id === this.selectedLibrary)) {
+              this.selectedLibrary = this.libraries[0].id;
+            }
+          }
+        } catch (e) { console.error('Failed to load env modal libraries', e); }
       },
 
       async saveEnvironment() {
@@ -2617,7 +2683,8 @@
         }
         const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
         try {
-          const res = await fetch(`/account/${accountNum}/api/hierarchy/icons?library=solar&search=${encodeURIComponent(this.iconSearch.trim())}&page=1&limit=32`);
+          const library = this.selectedLibrary || 'solar';
+          const res = await fetch(`/account/${accountNum}/api/hierarchy/icons?library=${library}&search=${encodeURIComponent(this.iconSearch.trim())}&page=1&limit=32`);
           if (res.ok) {
             const data = await res.json();
             this.iconResults = data.icons || [];
@@ -2627,6 +2694,282 @@
           }
         } catch (err) {
           console.error('[EnvModal] Icon search error:', err);
+        }
+      }
+    };
+  }
+</script>
+
+<!-- ═══ Standalone Space Modal (outside nav to avoid transform issues) ═══ -->
+<div x-data="spaceModalComponent()">
+  <div :style="modalOpen ? 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;display:flex;align-items:center;justify-content:center;' : 'display:none;'"
+       @keydown.escape.window="modalOpen && (modalOpen = false)">
+    <!-- Backdrop -->
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);" @click="modalOpen = false"></div>
+    <!-- Dialog -->
+    <div style="position:relative;width:400px;max-height:90vh;overflow-y:auto;overflow-x:hidden;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);background:#fff;"
+         class="dark:bg-[#1b2e4b]">
+
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white" x-text="editingSpace ? 'Modifier l\'espace' : 'Nouvel espace'"></h3>
+        <button @click="modalOpen = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+          <iconify-icon icon="solar:close-circle-bold" width="22"></iconify-icon>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="px-6 py-5 space-y-5">
+        <!-- Preview -->
+        <div class="flex items-center justify-center">
+          <div class="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300"
+               :style="'background:' + (formColor || '#4361ee') + '20; border: 2px solid ' + (formColor || '#4361ee') + '40'">
+            <iconify-icon :icon="formIcon" width="32" height="32" :style="'color:' + (formColor || '#4361ee')"></iconify-icon>
+          </div>
+        </div>
+
+        <!-- Name -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nom de l'espace</label>
+          <input type="text" x-model="formName" x-ref="spaceNameInput"
+                 placeholder="Ex: Ventes, Marketing, Support..."
+                 class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all text-sm">
+        </div>
+
+        <!-- Icon with Library Selector -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Icône</label>
+          <!-- Library + Search -->
+          <div class="flex gap-2 mb-2">
+            <select x-model="selectedLibrary" @change="searchIcons()"
+                    class="w-1/3 px-2 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-xs outline-none">
+              <template x-for="lib in libraries" :key="lib.id">
+                <option :value="lib.id" x-text="lib.name"></option>
+              </template>
+            </select>
+            <div class="relative flex-1">
+              <input type="text" x-model="iconSearch" placeholder="Rechercher une icône..."
+                     @input.debounce.300ms="searchIcons()"
+                     class="w-full px-4 py-2 pl-9 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all">
+              <iconify-icon icon="solar:magnifer-linear" width="14" class="absolute left-3 top-2.5 text-gray-400"></iconify-icon>
+            </div>
+          </div>
+          <!-- Icon Grid -->
+          <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;max-height:140px;overflow-y:auto;padding:4px;border-radius:12px;border:1px solid #f3f4f6;" class="custom-scrollbar dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+            <template x-for="ic in iconResults" :key="ic">
+              <button type="button" @click="formIcon = ic"
+                      class="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-all hover:bg-white dark:hover:bg-gray-700"
+                      :class="formIcon === ic ? 'ring-2 ring-primary bg-primary/10' : ''">
+                <iconify-icon :icon="ic" width="18" :style="formIcon === ic ? 'color:' + (formColor || '#4361ee') : ''"></iconify-icon>
+              </button>
+            </template>
+            <template x-if="iconResults.length === 0">
+              <div class="col-span-8 text-center py-4 text-xs text-gray-400">Aucune icône trouvée</div>
+            </template>
+          </div>
+          <!-- Manual icon input -->
+          <input type="text" x-model="formIcon" class="mt-2 w-full px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400"
+                 placeholder="ou saisir un nom d'icône (ex: solar:star-bold-duotone)">
+        </div>
+
+        <!-- Color -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Couleur</label>
+          <div class="flex items-center gap-2 flex-wrap">
+            <template x-for="c in presetColors" :key="c">
+              <button type="button" @click="formColor = c"
+                      class="w-7 h-7 rounded-full cursor-pointer transition-all hover:scale-110 border-2"
+                      :style="'background:' + c"
+                      :class="formColor === c ? 'border-gray-900 dark:border-white scale-110 shadow-lg' : 'border-transparent'">
+              </button>
+            </template>
+            <div class="relative w-7 h-7 rounded-full border-2 border-dashed border-gray-300 cursor-pointer overflow-hidden flex items-center justify-center hover:border-gray-400 transition-colors">
+              <iconify-icon icon="solar:palette-bold" width="14" class="text-gray-400 pointer-events-none"></iconify-icon>
+              <input type="color" x-model="formColor" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
+        <button @click="modalOpen = false"
+                class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+          Annuler
+        </button>
+        <button @click="saveSpace()"
+                class="px-5 py-2 text-sm font-semibold text-white rounded-xl transition-all hover:shadow-lg"
+                :style="'background:' + (formColor || '#4361ee')"
+                :disabled="!formName.trim() || isSaving">
+          <span x-show="isSaving" class="animate-spin border-2 border-white border-l-transparent rounded-full w-4 h-4 inline-block align-middle mr-1"></span>
+          <span x-text="editingSpace ? 'Enregistrer' : 'Créer'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function spaceModalComponent() {
+    return {
+      modalOpen: false,
+      editingSpace: null,
+      environmentId: null,
+      formName: '',
+      formIcon: 'solar:share-circle-bold-duotone',
+      formColor: '#4361ee',
+      iconSearch: '',
+      iconResults: [],
+      isSaving: false,
+      selectedLibrary: 'solar',
+      libraries: [],
+
+      presetColors: [
+        '#4361ee', '#805dca', '#00ab55', '#e7515a', '#e2a03f',
+        '#2196f3', '#6366f1', '#8b5cf6', '#ec4899', '#14b8a6',
+        '#06b6d4', '#3b82f6', '#dc2626', '#059669', '#7c3aed'
+      ],
+
+      defaultIcons: [
+        'solar:share-circle-bold-duotone',
+        'solar:bag-heart-bold-duotone',
+        'solar:magnet-bold-duotone',
+        'solar:chat-round-call-bold-duotone',
+        'solar:users-group-rounded-bold-duotone',
+        'solar:wallet-bold-duotone',
+        'solar:bill-list-bold-duotone',
+        'solar:rocket-2-bold-duotone',
+        'solar:star-bold-duotone',
+        'solar:folder-favourite-bookmark-bold-duotone',
+        'solar:widget-5-bold-duotone',
+        'solar:home-2-bold-duotone',
+        'solar:buildings-3-bold-duotone',
+        'solar:chart-square-bold-duotone',
+        'solar:inbox-bold-duotone',
+        'solar:heart-pulse-bold-duotone',
+        'solar:diploma-verified-bold-duotone',
+        'solar:bookmark-square-bold-duotone',
+        'solar:database-bold-duotone',
+        'solar:shield-check-bold-duotone',
+        'solar:fire-bold-duotone',
+        'solar:shop-2-bold-duotone',
+        'solar:laptop-minimalistic-bold-duotone',
+        'solar:case-round-bold-duotone'
+      ],
+
+      init() {
+        this.iconResults = [...this.defaultIcons];
+        this.loadLibraries();
+
+        // Listen for open-space-modal events
+        window.addEventListener('open-space-modal', (e) => {
+          const space = e.detail?.space || null;
+          this.environmentId = e.detail?.environmentId || null;
+          if (space) {
+            // Edit mode
+            this.editingSpace = space;
+            this.formName = space.name;
+            this.formIcon = space.icon || 'solar:share-circle-bold-duotone';
+            this.formColor = space.color || '#4361ee';
+          } else {
+            // Create mode
+            this.editingSpace = null;
+            this.formName = '';
+            this.formIcon = 'solar:share-circle-bold-duotone';
+            this.formColor = this.presetColors[Math.floor(Math.random() * this.presetColors.length)];
+          }
+          this.iconSearch = '';
+          this.iconResults = [...this.defaultIcons];
+          this.modalOpen = true;
+          this.$nextTick(() => {
+            if (this.$refs.spaceNameInput) this.$refs.spaceNameInput.focus();
+          });
+        });
+      },
+
+      async loadLibraries() {
+        const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+        try {
+          const res = await fetch(`/account/${accountNum}/api/hierarchy/icon-libraries`);
+          if (res.ok) {
+            const data = await res.json();
+            this.libraries = data.libraries || [];
+            if (this.libraries.length > 0 && !this.libraries.find(l => l.id === this.selectedLibrary)) {
+              this.selectedLibrary = this.libraries[0].id;
+            }
+          }
+        } catch (e) { console.error('Failed to load libraries', e); }
+      },
+
+      async saveSpace() {
+        if (!this.formName.trim() || this.isSaving) return;
+        this.isSaving = true;
+        const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+
+        try {
+          if (this.editingSpace) {
+            // Update existing space
+            await fetch(`/account/${accountNum}/api/hierarchy/space/update`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: this.editingSpace.id || this.editingSpace._id,
+                name: this.formName.trim(),
+                icon: this.formIcon,
+                color: this.formColor
+              })
+            });
+            this.modalOpen = false;
+            window.dispatchEvent(new CustomEvent('space-modal-saved', { detail: {} }));
+          } else {
+            // Create new space
+            const body = {
+              name: this.formName.trim(),
+              icon: this.formIcon,
+              color: this.formColor
+            };
+            if (this.environmentId) {
+              body.environmentId = this.environmentId;
+            }
+            const res = await fetch(`/account/${accountNum}/api/hierarchy/space`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body)
+            });
+            if (!res.ok) {
+              const err = await res.json();
+              throw new Error(err.error || `HTTP ${res.status}`);
+            }
+            const newSpace = await res.json();
+            this.modalOpen = false;
+            window.dispatchEvent(new CustomEvent('space-modal-saved', { detail: { newSpace } }));
+          }
+        } catch (err) {
+          console.error('[SpaceModal] Save error:', err);
+          alert('Erreur: ' + err.message);
+        } finally {
+          this.isSaving = false;
+        }
+      },
+
+      async searchIcons() {
+        if (!this.iconSearch.trim()) {
+          this.iconResults = [...this.defaultIcons];
+          return;
+        }
+        const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+        try {
+          const library = this.selectedLibrary || 'solar';
+          const res = await fetch(`/account/${accountNum}/api/hierarchy/icons?library=${library}&search=${encodeURIComponent(this.iconSearch.trim())}&page=1&limit=32`);
+          if (res.ok) {
+            const data = await res.json();
+            this.iconResults = data.icons || [];
+            if (this.iconResults.length === 0) {
+              this.iconResults = [...this.defaultIcons];
+            }
+          }
+        } catch (err) {
+          console.error('[SpaceModal] Icon search error:', err);
         }
       }
     };

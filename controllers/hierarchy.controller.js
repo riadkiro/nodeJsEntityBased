@@ -220,10 +220,17 @@ module.exports = {
             if (count <= 1) {
                 return res.status(400).json({ error: "Cannot delete the last environment" });
             }
-            // Unlink spaces from this environment
-            await SpaceModel.updateMany({ environmentId: id }, { $unset: { environmentId: '' } });
+            // Find the first remaining environment to reassign orphaned spaces
+            const remainingEnv = await EnvironmentModel.findOne({ _id: { $ne: id } }).sort({ order: 1 }).lean();
+            if (remainingEnv) {
+                // Reassign spaces from the deleted env to the first remaining env
+                await SpaceModel.updateMany(
+                    { environmentId: id },
+                    { $set: { environmentId: remainingEnv._id } }
+                );
+            }
             await EnvironmentModel.findByIdAndDelete(id);
-            res.json({ success: true });
+            res.json({ success: true, reassignedTo: remainingEnv ? remainingEnv._id.toString() : null });
         } catch (error) {
             console.error("[Hierarchy] deleteEnvironment Error:", error);
             res.status(500).json({ error: "Failed to delete environment" });

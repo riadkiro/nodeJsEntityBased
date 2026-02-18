@@ -121,6 +121,7 @@
       targetEntity: r.targetEntity ? (r.targetEntity._id || r.targetEntity).toString() : ''
     }))
   } : null,
+  templateData: locals.templateData || null,
   allClassifications: (locals.allClassifications || []).map(c => ({ _id: c._id.toString(), name: c.name })),
   allEntities: (locals.allEntities || []).map(e => ({ _id: e._id.toString(), name: e.name, slug: e.slug, icon: e.icon || '', color: e.color || '' }))
 }).replace(/</g, '\\u003C') %>
@@ -133,6 +134,20 @@ document.addEventListener('alpine:init', () => {
     const isEdit = raw.mode === 'edit';
     const entity = raw.entity;
 
+    const tplData = raw.templateData;
+    const hasTpl = !!tplData;
+
+    // Build standard fields initial state
+    const stdFieldsList = ['title', 'description', 'icon', 'attachments', 'image', 'slug', 'date'];
+    const buildStdFields = () => {
+      const result = {};
+      const enabledList = isEdit ? (entity.enabledStandardFields || []) : hasTpl ? (tplData.enabledStandardFields || ['title']) : stdFieldsList;
+      stdFieldsList.forEach(f => {
+        result[f] = enabledList.includes(f);
+      });
+      return result;
+    };
+
     return {
       // Mode
       isEdit,
@@ -140,13 +155,15 @@ document.addEventListener('alpine:init', () => {
       entityId: isEdit ? entity._id : null,
       isSubmitting: false,
       slugManuallyEdited: isEdit,
+      templateData: tplData,
+      templateClassificationsCreated: false,
 
       // Sections accordion
       sectionOpen: {
         general: true,
         visual: true,
         fields: true,
-        classifications: false,
+        classifications: hasTpl,
         relations: false,
         reference: false,
         advanced: false
@@ -154,23 +171,15 @@ document.addEventListener('alpine:init', () => {
 
       // Form data
       form: {
-        name: isEdit ? entity.name : '',
+        name: isEdit ? entity.name : hasTpl ? tplData.name : '',
         slug: isEdit ? entity.slug : '',
-        description: isEdit ? entity.description : '',
-        icon: isEdit ? entity.icon : '',
-        color: isEdit ? entity.color : '',
-        image: isEdit ? entity.image : '',
+        description: isEdit ? entity.description : hasTpl ? tplData.description : '',
+        icon: isEdit ? entity.icon : hasTpl ? tplData.icon : '',
+        color: isEdit ? entity.color : hasTpl ? tplData.color : '',
+        image: isEdit ? entity.image : hasTpl ? (tplData.image || '') : '',
         active: isEdit ? entity.active : true,
-        referenceTitleTokens: isEdit ? entity.referenceTitleTokens : [{ t: 'field', id: 'title' }],
-        standardFields: {
-          title: isEdit ? (entity.enabledStandardFields || []).includes('title') : true,
-          description: isEdit ? (entity.enabledStandardFields || []).includes('description') : true,
-          icon: isEdit ? (entity.enabledStandardFields || []).includes('icon') : true,
-          attachments: isEdit ? (entity.enabledStandardFields || []).includes('attachments') : true,
-          image: isEdit ? (entity.enabledStandardFields || []).includes('image') : true,
-          slug: isEdit ? (entity.enabledStandardFields || []).includes('slug') : true,
-          date: isEdit ? (entity.enabledStandardFields || []).includes('date') : true
-        },
+        referenceTitleTokens: isEdit ? entity.referenceTitleTokens : hasTpl ? (tplData.referenceTitleTokens || [{ t: 'field', id: 'title' }]) : [{ t: 'field', id: 'title' }],
+        standardFields: buildStdFields(),
         statusClassificationId: isEdit ? entity.statusClassification : '',
         classifications: isEdit ? entity.classifications : []
       },
@@ -180,6 +189,25 @@ document.addEventListener('alpine:init', () => {
       systemFields: [],
       fieldSearch: '',
       openCategories: { popular: true },
+
+      // Template fields (pre-loaded from template, shown as "selected" without matching system fields)
+      templateFields: hasTpl ? (tplData.fields || []).map((f, i) => ({
+        _id: 'tpl_' + i + '_' + f.name,
+        name: f.name,
+        label: f.label,
+        description: f.description || '',
+        type: f.type || 'string',
+        subtype: f.subtype || '',
+        category: f.category || 'text',
+        icon: f.icon || 'solar:widget-bold',
+        required: f.required || false,
+        typeConfig: f.typeConfig || {},
+        ui: f.ui || {},
+        _fromTemplate: true
+      })) : [],
+
+      // Template classifications
+      templateClassifications: hasTpl ? (tplData.classifications || []) : [],
 
       // Relations
       allEntities: raw.allEntities || [],
@@ -218,6 +246,15 @@ document.addEventListener('alpine:init', () => {
             }
           }
         }
+
+        // ── Pre-fill from template ──
+        if (hasTpl && !isEdit) {
+          // Pre-select template fields by matching system fields or creating them
+          await this.prefillTemplateFields();
+          // Create classifications from template
+          await this.createClassificationsFromTemplate();
+        }
+
         // Init pickers after DOM renders
         this.$nextTick(() => {
           this.initPickers();
@@ -225,6 +262,112 @@ document.addEventListener('alpine:init', () => {
           const editor = this.$refs.formatEditor;
           if (editor) editor.innerHTML = this.renderTokensAsHTML();
         });
+      },
+
+      // Pre-fill fields from template — match or create in tenant DB
+      async prefillTemplateFields() {
+        if (!this.templateFields.length) return;
+        // Try to match template fields to system fields
+        const allSysFields = [];
+        this.systemFields.forEach(cat => cat.fields.forEach(f => allSysFields.push(f)));
+
+        const matched = [];
+        const toCreate = [];
+
+        for (const tf of this.templateFields) {
+          // Try exact name match first, then label match
+          let sysField = allSysFields.find(sf => sf.name === tf.name);
+          if (!sysField) sysField = allSysFields.find(sf => sf.label?.toLowerCase() === tf.label?.toLowerCase());
+          if (!sysField) sysField = allSysFields.find(sf => sf.type === tf.type && sf.name === tf.name);
+          
+          if (sysField && !matched.some(m => m._id === sysField._id)) {
+            matched.push(sysField);
+          } else if (!sysField) {
+            // Create this field in the tenant DB
+            toCreate.push(tf);
+          }
+        }
+
+        // Create unmatched fields in tenant DB
+        const created = [];
+        for (const tf of toCreate) {
+          try {
+            const res = await fetch(`/account/${this.accountNumber}/field-template/api/create`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                name: tf.name,
+                label: tf.label,
+                type: tf.type || 'string',
+                subtype: tf.subtype || undefined,
+                description: tf.description || '',
+                icon: tf.icon || 'solar:widget-bold-duotone',
+                category: tf.category || 'custom',
+                required: tf.required || false,
+                typeConfig: tf.typeConfig || {},
+                ui: tf.ui || {}
+              })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.success && data.field) {
+                created.push(data.field);
+                console.log('[Template] Created field:', data.field.label, data.field._id);
+              }
+            }
+          } catch (err) {
+            console.error('[Template] Error creating field:', tf.label, err);
+          }
+        }
+
+        this.selectedFields = [...matched, ...created];
+      },
+
+      // Create classifications from template definitions in tenant DB
+      async createClassificationsFromTemplate() {
+        if (!this.templateClassifications.length || this.templateClassificationsCreated) return;
+        this.templateClassificationsCreated = true;
+
+        for (const tplCls of this.templateClassifications) {
+          try {
+            const res = await fetch(`/account/${this.accountNumber}/classification/api/create`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                name: tplCls.name,
+                slug: tplCls.slug || '',
+                type: tplCls.type || 'status',
+                options: (tplCls.options || []).map(o => ({
+                  label: o.label,
+                  value: o.value || o.label.toLowerCase().replace(/\s+/g, '-'),
+                  color: o.color || '#4361ee',
+                  icon: o.icon || '',
+                  order: o.order || 0
+                }))
+              })
+            });
+
+            if (res.ok) {
+              const result = await res.json();
+              const newCls = result.classification || result;
+              if (newCls && newCls._id) {
+                // Add to available classifications
+                this.allClassifications.push({ _id: newCls._id, name: newCls.name });
+                
+                // Auto-assign: if isStatus, set as status classification; otherwise add to regular
+                if (tplCls.isStatus) {
+                  this.form.statusClassificationId = newCls._id;
+                } else {
+                  this.form.classifications.push(newCls._id);
+                }
+              }
+            }
+          } catch (err) {
+            console.error('[Template] Error creating classification:', tplCls.name, err);
+          }
+        }
       },
 
       initPickers() {

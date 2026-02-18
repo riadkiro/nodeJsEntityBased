@@ -516,4 +516,51 @@ module.exports = {
       res.status(500).json({ error: err.message });
     }
   },
+
+  // JSON API: Create field template from entity template system
+  createApi: async (req, res) => {
+    try {
+      const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
+      const { name, label, type, subtype, description, icon, category, required, typeConfig, ui } = req.body;
+
+      if (!name || !label) return res.status(400).json({ error: 'name and label are required' });
+
+      const newField = new FieldTemplateModel({
+        name,
+        label,
+        description: description || '',
+        type: type || 'string',
+        subtype: subtype || undefined,
+        required: required || false,
+        isCustom: true,
+        isSystem: false,
+        category: category || 'custom',
+        type_config: typeConfig || {},
+        ui: {
+          placeholder: ui?.placeholder || '',
+          width: ui?.width || 'full',
+          icon: icon || ui?.icon || 'solar:widget-bold-duotone',
+          order: ui?.order || 0
+        }
+      });
+
+      await newField.save();
+      res.json({
+        success: true,
+        field: {
+          _id: newField._id,
+          name: newField.name,
+          label: newField.label,
+          type: newField.type,
+          subtype: newField.subtype,
+          icon: newField.ui?.icon || 'solar:widget-bold-duotone',
+          category: newField.category,
+          isSystem: false
+        }
+      });
+    } catch (err) {
+      console.error('[FieldTemplateAPI] Create error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  },
 };

@@ -1,0 +1,655 @@
+<!-- SuperAdmin Entity Templates Management -->
+<div x-data="entityTemplatesManager()" x-init="init()">
+  <!-- Page Header -->
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px;">
+    <div>
+      <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0;">Modèles d'entités</h1>
+      <p style="font-size: 13px; color: #94a3b8; margin: 4px 0 0;">Créez et gérez les modèles préconfigurés pour vos tenants</p>
+    </div>
+    <button @click="openCreateModal()" class="sa-btn sa-btn-primary">
+      <iconify-icon icon="solar:add-circle-bold" width="18"></iconify-icon>
+      Nouveau modèle
+    </button>
+  </div>
+
+  <!-- Stats Row -->
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px;">
+    <div class="sa-stat-card">
+      <div class="sa-stat-icon" style="background: rgba(67,97,238,0.1);">
+        <iconify-icon icon="solar:layers-bold-duotone" width="24" style="color: #4361ee;"></iconify-icon>
+      </div>
+      <div>
+        <div class="sa-stat-value" x-text="templates.length">0</div>
+        <div class="sa-stat-label">Total modèles</div>
+      </div>
+    </div>
+    <div class="sa-stat-card">
+      <div class="sa-stat-icon" style="background: rgba(22,163,74,0.1);">
+        <iconify-icon icon="solar:check-circle-bold-duotone" width="24" style="color: #16a34a;"></iconify-icon>
+      </div>
+      <div>
+        <div class="sa-stat-value" x-text="templates.filter(t => t.active).length">0</div>
+        <div class="sa-stat-label">Actifs</div>
+      </div>
+    </div>
+    <div class="sa-stat-card">
+      <div class="sa-stat-icon" style="background: rgba(124,58,237,0.1);">
+        <iconify-icon icon="solar:star-bold-duotone" width="24" style="color: #7c3aed;"></iconify-icon>
+      </div>
+      <div>
+        <div class="sa-stat-value" x-text="templates.filter(t => t.featured).length">0</div>
+        <div class="sa-stat-label">Mis en avant</div>
+      </div>
+    </div>
+    <div class="sa-stat-card">
+      <div class="sa-stat-icon" style="background: rgba(8,145,178,0.1);">
+        <iconify-icon icon="solar:graph-up-bold-duotone" width="24" style="color: #0891b2;"></iconify-icon>
+      </div>
+      <div>
+        <div class="sa-stat-value" x-text="templates.reduce((sum, t) => sum + (t.usageCount || 0), 0)">0</div>
+        <div class="sa-stat-label">Utilisations totales</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Filter -->
+  <div style="margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap;">
+    <button @click="filterCategory = ''" 
+            class="sa-btn sa-btn-sm"
+            :class="filterCategory === '' ? 'sa-btn-primary' : 'sa-btn-outline'"
+            style="border-radius: 999px;">
+      Tous
+    </button>
+    <template x-for="cat in categories" :key="cat.key">
+      <button @click="filterCategory = cat.key"
+              class="sa-btn sa-btn-sm"
+              :class="filterCategory === cat.key ? 'sa-btn-primary' : 'sa-btn-outline'"
+              style="border-radius: 999px;">
+        <iconify-icon :icon="cat.icon" width="14"></iconify-icon>
+        <span x-text="cat.label"></span>
+      </button>
+    </template>
+  </div>
+
+  <!-- Templates Grid -->
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px;">
+    <template x-for="tpl in filteredTemplates" :key="tpl._id">
+      <div class="sa-panel" style="cursor: pointer; transition: all 0.2s; position: relative;"
+           @mouseenter="$el.style.boxShadow = '0 4px 14px rgba(0,0,0,0.06)'; $el.style.transform = 'translateY(-2px)'"
+           @mouseleave="$el.style.boxShadow = 'none'; $el.style.transform = 'none'"
+           @click="openEditModal(tpl)">
+        
+        <!-- Status badges -->
+        <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 6px;">
+          <span x-show="tpl.featured" class="sa-badge sa-badge-purple" style="font-size: 9px;">
+            <iconify-icon icon="solar:star-bold" width="10"></iconify-icon> Featured
+          </span>
+          <span :class="tpl.active ? 'sa-badge sa-badge-green' : 'sa-badge sa-badge-red'" style="font-size: 9px;"
+                x-text="tpl.active ? 'Actif' : 'Inactif'"></span>
+        </div>
+
+        <div style="padding: 24px;">
+          <!-- Icon & Name -->
+          <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center;"
+                 :style="'background: ' + (tpl.color || '#4361ee') + '15; color: ' + (tpl.color || '#4361ee')">
+              <iconify-icon :icon="tpl.icon || 'solar:box-bold-duotone'" width="24"></iconify-icon>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 15px; font-weight: 700; color: #0f172a;" x-text="tpl.name"></div>
+              <div style="font-size: 11px; color: #94a3b8;" x-text="tpl.slug"></div>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <p style="font-size: 12px; color: #64748b; margin: 0 0 14px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
+             x-text="tpl.description || 'Aucune description'"></p>
+
+          <!-- Meta row -->
+          <div style="display: flex; align-items: center; gap: 12px; font-size: 11px; color: #94a3b8;">
+            <span style="display: flex; align-items: center; gap: 4px;">
+              <iconify-icon icon="solar:layers-bold" width="12"></iconify-icon>
+              <span x-text="(tpl.fields || []).length + ' champs'"></span>
+            </span>
+            <span style="display: flex; align-items: center; gap: 4px;">
+              <iconify-icon icon="solar:tag-bold" width="12"></iconify-icon>
+              <span x-text="getCategoryLabel(tpl.category)"></span>
+            </span>
+            <span style="display: flex; align-items: center; gap: 4px; margin-left: auto;">
+              <iconify-icon icon="solar:graph-up-bold" width="12"></iconify-icon>
+              <span x-text="(tpl.usageCount || 0) + ' uses'"></span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Empty state -->
+    <div x-show="filteredTemplates.length === 0" 
+         style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #94a3b8;">
+      <iconify-icon icon="solar:layers-broken" width="48" style="margin-bottom: 12px;"></iconify-icon>
+      <p style="font-size: 15px; margin: 0;">Aucun modèle trouvé</p>
+      <p style="font-size: 12px; margin: 4px 0 0;">Cliquez sur "Nouveau modèle" pour en créer un.</p>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- CREATE / EDIT MODAL -->
+  <!-- ============================================ -->
+  <dialog :id="'tplModal'" x-ref="tplModal" class="sa-modal" style="max-width: 680px;">
+    <div class="sa-modal-header" style="background: linear-gradient(135deg, #4361ee, #805dca); padding: 24px;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">
+            <iconify-icon :icon="editingId ? 'solar:pen-bold-duotone' : 'solar:add-circle-bold-duotone'" width="22" style="color: #fff;"></iconify-icon>
+          </div>
+          <div>
+            <h3 style="font-size: 17px; font-weight: 700; color: #fff; margin: 0;" 
+                x-text="editingId ? 'Modifier le modèle' : 'Nouveau modèle'"></h3>
+            <p style="font-size: 12px; color: rgba(255,255,255,0.7); margin: 2px 0 0;">
+              <span x-text="editingId ? 'Modifiez les paramètres du modèle' : 'Configurez un nouveau modèle d\'entité'"></span>
+            </p>
+          </div>
+        </div>
+        <button @click="closeModal()" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.15); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+          <iconify-icon icon="solar:close-circle-bold" width="20" style="color: #fff;"></iconify-icon>
+        </button>
+      </div>
+    </div>
+
+    <div class="sa-modal-body" style="padding: 24px; max-height: 60vh; overflow-y: auto;">
+      <!-- Tabs -->
+      <div style="display: flex; border-bottom: 1px solid #e2e8f0; margin-bottom: 20px;">
+        <button @click="modalTab = 'general'" 
+                style="padding: 10px 20px; font-size: 13px; font-weight: 600; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s;"
+                :style="modalTab === 'general' ? 'border-color: #4361ee; color: #4361ee;' : 'color: #94a3b8;'">
+          <iconify-icon icon="solar:info-circle-bold-duotone" width="14" style="margin-right: 4px; vertical-align: -2px;"></iconify-icon>
+          Général
+        </button>
+        <button @click="modalTab = 'fields'" 
+                style="padding: 10px 20px; font-size: 13px; font-weight: 600; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s;"
+                :style="modalTab === 'fields' ? 'border-color: #4361ee; color: #4361ee;' : 'color: #94a3b8;'">
+          <iconify-icon icon="solar:layers-bold-duotone" width="14" style="margin-right: 4px; vertical-align: -2px;"></iconify-icon>
+          Champs
+          <span x-show="form.fields.length > 0" 
+                style="margin-left: 4px; padding: 1px 6px; border-radius: 999px; font-size: 10px; background: rgba(67,97,238,0.15); color: #4361ee;"
+                x-text="form.fields.length"></span>
+        </button>
+        <button @click="modalTab = 'classifications'" 
+                style="padding: 10px 20px; font-size: 13px; font-weight: 600; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s;"
+                :style="modalTab === 'classifications' ? 'border-color: #4361ee; color: #4361ee;' : 'color: #94a3b8;'">
+          <iconify-icon icon="solar:tag-bold-duotone" width="14" style="margin-right: 4px; vertical-align: -2px;"></iconify-icon>
+          Classifications
+        </button>
+      </div>
+
+      <!-- TAB: General -->
+      <div x-show="modalTab === 'general'" style="display: grid; gap: 16px;">
+        <!-- Name + Slug -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+          <div>
+            <label class="sa-label">Nom <span style="color: #dc2626;">*</span></label>
+            <input x-model="form.name" @input="autoSlug()" type="text" class="sa-input" placeholder="Ex: Contacts, Projets..." />
+          </div>
+          <div>
+            <label class="sa-label">Slug</label>
+            <input x-model="form.slug" type="text" class="sa-input" placeholder="auto-generated" style="font-family: monospace; font-size: 12px;" />
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="sa-label">Description</label>
+          <textarea x-model="form.description" class="sa-input" rows="2" placeholder="Description du modèle..." style="resize: vertical;"></textarea>
+        </div>
+
+        <!-- Category + Color -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label class="sa-label">Catégorie</label>
+            <select x-model="form.category" class="sa-select" style="width: 100%;">
+              <template x-for="cat in categories" :key="cat.key">
+                <option :value="cat.key" x-text="cat.label"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="sa-label">Couleur</label>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;">
+              <template x-for="c in ['#4361ee','#00ab55','#e7515a','#805dca','#e2a03f','#2196f3','#f97316','#0891b2','#64748b']" :key="c">
+                <button type="button" @click="form.color = c"
+                        style="width: 28px; height: 28px; border-radius: 8px; border: 2px solid transparent; cursor: pointer; transition: all 0.15s;"
+                        :style="'background: ' + c + '; border-color: ' + (form.color === c ? '#0f172a' : 'transparent') + '; transform: ' + (form.color === c ? 'scale(1.15)' : 'scale(1)')">
+                </button>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Icon -->
+        <div>
+          <label class="sa-label">Icône</label>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0;"
+                 :style="'background: ' + (form.color || '#4361ee') + '15; color: ' + (form.color || '#4361ee')">
+              <iconify-icon :icon="form.icon || 'solar:box-bold-duotone'" width="22"></iconify-icon>
+            </div>
+            <input x-model="form.icon" type="text" class="sa-input" placeholder="solar:box-bold-duotone" style="flex: 1; font-family: monospace; font-size: 12px;" />
+          </div>
+        </div>
+
+        <!-- Standard Fields -->
+        <div>
+          <label class="sa-label">Champs standards activés</label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <template x-for="sf in ['title','description','slug','date','icon','image','attachments']" :key="sf">
+              <button type="button" @click="toggleStandardField(sf)"
+                      style="padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid; cursor: pointer; transition: all 0.15s;"
+                      :style="form.enabledStandardFields.includes(sf) 
+                        ? 'background: rgba(67,97,238,0.1); border-color: rgba(67,97,238,0.3); color: #4361ee;' 
+                        : 'background: #f1f5f9; border-color: #e2e8f0; color: #94a3b8;'">
+                <span x-text="sf"></span>
+              </button>
+            </template>
+          </div>
+        </div>
+
+        <!-- Toggles -->
+        <div style="display: flex; gap: 24px; padding-top: 8px; border-top: 1px solid #f1f5f9;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #334155;">
+            <input type="checkbox" x-model="form.active" style="accent-color: #4361ee; width: 16px; height: 16px;" />
+            <span>Actif</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #334155;">
+            <input type="checkbox" x-model="form.featured" style="accent-color: #7c3aed; width: 16px; height: 16px;" />
+            <span>Mis en avant</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- TAB: Fields -->
+      <div x-show="modalTab === 'fields'">
+        <!-- Add field button -->
+        <button @click="addField()" type="button"
+                style="width: 100%; padding: 10px; margin-bottom: 16px; border: 1px dashed #4361ee; border-radius: 10px; background: rgba(67,97,238,0.04); color: #4361ee; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s;"
+                onmouseenter="this.style.background='rgba(67,97,238,0.1)'" onmouseleave="this.style.background='rgba(67,97,238,0.04)'">
+          <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
+          Ajouter un champ
+        </button>
+
+        <!-- Fields list -->
+        <div style="display: flex; flex-direction: column; gap: 8px; max-height: 350px; overflow-y: auto;">
+          <template x-for="(field, fIdx) in form.fields" :key="fIdx">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; position: relative;">
+              <!-- Delete button -->
+              <button @click="form.fields.splice(fIdx, 1)" type="button"
+                      style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 6px; border: none; background: transparent; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+                      onmouseenter="this.style.color='#dc2626'; this.style.background='#fee2e2'" 
+                      onmouseleave="this.style.color='#94a3b8'; this.style.background='transparent'">
+                <iconify-icon icon="solar:trash-bin-trash-bold" width="14"></iconify-icon>
+              </button>
+
+              <!-- Field config -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                  <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; display: block;">Label</label>
+                  <input x-model="field.label" type="text" class="sa-input" placeholder="Ex: Email" style="font-size: 12px; padding: 7px 10px;" />
+                </div>
+                <div>
+                  <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; display: block;">Nom technique</label>
+                  <input x-model="field.name" type="text" class="sa-input" placeholder="ex: email" style="font-size: 12px; padding: 7px 10px; font-family: monospace;" />
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 8px;">
+                <div>
+                  <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; display: block;">Type</label>
+                  <select x-model="field.type" class="sa-select" style="width: 100%; font-size: 12px; padding: 7px 10px;">
+                    <option value="string">Texte</option>
+                    <option value="number">Nombre</option>
+                    <option value="boolean">Booléen</option>
+                    <option value="date">Date</option>
+                    <option value="select">Sélection</option>
+                    <option value="textarea">Zone de texte</option>
+                    <option value="email">Email</option>
+                    <option value="tel">Téléphone</option>
+                    <option value="url">URL</option>
+                    <option value="currency">Devise</option>
+                    <option value="percentage">Pourcentage</option>
+                    <option value="media">Média</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; display: block;">Catégorie</label>
+                  <select x-model="field.category" class="sa-select" style="width: 100%; font-size: 12px; padding: 7px 10px;">
+                    <option value="text">Texte</option>
+                    <option value="numeric">Numérique</option>
+                    <option value="date">Date</option>
+                    <option value="choice">Choix</option>
+                    <option value="media">Média</option>
+                    <option value="advanced">Avancé</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; display: block;">Icône</label>
+                  <input x-model="field.icon" type="text" class="sa-input" placeholder="solar:widget-bold" style="font-size: 11px; padding: 7px 10px; font-family: monospace;" />
+                </div>
+              </div>
+              <div style="margin-top: 8px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: #64748b;">
+                  <input type="checkbox" x-model="field.required" style="accent-color: #4361ee;" />
+                  Obligatoire
+                </label>
+              </div>
+            </div>
+          </template>
+
+          <div x-show="form.fields.length === 0" style="text-align: center; padding: 30px; color: #94a3b8;">
+            <iconify-icon icon="solar:layers-broken" width="32" style="margin-bottom: 8px;"></iconify-icon>
+            <p style="font-size: 13px; margin: 0;">Aucun champ configuré</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Classifications -->
+      <div x-show="modalTab === 'classifications'">
+        <button @click="addClassification()" type="button"
+                style="width: 100%; padding: 10px; margin-bottom: 16px; border: 1px dashed #0891b2; border-radius: 10px; background: rgba(8,145,178,0.04); color: #0891b2; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s;">
+          <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
+          Ajouter une classification
+        </button>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; max-height: 350px; overflow-y: auto;">
+          <template x-for="(cls, cIdx) in form.classifications" :key="cIdx">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; position: relative;">
+              <button @click="form.classifications.splice(cIdx, 1)" type="button"
+                      style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 6px; border: none; background: transparent; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+                      onmouseenter="this.style.color='#dc2626'; this.style.background='#fee2e2'" 
+                      onmouseleave="this.style.color='#94a3b8'; this.style.background='transparent'">
+                <iconify-icon icon="solar:trash-bin-trash-bold" width="14"></iconify-icon>
+              </button>
+
+              <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 10px;">
+                <div>
+                  <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; display: block;">Nom</label>
+                  <input x-model="cls.name" type="text" class="sa-input" placeholder="Ex: Statut" style="font-size: 12px; padding: 7px 10px;" />
+                </div>
+                <div>
+                  <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; display: block;">Type</label>
+                  <select x-model="cls.type" class="sa-select" style="width: 100%; font-size: 12px; padding: 7px 10px;">
+                    <option value="status">Statut</option>
+                    <option value="priority">Priorité</option>
+                    <option value="tag">Tag</option>
+                    <option value="category">Catégorie</option>
+                  </select>
+                </div>
+              </div>
+
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: #64748b; margin-bottom: 10px;">
+                <input type="checkbox" x-model="cls.isStatus" style="accent-color: #4361ee;" />
+                Utiliser pour le Kanban (classification de statut)
+              </label>
+
+              <!-- Options -->
+              <div style="margin-top: 8px;">
+                <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 6px; display: block;">Options</label>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <template x-for="(opt, oIdx) in cls.options" :key="oIdx">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <input type="color" x-model="opt.color" style="width: 28px; height: 28px; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; padding: 2px;" />
+                      <input x-model="opt.label" type="text" class="sa-input" placeholder="Label" style="flex: 1; font-size: 12px; padding: 6px 10px;" />
+                      <button @click="cls.options.splice(oIdx, 1)" type="button"
+                              style="width: 28px; height: 28px; border-radius: 6px; border: none; background: transparent; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
+                      </button>
+                    </div>
+                  </template>
+                </div>
+                <button @click="cls.options.push({ label: '', color: '#4361ee', order: cls.options.length })" type="button"
+                        style="margin-top: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; border: 1px dashed #cbd5e1; border-radius: 6px; background: transparent; color: #64748b; cursor: pointer;">
+                  + Option
+                </button>
+              </div>
+            </div>
+          </template>
+
+          <div x-show="form.classifications.length === 0" style="text-align: center; padding: 30px; color: #94a3b8;">
+            <iconify-icon icon="solar:tag-broken" width="32" style="margin-bottom: 8px;"></iconify-icon>
+            <p style="font-size: 13px; margin: 0;">Aucune classification configurée</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="sa-modal-footer" style="display: flex; align-items: center; justify-content: space-between;">
+      <div>
+        <template x-if="editingId">
+          <div style="display: flex; gap: 8px;">
+            <button @click="duplicateTemplate()" class="sa-btn sa-btn-outline sa-btn-sm">
+              <iconify-icon icon="solar:copy-bold" width="14"></iconify-icon>
+              Dupliquer
+            </button>
+            <button @click="deleteTemplate()" class="sa-btn sa-btn-danger sa-btn-sm">
+              <iconify-icon icon="solar:trash-bin-2-bold" width="14"></iconify-icon>
+              Supprimer
+            </button>
+          </div>
+        </template>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button @click="closeModal()" class="sa-btn sa-btn-outline">Annuler</button>
+        <button @click="saveTemplate()" class="sa-btn sa-btn-primary" :disabled="saving">
+          <iconify-icon :icon="saving ? 'svg-spinners:ring-resize' : 'solar:check-circle-bold'" width="16"></iconify-icon>
+          <span x-text="saving ? 'Enregistrement...' : (editingId ? 'Mettre à jour' : 'Créer')"></span>
+        </button>
+      </div>
+    </div>
+  </dialog>
+</div>
+
+<script>
+function entityTemplatesManager() {
+  const categoriesData = <%- JSON.stringify(categories) %>;
+  const initialTemplates = <%- JSON.stringify(templates.map(t => ({
+    _id: t._id,
+    name: t.name,
+    slug: t.slug,
+    description: t.description,
+    icon: t.icon,
+    color: t.color,
+    category: t.category,
+    tags: t.tags,
+    enabledStandardFields: t.enabledStandardFields,
+    fields: t.fields,
+    classifications: t.classifications,
+    referenceTitleTokens: t.referenceTitleTokens,
+    active: t.active,
+    featured: t.featured,
+    order: t.order,
+    usageCount: t.usageCount
+  }))) %>;
+
+  return {
+    templates: initialTemplates,
+    categories: categoriesData,
+    filterCategory: '',
+    modalTab: 'general',
+    editingId: null,
+    saving: false,
+
+    form: {
+      name: '', slug: '', description: '',
+      icon: 'solar:box-bold-duotone', color: '#4361ee',
+      category: 'general', tags: [],
+      enabledStandardFields: ['title'],
+      fields: [], classifications: [],
+      referenceTitleTokens: [{ t: 'field', id: 'title' }],
+      active: true, featured: false, order: 0
+    },
+
+    get filteredTemplates() {
+      if (!this.filterCategory) return this.templates;
+      return this.templates.filter(t => t.category === this.filterCategory);
+    },
+
+    init() {},
+
+    getCategoryLabel(key) {
+      const cat = this.categories.find(c => c.key === key);
+      return cat ? cat.label : key;
+    },
+
+    autoSlug() {
+      this.form.slug = this.form.name.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+    },
+
+    toggleStandardField(field) {
+      const idx = this.form.enabledStandardFields.indexOf(field);
+      if (idx >= 0) this.form.enabledStandardFields.splice(idx, 1);
+      else this.form.enabledStandardFields.push(field);
+    },
+
+    addField() {
+      this.form.fields.push({
+        name: '', label: '', description: '',
+        type: 'string', category: 'text',
+        icon: 'solar:widget-bold',
+        required: false, typeConfig: {},
+        ui: { placeholder: '', width: 'full', order: this.form.fields.length }
+      });
+    },
+
+    addClassification() {
+      this.form.classifications.push({
+        name: '', slug: '', type: 'status', isStatus: false,
+        options: [
+          { label: 'Nouveau', color: '#3b82f6', order: 0 },
+          { label: 'En cours', color: '#f59e0b', order: 1 },
+          { label: 'Terminé', color: '#22c55e', order: 2 }
+        ]
+      });
+    },
+
+    resetForm() {
+      this.form = {
+        name: '', slug: '', description: '',
+        icon: 'solar:box-bold-duotone', color: '#4361ee',
+        category: 'general', tags: [],
+        enabledStandardFields: ['title'],
+        fields: [], classifications: [],
+        referenceTitleTokens: [{ t: 'field', id: 'title' }],
+        active: true, featured: false, order: 0
+      };
+      this.editingId = null;
+      this.modalTab = 'general';
+    },
+
+    openCreateModal() {
+      this.resetForm();
+      this.$refs.tplModal.showModal();
+    },
+
+    openEditModal(tpl) {
+      this.editingId = tpl._id;
+      this.form = {
+        name: tpl.name || '',
+        slug: tpl.slug || '',
+        description: tpl.description || '',
+        icon: tpl.icon || 'solar:box-bold-duotone',
+        color: tpl.color || '#4361ee',
+        category: tpl.category || 'general',
+        tags: [...(tpl.tags || [])],
+        enabledStandardFields: [...(tpl.enabledStandardFields || ['title'])],
+        fields: (tpl.fields || []).map(f => ({ ...f })),
+        classifications: (tpl.classifications || []).map(c => ({
+          ...c,
+          options: (c.options || []).map(o => ({ ...o }))
+        })),
+        referenceTitleTokens: [...(tpl.referenceTitleTokens || [{ t: 'field', id: 'title' }])],
+        active: tpl.active !== false,
+        featured: tpl.featured || false,
+        order: tpl.order || 0
+      };
+      this.modalTab = 'general';
+      this.$refs.tplModal.showModal();
+    },
+
+    closeModal() {
+      this.$refs.tplModal.close();
+    },
+
+    async saveTemplate() {
+      if (!this.form.name) return alert('Le nom est requis');
+      this.saving = true;
+
+      try {
+        const url = this.editingId
+          ? `/superadmin/api/entity-templates/${this.editingId}`
+          : '/superadmin/api/entity-templates';
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(this.form)
+        });
+
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Erreur');
+
+        if (this.editingId) {
+          const idx = this.templates.findIndex(t => t._id === this.editingId);
+          if (idx >= 0) this.templates[idx] = data.template;
+        } else {
+          this.templates.push(data.template);
+        }
+
+        this.closeModal();
+        this.resetForm();
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        this.saving = false;
+      }
+    },
+
+    async duplicateTemplate() {
+      if (!this.editingId) return;
+      try {
+        const res = await fetch(`/superadmin/api/entity-templates/${this.editingId}/duplicate`, {
+          method: 'POST', credentials: 'include'
+        });
+        const data = await res.json();
+        if (data.success) {
+          this.templates.push(data.template);
+          this.closeModal();
+        }
+      } catch (err) {
+        alert('Erreur lors de la duplication');
+      }
+    },
+
+    async deleteTemplate() {
+      if (!this.editingId) return;
+      if (!confirm('Supprimer ce modèle définitivement ?')) return;
+
+      try {
+        const res = await fetch(`/superadmin/api/entity-templates/${this.editingId}`, {
+          method: 'DELETE', credentials: 'include'
+        });
+        const data = await res.json();
+        if (data.success) {
+          this.templates = this.templates.filter(t => t._id !== this.editingId);
+          this.closeModal();
+          this.resetForm();
+        }
+      } catch (err) {
+        alert('Erreur lors de la suppression');
+      }
+    }
+  };
+}
+</script>

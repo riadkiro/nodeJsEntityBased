@@ -2,11 +2,17 @@ const express = require("express");
 const router = express.Router();
 //Load Product model
 const entityController = require("../controllers/entity.controller");
+const entityTemplateController = require("../controllers/entity-template.controller");
 // Middleware d'upload dynamique basé sur l'account_id
 const uploadTo = require("../middleware/upload");
 const upload = uploadTo((req) => `public/uploads/${req.account_number}`);
 //Auto generated routers
 //Auto generated routers end
+
+// ── Entity Templates (read-only for tenants) ─────────────────
+router.get("/api/templates", entityTemplateController.listApi);
+router.get("/api/templates/:id", entityTemplateController.getApi);
+router.post("/api/templates/:id/use", entityTemplateController.incrementUsage);
 
 //list
 router.get("/list", entityController.list);

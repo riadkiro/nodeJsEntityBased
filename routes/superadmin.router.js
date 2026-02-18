@@ -1,12 +1,7 @@
-/**
- * SuperAdmin Routes - SaaS Platform Owner
- * ────────────────────────────────────────
- * ALL routes here require user.role === 'superadmin'
- * These are mounted at /superadmin in routes-inc.js
- */
 const express = require("express");
 const router = express.Router();
 const superadminController = require("../controllers/superadmin.controller");
+const entityTemplateController = require("../controllers/entity-template.controller");
 
 // Middleware: Require superadmin role (platform owner)
 const ensureSuperAdmin = (req, res, next) => {
@@ -28,6 +23,7 @@ router.get("/", superadminController.dashboard);
 router.get("/users", superadminController.usersList);
 router.get("/users/:userId", superadminController.userDetail);
 router.get("/accounts", superadminController.accountsList);
+router.get("/entity-templates", entityTemplateController.listPage);
 
 // ── API ──────────────────────────────────────────────────────
 router.post("/api/users/create", superadminController.createUser);
@@ -42,5 +38,13 @@ router.post("/api/accounts/invite", superadminController.inviteToAccount);
 router.get("/api/users", superadminController.usersApi);
 router.get("/api/accounts", superadminController.accountsApi);
 router.get("/api/stats", superadminController.statsApi);
+
+// ── Entity Templates API ─────────────────────────────────────
+router.get("/api/entity-templates", entityTemplateController.listApi);
+router.get("/api/entity-templates/:id", entityTemplateController.getApi);
+router.post("/api/entity-templates", entityTemplateController.createApi);
+router.post("/api/entity-templates/:id", entityTemplateController.updateApi);
+router.post("/api/entity-templates/:id/duplicate", entityTemplateController.duplicateApi);
+router.delete("/api/entity-templates/:id", entityTemplateController.deleteApi);
 
 module.exports = router;

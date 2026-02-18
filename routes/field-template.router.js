@@ -27,6 +27,9 @@ router.post("/factory-reset", fieldTemplateController.factoryReset);
 //Delete
 router.delete("/:id", fieldTemplateController.delete);
 
+//API: Create field from template
+router.post("/api/create", fieldTemplateController.createApi);
+
 //Generated from template
 
 module.exports = router;

@@ -496,6 +496,7 @@ module.exports = {
       const entityId = req.params.id;
       let entity = null;
       let mode = 'create';
+      let templateData = null;
 
       if (entityId) {
         if (!mongoose.Types.ObjectId.isValid(entityId)) {
@@ -516,12 +517,62 @@ module.exports = {
         mode = 'edit';
       }
 
+      // ── Load template data if ?template= query param is present ──
+      const templateId = req.query.template;
+      if (templateId && !entityId) {
+        try {
+          const EntityTemplate = require('../models/entity-template.model');
+          const tpl = await EntityTemplate.findById(templateId).lean();
+          if (tpl) {
+            templateData = {
+              name: tpl.name || '',
+              slug: tpl.slug || '',
+              description: tpl.description || '',
+              icon: tpl.icon || '',
+              color: tpl.color || '',
+              image: tpl.image || '',
+              enabledStandardFields: tpl.enabledStandardFields || ['title'],
+              fields: (tpl.fields || []).map(f => ({
+                name: f.name,
+                label: f.label,
+                description: f.description || '',
+                type: f.type || 'string',
+                subtype: f.subtype || '',
+                category: f.category || 'text',
+                icon: f.icon || 'solar:widget-bold',
+                required: f.required || false,
+                typeConfig: f.typeConfig || {},
+                ui: f.ui || {}
+              })),
+              classifications: (tpl.classifications || []).map(c => ({
+                name: c.name,
+                slug: c.slug || '',
+                type: c.type || 'status',
+                isStatus: c.isStatus || false,
+                options: (c.options || []).map(o => ({
+                  label: o.label,
+                  value: o.value || '',
+                  color: o.color || '#4361ee',
+                  icon: o.icon || '',
+                  order: o.order || 0
+                }))
+              })),
+              referenceTitleTokens: tpl.referenceTitleTokens || [{ t: 'field', id: 'title' }]
+            };
+          }
+        } catch (tplErr) {
+          console.error("Template load error:", tplErr);
+          // Continue without template — not critical
+        }
+      }
+
       const allClassifications = await Classification.find();
       const allEntities = await Entity.find({}, '_id name slug icon color');
 
       res.render("entity/entity-settings", {
         mode,
         entity,
+        templateData,
         allClassifications,
         allEntities,
         account_number: req.account_number,

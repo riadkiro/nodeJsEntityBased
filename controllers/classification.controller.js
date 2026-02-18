@@ -131,6 +131,42 @@ module.exports = {
         }
     },
 
+    // JSON API: Create classification (used by template system)
+    createApi: async (req, res) => {
+        try {
+            const Classification = await tenantCollection(req, "Classification");
+            const { name, slug, type, options } = req.body;
+
+            if (!name) return res.status(400).json({ error: 'Name is required' });
+
+            // Generate a unique key (add short random suffix to avoid collisions)
+            const baseKey = slug || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            const uniqueKey = baseKey + '-' + Date.now().toString(36).slice(-4);
+
+            const newClassification = new Classification({
+                name,
+                key: uniqueKey,
+                // Classification model only supports 'simple' or 'hierarchical'
+                type: 'simple',
+                allowMultiple: (type === 'tag' || type === 'category'),
+                options: (options || []).map((o, i) => ({
+                    label: o.label,
+                    color: o.color || '#4361ee',
+                    icon: o.icon || 'solar:info-circle-bold',
+                    type: 'normal',
+                    order: o.order !== undefined ? o.order : i
+                })),
+                createdBy: req.user?._id
+            });
+
+            await newClassification.save();
+            res.json({ success: true, classification: newClassification });
+        } catch (err) {
+            console.error('[ClassificationAPI] Create error:', err);
+            res.status(500).json({ error: err.message });
+        }
+    },
+
     fastAdd: async (req, res) => {
         try {
             const { classificationId, label, parentId } = req.body;

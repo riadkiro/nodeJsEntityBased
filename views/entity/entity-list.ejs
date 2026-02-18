@@ -864,10 +864,8 @@
       data-data-url="/account/<%= account_number %>/api/datagrid/entities"
       data-title="Collections"
       data-icon="solar:box-bold-duotone"
-      data-add-url="/account/<%= account_number %>/entity/settings"
-      data-add-label="Ajouter"
-      data-quick-add-action="open-create-modal"
-      data-quick-add-label="Quick Add"
+      data-add-action="open-entity-choice-modal"
+      data-add-label="Nouvelle collection"
       data-row-click-url="/account/<%= account_number %>/entity/settings/{id}"
       data-density="comfortable"
       data-page-size="10"
@@ -875,21 +873,279 @@
     ></div>
     <script src="/dist/dataGrid.js" type="module"></script>
 
-    <!-- Listen for add action from DataGrid -->
+    <!-- Listen for choice modal from DataGrid -->
     <script>
-      window.addEventListener('open-create-modal', () => {
-        const alpineEl = document.querySelector('[x-data]');
-        if (alpineEl && alpineEl.__x) {
-          alpineEl.__x.$data.showCreateModal = true;
-        } else {
-          // Alpine v3 approach
-          document.querySelectorAll('[x-data]').forEach(el => {
-            if (el._x_dataStack && el._x_dataStack[0]?.showCreateModal !== undefined) {
-              el._x_dataStack[0].showCreateModal = true;
-            }
-          });
-        }
+      window.addEventListener('open-entity-choice-modal', () => {
+        const choiceModal = document.getElementById('entityChoiceModal');
+        if (choiceModal) choiceModal.showModal();
       });
+      window.addEventListener('open-create-modal', () => {
+        // Close choice modal first
+        const choiceModal = document.getElementById('entityChoiceModal');
+        if (choiceModal && choiceModal.open) choiceModal.close();
+        // Open quick add
+        document.querySelectorAll('[x-data]').forEach(el => {
+          if (el._x_dataStack && el._x_dataStack[0]?.showCreateModal !== undefined) {
+            el._x_dataStack[0].showCreateModal = true;
+          }
+        });
+      });
+    </script>
+
+    <!-- ======================================================= -->
+    <!-- ENTITY CREATION CHOICE MODAL -->
+    <!-- ======================================================= -->
+    <dialog id="entityChoiceModal" class="entity-choice-dialog" onclick="if(event.target===this)this.close()">
+      <div class="entity-choice-content" x-data="entityChoiceModalManager()">
+        <!-- Header -->
+        <div class="entity-choice-header">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center;">
+              <iconify-icon icon="solar:add-circle-bold-duotone" width="24" style="color: #fff;"></iconify-icon>
+            </div>
+            <div>
+              <h3 style="font-size: 18px; font-weight: 700; color: #fff; margin: 0;">Nouvelle collection</h3>
+              <p style="font-size: 12px; color: rgba(255,255,255,0.65); margin: 3px 0 0;">Choisissez comment créer votre collection</p>
+            </div>
+          </div>
+          <button onclick="this.closest('dialog').close()" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.15); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            <iconify-icon icon="solar:close-circle-bold" width="20" style="color: #fff;"></iconify-icon>
+          </button>
+        </div>
+
+        <!-- View toggle: choices vs templates -->
+        <div x-show="view === 'choices'" x-transition class="entity-choice-body">
+          <!-- Three option cards -->
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Option 1: Templates -->
+            <button @click="view = 'templates'; loadTemplates()" type="button" class="entity-choice-option">
+              <div class="entity-choice-option-icon" style="background: linear-gradient(135deg, #805dca, #4361ee);">
+                <iconify-icon icon="solar:layers-bold-duotone" width="24" style="color: #fff;"></iconify-icon>
+              </div>
+              <div class="entity-choice-option-content">
+                <div class="entity-choice-option-title">Utiliser un modèle</div>
+                <div class="entity-choice-option-desc">Choisissez parmi des collections préconfigurées avec des champs, statuts et configurations prêtes à l'emploi</div>
+              </div>
+              <iconify-icon icon="solar:arrow-right-bold" width="18" style="color: #94a3b8;"></iconify-icon>
+            </button>
+
+            <!-- Option 2: Create from scratch -->
+            <a href="/account/<%= account_number %>/entity/settings"  class="entity-choice-option" style="text-decoration: none;">
+              <div class="entity-choice-option-icon" style="background: linear-gradient(135deg, #00ab55, #0891b2);">
+                <iconify-icon icon="solar:pen-bold-duotone" width="24" style="color: #fff;"></iconify-icon>
+              </div>
+              <div class="entity-choice-option-content">
+                <div class="entity-choice-option-title">Créer depuis zéro</div>
+                <div class="entity-choice-option-desc">Accédez au formulaire complet pour configurer votre collection en détail (champs, formulaires, relations...)</div>
+              </div>
+              <iconify-icon icon="solar:arrow-right-bold" width="18" style="color: #94a3b8;"></iconify-icon>
+            </a>
+
+            <!-- Option 3: Quick Add -->
+            <button @click="document.getElementById('entityChoiceModal').close(); window.dispatchEvent(new CustomEvent('open-create-modal'))" type="button" class="entity-choice-option">
+              <div class="entity-choice-option-icon" style="background: linear-gradient(135deg, #e2a03f, #e7515a);">
+                <iconify-icon icon="solar:bolt-bold-duotone" width="24" style="color: #fff;"></iconify-icon>
+              </div>
+              <div class="entity-choice-option-content">
+                <div class="entity-choice-option-title">Ajout rapide</div>
+                <div class="entity-choice-option-desc">Créez une collection minimale en quelques secondes (nom, icône, couleur)</div>
+              </div>
+              <iconify-icon icon="solar:arrow-right-bold" width="18" style="color: #94a3b8;"></iconify-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Templates browser view -->
+        <div x-show="view === 'templates'" x-transition class="entity-choice-body" style="min-height: 400px;">
+          <!-- Back button + search -->
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <button @click="view = 'choices'" type="button" style="width: 32px; height: 32px; border-radius: 8px; background: #f1f5f9; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #64748b;">
+              <iconify-icon icon="solar:arrow-left-bold" width="16"></iconify-icon>
+            </button>
+            <span style="font-size: 15px; font-weight: 700; color: #0f172a;">Modèles disponibles</span>
+            <div style="flex: 1;"></div>
+            <input x-model="templateSearch" type="text" placeholder="Rechercher..." 
+                   style="padding: 6px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; width: 160px; outline: none; color: #0f172a; background: #f8fafc;">
+          </div>
+
+          <!-- Category filter pills -->
+          <div style="display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap;">
+            <button @click="templateCategoryFilter = ''" type="button"
+                    style="padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+                    :style="templateCategoryFilter === '' ? 'background: #4361ee; color: #fff; border-color: #4361ee;' : 'background: #f1f5f9; color: #64748b; border-color: #e2e8f0;'">
+              Tous
+            </button>
+            <template x-for="cat in availableCategories" :key="cat">
+              <button @click="templateCategoryFilter = cat" type="button"
+                      style="padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid; transition: all 0.15s; text-transform: capitalize;"
+                      :style="templateCategoryFilter === cat ? 'background: #4361ee; color: #fff; border-color: #4361ee;' : 'background: #f1f5f9; color: #64748b; border-color: #e2e8f0;'"
+                      x-text="cat">
+              </button>
+            </template>
+          </div>
+
+          <!-- Loading -->
+          <div x-show="loadingTemplates" style="text-align: center; padding: 40px; color: #94a3b8;">
+            <iconify-icon icon="svg-spinners:ring-resize" width="28" style="color: #4361ee;"></iconify-icon>
+            <p style="font-size: 13px; margin: 8px 0 0;">Chargement des modèles...</p>
+          </div>
+
+          <!-- Templates grid -->
+          <div x-show="!loadingTemplates" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-height: 340px; overflow-y: auto; padding: 2px;">
+            <template x-for="tpl in displayedTemplates" :key="tpl._id">
+              <button @click="useTemplate(tpl)" type="button" class="entity-tpl-card"
+                      :style="selectedTemplate?._id === tpl._id ? 'border-color: #4361ee; box-shadow: 0 0 0 2px rgba(67,97,238,0.2);' : ''">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                  <div style="width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
+                       :style="'background: ' + (tpl.color || '#4361ee') + '15; color: ' + (tpl.color || '#4361ee')">
+                    <iconify-icon :icon="tpl.icon || 'solar:box-bold-duotone'" width="18"></iconify-icon>
+                  </div>
+                  <div style="text-align: left; min-width: 0;">
+                    <div style="font-size: 13px; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" x-text="tpl.name"></div>
+                    <div style="font-size: 10px; color: #94a3b8;" x-text="(tpl.fields || []).length + ' champs'"></div>
+                  </div>
+                </div>
+                <p style="font-size: 11px; color: #64748b; margin: 0; text-align: left; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.5;"
+                   x-text="tpl.description || 'Modèle préconfigurée'"></p>
+                <template x-if="tpl.featured">
+                  <span style="position: absolute; top: 6px; right: 6px; padding: 1px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; background: rgba(124,58,237,0.1); color: #805dca;">★</span>
+                </template>
+              </button>
+            </template>
+          </div>
+
+          <!-- Empty state -->
+          <div x-show="!loadingTemplates && displayedTemplates.length === 0" 
+               style="text-align: center; padding: 40px; color: #94a3b8;">
+            <iconify-icon icon="solar:layers-broken" width="36" style="margin-bottom: 8px;"></iconify-icon>
+            <p style="font-size: 13px; margin: 0;">Aucun modèle disponible</p>
+          </div>
+
+          <!-- Use template button -->
+          <div x-show="selectedTemplate" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+            <div style="display: flex; items: center; justify-content: space-between;">
+              <div style="font-size: 13px; color: #334155;">
+                <span style="font-weight: 600;">Modèle sélectionné : </span>
+                <span x-text="selectedTemplate?.name" style="color: #4361ee; font-weight: 700;"></span>
+              </div>
+              <button @click="applyTemplate()" type="button"
+                      style="padding: 8px 20px; border-radius: 10px; background: linear-gradient(135deg, #4361ee, #3b82f6); color: #fff; font-size: 13px; font-weight: 600; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s;"
+                      onmouseenter="this.style.boxShadow='0 4px 12px rgba(67,97,238,0.35)'; this.style.transform='translateY(-1px)'"
+                      onmouseleave="this.style.boxShadow='none'; this.style.transform='none'">
+                <iconify-icon icon="solar:check-circle-bold" width="16"></iconify-icon>
+                Utiliser ce modèle
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <style>
+      .entity-choice-dialog { border: none; border-radius: 16px; padding: 0; max-width: 560px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.2); overflow: hidden; background: #fff; }
+      .entity-choice-dialog::backdrop { background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); }
+      .entity-choice-header { display: flex; align-items: center; justify-content: space-between; padding: 24px; background: linear-gradient(135deg, #4361ee 0%, #805dca 100%); }
+      .entity-choice-body { padding: 24px; }
+      .entity-choice-option {
+        display: flex; align-items: center; gap: 14px; padding: 16px 18px;
+        border: 1px solid #e2e8f0; border-radius: 12px; background: #fff;
+        cursor: pointer; transition: all 0.2s; width: 100%; text-align: left; color: inherit;
+      }
+      .entity-choice-option:hover {
+        border-color: #c7d2fe; background: #f8fafc;
+        box-shadow: 0 2px 8px rgba(67,97,238,0.08);
+        transform: translateX(4px);
+      }
+      .entity-choice-option-icon {
+        width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .entity-choice-option-content { flex: 1; min-width: 0; }
+      .entity-choice-option-title { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+      .entity-choice-option-desc { font-size: 12px; color: #64748b; line-height: 1.4; }
+      .entity-tpl-card {
+        padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px;
+        background: #fff; cursor: pointer; transition: all 0.2s;
+        text-align: left; position: relative; width: 100%;
+      }
+      .entity-tpl-card:hover {
+        border-color: #c7d2fe; background: #fafaff;
+        box-shadow: 0 2px 8px rgba(67,97,238,0.08);
+      }
+      /* Dark mode support */
+      .dark .entity-choice-dialog { background: #1b2e4b; }
+      .dark .entity-choice-body { color: #e0e6ed; }
+      .dark .entity-choice-option { background: #0e1726; border-color: #253b5a; }
+      .dark .entity-choice-option:hover { background: #1b2e4b; border-color: #4361ee; }
+      .dark .entity-choice-option-title { color: #e0e6ed; }
+      .dark .entity-choice-option-desc { color: #888ea8; }
+      .dark .entity-tpl-card { background: #0e1726; border-color: #253b5a; }
+      .dark .entity-tpl-card:hover { background: #1b2e4b; border-color: #4361ee; }
+    </style>
+
+    <script>
+      function entityChoiceModalManager() {
+        return {
+          view: 'choices',
+          templates: [],
+          loadingTemplates: false,
+          templateSearch: '',
+          templateCategoryFilter: '',
+          selectedTemplate: null,
+
+          get availableCategories() {
+            const cats = [...new Set(this.templates.map(t => t.category).filter(Boolean))];
+            return cats;
+          },
+
+          get displayedTemplates() {
+            let result = this.templates;
+            if (this.templateCategoryFilter) {
+              result = result.filter(t => t.category === this.templateCategoryFilter);
+            }
+            if (this.templateSearch.trim()) {
+              const q = this.templateSearch.toLowerCase();
+              result = result.filter(t => 
+                t.name.toLowerCase().includes(q) || 
+                (t.description || '').toLowerCase().includes(q)
+              );
+            }
+            return result;
+          },
+
+          async loadTemplates() {
+            if (this.templates.length > 0) return;
+            this.loadingTemplates = true;
+            try {
+              const res = await fetch('/account/<%= account_number %>/entity/api/templates', { credentials: 'include' });
+              const data = await res.json();
+              if (data.success) this.templates = data.templates;
+            } catch (err) {
+              console.error('[EntityChoice] Load templates error:', err);
+            } finally {
+              this.loadingTemplates = false;
+            }
+          },
+
+          useTemplate(tpl) {
+            this.selectedTemplate = tpl;
+          },
+
+          async applyTemplate() {
+            if (!this.selectedTemplate) return;
+            // Navigate to entity settings with template parameter
+            const tplId = this.selectedTemplate._id;
+            // Track usage
+            try { 
+              await fetch(`/account/<%= account_number %>/entity/api/templates/${tplId}/use`, { 
+                method: 'POST', credentials: 'include' 
+              }); 
+            } catch(e) {}
+            // Go to settings page with template pre-loaded
+            window.location.href = `/account/<%= account_number %>/entity/settings?template=${tplId}`;
+          }
+        };
+      }
     </script>
 
   <!-- Modal Nouvelle Collection - Wizard 2 Étapes -->

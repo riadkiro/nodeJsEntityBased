@@ -13,6 +13,7 @@
                 <tr>
                     <th>Nom</th>
                     <th>Clé</th>
+                    <th>Portée</th>
                     <th>Options</th>
                     <th class="text-center">Actions</th>
                 </tr>
@@ -31,6 +32,24 @@
                         <td><span class="badge bg-outline-primary">
                                 <%= c.key %>
                             </span></td>
+                        <td>
+                            <% if (!c.entities || c.entities.length === 0) { %>
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-success/10 text-success border border-success/20">
+                                    <iconify-icon icon="solar:global-bold" width="10"></iconify-icon>
+                                    Globale
+                                </span>
+                            <% } else { %>
+                                <div class="flex flex-wrap gap-1">
+                                    <% c.entities.forEach(ent => { %>
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-info/10 text-info border border-info/20">
+                                            <iconify-icon icon="<%= (ent && ent.icon) || 'solar:box-bold-duotone' %>" width="10"
+                                                <% if (ent && ent.color) { %>style="color: <%= ent.color %>"<% } %>></iconify-icon>
+                                            <%= ent && ent.name ? ent.name : ent %>
+                                        </span>
+                                    <% }); %>
+                                </div>
+                            <% } %>
+                        </td>
                         <td>
                             <div class="flex -space-x-2 overflow-hidden">
                                 <% c.options.slice(0, 5).forEach(opt=> { %>
@@ -59,7 +78,7 @@
                     <% }) %>
                         <% if (classifications.length===0) { %>
                             <tr>
-                                <td colspan="4" class="text-center py-10 text-white-dark italic">
+                                <td colspan="5" class="text-center py-10 text-white-dark italic">
                                     Aucune classification créée pour le moment.
                                 </td>
                             </tr>

@@ -107,6 +107,70 @@
                 </div>
             </div>
 
+            <!-- Scope Card -->
+            <div class="bg-white dark:bg-[#0e1726] rounded-2xl border border-gray-100 dark:border-gray-800 p-5 space-y-4">
+                <div class="flex items-center gap-2 mb-1">
+                    <div class="w-7 h-7 rounded-lg bg-success/10 flex items-center justify-center">
+                        <iconify-icon icon="solar:global-bold-duotone" width="16" class="text-success"></iconify-icon>
+                    </div>
+                    <h6 class="text-sm font-bold dark:text-white">Portée</h6>
+                </div>
+
+                <!-- Scope toggle -->
+                <div>
+                    <label class="block text-[11px] uppercase font-bold text-gray-400 dark:text-gray-500 mb-2 tracking-wider">Visibilité</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" @click="scopeMode = 'global'; entities = []"
+                                :class="scopeMode === 'global'
+                                    ? 'bg-success text-white shadow-md shadow-success/20'
+                                    : 'bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'"
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all">
+                            <iconify-icon icon="solar:global-bold" width="14"></iconify-icon>
+                            Globale
+                        </button>
+                        <button type="button" @click="scopeMode = 'entity'"
+                                :class="scopeMode === 'entity'
+                                    ? 'bg-info text-white shadow-md shadow-info/20'
+                                    : 'bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'"
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all">
+                            <iconify-icon icon="solar:layers-bold" width="14"></iconify-icon>
+                            Par entité
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Entity selector (when scoped) -->
+                <div x-show="scopeMode === 'entity'" x-collapse>
+                    <label class="block text-[11px] uppercase font-bold text-gray-400 dark:text-gray-500 mb-2 tracking-wider">Entités assignées</label>
+                    <div class="flex flex-wrap gap-1.5" x-show="allEntities.length > 0">
+                        <template x-for="ent in allEntities" :key="ent._id">
+                            <button type="button" @click="toggleEntity(ent._id)"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all"
+                                    :class="entities.includes(ent._id) 
+                                        ? 'bg-info/10 border-info/30 text-info' 
+                                        : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400 hover:border-info/50'">
+                                <iconify-icon :icon="ent.icon || 'solar:box-bold-duotone'" width="12" 
+                                              :style="ent.color ? 'color:' + ent.color : ''"></iconify-icon>
+                                <span x-text="ent.name"></span>
+                            </button>
+                        </template>
+                    </div>
+                    <p class="text-[10px] text-gray-400 mt-2" x-show="entities.length === 0 && scopeMode === 'entity'">
+                        <iconify-icon icon="solar:info-circle-linear" width="12" class="mr-0.5"></iconify-icon>
+                        Sélectionnez au moins une entité ou passez en mode Globale
+                    </p>
+                </div>
+
+                <!-- Info text -->
+                <div class="flex items-start gap-2 p-2.5 rounded-lg bg-gray-50 dark:bg-white/5">
+                    <iconify-icon icon="solar:info-circle-bold-duotone" width="14" class="text-gray-400 mt-0.5 flex-shrink-0"></iconify-icon>
+                    <p class="text-[10px] text-gray-400 leading-relaxed" 
+                       x-text="scopeMode === 'global' 
+                           ? 'Classification globale : visible dans toutes les entités.' 
+                           : 'Classification limitée : visible uniquement dans les entités sélectionnées.'"></p>
+                </div>
+            </div>
+
             <!-- Stats Card -->
             <div class="bg-white dark:bg-[#0e1726] rounded-2xl border border-gray-100 dark:border-gray-800 p-5" x-show="isEdit">
                 <div class="flex items-center gap-2 mb-3">
@@ -322,11 +386,15 @@
 
 <script id="classification-data"
     type="application/json"><%- classification ? JSON.stringify(classification) : "null" %></script>
+<script id="all-entities-data"
+    type="application/json"><%- JSON.stringify((locals.allEntities || []).map(e => ({ _id: e._id.toString(), name: e.name, icon: e.icon || '', color: e.color || '' }))) %></script>
 
 <script>
     document.addEventListener("alpine:init", () => {
         Alpine.data("classificationEditor", () => {
             const initialData = JSON.parse(document.getElementById('classification-data').textContent);
+            const allEntitiesData = JSON.parse(document.getElementById('all-entities-data').textContent);
+            const initialEntities = (initialData && initialData.entities) ? initialData.entities.map(e => typeof e === 'object' ? e._id.toString() : e.toString()) : [];
 
             return {
                 isEdit: !!initialData,
@@ -339,6 +407,11 @@
                 defaultOptionId: '',
                 _savedDefaultOptionId: initialData?.defaultOptionId ? String(initialData.defaultOptionId) : '',
                 options: (initialData && initialData.options) ? initialData.options.map(o => ({ ...o, _id: o._id ? String(o._id) : null, tempId: null })) : [],
+                
+                // Entity scope
+                allEntities: allEntitiesData,
+                entities: initialEntities,
+                scopeMode: initialEntities.length > 0 ? 'entity' : 'global',
 
                 getDepth(opt) {
                     if (this.type !== 'hierarchical' || !opt.parentId) return 0;
@@ -452,6 +525,12 @@
                     this.defaultOptionId = current === target ? '' : id;
                 },
 
+                toggleEntity(entityId) {
+                    const idx = this.entities.indexOf(entityId);
+                    if (idx >= 0) this.entities.splice(idx, 1);
+                    else this.entities.push(entityId);
+                },
+
                 async saveClassification() {
                     if (!this.name) return;
 
@@ -470,6 +549,7 @@
                                 type: this.type,
                                 allowMultiple: this.allowMultiple,
                                 defaultOptionId: this.defaultOptionId || null,
+                                entities: this.scopeMode === 'entity' ? this.entities : [],
                                 options: this.options.map((opt, idx) => ({
                                     ...opt,
                                     order: idx,

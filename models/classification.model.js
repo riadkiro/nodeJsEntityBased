@@ -18,6 +18,8 @@ const ClassificationSchema = new mongoose.Schema(
         isShared: { type: Boolean, default: true },
         type: { type: String, enum: ['simple', 'hierarchical'], default: 'simple' },
         allowMultiple: { type: Boolean, default: false },
+        // Entity scope: empty = global (visible to all entities), populated = only visible to listed entities
+        entities: [{ type: mongoose.Schema.Types.ObjectId, ref: "Entity" }],
         options: [ClassificationOptionSchema],
         defaultOptionId: { type: mongoose.Schema.Types.ObjectId, default: null },
         createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }

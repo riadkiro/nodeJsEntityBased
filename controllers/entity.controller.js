@@ -54,7 +54,13 @@ module.exports = {
       const Classification = await tenantCollection(req, "Classification");
 
       const entity = await Entity.findById(req.params.id).populate('relations.targetEntity', '_id name slug icon color');
-      const allClassifications = await Classification.find();
+      const allClassifications = await Classification.find({
+        $or: [
+          { entities: { $exists: true, $size: 0 } },
+          { entities: { $exists: false } },
+          { entities: entity._id }
+        ]
+      });
       // All entities for relation display in form builder
       const allEntities = await Entity.find({}, '_id name slug icon color');
       if (!entity) {
@@ -566,7 +572,24 @@ module.exports = {
         }
       }
 
-      const allClassifications = await Classification.find();
+      let allClassifications;
+      if (mode === 'edit' && entity) {
+        allClassifications = await Classification.find({
+          $or: [
+            { entities: { $exists: true, $size: 0 } },
+            { entities: { $exists: false } },
+            { entities: entity._id }
+          ]
+        });
+      } else {
+        // New entity: show only global classifications
+        allClassifications = await Classification.find({
+          $or: [
+            { entities: { $exists: true, $size: 0 } },
+            { entities: { $exists: false } }
+          ]
+        });
+      }
       const allEntities = await Entity.find({}, '_id name slug icon color');
 
       res.render("entity/entity-settings", {

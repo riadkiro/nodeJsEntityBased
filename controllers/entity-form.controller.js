@@ -61,7 +61,13 @@ module.exports = {
                 ...t.toObject(),
                 htmlTemplate: t.htmlTemplate || ""
             }));
-            const allClassifications = await Classification.find();
+            const allClassifications = await Classification.find({
+                $or: [
+                    { entities: { $exists: true, $size: 0 } },
+                    { entities: { $exists: false } },
+                    { entities: entity._id }
+                ]
+            });
             const selectedFields = allFieldTemplates.filter(ft =>
                 entity.customFields?.map(id => id.toString()).includes(ft._id.toString())
             );
@@ -118,7 +124,13 @@ module.exports = {
                 ...t.toObject(),
                 htmlTemplate: t.htmlTemplate || ""
             }));
-            const allClassifications = await Classification.find();
+            const allClassifications = await Classification.find({
+                $or: [
+                    { entities: { $exists: true, $size: 0 } },
+                    { entities: { $exists: false } },
+                    { entities: entity._id }
+                ]
+            });
             const selectedFields = allFieldTemplates.filter(ft =>
                 entity.customFields?.map(id => id.toString()).includes(ft._id.toString())
             );

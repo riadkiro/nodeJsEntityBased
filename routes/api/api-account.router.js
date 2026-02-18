@@ -5,6 +5,7 @@ const router = express.Router();
 const accountController = require('../../controllers/account.controller')
 // Hierarchy
 const hierarchyController = require('../../controllers/hierarchy.controller');
+const uploadToDynamic = require('../../middleware/upload');
 const viewController = require('../../controllers/view.controller');
 const entityController = require('../../controllers/entity.controller');
 const recordController = require('../../controllers/record.controller');
@@ -46,6 +47,21 @@ router.post('/hierarchy/link-cockpit', hierarchyController.linkCockpit);
 
 router.get('/hierarchy/icon-libraries', hierarchyController.getIconLibraries);
 router.get('/hierarchy/icons', hierarchyController.getIcons);
+
+// Environment image upload
+const envImageUpload = uploadToDynamic((req) => `public/${req.account_number}/uploads/environments`);
+router.post('/hierarchy/environment/upload-image', envImageUpload.single('image'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: 'No file uploaded' });
+        }
+        const imagePath = `/${req.account_number}/uploads/environments/${req.file.filename}`;
+        res.json({ success: true, imagePath });
+    } catch (error) {
+        console.error('[Hierarchy] Upload environment image error:', error);
+        res.status(500).json({ success: false, error: 'Upload failed' });
+    }
+});
 
 // Sidebar Preferences
 router.get('/user/sidebar-prefs', hierarchyController.getSidebarPrefs);

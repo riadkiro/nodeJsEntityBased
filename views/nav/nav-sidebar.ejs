@@ -212,6 +212,7 @@
         margin-bottom: 6px;
         transition: all 0.3s ease;
       }
+      /* Theme indicator dots */
       .rail-theme-dot {
         width: 6px;
         height: 6px;
@@ -230,6 +231,34 @@
         transform: scale(1.2);
         border-color: var(--rail-indicator, currentColor);
         box-shadow: 0 0 4px var(--rail-indicator, currentColor);
+      }
+
+      /* ═══════════════════════════════════════════
+         ENVIRONMENT NAME LABEL (below icon in collapsed rail)
+         ═══════════════════════════════════════════ */
+      .env-rail-name {
+        font-size: 9px;
+        line-height: 1.2;
+        font-weight: 500;
+        text-align: center;
+        max-width: 42px;
+        color: var(--rail-label, #6b7280);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: break-word;
+        margin-top: 1px;
+      }
+      .mini-rail-item[data-active="true"] .env-rail-name {
+        color: var(--rail-label-active, #111827);
+      }
+      .env-rail-img {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        object-fit: cover;
       }
     </style>
     <div
@@ -282,8 +311,14 @@
              class="mini-rail-item"
              :title="env.name"
              :style="activeEnvId === env.id ? 'color:' + env.color : ''">
-            <iconify-icon :icon="env.icon" width="22" height="22"
-              :style="activeEnvId === env.id ? 'color:' + env.color : ''"></iconify-icon>
+            <template x-if="env.image">
+              <img :src="env.image" class="env-rail-img" :alt="env.name">
+            </template>
+            <template x-if="!env.image">
+              <iconify-icon :icon="env.icon" width="22" height="22"
+                :style="activeEnvId === env.id ? 'color:' + env.color : ''"></iconify-icon>
+            </template>
+            <span class="env-rail-name" x-text="env.name"></span>
             <span class="mini-rail-label" x-text="env.name"></span>
           </a>
         </template>
@@ -2471,12 +2506,34 @@
 
       <!-- Modal Body -->
       <div class="px-6 py-5 space-y-5">
-        <!-- Preview -->
-        <div class="flex items-center justify-center">
-          <div class="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300"
-               :style="'background:' + formColor + '20; border: 2px solid ' + formColor + '40'">
-            <iconify-icon :icon="formIcon" width="32" height="32" :style="'color:' + formColor"></iconify-icon>
+        <!-- Preview (clickable to upload image) -->
+        <div class="flex flex-col items-center justify-center gap-2">
+          <div class="relative group cursor-pointer" @click="$refs.envImageInput.click()">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 overflow-hidden"
+                 :style="'background:' + formColor + '20; border: 2px solid ' + formColor + '40'">
+              <template x-if="formImage">
+                <img :src="formImage" class="w-full h-full object-cover" :alt="formName">
+              </template>
+              <template x-if="!formImage">
+                <iconify-icon :icon="formIcon" width="32" height="32" :style="'color:' + formColor"></iconify-icon>
+              </template>
+            </div>
+            <!-- Upload overlay on hover -->
+            <div class="absolute inset-0 rounded-2xl flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+              <iconify-icon icon="solar:camera-bold" width="20" class="text-white"></iconify-icon>
+            </div>
           </div>
+          <input type="file" x-ref="envImageInput" accept="image/*" class="hidden" @change="uploadImage($event)">
+          <!-- Remove image button (only visible when image is set) -->
+          <template x-if="formImage">
+            <button @click.stop="removeImage()" class="text-xs text-red-500 hover:text-red-600 flex items-center gap-1 transition-colors">
+              <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="12"></iconify-icon>
+              Supprimer l'image
+            </button>
+          </template>
+          <template x-if="!formImage">
+            <span class="text-xs text-gray-400 dark:text-gray-500">Cliquer pour ajouter un logo</span>
+          </template>
         </div>
 
         <!-- Name -->
@@ -2560,6 +2617,8 @@
       formName: '',
       formIcon: 'solar:planet-3-bold-duotone',
       formColor: '#6366f1',
+      formImage: '',
+      uploadingImage: false,
       iconSearch: '',
       iconResults: [],
       selectedLibrary: 'solar',
@@ -2610,12 +2669,14 @@
             this.formName = env.name;
             this.formIcon = env.icon;
             this.formColor = env.color;
+            this.formImage = env.image || '';
           } else {
             // Create mode
             this.editingEnv = null;
             this.formName = '';
             this.formIcon = 'solar:planet-3-bold-duotone';
             this.formColor = this.presetColors[Math.floor(Math.random() * this.presetColors.length)];
+            this.formImage = '';
           }
           this.iconSearch = '';
           this.iconResults = [...this.defaultIcons];
@@ -2653,7 +2714,8 @@
                 id: this.editingEnv.id,
                 name: this.formName.trim(),
                 icon: this.formIcon,
-                color: this.formColor
+                color: this.formColor,
+                image: this.formImage
               })
             });
             this.modalOpen = false;
@@ -2665,7 +2727,8 @@
               body: JSON.stringify({
                 name: this.formName.trim(),
                 icon: this.formIcon,
-                color: this.formColor
+                color: this.formColor,
+                image: this.formImage
               })
             });
             const data = await res.json();
@@ -2680,6 +2743,35 @@
           console.error('[EnvModal] Save error:', err);
           alert('Erreur lors de la sauvegarde');
         }
+      },
+
+      async uploadImage(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        this.uploadingImage = true;
+        const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+        try {
+          const formData = new FormData();
+          formData.append('image', file);
+          const res = await fetch(`/account/${accountNum}/api/hierarchy/environment/upload-image`, {
+            method: 'POST',
+            body: formData
+          });
+          const data = await res.json();
+          if (data.success && data.imagePath) {
+            this.formImage = data.imagePath;
+          }
+        } catch (err) {
+          console.error('[EnvModal] Image upload error:', err);
+        } finally {
+          this.uploadingImage = false;
+          // Reset file input
+          event.target.value = '';
+        }
+      },
+
+      removeImage() {
+        this.formImage = '';
       },
 
       async searchIcons() {

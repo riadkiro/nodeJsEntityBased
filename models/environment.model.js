@@ -5,6 +5,7 @@ const EnvironmentSchema = new mongoose.Schema({
     slug: { type: String, required: true },
     icon: { type: String, default: 'solar:planet-3-bold-duotone' },
     color: { type: String, default: '#6366f1' },
+    image: { type: String, default: '' },
     order: { type: Number, default: 0 },
     isDefault: { type: Boolean, default: false },
 

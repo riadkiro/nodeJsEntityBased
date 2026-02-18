@@ -138,6 +138,7 @@ module.exports = {
                         slug: defaultEnv.slug,
                         icon: defaultEnv.icon,
                         color: defaultEnv.color,
+                        image: defaultEnv.image || '',
                         order: defaultEnv.order,
                         isDefault: true
                     }]
@@ -152,6 +153,7 @@ module.exports = {
                     slug: e.slug,
                     icon: e.icon,
                     color: e.color,
+                    image: e.image || '',
                     order: e.order,
                     isDefault: e.isDefault || false
                 }))
@@ -165,7 +167,7 @@ module.exports = {
     createEnvironment: async (req, res) => {
         try {
             const EnvironmentModel = await tenantCollection(req, "Environment");
-            const { name, icon, color } = req.body;
+            const { name, icon, color, image } = req.body;
             const count = await EnvironmentModel.countDocuments();
             const slug = await uniqueSlug(EnvironmentModel, name);
             const newEnv = new EnvironmentModel({
@@ -173,6 +175,7 @@ module.exports = {
                 slug,
                 icon: icon || 'solar:planet-3-bold-duotone',
                 color: color || '#6366f1',
+                image: image || '',
                 order: count,
                 createdBy: req.user._id
             });
@@ -185,6 +188,7 @@ module.exports = {
                     slug: newEnv.slug,
                     icon: newEnv.icon,
                     color: newEnv.color,
+                    image: newEnv.image || '',
                     order: newEnv.order
                 }
             });
@@ -197,11 +201,12 @@ module.exports = {
     updateEnvironment: async (req, res) => {
         try {
             const EnvironmentModel = await tenantCollection(req, "Environment");
-            const { id, name, icon, color } = req.body;
+            const { id, name, icon, color, image } = req.body;
             const update = {};
             if (name !== undefined) update.name = name;
             if (icon !== undefined) update.icon = icon;
             if (color !== undefined) update.color = color;
+            if (image !== undefined) update.image = image;
             await EnvironmentModel.findByIdAndUpdate(id, update);
             res.json({ success: true });
         } catch (error) {

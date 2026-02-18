@@ -797,6 +797,39 @@
 
                 renderField(field, itemId) {
                     let template = field.htmlTemplate || '';
+                    
+                    // Auto-generate input HTML when no htmlTemplate exists
+                    if (!template && field.type !== 'relation' && field.type !== 'recurrence') {
+                        const type = field.type || 'string';
+                        const subtype = field.subtype || '';
+                        const placeholder = field.ui?.placeholder || field.label || '';
+                        const fieldName = `custom[${field._id}]`;
+                        const labelHtml = `<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">${field.label || field.name}</label>`;
+                        
+                        if (type === 'textarea' || type === 'richtext' || subtype === 'textarea' || subtype === 'richtext') {
+                            template = `${labelHtml}<textarea name="${fieldName}" class="form-textarea text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" rows="3" placeholder="${placeholder}">{{value}}</textarea>`;
+                        } else if (type === 'boolean' || subtype === 'boolean' || subtype === 'checkbox') {
+                            template = `<label class="flex items-center gap-3 cursor-pointer"><span class="text-sm font-semibold text-gray-700 dark:text-gray-300">${field.label || field.name}</span><label class="w-12 h-6 relative mb-0"><input type="checkbox" name="${fieldName}" class="custom_switch absolute w-full h-full opacity-0 z-10 cursor-pointer peer" value="on" {{checked}} /><span class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-4 before:h-4 before:rounded-full peer-checked:before:left-7 peer-checked:bg-primary before:transition-all before:duration-300"></span></label></label>`;
+                        } else if (type === 'number' || subtype === 'number' || subtype === 'currency') {
+                            template = `${labelHtml}<input type="number" name="${fieldName}" class="form-input text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" placeholder="${placeholder}" value="{{value}}" step="any" />`;
+                        } else if (type === 'date' || subtype === 'date') {
+                            template = `${labelHtml}<input type="date" name="${fieldName}" class="form-input text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" value="{{value}}" />`;
+                        } else if (subtype === 'datetime') {
+                            template = `${labelHtml}<input type="datetime-local" name="${fieldName}" class="form-input text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" value="{{value}}" />`;
+                        } else if (subtype === 'email') {
+                            template = `${labelHtml}<input type="email" name="${fieldName}" class="form-input text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" placeholder="${placeholder}" value="{{value}}" />`;
+                        } else if (subtype === 'url' || subtype === 'website') {
+                            template = `${labelHtml}<input type="url" name="${fieldName}" class="form-input text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" placeholder="${placeholder}" value="{{value}}" />`;
+                        } else if (subtype === 'phone' || subtype === 'tel') {
+                            template = `${labelHtml}<input type="tel" name="${fieldName}" class="form-input text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" placeholder="${placeholder}" value="{{value}}" />`;
+                        } else if (subtype === 'select' && field.type_config?.options) {
+                            const opts = (field.type_config.options || []).map(o => `<option value="${o.value || o}">${o.label || o}</option>`).join('');
+                            template = `${labelHtml}<select name="${fieldName}" class="form-select text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300"><option value="">-- Choisir --</option>${opts}</select>`;
+                        } else {
+                            // Default: standard text input
+                            template = `${labelHtml}<input type="text" name="${fieldName}" class="form-input text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" placeholder="${placeholder}" value="{{value}}" />`;
+                        }
+                    }
                     if (!template && field.type === 'relation') {
                         template = `
 <div x-data="relationField({ 

@@ -6,6 +6,40 @@ const tenantCollection = require("../middleware/tenant").tenantCollection;
 const WorkflowTriggers = require("../src/integrations/services/WorkflowTriggers");
 const denormService = require("../services/record-denorm.service");
 
+/**
+ * Auto-generate a default form layout from entity.customFields
+ * when no EntityForm or published formLayout exists.
+ * Uses smart width assignments based on field type for aesthetic rendering.
+ */
+function generateDefaultLayout(customFields) {
+    if (!customFields || customFields.length === 0) return null;
+
+    const fields = customFields.map((cf, idx) => {
+        const type = cf.type || 'string';
+        const subtype = cf.subtype || '';
+
+        // Smart width: full-width for long-content fields, half for others
+        let width = 6; // Default: half-width (2 columns)
+        if (['textarea', 'richtext'].includes(type) || ['textarea', 'richtext'].includes(subtype)) {
+            width = 12; // Full width for text areas
+        } else if (type === 'relation') {
+            width = 6;
+        }
+
+        return {
+            fieldId: cf._id.toString(),
+            width,
+            id: `auto_${cf._id.toString()}`,
+            tabId: 'default'
+        };
+    });
+
+    return {
+        tabs: [{ id: 'default', title: 'Attributs', icon: 'tabler:apps' }],
+        fields
+    };
+}
+
 module.exports = {
     list: async (req, res) => {
         try {
@@ -297,6 +331,14 @@ module.exports = {
                     });
                 });
                 resolvedLayout = { tabs: [{ id: 'default', title: 'Attributs', icon: 'tabler:apps' }], fields: flatFields };
+            }
+
+            // Auto-generate default layout from entity.customFields when no form layout exists
+            if (!activeFormName && (!resolvedLayout || (Array.isArray(resolvedLayout) && resolvedLayout.length === 0) || (!Array.isArray(resolvedLayout) && (!resolvedLayout.fields || resolvedLayout.fields.length === 0)))) {
+                const autoLayout = generateDefaultLayout(entity.customFields);
+                if (autoLayout) {
+                    resolvedLayout = autoLayout;
+                }
             }
 
             res.render("record/record-add", {
@@ -658,6 +700,14 @@ module.exports = {
                     });
                 });
                 resolvedLayout = { tabs: [{ id: 'default', title: 'Attributs', icon: 'tabler:apps' }], fields: flatFields };
+            }
+
+            // Auto-generate default layout from entity.customFields when no form layout exists
+            if (!activeFormName && (!resolvedLayout || (Array.isArray(resolvedLayout) && resolvedLayout.length === 0) || (!Array.isArray(resolvedLayout) && (!resolvedLayout.fields || resolvedLayout.fields.length === 0)))) {
+                const autoLayout = generateDefaultLayout(entity.customFields);
+                if (autoLayout) {
+                    resolvedLayout = autoLayout;
+                }
             }
 
             res.render("record/record-edit", {

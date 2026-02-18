@@ -18,6 +18,8 @@ export default function DataGrid({
     addUrl,          // URL for "Add" button (null to hide)
     addLabel,        // Label for add button
     addAction,       // Alternative: JS action instead of URL (e.g., 'open-create-modal')
+    quickAddAction,  // Quick Add action (opens modal)
+    quickAddLabel,   // Label for quick add button
     rowClickUrl,     // URL pattern for row click, use {id} for record ID
     showSidebar: initialShowSidebar = false,
     initialDensity = 'comfortable',
@@ -378,6 +380,8 @@ export default function DataGrid({
                     addUrl={addUrl}
                     addLabel={addLabel}
                     addAction={addAction}
+                    quickAddAction={quickAddAction}
+                    quickAddLabel={quickAddLabel}
                     showSidebar={sidebarVisible}
                     onToggleSidebar={initialShowSidebar ? () => setSidebarVisible(v => !v) : undefined}
                 />

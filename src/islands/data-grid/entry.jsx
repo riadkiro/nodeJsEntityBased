@@ -21,6 +21,8 @@ function mountIslands() {
             addUrl: container.dataset.addUrl || null,
             addLabel: container.dataset.addLabel || 'Ajouter',
             addAction: container.dataset.addAction || null,
+            quickAddAction: container.dataset.quickAddAction || null,
+            quickAddLabel: container.dataset.quickAddLabel || null,
             rowClickUrl: container.dataset.rowClickUrl || null,
             showSidebar: container.dataset.showSidebar === 'true',
             initialDensity: container.dataset.density || 'comfortable',

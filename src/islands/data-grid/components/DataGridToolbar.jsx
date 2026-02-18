@@ -19,6 +19,8 @@ export default function DataGridToolbar({
     addUrl,
     addLabel,
     addAction,
+    quickAddAction,
+    quickAddLabel,
     showSidebar,
     onToggleSidebar
 }) {
@@ -100,12 +102,63 @@ export default function DataGridToolbar({
         }
     }
 
+    const handleQuickAddClick = () => {
+        if (quickAddAction) {
+            window.dispatchEvent(new CustomEvent(quickAddAction))
+        }
+    }
+
+    // Dual mode: both addUrl and quickAddAction are present
+    const hasDualButtons = (addUrl || addAction) && quickAddAction
+
     return (
         <div className="dataTable-top flex items-center mb-0 justify-between gap-2">
             {/* Left: Add + Search */}
             <div className="flex items-center gap-2">
-                {/* Add button */}
-                {(addUrl || addAction) && (
+                {/* Add button(s) */}
+                {hasDualButtons ? (
+                    <>
+                        {/* Primary: Full add page */}
+                        {addUrl ? (
+                            <a
+                                href={addUrl}
+                                className="btn-add-expandable block rounded-full p-2 bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
+                                title={addLabel || 'Ajouter'}
+                            >
+                                <svg className="btn-add-icon" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                                </svg>
+                                <span className="btn-add-label">{addLabel || 'Ajouter'}</span>
+                            </a>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={handleAddClick}
+                                className="btn-add-expandable block rounded-full p-2 bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
+                                title={addLabel || 'Ajouter'}
+                            >
+                                <svg className="btn-add-icon" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                                </svg>
+                                <span className="btn-add-label">{addLabel || 'Ajouter'}</span>
+                            </button>
+                        )}
+                        {/* Secondary: Quick Add (modal) */}
+                        <button
+                            type="button"
+                            onClick={handleQuickAddClick}
+                            className="btn-add-expandable btn-quick-add block rounded-full p-2 bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
+                            title={quickAddLabel || 'Quick Add'}
+                        >
+                            <svg className="btn-add-icon" viewBox="0 0 24 24" fill="none">
+                                <path d="M13 3L13 7C13 7.55228 13.4477 8 14 8L18 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M5 12V5C5 3.89543 5.89543 3 7 3H13L19 9V19C19 20.1046 18.1046 21 17 21H12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M3 18H9M6 15V21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            </svg>
+                            <span className="btn-add-label">{quickAddLabel || 'Quick Add'}</span>
+                        </button>
+                    </>
+                ) : (addUrl || addAction) && (
                     addUrl ? (
                         <a
                             href={addUrl}
@@ -373,6 +426,10 @@ export default function DataGridToolbar({
                     box-shadow: 0 4px 12px rgba(34, 188, 233, 0.4);
                     transform: translateY(-1px);
                 }
+                .btn-quick-add:hover {
+                    background-color: #805dca !important;
+                    box-shadow: 0 4px 12px rgba(128, 93, 202, 0.4);
+                }
                 .btn-add-icon {
                     width: 16px;
                     height: 16px;
@@ -385,7 +442,7 @@ export default function DataGridToolbar({
                     transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
                 }
                 .btn-add-expandable:hover .btn-add-label {
-                    max-width: 120px;
+                    max-width: 150px;
                     opacity: 1;
                 }
                 .btn-sidebar-toggle {

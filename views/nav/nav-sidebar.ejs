@@ -629,10 +629,10 @@
         <div x-show="!showAdmin" x-collapse x-cloak>
         <div>
           <h2
-            class="-mx-4 mb-2 flex items-center justify-between bg-white-light/30 py-3 px-4 font-extrabold uppercase text-[12px] tracking-wider dark:bg-dark dark:bg-opacity-[0.08]">
+            class="-mx-4 mb-2 flex items-center justify-between bg-white-light/30 py-3 px-4 font-extrabold text-[13px] tracking-wide dark:bg-dark dark:bg-opacity-[0.08]">
             <div class="flex items-center gap-2">
-              <iconify-icon icon="solar:share-circle-bold-duotone" width="18" height="18"></iconify-icon>
-              <span x-text="'Spaces (' + realSpacesCount + ')'">Spaces</span>
+              <iconify-icon :icon="activeEnvironmentIcon || 'solar:share-circle-bold-duotone'" width="18" height="18" :style="activeEnvironmentColor ? 'color:' + activeEnvironmentColor : ''"></iconify-icon>
+              <span x-text="(activeEnvironmentName || 'Spaces') + ' (' + realSpacesCount + ')'">Spaces</span>
             </div>
             <div class="flex items-center gap-1 pr-2">
               <iconify-icon icon="solar:add-square-bold" width="18" height="18"
@@ -1057,6 +1057,9 @@
               dragOverFolderId: null,
               sortableInstances: [],
               activeEnvironmentId: null,
+              activeEnvironmentName: '',
+              activeEnvironmentIcon: '',
+              activeEnvironmentColor: '',
               showCreateModal: false,
               creationName: '',
               creationType: 'folder',
@@ -1096,6 +1099,9 @@
                 // Listen for environment changes from the mini-rail
                 window.addEventListener('environment-changed', (e) => {
                   this.activeEnvironmentId = e.detail.environmentId;
+                  this.activeEnvironmentName = e.detail.environment?.name || '';
+                  this.activeEnvironmentIcon = e.detail.environment?.icon || '';
+                  this.activeEnvironmentColor = e.detail.environment?.color || '';
                   this.fetchHierarchy();
                 });
 

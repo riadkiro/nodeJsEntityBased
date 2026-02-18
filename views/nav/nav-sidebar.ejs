@@ -667,7 +667,7 @@
 
         <!-- ═══ SPACES SECTION (visible by default, hidden when admin is shown) ═══ -->
         <div x-show="!showAdmin" x-collapse x-cloak>
-        <div x-data="sidebarHierarchy" x-init="fetchHierarchy()">
+        <div>
           <h2
             class="-mx-4 mb-2 flex items-center justify-between bg-white-light/30 py-3 px-4 font-extrabold uppercase text-[12px] tracking-wider dark:bg-dark dark:bg-opacity-[0.08]">
             <div class="flex items-center gap-2">
@@ -2620,7 +2620,7 @@
           const res = await fetch(`/account/${accountNum}/api/hierarchy/icons?library=solar&search=${encodeURIComponent(this.iconSearch.trim())}&page=1&limit=32`);
           if (res.ok) {
             const data = await res.json();
-            this.iconResults = (data.icons || []).map(ic => ic.name);
+            this.iconResults = data.icons || [];
             if (this.iconResults.length === 0) {
               this.iconResults = [...this.defaultIcons];
             }

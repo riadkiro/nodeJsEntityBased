@@ -318,7 +318,7 @@
               <iconify-icon :icon="env.icon" width="22" height="22"
                 :style="activeEnvId === env.id ? 'color:' + env.color : ''"></iconify-icon>
             </template>
-            <span class="env-rail-name" x-text="env.name"></span>
+            <span class="env-rail-name" x-text="env.name" x-show="$store.app.sidebar" x-cloak></span>
             <span class="mini-rail-label" x-text="env.name"></span>
           </a>
         </template>
@@ -1924,6 +1924,10 @@
 
               selectEnvironment(env) {
                 this.activeEnvId = env.id;
+                // If sidebar is closed, open it to show the selected environment
+                if (Alpine.store('app').sidebar) {
+                  Alpine.store('app').toggleSidebar();
+                }
                 window.dispatchEvent(new CustomEvent('environment-changed', {
                   detail: { environmentId: env.id, environment: env }
                 }));

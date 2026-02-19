@@ -823,4 +823,137 @@ router.get('/api/analytics/today', async (req, res) => {
     }
 })
 
+// ═══════════════════════════════════════════════════════════════════
+// SAVED VIEWS CRUD
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * GET /account/:account_number/api/entity/:entityId/saved-views
+ * List saved views for the current user + entity
+ */
+router.get('/api/entity/:entityId/saved-views', async (req, res) => {
+    try {
+        const SavedView = await tenantCollection(req, "SavedView")
+        const { entityId } = req.params
+
+        if (!req.user?._id) {
+            return res.status(401).json({ error: 'User not authenticated' })
+        }
+
+        const views = await SavedView.find({
+            userId: req.user._id,
+            entityId
+        }).sort({ order: 1, createdAt: 1 }).lean()
+
+        res.json({ views })
+    } catch (error) {
+        console.error('[API] Saved views list error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * POST /account/:account_number/api/entity/:entityId/saved-views
+ * Create a new saved view
+ */
+router.post('/api/entity/:entityId/saved-views', async (req, res) => {
+    try {
+        const SavedView = await tenantCollection(req, "SavedView")
+        const { entityId } = req.params
+        const { name, color, icon, filters, fieldFilters, sort } = req.body
+
+        if (!req.user?._id) {
+            return res.status(401).json({ error: 'User not authenticated' })
+        }
+
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Name is required' })
+        }
+
+        // Get max order
+        const lastView = await SavedView.findOne({
+            userId: req.user._id,
+            entityId
+        }).sort({ order: -1 }).lean()
+
+        const view = await SavedView.create({
+            userId: req.user._id,
+            entityId,
+            name: name.trim(),
+            color: color || '#4361ee',
+            icon: icon || null,
+            filters: filters || {},
+            fieldFilters: fieldFilters || [],
+            sort: sort || null,
+            order: (lastView?.order || 0) + 1
+        })
+
+        res.json({ view })
+    } catch (error) {
+        console.error('[API] Saved view create error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * PUT /account/:account_number/api/entity/:entityId/saved-views/:viewId
+ * Update a saved view (name, filters, color, order)
+ */
+router.put('/api/entity/:entityId/saved-views/:viewId', async (req, res) => {
+    try {
+        const SavedView = await tenantCollection(req, "SavedView")
+        const { entityId, viewId } = req.params
+        const updates = req.body
+
+        if (!req.user?._id) {
+            return res.status(401).json({ error: 'User not authenticated' })
+        }
+
+        const view = await SavedView.findOneAndUpdate(
+            { _id: viewId, userId: req.user._id, entityId },
+            { $set: updates },
+            { new: true }
+        ).lean()
+
+        if (!view) {
+            return res.status(404).json({ error: 'View not found' })
+        }
+
+        res.json({ view })
+    } catch (error) {
+        console.error('[API] Saved view update error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * DELETE /account/:account_number/api/entity/:entityId/saved-views/:viewId
+ * Delete a saved view
+ */
+router.delete('/api/entity/:entityId/saved-views/:viewId', async (req, res) => {
+    try {
+        const SavedView = await tenantCollection(req, "SavedView")
+        const { entityId, viewId } = req.params
+
+        if (!req.user?._id) {
+            return res.status(401).json({ error: 'User not authenticated' })
+        }
+
+        const result = await SavedView.findOneAndDelete({
+            _id: viewId,
+            userId: req.user._id,
+            entityId
+        })
+
+        if (!result) {
+            return res.status(404).json({ error: 'View not found' })
+        }
+
+        res.json({ success: true })
+    } catch (error) {
+        console.error('[API] Saved view delete error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
 module.exports = router

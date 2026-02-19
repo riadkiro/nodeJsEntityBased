@@ -58,6 +58,8 @@ export default function RecordsToolbar({
     onViewChange,
     enabledViews = ['table', 'kanban', 'notes'],
     onEnabledViewsChange,
+    hasActiveFilters = false,
+    onOpenSaveView,
 }) {
     const [displayPopover, setDisplayPopover] = useState(false)
     const [sortPopover, setSortPopover] = useState(false)
@@ -239,6 +241,20 @@ export default function RecordsToolbar({
 
                 {/* Separator */}
                 <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-0.5" />
+
+                {/* Filter button */}
+                <button
+                    type="button"
+                    onClick={onOpenSaveView}
+                    className={`block rounded-full p-2 transition-all ${hasActiveFilters
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60'}`}
+                    title="Filtrer & enregistrer la vue"
+                >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <path d="M22 3H2L10 12.46V19L14 21V12.46L22 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                </button>
 
                 {/* Sort button (only for table view) */}
                 {activeView === 'table' && (() => {

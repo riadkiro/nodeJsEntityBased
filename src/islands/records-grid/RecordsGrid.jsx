@@ -10,6 +10,7 @@ import RecordsTable from './components/RecordsTable'
 import RecordsKanban from './components/RecordsKanban'
 import RecordsNotes from './components/RecordsNotes'
 import RecordsSidebar from './components/RecordsSidebar'
+import SavedViewsTabs from './components/SavedViewsTabs'
 
 export default function RecordsGrid({
     accountId,
@@ -36,6 +37,11 @@ export default function RecordsGrid({
     // Filter state (classification-based)
     const [sidebarFilters, setSidebarFilters] = useState([])
     const [activeFilters, setActiveFilters] = useState({})
+
+    // Saved views state
+    const [savedViews, setSavedViews] = useState([])
+    const [activeSavedViewId, setActiveSavedViewId] = useState(null)
+    const [showSaveViewModal, setShowSaveViewModal] = useState(false)
 
     // Preferences state
     const [preferences, setPreferences] = useState({
@@ -150,9 +156,132 @@ export default function RecordsGrid({
         }
     }, [accountNumber, entityId, viewId, preferences.sort])
 
+    // Fetch saved views
+    const fetchSavedViews = useCallback(async () => {
+        try {
+            const res = await fetch(
+                `/account/${accountNumber}/api/entity/${entityId}/saved-views`,
+                { credentials: 'include' }
+            )
+            if (res.ok) {
+                const data = await res.json()
+                setSavedViews(data.views || [])
+            }
+        } catch (err) {
+            console.error('[RecordsGrid] Fetch saved views error:', err)
+        }
+    }, [accountNumber, entityId])
+
+    // Create a saved view
+    const handleCreateSavedView = useCallback(async ({ name, color, filters, fieldFilters }) => {
+        try {
+            const res = await fetch(
+                `/account/${accountNumber}/api/entity/${entityId}/saved-views`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name, color, filters, fieldFilters })
+                }
+            )
+            if (res.ok) {
+                const data = await res.json()
+                setSavedViews(prev => [...prev, data.view])
+                // Auto-select the newly created view
+                setActiveSavedViewId(data.view._id)
+            }
+        } catch (err) {
+            console.error('[RecordsGrid] Create saved view error:', err)
+        }
+    }, [accountNumber, entityId])
+
+    // Delete a saved view
+    const handleDeleteSavedView = useCallback(async (viewIdToDelete) => {
+        try {
+            const res = await fetch(
+                `/account/${accountNumber}/api/entity/${entityId}/saved-views/${viewIdToDelete}`,
+                { method: 'DELETE', credentials: 'include' }
+            )
+            if (res.ok) {
+                setSavedViews(prev => prev.filter(v => v._id !== viewIdToDelete))
+                // If we deleted the active view, go back to "All"
+                if (activeSavedViewId === viewIdToDelete) {
+                    setActiveSavedViewId(null)
+                    setActiveFilters({})
+                    setPagination(prev => ({ ...prev, page: 1 }))
+                }
+            }
+        } catch (err) {
+            console.error('[RecordsGrid] Delete saved view error:', err)
+        }
+    }, [accountNumber, entityId, activeSavedViewId])
+
+    // Rename a saved view
+    const handleRenameSavedView = useCallback(async (viewIdToRename, newName) => {
+        try {
+            const res = await fetch(
+                `/account/${accountNumber}/api/entity/${entityId}/saved-views/${viewIdToRename}`,
+                {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name: newName })
+                }
+            )
+            if (res.ok) {
+                setSavedViews(prev => prev.map(v =>
+                    v._id === viewIdToRename ? { ...v, name: newName } : v
+                ))
+            }
+        } catch (err) {
+            console.error('[RecordsGrid] Rename saved view error:', err)
+        }
+    }, [accountNumber, entityId])
+
+    // Update a saved view's filters with current active filters
+    const handleUpdateViewFilters = useCallback(async (viewIdToUpdate, newFilters, newFieldFilters) => {
+        try {
+            const res = await fetch(
+                `/account/${accountNumber}/api/entity/${entityId}/saved-views/${viewIdToUpdate}`,
+                {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ filters: newFilters, fieldFilters: newFieldFilters || [] })
+                }
+            )
+            if (res.ok) {
+                setSavedViews(prev => prev.map(v =>
+                    v._id === viewIdToUpdate ? { ...v, filters: newFilters, fieldFilters: newFieldFilters || [] } : v
+                ))
+            }
+        } catch (err) {
+            console.error('[RecordsGrid] Update saved view filters error:', err)
+        }
+    }, [accountNumber, entityId])
+
+    // Select a saved view (apply its filters)
+    const handleSelectSavedView = useCallback((savedViewId) => {
+        if (!savedViewId) {
+            // "All" tab - clear filters
+            setActiveSavedViewId(null)
+            setActiveFilters({})
+            setPagination(prev => ({ ...prev, page: 1 }))
+            return
+        }
+
+        const view = savedViews.find(v => v._id === savedViewId)
+        if (!view) return
+
+        setActiveSavedViewId(savedViewId)
+        setActiveFilters(view.filters || {})
+        setPagination(prev => ({ ...prev, page: 1 }))
+    }, [savedViews])
+
     // Initial fetch
     useEffect(() => {
         fetchRecords()
+        fetchSavedViews()
     }, []) // Only on mount
 
     // CLIENT-SIDE SORTING - Sort allRecords when sort preferences change
@@ -440,6 +569,25 @@ export default function RecordsGrid({
                     onViewChange={handleViewChange}
                     enabledViews={preferences.enabledViews || ['table', 'kanban', 'notes']}
                     onEnabledViewsChange={(views) => handlePreferencesChange('enabledViews', views)}
+                    hasActiveFilters={Object.keys(activeFilters).filter(k => k !== '__favourites').length > 0}
+                    onOpenSaveView={() => setShowSaveViewModal(true)}
+                />
+
+                {/* Saved Views Tabs */}
+                <SavedViewsTabs
+                    savedViews={savedViews}
+                    activeViewId={activeSavedViewId}
+                    onSelectView={handleSelectSavedView}
+                    onCreateView={handleCreateSavedView}
+                    onDeleteView={handleDeleteSavedView}
+                    onRenameView={handleRenameSavedView}
+                    onUpdateViewFilters={handleUpdateViewFilters}
+                    hasActiveFilters={Object.keys(activeFilters).filter(k => k !== '__favourites').length > 0}
+                    activeFilters={activeFilters}
+                    fieldFilters={[]}
+                    sidebarFilters={sidebarFilters}
+                    externalOpenCreate={showSaveViewModal}
+                    onCloseExternalCreate={() => setShowSaveViewModal(false)}
                 />
 
                 {/* View content */}

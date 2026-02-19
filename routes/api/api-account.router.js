@@ -14,6 +14,21 @@ const recordController = require('../../controllers/record.controller');
 //Auto generated routers 
 //Auto generated routers end
 
+// Space Templates (tenant-facing) — must be before /:id catch-all
+const SpaceTemplate = require('../../models/space-template.model');
+router.get('/space-templates', async (req, res) => {
+    try {
+        const templates = await SpaceTemplate.find({ active: true })
+            .sort({ featured: -1, order: 1, usageCount: -1 })
+            .lean();
+        res.json({ success: true, templates });
+    } catch (err) {
+        console.error('[SpaceTemplates] list error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+router.post('/space-templates/:id/apply', hierarchyController.applySpaceTemplate);
+
 //Generated from template
 //list
 router.get('/list', accountController.list_Api);
@@ -63,6 +78,8 @@ router.post('/hierarchy/environment/upload-image', envImageUpload.single('image'
         res.status(500).json({ success: false, error: 'Upload failed' });
     }
 });
+
+
 
 // Sidebar Preferences
 router.get('/user/sidebar-prefs', hierarchyController.getSidebarPrefs);

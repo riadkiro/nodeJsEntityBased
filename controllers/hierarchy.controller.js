@@ -757,5 +757,182 @@ module.exports = {
             console.error("[Hierarchy] findEnvironmentByEntitySlug Error:", error);
             res.status(500).json({ error: "Internal error" });
         }
+    },
+
+    /**
+     * Apply a SpaceTemplate: creates environment + space + entities from template definitions.
+     * POST /api/space-templates/:id/apply
+     * Body: { envName, envIcon, envColor, envImage }
+     */
+    applySpaceTemplate: async (req, res) => {
+        try {
+            const SpaceTemplate = require('../models/space-template.model');
+            const EntityTemplate = require('../models/entity-template.model');
+
+            const template = await SpaceTemplate.findById(req.params.id);
+            if (!template) return res.status(404).json({ error: 'Template not found' });
+
+            const { envName, envIcon, envColor, envImage } = req.body;
+
+            const EnvironmentModel = await tenantCollection(req, "Environment");
+            const SpaceModel = await tenantCollection(req, "Space");
+            const EntityModel = await tenantCollection(req, "Entity");
+            const ViewModel = await tenantCollection(req, "View");
+            const ClassificationModel = await tenantCollection(req, "Classification");
+
+            // 1. Create Environment
+            const envCount = await EnvironmentModel.countDocuments();
+            const envSlug = await uniqueSlug(EnvironmentModel, envName || template.name);
+            const newEnv = new EnvironmentModel({
+                name: envName || template.name,
+                slug: envSlug,
+                icon: envIcon || template.icon,
+                color: envColor || template.color,
+                image: envImage || '',
+                order: envCount,
+                createdBy: req.user._id
+            });
+            await newEnv.save();
+
+            // 2. Create Space inside the environment
+            const spaceCount = await SpaceModel.countDocuments();
+            const spaceSlug = await uniqueSlug(SpaceModel, template.name);
+            const newSpace = new SpaceModel({
+                name: template.name,
+                slug: spaceSlug,
+                owner: req.user._id,
+                icon: template.icon,
+                color: template.color,
+                order: spaceCount,
+                environmentId: newEnv._id
+            });
+            await newSpace.save();
+
+            // 3. Create entities from template entity references
+            const entityTemplates = template.entities || [];
+            const createdEntities = [];
+
+            for (let i = 0; i < entityTemplates.length; i++) {
+                const etRef = entityTemplates[i];
+                // Fetch the EntityTemplate by slug
+                const et = await EntityTemplate.findOne({ slug: etRef.templateSlug, active: true }).lean();
+                if (!et) continue;
+
+                const entityName = etRef.name || et.name;
+                const entityIcon = etRef.icon || et.icon;
+                const entityColor = etRef.color || et.color;
+                const entitySlug = await uniqueSlug(EntityModel, entityName);
+
+                // Create the Entity
+                const newEntity = new EntityModel({
+                    name: entityName,
+                    slug: entitySlug,
+                    icon: entityIcon,
+                    color: entityColor,
+                    createdBy: req.user._id,
+                    enabledStandardFields: et.enabledStandardFields || ['title'],
+                    referenceTitleTokens: et.referenceTitleTokens || [{ t: 'field', id: 'title' }]
+                });
+
+                // Create custom fields from template
+                if (et.fields && et.fields.length > 0) {
+                    const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
+                    const fieldIds = [];
+                    for (const fieldDef of et.fields) {
+                        const newField = new FieldTemplateModel({
+                            name: fieldDef.name,
+                            label: fieldDef.label,
+                            description: fieldDef.description || '',
+                            fieldType: fieldDef.type || 'string',
+                            subtype: fieldDef.subtype || '',
+                            category: fieldDef.category || 'text',
+                            icon: fieldDef.icon || 'solar:widget-bold',
+                            required: fieldDef.required || false,
+                            typeConfig: fieldDef.typeConfig || {},
+                            ui: fieldDef.ui || {},
+                            createdBy: req.user._id
+                        });
+                        await newField.save();
+                        fieldIds.push(newField._id);
+                    }
+                    newEntity.customFields = fieldIds;
+                }
+
+                await newEntity.save();
+
+                // Create classifications from template
+                if (et.classifications && et.classifications.length > 0) {
+                    for (const classifDef of et.classifications) {
+                        const classifSlug = classifDef.slug || classifDef.name.toLowerCase()
+                            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                            .replace(/[^a-z0-9]+/g, '-')
+                            .replace(/^-|-$/g, '');
+                        const newClassif = new ClassificationModel({
+                            name: classifDef.name,
+                            slug: classifSlug,
+                            entity: newEntity._id,
+                            type: classifDef.type || 'status',
+                            isStatus: classifDef.isStatus || false,
+                            options: (classifDef.options || []).map((opt, idx) => ({
+                                label: opt.label,
+                                value: opt.value || opt.label.toLowerCase().replace(/\s+/g, '_'),
+                                color: opt.color || '#4361ee',
+                                icon: opt.icon || '',
+                                order: opt.order || idx
+                            })),
+                            createdBy: req.user._id
+                        });
+                        await newClassif.save();
+                    }
+                }
+
+                // Create View linking entity to space
+                const viewSlug = await uniqueSlug(ViewModel, entityName);
+                const viewTypeDef = (template.defaultViews || []).find(dv => dv.entitySlug === et.slug);
+                const newView = new ViewModel({
+                    name: entityName,
+                    slug: viewSlug,
+                    entity: newEntity._id,
+                    icon: entityIcon,
+                    color: entityColor,
+                    viewType: viewTypeDef?.viewType || 'table',
+                    createdBy: req.user._id,
+                    order: etRef.order || i,
+                    spaces: [newSpace._id],
+                    folders: []
+                });
+                await newView.save();
+
+                createdEntities.push({
+                    entityId: newEntity._id.toString(),
+                    viewId: newView._id.toString(),
+                    name: entityName
+                });
+            }
+
+            // Increment usage count
+            await SpaceTemplate.findByIdAndUpdate(template._id, { $inc: { usageCount: 1 } });
+
+            res.json({
+                success: true,
+                environment: {
+                    id: newEnv._id.toString(),
+                    name: newEnv.name,
+                    slug: newEnv.slug,
+                    icon: newEnv.icon,
+                    color: newEnv.color,
+                    image: newEnv.image || '',
+                    order: newEnv.order
+                },
+                space: {
+                    id: newSpace._id.toString(),
+                    name: newSpace.name
+                },
+                entities: createdEntities
+            });
+        } catch (error) {
+            console.error("[Hierarchy] applySpaceTemplate Error:", error);
+            res.status(500).json({ error: "Failed to apply template" });
+        }
     }
 };

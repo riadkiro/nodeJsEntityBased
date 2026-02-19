@@ -1,23 +1,17 @@
-# 🚀 Autopilote — Missions
+Missions du jour 
 
-> Ce fichier est partagé entre toi et l'IA. Ajoute tes missions ici, l'IA les barre une fois terminées.
+Une foie une mission terminée et pushée, barre là ici
 
----
+Mission 1
+ok parfait push, et voilà ma logique, dans le saas global on doit avoir des champs systemes et entity systeme qui seront activé automatiqument pour chaque nouveau user, le champssont ceux qu'on a activé pour le tenant 5001, donc enrichi moi ces champs et classes les dans des catégories bien classé comme ca en admin je peux creer des entités modèles à partir de ces champs facilement : ![alt text](image-5.png), ensuite pour les entité systeme on aura, Documents, Tasks, projects, users, events, emails, agenda, medias, notes... tout ça bien configuré avec les relations nécessaires etc pour que ça fonctionne bien dès le départ.
 
-## ✅ Terminé
+~~Missions 2~~ : ✅
 
-- ~~**DataGrid React Island** — Composant réutilisable (search, sort, density, colonnes, pagination, preferences serveur)~~
-- ~~**Entity List → DataGrid** — Remplacement de simpleDatatables par le DataGrid island~~
-- ~~**Tasks System** — Entity Tâches + seed (35 records) + classifications (Progression, Priorité, Tags) + API + DataGrid~~
-- ~~**Mission 1 — Entity Settings Page** — Page full-page add/edit entity ultra UX/UI (entity-settings.ejs + controller + routes /settings & /settings/:id). Sections accordion, champs standard/personnalisés, relations, classifications, reference title tokens, preview sidebar, icon/color pickers, dark mode.~~
-- ~~**Mission 2 — Icon Picker React Island** — Composant React Island pixel-perfect du IconPicker vanilla JS (src/islands/icon-picker/). Solar/MDI/Tabler, search, pagination, portal rendering, custom events pour Alpine.js integration.~~
-- ~~**Mission 3 — Timeline Widgets & Widget Library** — 4 variantes Timeline (Profile, Modern, Basic, Images) en React Islands pixel-perfect + Bibliothèque de widgets drag & drop (13 widgets catalogués) pour Page Builder & Cockpit Builder. Demo page `/timeline-widgets`, API seed data, système réutilisable avec catégories, recherche, grid/list view, dark mode.~~
-- ~~**Mission 4 — Calendar Widget** — Calendrier interactif React Island avec FullCalendar.js — vues mois/semaine/jour, CRUD événements via modal, badges couleur (Work/Travel/Personal/Important), légende, events seed data médicaux. Demo page `/calendar-widgets`, API route, intégré au Showcase, Vite build, dark mode.~~
-- ~~**Mission 1 — Sidebar Filters** — Classification-based filtering with colored badge pills, counts, enriched classification values (label/color denormalization), all filters as tags type.~~
-- ~~**Mission 2 — View Config** — Toolbar view switching (Table, Kanban, Notes), preferences persistence (viewMode saved server-side), enabled views config.~~
-- ~~**Mission 4 — URL Refactoring** — `/record/:entitySlug/list` as canonical URL, no ViewID in URL, entity ID as preference key.~~
-- ~~**Mission 5 — Kanban UX** — Colored columns (Niveau Urgence), classification badges on cards, QuickView modal (slide-in panel), drag & drop between columns, column max-width 320px, dark/light mode.~~
+~~Tu fais sortir bibliothèques des champs et types des champs et lineschema de réglages et tu les mets en dessous de classifications, tu supprime Studio du menu settings~~
 
+Mission 3 :
+
+On va devoir créer une bibliothèque de space coté super admin, avec les entitées qui vont avec et les relations nécessaires etc pour que ça fonctionne bien dès le départ. quand un user veut ajouter un space on fait comme pour entity, on lui propose des modèles ou de partir de 0
 
 
 

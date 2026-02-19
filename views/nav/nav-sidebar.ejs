@@ -449,13 +449,35 @@
           </div>
         </li>
 
-        <!-- 📄 Modèles -->
+        <!-- 📋 Bibliothèque de champs -->
         <li class="menu nav-item">
           <div class="nav-link group flex items-center justify-between -mx-4 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
-            :class="window.location.pathname.includes('/documents') ? 'bg-gray-100 dark:bg-gray-800' : ''">
-            <a href="/account/<%= account_number %>/documents" class="flex items-center mx-2 cursor-pointer flex-1">
-              <iconify-icon icon="solar:document-text-bold-duotone" class="ml-1" width="18" height="18" style="color: #10b981"></iconify-icon>
-              <span class="text-sm text-gray-700 dark:text-gray-400 group-hover:text-primary transition-all ltr:pl-2 rtl:pr-2">Studio</span>
+            :class="window.location.pathname.includes('/field-template') ? 'bg-gray-100 dark:bg-gray-800' : ''">
+            <a href="/account/<%= account_number %>/field-template/list" class="flex items-center mx-2 cursor-pointer flex-1">
+              <iconify-icon icon="solar:tuning-square-2-bold-duotone" class="ml-1" width="18" height="18" style="color: #8b5cf6"></iconify-icon>
+              <span class="text-sm text-gray-700 dark:text-gray-400 group-hover:text-primary transition-all ltr:pl-2 rtl:pr-2">Bibliothèque de champs</span>
+            </a>
+          </div>
+        </li>
+
+        <!-- 🧩 Types de champs -->
+        <li class="menu nav-item">
+          <div class="nav-link group flex items-center justify-between -mx-4 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+            :class="window.location.pathname.includes('/field-type') ? 'bg-gray-100 dark:bg-gray-800' : ''">
+            <a href="/account/<%= account_number %>/field-type/list" class="flex items-center mx-2 cursor-pointer flex-1">
+              <iconify-icon icon="solar:code-square-bold-duotone" class="ml-1" width="18" height="18" style="color: #ec4899"></iconify-icon>
+              <span class="text-sm text-gray-700 dark:text-gray-400 group-hover:text-primary transition-all ltr:pl-2 rtl:pr-2">Types de champs</span>
+            </a>
+          </div>
+        </li>
+
+        <!-- 📑 Line Schemas -->
+        <li class="menu nav-item">
+          <div class="nav-link group flex items-center justify-between -mx-4 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+            :class="window.location.pathname.includes('/line-schemas') ? 'bg-gray-100 dark:bg-gray-800' : ''">
+            <a href="/account/<%= account_number %>/line-schemas" class="flex items-center mx-2 cursor-pointer flex-1">
+              <iconify-icon icon="solar:document-text-bold-duotone" class="ml-1" width="18" height="18" style="color: #06b6d4"></iconify-icon>
+              <span class="text-sm text-gray-700 dark:text-gray-400 group-hover:text-primary transition-all ltr:pl-2 rtl:pr-2">Line Schemas</span>
             </a>
           </div>
         </li>
@@ -478,27 +500,6 @@
             </div>
           </div>
           <ul x-cloak x-show="activeDropdown === 'settings'" x-collapse class="sub-menu text-gray-500 dark:text-gray-400 mx-4 mb-2">
-            <!-- Bibliothèque de champs -->
-            <li x-data="{ hovered: false }">
-              <div class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
-                @mouseenter="hovered = true" @mouseleave="hovered = false">
-                <iconify-icon icon="solar:tuning-square-2-bold-duotone" class="ml-2" width="16" height="16"></iconify-icon>
-                <a href="/account/<%= account_number %>/field-template/list" 
-                  class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors flex-1"
-                  :class="window.location.pathname.includes('/field-template') ? '!text-primary font-bold' : ''">Bibliothèque de champs</a>
-              </div>
-            </li>
-            <!-- Types de champs -->
-            <li x-data="{ hovered: false }">
-              <div class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
-                @mouseenter="hovered = true" @mouseleave="hovered = false">
-                <iconify-icon icon="solar:code-square-bold-duotone" class="ml-2" width="16" height="16"></iconify-icon>
-                <a href="/account/<%= account_number %>/field-type/list" 
-                  class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors flex-1"
-                  :class="window.location.pathname.includes('/field-type') ? '!text-primary font-bold' : ''">Types de champs</a>
-                <span class="ml-auto text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded mr-2">Admin</span>
-              </div>
-            </li>
             <!-- Mailbox -->
             <li x-data="{ hovered: false }">
               <div class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
@@ -517,16 +518,6 @@
                 <a href="/account/<%= account_number %>/db/list" 
                   class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors flex-1"
                   :class="window.location.pathname.includes('/db') ? '!text-primary font-bold' : ''">Base de données</a>
-              </div>
-            </li>
-            <!-- Line Schemas -->
-            <li x-data="{ hovered: false }">
-              <div class="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
-                @mouseenter="hovered = true" @mouseleave="hovered = false">
-                <iconify-icon icon="solar:document-text-bold-duotone" class="ml-2" width="16" height="16"></iconify-icon>
-                <a href="/account/<%= account_number %>/line-schemas" 
-                  class="block ml-1 truncate text-gray-700 dark:text-gray-400 transition-colors flex-1"
-                  :class="window.location.pathname.includes('/line-schemas') ? '!text-primary font-bold' : ''">Line Schemas</a>
               </div>
             </li>
             <!-- Ordonnance -->

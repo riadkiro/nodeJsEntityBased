@@ -397,7 +397,7 @@ const dataRows = records.map(record => {
     const refTitle = record.referenceTitle || record.computedTitle || record.title || 'Sans titre';
     const initial = refTitle.charAt(0).toUpperCase();
     const imageUrl = record.image || null;
-    const detailUrl = '/account/' + account_number + '/record/' + entity.slug + '/' + record._id;
+    const detailUrl = '/account/' + account_number + '/record/' + entity.slug + '/' + record._id + '/edit';
     
     let refHtml = '';
     if (imageUrl) {

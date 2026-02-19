@@ -359,7 +359,7 @@
       <!-- BOTTOM: Réglages (toggles admin panel) -->
       <a href="javascript:;"
          @click="$dispatch('toggle-admin')"
-         x-data="{ adminActive: false }"
+         x-data="{ adminActive: (() => { const p = window.location.pathname; return p.includes('/entity/') || p.includes('/classification/') || p.includes('/field-template/') || p.includes('/field-type/') || p.includes('/documents') || p.includes('/db/') || p.includes('/line-schemas') || p.includes('/ordonnance') || p.includes('/datatable') || p.includes('/showcase') || p.includes('/admin'); })() }"
          @toggle-admin.window="adminActive = !adminActive"
          :data-active="adminActive"
          class="mini-rail-item"
@@ -395,7 +395,7 @@
 
 
         <!-- ═══ SIDEBAR MODE WRAPPER (Admin vs Spaces toggle) ═══ -->
-        <div x-data="{ showAdmin: false }" @toggle-admin.window="showAdmin = !showAdmin">
+        <div x-data="{ showAdmin: (() => { const p = window.location.pathname; return p.includes('/entity/') || p.includes('/classification/') || p.includes('/field-template/') || p.includes('/field-type/') || p.includes('/documents') || p.includes('/db/') || p.includes('/line-schemas') || p.includes('/ordonnance') || p.includes('/datatable') || p.includes('/showcase') || p.includes('/admin'); })() }" @toggle-admin.window="showAdmin = !showAdmin">
 
         <!-- ═══ ADMIN SECTION (hidden by default, toggle with settings icon) ═══ -->
         <div x-show="showAdmin" x-collapse x-cloak>
@@ -1913,12 +1913,41 @@
                   const data = await res.json();
                   this.environments = data.environments || [];
 
-                  // Auto-select the first environment if none is active
                   if (this.environments.length > 0 && !this.activeEnvId) {
+                    // Try to auto-detect the correct environment from the current URL
+                    const detected = await this.detectEnvironmentFromUrl(accountNum);
+                    if (detected) {
+                      const targetEnv = this.environments.find(e => e.id === detected);
+                      if (targetEnv) {
+                        this.selectEnvironment(targetEnv);
+                        return;
+                      }
+                    }
+                    // Fallback: select the first environment
                     this.selectEnvironment(this.environments[0]);
                   }
                 } catch (err) {
                   console.error('[EnvironmentRail] Error:', err);
+                }
+              },
+
+              async detectEnvironmentFromUrl(accountNum) {
+                try {
+                  // Parse URL: /account/XXXX/record/{entitySlug}/list or /add or /edit/...
+                  const pathParts = window.location.pathname.split('/');
+                  const recordIdx = pathParts.indexOf('record');
+                  if (recordIdx === -1 || recordIdx + 1 >= pathParts.length) return null;
+                  
+                  const entitySlug = pathParts[recordIdx + 1];
+                  if (!entitySlug) return null;
+
+                  const res = await fetch(`/account/${accountNum}/api/hierarchy/find-environment?entitySlug=${encodeURIComponent(entitySlug)}`);
+                  if (!res.ok) return null;
+                  const data = await res.json();
+                  return data.success ? data.environmentId : null;
+                } catch (err) {
+                  console.error('[EnvironmentRail] detectEnvironmentFromUrl error:', err);
+                  return null;
                 }
               },
 

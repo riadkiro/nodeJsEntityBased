@@ -59,9 +59,24 @@
                     <% } else if (sectionId==='classifications' ) { %>
                         <!-- Dynamic Classifications (Shared Data) -->
                         <div class="panel !p-0 group/panel relative z-10" data-id="classifications">
-                            <% const allEntityClassifications=[]; if (entity.classifications &&
+                            <% const allEntityClassifications=[];
+                                // Include statusClassification first (if populated)
+                                if (entity.statusClassification && entity.statusClassification._id) {
+                                allEntityClassifications.push({
+                                data: entity.statusClassification,
+                                isStatus: true,
+                                label: entity.statusClassification.name,
+                                icon: 'solar:flag-bold',
+                                colorClass: 'text-warning',
+                                nameAttr: `classifications[${entity.statusClassification._id}]`
+                                });
+                                }
+                                // Then include additional classifications
+                                if (entity.classifications &&
                                 entity.classifications.length> 0) {
                                 entity.classifications.forEach(c => {
+                                // Avoid duplicating if statusClassification is also in classifications array
+                                if (entity.statusClassification && c._id && entity.statusClassification._id && c._id.toString() === entity.statusClassification._id.toString()) return;
                                 allEntityClassifications.push({
                                 data: c,
                                 isStatus: false,

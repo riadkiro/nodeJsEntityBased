@@ -689,5 +689,73 @@ module.exports = {
             console.error("[Hierarchy] saveSidebarPrefs Error:", error);
             res.status(500).json({ error: "Failed to save sidebar preferences" });
         }
+    },
+
+    /**
+     * Find which environment contains a given entity slug.
+     * Used by the sidebar to auto-select the correct environment on page load.
+     * GET /api/hierarchy/find-environment?entitySlug=factures
+     */
+    findEnvironmentByEntitySlug: async (req, res) => {
+        try {
+            const { entitySlug } = req.query;
+            if (!entitySlug) return res.json({ success: false, environmentId: null });
+
+            const EntityModel = await tenantCollection(req, "Entity");
+            const ViewModel = await tenantCollection(req, "View");
+            const SpaceModel = await tenantCollection(req, "Space");
+            const FolderModel = await tenantCollection(req, "Folder");
+
+            // 1. Find the entity by slug
+            const entity = await EntityModel.findOne({ slug: entitySlug }).lean();
+            if (!entity) return res.json({ success: false, environmentId: null });
+
+            // 2. Find views that reference this entity
+            const views = await ViewModel.find({ entity: entity._id }).lean();
+            if (!views.length) return res.json({ success: false, environmentId: null });
+
+            // 3. For each view, trace up to find the space → environment
+            for (const view of views) {
+                // Check if the view is directly in a space
+                if (view.spaces && view.spaces.length > 0) {
+                    const space = await SpaceModel.findById(view.spaces[0]).lean();
+                    if (space && space.environmentId) {
+                        return res.json({ success: true, environmentId: space.environmentId.toString() });
+                    }
+                }
+
+                // Check if the view is in a folder → trace up to space
+                if (view.folders && view.folders.length > 0) {
+                    let folderId = view.folders[0];
+                    const visited = new Set();
+                    // Walk up the folder chain
+                    while (folderId && !visited.has(folderId.toString())) {
+                        visited.add(folderId.toString());
+                        const folder = await FolderModel.findById(folderId).lean();
+                        if (!folder) break;
+
+                        // If this folder is in a space, find the environment
+                        if (folder.spaces && folder.spaces.length > 0) {
+                            const space = await SpaceModel.findById(folder.spaces[0]).lean();
+                            if (space && space.environmentId) {
+                                return res.json({ success: true, environmentId: space.environmentId.toString() });
+                            }
+                        }
+
+                        // Go up to parent folder
+                        if (folder.parentFolders && folder.parentFolders.length > 0) {
+                            folderId = folder.parentFolders[0];
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return res.json({ success: false, environmentId: null });
+        } catch (error) {
+            console.error("[Hierarchy] findEnvironmentByEntitySlug Error:", error);
+            res.status(500).json({ error: "Internal error" });
+        }
     }
 };

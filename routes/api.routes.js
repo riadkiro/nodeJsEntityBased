@@ -263,7 +263,7 @@ router.get('/api/datagrid/entities', async (req, res) => {
 
         // Column definitions
         const columns = [
-            { id: 'name', name: 'Nom', sortable: true, link: `/account/${req.account_number}/entity/edit/{id}` },
+            { id: 'name', name: 'Nom', sortable: true, link: `/account/${req.account_number}/entity/settings/{id}` },
             { id: 'slug', name: 'Slug', sortable: true },
             { id: 'description', name: 'Description', sortable: false },
             { id: 'color', name: 'Couleur', sortable: false, type: 'color' },

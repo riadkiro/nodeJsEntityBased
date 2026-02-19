@@ -230,7 +230,7 @@ function renderCellValue(record, col, accountNumber, entitySlug, config, titleDi
                         </div>
                     )}
                     <a
-                        href={`/account/${accountNumber}/record/${entitySlug}/${record._id}`}
+                        href={`/account/${accountNumber}/record/${entitySlug}/${record._id}/edit`}
                         className={`${config.fontWeight} hover:text-primary transition-colors`}
                     >
                         {refTitle}

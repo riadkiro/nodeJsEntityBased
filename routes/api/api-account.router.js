@@ -47,6 +47,7 @@ router.post('/hierarchy/link-cockpit', hierarchyController.linkCockpit);
 
 router.get('/hierarchy/icon-libraries', hierarchyController.getIconLibraries);
 router.get('/hierarchy/icons', hierarchyController.getIcons);
+router.get('/hierarchy/find-environment', hierarchyController.findEnvironmentByEntitySlug);
 
 // Environment image upload
 const envImageUpload = uploadToDynamic((req) => `public/${req.account_number}/uploads/environments`);

@@ -1,16 +1,47 @@
 /**
- * SavedViewsTabs - Horizontal tabs bar for saved filter views
- * Shows saved views as tabs with add button, context menu for rename/delete
+ * SavedViewsTabs - Horizontal tabs for saved filter views
+ * Includes: create, rename, delete, update filters
+ * Supports inline filter creation within the modal.
  */
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 
-// Color presets for views
+// Color options for view tabs
 const VIEW_COLORS = [
-    '#4361ee', '#e7515a', '#00ab55', '#e2a03f', '#8b5cf6',
-    '#06b6d4', '#ec4899', '#f59e0b', '#10b981', '#6366f1'
+    '#4361ee', '#805dca', '#e2a03f', '#00ab55', '#e7515a',
+    '#2196d4', '#3b3f5c', '#009688', '#ff5722', '#607d8b'
 ]
 
-// Short operator labels for display
+// Operators available for modal inline filter builder
+const MODAL_OPERATORS = {
+    contains: { label: 'Contient', icon: '⊃', types: ['text', 'email', 'phone', 'url', 'textarea', 'title', 'relation'] },
+    not_contains: { label: 'Ne contient pas', icon: '⊅', types: ['text', 'email', 'phone', 'url', 'textarea', 'title', 'relation'] },
+    equals: { label: 'Est égal à', icon: '=', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'title', 'select', 'relation', 'classification'] },
+    not_equals: { label: "N'est pas égal à", icon: '≠', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'title', 'select', 'relation', 'classification'] },
+    starts_with: { label: 'Commence par', icon: 'A…', types: ['text', 'email', 'phone', 'url', 'title'] },
+    ends_with: { label: 'Se termine par', icon: '…Z', types: ['text', 'email', 'phone', 'url', 'title'] },
+    gt: { label: 'Supérieur à', icon: '>', types: ['number', 'date'] },
+    gte: { label: 'Supérieur ou égal', icon: '≥', types: ['number', 'date'] },
+    lt: { label: 'Inférieur à', icon: '<', types: ['number', 'date'] },
+    lte: { label: 'Inférieur ou égal', icon: '≤', types: ['number', 'date'] },
+    between: { label: 'Entre', icon: '↔', types: ['number', 'date'] },
+    is_empty: { label: 'Est vide', icon: '∅', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'textarea', 'title', 'select', 'relation', 'classification'] },
+    is_not_empty: { label: "N'est pas vide", icon: '∃', types: ['text', 'email', 'phone', 'url', 'number', 'date', 'textarea', 'title', 'select', 'relation', 'classification'] },
+}
+
+function getModalOperatorsForType(fieldType) {
+    const type = fieldType || 'text'
+    return Object.entries(MODAL_OPERATORS)
+        .filter(([_, op]) => op.types.includes(type))
+        .map(([key, op]) => ({ key, ...op }))
+}
+
+function getModalInputType(fieldType) {
+    if (['number', 'currency', 'percent'].includes(fieldType)) return 'number'
+    if (['date', 'datetime'].includes(fieldType)) return 'date'
+    return 'text'
+}
+
+// Operator labels for filter summaries
 function getOperatorShortLabel(op) {
     const labels = {
         contains: '⊃',
@@ -42,6 +73,7 @@ export default function SavedViewsTabs({
     activeFilters = {},
     fieldFilters = [],
     sidebarFilters = [],
+    columns = [],
     externalOpenCreate = false,
     onCloseExternalCreate,
 }) {
@@ -52,6 +84,10 @@ export default function SavedViewsTabs({
     const [contextMenu, setContextMenu] = useState(null) // { viewId, x, y }
     const [editingViewId, setEditingViewId] = useState(null)
     const [editingName, setEditingName] = useState('')
+    // Modal inline filter state
+    const [modalFieldFilters, setModalFieldFilters] = useState([])
+    const [modalShowFieldSelector, setModalShowFieldSelector] = useState(false)
+    const modalFieldSelectorRef = useRef(null)
     const contextMenuRef = useRef(null)
     const createInputRef = useRef(null)
     const editInputRef = useRef(null)
@@ -80,9 +116,28 @@ export default function SavedViewsTabs({
     useEffect(() => {
         if (externalOpenCreate) {
             setShowCreateModal(true)
+            setModalFieldFilters([...fieldFilters])
             onCloseExternalCreate?.()
         }
     }, [externalOpenCreate])
+
+    // Init modal filters when modal opens internally
+    useEffect(() => {
+        if (showCreateModal) {
+            setModalFieldFilters([...fieldFilters])
+        }
+    }, [showCreateModal])
+
+    // Close modal field selector on outside click
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (modalShowFieldSelector && modalFieldSelectorRef.current && !modalFieldSelectorRef.current.contains(e.target)) {
+                setModalShowFieldSelector(false)
+            }
+        }
+        if (modalShowFieldSelector) document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [modalShowFieldSelector])
 
     // Focus inline edit input
     useEffect(() => {
@@ -103,12 +158,56 @@ export default function SavedViewsTabs({
             name: newViewName.trim(),
             color: newViewColor,
             filters: activeFilters,
-            fieldFilters: fieldFilters
+            fieldFilters: modalFieldFilters
         })
         setNewViewName('')
         setNewViewColor('#4361ee')
+        setModalFieldFilters([])
         setShowCreateModal(false)
     }
+
+    // ── Modal inline filter helpers ──
+    const filterableColumns = useMemo(() =>
+        columns.filter(col => col.id !== 'actions'),
+        [columns]
+    )
+
+    const classificationOptionsMap = useMemo(() => {
+        const map = {}
+        sidebarFilters.forEach(fg => {
+            map[`classif:${fg.id}`] = fg.options || []
+        })
+        return map
+    }, [sidebarFilters])
+
+    const addModalFilter = useCallback((columnId) => {
+        const column = filterableColumns.find(c => c.id === columnId)
+        if (!column) return
+        const isClassif = columnId.startsWith('classif:')
+        const availableOps = getModalOperatorsForType(column.type)
+        const defaultOp = isClassif
+            ? (availableOps.find(o => o.key === 'equals') || availableOps[0])
+            : (availableOps.find(o => o.key === 'contains') || availableOps[0])
+        const newFilter = {
+            fieldId: columnId,
+            fieldName: column.name,
+            fieldType: column.type || 'text',
+            operator: defaultOp.key,
+            value: '',
+            value2: '',
+            logic: 'AND',
+        }
+        setModalFieldFilters(prev => [...prev, newFilter])
+        setModalShowFieldSelector(false)
+    }, [filterableColumns])
+
+    const updateModalFilter = useCallback((index, updates) => {
+        setModalFieldFilters(prev => prev.map((f, i) => i === index ? { ...f, ...updates } : f))
+    }, [])
+
+    const removeModalFilter = useCallback((index) => {
+        setModalFieldFilters(prev => prev.filter((_, i) => i !== index))
+    }, [])
 
     const handleStartRename = (viewId) => {
         const view = savedViews.find(v => v._id === viewId)
@@ -329,10 +428,10 @@ export default function SavedViewsTabs({
                                 </div>
                             </div>
 
-                            {/* Active filters summary */}
-                            <div className="saved-view-form-group">
-                                <label className="saved-view-form-label">Filtres actifs</label>
-                                {(Object.keys(activeFilters).filter(k => k !== '__favourites').length > 0 || fieldFilters.length > 0) ? (
+                            {/* Sidebar classification filters (read-only summary) */}
+                            {Object.keys(activeFilters).filter(k => k !== '__favourites').length > 0 && (
+                                <div className="saved-view-form-group">
+                                    <label className="saved-view-form-label">Filtres de classification</label>
                                     <div className="saved-view-filter-summary">
                                         {Object.keys(activeFilters).filter(k => k !== '__favourites').map(classifId => {
                                             const filterGroup = sidebarFilters.find(f => f.id === classifId)
@@ -362,25 +461,160 @@ export default function SavedViewsTabs({
                                                 </div>
                                             )
                                         })}
-                                        {/* Field-based advanced filters */}
-                                        {fieldFilters.length > 0 && (
-                                            <div className="saved-view-filter-group">
-                                                <span className="saved-view-filter-group-label">Filtres avancés:</span>
-                                                <div className="saved-view-filter-tags">
-                                                    {fieldFilters.map((f, i) => (
-                                                        <span key={i} className="saved-view-filter-tag" style={{ borderColor: '#4361ee', color: '#4361ee' }}>
-                                                            {f.fieldName} {getOperatorShortLabel(f.operator)} {f.value || ''}
-                                                        </span>
-                                                    ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Inline filter builder */}
+                            <div className="saved-view-form-group">
+                                <label className="saved-view-form-label">Filtres avancés</label>
+                                <div className="svm-filter-builder">
+                                    {/* Existing modal filters */}
+                                    {modalFieldFilters.map((filter, index) => {
+                                        const isClassif = filter.fieldId?.startsWith('classif:')
+                                        const classifOptions = isClassif ? (classificationOptionsMap[filter.fieldId] || []) : []
+                                        const availableOps = getModalOperatorsForType(filter.fieldType)
+                                        const isNoValueOp = ['is_empty', 'is_not_empty'].includes(filter.operator)
+                                        const isBetweenOp = filter.operator === 'between'
+                                        const currentLogic = filter.logic || 'AND'
+
+                                        return (
+                                            <React.Fragment key={index}>
+                                                {/* Per-filter AND/OR connector */}
+                                                {index > 0 && (
+                                                    <div className="svm-filter-connector">
+                                                        <span className="svm-filter-connector-line"></span>
+                                                        <button
+                                                            type="button"
+                                                            className={`svm-filter-connector-badge ${currentLogic === 'OR' ? 'svm-filter-connector-badge--or' : ''}`}
+                                                            onClick={() => updateModalFilter(index, { logic: currentLogic === 'AND' ? 'OR' : 'AND' })}
+                                                            title="Cliquez pour basculer ET/OU"
+                                                        >
+                                                            {currentLogic === 'OR' ? 'OU' : 'ET'}
+                                                        </button>
+                                                        <span className="svm-filter-connector-line"></span>
+                                                    </div>
+                                                )}
+                                                <div className="svm-filter-row">
+                                                    {/* Field */}
+                                                    <select
+                                                        value={filter.fieldId}
+                                                        onChange={(e) => {
+                                                            const newCol = filterableColumns.find(c => c.id === e.target.value)
+                                                            if (newCol) {
+                                                                const newIsClassif = e.target.value.startsWith('classif:')
+                                                                const newOps = getModalOperatorsForType(newCol.type)
+                                                                const defaultOp = newIsClassif
+                                                                    ? (newOps.find(o => o.key === 'equals') || newOps[0])
+                                                                    : (newOps.find(o => o.key === filter.operator) || newOps[0])
+                                                                updateModalFilter(index, {
+                                                                    fieldId: newCol.id,
+                                                                    fieldName: newCol.name,
+                                                                    fieldType: newCol.type || 'text',
+                                                                    operator: defaultOp.key,
+                                                                    value: '',
+                                                                    value2: ''
+                                                                })
+                                                            }
+                                                        }}
+                                                        className="svm-filter-select svm-filter-select--field"
+                                                    >
+                                                        {filterableColumns.map(col => (
+                                                            <option key={col.id} value={col.id}>{col.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    {/* Operator */}
+                                                    <select
+                                                        value={filter.operator}
+                                                        onChange={(e) => updateModalFilter(index, {
+                                                            operator: e.target.value,
+                                                            value: ['is_empty', 'is_not_empty'].includes(e.target.value) ? '' : filter.value,
+                                                            value2: ''
+                                                        })}
+                                                        className="svm-filter-select svm-filter-select--op"
+                                                    >
+                                                        {availableOps.map(op => (
+                                                            <option key={op.key} value={op.key}>{op.label}</option>
+                                                        ))}
+                                                    </select>
+                                                    {/* Value */}
+                                                    {!isNoValueOp && (
+                                                        isClassif && classifOptions.length > 0 ? (
+                                                            <select
+                                                                value={filter.value}
+                                                                onChange={(e) => updateModalFilter(index, { value: e.target.value })}
+                                                                className="svm-filter-select svm-filter-select--val"
+                                                            >
+                                                                <option value="">Sélectionnez...</option>
+                                                                {classifOptions.map(opt => (
+                                                                    <option key={opt.id} value={opt.label}>{opt.label}</option>
+                                                                ))}
+                                                            </select>
+                                                        ) : (
+                                                            <input
+                                                                type={getModalInputType(filter.fieldType)}
+                                                                value={filter.value}
+                                                                onChange={(e) => updateModalFilter(index, { value: e.target.value })}
+                                                                placeholder="Valeur..."
+                                                                className="svm-filter-input"
+                                                            />
+                                                        )
+                                                    )}
+                                                    {/* Between second value */}
+                                                    {isBetweenOp && (
+                                                        <input
+                                                            type={getModalInputType(filter.fieldType)}
+                                                            value={filter.value2 || ''}
+                                                            onChange={(e) => updateModalFilter(index, { value2: e.target.value })}
+                                                            placeholder="Max..."
+                                                            className="svm-filter-input"
+                                                        />
+                                                    )}
+                                                    {/* Remove */}
+                                                    <button
+                                                        type="button"
+                                                        className="svm-filter-remove"
+                                                        onClick={() => removeModalFilter(index)}
+                                                        title="Supprimer ce filtre"
+                                                    >
+                                                        <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
+                                                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                                        </svg>
+                                                    </button>
                                                 </div>
+                                            </React.Fragment>
+                                        )
+                                    })}
+
+                                    {/* Add filter button */}
+                                    <div className="svm-filter-add-row" ref={modalFieldSelectorRef}>
+                                        <button
+                                            type="button"
+                                            className="svm-filter-add-btn"
+                                            onClick={() => setModalShowFieldSelector(!modalShowFieldSelector)}
+                                        >
+                                            <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
+                                                <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                            </svg>
+                                            Ajouter un filtre
+                                        </button>
+                                        {modalShowFieldSelector && (
+                                            <div className="svm-filter-field-dropdown">
+                                                <div className="svm-filter-field-dropdown-title">Choisir un champ</div>
+                                                {filterableColumns.map(col => (
+                                                    <button
+                                                        key={col.id}
+                                                        type="button"
+                                                        className="svm-filter-field-option"
+                                                        onClick={() => addModalFilter(col.id)}
+                                                    >
+                                                        {col.name}
+                                                    </button>
+                                                ))}
                                             </div>
                                         )}
                                     </div>
-                                ) : (
-                                    <p className="saved-view-no-filters">
-                                        Aucun filtre actif. Utilisez la sidebar pour filtrer d'abord.
-                                    </p>
-                                )}
+                                </div>
                             </div>
                         </div>
 
@@ -840,6 +1074,241 @@ export default function SavedViewsTabs({
                     cursor: not-allowed;
                     transform: none;
                     box-shadow: none;
+                }
+
+                /* ── Modal Inline Filter Builder ──────────────────── */
+                .svm-filter-builder {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+                .svm-filter-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 6px 8px;
+                    background: #f8fafc;
+                    border: 1.5px solid #e2e8f0;
+                    border-radius: 8px;
+                    transition: border-color 0.15s;
+                }
+                .dark .svm-filter-row {
+                    background: rgba(255,255,255,0.03);
+                    border-color: rgba(255,255,255,0.08);
+                }
+                .svm-filter-row:hover {
+                    border-color: var(--primary, #4361ee);
+                }
+                .svm-filter-select {
+                    padding: 4px 6px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 6px;
+                    font-size: 11.5px;
+                    color: #334155;
+                    background: #fff;
+                    outline: none;
+                    cursor: pointer;
+                    transition: border-color 0.15s;
+                }
+                .dark .svm-filter-select {
+                    background: #1b2e4b;
+                    border-color: rgba(255,255,255,0.1);
+                    color: #e2e8f0;
+                }
+                .svm-filter-select:focus {
+                    border-color: var(--primary, #4361ee);
+                }
+                .svm-filter-select--field {
+                    flex: 1;
+                    min-width: 0;
+                    font-weight: 600;
+                }
+                .svm-filter-select--op {
+                    min-width: 100px;
+                }
+                .svm-filter-select--val {
+                    flex: 1;
+                    min-width: 0;
+                }
+                .svm-filter-input {
+                    flex: 1;
+                    min-width: 0;
+                    padding: 4px 6px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 6px;
+                    font-size: 11.5px;
+                    color: #334155;
+                    background: #fff;
+                    outline: none;
+                    transition: border-color 0.15s;
+                }
+                .dark .svm-filter-input {
+                    background: #1b2e4b;
+                    border-color: rgba(255,255,255,0.1);
+                    color: #e2e8f0;
+                }
+                .svm-filter-input:focus {
+                    border-color: var(--primary, #4361ee);
+                }
+                .svm-filter-input::placeholder {
+                    color: #94a3b8;
+                }
+                .svm-filter-remove {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 50%;
+                    border: none;
+                    background: none;
+                    color: #94a3b8;
+                    cursor: pointer;
+                    flex-shrink: 0;
+                    transition: all 0.15s;
+                }
+                .svm-filter-remove:hover {
+                    background: #fee2e2;
+                    color: #dc2626;
+                }
+                .dark .svm-filter-remove:hover {
+                    background: rgba(220,38,38,0.15);
+                    color: #ef4444;
+                }
+
+                /* ── Modal Filter Connector ──────────────────── */
+                .svm-filter-connector {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 0 8px;
+                }
+                .svm-filter-connector-line {
+                    flex: 1;
+                    height: 1px;
+                    background: #e2e8f0;
+                }
+                .dark .svm-filter-connector-line {
+                    background: rgba(255,255,255,0.08);
+                }
+                .svm-filter-connector-badge {
+                    font-size: 9px;
+                    font-weight: 800;
+                    letter-spacing: 0.05em;
+                    color: var(--primary, #4361ee);
+                    background: rgba(67, 97, 238, 0.08);
+                    padding: 1px 10px;
+                    border-radius: 4px;
+                    text-transform: uppercase;
+                    border: 1.5px solid rgba(67, 97, 238, 0.2);
+                    cursor: pointer;
+                    transition: all 0.15s;
+                }
+                .svm-filter-connector-badge:hover {
+                    background: rgba(67, 97, 238, 0.18);
+                    border-color: var(--primary, #4361ee);
+                    transform: scale(1.05);
+                }
+                .svm-filter-connector-badge--or {
+                    color: #f59e0b;
+                    background: rgba(245, 158, 11, 0.1);
+                    border-color: rgba(245, 158, 11, 0.25);
+                }
+                .svm-filter-connector-badge--or:hover {
+                    background: rgba(245, 158, 11, 0.2);
+                    border-color: #f59e0b;
+                }
+
+                /* ── Modal Add Filter ──────────────────── */
+                .svm-filter-add-row {
+                    position: relative;
+                }
+                .svm-filter-add-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 6px 10px;
+                    border: 1.5px dashed #cbd5e1;
+                    border-radius: 8px;
+                    background: transparent;
+                    color: #94a3b8;
+                    font-size: 11.5px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                    width: 100%;
+                    justify-content: center;
+                }
+                .svm-filter-add-btn:hover {
+                    border-color: var(--primary, #4361ee);
+                    color: var(--primary, #4361ee);
+                    background: rgba(67,97,238,0.04);
+                }
+                .dark .svm-filter-add-btn {
+                    border-color: #475569;
+                    color: #64748b;
+                }
+                .dark .svm-filter-add-btn:hover {
+                    border-color: var(--primary, #4361ee);
+                    color: var(--primary, #4361ee);
+                }
+                .svm-filter-field-dropdown {
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    bottom: calc(100% + 4px);
+                    z-index: 100;
+                    background: #fff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
+                    padding: 4px;
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+                    max-height: 200px;
+                    overflow-y: auto;
+                    animation: svmFilterDropIn 0.12s ease-out;
+                }
+                .dark .svm-filter-field-dropdown {
+                    background: #0e1726;
+                    border-color: rgba(255,255,255,0.1);
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+                }
+                @keyframes svmFilterDropIn {
+                    from { opacity: 0; transform: translateY(4px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .svm-filter-field-dropdown-title {
+                    padding: 6px 10px 4px;
+                    font-size: 10px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.04em;
+                    color: #94a3b8;
+                }
+                .svm-filter-field-option {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    width: 100%;
+                    padding: 7px 10px;
+                    border: none;
+                    background: none;
+                    font-size: 12px;
+                    color: #475569;
+                    cursor: pointer;
+                    border-radius: 6px;
+                    transition: all 0.12s;
+                    text-align: left;
+                }
+                .dark .svm-filter-field-option {
+                    color: #cbd5e1;
+                }
+                .svm-filter-field-option:hover {
+                    background: #f1f5f9;
+                    color: #1e293b;
+                }
+                .dark .svm-filter-field-option:hover {
+                    background: rgba(255,255,255,0.06);
+                    color: #f1f5f9;
                 }
             `}</style>
         </>

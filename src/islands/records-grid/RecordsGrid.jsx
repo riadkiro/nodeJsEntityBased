@@ -22,8 +22,16 @@ function getRecordFieldValue(record, fieldId) {
     // Relation fields (rel:key)
     if (fieldId.startsWith('rel:')) {
         const relKey = fieldId.replace('rel:', '')
-        const rel = (record.relations || []).find(r => r.key === relKey)
-        if (rel) return rel.title || rel.computedTitle || ''
+        // Check denormalized relations first (most reliable)
+        const denormRelations = record._denorm?.relations || []
+        const denormRel = denormRelations.find(dr => dr.relationKey === relKey)
+        if (denormRel?.records?.length > 0) {
+            return denormRel.records.map(r => r.title || r.computedTitle || '').join(', ')
+        }
+        // Fallback: direct relations array
+        const rel = (record.relations || []).find(r => r.key === relKey || r.relationKey === relKey)
+        if (rel) return rel.title || rel.computedTitle || rel.value || ''
+        // Fallback: legacy denorm by key
         const denorm = record._denorm?.[relKey]
         if (denorm) return denorm.title || denorm.computedTitle || ''
         return ''
@@ -132,8 +140,6 @@ export default function RecordsGrid({
     const [activeFilters, setActiveFilters] = useState({})
     // Field-based advanced filters
     const [fieldFilters, setFieldFilters] = useState([])
-    // Filter logic: 'AND' or 'OR' between advanced filters
-    const [filterLogic, setFilterLogic] = useState('AND')
 
     // Saved views state
     const [savedViews, setSavedViews] = useState([])
@@ -464,21 +470,37 @@ export default function RecordsGrid({
             })
         }
 
-        // Apply advanced field filters (AND or OR based on filterLogic)
+        // Apply advanced field filters with per-filter AND/OR logic
+        // Each filter (except first) has its own logic (AND/OR) connector
+        // Evaluation: group consecutive AND filters, OR creates new groups
+        // Record passes if it matches ANY group (OR between groups)
+        // Within a group, ALL filters must match (AND within group)
         if (advancedFilters && advancedFilters.length > 0) {
             result = result.filter(record => {
-                const matcher = filterLogic === 'OR'
-                    ? advancedFilters.some.bind(advancedFilters)
-                    : advancedFilters.every.bind(advancedFilters)
-                return matcher(filter => {
-                    const fieldValue = getRecordFieldValue(record, filter.fieldId)
-                    return matchFieldFilter(fieldValue, filter)
-                })
+                // Build groups of filters connected by AND
+                // OR boundaries create new groups
+                const groups = [[advancedFilters[0]]]
+                for (let i = 1; i < advancedFilters.length; i++) {
+                    const filterLogic = advancedFilters[i].logic || 'AND'
+                    if (filterLogic === 'OR') {
+                        groups.push([advancedFilters[i]])
+                    } else {
+                        groups[groups.length - 1].push(advancedFilters[i])
+                    }
+                }
+                // Record passes if it matches ANY group
+                return groups.some(group =>
+                    // Within a group, ALL filters must match
+                    group.every(filter => {
+                        const fieldValue = getRecordFieldValue(record, filter.fieldId)
+                        return matchFieldFilter(fieldValue, filter)
+                    })
+                )
             })
         }
 
         return result
-    }, [filterLogic])
+    }, [])
 
     // Handle search
     const handleSearch = useCallback((queryOrEvent) => {
@@ -506,7 +528,7 @@ export default function RecordsGrid({
     useEffect(() => {
         const filtered = applyFilters(recordsWithSearchIndex, searchQuery, activeFilters, fieldFilters)
         setFilteredRecords(filtered)
-    }, [recordsWithSearchIndex, searchQuery, activeFilters, fieldFilters, filterLogic, applyFilters])
+    }, [recordsWithSearchIndex, searchQuery, activeFilters, fieldFilters, applyFilters])
 
     // LOCAL PAGINATION - Slice filtered records
     useEffect(() => {
@@ -670,8 +692,6 @@ export default function RecordsGrid({
                 fieldFilters={fieldFilters}
                 onFieldFiltersChange={handleFieldFiltersChange}
                 allRecords={allRecords}
-                filterLogic={filterLogic}
-                onFilterLogicChange={setFilterLogic}
             />
 
             {/* Main content panel */}
@@ -710,6 +730,7 @@ export default function RecordsGrid({
                     activeFilters={activeFilters}
                     fieldFilters={fieldFilters}
                     sidebarFilters={sidebarFilters}
+                    columns={columns}
                     externalOpenCreate={showSaveViewModal}
                     onCloseExternalCreate={() => setShowSaveViewModal(false)}
                 />

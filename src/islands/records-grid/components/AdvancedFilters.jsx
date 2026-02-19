@@ -49,8 +49,6 @@ export default function AdvancedFilters({
     onFieldFiltersChange,
     allRecords = [],
     sidebarFilters = [],
-    filterLogic = 'AND',
-    onFilterLogicChange,
 }) {
     const [isExpanded, setIsExpanded] = useState(fieldFilters.length > 0)
     const [editingIndex, setEditingIndex] = useState(null)
@@ -101,6 +99,7 @@ export default function AdvancedFilters({
             operator: defaultOp.key,
             value: '',
             value2: '', // For "between" operator
+            logic: 'AND', // Default connector logic for this filter
         }
 
         onFieldFiltersChange([...fieldFilters, newFilter])
@@ -176,29 +175,6 @@ export default function AdvancedFilters({
 
             {isExpanded && (
                 <div className="adv-filters-body">
-                    {/* AND/OR Toggle — only show when 2+ filters */}
-                    {fieldFilters.length >= 2 && (
-                        <div className="adv-filter-logic-toggle">
-                            <span className="adv-filter-logic-label">Logique :</span>
-                            <div className="adv-filter-logic-buttons">
-                                <button
-                                    type="button"
-                                    className={`adv-filter-logic-btn ${filterLogic === 'AND' ? 'adv-filter-logic-btn--active' : ''}`}
-                                    onClick={() => onFilterLogicChange && onFilterLogicChange('AND')}
-                                >
-                                    ET
-                                </button>
-                                <button
-                                    type="button"
-                                    className={`adv-filter-logic-btn ${filterLogic === 'OR' ? 'adv-filter-logic-btn--active' : ''}`}
-                                    onClick={() => onFilterLogicChange && onFilterLogicChange('OR')}
-                                >
-                                    OU
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
                     {/* Active filter conditions */}
                     {fieldFilters.map((filter, index) => {
                         const column = filterableColumns.find(c => c.id === filter.fieldId)
@@ -206,16 +182,25 @@ export default function AdvancedFilters({
                         const isEditing = editingIndex === index
                         const isClassif = isClassificationField(filter.fieldId)
                         const classifOptions = isClassif ? getClassificationOptions(filter.fieldId) : []
+                        const currentFilterLogic = filter.logic || 'AND'
 
                         return (
                             <React.Fragment key={index}>
-                                {/* AND/OR connector between filters */}
-                                {index > 0 && fieldFilters.length >= 2 && (
+                                {/* AND/OR connector between filters — clickable to toggle */}
+                                {index > 0 && (
                                     <div className="adv-filter-connector">
                                         <span className="adv-filter-connector-line"></span>
-                                        <span className={`adv-filter-connector-badge ${filterLogic === 'OR' ? 'adv-filter-connector-badge--or' : ''}`}>
-                                            {filterLogic === 'OR' ? 'OU' : 'ET'}
-                                        </span>
+                                        <button
+                                            type="button"
+                                            className={`adv-filter-connector-badge ${currentFilterLogic === 'OR' ? 'adv-filter-connector-badge--or' : ''}`}
+                                            onClick={() => {
+                                                const newLogic = currentFilterLogic === 'AND' ? 'OR' : 'AND'
+                                                updateFilter(index, { logic: newLogic })
+                                            }}
+                                            title={`Cliquez pour basculer entre ET/OU`}
+                                        >
+                                            {currentFilterLogic === 'OR' ? 'OU' : 'ET'}
+                                        </button>
                                         <span className="adv-filter-connector-line"></span>
                                     </div>
                                 )}
@@ -492,70 +477,6 @@ export default function AdvancedFilters({
                     gap: 6px;
                 }
 
-                /* ── AND/OR Logic Toggle ──────────────────── */
-                .adv-filter-logic-toggle {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    padding: 6px 8px;
-                    background: #f8fafc;
-                    border-radius: 8px;
-                    border: 1px solid #e2e8f0;
-                }
-                .dark .adv-filter-logic-toggle {
-                    background: rgba(255,255,255,0.03);
-                    border-color: rgba(255,255,255,0.08);
-                }
-                .adv-filter-logic-label {
-                    font-size: 11px;
-                    font-weight: 600;
-                    color: #64748b;
-                    white-space: nowrap;
-                }
-                .dark .adv-filter-logic-label {
-                    color: #94a3b8;
-                }
-                .adv-filter-logic-buttons {
-                    display: flex;
-                    gap: 0;
-                    border-radius: 6px;
-                    overflow: hidden;
-                    border: 1.5px solid #e2e8f0;
-                }
-                .dark .adv-filter-logic-buttons {
-                    border-color: rgba(255,255,255,0.1);
-                }
-                .adv-filter-logic-btn {
-                    padding: 3px 14px;
-                    border: none;
-                    background: #fff;
-                    color: #64748b;
-                    font-size: 11px;
-                    font-weight: 700;
-                    cursor: pointer;
-                    transition: all 0.15s;
-                    letter-spacing: 0.03em;
-                }
-                .dark .adv-filter-logic-btn {
-                    background: #1b2e4b;
-                    color: #94a3b8;
-                }
-                .adv-filter-logic-btn:first-child {
-                    border-right: 1.5px solid #e2e8f0;
-                }
-                .dark .adv-filter-logic-btn:first-child {
-                    border-right-color: rgba(255,255,255,0.1);
-                }
-                .adv-filter-logic-btn--active {
-                    background: var(--primary, #4361ee) !important;
-                    color: #fff !important;
-                }
-                .adv-filter-logic-btn:hover:not(.adv-filter-logic-btn--active) {
-                    background: #f1f5f9;
-                }
-                .dark .adv-filter-logic-btn:hover:not(.adv-filter-logic-btn--active) {
-                    background: rgba(255,255,255,0.06);
-                }
 
                 /* ── Filter Connector (AND/OR between pills) ──────────────────── */
                 .adv-filter-connector {
@@ -578,13 +499,26 @@ export default function AdvancedFilters({
                     letter-spacing: 0.05em;
                     color: var(--primary, #4361ee);
                     background: rgba(67, 97, 238, 0.08);
-                    padding: 1px 8px;
+                    padding: 1px 10px;
                     border-radius: 4px;
                     text-transform: uppercase;
+                    border: 1.5px solid rgba(67, 97, 238, 0.2);
+                    cursor: pointer;
+                    transition: all 0.15s;
+                }
+                .adv-filter-connector-badge:hover {
+                    background: rgba(67, 97, 238, 0.18);
+                    border-color: var(--primary, #4361ee);
+                    transform: scale(1.05);
                 }
                 .adv-filter-connector-badge--or {
                     color: #f59e0b;
                     background: rgba(245, 158, 11, 0.1);
+                    border-color: rgba(245, 158, 11, 0.25);
+                }
+                .adv-filter-connector-badge--or:hover {
+                    background: rgba(245, 158, 11, 0.2);
+                    border-color: #f59e0b;
                 }
 
                 /* ── Filter Pill (compact view) ──────────────────── */

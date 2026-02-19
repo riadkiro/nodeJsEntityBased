@@ -20,8 +20,6 @@ export default function RecordsSidebar({
     fieldFilters = [],
     onFieldFiltersChange,
     allRecords = [],
-    filterLogic = 'AND',
-    onFilterLogicChange,
 }) {
     const [showDropdown, setShowDropdown] = useState(false)
     const dropdownRef = useRef(null)
@@ -67,7 +65,7 @@ export default function RecordsSidebar({
     const hasAnyFilter = Object.keys(activeFilters).length > 0
 
     return (
-        <div className="panel z-10 w-full max-w-xs flex-none space-y-4 overflow-hidden p-4 h-full"
+        <div className="panel z-10 w-full max-w-xs flex-none space-y-4 overflow-y-auto p-4 h-full"
             style={{ display: 'flex', flexDirection: 'column' }}>
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -233,8 +231,6 @@ export default function RecordsSidebar({
                                 onFieldFiltersChange={onFieldFiltersChange}
                                 allRecords={allRecords}
                                 sidebarFilters={filters}
-                                filterLogic={filterLogic}
-                                onFilterLogicChange={onFilterLogicChange}
                             />
                         </div>
                     </div>

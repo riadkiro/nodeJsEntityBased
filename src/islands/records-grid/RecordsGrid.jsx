@@ -145,6 +145,15 @@ export default function RecordsGrid({
     const [savedViews, setSavedViews] = useState([])
     const [activeSavedViewId, setActiveSavedViewId] = useState(null)
     const [showSaveViewModal, setShowSaveViewModal] = useState(false)
+    const [toast, setToast] = useState(null) // { message, type: 'success'|'error' }
+    const toastTimerRef = useRef(null)
+
+    // Show a temporary toast notification
+    const showToast = useCallback((message, type = 'success') => {
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+        setToast({ message, type })
+        toastTimerRef.current = setTimeout(() => setToast(null), 2500)
+    }, [])
 
     // Preferences state
     const [preferences, setPreferences] = useState({
@@ -341,27 +350,43 @@ export default function RecordsGrid({
         }
     }, [accountNumber, entityId])
 
-    // Update a saved view's filters with current active filters
-    const handleUpdateViewFilters = useCallback(async (viewIdToUpdate, newFilters, newFieldFilters) => {
+    // Update a saved view (name, color, filters)
+    const handleUpdateViewFilters = useCallback(async (viewIdToUpdate, newFilters, newFieldFilters, newName, newColor) => {
         try {
+            const updatePayload = { filters: newFilters, fieldFilters: newFieldFilters || [] }
+            if (newName) updatePayload.name = newName
+            if (newColor) updatePayload.color = newColor
+
             const res = await fetch(
                 `/account/${accountNumber}/api/entity/${entityId}/saved-views/${viewIdToUpdate}`,
                 {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ filters: newFilters, fieldFilters: newFieldFilters || [] })
+                    body: JSON.stringify(updatePayload)
                 }
             )
             if (res.ok) {
-                setSavedViews(prev => prev.map(v =>
-                    v._id === viewIdToUpdate ? { ...v, filters: newFilters, fieldFilters: newFieldFilters || [] } : v
-                ))
+                // Deep clone to break reference equality — ensures React detects changes when re-selecting
+                const clonedFilters = JSON.parse(JSON.stringify(newFilters || {}))
+                const clonedFieldFilters = JSON.parse(JSON.stringify(newFieldFilters || []))
+                setSavedViews(prev => prev.map(v => {
+                    if (v._id !== viewIdToUpdate) return v
+                    const updated = { ...v, filters: clonedFilters, fieldFilters: clonedFieldFilters }
+                    if (newName) updated.name = newName
+                    if (newColor) updated.color = newColor
+                    return updated
+                }))
+                const displayName = newName || savedViews.find(v => v._id === viewIdToUpdate)?.name || 'Vue'
+                showToast(`Vue "${displayName}" mise à jour`)
+            } else {
+                showToast('Erreur lors de la mise à jour', 'error')
             }
         } catch (err) {
-            console.error('[RecordsGrid] Update saved view filters error:', err)
+            console.error('[RecordsGrid] Update saved view error:', err)
+            showToast('Erreur lors de la mise à jour', 'error')
         }
-    }, [accountNumber, entityId])
+    }, [accountNumber, entityId, savedViews, showToast])
 
     // Select a saved view (apply its filters)
     const handleSelectSavedView = useCallback((savedViewId) => {
@@ -378,8 +403,9 @@ export default function RecordsGrid({
         if (!view) return
 
         setActiveSavedViewId(savedViewId)
-        setActiveFilters(view.filters || {})
-        setFieldFilters(view.fieldFilters || [])
+        // Deep clone to ensure React detects the change even if same data
+        setActiveFilters(JSON.parse(JSON.stringify(view.filters || {})))
+        setFieldFilters(JSON.parse(JSON.stringify(view.fieldFilters || [])))
         setPagination(prev => ({ ...prev, page: 1 }))
     }, [savedViews])
 
@@ -836,6 +862,42 @@ export default function RecordsGrid({
                     )}
                 </div>
             </div>
+
+            {/* Toast notification */}
+            {toast && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '24px',
+                    right: '24px',
+                    zIndex: 99999,
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    color: '#fff',
+                    background: toast.type === 'error' ? '#e7515a' : '#00ab55',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                    animation: 'toastSlideIn 0.25s ease-out',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                }}>
+                    <svg viewBox="0 0 24 24" fill="none" style={{ width: 16, height: 16, flexShrink: 0 }}>
+                        {toast.type === 'error' ? (
+                            <path d="M12 8V12M12 16H12.01M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        ) : (
+                            <path d="M5 13L9 17L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        )}
+                    </svg>
+                    {toast.message}
+                </div>
+            )}
+            <style>{`
+                @keyframes toastSlideIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
         </div>
     )
 }

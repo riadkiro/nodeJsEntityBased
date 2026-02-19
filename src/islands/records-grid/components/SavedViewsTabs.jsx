@@ -84,8 +84,11 @@ export default function SavedViewsTabs({
     const [contextMenu, setContextMenu] = useState(null) // { viewId, x, y }
     const [editingViewId, setEditingViewId] = useState(null)
     const [editingName, setEditingName] = useState('')
+    // Edit mode for modal (null = create, viewId = edit)
+    const [editModalViewId, setEditModalViewId] = useState(null)
     // Modal inline filter state
     const [modalFieldFilters, setModalFieldFilters] = useState([])
+    const [modalClassificationFilters, setModalClassificationFilters] = useState({})
     const [modalShowFieldSelector, setModalShowFieldSelector] = useState(false)
     const modalFieldSelectorRef = useRef(null)
     const contextMenuRef = useRef(null)
@@ -121,10 +124,11 @@ export default function SavedViewsTabs({
         }
     }, [externalOpenCreate])
 
-    // Init modal filters when modal opens internally
+    // Init modal filters when modal opens internally (only for create mode)
     useEffect(() => {
-        if (showCreateModal) {
+        if (showCreateModal && !editModalViewId) {
             setModalFieldFilters([...fieldFilters])
+            setModalClassificationFilters(JSON.parse(JSON.stringify(activeFilters || {})))
         }
     }, [showCreateModal])
 
@@ -157,12 +161,13 @@ export default function SavedViewsTabs({
         onCreateView({
             name: newViewName.trim(),
             color: newViewColor,
-            filters: activeFilters,
+            filters: modalClassificationFilters,
             fieldFilters: modalFieldFilters
         })
         setNewViewName('')
         setNewViewColor('#4361ee')
         setModalFieldFilters([])
+        setModalClassificationFilters({})
         setShowCreateModal(false)
     }
 
@@ -231,9 +236,29 @@ export default function SavedViewsTabs({
         setContextMenu(null)
     }
 
-    const handleUpdateFilters = (viewId) => {
-        onUpdateViewFilters(viewId, activeFilters, fieldFilters)
+    // Open edit modal pre-filled with the view's data
+    const handleOpenEditModal = (viewId) => {
+        const view = savedViews.find(v => v._id === viewId)
+        if (!view) return
+        setEditModalViewId(viewId)
+        setNewViewName(view.name || '')
+        setNewViewColor(view.color || '#4361ee')
+        setModalFieldFilters(view.fieldFilters ? JSON.parse(JSON.stringify(view.fieldFilters)) : [])
+        setModalClassificationFilters(view.filters ? JSON.parse(JSON.stringify(view.filters)) : {})
+        setShowCreateModal(true)
         setContextMenu(null)
+    }
+
+    // Handle save in edit mode
+    const handleEditSave = () => {
+        if (!newViewName.trim() || !editModalViewId) return
+        onUpdateViewFilters(editModalViewId, modalClassificationFilters, modalFieldFilters, newViewName.trim(), newViewColor)
+        setNewViewName('')
+        setNewViewColor('#4361ee')
+        setModalFieldFilters([])
+        setModalClassificationFilters({})
+        setEditModalViewId(null)
+        setShowCreateModal(false)
     }
 
     // Get count of active filter conditions for a view
@@ -316,7 +341,7 @@ export default function SavedViewsTabs({
                 <button
                     type="button"
                     className="saved-view-tab saved-view-tab--add"
-                    onClick={() => setShowCreateModal(true)}
+                    onClick={() => { setEditModalViewId(null); setNewViewName(''); setNewViewColor('#4361ee'); setShowCreateModal(true) }}
                     title="Enregistrer une vue"
                 >
                     <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
@@ -348,14 +373,14 @@ export default function SavedViewsTabs({
                     </button>
                     <button
                         className="saved-view-context-item"
-                        onClick={() => handleUpdateFilters(contextMenu.viewId)}
+                        onClick={() => handleOpenEditModal(contextMenu.viewId)}
                     >
                         <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
                             <path d="M4.06189 13C4.02104 12.6724 4 12.3387 4 12C4 7.58172 7.58172 4 12 4C14.5006 4 16.7332 5.14727 18.2002 6.94416M19.9381 11C19.979 11.3276 20 11.6613 20 12C20 16.4183 16.4183 20 12 20C9.49944 20 7.26681 18.8527 5.79984 17.0558" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M15 7H19V3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M9 17H5V21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
-                        Mettre à jour les filtres
+                        Modifier la vue
                     </button>
                     <div className="saved-view-context-separator" />
                     <button
@@ -379,11 +404,11 @@ export default function SavedViewsTabs({
                 <div className="saved-view-modal-overlay" onClick={() => setShowCreateModal(false)}>
                     <div className="saved-view-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="saved-view-modal-header">
-                            <h3>Enregistrer la vue</h3>
+                            <h3>{editModalViewId ? 'Modifier la vue' : 'Enregistrer la vue'}</h3>
                             <button
                                 type="button"
                                 className="saved-view-modal-close"
-                                onClick={() => setShowCreateModal(false)}
+                                onClick={() => { setShowCreateModal(false); setEditModalViewId(null) }}
                             >
                                 <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
                                     <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -428,33 +453,53 @@ export default function SavedViewsTabs({
                                 </div>
                             </div>
 
-                            {/* Sidebar classification filters (read-only summary) */}
-                            {Object.keys(activeFilters).filter(k => k !== '__favourites').length > 0 && (
+                            {/* Sidebar classification filters (interactive) */}
+                            {sidebarFilters.length > 0 && (
                                 <div className="saved-view-form-group">
                                     <label className="saved-view-form-label">Filtres de classification</label>
-                                    <div className="saved-view-filter-summary">
-                                        {Object.keys(activeFilters).filter(k => k !== '__favourites').map(classifId => {
-                                            const filterGroup = sidebarFilters.find(f => f.id === classifId)
-                                            const selectedOptions = activeFilters[classifId] || []
+                                    <div className="svm-classif-editor">
+                                        {sidebarFilters.map(fg => {
+                                            const selectedOptions = modalClassificationFilters[fg.id] || []
                                             return (
-                                                <div key={classifId} className="saved-view-filter-group">
-                                                    <span className="saved-view-filter-group-label">
-                                                        {filterGroup?.name || 'Filtre'}:
-                                                    </span>
-                                                    <div className="saved-view-filter-tags">
-                                                        {selectedOptions.map(optId => {
-                                                            const option = filterGroup?.options?.find(o => o.id === optId)
+                                                <div key={fg.id} className="svm-classif-group">
+                                                    <span className="svm-classif-group-label">{fg.name}</span>
+                                                    <div className="svm-classif-options">
+                                                        {(fg.options || []).map(opt => {
+                                                            const isSelected = selectedOptions.includes(opt.id)
                                                             return (
-                                                                <span
-                                                                    key={optId}
-                                                                    className="saved-view-filter-tag"
+                                                                <button
+                                                                    key={opt.id}
+                                                                    type="button"
+                                                                    className={`svm-classif-pill ${isSelected ? 'svm-classif-pill--active' : ''}`}
                                                                     style={{
-                                                                        borderColor: option?.color || '#9ca3af',
-                                                                        color: option?.color || '#9ca3af'
+                                                                        '--pill-color': opt.color || '#9ca3af',
+                                                                    }}
+                                                                    onClick={() => {
+                                                                        setModalClassificationFilters(prev => {
+                                                                            const current = prev[fg.id] || []
+                                                                            let updated
+                                                                            if (isSelected) {
+                                                                                updated = current.filter(id => id !== opt.id)
+                                                                            } else {
+                                                                                updated = [...current, opt.id]
+                                                                            }
+                                                                            const next = { ...prev }
+                                                                            if (updated.length > 0) {
+                                                                                next[fg.id] = updated
+                                                                            } else {
+                                                                                delete next[fg.id]
+                                                                            }
+                                                                            return next
+                                                                        })
                                                                     }}
                                                                 >
-                                                                    {option?.label || optId}
-                                                                </span>
+                                                                    {isSelected && (
+                                                                        <svg viewBox="0 0 24 24" fill="none" className="svm-classif-check">
+                                                                            <path d="M5 13L9 17L19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                                        </svg>
+                                                                    )}
+                                                                    {opt.label}
+                                                                </button>
                                                             )
                                                         })}
                                                     </div>
@@ -622,20 +667,20 @@ export default function SavedViewsTabs({
                             <button
                                 type="button"
                                 className="saved-view-btn saved-view-btn--cancel"
-                                onClick={() => setShowCreateModal(false)}
+                                onClick={() => { setShowCreateModal(false); setEditModalViewId(null) }}
                             >
                                 Annuler
                             </button>
                             <button
                                 type="button"
                                 className="saved-view-btn saved-view-btn--save"
-                                onClick={handleCreate}
+                                onClick={editModalViewId ? handleEditSave : handleCreate}
                                 disabled={!newViewName.trim()}
                             >
                                 <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
                                     <path d="M5 13L9 17L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                 </svg>
-                                Enregistrer
+                                {editModalViewId ? 'Mettre à jour' : 'Enregistrer'}
                             </button>
                         </div>
                     </div>
@@ -1074,6 +1119,70 @@ export default function SavedViewsTabs({
                     cursor: not-allowed;
                     transform: none;
                     box-shadow: none;
+                }
+
+                /* ── Modal Classification Filter Editor ────────── */
+                .svm-classif-editor {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding: 12px;
+                    background: #f8fafc;
+                    border-radius: 10px;
+                    border: 1px solid #e2e8f0;
+                }
+                .dark .svm-classif-editor {
+                    background: rgba(255,255,255,0.03);
+                    border-color: rgba(255,255,255,0.08);
+                }
+                .svm-classif-group {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+                .svm-classif-group-label {
+                    font-size: 11px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    color: #64748b;
+                }
+                .dark .svm-classif-group-label {
+                    color: #94a3b8;
+                }
+                .svm-classif-options {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                }
+                .svm-classif-pill {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    padding: 4px 12px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    border: 1.5px solid var(--pill-color);
+                    background: transparent;
+                    color: var(--pill-color);
+                    transition: all 0.2s ease;
+                    line-height: 1.4;
+                }
+                .svm-classif-pill:hover {
+                    background: color-mix(in srgb, var(--pill-color) 12%, transparent);
+                }
+                .svm-classif-pill--active {
+                    background: var(--pill-color) !important;
+                    color: #fff !important;
+                    border-color: var(--pill-color);
+                    box-shadow: 0 1px 4px color-mix(in srgb, var(--pill-color) 40%, transparent);
+                }
+                .svm-classif-check {
+                    width: 12px;
+                    height: 12px;
+                    flex-shrink: 0;
                 }
 
                 /* ── Modal Inline Filter Builder ──────────────────── */

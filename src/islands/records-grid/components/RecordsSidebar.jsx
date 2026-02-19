@@ -3,6 +3,7 @@
  * Fetches filter groups from API and enables client-side filtering
  */
 import React, { useState, useRef, useEffect } from 'react'
+import AdvancedFilters from './AdvancedFilters'
 
 export default function RecordsSidebar({
     entityName,
@@ -14,7 +15,13 @@ export default function RecordsSidebar({
     onToggleSidebar,
     filters = [],
     activeFilters = {},
-    onFilterChange
+    onFilterChange,
+    columns = [],
+    fieldFilters = [],
+    onFieldFiltersChange,
+    allRecords = [],
+    filterLogic = 'AND',
+    onFilterLogicChange,
 }) {
     const [showDropdown, setShowDropdown] = useState(false)
     const dropdownRef = useRef(null)
@@ -218,6 +225,17 @@ export default function RecordsSidebar({
                                     )}
                                 </div>
                             ))}
+
+                            {/* Advanced field-based filters */}
+                            <AdvancedFilters
+                                columns={columns}
+                                fieldFilters={fieldFilters}
+                                onFieldFiltersChange={onFieldFiltersChange}
+                                allRecords={allRecords}
+                                sidebarFilters={filters}
+                                filterLogic={filterLogic}
+                                onFilterLogicChange={onFilterLogicChange}
+                            />
                         </div>
                     </div>
                     {/* Bottom Add button */}

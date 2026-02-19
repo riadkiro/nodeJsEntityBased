@@ -10,6 +10,26 @@ const VIEW_COLORS = [
     '#06b6d4', '#ec4899', '#f59e0b', '#10b981', '#6366f1'
 ]
 
+// Short operator labels for display
+function getOperatorShortLabel(op) {
+    const labels = {
+        contains: '⊃',
+        not_contains: '⊅',
+        equals: '=',
+        not_equals: '≠',
+        starts_with: 'A…',
+        ends_with: '…Z',
+        gt: '>',
+        gte: '≥',
+        lt: '<',
+        lte: '≤',
+        between: '↔',
+        is_empty: '∅',
+        is_not_empty: '∃',
+    }
+    return labels[op] || op
+}
+
 export default function SavedViewsTabs({
     savedViews = [],
     activeViewId,
@@ -312,7 +332,7 @@ export default function SavedViewsTabs({
                             {/* Active filters summary */}
                             <div className="saved-view-form-group">
                                 <label className="saved-view-form-label">Filtres actifs</label>
-                                {Object.keys(activeFilters).filter(k => k !== '__favourites').length > 0 ? (
+                                {(Object.keys(activeFilters).filter(k => k !== '__favourites').length > 0 || fieldFilters.length > 0) ? (
                                     <div className="saved-view-filter-summary">
                                         {Object.keys(activeFilters).filter(k => k !== '__favourites').map(classifId => {
                                             const filterGroup = sidebarFilters.find(f => f.id === classifId)
@@ -342,6 +362,19 @@ export default function SavedViewsTabs({
                                                 </div>
                                             )
                                         })}
+                                        {/* Field-based advanced filters */}
+                                        {fieldFilters.length > 0 && (
+                                            <div className="saved-view-filter-group">
+                                                <span className="saved-view-filter-group-label">Filtres avancés:</span>
+                                                <div className="saved-view-filter-tags">
+                                                    {fieldFilters.map((f, i) => (
+                                                        <span key={i} className="saved-view-filter-tag" style={{ borderColor: '#4361ee', color: '#4361ee' }}>
+                                                            {f.fieldName} {getOperatorShortLabel(f.operator)} {f.value || ''}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <p className="saved-view-no-filters">

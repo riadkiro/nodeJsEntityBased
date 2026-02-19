@@ -12,6 +12,99 @@ import RecordsNotes from './components/RecordsNotes'
 import RecordsSidebar from './components/RecordsSidebar'
 import SavedViewsTabs from './components/SavedViewsTabs'
 
+// ─── Helper: Extract the value of a field from a record ───
+function getRecordFieldValue(record, fieldId) {
+    // Built-in fields
+    if (fieldId === 'title') return record.referenceTitle || record.computedTitle || record.title || ''
+    if (fieldId === 'createdAt') return record.createdAt || ''
+    if (fieldId === 'updatedAt') return record.updatedAt || ''
+
+    // Relation fields (rel:key)
+    if (fieldId.startsWith('rel:')) {
+        const relKey = fieldId.replace('rel:', '')
+        const rel = (record.relations || []).find(r => r.key === relKey)
+        if (rel) return rel.title || rel.computedTitle || ''
+        const denorm = record._denorm?.[relKey]
+        if (denorm) return denorm.title || denorm.computedTitle || ''
+        return ''
+    }
+
+    // Classification fields (classif:id)
+    if (fieldId.startsWith('classif:')) {
+        const classifId = fieldId.replace('classif:', '')
+        const cvs = record.classificationValues || []
+        const matched = cvs.filter(cv => cv.classificationId?.toString() === classifId)
+        return matched.map(cv => cv.label || cv.optionLabel || '').join(', ')
+    }
+
+    // Custom fields (by field _id)
+    const cf = (record.customFields || []).find(f =>
+        f.field_id?._id?.toString() === fieldId ||
+        f.field_id?.toString() === fieldId
+    )
+    return cf?.value ?? ''
+}
+
+// ─── Helper: Check if a record field matches a filter condition ───
+function matchFieldFilter(rawValue, filter) {
+    const { operator, value, value2, fieldType } = filter
+    const isNumeric = ['number', 'currency', 'percent'].includes(fieldType)
+    const isDate = ['date', 'datetime'].includes(fieldType)
+
+    // Normalize
+    const strValue = String(rawValue ?? '').trim()
+    const lowerValue = strValue.toLowerCase()
+    const lowerFilter = String(value ?? '').trim().toLowerCase()
+
+    switch (operator) {
+        case 'contains':
+            return lowerValue.includes(lowerFilter)
+        case 'not_contains':
+            return !lowerValue.includes(lowerFilter)
+        case 'equals':
+            if (isNumeric) return parseFloat(strValue) === parseFloat(value)
+            return lowerValue === lowerFilter
+        case 'not_equals':
+            if (isNumeric) return parseFloat(strValue) !== parseFloat(value)
+            return lowerValue !== lowerFilter
+        case 'starts_with':
+            return lowerValue.startsWith(lowerFilter)
+        case 'ends_with':
+            return lowerValue.endsWith(lowerFilter)
+        case 'gt': {
+            if (isDate) return new Date(rawValue) > new Date(value)
+            return parseFloat(strValue) > parseFloat(value)
+        }
+        case 'gte': {
+            if (isDate) return new Date(rawValue) >= new Date(value)
+            return parseFloat(strValue) >= parseFloat(value)
+        }
+        case 'lt': {
+            if (isDate) return new Date(rawValue) < new Date(value)
+            return parseFloat(strValue) < parseFloat(value)
+        }
+        case 'lte': {
+            if (isDate) return new Date(rawValue) <= new Date(value)
+            return parseFloat(strValue) <= parseFloat(value)
+        }
+        case 'between': {
+            if (isDate) {
+                const d = new Date(rawValue)
+                return d >= new Date(value) && d <= new Date(value2)
+            }
+            const n = parseFloat(strValue)
+            return n >= parseFloat(value) && n <= parseFloat(value2)
+        }
+        case 'is_empty':
+            return strValue === '' || rawValue == null
+        case 'is_not_empty':
+            return strValue !== '' && rawValue != null
+        default:
+            return true
+    }
+}
+
+
 export default function RecordsGrid({
     accountId,
     accountNumber,
@@ -37,6 +130,10 @@ export default function RecordsGrid({
     // Filter state (classification-based)
     const [sidebarFilters, setSidebarFilters] = useState([])
     const [activeFilters, setActiveFilters] = useState({})
+    // Field-based advanced filters
+    const [fieldFilters, setFieldFilters] = useState([])
+    // Filter logic: 'AND' or 'OR' between advanced filters
+    const [filterLogic, setFilterLogic] = useState('AND')
 
     // Saved views state
     const [savedViews, setSavedViews] = useState([])
@@ -266,6 +363,7 @@ export default function RecordsGrid({
             // "All" tab - clear filters
             setActiveSavedViewId(null)
             setActiveFilters({})
+            setFieldFilters([])
             setPagination(prev => ({ ...prev, page: 1 }))
             return
         }
@@ -275,6 +373,7 @@ export default function RecordsGrid({
 
         setActiveSavedViewId(savedViewId)
         setActiveFilters(view.filters || {})
+        setFieldFilters(view.fieldFilters || [])
         setPagination(prev => ({ ...prev, page: 1 }))
     }, [savedViews])
 
@@ -335,8 +434,8 @@ export default function RecordsGrid({
         }))
     }, [sortedRecords])
 
-    // CLIENT-SIDE SEARCH + CLASSIFICATION FILTER
-    const applyFilters = useCallback((records, query, classifFilters) => {
+    // CLIENT-SIDE SEARCH + CLASSIFICATION FILTER + FIELD FILTERS
+    const applyFilters = useCallback((records, query, classifFilters, advancedFilters) => {
         let result = records
 
         // Apply search
@@ -365,8 +464,21 @@ export default function RecordsGrid({
             })
         }
 
+        // Apply advanced field filters (AND or OR based on filterLogic)
+        if (advancedFilters && advancedFilters.length > 0) {
+            result = result.filter(record => {
+                const matcher = filterLogic === 'OR'
+                    ? advancedFilters.some.bind(advancedFilters)
+                    : advancedFilters.every.bind(advancedFilters)
+                return matcher(filter => {
+                    const fieldValue = getRecordFieldValue(record, filter.fieldId)
+                    return matchFieldFilter(fieldValue, filter)
+                })
+            })
+        }
+
         return result
-    }, [])
+    }, [filterLogic])
 
     // Handle search
     const handleSearch = useCallback((queryOrEvent) => {
@@ -384,11 +496,17 @@ export default function RecordsGrid({
         setPagination(prev => ({ ...prev, page: 1 }))
     }, [])
 
-    // Recompute filtered records when search or filters change
+    // Handle field filter change
+    const handleFieldFiltersChange = useCallback((newFieldFilters) => {
+        setFieldFilters(newFieldFilters)
+        setPagination(prev => ({ ...prev, page: 1 }))
+    }, [])
+
+    // Recompute filtered records when search, classification filters, or field filters change
     useEffect(() => {
-        const filtered = applyFilters(recordsWithSearchIndex, searchQuery, activeFilters)
+        const filtered = applyFilters(recordsWithSearchIndex, searchQuery, activeFilters, fieldFilters)
         setFilteredRecords(filtered)
-    }, [recordsWithSearchIndex, searchQuery, activeFilters, applyFilters])
+    }, [recordsWithSearchIndex, searchQuery, activeFilters, fieldFilters, filterLogic, applyFilters])
 
     // LOCAL PAGINATION - Slice filtered records
     useEffect(() => {
@@ -548,6 +666,12 @@ export default function RecordsGrid({
                 filters={sidebarFilters}
                 activeFilters={activeFilters}
                 onFilterChange={handleFilterChange}
+                columns={columns}
+                fieldFilters={fieldFilters}
+                onFieldFiltersChange={handleFieldFiltersChange}
+                allRecords={allRecords}
+                filterLogic={filterLogic}
+                onFilterLogicChange={setFilterLogic}
             />
 
             {/* Main content panel */}
@@ -569,7 +693,7 @@ export default function RecordsGrid({
                     onViewChange={handleViewChange}
                     enabledViews={preferences.enabledViews || ['table', 'kanban', 'notes']}
                     onEnabledViewsChange={(views) => handlePreferencesChange('enabledViews', views)}
-                    hasActiveFilters={Object.keys(activeFilters).filter(k => k !== '__favourites').length > 0}
+                    hasActiveFilters={Object.keys(activeFilters).filter(k => k !== '__favourites').length > 0 || fieldFilters.length > 0}
                     onOpenSaveView={() => setShowSaveViewModal(true)}
                 />
 
@@ -582,9 +706,9 @@ export default function RecordsGrid({
                     onDeleteView={handleDeleteSavedView}
                     onRenameView={handleRenameSavedView}
                     onUpdateViewFilters={handleUpdateViewFilters}
-                    hasActiveFilters={Object.keys(activeFilters).filter(k => k !== '__favourites').length > 0}
+                    hasActiveFilters={Object.keys(activeFilters).filter(k => k !== '__favourites').length > 0 || fieldFilters.length > 0}
                     activeFilters={activeFilters}
-                    fieldFilters={[]}
+                    fieldFilters={fieldFilters}
                     sidebarFilters={sidebarFilters}
                     externalOpenCreate={showSaveViewModal}
                     onCloseExternalCreate={() => setShowSaveViewModal(false)}

@@ -21,7 +21,7 @@ const EntityTemplateSchema = new mongoose.Schema({
     // ── Category / Tags for filtering in UI ─────────────
     category: {
         type: String,
-        enum: ['general', 'crm', 'project', 'hr', 'finance', 'medical', 'education', 'logistics', 'custom'],
+        enum: ['general', 'crm', 'project', 'hr', 'finance', 'medical', 'education', 'logistics', 'custom', 'productivity', 'content', 'system', 'communication'],
         default: 'general'
     },
     tags: [String], // e.g. ['contacts', 'people', 'sales']
@@ -42,7 +42,7 @@ const EntityTemplateSchema = new mongoose.Schema({
         subtype: { type: String },                      // email, tel, url, etc.
         category: {
             type: String,
-            enum: ['popular', 'text', 'numeric', 'date', 'choice', 'relation', 'media', 'computed', 'advanced'],
+            enum: ['popular', 'text', 'numeric', 'date', 'dates', 'choice', 'relation', 'media', 'computed', 'advanced', 'content', 'finance', 'pro', 'workflow', 'other'],
             default: 'text'
         },
         icon: { type: String, default: 'solar:widget-bold' },

@@ -269,27 +269,104 @@
 
       <!-- TAB: Fields -->
       <div x-show="modalTab === 'fields'">
-        <!-- Add field button -->
-        <button @click="addField()" type="button"
-                style="width: 100%; padding: 10px; margin-bottom: 16px; border: 1px dashed #4361ee; border-radius: 10px; background: rgba(67,97,238,0.04); color: #4361ee; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s;"
-                onmouseenter="this.style.background='rgba(67,97,238,0.1)'" onmouseleave="this.style.background='rgba(67,97,238,0.04)'">
-          <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
-          Ajouter un champ
-        </button>
+        <!-- Selected fields list -->
+        <div x-show="form.fields.length > 0" style="margin-bottom: 16px;">
+          <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block;">
+            Champs sélectionnés (<span x-text="form.fields.length"></span>)
+          </label>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <template x-for="(field, fIdx) in form.fields" :key="fIdx">
+              <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: rgba(67,97,238,0.1); color: #4361ee; border: 1px solid rgba(67,97,238,0.2); cursor: default;">
+                <iconify-icon :icon="field.icon || 'solar:widget-bold'" width="13"></iconify-icon>
+                <span x-text="field.label || field.name"></span>
+                <button @click="form.fields.splice(fIdx, 1)" type="button"
+                        style="width: 16px; height: 16px; border-radius: 50%; border: none; background: transparent; color: #4361ee; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 2px; opacity: 0.6; transition: opacity 0.15s;"
+                        onmouseenter="this.style.opacity='1'; this.style.color='#dc2626'" 
+                        onmouseleave="this.style.opacity='0.6'; this.style.color='#4361ee'">
+                  <iconify-icon icon="solar:close-circle-bold" width="13"></iconify-icon>
+                </button>
+              </span>
+            </template>
+          </div>
+        </div>
 
-        <!-- Fields list -->
-        <div style="display: flex; flex-direction: column; gap: 8px; max-height: 350px; overflow-y: auto;">
-          <template x-for="(field, fIdx) in form.fields" :key="fIdx">
+        <!-- Search & filter -->
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <div style="flex: 1; position: relative;">
+            <iconify-icon icon="solar:magnifer-bold" width="14" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></iconify-icon>
+            <input x-model="fieldSearch" type="text" class="sa-input" placeholder="Rechercher un champ..." 
+                   style="font-size: 12px; padding: 8px 10px 8px 30px; width: 100%;" />
+          </div>
+          <select x-model="fieldCategoryFilter" class="sa-select" style="width: auto; font-size: 12px; padding: 8px 10px; min-width: 120px;">
+            <option value="">Toutes catégories</option>
+            <option value="popular">👤 Identité</option>
+            <option value="content">📝 Contenu</option>
+            <option value="dates">📅 Dates</option>
+            <option value="finance">💰 Finance</option>
+            <option value="pro">🏢 Professionnel</option>
+            <option value="workflow">⚡ Workflow</option>
+            <option value="media">📎 Médias</option>
+            <option value="numeric">🔢 Numérique</option>
+            <option value="choice">🎛️ Choix</option>
+            <option value="relation">🔗 Relation</option>
+            <option value="other">📦 Autre</option>
+            <option value="text">📋 Texte</option>
+            <option value="advanced">🧪 Avancé</option>
+          </select>
+        </div>
+
+        <!-- Field library grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-height: 300px; overflow-y: auto; padding-right: 4px;">
+          <template x-for="sysField in filteredSystemFields" :key="sysField.name">
+            <button @click="addSystemField(sysField)" type="button"
+                    :disabled="form.fields.some(f => f.name === sysField.name)"
+                    style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; text-align: left; transition: all 0.15s; font-size: 12px;"
+                    :style="form.fields.some(f => f.name === sysField.name) 
+                      ? 'opacity: 0.4; cursor: not-allowed; background: #f1f5f9;' 
+                      : ''"
+                    onmouseenter="if(!this.disabled){this.style.background='rgba(67,97,238,0.06)'; this.style.borderColor='rgba(67,97,238,0.3)';}"
+                    onmouseleave="if(!this.disabled){this.style.background='#fff'; this.style.borderColor='#e2e8f0';}">
+              <div style="width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: #f8fafc;">
+                <iconify-icon :icon="(sysField.ui && sysField.ui.icon) || 'solar:widget-bold'" width="14" style="color: #4361ee;"></iconify-icon>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 600; color: #0f172a; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" x-text="sysField.label"></div>
+                <div style="font-size: 10px; color: #94a3b8; font-family: monospace;" x-text="sysField.name"></div>
+              </div>
+              <iconify-icon x-show="form.fields.some(f => f.name === sysField.name)" icon="solar:check-circle-bold" width="16" style="color: #10b981; flex-shrink: 0;"></iconify-icon>
+              <iconify-icon x-show="!form.fields.some(f => f.name === sysField.name)" icon="solar:add-circle-linear" width="16" style="color: #94a3b8; flex-shrink: 0;"></iconify-icon>
+            </button>
+          </template>
+        </div>
+
+        <!-- Empty search results -->
+        <div x-show="filteredSystemFields.length === 0 && (fieldSearch || fieldCategoryFilter)" 
+             style="text-align: center; padding: 20px; color: #94a3b8;">
+          <iconify-icon icon="solar:magnifer-broken" width="28" style="margin-bottom: 6px;"></iconify-icon>
+          <p style="font-size: 12px; margin: 0;">Aucun champ trouvé</p>
+        </div>
+
+        <!-- Add custom field -->
+        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+          <button @click="addField()" type="button"
+                  style="width: 100%; padding: 8px; border: 1px dashed #94a3b8; border-radius: 8px; background: transparent; color: #64748b; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s;"
+                  onmouseenter="this.style.borderColor='#4361ee'; this.style.color='#4361ee';" 
+                  onmouseleave="this.style.borderColor='#94a3b8'; this.style.color='#64748b';">
+            <iconify-icon icon="solar:pen-new-round-bold" width="14"></iconify-icon>
+            Ajouter un champ personnalisé
+          </button>
+        </div>
+
+        <!-- Manual custom fields (if any added via button above) -->
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+          <template x-for="(field, fIdx) in form.fields.filter(f => f._isCustom)" :key="'custom-'+fIdx">
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; position: relative;">
-              <!-- Delete button -->
-              <button @click="form.fields.splice(fIdx, 1)" type="button"
+              <button @click="form.fields = form.fields.filter(f => f !== field)" type="button"
                       style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 6px; border: none; background: transparent; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center;"
                       onmouseenter="this.style.color='#dc2626'; this.style.background='#fee2e2'" 
                       onmouseleave="this.style.color='#94a3b8'; this.style.background='transparent'">
                 <iconify-icon icon="solar:trash-bin-trash-bold" width="14"></iconify-icon>
               </button>
-
-              <!-- Field config -->
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                   <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; display: block;">Label</label>
@@ -342,11 +419,6 @@
               </div>
             </div>
           </template>
-
-          <div x-show="form.fields.length === 0" style="text-align: center; padding: 30px; color: #94a3b8;">
-            <iconify-icon icon="solar:layers-broken" width="32" style="margin-bottom: 8px;"></iconify-icon>
-            <p style="font-size: 13px; margin: 0;">Aucun champ configuré</p>
-          </div>
         </div>
       </div>
 
@@ -450,6 +522,7 @@
 <script>
 function entityTemplatesManager() {
   const categoriesData = <%- JSON.stringify(categories) %>;
+  const systemFieldsData = <%- JSON.stringify(systemFields.map(f => ({ name: f.name, label: f.label, type: f.type, category: f.category, ui: f.ui || {}, render: f.render || {}, subtype: f.subtype, type_config: f.type_config }))) %>;
   const initialTemplates = <%- JSON.stringify(templates.map(t => ({
     _id: t._id,
     name: t.name,
@@ -475,6 +548,8 @@ function entityTemplatesManager() {
     filterCategory: '',
     modalTab: 'general',
     editingId: null,
+    fieldSearch: '',
+    fieldCategoryFilter: '',
     saving: false,
 
     form: {
@@ -490,6 +565,18 @@ function entityTemplatesManager() {
     get filteredTemplates() {
       if (!this.filterCategory) return this.templates;
       return this.templates.filter(t => t.category === this.filterCategory);
+    },
+
+    get filteredSystemFields() {
+      let fields = systemFieldsData;
+      if (this.fieldCategoryFilter) {
+        fields = fields.filter(f => f.category === this.fieldCategoryFilter);
+      }
+      if (this.fieldSearch) {
+        const q = this.fieldSearch.toLowerCase();
+        fields = fields.filter(f => f.label.toLowerCase().includes(q) || f.name.toLowerCase().includes(q));
+      }
+      return fields;
     },
 
     init() {},
@@ -512,12 +599,31 @@ function entityTemplatesManager() {
       else this.form.enabledStandardFields.push(field);
     },
 
+    addSystemField(sysField) {
+      if (this.form.fields.some(f => f.name === sysField.name)) return;
+      this.form.fields.push({
+        name: sysField.name,
+        label: sysField.label,
+        description: '',
+        type: sysField.type || 'string',
+        category: sysField.category || 'text',
+        icon: (sysField.ui && sysField.ui.icon) || 'solar:widget-bold',
+        required: false,
+        typeConfig: sysField.type_config || {},
+        ui: sysField.ui || { placeholder: '', width: 'full', order: this.form.fields.length },
+        render: sysField.render || {},
+        subtype: sysField.subtype || '',
+        isSystem: true
+      });
+    },
+
     addField() {
       this.form.fields.push({
         name: '', label: '', description: '',
         type: 'string', category: 'text',
         icon: 'solar:widget-bold',
         required: false, typeConfig: {},
+        _isCustom: true,
         ui: { placeholder: '', width: 'full', order: this.form.fields.length }
       });
     },

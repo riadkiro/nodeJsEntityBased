@@ -91,7 +91,7 @@ const FieldTemplateSchema = new mongoose.Schema({
   isSystem: { type: Boolean, default: false },
   category: {
     type: String,
-    enum: ['popular', 'text', 'numeric', 'date', 'choice', 'relation', 'media', 'computed', 'advanced'],
+    enum: ['popular', 'text', 'numeric', 'date', 'dates', 'choice', 'relation', 'media', 'computed', 'advanced', 'content', 'finance', 'pro', 'workflow', 'other'],
     default: 'text'
   },
 

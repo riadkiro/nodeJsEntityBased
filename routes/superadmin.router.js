@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const superadminController = require("../controllers/superadmin.controller");
 const entityTemplateController = require("../controllers/entity-template.controller");
+const spaceTemplateController = require("../controllers/space-template.controller");
 
 // Middleware: Require superadmin role (platform owner)
 const ensureSuperAdmin = (req, res, next) => {
@@ -24,6 +25,7 @@ router.get("/users", superadminController.usersList);
 router.get("/users/:userId", superadminController.userDetail);
 router.get("/accounts", superadminController.accountsList);
 router.get("/entity-templates", entityTemplateController.listPage);
+router.get("/space-templates", spaceTemplateController.listPage);
 
 // ── API ──────────────────────────────────────────────────────
 router.post("/api/users/create", superadminController.createUser);
@@ -46,5 +48,13 @@ router.post("/api/entity-templates", entityTemplateController.createApi);
 router.post("/api/entity-templates/:id", entityTemplateController.updateApi);
 router.post("/api/entity-templates/:id/duplicate", entityTemplateController.duplicateApi);
 router.delete("/api/entity-templates/:id", entityTemplateController.deleteApi);
+
+// ── Space Templates API ──────────────────────────────────
+router.get("/api/space-templates", spaceTemplateController.listApi);
+router.get("/api/space-templates/:id", spaceTemplateController.getApi);
+router.post("/api/space-templates", spaceTemplateController.createApi);
+router.post("/api/space-templates/:id", spaceTemplateController.updateApi);
+router.post("/api/space-templates/:id/duplicate", spaceTemplateController.duplicateApi);
+router.delete("/api/space-templates/:id", spaceTemplateController.deleteApi);
 
 module.exports = router;

@@ -438,6 +438,9 @@ const spaceTemplates = [
             { templateSlug: 'tpl-contacts', isMain: true, order: 0 },
             { templateSlug: 'tpl-opportunities', order: 1 }
         ],
+        relations: [
+            { from: 'tpl-opportunities', to: 'tpl-contacts', type: 'many-to-one', fieldName: 'contact', label: 'Contact', inverseLabel: 'Opportunités' }
+        ],
         defaultViews: [
             { entitySlug: 'tpl-contacts', viewType: 'table' },
             { entitySlug: 'tpl-opportunities', viewType: 'kanban' }
@@ -456,6 +459,7 @@ const spaceTemplates = [
             { templateSlug: 'tpl-invoices', isMain: true, order: 0 },
             { templateSlug: 'tpl-expenses', order: 1 }
         ],
+        relations: [],
         defaultViews: [
             { entitySlug: 'tpl-invoices', viewType: 'table' },
             { entitySlug: 'tpl-expenses', viewType: 'table' }
@@ -473,6 +477,9 @@ const spaceTemplates = [
         entities: [
             { templateSlug: 'tpl-tasks', isMain: true, order: 0 },
             { templateSlug: 'tpl-milestones', order: 1 }
+        ],
+        relations: [
+            { from: 'tpl-tasks', to: 'tpl-milestones', type: 'many-to-one', fieldName: 'milestone', label: 'Jalon', inverseLabel: 'Tâches' }
         ],
         defaultViews: [
             { entitySlug: 'tpl-tasks', viewType: 'kanban' },
@@ -492,6 +499,9 @@ const spaceTemplates = [
             { templateSlug: 'tpl-employees', isMain: true, order: 0 },
             { templateSlug: 'tpl-leave-requests', order: 1 }
         ],
+        relations: [
+            { from: 'tpl-leave-requests', to: 'tpl-employees', type: 'many-to-one', fieldName: 'employee', label: 'Employé', inverseLabel: 'Congés' }
+        ],
         defaultViews: [
             { entitySlug: 'tpl-employees', viewType: 'table' },
             { entitySlug: 'tpl-leave-requests', viewType: 'kanban' }
@@ -510,6 +520,9 @@ const spaceTemplates = [
             { templateSlug: 'tpl-patients', isMain: true, order: 0 },
             { templateSlug: 'tpl-consultations', order: 1 }
         ],
+        relations: [
+            { from: 'tpl-consultations', to: 'tpl-patients', type: 'many-to-one', fieldName: 'patient', label: 'Patient', inverseLabel: 'Consultations' }
+        ],
         defaultViews: [
             { entitySlug: 'tpl-patients', viewType: 'table' },
             { entitySlug: 'tpl-consultations', viewType: 'table' }
@@ -527,6 +540,9 @@ const spaceTemplates = [
         entities: [
             { templateSlug: 'tpl-products', isMain: true, order: 0 },
             { templateSlug: 'tpl-orders', order: 1 }
+        ],
+        relations: [
+            { from: 'tpl-orders', to: 'tpl-products', type: 'many-to-many', fieldName: 'products', label: 'Produits', inverseLabel: 'Commandes' }
         ],
         defaultViews: [
             { entitySlug: 'tpl-products', viewType: 'table' },

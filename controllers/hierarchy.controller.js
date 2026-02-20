@@ -811,6 +811,8 @@ module.exports = {
             // 3. Create entities from template entity references
             const entityTemplates = template.entities || [];
             const createdEntities = [];
+            // Track for cross-entity relations: templateSlug → { entityId, entitySlug, records: [{ _id, title }] }
+            const slugToEntityInfo = {};
 
             for (let i = 0; i < entityTemplates.length; i++) {
                 const etRef = entityTemplates[i];
@@ -954,6 +956,9 @@ module.exports = {
                 });
                 await newView.save();
 
+                // Track created records for this entity (for cross-entity relation linking)
+                const createdRecords = [];
+
                 // Create demo records from template
                 if (et.demoRecords && et.demoRecords.length > 0) {
                     const RecordModel = await tenantCollection(req, "Record");
@@ -1007,15 +1012,109 @@ module.exports = {
                             createdBy: req.user._id
                         });
                         await newRecord.save();
+                        createdRecords.push({ _id: newRecord._id, title: demo.title });
                     }
                     console.log(`[Template] Created ${et.demoRecords.length} demo records for ${entityName}`);
                 }
+
+                // Save tracking info for relation linking
+                slugToEntityInfo[etRef.templateSlug] = {
+                    entityId: newEntity._id,
+                    entitySlug: entitySlug,
+                    records: createdRecords
+                };
 
                 createdEntities.push({
                     entityId: newEntity._id.toString(),
                     viewId: newView._id.toString(),
                     name: entityName
                 });
+            }
+
+            // ═══════════════════════════════════════════════════════
+            // 4. Create cross-entity RELATIONS from template
+            // ═══════════════════════════════════════════════════════
+            if (template.relations && template.relations.length > 0) {
+                const crypto = require('crypto');
+                const RecordModel = await tenantCollection(req, "Record");
+                let demoRelLinks = {};
+                try { demoRelLinks = require('../scripts/data/demo-relation-links'); } catch (e) { /* no links file */ }
+
+                for (const rel of template.relations) {
+                    const fromInfo = slugToEntityInfo[rel.from];
+                    const toInfo = slugToEntityInfo[rel.to];
+                    if (!fromInfo || !toInfo) {
+                        console.warn(`[Template] Skipping relation ${rel.from} → ${rel.to}: entity not found`);
+                        continue;
+                    }
+
+                    // Create a relation key (UUID) on the "from" entity
+                    const relationKey = crypto.randomUUID();
+                    const cardinality = rel.type === 'many-to-many' ? 'many-to-many'
+                        : rel.type === 'one-to-one' ? 'one-to-one'
+                            : 'one-to-many';
+
+                    // Push the relation definition onto the "from" entity
+                    await EntityModel.findByIdAndUpdate(fromInfo.entityId, {
+                        $push: {
+                            relations: {
+                                key: relationKey,
+                                targetEntity: toInfo.entityId,
+                                label: rel.label || '',
+                                inverseLabel: rel.inverseLabel || '',
+                                cardinality: cardinality,
+                                inputMode: 'autocomplete',
+                                storage: 'on-source',
+                                bidirectional: true,
+                                required: false
+                            }
+                        }
+                    });
+                    console.log(`[Template] Created relation: ${rel.from} —[${rel.fieldName}]→ ${rel.to} (key: ${relationKey})`);
+
+                    // Link demo records using demo-relation-links.js
+                    const linkDefs = demoRelLinks[rel.from] || [];
+                    if (linkDefs.length > 0 && fromInfo.records.length > 0 && toInfo.records.length > 0) {
+                        // Build a title → _id lookup for the target entity
+                        const targetTitleToId = {};
+                        toInfo.records.forEach(r => { targetTitleToId[r.title] = r._id; });
+
+                        for (const linkDef of linkDefs) {
+                            const fromRecord = fromInfo.records.find(r => r.title === linkDef.title);
+                            if (!fromRecord) continue;
+
+                            const targetRef = linkDef.links[rel.fieldName];
+                            if (!targetRef) continue;
+
+                            // Resolve target record IDs
+                            let targetIds;
+                            if (Array.isArray(targetRef)) {
+                                targetIds = targetRef.map(t => targetTitleToId[t]).filter(Boolean);
+                            } else {
+                                const tid = targetTitleToId[targetRef];
+                                targetIds = tid ? [tid] : [];
+                            }
+
+                            if (targetIds.length === 0) continue;
+
+                            // Build denormalized data
+                            const denormRecords = targetIds.map(tid => {
+                                const tr = toInfo.records.find(r => r._id.equals(tid));
+                                return { _id: tid, title: tr ? tr.title : '', entitySlug: toInfo.entitySlug };
+                            });
+
+                            const relationValue = cardinality === 'many-to-many' ? targetIds : targetIds[0];
+
+                            await RecordModel.findByIdAndUpdate(fromRecord._id, {
+                                $push: {
+                                    relations: { relationKey: relationKey, value: relationValue },
+                                    '_denorm.relations': { relationKey: relationKey, records: denormRecords }
+                                }
+                            });
+                        }
+                        console.log(`[Template] Linked ${linkDefs.length} records for relation ${rel.fieldName}`);
+                    }
+                }
             }
 
             // Increment usage count

@@ -1,5 +1,5 @@
 /**
- * RecordsTable - Virtual scrolling table
+ * RecordsTable - Virtual scrolling table with bulk select
  * Pixel-perfect reproduction of existing HTMX table styling
  */
 import React, { useState } from 'react'
@@ -15,7 +15,12 @@ export default function RecordsTable({
     titleDisplay,
     entityIcon,
     accountNumber,
-    entitySlug
+    entitySlug,
+    // Bulk select props
+    selectedIds,
+    onToggleSelect,
+    onSelectAll,
+    allPageSelected
 }) {
     const [draggedColumn, setDraggedColumn] = useState(null)
     const [dragOverColumn, setDragOverColumn] = useState(null)
@@ -50,14 +55,25 @@ export default function RecordsTable({
     }
 
     const config = densityConfig[density] || densityConfig.comfortable
-
-
+    const hasSelection = selectedIds && selectedIds.size > 0
 
     return (
         <table className="table-hover whitespace-nowrap dataTable-table w-full">
             <thead className="sticky top-0 bg-white dark:bg-[#1b2e4b] z-10">
                 <tr>
-                    {columns.map((col, index) => {
+                    {/* Checkbox column header */}
+                    <th style={{ width: 40, padding: '0 8px' }}>
+                        <label className="bulk-checkbox-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <input
+                                type="checkbox"
+                                checked={allPageSelected && records.length > 0}
+                                onChange={() => onSelectAll && onSelectAll()}
+                                className="bulk-checkbox"
+                            />
+                            <span className="bulk-checkbox-custom"></span>
+                        </label>
+                    </th>
+                    {columns.map((col) => {
                         // Check if this column is currently sorted
                         const isSorted = sort?.field === col.id ||
                             (col.id === 'title' && sort?.field === 'title') ||
@@ -152,7 +168,7 @@ export default function RecordsTable({
                 {/* Top spacer for virtual scroll */}
                 {virtualRows.length > 0 && virtualRows[0].start > 0 && (
                     <tr>
-                        <td colSpan={columns.length} style={{ height: virtualRows[0].start, padding: 0 }} />
+                        <td colSpan={columns.length + 1} style={{ height: virtualRows[0].start, padding: 0 }} />
                     </tr>
                 )}
 
@@ -168,13 +184,35 @@ export default function RecordsTable({
                         comfortable: '12px 12px'
                     }[density] || '12px 12px'
 
+                    const isSelected = selectedIds && selectedIds.has(record._id)
+
                     return (
                         <tr
                             key={record._id}
                             data-index={virtualRow.index}
                             ref={virtualizer.measureElement}
                             style={{ minHeight: config.rowHeight }}
+                            className={isSelected ? 'bulk-row-selected' : ''}
                         >
+                            {/* Checkbox cell */}
+                            <td style={{ padding: '0 8px', width: 40 }}>
+                                <label
+                                    className="bulk-checkbox-wrapper"
+                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    onClick={(e) => {
+                                        e.preventDefault()
+                                        onToggleSelect && onToggleSelect(record._id, virtualRow.index, e.shiftKey)
+                                    }}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        readOnly
+                                        className="bulk-checkbox"
+                                    />
+                                    <span className="bulk-checkbox-custom"></span>
+                                </label>
+                            </td>
                             {columns.map(col => (
                                 <td
                                     key={col.id}
@@ -192,7 +230,7 @@ export default function RecordsTable({
                 {virtualRows.length > 0 && (
                     <tr>
                         <td
-                            colSpan={columns.length}
+                            colSpan={columns.length + 1}
                             style={{
                                 height: Math.max(0, virtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1]?.end || 0)),
                                 padding: 0

@@ -135,6 +135,11 @@ export default function RecordsGrid({
     const [entityIcon, setEntityIcon] = useState('')
     const [entityData, setEntityData] = useState(null)
 
+    // Bulk select state
+    const [selectedIds, setSelectedIds] = useState(new Set())
+    const [bulkLoading, setBulkLoading] = useState(false)
+    const lastClickedIndexRef = useRef(null)  // for shift+click range select
+
     // Filter state (classification-based)
     const [sidebarFilters, setSidebarFilters] = useState([])
     const [activeFilters, setActiveFilters] = useState({})
@@ -617,6 +622,118 @@ export default function RecordsGrid({
         setPagination(prev => ({ ...prev, page: newPage }))
     }, [])
 
+    // ═══════════════════════════════════════════════════════
+    // BULK SELECT handlers
+    // ═══════════════════════════════════════════════════════
+    const handleToggleSelect = useCallback((recordId, rowIndex, shiftKey) => {
+        if (shiftKey && lastClickedIndexRef.current !== null && lastClickedIndexRef.current !== rowIndex) {
+            // Shift+Click → range select
+            const start = Math.min(lastClickedIndexRef.current, rowIndex)
+            const end = Math.max(lastClickedIndexRef.current, rowIndex)
+            setSelectedIds(prev => {
+                const next = new Set(prev)
+                for (let i = start; i <= end; i++) {
+                    if (displayRecords[i]) {
+                        next.add(displayRecords[i]._id)
+                    }
+                }
+                return next
+            })
+        } else {
+            // Normal click → toggle single
+            setSelectedIds(prev => {
+                const next = new Set(prev)
+                if (next.has(recordId)) {
+                    next.delete(recordId)
+                } else {
+                    next.add(recordId)
+                }
+                return next
+            })
+        }
+        lastClickedIndexRef.current = rowIndex
+    }, [displayRecords])
+
+    const handleSelectAllPage = useCallback(() => {
+        setSelectedIds(prev => {
+            const pageIds = displayRecords.map(r => r._id)
+            const allSelected = pageIds.every(id => prev.has(id))
+            const next = new Set(prev)
+            if (allSelected) {
+                // Deselect page
+                pageIds.forEach(id => next.delete(id))
+            } else {
+                // Select all on page
+                pageIds.forEach(id => next.add(id))
+            }
+            return next
+        })
+    }, [displayRecords])
+
+    const handleSelectAll = useCallback(() => {
+        setSelectedIds(prev => {
+            const allIds = filteredRecords.map(r => r._id)
+            if (prev.size === allIds.length) {
+                return new Set()
+            }
+            return new Set(allIds)
+        })
+    }, [filteredRecords])
+
+    const handleClearSelection = useCallback(() => {
+        setSelectedIds(new Set())
+    }, [])
+
+    // All records on current page selected?
+    const allPageSelected = useMemo(() => {
+        if (displayRecords.length === 0) return false
+        return displayRecords.every(r => selectedIds.has(r._id))
+    }, [displayRecords, selectedIds])
+
+    // Bulk delete
+    const handleBulkDelete = useCallback(async () => {
+        if (selectedIds.size === 0) return
+
+        // Use SweetAlert if available, else confirm
+        const doDelete = typeof Swal !== 'undefined'
+            ? await Swal.fire({
+                title: 'Confirmer la suppression',
+                html: `<p>Vous allez supprimer <strong>${selectedIds.size}</strong> enregistrement(s).</p><p style="color:#e7515a;font-size:13px;margin-top:8px;">Cette action est irréversible.</p>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e7515a',
+                cancelButtonText: 'Annuler',
+                confirmButtonText: 'Supprimer',
+            }).then(r => r.isConfirmed)
+            : confirm(`Supprimer ${selectedIds.size} enregistrement(s) ?`)
+
+        if (!doDelete) return
+
+        setBulkLoading(true)
+        try {
+            const res = await fetch(`/account/${accountNumber}/record/api/bulk-delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ ids: [...selectedIds] })
+            })
+            const data = await res.json()
+            if (data.success) {
+                // Remove deleted records from local data
+                setAllRecords(prev => prev.filter(r => !selectedIds.has(r._id)))
+                setSelectedIds(new Set())
+                showToast(`${data.deletedCount} enregistrement(s) supprimé(s)`)
+            } else {
+                showToast(data.error || 'Erreur lors de la suppression', 'error')
+            }
+        } catch (err) {
+            console.error('[RecordsGrid] Bulk delete error:', err)
+            showToast('Erreur lors de la suppression', 'error')
+        } finally {
+            setBulkLoading(false)
+        }
+    }, [selectedIds, accountNumber, showToast])
+
     // Handle column reorder - receives column IDs from visible columns
     const handleColumnReorder = useCallback((fromColumnId, toColumnId) => {
         setColumns(prevColumns => {
@@ -802,6 +919,10 @@ export default function RecordsGrid({
                                     entityIcon={entityIcon}
                                     accountNumber={accountNumber}
                                     entitySlug={entitySlug}
+                                    selectedIds={selectedIds}
+                                    onToggleSelect={handleToggleSelect}
+                                    onSelectAll={handleSelectAllPage}
+                                    allPageSelected={allPageSelected}
                                 />
                             </div>
 
@@ -863,11 +984,112 @@ export default function RecordsGrid({
                 </div>
             </div>
 
+            {/* ═══════ BULK ACTION BAR ═══════ */}
+            {selectedIds.size > 0 && (
+                <div className="bulk-action-bar" style={{
+                    position: 'fixed',
+                    bottom: '24px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 99999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '10px 20px',
+                    borderRadius: '14px',
+                    background: 'linear-gradient(135deg, #1b2e4b 0%, #0e1726 100%)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(67,97,238,0.2)',
+                    animation: 'bulkBarSlideUp 0.3s cubic-bezier(0.16,1,0.3,1)',
+                    backdropFilter: 'blur(12px)',
+                }}>
+                    {/* Selection info */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{
+                            width: 28, height: 28, borderRadius: '8px',
+                            background: 'rgba(67,97,238,0.2)', color: '#4361ee',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '12px', fontWeight: 700
+                        }}>
+                            {selectedIds.size}
+                        </div>
+                        <span style={{ color: '#e0e6ed', fontSize: '13px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                            sélectionné{selectedIds.size > 1 ? 's' : ''}
+                        </span>
+                    </div>
+
+                    {/* Separator */}
+                    <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }}></div>
+
+                    {/* Select all filtered */}
+                    {selectedIds.size < filteredRecords.length && (
+                        <button
+                            onClick={handleSelectAll}
+                            style={{
+                                padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(67,97,238,0.3)',
+                                background: 'rgba(67,97,238,0.1)', color: '#93b4fd',
+                                fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                                transition: 'all 0.15s', whiteSpace: 'nowrap'
+                            }}
+                            onMouseEnter={e => { e.target.style.background = 'rgba(67,97,238,0.2)'; e.target.style.color = '#b8cffe' }}
+                            onMouseLeave={e => { e.target.style.background = 'rgba(67,97,238,0.1)'; e.target.style.color = '#93b4fd' }}
+                        >
+                            Tout sélectionner ({filteredRecords.length})
+                        </button>
+                    )}
+
+                    {/* Separator */}
+                    <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }}></div>
+
+                    {/* Delete action */}
+                    <button
+                        onClick={handleBulkDelete}
+                        disabled={bulkLoading}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            padding: '6px 14px', borderRadius: '8px', border: 'none',
+                            background: 'rgba(231,81,90,0.15)', color: '#ff6b6b',
+                            fontSize: '12px', fontWeight: 600, cursor: bulkLoading ? 'wait' : 'pointer',
+                            transition: 'all 0.15s', whiteSpace: 'nowrap',
+                            opacity: bulkLoading ? 0.6 : 1
+                        }}
+                        onMouseEnter={e => { if (!bulkLoading) { e.target.style.background = 'rgba(231,81,90,0.25)'; e.target.style.color = '#ff8a8a' } }}
+                        onMouseLeave={e => { e.target.style.background = 'rgba(231,81,90,0.15)'; e.target.style.color = '#ff6b6b' }}
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}>
+                            <path d="M20.5 6H3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            <path d="M18.833 8.5L18.373 15.4C18.196 18.054 18.108 19.381 17.243 20.19C16.378 21 15.048 21 12.387 21H11.613C8.952 21 7.622 21 6.757 20.19C5.892 19.381 5.804 18.054 5.627 15.4L5.167 8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        </svg>
+                        {bulkLoading ? 'Suppression...' : 'Supprimer'}
+                    </button>
+
+                    {/* Separator */}
+                    <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }}></div>
+
+                    {/* Close / deselect */}
+                    <button
+                        onClick={handleClearSelection}
+                        style={{
+                            width: 28, height: 28, borderRadius: '8px', border: 'none',
+                            background: 'rgba(255,255,255,0.08)', color: '#888ea8',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', transition: 'all 0.15s'
+                        }}
+                        onMouseEnter={e => { e.target.style.background = 'rgba(255,255,255,0.15)'; e.target.style.color = '#e0e6ed' }}
+                        onMouseLeave={e => { e.target.style.background = 'rgba(255,255,255,0.08)'; e.target.style.color = '#888ea8' }}
+                        title="Désélectionner tout"
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}>
+                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                    </button>
+                </div>
+            )}
+
             {/* Toast notification */}
             {toast && (
                 <div style={{
                     position: 'fixed',
-                    bottom: '24px',
+                    bottom: selectedIds.size > 0 ? '80px' : '24px',
                     right: '24px',
                     zIndex: 99999,
                     padding: '10px 20px',
@@ -881,6 +1103,7 @@ export default function RecordsGrid({
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
+                    transition: 'bottom 0.3s ease',
                 }}>
                     <svg viewBox="0 0 24 24" fill="none" style={{ width: 16, height: 16, flexShrink: 0 }}>
                         {toast.type === 'error' ? (
@@ -896,6 +1119,66 @@ export default function RecordsGrid({
                 @keyframes toastSlideIn {
                     from { opacity: 0; transform: translateY(10px); }
                     to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes bulkBarSlideUp {
+                    from { opacity: 0; transform: translate(-50%, 20px); }
+                    to { opacity: 1; transform: translate(-50%, 0); }
+                }
+                /* Bulk select checkboxes */
+                .bulk-checkbox-wrapper {
+                    position: relative;
+                    cursor: pointer;
+                    user-select: none;
+                }
+                .bulk-checkbox {
+                    position: absolute;
+                    opacity: 0;
+                    width: 0;
+                    height: 0;
+                }
+                .bulk-checkbox-custom {
+                    display: inline-block;
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 4px;
+                    border: 2px solid #d1d5db;
+                    background: #fff;
+                    transition: all 0.15s ease;
+                    position: relative;
+                }
+                .dark .bulk-checkbox-custom {
+                    border-color: #4b5563;
+                    background: #1f2937;
+                }
+                .bulk-checkbox:checked + .bulk-checkbox-custom {
+                    background: #4361ee;
+                    border-color: #4361ee;
+                }
+                .bulk-checkbox:checked + .bulk-checkbox-custom::after {
+                    content: '';
+                    position: absolute;
+                    left: 4px;
+                    top: 1px;
+                    width: 5px;
+                    height: 9px;
+                    border: solid #fff;
+                    border-width: 0 2px 2px 0;
+                    transform: rotate(45deg);
+                }
+                .bulk-checkbox-wrapper:hover .bulk-checkbox-custom {
+                    border-color: #4361ee;
+                }
+                .bulk-row-selected {
+                    background: rgba(67, 97, 238, 0.04) !important;
+                }
+                .bulk-row-selected td {
+                    background: rgba(67, 97, 238, 0.04) !important;
+                }
+                .dark .bulk-row-selected {
+                    background: rgba(67, 97, 238, 0.08) !important;
+                }
+                .dark .bulk-row-selected td {
+                    background: rgba(67, 97, 238, 0.08) !important;
                 }
             `}</style>
         </div>

@@ -7,6 +7,10 @@ const upload = uploadTo((req) => `public/uploads/${req.account_number}`);
 // API for relations — MUST be before dynamic /:entityName routes
 router.get("/api/search", recordController.searchAjax);
 
+// Bulk actions — MUST be before dynamic /:entityName routes
+router.post("/api/bulk-delete", recordController.bulkDelete);
+router.post("/api/bulk-update-classification", recordController.bulkUpdateClassification);
+
 // Dynamic Record management based on Entity slug
 router.get("/:entityName/list", recordController.list);
 router.get("/:entityName/list-view", recordController.listView);

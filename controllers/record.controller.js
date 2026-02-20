@@ -867,6 +867,89 @@ module.exports = {
         }
     },
 
+    // Bulk delete records
+    bulkDelete: async (req, res) => {
+        try {
+            const { ids } = req.body;
+            if (!ids || !Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ success: false, error: "No record IDs provided" });
+            }
+
+            // Validate all IDs
+            const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+            if (validIds.length === 0) {
+                return res.status(400).json({ success: false, error: "No valid record IDs" });
+            }
+
+            const RecordModel = await tenantCollection(req, "Record");
+            const result = await RecordModel.deleteMany({ _id: { $in: validIds } });
+
+            res.json({
+                success: true,
+                deletedCount: result.deletedCount,
+                message: `${result.deletedCount} enregistrement(s) supprimé(s)`
+            });
+        } catch (error) {
+            console.error('[Record] Bulk delete error:', error);
+            res.status(500).json({ success: false, error: "Server Error" });
+        }
+    },
+
+    // Bulk update classification for records
+    bulkUpdateClassification: async (req, res) => {
+        try {
+            const { ids, classificationId, optionId, optionLabel, optionColor } = req.body;
+            if (!ids || !Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ success: false, error: "No record IDs provided" });
+            }
+            if (!classificationId || !optionId) {
+                return res.status(400).json({ success: false, error: "Missing classification data" });
+            }
+
+            const RecordModel = await tenantCollection(req, "Record");
+            let updatedCount = 0;
+
+            for (const id of ids) {
+                if (!mongoose.Types.ObjectId.isValid(id)) continue;
+
+                const record = await RecordModel.findById(id);
+                if (!record) continue;
+
+                // Update or add the classification value
+                const cvs = record.classificationValues || [];
+                const existingIdx = cvs.findIndex(cv =>
+                    (cv.classificationId?.toString() || cv.classificationId) === classificationId
+                );
+
+                const newCv = {
+                    classificationId,
+                    optionId,
+                    label: optionLabel || '',
+                    color: optionColor || ''
+                };
+
+                if (existingIdx >= 0) {
+                    cvs[existingIdx] = newCv;
+                } else {
+                    cvs.push(newCv);
+                }
+
+                record.classificationValues = cvs;
+                await record.save();
+                updatedCount++;
+            }
+
+            res.json({
+                success: true,
+                updatedCount,
+                message: `${updatedCount} enregistrement(s) mis à jour`
+            });
+        } catch (error) {
+            console.error('[Record] Bulk update classification error:', error);
+            res.status(500).json({ success: false, error: "Server Error" });
+        }
+    },
+
     searchAjax: async (req, res) => {
         try {
             const { entityId, q } = req.query;

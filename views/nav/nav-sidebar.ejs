@@ -2661,7 +2661,7 @@
               </div>
               <div class="text-left">
                 <div class="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-primary">Environnement vide</div>
-                <div class="text-xs text-gray-400 dark:text-gray-500">Créez de zéro et ajoutez vos propres modules</div>
+                <div class="text-xs text-gray-400 dark:text-gray-500">Créez de zéro et ajoutez vos propres collections</div>
               </div>
               <iconify-icon icon="solar:alt-arrow-right-linear" width="18" class="ml-auto text-gray-300 group-hover:text-primary transition-colors"></iconify-icon>
             </button>
@@ -2698,7 +2698,7 @@
                   <div class="mt-2 flex items-center gap-1.5">
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                       <iconify-icon icon="solar:database-linear" width="10"></iconify-icon>
-                      <span x-text="(tpl.entities || []).length + ' modules'"></span>
+                      <span x-text="(tpl.entities || []).length + ' collections'"></span>
                     </span>
                     <template x-if="tpl.featured">
                       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400">
@@ -2812,7 +2812,7 @@
               <div class="rounded-xl border border-gray-200 dark:border-gray-600 p-3 bg-gray-50/50 dark:bg-gray-800/50">
                 <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
                   <iconify-icon icon="solar:widget-4-bold-duotone" width="14"></iconify-icon>
-                  Modules qui seront créés
+                  Collections qui seront créées
                 </div>
                 <div class="flex flex-wrap gap-1.5">
                   <template x-for="ent in (selectedTemplateObj.entities || [])" :key="ent.templateSlug">

@@ -1890,9 +1890,9 @@
                 window.addEventListener('env-modal-saved', async (e) => {
                   const detail = e.detail || {};
                   await this.refreshEnvironments();
-                  // Auto-select newly created environment
+                  // Auto-select newly created environment (skip sidebar toggle to avoid breaking the modal)
                   if (detail.newEnv) {
-                    this.selectEnvironment(detail.newEnv);
+                    this.selectEnvironment(detail.newEnv, true);
                   }
                 });
               },
@@ -1943,10 +1943,11 @@
                 }
               },
 
-              selectEnvironment(env) {
+              selectEnvironment(env, skipSidebarToggle) {
                 this.activeEnvId = env.id;
                 // If sidebar is closed, open it to show the selected environment
-                if (Alpine.store('app').sidebar) {
+                // (skip when called from modal save to avoid breaking modal reactivity)
+                if (!skipSidebarToggle && Alpine.store('app').sidebar) {
                   Alpine.store('app').toggleSidebar();
                 }
                 window.dispatchEvent(new CustomEvent('environment-changed', {
@@ -1956,6 +1957,11 @@
 
               // ═══ Pure JS Context Menu (renders at body level) ═══
               _destroyPopup() {
+                if (this._popupCloseHandler) {
+                  document.removeEventListener('click', this._popupCloseHandler, true);
+                  document.removeEventListener('contextmenu', this._popupCloseHandler, true);
+                  this._popupCloseHandler = null;
+                }
                 if (this._activePopup) {
                   this._activePopup.remove();
                   this._activePopup = null;
@@ -1971,17 +1977,41 @@
 
                 items.forEach(item => {
                   const btn = document.createElement('button');
-                  btn.style.cssText = 'width:100%; display:flex; align-items:center; gap:12px; padding:10px 16px; font-size:14px; border:none; background:none; cursor:pointer; transition:background 0.15s;';
+                  btn.style.cssText = 'width:100%; display:flex; align-items:center; gap:12px; padding:10px 16px; font-size:14px; border:none; background:none; cursor:pointer; transition:all 0.2s ease;';
                   btn.style.color = item.danger ? '#ef4444' : (isDark ? '#d1d5db' : '#374151');
                   btn.innerHTML = `<iconify-icon icon="${item.icon}" width="18" style="color:${item.iconColor || 'inherit'}"></iconify-icon> ${item.label}`;
                   btn.addEventListener('mouseenter', () => {
-                    btn.style.background = item.danger 
-                      ? (isDark ? 'rgba(239,68,68,0.1)' : '#fef2f2')
-                      : (isDark ? '#1f2937' : '#f3f4f6');
+                    if (!btn._confirming) {
+                      btn.style.background = item.danger 
+                        ? (isDark ? 'rgba(239,68,68,0.1)' : '#fef2f2')
+                        : (isDark ? '#1f2937' : '#f3f4f6');
+                    }
                   });
-                  btn.addEventListener('mouseleave', () => { btn.style.background = 'none'; });
+                  btn.addEventListener('mouseleave', () => { 
+                    if (!btn._confirming) btn.style.background = 'none'; 
+                  });
                   btn.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    e.preventDefault();
+                    if (item.danger && item.confirm !== false) {
+                      // Two-step inline confirmation for dangerous actions
+                      if (!btn._confirming) {
+                        btn._confirming = true;
+                        btn.innerHTML = `<iconify-icon icon="solar:danger-triangle-bold-duotone" width="18" style="color:#ef4444"></iconify-icon> Confirmer ?`;
+                        btn.style.background = isDark ? 'rgba(239,68,68,0.15)' : '#fef2f2';
+                        btn.style.fontWeight = '600';
+                        // Auto-reset after 3 seconds
+                        btn._resetTimer = setTimeout(() => {
+                          btn._confirming = false;
+                          btn.innerHTML = `<iconify-icon icon="${item.icon}" width="18" style="color:${item.iconColor || 'inherit'}"></iconify-icon> ${item.label}`;
+                          btn.style.background = 'none';
+                          btn.style.fontWeight = 'normal';
+                        }, 3000);
+                        return;
+                      }
+                      // Second click = confirmed
+                      clearTimeout(btn._resetTimer);
+                    }
                     this._destroyPopup();
                     item.action();
                   });
@@ -1995,10 +2025,9 @@
                 const closeHandler = (evt) => {
                   if (!menu.contains(evt.target)) {
                     this._destroyPopup();
-                    document.removeEventListener('click', closeHandler, true);
-                    document.removeEventListener('contextmenu', closeHandler, true);
                   }
                 };
+                this._popupCloseHandler = closeHandler;
                 // Use setTimeout to avoid the current event from immediately closing
                 setTimeout(() => {
                   document.addEventListener('click', closeHandler, true);
@@ -2057,9 +2086,9 @@
               },
 
               async deleteEnvironment(env) {
-                // Close context menu immediately
+                // Close context menu immediately (already closed by _showPopupMenu click handler)
                 this._destroyPopup();
-                if (!confirm(`Supprimer l'environnement "${env.name}" ?\nLes espaces seront réassignés au premier environnement restant.`)) return;
+                console.log('[EnvironmentRail] Deleting environment:', env.name, env.id);
                 const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
                 try {
                   const res = await fetch(`/account/${accountNum}/api/hierarchy/environment/delete`, {
@@ -2870,9 +2899,14 @@
           this.isSubmitting = false;
           this.iconSearch = '';
           this.iconResults = [...this.defaultIcons];
-          this.modalOpen = true;
+          // Force a clean false→true cycle to ensure Alpine detects the change
+          // (handles case where modalOpen is already true from stale state)
+          this.modalOpen = false;
           this.$nextTick(() => {
-            if (this.step === 'customize' && this.$refs.envNameInput) this.$refs.envNameInput.focus();
+            this.modalOpen = true;
+            this.$nextTick(() => {
+              if (this.step === 'customize' && this.$refs.envNameInput) this.$refs.envNameInput.focus();
+            });
           });
         });
       },

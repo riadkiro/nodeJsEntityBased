@@ -536,7 +536,13 @@ const spaceTemplates = [
     }
 ];
 
-const demoRecords = require('./data/demo-records');
+// Merge base + extra demo records
+const baseRecords = require('./data/demo-records');
+const extraRecords = require('./data/demo-records-extra');
+const demoRecords = {};
+for (const slug of new Set([...Object.keys(baseRecords), ...Object.keys(extraRecords)])) {
+    demoRecords[slug] = [...(baseRecords[slug] || []), ...(extraRecords[slug] || [])];
+}
 
 // ══════════════════════════════════════════════
 // MAIN SEED FUNCTION

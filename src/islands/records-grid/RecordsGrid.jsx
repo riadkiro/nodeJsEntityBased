@@ -168,6 +168,7 @@ export default function RecordsGrid({
         pageSize: 10,
         titleDisplay: 'avatar',
         showSidebar: true,
+        sidebarWidth: 280,
         viewMode: null,
         enabledViews: ['table', 'kanban', 'notes']
     })
@@ -835,6 +836,8 @@ export default function RecordsGrid({
                 fieldFilters={fieldFilters}
                 onFieldFiltersChange={handleFieldFiltersChange}
                 allRecords={allRecords}
+                sidebarWidth={preferences.sidebarWidth}
+                onSidebarWidthChange={(w) => handlePreferencesChange('sidebarWidth', w)}
             />
 
             {/* Main content panel */}

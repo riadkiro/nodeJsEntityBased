@@ -923,6 +923,7 @@ export default function RecordsGrid({
                                     onToggleSelect={handleToggleSelect}
                                     onSelectAll={handleSelectAllPage}
                                     allPageSelected={allPageSelected}
+                                    showCheckboxes={preferences.showCheckboxes !== false}
                                 />
                             </div>
 

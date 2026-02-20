@@ -20,7 +20,8 @@ export default function RecordsTable({
     selectedIds,
     onToggleSelect,
     onSelectAll,
-    allPageSelected
+    allPageSelected,
+    showCheckboxes = true
 }) {
     const [draggedColumn, setDraggedColumn] = useState(null)
     const [dragOverColumn, setDragOverColumn] = useState(null)
@@ -62,17 +63,19 @@ export default function RecordsTable({
             <thead className="sticky top-0 bg-white dark:bg-[#1b2e4b] z-10">
                 <tr>
                     {/* Checkbox column header */}
-                    <th style={{ width: 40, padding: '0 8px' }}>
-                        <label className="bulk-checkbox-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <input
-                                type="checkbox"
-                                checked={allPageSelected && records.length > 0}
-                                onChange={() => onSelectAll && onSelectAll()}
-                                className="bulk-checkbox"
-                            />
-                            <span className="bulk-checkbox-custom"></span>
-                        </label>
-                    </th>
+                    {showCheckboxes && (
+                        <th style={{ width: 40, padding: '0 8px' }}>
+                            <label className="bulk-checkbox-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={allPageSelected && records.length > 0}
+                                    onChange={() => onSelectAll && onSelectAll()}
+                                    className="bulk-checkbox"
+                                />
+                                <span className="bulk-checkbox-custom"></span>
+                            </label>
+                        </th>
+                    )}
                     {columns.map((col) => {
                         // Check if this column is currently sorted
                         const isSorted = sort?.field === col.id ||
@@ -195,24 +198,26 @@ export default function RecordsTable({
                             className={isSelected ? 'bulk-row-selected' : ''}
                         >
                             {/* Checkbox cell */}
-                            <td style={{ padding: '0 8px', width: 40 }}>
-                                <label
-                                    className="bulk-checkbox-wrapper"
-                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                    onClick={(e) => {
-                                        e.preventDefault()
-                                        onToggleSelect && onToggleSelect(record._id, virtualRow.index, e.shiftKey)
-                                    }}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={isSelected}
-                                        readOnly
-                                        className="bulk-checkbox"
-                                    />
-                                    <span className="bulk-checkbox-custom"></span>
-                                </label>
-                            </td>
+                            {showCheckboxes && (
+                                <td style={{ padding: '0 8px', width: 40 }}>
+                                    <label
+                                        className="bulk-checkbox-wrapper"
+                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                        onClick={(e) => {
+                                            e.preventDefault()
+                                            onToggleSelect && onToggleSelect(record._id, virtualRow.index, e.shiftKey)
+                                        }}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            readOnly
+                                            className="bulk-checkbox"
+                                        />
+                                        <span className="bulk-checkbox-custom"></span>
+                                    </label>
+                                </td>
+                            )}
                             {columns.map(col => (
                                 <td
                                     key={col.id}

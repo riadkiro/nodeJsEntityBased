@@ -79,7 +79,31 @@ module.exports = {
         { title: 'Consultation Mercier - Contrôle cardiaque', links: { patient: 'Robert Mercier' } },
         { title: 'Consultation Garnier - Bilan annuel', links: { patient: 'Nicolas Garnier' } },
         { title: 'Consultation Dupont - Renouvellement', links: { patient: 'Jean-Pierre Dupont' } },
-        { title: 'Consultation Morel - Contrôle post-colite', links: { patient: 'Élise Morel' } }
+        { title: 'Consultation Morel - Contrôle post-colite', links: { patient: 'Élise Morel' } },
+        { title: 'Consultation Gauthier - Suivi PR', links: { patient: 'Françoise Gauthier' } },
+        { title: 'Consultation Khelifi - Suivi apnée', links: { patient: 'Ahmed Khelifi' } },
+        { title: 'Consultation Blanc - Migraine', links: { patient: 'Sophie Blanc' } }
+    ],
+
+    // ═══════════════════════════════════════
+    // Médical: Traitements → Patients + Consultations
+    // ═══════════════════════════════════════
+    'tpl-treatments': [
+        { title: 'HTA - Bithérapie Dupont', links: { patient: 'Jean-Pierre Dupont', consultation: 'Consultation Dupont - Contrôle tension' } },
+        { title: 'Diabète T2 - Metformine Fournier', links: { patient: 'Isabelle Fournier', consultation: 'Consultation Fournier - Suivi diabète' } },
+        { title: 'Asthme - Symbicort Lambert', links: { patient: 'Catherine Lambert', consultation: 'Consultation Lambert - Bilan asthme' } },
+        { title: 'Rééducation hanche - Kiné Rousseau', links: { patient: 'Philippe Rousseau', consultation: 'Suivi Rousseau - Rééducation hanche' } },
+        { title: 'Grossesse - Supplémentation Benali', links: { patient: 'Amina Benali', consultation: 'Consultation Benali - Suivi grossesse M6' } },
+        { title: 'IC - Traitement combiné Mercier', links: { patient: 'Robert Mercier', consultation: 'Consultation Mercier - Contrôle cardiaque' } },
+        { title: 'PR - Méthotrexate Gauthier', links: { patient: 'Françoise Gauthier', consultation: 'Consultation Gauthier - Suivi PR' } },
+        { title: 'Colite - Mesalazine Morel', links: { patient: 'Élise Morel', consultation: 'Consultation Morel - Contrôle post-colite' } },
+        { title: 'Corticothérapie - Poussée colite Morel', links: { patient: 'Élise Morel', consultation: 'Urgence Morel - Douleur abdominale' } },
+        { title: 'Gonarthrose - Kiné Lecomte', links: { patient: 'Marc Lecomte', consultation: 'Consultation Lecomte - Douleur genou' } },
+        { title: 'Allergie - Désensibilisation Perrin', links: { patient: 'Julie Perrin', consultation: 'Urgence Perrin - Réaction allergique' } },
+        { title: 'Migraine - Topiramate Blanc', links: { patient: 'Sophie Blanc', consultation: 'Consultation Blanc - Migraine' } },
+        { title: 'Hypothyroïdie - Levothyrox Dubois', links: { patient: 'Claire Dubois' } },
+        { title: 'BPCO - O2 domicile Moreau', links: { patient: 'Lucien Moreau' } },
+        { title: 'Apnée - PPC Khelifi', links: { patient: 'Ahmed Khelifi', consultation: 'Consultation Khelifi - Suivi apnée' } }
     ],
 
     // ═══════════════════════════════════════

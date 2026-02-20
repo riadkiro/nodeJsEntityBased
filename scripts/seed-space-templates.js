@@ -359,6 +359,47 @@ const entityTemplates = [
         ],
         featured: false, active: true, order: 1
     },
+    {
+        name: 'Traitements',
+        slug: 'tpl-treatments',
+        description: 'Suivi des traitements et prescriptions médicales',
+        icon: 'solar:pills-3-bold-duotone',
+        color: '#8b5cf6',
+        category: 'medical',
+        tags: ['treatments', 'prescription', 'medical'],
+        enabledStandardFields: ['title'],
+        fields: [
+            { name: 'medication', label: 'Médicament', type: 'string', category: 'text', icon: 'solar:pills-bold-duotone', required: true },
+            { name: 'dosage', label: 'Posologie', type: 'string', category: 'text', icon: 'solar:tuning-bold-duotone' },
+            { name: 'start_date', label: 'Date de début', type: 'date', category: 'date', icon: 'solar:calendar-bold-duotone', required: true },
+            { name: 'end_date', label: 'Date de fin', type: 'date', category: 'date', icon: 'solar:calendar-mark-bold-duotone' },
+            { name: 'frequency', label: 'Fréquence', type: 'string', category: 'text', icon: 'solar:alarm-bold-duotone' },
+            { name: 'side_effects', label: 'Effets secondaires', type: 'text', category: 'text', icon: 'solar:danger-bold-duotone' },
+            { name: 'notes', label: 'Notes', type: 'text', category: 'text', icon: 'solar:notes-bold-duotone' }
+        ],
+        classifications: [
+            {
+                name: 'Statut', slug: 'status', type: 'status', isStatus: true,
+                options: [
+                    { label: 'En cours', value: 'active', color: '#22c55e', order: 0 },
+                    { label: 'Terminé', value: 'completed', color: '#3b82f6', order: 1 },
+                    { label: 'Suspendu', value: 'suspended', color: '#f59e0b', order: 2 },
+                    { label: 'Annulé', value: 'cancelled', color: '#ef4444', order: 3 }
+                ]
+            },
+            {
+                name: 'Type', slug: 'type', type: 'category',
+                options: [
+                    { label: 'Médicament', value: 'medication', color: '#3b82f6' },
+                    { label: 'Kinésithérapie', value: 'physiotherapy', color: '#22c55e' },
+                    { label: 'Chirurgie', value: 'surgery', color: '#ef4444' },
+                    { label: 'Immunothérapie', value: 'immunotherapy', color: '#8b5cf6' },
+                    { label: 'Autre', value: 'other', color: '#6b7280' }
+                ]
+            }
+        ],
+        featured: false, active: true, order: 2
+    },
     // ─── LOGISTIQUE ───
     {
         name: 'Produits',
@@ -511,21 +552,25 @@ const spaceTemplates = [
     {
         name: 'Cabinet Médical',
         slug: 'tpl-space-medical',
-        description: 'Suivi des patients et gestion des consultations médicales',
+        description: 'Gestion complète du cabinet : patients, consultations, traitements et suivi médical',
         icon: 'solar:health-bold-duotone',
         color: '#2196f3',
         category: 'medical',
-        tags: ['medical', 'patients', 'health'],
+        tags: ['medical', 'patients', 'health', 'doctor'],
         entities: [
             { templateSlug: 'tpl-patients', isMain: true, order: 0 },
-            { templateSlug: 'tpl-consultations', order: 1 }
+            { templateSlug: 'tpl-consultations', order: 1 },
+            { templateSlug: 'tpl-treatments', order: 2 }
         ],
         relations: [
-            { from: 'tpl-consultations', to: 'tpl-patients', type: 'many-to-one', fieldName: 'patient', label: 'Patient', inverseLabel: 'Consultations' }
+            { from: 'tpl-consultations', to: 'tpl-patients', type: 'many-to-one', fieldName: 'patient', label: 'Patient', inverseLabel: 'Consultations' },
+            { from: 'tpl-treatments', to: 'tpl-patients', type: 'many-to-one', fieldName: 'patient', label: 'Patient', inverseLabel: 'Traitements' },
+            { from: 'tpl-treatments', to: 'tpl-consultations', type: 'many-to-one', fieldName: 'consultation', label: 'Consultation', inverseLabel: 'Traitements' }
         ],
         defaultViews: [
             { entitySlug: 'tpl-patients', viewType: 'table' },
-            { entitySlug: 'tpl-consultations', viewType: 'table' }
+            { entitySlug: 'tpl-consultations', viewType: 'table' },
+            { entitySlug: 'tpl-treatments', viewType: 'kanban' }
         ],
         featured: true, active: true, order: 4
     },

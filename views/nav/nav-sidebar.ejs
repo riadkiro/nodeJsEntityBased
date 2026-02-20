@@ -260,6 +260,28 @@
         border-radius: 6px;
         object-fit: cover;
       }
+      /* SortableJS drag & drop feedback */
+      .env-rail-ghost {
+        opacity: 0.35;
+        background: var(--rail-hover, rgba(99,102,241,0.08));
+        border-radius: 10px;
+      }
+      .env-rail-chosen {
+        opacity: 0.8;
+        transform: scale(1.08);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+        z-index: 10;
+      }
+      .env-rail-dragging {
+        opacity: 0.9;
+      }
+      .env-rail-sortable-item {
+        cursor: grab;
+        transition: transform 0.15s ease;
+      }
+      .env-rail-sortable-item:active {
+        cursor: grabbing;
+      }
     </style>
     <div
       x-data="{
@@ -308,7 +330,8 @@
              @click="selectEnvironment(env); $dispatch('show-spaces')"
              @contextmenu.prevent.stop="showEnvContextMenu($event, env)"
              :data-active="activeEnvId === env.id"
-             class="mini-rail-item"
+             :data-env-id="env.id"
+             class="mini-rail-item env-rail-sortable-item"
              :title="env.name"
              :style="activeEnvId === env.id ? 'color:' + env.color : ''">
             <template x-if="env.image">
@@ -326,7 +349,7 @@
         <!-- Add Environment Button -->
         <a href="javascript:;"
            @click="openCreateModal()"
-           class="mini-rail-item"
+           class="mini-rail-item add-env-btn"
            title="Ajouter un environnement"
            style="opacity: 0.5; border: 1px dashed var(--rail-divider); margin-top: 4px;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1895,6 +1918,50 @@
                     this.selectEnvironment(detail.newEnv, true);
                   }
                 });
+
+                // ═══ SortableJS: Reorder environment icons ═══
+                // Pattern: revert-then-splice (Alpine manages DOM, Sortable only handles ghost)
+                const self = this;
+                this._sortable = Sortable.create(this.$el, {
+                  animation: 200,
+                  draggable: '.env-rail-sortable-item',
+                  filter: '.add-env-btn',             // Exclude "+" button from drag
+                  ghostClass: 'env-rail-ghost',
+                  dragClass: 'env-rail-dragging',
+                  chosenClass: 'env-rail-chosen',
+
+                  onEnd(evt) {
+                    // 1. Identify the moved item by env ID (NEVER by index — rule #5)
+                    const envId = evt.item.dataset.envId;
+                    if (!envId) return;
+
+                    const oldIdx = self.environments.findIndex(e => e.id === envId);
+                    if (oldIdx === -1) return;
+
+                    // 2. REVERT DOM move — Alpine manages the DOM via x-for (rule #1)
+                    const items = Array.from(evt.from.querySelectorAll('.env-rail-sortable-item'));
+                    const ref = items[evt.oldIndex] || null;
+                    if (ref) {
+                      evt.from.insertBefore(evt.item, ref);
+                    } else {
+                      // Put back at the end (before the "+" button)
+                      const addBtn = evt.from.querySelector('.add-env-btn');
+                      if (addBtn) {
+                        evt.from.insertBefore(evt.item, addBtn);
+                      } else {
+                        evt.from.appendChild(evt.item);
+                      }
+                    }
+
+                    // 3. Splice the data array → Alpine re-renders correctly
+                    const [moved] = self.environments.splice(oldIdx, 1);
+                    self.environments.splice(evt.newIndex, 0, moved);
+
+                    // 4. Update order values and save to DB
+                    self.environments.forEach((env, idx) => { env.order = idx; });
+                    self.saveEnvOrder();
+                  }
+                });
               },
 
               async refreshEnvironments() {
@@ -2114,6 +2181,24 @@
                 } catch (err) {
                   console.error('[EnvironmentRail] Delete error:', err);
                   alert('Erreur lors de la suppression');
+                }
+              },
+
+              // ═══ Persist environment order to DB ═══
+              async saveEnvOrder() {
+                const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+                try {
+                  const items = this.environments.map((env, idx) => ({
+                    id: env.id,
+                    order: idx
+                  }));
+                  await fetch(`/account/${accountNum}/api/hierarchy/environment/reorder`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items })
+                  });
+                } catch (err) {
+                  console.error('[EnvironmentRail] saveEnvOrder error:', err);
                 }
               }
             };

@@ -456,22 +456,6 @@ export default function RecordsToolbar({
                                 ))}
                             </div>
                         </div>
-
-                        {/* Show Checkboxes toggle */}
-                        <div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-gray-500 dark:text-white-dark">Sélection multiple</span>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={preferences.showCheckboxes !== false}
-                                        onChange={() => onPreferencesChange('showCheckboxes', preferences.showCheckboxes === false ? true : false)}
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-gray-300 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                                </label>
-                            </div>
-                        </div>
                     </div>
                 </>,
                 document.body
@@ -553,6 +537,43 @@ export default function RecordsToolbar({
                                         {opt.label}
                                     </button>
                                 ))}
+                            </div>
+                        </div>
+
+                        {/* Separator */}
+                        <div className="border-t border-gray-100 dark:border-white/10 mt-3 mb-2"></div>
+
+                        {/* Show Checkboxes toggle */}
+                        <div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-gray-500 dark:text-white-dark">Sélection multiple</span>
+                                <button
+                                    type="button"
+                                    onClick={() => onPreferencesChange('showCheckboxes', preferences.showCheckboxes === false ? true : false)}
+                                    style={{
+                                        position: 'relative',
+                                        width: 36,
+                                        height: 20,
+                                        borderRadius: 10,
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        transition: 'background 0.2s ease',
+                                        background: preferences.showCheckboxes !== false ? '#4361ee' : '#d1d5db',
+                                        padding: 0,
+                                    }}
+                                >
+                                    <span style={{
+                                        position: 'absolute',
+                                        top: 2,
+                                        left: preferences.showCheckboxes !== false ? 18 : 2,
+                                        width: 16,
+                                        height: 16,
+                                        borderRadius: '50%',
+                                        background: '#fff',
+                                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                        transition: 'left 0.2s ease',
+                                    }} />
+                                </button>
                             </div>
                         </div>
                     </div>

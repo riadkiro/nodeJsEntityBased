@@ -637,6 +637,21 @@
 <script type="application/json" id="record-values">
     <%- JSON.stringify([...(record.customFields || []), ...((record.relations || []).map(r => ({ field_id: r.relationKey, value: r.value })))]).replace(/</g, '\\u003C') %>
 </script>
+<script type="application/json" id="entity-relations">
+    <%- JSON.stringify((entity.relations || []).map(r => ({
+        _id: r.key,
+        type: 'relation',
+        label: r.label || 'Relation',
+        name: r.label || 'Relation',
+        type_config: {
+            refEntity: (r.targetEntity && r.targetEntity._id ? r.targetEntity._id.toString() : (r.targetEntity || '')),
+            multiple: (r.cardinality === 'one-to-many' || r.cardinality === 'many-to-many')
+        },
+        ui: {
+            placeholder: 'Rechercher ' + ((r.targetEntity && r.targetEntity.name) || '') + '...'
+        }
+    }))).replace(/</g, '\\u003C') %>
+</script>
 
 <script>
     document.addEventListener("alpine:init", () => {
@@ -649,6 +664,10 @@
             const fieldsMap = {};
             rawFields.forEach(f => { fieldsMap[f._id] = f; });
             allTemplates.forEach(t => { if (!fieldsMap[t._id]) fieldsMap[t._id] = t; });
+
+            // Inject entity relations as pseudo-fields in fieldsMap
+            const entityRelations = JSON.parse(document.getElementById("entity-relations").textContent);
+            entityRelations.forEach(r => { if (!fieldsMap[r._id]) fieldsMap[r._id] = r; });
 
             const valuesMap = {};
             recordValues.forEach(cv => { valuesMap[cv.field_id] = cv.value; });
@@ -870,9 +889,9 @@
             </template>
 
             <template x-if="hasMore">
-                <button type="button" @click.stop="loadMore" class="w-full px-4 py-2 text-sm text-primary hover:bg-primary/5 text-center disabled:opacity-50" :disabled="loading">
-                    <span x-show="!loading">Load More...</span>
-                    <span x-show="loading">Loading...</span>
+                <button type="button" @click.stop="loadMore" :disabled="loading" style="width: 100%; padding: 8px 16px; font-size: 13px; color: #4361ee; background: #f8f9ff; border: none; border-top: 1px solid #e0e6ed; cursor: pointer; text-align: center; white-space: nowrap; position: sticky; bottom: 0;">
+                    <span x-show="!loading">Charger plus...</span>
+                    <span x-show="loading" style="display: none;">Chargement...</span>
                 </button>
             </template>
         </div>

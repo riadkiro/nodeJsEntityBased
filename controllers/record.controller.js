@@ -11,10 +11,12 @@ const denormService = require("../services/record-denorm.service");
  * when no EntityForm or published formLayout exists.
  * Uses smart width assignments based on field type for aesthetic rendering.
  */
-function generateDefaultLayout(customFields) {
-    if (!customFields || customFields.length === 0) return null;
+function generateDefaultLayout(customFields, relations) {
+    const hasCustom = customFields && customFields.length > 0;
+    const hasRelations = relations && relations.length > 0;
+    if (!hasCustom && !hasRelations) return null;
 
-    const fields = customFields.map((cf, idx) => {
+    const fields = (customFields || []).map((cf, idx) => {
         const type = cf.type || 'string';
         const subtype = cf.subtype || '';
 
@@ -32,6 +34,16 @@ function generateDefaultLayout(customFields) {
             id: `auto_${cf._id.toString()}`,
             tabId: 'default'
         };
+    });
+
+    // Add relation fields to the layout
+    (relations || []).forEach(rel => {
+        fields.push({
+            fieldId: rel.key, // UUID key for relation
+            width: 6,
+            id: `auto_rel_${rel.key}`,
+            tabId: 'default'
+        });
     });
 
     return {
@@ -335,7 +347,7 @@ module.exports = {
 
             // Auto-generate default layout from entity.customFields when no form layout exists
             if (!activeFormName && (!resolvedLayout || (Array.isArray(resolvedLayout) && resolvedLayout.length === 0) || (!Array.isArray(resolvedLayout) && (!resolvedLayout.fields || resolvedLayout.fields.length === 0)))) {
-                const autoLayout = generateDefaultLayout(entity.customFields);
+                const autoLayout = generateDefaultLayout(entity.customFields, entity.relations);
                 if (autoLayout) {
                     resolvedLayout = autoLayout;
                 }
@@ -704,7 +716,7 @@ module.exports = {
 
             // Auto-generate default layout from entity.customFields when no form layout exists
             if (!activeFormName && (!resolvedLayout || (Array.isArray(resolvedLayout) && resolvedLayout.length === 0) || (!Array.isArray(resolvedLayout) && (!resolvedLayout.fields || resolvedLayout.fields.length === 0)))) {
-                const autoLayout = generateDefaultLayout(entity.customFields);
+                const autoLayout = generateDefaultLayout(entity.customFields, entity.relations);
                 if (autoLayout) {
                     resolvedLayout = autoLayout;
                 }

@@ -814,14 +814,26 @@ module.exports = {
 
             for (let i = 0; i < entityTemplates.length; i++) {
                 const etRef = entityTemplates[i];
-                // Fetch the EntityTemplate by slug
-                const et = await EntityTemplate.findOne({ slug: etRef.templateSlug, active: true }).lean();
-                if (!et) continue;
+                // Fetch the EntityTemplate by slug (active: { $ne: false } to include undefined/true)
+                const et = await EntityTemplate.findOne({ slug: etRef.templateSlug, active: { $ne: false } }).lean();
+                if (!et) {
+                    console.warn(`[Template] EntityTemplate not found for slug: ${etRef.templateSlug} — skipping`);
+                    continue;
+                }
 
                 const entityName = etRef.name || et.name;
                 const entityIcon = etRef.icon || et.icon;
                 const entityColor = etRef.color || et.color;
                 const entitySlug = await uniqueSlug(EntityModel, entityName);
+
+                // Normalize referenceTitleTokens: old templates use {type, value}, new use {t, id}
+                let refTokens = [{ t: 'field', id: 'title' }]; // default
+                if (et.referenceTitleTokens && et.referenceTitleTokens.length > 0) {
+                    refTokens = et.referenceTitleTokens.map(tok => {
+                        if (tok.t) return tok; // already in new format
+                        return { t: tok.type || 'field', id: tok.value || tok.id || 'title' };
+                    });
+                }
 
                 // Create the Entity
                 const newEntity = new EntityModel({
@@ -829,26 +841,41 @@ module.exports = {
                     slug: entitySlug,
                     icon: entityIcon,
                     color: entityColor,
+                    spaces: [newSpace._id],
                     createdBy: req.user._id,
                     enabledStandardFields: et.enabledStandardFields || ['title'],
-                    referenceTitleTokens: et.referenceTitleTokens || [{ t: 'field', id: 'title' }]
+                    referenceTitleTokens: refTokens
                 });
 
                 // Create custom fields from template
                 if (et.fields && et.fields.length > 0) {
                     const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
                     const fieldIds = [];
-                    for (const fieldDef of et.fields) {
+                    for (const rawFieldDef of et.fields) {
+                        // Normalize: old templates use plain strings, new ones use objects
+                        let fieldDef;
+                        if (typeof rawFieldDef === 'string') {
+                            const label = rawFieldDef.charAt(0).toUpperCase() + rawFieldDef.slice(1).replace(/_/g, ' ');
+                            fieldDef = { name: rawFieldDef, label, type: 'string' };
+                        } else {
+                            fieldDef = rawFieldDef;
+                        }
+
+                        if (!fieldDef.name || !fieldDef.label) {
+                            console.warn(`[Template] Skipping field with missing name/label:`, fieldDef);
+                            continue;
+                        }
+
                         const newField = new FieldTemplateModel({
                             name: fieldDef.name,
                             label: fieldDef.label,
                             description: fieldDef.description || '',
-                            fieldType: fieldDef.type || 'string',
+                            type: fieldDef.type || 'string',
                             subtype: fieldDef.subtype || '',
                             category: fieldDef.category || 'text',
                             icon: fieldDef.icon || 'solar:widget-bold',
                             required: fieldDef.required || false,
-                            typeConfig: fieldDef.typeConfig || {},
+                            type_config: fieldDef.type_config || fieldDef.typeConfig || {},
                             ui: fieldDef.ui || {},
                             createdBy: req.user._id
                         });
@@ -860,7 +887,8 @@ module.exports = {
 
                 await newEntity.save();
 
-                // Create classifications from template
+                // Create classifications from template — track for demo records
+                const classifMap = {}; // { slug: { _id, options: { value: optionDoc } } }
                 if (et.classifications && et.classifications.length > 0) {
                     for (const classifDef of et.classifications) {
                         const classifSlug = classifDef.slug || classifDef.name.toLowerCase()
@@ -869,20 +897,43 @@ module.exports = {
                             .replace(/^-|-$/g, '');
                         const newClassif = new ClassificationModel({
                             name: classifDef.name,
-                            slug: classifSlug,
-                            entity: newEntity._id,
-                            type: classifDef.type || 'status',
-                            isStatus: classifDef.isStatus || false,
+                            key: `${newEntity._id}_${classifSlug}`,
+                            description: '',
+                            type: classifDef.type === 'status' ? 'simple' : 'simple',
+                            allowMultiple: false,
+                            entities: [newEntity._id],
                             options: (classifDef.options || []).map((opt, idx) => ({
                                 label: opt.label,
-                                value: opt.value || opt.label.toLowerCase().replace(/\s+/g, '_'),
                                 color: opt.color || '#4361ee',
-                                icon: opt.icon || '',
-                                order: opt.order || idx
+                                icon: opt.icon || 'solar:info-circle-bold',
+                                type: idx === 0 ? 'start' : (idx === (classifDef.options.length - 1) ? 'completed' : 'active'),
+                                order: opt.order ?? idx
                             })),
                             createdBy: req.user._id
                         });
                         await newClassif.save();
+
+                        // Map for demo records: slug -> { _id, optionsMap }
+                        const optionsMap = {};
+                        newClassif.options.forEach((savedOpt, idx) => {
+                            const origOpt = classifDef.options[idx];
+                            if (origOpt && origOpt.value) {
+                                optionsMap[origOpt.value] = { _id: savedOpt._id, label: savedOpt.label, color: savedOpt.color };
+                            }
+                        });
+                        classifMap[classifSlug] = { _id: newClassif._id, optionsMap };
+
+                        // Set as status classification if applicable
+                        if (classifDef.isStatus) {
+                            newEntity.statusClassification = newClassif._id;
+                            if (!newEntity.classifications) newEntity.classifications = [];
+                            newEntity.classifications.push(newClassif._id);
+                            await newEntity.save();
+                        } else {
+                            if (!newEntity.classifications) newEntity.classifications = [];
+                            newEntity.classifications.push(newClassif._id);
+                            await newEntity.save();
+                        }
                     }
                 }
 
@@ -902,6 +953,63 @@ module.exports = {
                     folders: []
                 });
                 await newView.save();
+
+                // Create demo records from template
+                if (et.demoRecords && et.demoRecords.length > 0) {
+                    const RecordModel = await tenantCollection(req, "Record");
+
+                    // Build field name → _id map
+                    const fieldNameToId = {};
+                    if (et.fields && newEntity.customFields) {
+                        const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
+                        const savedFields = await FieldTemplateModel.find({ _id: { $in: newEntity.customFields } }).lean();
+                        savedFields.forEach(f => { fieldNameToId[f.name] = f._id; });
+                    }
+
+                    for (let r = 0; r < et.demoRecords.length; r++) {
+                        const demo = et.demoRecords[r];
+                        const customFields = [];
+                        const classificationValues = [];
+
+                        // Map custom field values
+                        if (demo.customFieldValues) {
+                            for (const [fieldName, value] of Object.entries(demo.customFieldValues)) {
+                                if (fieldNameToId[fieldName]) {
+                                    customFields.push({ field_id: fieldNameToId[fieldName], value });
+                                }
+                            }
+                        }
+
+                        // Map classification values
+                        if (demo.classificationValues) {
+                            for (const [classifSlug, optionValue] of Object.entries(demo.classificationValues)) {
+                                const classifInfo = classifMap[classifSlug];
+                                if (classifInfo && classifInfo.optionsMap[optionValue]) {
+                                    const opt = classifInfo.optionsMap[optionValue];
+                                    classificationValues.push({
+                                        classificationId: classifInfo._id,
+                                        optionId: opt._id,
+                                        label: opt.label,
+                                        color: opt.color
+                                    });
+                                }
+                            }
+                        }
+
+                        const newRecord = new RecordModel({
+                            entityId: newEntity._id,
+                            spaces: [newSpace._id],
+                            title: demo.title,
+                            computedTitle: demo.title,
+                            customFields,
+                            classificationValues,
+                            order: r,
+                            createdBy: req.user._id
+                        });
+                        await newRecord.save();
+                    }
+                    console.log(`[Template] Created ${et.demoRecords.length} demo records for ${entityName}`);
+                }
 
                 createdEntities.push({
                     entityId: newEntity._id.toString(),
@@ -931,7 +1039,12 @@ module.exports = {
                 entities: createdEntities
             });
         } catch (error) {
-            console.error("[Hierarchy] applySpaceTemplate Error:", error);
+            console.error("[Hierarchy] applySpaceTemplate Error:", error.message);
+            if (error.errors) {
+                Object.keys(error.errors).forEach(key => {
+                    console.error(`  [VALIDATION] ${key}: ${error.errors[key].message}`);
+                });
+            }
             res.status(500).json({ error: "Failed to apply template" });
         }
     }

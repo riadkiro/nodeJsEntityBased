@@ -70,6 +70,14 @@ const EntityTemplateSchema = new mongoose.Schema({
         }]
     }],
 
+    // Demo records to seed when template is applied (embedded)
+    demoRecords: [{
+        title: String,
+        status: String,
+        customFieldValues: { type: mongoose.Schema.Types.Mixed, default: {} },
+        classificationValues: { type: mongoose.Schema.Types.Mixed, default: {} }
+    }],
+
     // Reference title format
     referenceTitleTokens: {
         type: [{

@@ -536,6 +536,8 @@ const spaceTemplates = [
     }
 ];
 
+const demoRecords = require('./data/demo-records');
+
 // ══════════════════════════════════════════════
 // MAIN SEED FUNCTION
 // ══════════════════════════════════════════════
@@ -544,16 +546,20 @@ async function seed() {
         await mongoose.connect(MONGO_URI);
         console.log('✓ Connected to', MONGO_URI);
 
-        // Seed entity templates (upsert by slug)
+        // Seed entity templates (upsert by slug) — inject demo records
         console.log('\n── Entity Templates ──');
         for (const et of entityTemplates) {
+            // Attach demo records if available
+            if (demoRecords[et.slug]) {
+                et.demoRecords = demoRecords[et.slug];
+            }
             const existing = await EntityTemplate.findOne({ slug: et.slug });
             if (existing) {
                 await EntityTemplate.findByIdAndUpdate(existing._id, et);
-                console.log(`  ↻ Updated: ${et.name} (${et.slug})`);
+                console.log(`  ↻ Updated: ${et.name} (${et.slug}) — ${(et.demoRecords || []).length} demo records`);
             } else {
                 await new EntityTemplate(et).save();
-                console.log(`  ✓ Created: ${et.name} (${et.slug})`);
+                console.log(`  ✓ Created: ${et.name} (${et.slug}) — ${(et.demoRecords || []).length} demo records`);
             }
         }
 

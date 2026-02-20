@@ -1,0 +1,9 @@
+Error: Entity validation failed: referenceTitleTokens.0.t: Path `t` is required.
+  VALIDATION referenceTitleTokens.0.t: Path `t` is required.
+Stack:
+ValidationError: Entity validation failed: referenceTitleTokens.0.t: Path `t` is required.
+    at Document.invalidate (C:\Users\pc\Documents\nodeJsProject\node_modules\mongoose\lib\document.js:3153:32)
+    at Subdocument.invalidate (C:\Users\pc\Documents\nodeJsProject\node_modules\mongoose\lib\types\subdocument.js:225:12)
+    at C:\Users\pc\Documents\nodeJsProject\node_modules\mongoose\lib\document.js:2941:17
+    at C:\Users\pc\Documents\nodeJsProject\node_modules\mongoose\lib\schematype.js:1349:9
+    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)

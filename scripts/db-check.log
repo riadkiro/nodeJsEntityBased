@@ -1,0 +1,17 @@
+Cleaned: Gestion de Projets
+Status: 200
+SUCCESS!
+Entities: 5
+  - Projets (viewId: 69978f7b153840f8eed21978)
+  - Tâches (viewId: 69978f7b153840f8eed219aa)
+  - Documents (viewId: 69978f7b153840f8eed219cd)
+  - Notes (viewId: 69978f7b153840f8eed219e5)
+  - Jalons (viewId: 69978f7b153840f8eed21a14)
+
+Hierarchy:
+  space: Gestion de Projets
+    entity: Projets
+    entity: Tâches
+    entity: Documents
+    entity: Notes
+    entity: Jalons

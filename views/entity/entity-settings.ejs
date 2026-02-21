@@ -111,6 +111,7 @@
     color: entity.color || '',
     image: entity.image || '',
     active: entity.active !== false,
+    enableAttachments: entity.enableAttachments || false,
     enabledStandardFields: entity.enabledStandardFields || [],
     referenceTitleTokens: entity.referenceTitleTokens || [{ t: 'field', id: 'title' }],
     customFields: (entity.customFields || []).map(f => typeof f === 'object' ? f : f),
@@ -178,6 +179,7 @@ document.addEventListener('alpine:init', () => {
         color: isEdit ? entity.color : hasTpl ? tplData.color : '',
         image: isEdit ? entity.image : hasTpl ? (tplData.image || '') : '',
         active: isEdit ? entity.active : true,
+        enableAttachments: isEdit ? entity.enableAttachments : false,
         referenceTitleTokens: isEdit ? entity.referenceTitleTokens : hasTpl ? (tplData.referenceTitleTokens || [{ t: 'field', id: 'title' }]) : [{ t: 'field', id: 'title' }],
         standardFields: buildStdFields(),
         statusClassificationId: isEdit ? entity.statusClassification : '',
@@ -575,6 +577,7 @@ document.addEventListener('alpine:init', () => {
           color: this.form.color,
           active: this.form.active,
           enabledStandardFields,
+          enableAttachments: this.form.enableAttachments,
           customFields: this.selectedFields.map(f => f._id || f),
           referenceTitleTokens: this.form.referenceTitleTokens,
           statusClassification: this.form.statusClassificationId || null,
@@ -618,6 +621,116 @@ document.addEventListener('alpine:init', () => {
             setTimeout(() => { window.location.href = `/account/${this.accountNumber}/entity/list`; }, 800);
           }
         } catch(e) { Swal.fire({ icon:'error', title:'Erreur', text:e.message }); }
+      }
+    };
+  });
+
+  // ========== SMARTDOC MANAGER ==========
+  Alpine.data('smartDocManager', () => {
+    const raw = JSON.parse(document.getElementById('entity-settings-data').textContent);
+    const accountNumber = raw.accountNumber;
+    const entityId = raw.entity?._id || '';
+
+    return {
+      templates: [],
+      availableDocuments: [],
+      showAddForm: false,
+      saving: false,
+      newTemplate: {
+        name: '',
+        documentId: '',
+        icon: 'solar:document-bold-duotone',
+        color: '#4361ee',
+        inputFields: []
+      },
+
+      init() {
+        if (entityId) {
+          this.loadTemplates();
+          this.loadDocuments();
+        }
+      },
+
+      async loadTemplates() {
+        try {
+          const res = await fetch(`/account/${accountNumber}/api/smartdoc/templates/${entityId}`, { credentials: 'include' });
+          const data = await res.json();
+          if (data.success) this.templates = data.templates || [];
+        } catch (e) { console.error('[SmartDoc] Load error:', e); }
+      },
+
+      async loadDocuments() {
+        try {
+          const res = await fetch(`/account/${accountNumber}/api/smartdoc/documents?entityId=${entityId}`, { credentials: 'include' });
+          const data = await res.json();
+          if (data.success) this.availableDocuments = data.documents || [];
+        } catch (e) { console.error('[SmartDoc] Load docs error:', e); }
+      },
+
+      addInputField() {
+        this.newTemplate.inputFields.push({
+          key: '',
+          label: '',
+          type: 'text',
+          required: true,
+          placeholder: ''
+        });
+      },
+
+      async saveTemplate() {
+        if (!this.newTemplate.name || !this.newTemplate.documentId) {
+          alert('Veuillez remplir le nom et sélectionner un document template.');
+          return;
+        }
+        this.saving = true;
+        try {
+          const payload = {
+            ...this.newTemplate,
+            entityId,
+            inputFields: this.newTemplate.inputFields.filter(f => f.key && f.label)
+          };
+          const res = await fetch(`/account/${accountNumber}/api/smartdoc/templates`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (data.success) {
+            this.templates.push(data.template);
+            this.resetForm();
+            this.showAddForm = false;
+          } else {
+            alert(data.error || 'Erreur');
+          }
+        } catch (e) {
+          console.error('[SmartDoc] Save error:', e);
+          alert('Erreur lors de la sauvegarde');
+        } finally { this.saving = false; }
+      },
+
+      async deleteTemplate(id) {
+        if (!confirm('Supprimer ce SmartDoc ?')) return;
+        try {
+          const res = await fetch(`/account/${accountNumber}/api/smartdoc/templates/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+          });
+          const data = await res.json();
+          if (data.success) {
+            this.templates = this.templates.filter(t => t._id !== id);
+          }
+        } catch (e) { console.error('[SmartDoc] Delete error:', e); }
+      },
+
+      resetForm() {
+        this.newTemplate = {
+          name: '',
+          documentId: '',
+          icon: 'solar:document-bold-duotone',
+          color: '#4361ee',
+          inputFields: []
+        };
       }
     };
   });
@@ -998,7 +1111,134 @@ document.addEventListener('alpine:init', () => {
         </div>
       </div>
 
+      <!-- Attachments Toggle -->
+      <div class="section-card">
+        <div class="p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <iconify-icon icon="solar:paperclip-2-bold-duotone" width="18" class="text-secondary"></iconify-icon>
+              <span class="text-sm font-semibold dark:text-gray-300">Pièces jointes</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" x-model="form.enableAttachments" class="sr-only peer">
+              <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-secondary"></div>
+            </label>
+          </div>
+          <p class="text-[10px] text-gray-400" x-show="form.enableAttachments">Les utilisateurs pourront joindre des fichiers aux records de cette collection.</p>
+        </div>
+      </div>
+
+      <!-- ✨ SmartDoc Templates (only when attachments enabled + edit mode) -->
+      <template x-if="isEdit && form.enableAttachments">
+        <div class="section-card" x-data="smartDocManager()">
+          <div class="p-5 space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="18" class="text-warning"></iconify-icon>
+                <span class="text-sm font-semibold dark:text-gray-300">SmartDoc</span>
+              </div>
+              <button type="button" @click="showAddForm = !showAddForm"
+                class="w-6 h-6 rounded-md flex items-center justify-center bg-primary/10 hover:bg-primary/20 text-primary transition-all text-xs">
+                <iconify-icon :icon="showAddForm ? 'solar:close-circle-bold' : 'solar:add-circle-bold'" width="14"></iconify-icon>
+              </button>
+            </div>
+            <p class="text-[10px] text-gray-400">Modèles de documents générables en 1 clic depuis les records.</p>
+
+            <!-- Add Form -->
+            <div x-show="showAddForm" x-collapse class="space-y-3 bg-gray-50/50 dark:bg-gray-800/30 rounded-lg p-3">
+              <div>
+                <label class="text-[10px] font-semibold text-gray-500 mb-1 block">Nom du SmartDoc *</label>
+                <input type="text" x-model="newTemplate.name" class="form-input text-xs !h-8" placeholder="Ex: Attestation de congé">
+              </div>
+              <div>
+                <label class="text-[10px] font-semibold text-gray-500 mb-1 block">Document template *</label>
+                <select x-model="newTemplate.documentId" class="form-input text-xs !h-8">
+                  <option value="">-- Sélectionner un modèle --</option>
+                  <template x-for="doc in availableDocuments" :key="doc._id">
+                    <option :value="doc._id" x-text="doc.name + ' (' + doc.pageCount + ' pages)'"></option>
+                  </template>
+                </select>
+                <template x-if="availableDocuments.length === 0">
+                  <p class="text-[9px] text-gray-400 mt-1 italic">Aucun document template trouvé. Créez d'abord un document template lié à cette collection.</p>
+                </template>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] font-semibold text-gray-500 mb-1 block">Icône</label>
+                  <input type="text" x-model="newTemplate.icon" class="form-input text-xs !h-8" placeholder="solar:document-bold-duotone">
+                </div>
+                <div>
+                  <label class="text-[10px] font-semibold text-gray-500 mb-1 block">Couleur</label>
+                  <input type="color" x-model="newTemplate.color" class="form-input !h-8 !p-1 !w-full">
+                </div>
+              </div>
+
+              <!-- Input Fields Config -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <label class="text-[10px] font-semibold text-gray-500">Champs supplémentaires</label>
+                  <button type="button" @click="addInputField()" class="text-[9px] text-primary hover:underline">+ Ajouter</button>
+                </div>
+                <template x-for="(field, idx) in newTemplate.inputFields" :key="idx">
+                  <div class="flex items-start gap-1 bg-white dark:bg-gray-800 rounded p-2 border dark:border-gray-700">
+                    <div class="flex-1 space-y-1">
+                      <div class="flex gap-1">
+                        <input type="text" x-model="field.key" class="form-input text-[10px] !h-6 flex-1" placeholder="Clé (ex: dateFrom)">
+                        <select x-model="field.type" class="form-input text-[10px] !h-6 w-20">
+                          <option value="text">Texte</option>
+                          <option value="date">Date</option>
+                          <option value="number">Nombre</option>
+                          <option value="select">Liste</option>
+                          <option value="textarea">Zone texte</option>
+                        </select>
+                      </div>
+                      <input type="text" x-model="field.label" class="form-input text-[10px] !h-6 w-full" placeholder="Label (ex: Date de début)">
+                    </div>
+                    <button type="button" @click="newTemplate.inputFields.splice(idx, 1)"
+                      class="w-5 h-5 rounded flex items-center justify-center text-gray-400 hover:text-danger hover:bg-danger/10 transition-all mt-1 shrink-0">
+                      <iconify-icon icon="solar:trash-bin-trash-bold" width="11"></iconify-icon>
+                    </button>
+                  </div>
+                </template>
+              </div>
+
+              <button type="button" @click="saveTemplate()" :disabled="saving"
+                class="btn btn-primary btn-sm w-full text-[10px] flex items-center justify-center gap-1.5">
+                <iconify-icon :icon="saving ? 'line-md:loading-twotone-loop' : 'solar:add-circle-bold'" width="14"></iconify-icon>
+                <span x-text="saving ? 'Enregistrement...' : 'Ajouter le SmartDoc'"></span>
+              </button>
+            </div>
+
+            <!-- Existing Templates List -->
+            <div class="space-y-2" x-show="templates.length > 0">
+              <template x-for="tpl in templates" :key="tpl._id">
+                <div class="flex items-center gap-2 px-2 py-2 rounded-lg bg-gray-50/50 dark:bg-gray-800/30 border dark:border-gray-700/30 group">
+                  <div class="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
+                    :style="'background:' + (tpl.color || '#4361ee') + '20; color:' + (tpl.color || '#4361ee')">
+                    <iconify-icon :icon="tpl.icon || 'solar:document-bold-duotone'" width="14"></iconify-icon>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <span class="text-[11px] font-medium text-gray-700 dark:text-gray-300 truncate block" x-text="tpl.name"></span>
+                    <span class="text-[9px] text-gray-400" x-text="(tpl.inputFields?.length || 0) + ' champ(s) requis'"></span>
+                  </div>
+                  <button type="button" @click="deleteTemplate(tpl._id)"
+                    class="opacity-0 group-hover:opacity-100 w-5 h-5 rounded flex items-center justify-center text-gray-400 hover:text-danger hover:bg-danger/10 transition-all shrink-0">
+                    <iconify-icon icon="solar:trash-bin-trash-bold" width="11"></iconify-icon>
+                  </button>
+                </div>
+              </template>
+            </div>
+
+            <!-- Empty state -->
+            <div x-show="templates.length === 0 && !showAddForm" class="text-center py-2">
+              <span class="text-[10px] text-gray-400 italic">Aucun SmartDoc configuré</span>
+            </div>
+          </div>
+        </div>
+      </template>
+
       <!-- Danger Zone -->
+
       <template x-if="isEdit">
         <div class="section-card border-red-200 dark:border-red-900/30">
           <div class="p-5">

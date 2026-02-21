@@ -956,4 +956,22 @@ router.delete('/api/entity/:entityId/saved-views/:viewId', async (req, res) => {
     }
 })
 
+/**
+ * GET /account/:account_number/api/entities
+ * Lightweight list of all entities (for dropdowns, selectors)
+ */
+router.get('/api/entities', async (req, res) => {
+    try {
+        const Entity = await tenantCollection(req, "Entity")
+        const entities = await Entity.find({})
+            .select('name slug icon color')
+            .sort({ name: 1 })
+            .lean()
+        res.json({ entities })
+    } catch (error) {
+        console.error('[API] Entities list error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
 module.exports = router

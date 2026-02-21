@@ -18,8 +18,6 @@
                     <%- include('partials/editor-canvas') %>
                   </div>
 
-                  <!-- Properties Panel (Right) -->
-                  <%- include('partials/editor-right-sidebar') %>
 
                     <!-- HTML Editor Modal -->
                     <div x-show="editingHtml"
@@ -71,6 +69,8 @@
   dimensions: isNew ? { width: 794, height: 1123 } : document.dimensions,
   pages: isNew ? [{ elements: [], background: { color: '#ffffff' }, order: 0 }] : document.pages,
   status: isNew ? 'draft' : document.status,
+  isTemplate: isNew ? false : (document.isTemplate || false),
+  entityId: isNew ? '' : (document.entityId || ''),
   collections: isNew ? [] : (document.collections || []),
   contentBlocks: isNew ? [] : (document.contentBlocks || [])
 }).replace(/</g, '\\u003C') %>
@@ -96,11 +96,15 @@
             return pData;
           }),
           status: data.status,
+          isTemplate: data.isTemplate || false,
+          entityId: data.entityId || '',
           margins: data.margins || { top: 72, bottom: 72, left: 72, right: 72 },
           // Dynamic Template System fields
           collections: data.collections || [],
           contentBlocks: data.contentBlocks || []
         },
+        availableEntities: [],
+        showTemplateModal: false,
         editorMode: 'edition', // Keep for backward compat, but pages will use their own.
         selectedPageIndex: 0,
         selectedRow: null,
@@ -123,6 +127,7 @@
           elements: true,
           layout: true,
           settings: true,
+          template: false,
           margins: true,
           info: true
         },
@@ -132,6 +137,9 @@
 
         init: function () {
           var self = this;
+
+          // Load available entities for the "Lier à une collection" dropdown
+          this.loadEntities();
 
           // CRITICAL: Safety synchronization on load
           // If content is empty but rows exist, reconstruct the edition buffer
@@ -783,6 +791,7 @@
         },
         openSections: {
           info: true,
+          template: false,
           margins: true,
           pages: true
         },
@@ -793,6 +802,23 @@
           'A3': { width: 1123, height: 1587 },
           'Letter': { width: 816, height: 1056 },
           'Legal': { width: 816, height: 1344 }
+        },
+
+        // Load available entities from API for the collection binding dropdown
+        loadEntities: function () {
+          var self = this;
+          fetch('/account/' + accountNumber + '/api/hierarchy/all-entities', { credentials: 'include' })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+              if (data.entities) {
+                self.availableEntities = data.entities;
+              } else if (Array.isArray(data)) {
+                self.availableEntities = data;
+              }
+            })
+            .catch(function (e) {
+              console.warn('[Document] Could not load entities:', e);
+            });
         },
 
         updateDimensions: function () {

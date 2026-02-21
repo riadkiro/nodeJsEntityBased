@@ -55,6 +55,7 @@ export default function DataGrid({
     })
 
     const parentRef = useRef(null)
+    const [sidebarWidth, setSidebarWidth] = useState(280)
 
     // Fetch data from API
     const fetchData = useCallback(async () => {
@@ -361,6 +362,8 @@ export default function DataGrid({
                     showSidebar={sidebarVisible}
                     addUrl={addUrl}
                     addLabel={addLabel}
+                    sidebarWidth={sidebarWidth}
+                    onWidthChange={setSidebarWidth}
                 />
             )}
 

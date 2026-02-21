@@ -67,6 +67,23 @@ const RecordSchema = new mongoose.Schema({
     }]
   },
 
+  // 📎 Attachements (fichiers joints)
+  attachments: [{
+    filename: { type: String, required: true },       // Nom stocké sur disque
+    originalName: { type: String, required: true },   // Nom original du fichier
+    mimeType: String,                                  // e.g. application/pdf, image/jpeg
+    size: Number,                                      // Taille en bytes
+    category: {                                        // Catégorie auto-détectée
+      type: String,
+      enum: ['image', 'pdf', 'word', 'excel', 'video', 'audio', 'other'],
+      default: 'other'
+    },
+    isGenerated: { type: Boolean, default: false },   // Généré par SmartDoc
+    generatedFrom: String,                             // ID du template de document
+    uploadedAt: { type: Date, default: Date.now },
+    uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  }],
+
   // 👤 Suivi
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }

@@ -1,6 +1,6 @@
 <% const sidebarOrder=locals.user?.preferences?.record_sidebar_blocks_order || ['actions', 'classifications'
-    , 'visibility' , 'style' , 'dates' ]; const availableSections=['actions', 'classifications' , 'visibility' , 'style'
-    , 'dates' ]; const finalOrder=sidebarOrder.filter(function(s) { return availableSections.includes(s); });
+    , 'visibility' , 'style' , 'dates' , 'attachments' ]; const availableSections=['actions', 'classifications' , 'visibility' , 'style'
+    , 'dates' , 'attachments' ]; const finalOrder=sidebarOrder.filter(function(s) { return availableSections.includes(s); });
     availableSections.forEach(function(s) { if (!finalOrder.includes(s)) finalOrder.push(s); }); %>
     <div class="space-y-4 sticky top-20" x-data="recordSidebar" id="sidebar-main-sortable">
         <% finalOrder.forEach(function(sectionId) { %>
@@ -612,6 +612,207 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <% } else if (sectionId==='attachments' && locals.entity && entity.enableAttachments) { %>
+                                                    <!-- 📎 Attachements -->
+                                                    <% const sidebarSectionAttachments=locals.user?.preferences?.sidebar_section_attachments!==false; %>
+                                                    <div class="panel !p-4 group/panel relative" data-id="attachments"
+                                                    x-data='attachmentPanel({
+                                                            recordId: "<%= locals.record && record._id ? record._id : "" %>",
+                                                            accountNumber: "<%= account_number %>",
+                                                            initialAttachments: <%- JSON.stringify((locals.record && record.attachments) ? record.attachments.map(a => ({ _id: a._id, filename: a.filename, originalName: a.originalName, mimeType: a.mimeType, size: a.size, category: a.category, isGenerated: a.isGenerated || false, uploadedAt: a.uploadedAt })) : []) %>,
+                                                            initialOpen: <%= sidebarSectionAttachments %>
+                                                        })'>
+                                                        <div class="flex items-center justify-between cursor-pointer mb-0"
+                                                            @click="isOpen = !isOpen; $dispatch('save-pref', { key: 'sidebar_section_attachments', value: isOpen })">
+                                                            <div class="flex items-center gap-2 text-secondary">
+                                                                <iconify-icon icon="solar:paperclip-2-bold" width="16"></iconify-icon>
+                                                                <h6 class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light">
+                                                                    Pièces jointes
+                                                                    <span x-show="attachments.length > 0" class="text-[9px] bg-primary/10 text-primary px-1.5 rounded-full ml-1 font-bold" x-text="attachments.length"></span>
+                                                                </h6>
+                                                            </div>
+                                                            <div class="flex items-center gap-1">
+                                                                <div class="drag-handle-panel flex items-center justify-center text-gray-400 hover:text-primary cursor-grab transition-colors h-4">
+                                                                    <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
+                                                                </div>
+                                                                <div class="flex items-center justify-center h-4">
+                                                                    <iconify-icon icon="solar:alt-arrow-down-bold" width="14"
+                                                                        :class="isOpen ? '' : '-rotate-90'"
+                                                                        class="transition-transform text-gray-400 block"></iconify-icon>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="space-y-3 mt-4" x-show="isOpen" x-collapse>
+                                                            <!-- Drop Zone -->
+                                                            <div class="relative border-2 border-dashed rounded-lg p-3 text-center transition-all duration-200 cursor-pointer"
+                                                                :class="isDragging ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-gray-200 hover:border-primary/40 hover:bg-gray-50/50'"
+                                                                @click="$refs.fileInput.click()"
+                                                                @dragover.prevent="isDragging = true"
+                                                                @dragleave.prevent="isDragging = false"
+                                                                @drop.prevent="handleDrop($event)">
+                                                                <input type="file" x-ref="fileInput" multiple class="hidden"
+                                                                    @change="handleFiles($event.target.files)"
+                                                                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mp4,.webm,.mp3,.wav,.zip,.rar,.txt,.csv">
+                                                                <div class="flex flex-col items-center gap-1">
+                                                                    <iconify-icon :icon="isDragging ? 'solar:cloud-download-bold-duotone' : 'solar:upload-minimalistic-bold-duotone'" width="24"
+                                                                        :class="isDragging ? 'text-primary' : 'text-gray-300'"></iconify-icon>
+                                                                    <span class="text-[10px] font-medium" :class="isDragging ? 'text-primary' : 'text-gray-400'" x-text="isDragging ? 'Déposer ici' : 'Glisser ou cliquer'"></span>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Upload Progress -->
+                                                            <template x-if="uploading">
+                                                                <div class="flex items-center gap-2 py-1">
+                                                                    <iconify-icon icon="line-md:loading-twotone-loop" width="14" class="text-primary"></iconify-icon>
+                                                                    <span class="text-[10px] text-primary font-medium">Upload en cours...</span>
+                                                                </div>
+                                                            </template>
+
+                                                            <!-- File List -->
+                                                            <div class="space-y-1.5 max-h-[250px] overflow-y-auto custom-scrollbar" x-show="attachments.length > 0">
+                                                                <template x-for="att in attachments" :key="att._id">
+                                                                    <div class="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-[#1b2e4b] transition-colors">
+                                                                        <!-- Category Icon -->
+                                                                        <div class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 text-white text-[10px]"
+                                                                            :style="'background:' + getCategoryColor(att.category)">
+                                                                            <iconify-icon :icon="getCategoryIcon(att.category)" width="14"></iconify-icon>
+                                                                        </div>
+                                                                        <!-- File Info -->
+                                                                        <div class="flex-1 min-w-0">
+                                                                            <a :href="getFileUrl(att)" target="_blank"
+                                                                                class="text-[11px] font-medium text-gray-700 dark:text-gray-300 hover:text-primary truncate block transition-colors"
+                                                                                x-text="att.originalName"></a>
+                                                                            <div class="flex items-center gap-1 mt-0.5">
+                                                                                <span class="text-[9px] text-gray-400" x-text="formatSize(att.size)"></span>
+                                                                                <template x-if="att.isGenerated">
+                                                                                    <span class="text-[8px] bg-success/10 text-success px-1 rounded font-bold">SmartDoc</span>
+                                                                                </template>
+                                                                            </div>
+                                                                        </div>
+                                                                        <!-- Delete Button -->
+                                                                        <button type="button" @click.stop="deleteAttachment(att._id)"
+                                                                            class="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-danger hover:bg-danger/10 transition-all shrink-0"
+                                                                            title="Supprimer">
+                                                                            <iconify-icon icon="solar:trash-bin-trash-bold" width="12"></iconify-icon>
+                                                                        </button>
+                                                                    </div>
+                                                                </template>
+                                                            </div>
+
+                                                            <!-- ✨ SmartDoc - Document Generation -->
+                                                            <template x-if="recordId && smartDocTemplates.length > 0">
+                                                                <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                                                                    <div class="flex items-center gap-1.5 mb-2">
+                                                                        <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="13" class="text-warning"></iconify-icon>
+                                                                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">SmartDoc</span>
+                                                                    </div>
+                                                                    <div class="space-y-1">
+                                                                        <template x-for="tpl in smartDocTemplates" :key="tpl._id">
+                                                                            <button type="button"
+                                                                                @click="generateSmartDoc(tpl)"
+                                                                                :disabled="generatingDocId === tpl._id"
+                                                                                class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-all hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent group/sdoc border border-transparent hover:border-primary/10">
+                                                                                <div class="w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-transform group-hover/sdoc:scale-110"
+                                                                                    :style="'background:' + (tpl.color || '#4361ee') + '20; color:' + (tpl.color || '#4361ee')">
+                                                                                    <iconify-icon :icon="generatingDocId === tpl._id ? 'line-md:loading-twotone-loop' : (tpl.icon || 'solar:document-bold-duotone')" width="13"></iconify-icon>
+                                                                                </div>
+                                                                                <div class="flex-1 min-w-0">
+                                                                                    <span class="text-[11px] font-medium text-gray-600 dark:text-gray-300 truncate block" x-text="tpl.name"></span>
+                                                                                    <span class="text-[9px] text-gray-400" x-text="tpl.inputFields && tpl.inputFields.length > 0 ? 'Infos requises' : 'Génération directe'"></span>
+                                                                                </div>
+                                                                                <iconify-icon icon="solar:alt-arrow-right-bold" width="12" class="text-gray-300 group-hover/sdoc:text-primary transition-colors shrink-0"></iconify-icon>
+                                                                            </button>
+                                                                        </template>
+                                                                    </div>
+                                                                </div>
+                                                            </template>
+
+                                                            <!-- SmartDoc Input Modal -->
+                                                            <template x-if="showSmartDocModal">
+                                                                <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm" @click.self="showSmartDocModal = false">
+                                                                    <div class="bg-white dark:bg-[#1b2e4b] rounded-xl shadow-2xl w-[380px] max-w-[90vw] overflow-hidden animate__animated animate__fadeInUp animate__faster">
+                                                                        <!-- Modal Header -->
+                                                                        <div class="px-5 py-4 border-b dark:border-gray-700 bg-gradient-to-r from-primary/5 to-transparent">
+                                                                            <div class="flex items-center gap-3">
+                                                                                <div class="w-9 h-9 rounded-lg flex items-center justify-center"
+                                                                                    :style="'background:' + (smartDocModalTemplate?.color || '#4361ee') + '15; color:' + (smartDocModalTemplate?.color || '#4361ee')">
+                                                                                    <iconify-icon :icon="smartDocModalTemplate?.icon || 'solar:document-bold-duotone'" width="20"></iconify-icon>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h4 class="text-sm font-bold text-gray-800 dark:text-white" x-text="smartDocModalTemplate?.name"></h4>
+                                                                                    <p class="text-[10px] text-gray-400">Renseignez les informations requises</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                        <!-- Modal Body -->
+                                                                        <div class="px-5 py-4 space-y-3 max-h-[50vh] overflow-y-auto">
+                                                                            <template x-for="field in smartDocModalTemplate?.inputFields || []" :key="field._id || field.key">
+                                                                                <div>
+                                                                                    <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1 block">
+                                                                                        <span x-text="field.label"></span>
+                                                                                        <span x-show="field.required" class="text-danger text-[10px]">*</span>
+                                                                                    </label>
+                                                                                    <template x-if="field.type === 'date'">
+                                                                                        <input type="date" class="form-input text-xs !h-9" 
+                                                                                            :name="field.key"
+                                                                                            x-model="smartDocModalInputs[field.key]">
+                                                                                    </template>
+                                                                                    <template x-if="field.type === 'number'">
+                                                                                        <input type="number" class="form-input text-xs !h-9" 
+                                                                                            :name="field.key"
+                                                                                            :placeholder="field.placeholder || ''"
+                                                                                            x-model="smartDocModalInputs[field.key]">
+                                                                                    </template>
+                                                                                    <template x-if="field.type === 'textarea'">
+                                                                                        <textarea class="form-input text-xs" rows="3"
+                                                                                            :name="field.key"
+                                                                                            :placeholder="field.placeholder || ''"
+                                                                                            x-model="smartDocModalInputs[field.key]"></textarea>
+                                                                                    </template>
+                                                                                    <template x-if="field.type === 'select'">
+                                                                                        <select class="form-input text-xs !h-9"
+                                                                                            :name="field.key"
+                                                                                            x-model="smartDocModalInputs[field.key]">
+                                                                                            <option value="">-- Choisir --</option>
+                                                                                            <template x-for="opt in field.options || []" :key="opt.value">
+                                                                                                <option :value="opt.value" x-text="opt.label"></option>
+                                                                                            </template>
+                                                                                        </select>
+                                                                                    </template>
+                                                                                    <template x-if="!field.type || field.type === 'text'">
+                                                                                        <input type="text" class="form-input text-xs !h-9" 
+                                                                                            :name="field.key"
+                                                                                            :placeholder="field.placeholder || ''"
+                                                                                            x-model="smartDocModalInputs[field.key]">
+                                                                                    </template>
+                                                                                </div>
+                                                                            </template>
+                                                                        </div>
+                                                                        <!-- Modal Footer -->
+                                                                        <div class="px-5 py-3 border-t dark:border-gray-700 flex items-center justify-end gap-2 bg-gray-50/50 dark:bg-gray-800/30">
+                                                                            <button type="button" @click="showSmartDocModal = false"
+                                                                                class="btn btn-sm btn-outline-secondary text-[10px] px-3 py-1.5">
+                                                                                Annuler
+                                                                            </button>
+                                                                            <button type="button" @click="confirmSmartDocGeneration()"
+                                                                                :disabled="generatingDocId"
+                                                                                class="btn btn-sm btn-primary text-[10px] px-4 py-1.5 flex items-center gap-1.5">
+                                                                                <iconify-icon :icon="generatingDocId ? 'line-md:loading-twotone-loop' : 'solar:magic-stick-3-bold'" width="14"></iconify-icon>
+                                                                                <span x-text="generatingDocId ? 'Génération...' : 'Générer'"></span>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </template>
+
+                                                            <!-- Empty State -->
+                                                            <div x-show="attachments.length === 0 && !uploading" class="text-center py-1">
+                                                                <span class="text-[10px] text-gray-400 italic">Aucune pièce jointe</span>
+                                                            </div>
+
+                                                        </div>
+                                                    </div>
                                                 <% } %>
                                                     <% }); %>
     </div>
@@ -903,6 +1104,204 @@
                             window.dispatchEvent(new CustomEvent('close-edit-' + clsId));
                         }
                     } catch (e) { console.error(e); } finally { this.localLoading = false; }
+                }
+            }));
+
+            // ========== ATTACHMENT PANEL ==========
+            Alpine.data('attachmentPanel', (config) => ({
+                recordId: config.recordId,
+                accountNumber: config.accountNumber,
+                attachments: config.initialAttachments || [],
+                isOpen: config.initialOpen !== false,
+                isDragging: false,
+                uploading: false,
+
+                // SmartDoc state
+                smartDocTemplates: [],
+                generatingDocId: null,
+                showSmartDocModal: false,
+                smartDocModalTemplate: null,
+                smartDocModalInputs: {},
+
+                init() {
+                    if (this.recordId) {
+                        this.loadSmartDocTemplates();
+                    }
+                },
+
+                async loadSmartDocTemplates() {
+                    try {
+                        const entityId = '<%= locals.entity ? entity._id : "" %>';
+                        if (!entityId) return;
+                        const res = await fetch(`/account/${this.accountNumber}/api/smartdoc/templates/${entityId}`, {
+                            credentials: 'include'
+                        });
+                        const data = await res.json();
+                        if (data.success && data.templates) {
+                            this.smartDocTemplates = data.templates;
+                        }
+                    } catch (e) { console.error('[SmartDoc] Load templates error:', e); }
+                },
+
+                generateSmartDoc(tpl) {
+                    // If template has input fields → show modal
+                    if (tpl.inputFields && tpl.inputFields.length > 0) {
+                        this.smartDocModalTemplate = tpl;
+                        this.smartDocModalInputs = {};
+                        // Pre-fill defaults
+                        for (const field of tpl.inputFields) {
+                            if (field.defaultValue !== undefined && field.defaultValue !== null) {
+                                this.smartDocModalInputs[field.key] = field.defaultValue;
+                            } else {
+                                this.smartDocModalInputs[field.key] = '';
+                            }
+                        }
+                        this.showSmartDocModal = true;
+                    } else {
+                        // No inputs needed → generate directly
+                        this._executeGeneration(tpl._id, {});
+                    }
+                },
+
+                confirmSmartDocGeneration() {
+                    if (!this.smartDocModalTemplate) return;
+                    // Validate required fields
+                    const missing = [];
+                    for (const field of this.smartDocModalTemplate.inputFields || []) {
+                        if (field.required && !this.smartDocModalInputs[field.key]) {
+                            missing.push(field.label);
+                        }
+                    }
+                    if (missing.length > 0) {
+                        alert('Veuillez remplir : ' + missing.join(', '));
+                        return;
+                    }
+                    this._executeGeneration(
+                        this.smartDocModalTemplate._id,
+                        { ...this.smartDocModalInputs }
+                    );
+                    this.showSmartDocModal = false;
+                },
+
+                async _executeGeneration(templateId, inputs) {
+                    this.generatingDocId = templateId;
+                    try {
+                        const res = await fetch(`/account/${this.accountNumber}/api/smartdoc/generate/${templateId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                recordId: this.recordId,
+                                inputs
+                            })
+                        });
+                        const data = await res.json();
+                        if (data.success && data.attachment) {
+                            // Add to the attachments list
+                            this.attachments.push(data.attachment);
+                            // Little success feedback
+                            if (window.showMessage) {
+                                window.showMessage('Document généré avec succès !', 'success');
+                            }
+                        } else {
+                            alert(data.error || 'Erreur lors de la génération');
+                        }
+                    } catch (e) {
+                        console.error('[SmartDoc] Generation error:', e);
+                        alert('Erreur lors de la génération du document');
+                    } finally {
+                        this.generatingDocId = null;
+                    }
+                },
+
+                handleDrop(e) {
+                    this.isDragging = false;
+                    const files = e.dataTransfer?.files;
+                    if (files && files.length > 0) this.handleFiles(files);
+                },
+
+                async handleFiles(files) {
+                    if (!files || files.length === 0) return;
+                    if (!this.recordId) {
+                        alert('Veuillez d\'abord enregistrer le record avant d\'ajouter des pièces jointes.');
+                        return;
+                    }
+                    this.uploading = true;
+                    try {
+                        const formData = new FormData();
+                        for (let i = 0; i < files.length; i++) {
+                            formData.append('files', files[i]);
+                        }
+                        const res = await fetch(`/account/${this.accountNumber}/api/records/${this.recordId}/attachments`, {
+                            method: 'POST',
+                            credentials: 'include',
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (data.success && data.attachments) {
+                            this.attachments.push(...data.attachments);
+                        } else {
+                            alert(data.error || 'Erreur lors de l\'upload');
+                        }
+                    } catch (e) {
+                        console.error('Upload error:', e);
+                        alert('Erreur lors de l\'upload');
+                    } finally {
+                        this.uploading = false;
+                        // Reset file input
+                        if (this.$refs.fileInput) this.$refs.fileInput.value = '';
+                    }
+                },
+
+                async deleteAttachment(attachmentId) {
+                    if (!confirm('Supprimer cette pièce jointe ?')) return;
+                    try {
+                        const res = await fetch(`/account/${this.accountNumber}/api/records/${this.recordId}/attachments/${attachmentId}`, {
+                            method: 'DELETE',
+                            credentials: 'include'
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.attachments = this.attachments.filter(a => a._id !== attachmentId);
+                        }
+                    } catch (e) { console.error('Delete error:', e); }
+                },
+
+                getFileUrl(att) {
+                    return `/uploads/attachments/${this.accountNumber}/${att.filename}`;
+                },
+
+                formatSize(bytes) {
+                    if (!bytes) return '';
+                    if (bytes < 1024) return bytes + ' o';
+                    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' Ko';
+                    return (bytes / (1024 * 1024)).toFixed(1) + ' Mo';
+                },
+
+                getCategoryIcon(cat) {
+                    const icons = {
+                        image: 'solar:gallery-bold-duotone',
+                        pdf: 'solar:file-text-bold-duotone',
+                        word: 'solar:document-text-bold-duotone',
+                        excel: 'solar:chart-square-bold-duotone',
+                        video: 'solar:videocamera-record-bold-duotone',
+                        audio: 'solar:music-notes-bold-duotone',
+                        other: 'solar:file-bold-duotone'
+                    };
+                    return icons[cat] || icons.other;
+                },
+
+                getCategoryColor(cat) {
+                    const colors = {
+                        image: '#8b5cf6',
+                        pdf: '#ef4444',
+                        word: '#3b82f6',
+                        excel: '#22c55e',
+                        video: '#f97316',
+                        audio: '#ec4899',
+                        other: '#6b7280'
+                    };
+                    return colors[cat] || colors.other;
                 }
             }));
         });

@@ -84,6 +84,8 @@ const createDefaultDoc = () => ({
     format: 'A4',
     orientation: 'portrait',
     status: 'draft',
+    isTemplate: false,
+    entityId: null,
     dimensions: { width: 794, height: 1123 },
     margins: { top: 72, bottom: 72, left: 72, right: 72 },
     headerHtml: '',  // Global header HTML applied to all pages
@@ -140,6 +142,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const [pasteMode, setPasteMode] = useState('match') // keep, match, plain
     const [isSettingsOpen, setIsSettingsOpen] = useState(false) // Settings popup state
     const [zoomLevel, setZoomLevel] = useState(1) // Zoom level for document canvas (0.25 to 3)
+    const [availableEntities, setAvailableEntities] = useState([])
 
     // Formatting state (for toolbar display)
     const [currentFont, setCurrentFont] = useState('Arial')
@@ -187,6 +190,17 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     useEffect(() => {
         isGlobalSelectionRef.current = isGlobalSelection
     }, [isGlobalSelection])
+
+    // ========== LOAD ENTITIES (for Template dropdown) ==========
+    useEffect(() => {
+        fetch(`/account/${accountNumber}/api/hierarchy/all-entities`, { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.entities) setAvailableEntities(data.entities)
+                else if (Array.isArray(data)) setAvailableEntities(data)
+            })
+            .catch(e => console.warn('[DocumentEditor] Could not load entities:', e))
+    }, [accountNumber])
 
     // ========== AUTOSAVE ==========
     const triggerSave = useCallback(() => {
@@ -1946,6 +1960,8 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                 lastSaved={lastSaved}
                 triggerSave={triggerSave}
                 handlePdfExport={handlePdfExport}
+                // Template props
+                availableEntities={availableEntities}
                 // Paste mode props
                 pasteMode={pasteMode}
                 setPasteMode={setPasteMode}

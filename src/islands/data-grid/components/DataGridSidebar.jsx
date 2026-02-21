@@ -3,7 +3,10 @@
  * Displays classification-based filters (status, priority, tags, etc.) 
  * from API-provided filter data. Pixel-perfect match with RecordsSidebar.
  */
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
+
+const SIDEBAR_MIN_WIDTH = 229
+const SIDEBAR_MAX_WIDTH = 500
 
 export default function DataGridSidebar({
     title,
@@ -16,7 +19,9 @@ export default function DataGridSidebar({
     onFilterChange,
     showSidebar,
     addUrl,
-    addLabel
+    addLabel,
+    sidebarWidth = 280,
+    onWidthChange
 }) {
     const [showDropdown, setShowDropdown] = useState(false)
     const dropdownRef = useRef(null)
@@ -33,6 +38,42 @@ export default function DataGridSidebar({
         }
         return () => document.removeEventListener('mousedown', handleClick)
     }, [showDropdown])
+
+    // ====== RESIZE LOGIC ======
+    const isResizingRef = useRef(false)
+    const startXRef = useRef(0)
+    const startWidthRef = useRef(0)
+
+    const handleResizeStart = useCallback((e) => {
+        e.preventDefault()
+        isResizingRef.current = true
+        startXRef.current = e.clientX
+        startWidthRef.current = sidebarWidth
+        document.body.style.cursor = 'col-resize'
+        document.body.style.userSelect = 'none'
+    }, [sidebarWidth])
+
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isResizingRef.current) return
+            const delta = e.clientX - startXRef.current
+            const newWidth = Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, startWidthRef.current + delta))
+            onWidthChange?.(newWidth)
+        }
+        const handleMouseUp = () => {
+            if (isResizingRef.current) {
+                isResizingRef.current = false
+                document.body.style.cursor = ''
+                document.body.style.userSelect = ''
+            }
+        }
+        document.addEventListener('mousemove', handleMouseMove)
+        document.addEventListener('mouseup', handleMouseUp)
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove)
+            document.removeEventListener('mouseup', handleMouseUp)
+        }
+    }, [onWidthChange])
 
     if (!showSidebar) return null
 
@@ -65,8 +106,35 @@ export default function DataGridSidebar({
     const hasAnyFilter = Object.keys(activeFilters).length > 0
 
     return (
-        <div className="panel z-10 w-full max-w-xs flex-none space-y-4 overflow-hidden p-4 h-full"
-            style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="panel z-10 flex-none space-y-4 overflow-hidden p-4 h-full"
+            style={{ display: 'flex', flexDirection: 'column', width: sidebarWidth, minWidth: SIDEBAR_MIN_WIDTH, maxWidth: SIDEBAR_MAX_WIDTH, position: 'relative' }}>
+            {/* Resize Handle */}
+            <div
+                onMouseDown={handleResizeStart}
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: -3,
+                    width: 6,
+                    height: '100%',
+                    cursor: 'col-resize',
+                    zIndex: 20,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}
+                className="group"
+            >
+                <div
+                    style={{
+                        width: 3,
+                        height: 40,
+                        borderRadius: 4,
+                        transition: 'background-color 0.15s, opacity 0.15s'
+                    }}
+                    className="bg-gray-300 dark:bg-gray-600 opacity-0 group-hover:opacity-100"
+                />
+            </div>
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center">

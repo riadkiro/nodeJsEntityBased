@@ -38,7 +38,11 @@ router.use("/mailbox", require("./mailbox.router.js"));
 // React Islands API (JSON endpoints)
 router.use("/", require("./api.routes.js"));
 
+// Attachment API (file uploads for records)
+router.use("/api", require("./api/api-attachment.router.js"));
 
+// SmartDoc API (template-based document generation for records)
+router.use("/api", require("./api/api-smartdoc.router.js"));
 
 // Document Builder
 router.use("/documents", require("./document.routes.js"));

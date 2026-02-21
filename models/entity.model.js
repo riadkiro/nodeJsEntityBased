@@ -113,6 +113,11 @@ const EntitySchema = new mongoose.Schema(
       }, { _id: false }),
       default: new Map()
     },
+    // 📎 Attachements
+    enableAttachments: {
+      type: Boolean,
+      default: false
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

@@ -177,6 +177,11 @@ const DocumentSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Entity'
     },
+    // Multi-entity linking for templates
+    entityIds: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Entity'
+    }],
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -237,6 +242,7 @@ DocumentSchema.index({ name: 'text' });
 DocumentSchema.index({ createdBy: 1, createdAt: -1 });
 DocumentSchema.index({ isTemplate: 1 });
 DocumentSchema.index({ entityId: 1 });
+DocumentSchema.index({ entityIds: 1 });
 DocumentSchema.index({ folderId: 1 });
 
 // Virtual pour compter les pages

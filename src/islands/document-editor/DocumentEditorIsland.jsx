@@ -86,6 +86,7 @@ const createDefaultDoc = () => ({
     status: 'draft',
     isTemplate: false,
     entityId: null,
+    entityIds: [],
     dimensions: { width: 794, height: 1123 },
     margins: { top: 72, bottom: 72, left: 72, right: 72 },
     headerHtml: '',  // Global header HTML applied to all pages
@@ -1995,6 +1996,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     doc={doc}
                     setDoc={setDoc}
                     triggerSave={triggerSave}
+                    accountNumber={accountNumber}
                     settingsPanelProps={{
                         isOpen: isSettingsOpen,
                         onClose: () => setIsSettingsOpen(false),

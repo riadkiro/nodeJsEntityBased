@@ -59,7 +59,8 @@ export default function LeftSidebar({
     settingsPanelProps,
     doc,
     setDoc,
-    triggerSave
+    triggerSave,
+    accountNumber
 }) {
     const toggleTab = (tab) => {
         setActiveTab(activeTab === tab ? null : tab)
@@ -190,7 +191,7 @@ export default function LeftSidebar({
                             <LayoutsPanel doc={doc} setDoc={setDoc} triggerSave={triggerSave} />
                         )}
                         {activeTab === 'dynamic-nav' && (
-                            <DynamicNavPanel insertVariableToken={insertVariableToken} />
+                            <DynamicNavPanel insertVariableToken={insertVariableToken} accountNumber={accountNumber} doc={doc} />
                         )}
                     </div>
                 </div>
@@ -996,43 +997,322 @@ function GalleryPanel() {
     )
 }
 
-// Dynamic Nav Panel Component
-function DynamicNavPanel({ insertVariableToken }) {
-    // Sample variables for demonstration
-    const variables = [
-        { path: 'record.title', label: 'Titre', fieldId: null },
-        { path: 'record.createdAt', label: 'Date création', fieldId: null },
-        { path: 'user.name', label: 'Utilisateur', fieldId: null }
-    ]
+// ===== Dynamic Variables Panel =====
+function DynamicNavPanel({ insertVariableToken, accountNumber, doc }) {
+    const isDark = useDarkMode();
+    const [variables, setVariables] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [expandedSections, setExpandedSections] = useState({ system: true, user: true });
 
-    const handleClick = (variable) => {
+    // Fetch variables from the SmartDoc API
+    useEffect(() => {
+        if (!doc?._id || !accountNumber) return;
+
+        const fetchVariables = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await fetch(`/account/${accountNumber}/api/smartdoc/variables/${doc._id}`, {
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.success && data.variables) {
+                    setVariables(data.variables);
+                    // Auto-expand entity sections
+                    const expanded = { system: true, user: true };
+                    (data.variables.entities || []).forEach(e => {
+                        expanded['entity_' + e.entityId] = true;
+                    });
+                    setExpandedSections(expanded);
+                } else {
+                    setError(data.error || 'Erreur de chargement');
+                }
+            } catch (err) {
+                console.error('[Variables] Fetch error:', err);
+                setError('Impossible de charger les variables');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchVariables();
+    }, [doc?._id, accountNumber]);
+
+    const toggleSection = (key) => {
+        setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const handleInsert = (variable) => {
         insertVariableToken(variable.path, {
-            fieldId: variable.fieldId,
+            fieldId: variable.fieldId || null,
             label: variable.label,
-            type: 'text'
-        })
+            type: variable.type || 'text'
+        });
+    };
+
+    // Filter variables by search query
+    const matchesSearch = (label, path) => {
+        if (!searchQuery) return true;
+        const q = searchQuery.toLowerCase();
+        return (label && label.toLowerCase().includes(q)) ||
+            (path && path.toLowerCase().includes(q));
+    };
+
+    const sectionHeaderStyle = {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '8px 10px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        border: 'none',
+        background: isDark ? '#1b2e4b' : '#f1f5f9',
+        width: '100%',
+        textAlign: 'left',
+        transition: 'background 0.15s',
+        marginBottom: '4px'
+    };
+
+    const varButtonStyle = {
+        width: '100%',
+        padding: '6px 10px',
+        textAlign: 'left',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        border: 'none',
+        background: 'transparent',
+        transition: 'background 0.15s',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        fontSize: '12px'
+    };
+
+    const renderVariableButton = (v, i) => (
+        <button
+            key={v.path + '_' + i}
+            style={varButtonStyle}
+            onClick={() => handleInsert(v)}
+            onMouseEnter={e => e.currentTarget.style.background = isDark ? 'rgba(67,97,238,0.15)' : 'rgba(67,97,238,0.08)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            title={`Insérer {{${v.path}}}`}
+        >
+            <span style={{
+                padding: '2px 6px',
+                background: isDark ? 'rgba(245,158,11,0.15)' : '#fef3c7',
+                color: isDark ? '#fbbf24' : '#b45309',
+                borderRadius: '4px',
+                fontFamily: 'monospace',
+                fontSize: '10px',
+                fontWeight: 600,
+                flexShrink: 0,
+                maxWidth: '120px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+            }}>
+                {`{{${v.path}}}`}
+            </span>
+            <span style={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {v.label}
+            </span>
+        </button>
+    );
+
+    const renderSection = (key, title, icon, items, iconColor) => {
+        const filtered = items.filter(v => matchesSearch(v.label, v.path));
+        if (filtered.length === 0 && searchQuery) return null;
+
+        return (
+            <div key={key} style={{ marginBottom: '8px' }}>
+                <button
+                    style={sectionHeaderStyle}
+                    onClick={() => toggleSection(key)}
+                    onMouseEnter={e => e.currentTarget.style.background = isDark ? '#243b5e' : '#e2e8f0'}
+                    onMouseLeave={e => e.currentTarget.style.background = isDark ? '#1b2e4b' : '#f1f5f9'}
+                >
+                    <iconify-icon icon={expandedSections[key] ? 'tabler:chevron-down' : 'tabler:chevron-right'} width="14" style={{ color: isDark ? '#64748b' : '#94a3b8', flexShrink: 0 }}></iconify-icon>
+                    <iconify-icon icon={icon} width="16" style={{ color: iconColor, flexShrink: 0 }}></iconify-icon>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: isDark ? '#e2e8f0' : '#334155', flex: 1 }}>{title}</span>
+                    <span style={{ fontSize: '10px', color: isDark ? '#4b5563' : '#9ca3af', fontWeight: 500 }}>{filtered.length}</span>
+                </button>
+                {expandedSections[key] && (
+                    <div style={{ paddingLeft: '12px' }}>
+                        {filtered.map((v, i) => renderVariableButton(v, i))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // Loading state
+    if (loading) {
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 16px', gap: '12px' }}>
+                <div style={{
+                    width: '36px', height: '36px', border: '3px solid #e5e7eb', borderTopColor: '#4361ee',
+                    borderRadius: '50%', animation: 'spin 0.8s linear infinite'
+                }} />
+                <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+                <span style={{ fontSize: '12px', color: isDark ? '#94a3b8' : '#64748b' }}>Chargement des variables...</span>
+            </div>
+        );
     }
 
+    // Error state
+    if (error) {
+        return (
+            <div style={{ padding: '16px', textAlign: 'center' }}>
+                <iconify-icon icon="solar:danger-triangle-bold-duotone" width="32" style={{ color: '#ef4444', marginBottom: '8px' }}></iconify-icon>
+                <p style={{ fontSize: '12px', color: '#ef4444', margin: '0 0 8px' }}>{error}</p>
+                <button
+                    onClick={() => { setError(null); setLoading(true); /* re-trigger useEffect */ }}
+                    style={{
+                        padding: '6px 16px', borderRadius: '6px', border: '1px solid #e5e7eb',
+                        background: 'transparent', cursor: 'pointer', fontSize: '12px',
+                        color: isDark ? '#e2e8f0' : '#374151'
+                    }}
+                >Réessayer</button>
+            </div>
+        );
+    }
+
+    // No document saved yet
+    if (!doc?._id) {
+        return (
+            <div style={{ padding: '16px', textAlign: 'center' }}>
+                <iconify-icon icon="solar:document-add-bold-duotone" width="40" style={{ color: isDark ? '#4b5563' : '#d1d5db', marginBottom: '12px' }}></iconify-icon>
+                <p style={{ fontSize: '12px', color: isDark ? '#94a3b8' : '#6b7280', margin: 0 }}>
+                    Sauvegardez d'abord le document pour accéder aux variables dynamiques.
+                </p>
+            </div>
+        );
+    }
+
+    // Variables loaded
+    if (!variables) return null;
+
+    const hasEntities = variables.entities && variables.entities.length > 0;
+
     return (
-        <div className="space-y-4">
-            <p className="text-xs text-gray-500">
-                Cliquez sur une variable pour l'insérer à la position du curseur.
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {/* Search */}
+            <div style={{ position: 'relative', marginBottom: '8px' }}>
+                <iconify-icon icon="tabler:search" width="14" style={{
+                    position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)',
+                    color: isDark ? '#4b5563' : '#9ca3af'
+                }}></iconify-icon>
+                <input
+                    type="text"
+                    placeholder="Rechercher une variable..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    style={{
+                        width: '100%', padding: '7px 10px 7px 30px', borderRadius: '8px',
+                        border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                        background: isDark ? '#0e1726' : '#ffffff',
+                        color: isDark ? '#e2e8f0' : '#374151',
+                        fontSize: '12px', outline: 'none',
+                        boxSizing: 'border-box'
+                    }}
+                />
+                {searchQuery && (
+                    <button
+                        onClick={() => setSearchQuery('')}
+                        style={{
+                            position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
+                            border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px',
+                            color: isDark ? '#6b7280' : '#9ca3af'
+                        }}
+                    >
+                        <iconify-icon icon="tabler:x" width="12"></iconify-icon>
+                    </button>
+                )}
+            </div>
+
+            {/* Hint */}
+            <p style={{ fontSize: '10px', color: isDark ? '#4b5563' : '#94a3b8', margin: '0 0 8px', lineHeight: 1.4 }}>
+                Cliquez sur une variable pour l'insérer dans le document à la position du curseur.
             </p>
 
-            <div className="space-y-1">
-                {variables.map((variable, i) => (
-                    <button
-                        key={i}
-                        onClick={() => handleClick(variable)}
-                        className="w-full p-2 text-left rounded-lg hover:bg-primary/10 text-sm flex items-center gap-2 text-gray-600 dark:text-gray-300"
-                    >
-                        <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded text-xs font-mono">
-                            {`{{${variable.path}}}`}
-                        </span>
-                        <span className="text-gray-400">{variable.label}</span>
-                    </button>
-                ))}
-            </div>
+            {/* System Variables */}
+            {renderSection('system', 'Système', 'solar:settings-bold-duotone', variables.system || [], '#6366f1')}
+
+            {/* User Variables */}
+            {renderSection('user', 'Utilisateur', 'solar:user-bold-duotone', variables.user || [], '#0ea5e9')}
+
+            {/* Entity Variables */}
+            {hasEntities && variables.entities.map(entity => (
+                <div key={entity.entityId}>
+                    {/* Entity Fields */}
+                    {renderSection(
+                        'entity_' + entity.entityId,
+                        entity.name,
+                        entity.icon || 'solar:layers-bold-duotone',
+                        entity.fields || [],
+                        '#f59e0b'
+                    )}
+
+                    {/* Entity Classifications */}
+                    {entity.classifications && entity.classifications.length > 0 && renderSection(
+                        'classif_' + entity.entityId,
+                        entity.name + ' · Classifications',
+                        'solar:tag-bold-duotone',
+                        entity.classifications.map(c => ({
+                            path: c.path,
+                            label: c.label,
+                            type: 'classification',
+                            fieldId: c.classificationId
+                        })),
+                        '#8b5cf6'
+                    )}
+
+                    {/* Entity Relations */}
+                    {entity.relations && entity.relations.map(rel => (
+                        <div key={rel.relationKey}>
+                            {renderSection(
+                                'rel_' + rel.relationKey,
+                                rel.label + ' (' + rel.entityName + ')',
+                                rel.entityIcon || 'solar:link-bold-duotone',
+                                rel.fields || [],
+                                '#10b981'
+                            )}
+                            {rel.classifications && rel.classifications.length > 0 && renderSection(
+                                'relclass_' + rel.relationKey,
+                                rel.label + ' · Classifications',
+                                'solar:tag-bold-duotone',
+                                rel.classifications.map(c => ({
+                                    path: c.path,
+                                    label: c.label,
+                                    type: 'classification',
+                                    fieldId: c.classificationId
+                                })),
+                                '#8b5cf6'
+                            )}
+                        </div>
+                    ))}
+                </div>
+            ))}
+
+            {/* No entities linked */}
+            {!hasEntities && (
+                <div style={{
+                    padding: '16px',
+                    background: isDark ? '#1b2e4b' : '#fffbeb',
+                    borderRadius: '8px',
+                    border: `1px solid ${isDark ? '#374151' : '#fde68a'}`,
+                    textAlign: 'center'
+                }}>
+                    <iconify-icon icon="solar:link-broken-bold-duotone" width="28" style={{ color: '#f59e0b', marginBottom: '8px' }}></iconify-icon>
+                    <p style={{ fontSize: '11px', color: isDark ? '#fbbf24' : '#92400e', margin: '0 0 4px', fontWeight: 600 }}>
+                        Aucune entité liée
+                    </p>
+                    <p style={{ fontSize: '10px', color: isDark ? '#94a3b8' : '#78350f', margin: 0 }}>
+                        Liez des entités au document pour accéder à leurs champs comme variables.
+                    </p>
+                </div>
+            )}
         </div>
-    )
+    );
 }

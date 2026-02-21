@@ -24,6 +24,14 @@ router.get('/', async (req, res) => {
             .sort({ updatedAt: -1 })
             .lean();
 
+        // Fetch user's template documents
+        const templateDocs = await Document.find({
+            isTemplate: true,
+            createdBy: req.user._id
+        })
+            .sort({ updatedAt: -1 })
+            .lean();
+
         // Fetch user-created folders
         let folders = [];
         if (DocumentFolder) {
@@ -43,6 +51,7 @@ router.get('/', async (req, res) => {
         res.render('document/document-list', {
             title: 'Documents',
             documents,
+            templateDocs,
             folders,
             uploadedDocs,
             account_number: req.account_number,
@@ -58,17 +67,38 @@ router.get('/', async (req, res) => {
 router.get('/templates', async (req, res) => {
     try {
         const Document = await tenantCollection(req, 'Document');
+        const Entity = await tenantCollection(req, 'Entity');
         if (!Document) {
             return res.status(500).send('Erreur de connexion base de données');
         }
 
-        const templates = await Document.find({ isTemplate: true })
+        // User's own templates
+        const myTemplates = await Document.find({
+            isTemplate: true,
+            createdBy: req.user._id
+        })
             .sort({ updatedAt: -1 })
             .lean();
 
+        // System/other templates (not created by user)
+        const systemTemplates = await Document.find({
+            isTemplate: true,
+            createdBy: { $ne: req.user._id }
+        })
+            .sort({ updatedAt: -1 })
+            .lean();
+
+        // Fetch entities for linking info
+        let entities = [];
+        if (Entity) {
+            entities = await Entity.find({}).select('name icon').lean();
+        }
+
         res.render('document/template-list', {
-            title: 'Templates',
-            templates,
+            title: 'Mes Templates',
+            myTemplates,
+            systemTemplates,
+            entities,
             account_number: req.account_number,
             layout: 'layout-app'
         });
@@ -253,6 +283,66 @@ router.put('/api/:id', async (req, res) => {
 
         if (!document) {
             return res.status(404).json({ success: false, error: 'Document non trouvé' });
+        }
+
+        // ── Mission 8: Auto-sync SmartDocTemplate entries ──
+        // When a template document is linked/unlinked to entities, 
+        // automatically create or remove the SmartDocTemplate registrations
+        try {
+            const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
+            if (SmartDocTemplate) {
+                const docId = document._id.toString();
+                const isTemplate = document.isTemplate === true;
+                const linkedEntityIds = (document.entityIds || []).map(id => id.toString());
+
+                // If entityId is set but not in entityIds, include it
+                if (document.entityId && !linkedEntityIds.includes(document.entityId.toString())) {
+                    linkedEntityIds.push(document.entityId.toString());
+                }
+
+                // Get existing SmartDocTemplate entries for this document
+                const existingTemplates = await SmartDocTemplate.find({ documentId: docId }).lean();
+                const existingEntityIds = existingTemplates.map(t => t.entityId.toString());
+
+                if (isTemplate && linkedEntityIds.length > 0) {
+                    // Create missing SmartDocTemplate entries
+                    for (const entityId of linkedEntityIds) {
+                        if (!existingEntityIds.includes(entityId)) {
+                            await SmartDocTemplate.create({
+                                name: document.name || 'Template',
+                                documentId: docId,
+                                entityId: entityId,
+                                outputFormat: 'pdf',
+                                active: true,
+                                createdBy: req.user?._id
+                            });
+                            console.log(`[SmartDoc] Auto-linked template "${document.name}" to entity ${entityId}`);
+                        }
+                    }
+
+                    // Remove SmartDocTemplate entries for unlinked entities
+                    for (const existing of existingTemplates) {
+                        if (!linkedEntityIds.includes(existing.entityId.toString())) {
+                            await SmartDocTemplate.findByIdAndDelete(existing._id);
+                            console.log(`[SmartDoc] Auto-unlinked template "${document.name}" from entity ${existing.entityId}`);
+                        }
+                    }
+
+                    // Update name if changed
+                    for (const existing of existingTemplates) {
+                        if (linkedEntityIds.includes(existing.entityId.toString()) && existing.name !== document.name) {
+                            await SmartDocTemplate.findByIdAndUpdate(existing._id, { name: document.name });
+                        }
+                    }
+                } else if (!isTemplate && existingTemplates.length > 0) {
+                    // Template mode was disabled → remove all SmartDocTemplate entries
+                    await SmartDocTemplate.deleteMany({ documentId: docId });
+                    console.log(`[SmartDoc] Template mode disabled → removed ${existingTemplates.length} SmartDocTemplate entries`);
+                }
+            }
+        } catch (syncErr) {
+            // Don't fail the save if sync fails — just log
+            console.warn('[SmartDoc] Auto-sync error (non-blocking):', syncErr.message);
         }
 
         res.json({ success: true, document });

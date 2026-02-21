@@ -1,13 +1,11 @@
 Missions du jour 
 
-Une foie une mission terminée et pushée, barre là ici
+Une foie une mission terminée et pushée, barre là ici, fais un truck super beau UX/UI
 
-Misison 7 :
+~~Misison 7 : ✅ Bouton "Templates" ajouté à côté du btn + dans la page documents, avec icône magic-stick. Redirige vers la page templates qui affiche "Mes templates" en premier puis "Modèles prédéfinis"~~
 
-![alt text](image-12.png) ici la sidbarre du datagrid, je dois pouvoir resiser son width avec souris avec min 229px et max 500px.
+~~Misison 8 : ✅ Auto-sync SmartDocTemplate — Quand un document template est lié à une entité via l'éditeur, le SmartDocTemplate est automatiquement créé/mis à jour/supprimé. Plus besoin d'aller dans les paramètres de l'entité.~~
 
-Enrichi le démo Cabinet docteur avec : Patients, consultations, traitements ... , met bien les relations, et démo, cree aussi un cockpit pour le médecin comme un tableau de bord ultra ux/UI, met un canal de communication avec les secretaires... un truck pro médecin...
+~~Misison 9 : ✅ Les nouvelles entités ont maintenant "Pièces jointes" activé par défaut.~~
 
-Je veux aussi pour chaque record la possibilité de joindre des fichiers, a activé coté entity, si activé le formulaire par defaut affiche une zonne Attachements, avec liste des attachement qui peuvent etre images, pdf, word, excel, video, audio, et autre. avec aussi une partie drop file et upload files, 
-
-une autre partie pour les records sera de générer un document automatiquement à partir d'un model, trouve un nom UX/UI accrocheur a cette partie je te donne un exemple genre pour un employé une attestation de congé sera généré en 2 clique, j'ai deja le modele lié à l'entité, je clique sur attesation de congé, il me demande la date de ... à ... et c'est bon, certain modele n'ont pas besoin de plus d'infos donc il se genereront automatiquement, les docs generé se placetront dans la partie attachements dans une section bien spécifique au doc generé, les modèles doivent donc etre capable de 'integrer aune entité et se generer facilement, si des infos obligatoire manque au model pour se generer il ffiche un modal pour demander les infos manquante, si tu voix des idées UX/UI pour cette partie n'hesite pas... 
+~~Misisons 10 : ✅ Variables dynamiques fonctionnelles — Support complet : variables système (date, heure, année), utilisateur (nom, email), champs d'entités liées, relations (ex: consultations.patient.nom), et classifications. Résolution des tokens {{path}} ET des \<span\> visuels.~~

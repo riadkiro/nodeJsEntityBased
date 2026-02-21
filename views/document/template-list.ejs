@@ -1,95 +1,325 @@
-<div x-data="templateList()" class="panel">
-  <!-- Header -->
-  <div class="mb-5 flex items-center justify-between">
-    <h5 class="text-lg font-semibold dark:text-white-light">Templates de Documents</h5>
-    <a href="/account/<%= account_number %>/documents" class="btn btn-outline-secondary">
-      <iconify-icon icon="solar:arrow-left-line-duotone" class="mr-1"></iconify-icon>
-      Retour aux documents
-    </a>
+<div x-data="templateListPage()" class="space-y-6">
+
+  <!-- Hero Header -->
+  <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 p-6 md:p-8">
+    <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA4KSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3QgZmlsbD0idXJsKCNnKSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIvPjwvc3ZnPg==')] opacity-50"></div>
+    <div class="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+          <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="28" class="text-white"></iconify-icon>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-white">Mes Templates</h1>
+          <p class="text-white/80 text-sm mt-0.5">Gérez vos modèles de documents et découvrez les modèles prédéfinis</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/account/<%= account_number %>/documents" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white text-sm font-medium transition-all">
+          <iconify-icon icon="solar:arrow-left-line-duotone" width="18"></iconify-icon>
+          Documents
+        </a>
+        <a href="/account/<%= account_number %>/documents/new" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-amber-600 text-sm font-semibold hover:shadow-lg hover:scale-[1.02] transition-all">
+          <iconify-icon icon="solar:add-circle-bold" width="18"></iconify-icon>
+          Nouveau document
+        </a>
+      </div>
+    </div>
   </div>
 
-  <!-- Search -->
-  <div class="mb-4">
-    <input 
-      type="text" 
-      x-model="searchQuery" 
-      placeholder="Rechercher un template..."
-      class="form-input w-full max-w-md"
-    >
+  <!-- Search & Filter Bar -->
+  <div class="panel p-4">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+      <div class="relative flex-1 w-full sm:max-w-md">
+        <iconify-icon icon="solar:magnifer-line-duotone" width="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></iconify-icon>
+        <input type="text" x-model="searchQuery" placeholder="Rechercher un template..." 
+               class="form-input w-full pl-10 py-2.5 rounded-xl text-sm dark:bg-[#1b2e4b] dark:border-[#1b2e4b]" />
+      </div>
+      <div class="flex items-center gap-2">
+        <button @click="activeTab = 'mine'" class="px-4 py-2 rounded-xl text-sm font-medium transition-all"
+                :class="activeTab === 'mine' ? 'bg-amber-500 text-white shadow-md shadow-amber-200 dark:shadow-amber-900/30' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'">
+          <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="16" class="mr-1"></iconify-icon>
+          Mes templates
+          <span class="ml-1 text-[11px] opacity-80" x-text="'(' + myTemplates.length + ')'"></span>
+        </button>
+        <button @click="activeTab = 'system'" class="px-4 py-2 rounded-xl text-sm font-medium transition-all"
+                :class="activeTab === 'system' ? 'bg-indigo-500 text-white shadow-md shadow-indigo-200 dark:shadow-indigo-900/30' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'">
+          <iconify-icon icon="solar:star-bold-duotone" width="16" class="mr-1"></iconify-icon>
+          Modèles prédéfinis
+          <span class="ml-1 text-[11px] opacity-80" x-text="'(' + systemTemplates.length + ')'"></span>
+        </button>
+      </div>
+    </div>
   </div>
 
-  <!-- Templates Grid -->
-  <template x-if="filteredTemplates().length > 0">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      <template x-for="template in filteredTemplates()" :key="template._id">
-        <div 
-          class="relative rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 hover:shadow-lg transition-shadow cursor-pointer"
-          @click="useTemplate(template._id)"
-        >
-          <!-- Template Preview Placeholder -->
-          <div class="mb-3 h-40 rounded bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 flex items-center justify-center">
-            <iconify-icon icon="solar:document-text-bold-duotone" width="48" class="text-blue-400"></iconify-icon>
+  <!-- ================================ -->
+  <!-- MES TEMPLATES SECTION -->
+  <!-- ================================ -->
+  <template x-if="activeTab === 'mine'">
+    <div class="space-y-4">
+      <!-- Section Header -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-900/20">
+            <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="18" class="text-amber-500"></iconify-icon>
           </div>
-
-          <!-- Template Info -->
-          <div class="mb-2">
-            <h6 class="font-semibold text-sm truncate dark:text-white" x-text="template.name"></h6>
-            <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2 mt-1">
-              <span x-text="template.format"></span>
-              <span>•</span>
-              <span x-text="template.orientation"></span>
-            </p>
+          <div>
+            <h2 class="text-base font-bold dark:text-white">Mes templates</h2>
+            <p class="text-xs text-gray-400">Templates que vous avez créés</p>
           </div>
+        </div>
+      </div>
 
-          <!-- Category Badge -->
-          <template x-if="template.metadata && template.metadata.category">
-            <div class="mb-2">
-              <span class="badge badge-outline-primary text-xs" x-text="template.metadata.category"></span>
+      <!-- My Templates Grid -->
+      <template x-if="filteredMyTemplates().length > 0">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <template x-for="tpl in filteredMyTemplates()" :key="tpl._id">
+            <div class="group panel relative overflow-hidden hover:shadow-xl hover:shadow-amber-100/50 dark:hover:shadow-amber-900/10 transition-all duration-300 hover:-translate-y-0.5">
+              <!-- Color accent top -->
+              <div class="h-1 w-full bg-gradient-to-r from-amber-400 to-orange-400"></div>
+              
+              <!-- Preview area -->
+              <div class="relative h-40 bg-gradient-to-br from-amber-50/50 to-orange-50/50 dark:from-amber-900/10 dark:to-orange-900/10 overflow-hidden">
+                <!-- Scaled content preview -->
+                <div class="absolute inset-0 p-3 overflow-hidden opacity-20 pointer-events-none" style="transform: scale(0.3); transform-origin: top left; width: 333%; height: 333%;">
+                  <div x-html="tpl.pages?.[0]?.content?.substring(0, 500) || ''"></div>
+                </div>
+                <!-- Center icon -->
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <div class="w-14 h-14 rounded-2xl bg-white dark:bg-dark shadow-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <iconify-icon :icon="tpl.metadata?.icon || 'solar:document-text-bold-duotone'" width="28" class="text-amber-500"></iconify-icon>
+                  </div>
+                </div>
+                <!-- Status badge -->
+                <div class="absolute top-3 right-3">
+                  <span class="badge text-[10px]" 
+                        :class="tpl.status === 'published' ? 'badge-outline-success' : 'badge-outline-warning'"
+                        x-text="tpl.status === 'published' ? 'Publié' : 'Brouillon'"></span>
+                </div>
+              </div>
+              
+              <!-- Info -->
+              <div class="p-4">
+                <h3 class="font-semibold text-sm dark:text-white truncate mb-1" x-text="tpl.name || 'Template sans titre'"></h3>
+                <p class="text-xs text-gray-400 mb-3" x-text="tpl.metadata?.description || 'Modèle de document'"></p>
+                
+                <!-- Linked entities -->
+                <div class="flex flex-wrap gap-1 mb-3" x-show="tpl.entityIds && tpl.entityIds.length > 0">
+                  <template x-for="eid in (tpl.entityIds || []).slice(0, 3)" :key="eid">
+                    <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-900/20 text-amber-600" 
+                          x-text="getEntityName(eid)"></span>
+                  </template>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500"
+                        x-show="(tpl.entityIds || []).length > 3"
+                        x-text="'+' + ((tpl.entityIds || []).length - 3)"></span>
+                </div>
+
+                <!-- Date -->
+                <p class="text-[11px] text-gray-400 mb-3">
+                  <iconify-icon icon="solar:clock-circle-line-duotone" width="12" class="mr-0.5"></iconify-icon>
+                  <span x-text="formatDate(tpl.updatedAt)"></span>
+                </p>
+                
+                <!-- Actions -->
+                <div class="flex items-center gap-2">
+                  <a :href="'/account/<%= account_number %>/documents/' + tpl._id + '/edit-react'" 
+                     class="flex-1 btn btn-sm btn-outline-primary rounded-lg text-xs gap-1">
+                    <iconify-icon icon="solar:pen-2-line-duotone" width="14"></iconify-icon>
+                    Modifier
+                  </a>
+                  <button @click="duplicateTemplate(tpl._id)" class="btn btn-sm btn-outline-secondary rounded-lg text-xs px-2" title="Dupliquer">
+                    <iconify-icon icon="solar:copy-line-duotone" width="14"></iconify-icon>
+                  </button>
+                </div>
+              </div>
             </div>
           </template>
+        </div>
+      </template>
 
-          <!-- Use Template Button -->
-          <button class="btn btn-sm btn-primary w-full">
-            Utiliser ce template
-          </button>
+      <!-- Empty state -->
+      <template x-if="filteredMyTemplates().length === 0 && !searchQuery">
+        <div class="panel">
+          <div class="flex flex-col items-center justify-center py-16 text-center">
+            <div class="w-20 h-20 rounded-3xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center mb-5">
+              <iconify-icon icon="solar:magic-stick-3-broken" width="40" class="text-amber-300"></iconify-icon>
+            </div>
+            <h3 class="text-lg font-semibold dark:text-white mb-2">Aucun template créé</h3>
+            <p class="text-sm text-gray-400 max-w-sm mb-6">Créez un document et activez le mode template depuis l'éditeur pour le retrouver ici</p>
+            <a href="/account/<%= account_number %>/documents/new" class="btn btn-primary rounded-xl gap-2">
+              <iconify-icon icon="solar:add-circle-bold" width="18"></iconify-icon>
+              Créer un document
+            </a>
+          </div>
+        </div>
+      </template>
+
+      <!-- Search empty -->
+      <template x-if="filteredMyTemplates().length === 0 && searchQuery">
+        <div class="panel py-12 text-center">
+          <iconify-icon icon="solar:magnifer-broken" width="40" class="text-gray-300 mb-3"></iconify-icon>
+          <p class="text-sm text-gray-400">Aucun template trouvé pour "<span x-text="searchQuery" class="font-medium"></span>"</p>
         </div>
       </template>
     </div>
   </template>
 
-  <!-- Empty State -->
-  <template x-if="filteredTemplates().length === 0">
-    <div class="text-center py-12">
-      <iconify-icon icon="solar:document-text-line-duotone" width="64" class="text-gray-300 mb-4"></iconify-icon>
-      <h3 class="text-lg font-semibold mb-2 dark:text-white">Aucun template</h3>
-      <p class="text-gray-500 mb-4">Aucun template disponible pour le moment</p>
-      <a href="/account/<%= account_number %>/documents/new" class="btn btn-primary">
-        <iconify-icon icon="solar:add-circle-bold" class="mr-1"></iconify-icon>
-        Créer un document vierge
-      </a>
+  <!-- ================================ -->
+  <!-- MODÈLES PRÉDÉFINIS SECTION -->
+  <!-- ================================ -->
+  <template x-if="activeTab === 'system'">
+    <div class="space-y-4">
+      <!-- Section Header -->
+      <div class="flex items-center gap-3">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-900/20">
+          <iconify-icon icon="solar:star-bold-duotone" width="18" class="text-indigo-500"></iconify-icon>
+        </div>
+        <div>
+          <h2 class="text-base font-bold dark:text-white">Modèles prédéfinis</h2>
+          <p class="text-xs text-gray-400">Templates professionnels prêts à l'emploi</p>
+        </div>
+      </div>
+
+      <!-- Category filter pills -->
+      <div class="flex flex-wrap gap-2">
+        <button @click="systemCategory = 'all'" class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+                :class="systemCategory === 'all' ? 'bg-indigo-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'">
+          Tous
+        </button>
+        <template x-for="cat in categories" :key="cat.id">
+          <button @click="systemCategory = cat.id" class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5"
+                  :class="systemCategory === cat.id ? 'text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                  :style="systemCategory === cat.id ? 'background:' + cat.color : ''">
+            <span class="w-2 h-2 rounded-full" :style="'background:' + cat.color" x-show="systemCategory !== cat.id"></span>
+            <span x-text="cat.label"></span>
+          </button>
+        </template>
+      </div>
+
+      <!-- System Templates Grid -->
+      <template x-if="filteredSystemTemplates().length > 0">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <template x-for="tpl in filteredSystemTemplates()" :key="tpl._id">
+            <div class="group panel relative overflow-hidden hover:shadow-xl hover:shadow-indigo-100/50 dark:hover:shadow-indigo-900/10 transition-all duration-300 hover:-translate-y-0.5">
+              <!-- Color accent top -->
+              <div class="h-1 w-full" :style="'background: linear-gradient(90deg, ' + (tpl.metadata?.color || '#6366f1') + ', ' + (tpl.metadata?.color || '#6366f1') + '80)'"></div>
+              
+              <!-- Preview area -->
+              <div class="relative h-40 overflow-hidden" :style="'background: linear-gradient(135deg, ' + (tpl.metadata?.color || '#6366f1') + '08, ' + (tpl.metadata?.color || '#6366f1') + '15)'">
+                <div class="absolute inset-0 p-3 overflow-hidden opacity-20 pointer-events-none" style="transform: scale(0.3); transform-origin: top left; width: 333%; height: 333%;">
+                  <div x-html="tpl.pages?.[0]?.content?.substring(0, 500) || ''"></div>
+                </div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <div class="w-14 h-14 rounded-2xl bg-white dark:bg-dark shadow-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <iconify-icon :icon="tpl.metadata?.icon || 'solar:document-text-bold-duotone'" width="28" :style="'color:' + (tpl.metadata?.color || '#6366f1')"></iconify-icon>
+                  </div>
+                </div>
+                <!-- Category badge -->
+                <div class="absolute top-3 right-3" x-show="tpl.metadata?.category">
+                  <span class="text-[10px] px-2 py-0.5 rounded-full text-white font-medium" 
+                        :style="'background:' + (tpl.metadata?.color || '#6366f1')"
+                        x-text="tpl.metadata?.category"></span>
+                </div>
+              </div>
+              
+              <!-- Info -->
+              <div class="p-4">
+                <h3 class="font-semibold text-sm dark:text-white truncate mb-1" x-text="tpl.name || 'Modèle'"></h3>
+                <p class="text-xs text-gray-400 mb-4 line-clamp-2" x-text="tpl.metadata?.description || 'Modèle de document professionnel'"></p>
+                
+                <!-- Use Template -->
+                <a :href="'/account/<%= account_number %>/documents/new?template=' + tpl._id" 
+                   class="flex items-center justify-center gap-1.5 w-full btn btn-sm rounded-lg text-xs font-medium transition-all"
+                   :style="'background:' + (tpl.metadata?.color || '#6366f1') + '15; color:' + (tpl.metadata?.color || '#6366f1')"
+                   @mouseenter="$el.style.background = (tpl.metadata?.color || '#6366f1'); $el.style.color = 'white'"
+                   @mouseleave="$el.style.background = (tpl.metadata?.color || '#6366f1') + '15'; $el.style.color = (tpl.metadata?.color || '#6366f1')">
+                  <iconify-icon icon="solar:document-add-line-duotone" width="14"></iconify-icon>
+                  Utiliser ce modèle
+                </a>
+              </div>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <!-- Empty state -->
+      <template x-if="filteredSystemTemplates().length === 0">
+        <div class="panel py-12 text-center">
+          <iconify-icon icon="solar:star-broken" width="40" class="text-gray-300 mb-3"></iconify-icon>
+          <p class="text-sm text-gray-400" x-text="searchQuery ? 'Aucun modèle trouvé pour \"' + searchQuery + '\"' : 'Aucun modèle prédéfini disponible'"></p>
+        </div>
+      </template>
     </div>
   </template>
+
 </div>
 
 <script>
-  document.addEventListener('alpine:init', function() {
-    Alpine.data('templateList', function() {
-      return {
-        templates: <%- JSON.stringify(templates) %>,
-        searchQuery: '',
+document.addEventListener('alpine:init', () => {
+  Alpine.data('templateListPage', () => ({
+    myTemplates: <%- JSON.stringify(myTemplates || []) %>,
+    systemTemplates: <%- JSON.stringify(systemTemplates || []) %>,
+    entities: <%- JSON.stringify(entities || []) %>,
+    searchQuery: '',
+    activeTab: 'mine',
+    systemCategory: 'all',
+    categories: [
+      { id: 'finance', label: 'Finance', color: '#1e40af' },
+      { id: 'commercial', label: 'Commercial', color: '#059669' },
+      { id: 'notes', label: 'Notes', color: '#7c3aed' },
+      { id: 'courrier', label: 'Courrier', color: '#dc2626' },
+      { id: 'rapport', label: 'Rapport', color: '#0891b2' },
+      { id: 'medical', label: 'Médical', color: '#e11d48' }
+    ],
 
-        filteredTemplates: function() {
-          var self = this;
-          return this.templates.filter(function(template) {
-            return !self.searchQuery || 
-              template.name.toLowerCase().includes(self.searchQuery.toLowerCase());
-          });
-        },
+    filteredMyTemplates() {
+      if (!this.searchQuery) return this.myTemplates;
+      const q = this.searchQuery.toLowerCase();
+      return this.myTemplates.filter(t => 
+        (t.name || '').toLowerCase().includes(q) || 
+        (t.metadata?.description || '').toLowerCase().includes(q)
+      );
+    },
 
-        useTemplate: function(templateId) {
-          window.location.href = '/account/<%= account_number %>/documents/new?template=' + templateId;
+    filteredSystemTemplates() {
+      let tpls = this.systemTemplates;
+      if (this.systemCategory !== 'all') {
+        tpls = tpls.filter(t => t.metadata?.category === this.systemCategory);
+      }
+      if (this.searchQuery) {
+        const q = this.searchQuery.toLowerCase();
+        tpls = tpls.filter(t => 
+          (t.name || '').toLowerCase().includes(q) || 
+          (t.metadata?.description || '').toLowerCase().includes(q)
+        );
+      }
+      return tpls;
+    },
+
+    getEntityName(entityId) {
+      const entity = this.entities.find(e => e._id === entityId);
+      return entity ? entity.name : 'Collection';
+    },
+
+    formatDate(dateString) {
+      if (!dateString) return '';
+      return new Date(dateString).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    },
+
+    async duplicateTemplate(templateId) {
+      if (!confirm('Dupliquer ce template ?')) return;
+      try {
+        const res = await fetch('/account/<%= account_number %>/documents/api/duplicate/' + templateId, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        const data = await res.json();
+        if (data.success && data.document) {
+          window.location.href = '/account/<%= account_number %>/documents/' + data.document._id + '/edit-react';
         }
-      };
-    });
-  });
+      } catch (e) {
+        console.error('Error duplicating template:', e);
+      }
+    }
+  }));
+});
 </script>

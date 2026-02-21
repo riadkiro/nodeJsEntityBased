@@ -323,48 +323,68 @@ export default function EditorHeader({
 
                             {/* Body */}
                             <div className="p-4 space-y-4">
-                                {/* Toggle */}
+                                {/* Toggle - Clear ON/OFF state */}
                                 <div className="flex items-center justify-between py-1">
                                     <div>
                                         <span className="text-xs font-bold text-gray-700 dark:text-gray-200">Modèle de document</span>
                                         <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">Activer le mode template</p>
                                     </div>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={doc.isTemplate || false}
-                                            onChange={(e) => {
-                                                setDoc(prev => ({ ...prev, isTemplate: e.target.checked }))
-                                                triggerSave()
-                                            }}
-                                            className="sr-only peer"
-                                        />
-                                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-amber-500"></div>
-                                    </label>
+                                    <button
+                                        onClick={() => {
+                                            setDoc(prev => ({ ...prev, isTemplate: !prev.isTemplate }))
+                                            triggerSave()
+                                        }}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-200 ${doc.isTemplate
+                                                ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30'
+                                                : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500'
+                                            }`}
+                                    >
+                                        <iconify-icon icon={doc.isTemplate ? 'tabler:check' : 'tabler:x'} width="13"></iconify-icon>
+                                        {doc.isTemplate ? 'Activé' : 'Désactivé'}
+                                    </button>
                                 </div>
 
-                                {/* Entity Selector */}
+                                {/* Entity Multi-Select */}
                                 {doc.isTemplate && (
-                                    <div className="space-y-1.5">
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Lier à une collection</label>
-                                        <div className="relative">
-                                            <iconify-icon icon="solar:box-bold-duotone" width="14" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 z-10" style={{ transform: 'translateY(-50%)' }}
-                                            ></iconify-icon>
-                                            <select
-                                                value={doc.entityId || ''}
-                                                onChange={(e) => {
-                                                    setDoc(prev => ({ ...prev, entityId: e.target.value || null }))
-                                                    triggerSave()
-                                                }}
-                                                className="form-select w-full text-xs py-2 pl-8 pr-3 focus:ring-amber-200 focus:border-amber-300 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                                            >
-                                                <option value="">-- Aucune collection --</option>
-                                                {(availableEntities || []).map(entity => (
-                                                    <option key={entity.id} value={entity.id}>{entity.name}</option>
-                                                ))}
-                                            </select>
+                                    <div className="space-y-2">
+                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Lier à une ou plusieurs collections</label>
+                                        <div className="max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+                                            {(availableEntities || []).length === 0 ? (
+                                                <p className="text-[10px] text-gray-400 py-3 text-center italic">Aucune collection disponible</p>
+                                            ) : (
+                                                (availableEntities || []).map(entity => {
+                                                    const entityIds = doc.entityIds || (doc.entityId ? [doc.entityId] : [])
+                                                    const isLinked = entityIds.includes(entity.id)
+                                                    return (
+                                                        <label
+                                                            key={entity.id}
+                                                            className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-700/50 last:border-b-0 ${isLinked ? 'bg-amber-50/50 dark:bg-amber-900/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700/30'
+                                                                }`}
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isLinked}
+                                                                onChange={() => {
+                                                                    setDoc(prev => {
+                                                                        const currentIds = prev.entityIds || (prev.entityId ? [prev.entityId] : [])
+                                                                        const newIds = isLinked
+                                                                            ? currentIds.filter(id => id !== entity.id)
+                                                                            : [...currentIds, entity.id]
+                                                                        return { ...prev, entityIds: newIds, entityId: newIds[0] || null }
+                                                                    })
+                                                                    triggerSave()
+                                                                }}
+                                                                className="w-3.5 h-3.5 rounded border-gray-300 text-amber-500 focus:ring-amber-200 dark:border-gray-600 dark:bg-gray-700"
+                                                            />
+                                                            <iconify-icon icon={entity.icon || 'solar:database-bold'} width="14" className={isLinked ? 'text-amber-500' : 'text-gray-400'}></iconify-icon>
+                                                            <span className={`text-xs ${isLinked ? 'font-semibold text-gray-700 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>{entity.name}</span>
+                                                            {isLinked && <iconify-icon icon="tabler:check" width="12" className="text-amber-500 ml-auto"></iconify-icon>}
+                                                        </label>
+                                                    )
+                                                })
+                                            )}
                                         </div>
-                                        <p className="text-[9px] text-gray-400 italic leading-relaxed">Ce template sera utilisable dans les SmartDoc de cette collection.</p>
+                                        <p className="text-[9px] text-gray-400 italic leading-relaxed">Ce template sera utilisable dans les SmartDoc de ces collections.</p>
                                     </div>
                                 )}
 

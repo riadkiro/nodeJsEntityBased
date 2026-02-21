@@ -101,17 +101,21 @@ router.delete('/smartdoc/templates/:id', async (req, res) => {
 /**
  * GET /api/smartdoc/documents?entityId=xxx
  * List available Document templates that are linked to an entity
- * (to populate the SmartDoc template creation form)
+ * Supports both legacy entityId and new entityIds array
  */
 router.get('/smartdoc/documents', async (req, res) => {
     try {
         const Document = await tenantCollection(req, 'Document');
         const filter = { isTemplate: true };
         if (req.query.entityId) {
-            filter.entityId = req.query.entityId;
+            // Search in both legacy entityId and new entityIds array
+            filter.$or = [
+                { entityId: req.query.entityId },
+                { entityIds: req.query.entityId }
+            ];
         }
         const documents = await Document.find(filter)
-            .select('name entityId format pages createdAt')
+            .select('name entityId entityIds format pages createdAt')
             .sort({ name: 1 })
             .lean();
 
@@ -124,6 +128,182 @@ router.get('/smartdoc/documents', async (req, res) => {
         res.json({ success: true, documents });
     } catch (error) {
         console.error('[SmartDoc] List documents error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/smartdoc/variables/:documentId
+ * Get available variables for a document based on its linked entities
+ * Returns: system vars, user vars, entity fields, related entity fields, classifications
+ */
+router.get('/smartdoc/variables/:documentId', async (req, res) => {
+    try {
+        const Document = await tenantCollection(req, 'Document');
+        const Entity = await tenantCollection(req, 'Entity');
+        const FieldTemplate = await tenantCollection(req, 'FieldTemplate');
+        const Classification = await tenantCollection(req, 'Classification');
+
+        const doc = await Document.findById(req.params.documentId).lean();
+        if (!doc) return res.status(404).json({ error: 'Document introuvable' });
+
+        const variables = {
+            system: [],
+            user: [],
+            entities: []
+        };
+
+        // 1. System variables
+        variables.system = [
+            { path: 'today', label: "Date du jour", type: 'date', icon: 'solar:calendar-bold-duotone' },
+            { path: 'currentYear', label: "Année en cours", type: 'text', icon: 'solar:calendar-bold-duotone' },
+            { path: 'currentMonth', label: "Mois en cours", type: 'text', icon: 'solar:calendar-bold-duotone' },
+            { path: 'currentTime', label: "Heure actuelle", type: 'text', icon: 'solar:clock-circle-bold-duotone' }
+        ];
+
+        // 2. User variables
+        variables.user = [
+            { path: 'user.name', label: "Nom de l'utilisateur", type: 'text', icon: 'solar:user-bold-duotone' },
+            { path: 'user.email', label: "Email de l'utilisateur", type: 'text', icon: 'solar:letter-bold-duotone' }
+        ];
+
+        // 3. Entity variables from linked entities
+        const entityIds = [...(doc.entityIds || [])];
+        if (doc.entityId && !entityIds.includes(doc.entityId.toString())) {
+            entityIds.push(doc.entityId);
+        }
+
+        if (entityIds.length > 0 && Entity && FieldTemplate) {
+            // Fetch all linked entities with their customFields populated
+            const entities = await Entity.find({ _id: { $in: entityIds } })
+                .populate('customFields')
+                .populate('classifications')
+                .populate('statusClassification')
+                .populate({
+                    path: 'relations.targetEntity',
+                    select: 'name icon slug customFields classifications statusClassification',
+                    populate: [
+                        { path: 'customFields', model: 'FieldTemplate' },
+                        { path: 'classifications', model: 'Classification' },
+                        { path: 'statusClassification', model: 'Classification' }
+                    ]
+                })
+                .lean();
+
+            for (const entity of entities) {
+                const entityVar = {
+                    entityId: entity._id.toString(),
+                    name: entity.name,
+                    icon: entity.icon || 'solar:layers-bold-duotone',
+                    slug: entity.slug,
+                    fields: [],
+                    classifications: [],
+                    relations: []
+                };
+
+                // Standard fields
+                entityVar.fields.push(
+                    { path: `${entity.slug}.title`, label: 'Titre', type: 'text', fieldId: null },
+                    { path: `${entity.slug}.description`, label: 'Description', type: 'text', fieldId: null },
+                    { path: `${entity.slug}.createdAt`, label: 'Date de création', type: 'date', fieldId: null },
+                    { path: `${entity.slug}.updatedAt`, label: 'Date de modification', type: 'date', fieldId: null }
+                );
+
+                // Custom fields from FieldTemplate
+                if (entity.customFields && entity.customFields.length > 0) {
+                    for (const field of entity.customFields) {
+                        if (!field) continue;
+                        // Check overrides for label
+                        const overrides = entity.fieldOverrides && entity.fieldOverrides instanceof Map
+                            ? entity.fieldOverrides.get(field._id.toString())
+                            : (entity.fieldOverrides?.[field._id.toString()] || null);
+                        const displayLabel = overrides?.label || field.label || field.name;
+
+                        entityVar.fields.push({
+                            path: `${entity.slug}.${field.name}`,
+                            label: displayLabel,
+                            type: field.type || 'text',
+                            fieldId: field._id.toString()
+                        });
+                    }
+                }
+
+                // Classifications for this entity
+                const allClassifications = [
+                    ...(entity.statusClassification ? [entity.statusClassification] : []),
+                    ...(entity.classifications || [])
+                ];
+                for (const classif of allClassifications) {
+                    if (!classif) continue;
+                    entityVar.classifications.push({
+                        path: `${entity.slug}.classification.${classif.key}`,
+                        label: classif.name,
+                        classificationId: classif._id.toString(),
+                        options: (classif.options || []).map(o => ({ label: o.label, color: o.color }))
+                    });
+                }
+
+                // Relations (related entities with their fields)
+                if (entity.relations && entity.relations.length > 0) {
+                    for (const relation of entity.relations) {
+                        const targetEntity = relation.targetEntity;
+                        if (!targetEntity || typeof targetEntity !== 'object') continue;
+
+                        const relVar = {
+                            relationKey: relation.key,
+                            label: relation.label || targetEntity.name,
+                            entityName: targetEntity.name,
+                            entityIcon: targetEntity.icon || 'solar:link-bold-duotone',
+                            entitySlug: targetEntity.slug,
+                            cardinality: relation.cardinality,
+                            fields: [],
+                            classifications: []
+                        };
+
+                        // Standard fields of related entity
+                        relVar.fields.push(
+                            { path: `${entity.slug}.${targetEntity.slug}.title`, label: 'Titre', type: 'text', fieldId: null },
+                            { path: `${entity.slug}.${targetEntity.slug}.description`, label: 'Description', type: 'text', fieldId: null }
+                        );
+
+                        // Custom fields of related entity
+                        if (targetEntity.customFields && targetEntity.customFields.length > 0) {
+                            for (const field of targetEntity.customFields) {
+                                if (!field) continue;
+                                relVar.fields.push({
+                                    path: `${entity.slug}.${targetEntity.slug}.${field.name}`,
+                                    label: field.label || field.name,
+                                    type: field.type || 'text',
+                                    fieldId: field._id.toString()
+                                });
+                            }
+                        }
+
+                        // Classifications of related entity
+                        const relClassifications = [
+                            ...(targetEntity.statusClassification ? [targetEntity.statusClassification] : []),
+                            ...(targetEntity.classifications || [])
+                        ];
+                        for (const classif of relClassifications) {
+                            if (!classif) continue;
+                            relVar.classifications.push({
+                                path: `${entity.slug}.${targetEntity.slug}.classification.${classif.key}`,
+                                label: classif.name,
+                                classificationId: classif._id.toString()
+                            });
+                        }
+
+                        entityVar.relations.push(relVar);
+                    }
+                }
+
+                variables.entities.push(entityVar);
+            }
+        }
+
+        res.json({ success: true, variables });
+    } catch (error) {
+        console.error('[SmartDoc] Variables error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -146,6 +326,7 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
         const Document = await tenantCollection(req, 'Document');
         const Record = await tenantCollection(req, 'Record');
         const Entity = await tenantCollection(req, 'Entity');
+        const Classification = await tenantCollection(req, 'Classification');
 
         // 1. Load the SmartDoc template
         const smartDocTemplate = await SmartDocTemplate.findById(req.params.templateId);
@@ -159,8 +340,49 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
             return res.status(404).json({ error: 'Record introuvable' });
         }
 
-        // 3. Load the entity for custom field resolution
-        const entity = await Entity.findById(smartDocTemplate.entityId).populate('customFields');
+        // 3. Load the entity with full population (custom fields, relations, classifications)
+        const entity = await Entity.findById(smartDocTemplate.entityId)
+            .populate('customFields')
+            .populate('classifications')
+            .populate('statusClassification')
+            .populate({
+                path: 'relations.targetEntity',
+                select: 'name icon slug customFields classifications statusClassification',
+                populate: [
+                    { path: 'customFields', model: 'FieldTemplate' },
+                    { path: 'classifications', model: 'Classification' },
+                    { path: 'statusClassification', model: 'Classification' }
+                ]
+            })
+            .lean();
+
+        // 3b. Load related records for relations
+        const relatedRecordsMap = {};
+        if (entity && entity.relations && record.relations) {
+            for (const rel of entity.relations) {
+                const targetEntity = rel.targetEntity;
+                if (!targetEntity || typeof targetEntity !== 'object') continue;
+
+                const recRelation = record.relations.find(r => r.relationKey === rel.key);
+                if (!recRelation || !recRelation.value) continue;
+
+                // Get the first related record (for single cardinality)
+                const relatedId = Array.isArray(recRelation.value) ? recRelation.value[0] : recRelation.value;
+                if (!relatedId) continue;
+
+                try {
+                    const relatedRecord = await Record.findById(relatedId).lean();
+                    if (relatedRecord) {
+                        relatedRecordsMap[rel.key] = {
+                            record: relatedRecord,
+                            entity: targetEntity
+                        };
+                    }
+                } catch (e) {
+                    console.warn('[SmartDoc] Could not load related record:', relatedId, e.message);
+                }
+            }
+        }
 
         // 4. Validate required inputs
         const inputs = req.body.inputs || {};
@@ -184,7 +406,7 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
         }
 
         // 6. Resolve tokens in the document template
-        const resolvedHtml = resolveDocumentTokens(docTemplate, record, entity, inputs);
+        const resolvedHtml = resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecordsMap, req.user);
 
         // 7. Generate output file name
         const outputName = resolveOutputName(
@@ -267,11 +489,13 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
 
 /**
  * Resolve document tokens by replacing {{token}} patterns with record data
+ * Supports: flat keys, entity-scoped keys (entity.field), related entity keys,
+ * classification values, user info, and system variables.
  */
-function resolveDocumentTokens(docTemplate, record, entity, inputs) {
+function resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecordsMap, user) {
     // Build the token context
     const context = {
-        // Standard record fields
+        // Standard record fields (flat, for backward compatibility)
         title: record.title || '',
         computedTitle: record.computedTitle || record.title || '',
         description: record.description || '',
@@ -280,7 +504,7 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs) {
         createdAt: record.createdAt ? formatDate(record.createdAt) : '',
         updatedAt: record.updatedAt ? formatDate(record.updatedAt) : '',
 
-        // Custom fields (from record.customFields Map)
+        // Custom fields (flat, for backward compatibility)
         ...extractCustomFields(record, entity),
 
         // SmartDoc inputs
@@ -289,14 +513,100 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs) {
         // Computed values
         today: formatDate(new Date()),
         currentYear: new Date().getFullYear().toString(),
-        currentMonth: formatDate(new Date(), 'month')
+        currentMonth: formatDate(new Date(), 'month'),
+        currentTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+
+        // User info
+        user: {
+            name: user ? (user.name || user.fullName || user.email || '') : '',
+            email: user ? (user.email || '') : ''
+        }
     };
+
+    // Entity-scoped variables: entity.slug.fieldName
+    if (entity && entity.slug) {
+        const entityContext = {
+            title: record.title || '',
+            computedTitle: record.computedTitle || record.title || '',
+            description: record.description || '',
+            slug: record.slug || '',
+            date: record.date ? formatDate(record.date) : '',
+            createdAt: record.createdAt ? formatDate(record.createdAt) : '',
+            updatedAt: record.updatedAt ? formatDate(record.updatedAt) : '',
+            ...extractCustomFields(record, entity)
+        };
+
+        // Add classification values for the entity
+        if (record.classificationValues && record.classificationValues.length > 0) {
+            const classifContext = {};
+            // Build lookup of classification key by ID
+            const allClassifs = [
+                ...(entity.statusClassification ? [entity.statusClassification] : []),
+                ...(entity.classifications || [])
+            ];
+            for (const cv of record.classificationValues) {
+                const classifDef = allClassifs.find(c => c && c._id && c._id.toString() === cv.classificationId?.toString());
+                if (classifDef && classifDef.key) {
+                    classifContext[classifDef.key] = cv.label || '';
+                }
+                // Also map by classificationId for fallback
+                if (cv.classificationId) {
+                    classifContext[cv.classificationId.toString()] = cv.label || '';
+                }
+            }
+            entityContext.classification = classifContext;
+        }
+
+        // Add related entity data
+        if (entity.relations && relatedRecordsMap) {
+            for (const rel of entity.relations) {
+                const targetEntity = rel.targetEntity;
+                if (!targetEntity || typeof targetEntity !== 'object') continue;
+
+                const relData = relatedRecordsMap[rel.key];
+                if (relData && relData.record) {
+                    const relRecord = relData.record;
+                    const relEntityDef = relData.entity;
+
+                    // Build the related record's context
+                    const relContext = {
+                        title: relRecord.title || '',
+                        computedTitle: relRecord.computedTitle || relRecord.title || '',
+                        description: relRecord.description || '',
+                        createdAt: relRecord.createdAt ? formatDate(relRecord.createdAt) : '',
+                        updatedAt: relRecord.updatedAt ? formatDate(relRecord.updatedAt) : '',
+                        ...extractCustomFields(relRecord, relEntityDef)
+                    };
+
+                    // Classification values of related record
+                    if (relRecord.classificationValues && relRecord.classificationValues.length > 0) {
+                        const relClassifContext = {};
+                        const relAllClassifs = [
+                            ...(relEntityDef.statusClassification ? [relEntityDef.statusClassification] : []),
+                            ...(relEntityDef.classifications || [])
+                        ];
+                        for (const cv of relRecord.classificationValues) {
+                            const classifDef = relAllClassifs.find(c => c && c._id && c._id.toString() === cv.classificationId?.toString());
+                            if (classifDef && classifDef.key) {
+                                relClassifContext[classifDef.key] = cv.label || '';
+                            }
+                        }
+                        relContext.classification = relClassifContext;
+                    }
+
+                    // Mount under entity slug: e.g. consultations.patient = { title, nom, ... }
+                    entityContext[targetEntity.slug] = relContext;
+                }
+            }
+        }
+
+        context[entity.slug] = entityContext;
+    }
 
     // Resolve in content blocks, pages, etc.
     let html = '';
 
     if (docTemplate.contentBlocks && docTemplate.contentBlocks.length > 0) {
-        // Use content blocks (structured template mode)
         for (const block of docTemplate.contentBlocks) {
             if (block.type === 'text' && block.html) {
                 html += resolveTokensInString(block.html, context);
@@ -305,7 +615,6 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs) {
             }
         }
     } else if (docTemplate.pages && docTemplate.pages.length > 0) {
-        // Use pages (WYSIWYG editor mode)
         for (const page of docTemplate.pages) {
             if (page.content) {
                 html += resolveTokensInString(page.content, context);
@@ -325,7 +634,6 @@ function resolveDocumentTokens(docTemplate, record, entity, inputs) {
         }
     }
 
-    // Wrap in a full HTML document for PDF generation
     const fullHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -360,56 +668,139 @@ ${docTemplate.footerHtml ? resolveTokensInString(docTemplate.footerHtml, context
 
 /**
  * Extract custom fields from record into a flat key-value object
+ * Supports both Map-based and Array-based customFields formats
  */
 function extractCustomFields(record, entity) {
     const result = {};
     if (!record.customFields) return result;
 
-    // customFields is a Map in Mongoose
-    const cfMap = record.customFields instanceof Map
-        ? Object.fromEntries(record.customFields)
-        : record.customFields;
+    // customFields can be either:
+    // 1. A Map (older format): { fieldId: value, fieldName: value }
+    // 2. An Array (current format): [{ field_id, value }]
+    const isArray = Array.isArray(record.customFields);
 
-    // If entity has populated custom fields, map by field name
-    if (entity && entity.customFields) {
-        const fieldDefs = Array.isArray(entity.customFields) ? entity.customFields : [];
-        for (const fd of fieldDefs) {
-            const fieldName = fd.name || fd.label;
-            const fieldId = fd._id ? fd._id.toString() : '';
-            // Try both ID and name keys
-            const value = cfMap[fieldId] || cfMap[fieldName] || '';
-            if (fieldName) result[fieldName] = value;
-            if (fieldId) result['cf_' + fieldId] = value;
+    if (isArray) {
+        // Array format: [{ field_id, value }]
+        const fieldDefs = (entity && entity.customFields && Array.isArray(entity.customFields))
+            ? entity.customFields : [];
+
+        for (const cf of record.customFields) {
+            if (!cf.field_id) continue;
+            const fieldId = cf.field_id.toString();
+            const fieldDef = fieldDefs.find(fd => fd._id && fd._id.toString() === fieldId);
+            const value = cf.value !== undefined && cf.value !== null ? cf.value : '';
+
+            // Format dates
+            const formattedValue = (fieldDef && fieldDef.type === 'date' && value)
+                ? formatDate(value)
+                : (typeof value === 'object' ? JSON.stringify(value) : String(value));
+
+            if (fieldDef) {
+                const fieldName = fieldDef.name || fieldDef.label;
+                if (fieldName) result[fieldName] = formattedValue;
+            }
+            result['cf_' + fieldId] = formattedValue;
         }
-    }
+    } else {
+        // Map format (legacy)
+        const cfMap = record.customFields instanceof Map
+            ? Object.fromEntries(record.customFields)
+            : record.customFields;
 
-    // Also add all raw keys
-    for (const [key, value] of Object.entries(cfMap)) {
-        if (!result[key]) result[key] = value;
+        if (entity && entity.customFields) {
+            const fieldDefs = Array.isArray(entity.customFields) ? entity.customFields : [];
+            for (const fd of fieldDefs) {
+                const fieldName = fd.name || fd.label;
+                const fieldId = fd._id ? fd._id.toString() : '';
+                const value = cfMap[fieldId] || cfMap[fieldName] || '';
+                if (fieldName) result[fieldName] = value;
+                if (fieldId) result['cf_' + fieldId] = value;
+            }
+        }
+
+        for (const [key, value] of Object.entries(cfMap)) {
+            if (!result[key]) result[key] = value;
+        }
     }
 
     return result;
 }
 
 /**
- * Replace {{token}} patterns in a string with values from context
+ * Replace {{token}} patterns AND <span class="template-token"> elements in a string with values from context
  */
 function resolveTokensInString(str, context) {
     if (!str) return '';
-    return str.replace(/\{\{([^}]+)\}\}/g, (match, token) => {
-        const key = token.trim();
-        // Support nested keys: record.title, cf.fieldName
-        if (key.includes('.')) {
-            const parts = key.split('.');
-            let val = context;
-            for (const part of parts) {
-                if (val && typeof val === 'object') val = val[part];
-                else { val = undefined; break; }
+
+    // 1. First resolve <span class="template-token" data-token="...">label</span> elements
+    //    These are inserted by the visual editor's insertVariableToken function
+    let result = str.replace(
+        /<span[^>]*class="[^"]*template-token[^"]*"[^>]*data-token="([^"]*)"[^>]*>[^<]*<\/span>/gi,
+        (match, encodedTokenData) => {
+            try {
+                // data-token is HTML-encoded JSON, decode it
+                const decoded = encodedTokenData
+                    .replace(/&quot;/g, '"')
+                    .replace(/&amp;/g, '&')
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&#39;/g, "'");
+                const tokenData = JSON.parse(decoded);
+                const path = tokenData.path;
+                if (!path) return match;
+
+                // Resolve value from context using dot notation
+                return resolveNestedValue(context, path) ?? match;
+            } catch (e) {
+                console.warn('[SmartDoc] Could not parse template-token:', e.message);
+                return match;
             }
-            return val !== undefined ? String(val) : match;
         }
-        return context[key] !== undefined ? String(context[key]) : match;
+    );
+
+    // 2. Also handle data-token with single quotes (some serializations)
+    result = result.replace(
+        /<span[^>]*class="[^"]*template-token[^"]*"[^>]*data-token='([^']*)'[^>]*>[^<]*<\/span>/gi,
+        (match, tokenDataStr) => {
+            try {
+                const tokenData = JSON.parse(tokenDataStr);
+                const path = tokenData.path;
+                if (!path) return match;
+                return resolveNestedValue(context, path) ?? match;
+            } catch (e) {
+                return match;
+            }
+        }
+    );
+
+    // 3. Then resolve standard {{token}} text patterns
+    result = result.replace(/\{\{([^}]+)\}\}/g, (match, token) => {
+        const key = token.trim();
+        return resolveNestedValue(context, key) ?? match;
     });
+
+    return result;
+}
+
+/**
+ * Resolve a dot-separated path in a nested context object
+ * Returns the resolved value as a string, or null if not found
+ */
+function resolveNestedValue(context, path) {
+    if (!path || !context) return null;
+    const key = path.trim();
+
+    if (key.includes('.')) {
+        const parts = key.split('.');
+        let val = context;
+        for (const part of parts) {
+            if (val && typeof val === 'object') val = val[part];
+            else { val = undefined; break; }
+        }
+        return val !== undefined ? String(val) : null;
+    }
+
+    return context[key] !== undefined ? String(context[key]) : null;
 }
 
 /**

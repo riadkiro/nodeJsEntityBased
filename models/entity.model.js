@@ -116,7 +116,7 @@ const EntitySchema = new mongoose.Schema(
     // 📎 Attachements
     enableAttachments: {
       type: Boolean,
-      default: false
+      default: true
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

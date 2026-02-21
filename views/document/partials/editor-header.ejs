@@ -252,32 +252,49 @@
         <!-- Modal Body -->
         <div class="p-4 space-y-4">
 
-          <!-- isTemplate Toggle -->
+          <!-- isTemplate Toggle - Clear ON/OFF -->
           <div class="flex items-center justify-between py-1">
             <div>
               <span class="text-xs font-bold text-gray-700 dark:text-gray-200">Modèle de document</span>
               <p class="text-[10px] text-gray-400 mt-0.5 leading-tight">Activer le mode template</p>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" x-model="doc.isTemplate" @change="saveDocument" class="sr-only peer">
-              <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-warning/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-warning"></div>
-            </label>
+            <button @click="doc.isTemplate = !doc.isTemplate; saveDocument()"
+              :class="doc.isTemplate ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30' : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500'"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-200">
+              <iconify-icon :icon="doc.isTemplate ? 'tabler:check' : 'tabler:x'" width="13"></iconify-icon>
+              <span x-text="doc.isTemplate ? 'Activé' : 'Désactivé'"></span>
+            </button>
           </div>
 
-          <!-- Entity Selector (only when isTemplate) -->
+          <!-- Entity Multi-Select (only when isTemplate) -->
           <div x-show="doc.isTemplate" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
-            <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">Lier à une collection</label>
-            <div class="relative">
-              <iconify-icon icon="solar:box-bold-duotone" width="14" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"></iconify-icon>
-              <select x-model="doc.entityId" @change="saveDocument" 
-                class="form-select w-full text-xs py-2 pl-8 pr-3 focus:ring-warning/20 focus:border-warning/40 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <option value="">-- Aucune collection --</option>
-                <template x-for="entity in availableEntities" :key="entity.id">
-                  <option :value="entity.id" x-text="entity.name" :selected="doc.entityId === entity.id"></option>
-                </template>
-              </select>
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">Lier à une ou plusieurs collections</label>
+            <div class="max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+              <template x-if="availableEntities.length === 0">
+                <p class="text-[10px] text-gray-400 py-3 text-center italic">Aucune collection disponible</p>
+              </template>
+              <template x-for="entity in availableEntities" :key="entity.id">
+                <label
+                  :class="(doc.entityIds || []).includes(entity.id) ? 'bg-amber-50/50 dark:bg-amber-900/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700/30'"
+                  class="flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-700/50 last:border-b-0">
+                  <input type="checkbox"
+                    :checked="(doc.entityIds || []).includes(entity.id)"
+                    @change="
+                      if (!doc.entityIds) doc.entityIds = doc.entityId ? [doc.entityId] : [];
+                      const idx = doc.entityIds.indexOf(entity.id);
+                      if (idx > -1) doc.entityIds.splice(idx, 1);
+                      else doc.entityIds.push(entity.id);
+                      doc.entityId = doc.entityIds[0] || null;
+                      saveDocument();
+                    "
+                    class="w-3.5 h-3.5 rounded border-gray-300 text-amber-500 focus:ring-amber-200 dark:border-gray-600 dark:bg-gray-700">
+                  <iconify-icon :icon="entity.icon || 'solar:database-bold'" width="14" :class="(doc.entityIds || []).includes(entity.id) ? 'text-amber-500' : 'text-gray-400'"></iconify-icon>
+                  <span :class="(doc.entityIds || []).includes(entity.id) ? 'font-semibold text-gray-700 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'" class="text-xs" x-text="entity.name"></span>
+                  <iconify-icon x-show="(doc.entityIds || []).includes(entity.id)" icon="tabler:check" width="12" class="text-amber-500 ml-auto"></iconify-icon>
+                </label>
+              </template>
             </div>
-            <p class="text-[9px] text-gray-400 mt-1.5 italic leading-relaxed">Ce template sera utilisable dans les SmartDoc de cette collection.</p>
+            <p class="text-[9px] text-gray-400 mt-1.5 italic leading-relaxed">Ce template sera utilisable dans les SmartDoc de ces collections.</p>
           </div>
 
           <!-- Info hint -->

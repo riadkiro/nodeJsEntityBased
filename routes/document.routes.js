@@ -177,12 +177,16 @@ router.get('/:id/edit-react', async (req, res) => {
             return res.status(404).send('Document non trouvé');
         }
 
+        // Support minimal mode for iframe embedding (no app layout)
+        const isMinimal = req.query.minimal === 'true';
+
         res.render('document/document-editor-react', {
             title: `Éditer - ${document.name}`,
             document,
             isNew: false,
+            isMinimal: isMinimal,
             account_number: req.account_number,
-            layout: 'layout-app' // Same layout as Alpine.js editor
+            layout: isMinimal ? false : 'layout-app'
         });
     } catch (error) {
         console.error('[Documents] Error loading document (React):', error);

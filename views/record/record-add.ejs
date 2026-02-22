@@ -606,7 +606,7 @@
             <% const _showRightSidebar = !(locals.entityFormLayout && locals.entityFormLayout.settings && locals.entityFormLayout.settings.showRightSidebar === false); %>
             <% if (_showRightSidebar) { %>
             <!-- Sidebar Content -->
-            <div class="w-[248px] flex-none space-y-4">
+            <div class="flex-none space-y-3 overflow-hidden" style="width: 260px; min-width: 260px; max-width: 260px;">
                 <%- include('partials/record-sidebar') %>
             </div>
             <% } %>

@@ -584,6 +584,22 @@ module.exports = {
                 if (rv.relationKey) recordValues[rv.relationKey] = rv.value;
             });
 
+            // Load related records data for relation panels (Mission 3)
+            const relatedRecordsData = {};
+            for (const rel of (entity.relations || [])) {
+                const relValue = recordValues[rel.key];
+                if (relValue) {
+                    const targetIds = Array.isArray(relValue) ? relValue : [relValue];
+                    const validIds = targetIds.filter(id => mongoose.Types.ObjectId.isValid(id));
+                    if (validIds.length > 0) {
+                        const relRecords = await RecordModel.find({ _id: { $in: validIds } })
+                            .populate({ path: 'customFields.field_id', select: 'label name type inputType ui' })
+                            .lean();
+                        relatedRecordsData[rel.key] = relRecords;
+                    }
+                }
+            }
+
             // Try to load from EntityForm (multi-form architecture)
             let resolvedLayout = entity.layout || [];
             let activeFormName = null;
@@ -732,6 +748,7 @@ module.exports = {
                 entityFormLayout,
                 entityFormFieldDefs,
                 recordValues,
+                relatedRecordsData,
                 allFieldTemplates,
                 account_number: req.account_number,
                 layout: "layout-app"

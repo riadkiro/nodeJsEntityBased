@@ -1,7 +1,23 @@
 <!-- 
     Document Editor React Island
     This view integrates into layout-app with sidebar, navbar, dark/light mode
+    Supports minimal mode (isMinimal: true) for iframe embedding
 -->
+
+<% if (locals.isMinimal) { %>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+</head>
+<body style="margin:0; padding:0; overflow:hidden;">
+<% } %>
 
 <style>
     /* Template token styling */
@@ -55,8 +71,13 @@
     %>"
     data-account-number="<%= account_number %>"
     data-is-new="<%= isNew ? 'true' : 'false' %>"
-    class="h-[calc(100vh-80px)] -m-6"
+    class="<%= locals.isMinimal ? 'h-screen' : 'h-[calc(100vh-80px)] -m-6' %>"
 ></div>
 
 <!-- React Island Script -->
 <script type="module" src="/dist/documentEditor.js"></script>
+
+<% if (locals.isMinimal) { %>
+</body>
+</html>
+<% } %>

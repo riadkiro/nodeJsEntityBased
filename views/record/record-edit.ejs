@@ -1,53 +1,100 @@
-<div x-data="recordForm()" class="space-y-6">
+<div x-data="recordForm()" class="space-y-4">
     <form action="/account/<%= account_number %>/record/<%= entity.slug %>/update/<%= record._id %>" method="POST"
         enctype="multipart/form-data" id="main-record-form">
-        <!-- Big Title Panel (only for legacy layout - EntityForm renders title inline) -->
-        <% if (!(locals.entityFormLayout && locals.entityFormLayout.rows)) { %>
-        <div class="panel mb-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        <span class="text-gray-400 font-normal">
-                            <%= entity.name %>
-                        </span>
-                        <span class="text-gray-300">/</span>
-                        <div class="flex items-center gap-2 group"
-                            x-data="{ editing: false, title: '<%= record.title %>' }">
-                            <template x-if="!editing">
-                                <span
-                                    class="cursor-pointer hover:text-primary transition-colors flex items-center gap-2"
-                                    @click="editing = true">
-                                    <span x-text="title" class="text-primary"></span>
-                                    <iconify-icon icon="solar:pen-2-linear" width="16"
-                                        class="text-gray-400 opacity-40 group-hover:opacity-100 transition-opacity"></iconify-icon>
-                                </span>
-                            </template>
-                            <template x-if="editing">
-                                <input name="standard[title]" type="text" x-model="title" @keyup.enter="editing = false"
-                                    @blur="editing = false"
-                                    class="form-input !h-9 !text-lg !font-bold !py-0 !border-primary border-2 focus:ring-0 w-auto min-w-[300px] dark:bg-[#121e32] dark:text-gray-200"
-                                    x-init="$nextTick(() => $el.focus())">
-                            </template>
-                            <!-- Hidden input for form submission if not editing -->
-                            <template x-if="!editing">
-                                <input type="hidden" name="standard[title]" :value="title">
-                            </template>
-                        </div>
-                    </h2>
+
+        <!-- ═══════════════ HORIZONTAL TOOLBAR (Mission 1) ═══════════════ -->
+        <div class="flex items-center justify-between px-5 py-2.5 bg-white dark:bg-[#1b2e4b] rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm mb-4"
+            x-data="{ showDeleteConfirm: false }">
+            <!-- Left: Back + Entity/Title breadcrumb -->
+            <div class="flex items-center gap-3 min-w-0">
+                <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
+                    class="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-all"
+                    title="Retour à la liste">
+                    <iconify-icon icon="solar:arrow-left-linear" width="18"></iconify-icon>
+                </a>
+                <div class="h-5 w-px bg-gray-200 dark:bg-gray-700"></div>
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-sm text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap"><%= entity.name %></span>
+                    <iconify-icon icon="solar:alt-arrow-right-linear" width="14" class="text-gray-300 dark:text-gray-600 flex-none"></iconify-icon>
+                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 truncate max-w-[300px]"><%= record.title || 'Sans titre' %></span>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button type="button" @click="designMode = !designMode"
-                        :class="designMode ? 'text-primary bg-primary/10' : 'text-gray-400 hover:text-primary'"
-                        class="p-2 rounded-lg transition-all" title="Mode Layout">
-                        <iconify-icon icon="tabler:layout-dashboard" width="22"></iconify-icon>
+            </div>
+
+            <!-- Center: Last modified -->
+            <div class="hidden md:flex items-center gap-1.5 text-[10px] text-gray-400 dark:text-gray-500">
+                <iconify-icon icon="solar:clock-circle-linear" width="12"></iconify-icon>
+                <span>Modifié le <strong class="text-gray-500 dark:text-gray-400"><%= record.updatedAt ? new Date(record.updatedAt).toLocaleDateString('fr-FR') : '-' %></strong></span>
+            </div>
+
+            <!-- Right: Actions cluster -->
+            <div class="flex items-center gap-2">
+                <!-- Public toggle -->
+                <label class="flex items-center gap-1.5 cursor-pointer px-2.5 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all" title="Publier">
+                    <input type="hidden" name="standard[published]" value="">
+                    <input type="checkbox" name="standard[published]"
+                        class="form-checkbox rounded text-success border-gray-300 dark:border-gray-600 focus:ring-0 !w-3.5 !h-3.5"
+                        <%= record.published ? 'checked' : '' %>>
+                    <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Public</span>
+                </label>
+
+                <div class="h-5 w-px bg-gray-200 dark:bg-gray-700"></div>
+
+                <!-- Layout mode -->
+                <button type="button" @click="designMode = !designMode"
+                    :class="designMode ? 'text-primary bg-primary/10' : 'text-gray-400 hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-700/50'"
+                    class="flex items-center justify-center w-8 h-8 rounded-lg transition-all" title="Mode Layout">
+                    <iconify-icon icon="tabler:layout-dashboard" width="16"></iconify-icon>
+                </button>
+
+                <div class="h-5 w-px bg-gray-200 dark:bg-gray-700"></div>
+
+                <!-- Cancel -->
+                <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+                    title="Annuler">
+                    <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
+                    <span class="hidden sm:inline">Annuler</span>
+                </a>
+
+                <!-- Save -->
+                <button type="submit" form="main-record-form"
+                    class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-primary text-white text-[11px] font-bold hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 transition-all"
+                    x-data="{ submitting: false }" @submit.window="submitting = true"
+                    :disabled="submitting"
+                    :class="submitting ? 'opacity-60 cursor-wait' : ''">
+                    <iconify-icon :icon="submitting ? 'line-md:loading-twotone-loop' : 'solar:diskette-bold'" width="14"></iconify-icon>
+                    <span x-text="submitting ? 'Envoi...' : 'Enregistrer'">Enregistrer</span>
+                </button>
+
+                <!-- Delete -->
+                <div class="relative">
+                    <button type="button" @click="showDeleteConfirm = !showDeleteConfirm"
+                        class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-danger hover:bg-danger/5 transition-all"
+                        title="Supprimer">
+                        <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="15"></iconify-icon>
                     </button>
+                    <!-- Delete confirm dropdown -->
+                    <div x-show="showDeleteConfirm" x-transition @click.outside="showDeleteConfirm = false"
+                        class="absolute right-0 top-full mt-2 bg-white dark:bg-[#1b2e4b] rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-4 w-[220px] z-50">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-3">Supprimer définitivement cet enregistrement ?</p>
+                        <div class="flex items-center gap-2">
+                            <button type="button" @click="showDeleteConfirm = false"
+                                class="flex-1 px-3 py-1.5 text-[10px] font-semibold text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 transition-all">
+                                Non
+                            </button>
+                            <a href="/account/<%= account_number %>/record/<%= entity.slug %>/delete/<%= record._id %>"
+                                class="flex-1 px-3 py-1.5 text-[10px] font-bold text-white bg-danger rounded-lg hover:bg-danger/90 text-center transition-all">
+                                Supprimer
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <% } %>
-        <div class="flex flex-col lg:flex-row gap-6">
+
+        <div class="flex flex-col lg:flex-row gap-4">
             <!-- Main Form Content -->
-            <div class="flex-1 space-y-6">
+            <div class="flex-1 space-y-4">
                 <div class="panel">
                     <div class="space-y-8">
 
@@ -587,38 +634,86 @@
                     <% } %>
                     </div>
                 </div>
+
+                <!-- ═══════════════ RELATION DATA PANELS (Mission 3) ═══════════════ -->
+                <% (entity.relations || []).forEach(function(rel) { %>
+                    <% const relRecords = locals.relatedRecordsData && locals.relatedRecordsData[rel.key]; %>
+                    <% if (relRecords && relRecords.length > 0) { %>
+                        <% relRecords.forEach(function(relRec) { %>
+                            <% const relIcon = (rel.targetEntity && rel.targetEntity.icon) || 'solar:user-bold-duotone'; %>
+                            <% const relColor = (rel.targetEntity && rel.targetEntity.color) || '#4361ee'; %>
+                            <% const relEntityName = (rel.targetEntity && rel.targetEntity.name) || rel.label || 'Relation'; %>
+                            <% const relEntitySlug = (rel.targetEntity && rel.targetEntity.slug) || ''; %>
+                            <div class="panel !p-0 overflow-hidden" x-data="{ open: true }">
+                                <div class="flex items-center justify-between px-4 py-2.5 border-b border-gray-50 dark:border-gray-700/30">
+                                    <div class="flex items-center gap-2.5 cursor-pointer flex-1" @click="open = !open">
+                                        <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-none" style="background: <%= relColor %>15;">
+                                            <iconify-icon icon="<%= relIcon %>" width="14" style="color: <%= relColor %>"></iconify-icon>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500"><%= rel.label || relEntityName %></span>
+                                            <div class="text-[13px] font-semibold text-gray-700 dark:text-gray-200 -mt-0.5 truncate"><%= relRec.title || 'Sans titre' %></div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 flex-none">
+                                        <% if (relEntitySlug) { %>
+                                            <a href="/account/<%= account_number %>/record/<%= relEntitySlug %>/edit/<%= relRec._id %>"
+                                                class="flex items-center justify-center w-6 h-6 rounded-md text-gray-400 hover:text-primary hover:bg-primary/5 transition-all"
+                                                title="Ouvrir dans un nouvel onglet" target="_blank">
+                                                <iconify-icon icon="solar:arrow-right-up-linear" width="13"></iconify-icon>
+                                            </a>
+                                        <% } %>
+                                        <button type="button" @click="open = !open"
+                                            class="flex items-center justify-center w-6 h-6 rounded-md text-gray-400 hover:text-gray-600 transition-all">
+                                            <iconify-icon :icon="open ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'" width="14"></iconify-icon>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div x-show="open" x-collapse class="px-4 py-3">
+                                    <div class="grid grid-cols-2 gap-x-6 gap-y-2.5">
+                                        <% if (relRec.slug) { %>
+                                            <div>
+                                                <div class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5">Identifiant</div>
+                                                <div class="text-xs text-gray-700 dark:text-gray-300"><%= relRec.slug %></div>
+                                            </div>
+                                        <% } %>
+                                        <% if (relRec.date) { %>
+                                            <div>
+                                                <div class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5">Date</div>
+                                                <div class="text-xs text-gray-700 dark:text-gray-300"><%= new Date(relRec.date).toLocaleDateString('fr-FR') %></div>
+                                            </div>
+                                        <% } %>
+                                        <% (relRec.customFields || []).forEach(function(cf) { %>
+                                            <% if (cf.value && cf.field_id && cf.field_id.label) { %>
+                                                <div>
+                                                    <div class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5"><%= cf.field_id.label %></div>
+                                                    <div class="text-xs text-gray-700 dark:text-gray-300 line-clamp-2">
+                                                        <% if (typeof cf.value === 'object' && cf.value !== null) { %>
+                                                            <%= JSON.stringify(cf.value) %>
+                                                        <% } else { %>
+                                                            <%= String(cf.value).substring(0, 120) %><%= String(cf.value).length > 120 ? '...' : '' %>
+                                                        <% } %>
+                                                    </div>
+                                                </div>
+                                            <% } %>
+                                        <% }) %>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    <% } %>
+                <% }) %>
+
             </div>
 
             <% const _showRightSidebar = !(locals.entityFormLayout && locals.entityFormLayout.settings && locals.entityFormLayout.settings.showRightSidebar === false); %>
             <% if (_showRightSidebar) { %>
             <!-- Sidebar Content -->
-            <div class="w-[248px] flex-none space-y-4">
+            <div class="flex-none space-y-3 overflow-hidden" style="width: 260px; min-width: 260px; max-width: 260px;">
                 <%- include('partials/record-sidebar') %>
             </div>
             <% } %>
         </div>
-
-        <% if (!_showRightSidebar) { %>
-        <!-- Bottom Action Buttons (when sidebar is hidden) -->
-        <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
-                class="btn btn-outline-danger flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider px-5 py-2"
-                title="Annuler">
-                <iconify-icon icon="solar:close-circle-bold" width="16"></iconify-icon>
-                <span>Annuler</span>
-            </a>
-            <button type="submit" form="main-record-form"
-                class="btn btn-primary flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider px-5 py-2 hover:shadow-lg hover:shadow-primary/20 transition-all"
-                x-data="{ submitting: false }" @submit.window="submitting = true"
-                :disabled="submitting"
-                :class="submitting ? 'opacity-60 cursor-wait' : ''">
-                <iconify-icon :icon="submitting ? 'line-md:loading-twotone-loop' : 'solar:diskette-bold'" width="16"></iconify-icon>
-                <span x-text="submitting ? 'Envoi...' : 'Enregistrer'">
-                    Enregistrer
-                </span>
-            </button>
-        </div>
-        <% } %>
     </form>
 
     <!-- Modal for adding fields -->

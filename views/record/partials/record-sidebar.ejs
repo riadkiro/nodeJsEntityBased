@@ -563,6 +563,89 @@
                                         </div>
                                     </template>
 
+                                    <!-- ✨ SmartDoc Preview Modal -->
+                                    <template x-teleport="body">
+                                        <div x-show="showSmartDocPreview" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                                            x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                                            class="fixed inset-0 flex bg-black/50 backdrop-blur-sm" style="display:none; z-index: 99998;" @click.self="showSmartDocPreview = false">
+                                            <div class="flex w-full h-full max-w-[95vw] max-h-[95vh] m-auto bg-white dark:bg-[#0e1726] rounded-2xl shadow-2xl overflow-hidden animate__animated animate__fadeInUp animate__faster">
+                                                <!-- Left: Document Preview -->
+                                                <div class="flex-1 flex flex-col min-w-0 border-r border-gray-200 dark:border-gray-700">
+                                                    <!-- Preview Header -->
+                                                    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1b2e4b]">
+                                                        <div class="flex items-center gap-3">
+                                                            <div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
+                                                                <iconify-icon icon="solar:document-bold-duotone" width="18" class="text-success"></iconify-icon>
+                                                            </div>
+                                                            <div>
+                                                                <h3 class="text-sm font-bold text-gray-800 dark:text-white" x-text="previewOutputName || 'Aperçu du document'"></h3>
+                                                                <p class="text-[10px] text-gray-400">Document généré avec succès</p>
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex items-center gap-2">
+                                                            <a :href="previewAttachment?.url" target="_blank"
+                                                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
+                                                                <iconify-icon icon="solar:download-minimalistic-bold" width="14"></iconify-icon>
+                                                                Télécharger
+                                                            </a>
+                                                            <button type="button" @click="showSmartDocPreview = false"
+                                                                class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold bg-success text-white hover:bg-success/90 transition-all shadow-sm">
+                                                                <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
+                                                                Fermer
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <!-- Preview iframe -->
+                                                    <div class="flex-1 overflow-hidden bg-gray-100 dark:bg-gray-900/50 p-4">
+                                                        <div class="w-full h-full bg-white rounded-lg shadow-lg overflow-hidden">
+                                                            <iframe id="smartdoc-preview-iframe" class="w-full h-full border-0" sandbox="allow-same-origin"></iframe>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <!-- Right: Variables Sidebar -->
+                                                <div class="w-[320px] shrink-0 flex flex-col bg-gray-50/50 dark:bg-[#0e1726]">
+                                                    <!-- Sidebar Header -->
+                                                    <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-[#1b2e4b]">
+                                                        <div class="flex items-center gap-2">
+                                                            <iconify-icon icon="solar:tuning-2-bold-duotone" width="16" class="text-primary"></iconify-icon>
+                                                            <span class="text-xs font-bold text-gray-700 dark:text-gray-200">Variables utilisées</span>
+                                                            <span class="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold" x-text="previewVariables.length"></span>
+                                                        </div>
+                                                    </div>
+                                                    <!-- Variables List -->
+                                                    <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
+                                                        <template x-if="previewVariables.length === 0">
+                                                            <div class="text-center py-8">
+                                                                <iconify-icon icon="solar:document-text-bold-duotone" width="32" class="text-gray-300 dark:text-gray-600"></iconify-icon>
+                                                                <p class="text-[11px] text-gray-400 mt-2">Aucune variable détectée</p>
+                                                            </div>
+                                                        </template>
+                                                        <template x-for="group in groupedPreviewVariables()" :key="group.name">
+                                                            <div>
+                                                                <div class="flex items-center gap-1.5 mb-1.5">
+                                                                    <iconify-icon :icon="getGroupIcon(group.name)" width="12" :class="getGroupColor(group.name)"></iconify-icon>
+                                                                    <span class="text-[9px] font-bold uppercase tracking-wider" :class="getGroupColor(group.name)" x-text="group.name"></span>
+                                                                    <span class="text-[8px] text-gray-400" x-text="'(' + group.items.length + ')'"></span>
+                                                                </div>
+                                                                <div class="space-y-1">
+                                                                    <template x-for="v in group.items" :key="v.path">
+                                                                        <div class="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-white dark:bg-[#1b2e4b] border border-gray-100 dark:border-gray-700/50 transition-all hover:border-primary/20">
+                                                                            <div class="flex-1 min-w-0">
+                                                                                <div class="text-[10px] font-semibold text-gray-600 dark:text-gray-300 truncate" x-text="v.label"></div>
+                                                                                <div class="text-[10px] text-gray-400 dark:text-gray-500 truncate font-mono" x-text="'{{' + v.path + '}}'"></div>
+                                                                            </div>
+                                                                            <div class="text-[10px] font-medium text-gray-800 dark:text-gray-200 text-right max-w-[120px] truncate" :title="v.value" x-text="v.value || '—'"></div>
+                                                                        </div>
+                                                                    </template>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+
                                     <!-- Empty state -->
                                     <div x-show="attachments.length === 0 && !uploading && !recordId" class="text-center px-3 py-2 border-t border-gray-50 dark:border-gray-700/20">
                                         <span class="text-[9px] text-gray-400 italic">Aucune pièce jointe</span>
@@ -916,6 +999,13 @@
                 showSmartDocEditor: false,
                 smartDocTitleError: '',
 
+                // SmartDoc Preview state
+                showSmartDocPreview: false,
+                previewHtml: '',
+                previewVariables: [],
+                previewAttachment: null,
+                previewOutputName: '',
+
                 init() {
                     if (this.recordId) {
                         this.loadSmartDocTemplates();
@@ -992,7 +1082,25 @@
                         if (data.success && data.attachment) {
                             // Add to the attachments list
                             this.attachments.push(data.attachment);
-                            // Little success feedback
+
+                            // Show preview modal
+                            this.previewAttachment = data.attachment;
+                            this.previewVariables = data.usedVariables || [];
+                            this.previewOutputName = data.outputName || data.attachment.originalName || 'Document';
+                            this.previewHtml = data.previewHtml || '';
+                            this.showSmartDocPreview = true;
+
+                            // Inject preview HTML into iframe
+                            this.$nextTick(() => {
+                                const iframe = document.getElementById('smartdoc-preview-iframe');
+                                if (iframe && this.previewHtml) {
+                                    const doc = iframe.contentDocument || iframe.contentWindow.document;
+                                    doc.open();
+                                    doc.write(this.previewHtml);
+                                    doc.close();
+                                }
+                            });
+
                             if (window.showMessage) {
                                 window.showMessage('Document généré avec succès !', 'success');
                             }
@@ -1204,6 +1312,43 @@
                         other: '#6b7280'
                     };
                     return colors[cat] || colors.other;
+                },
+
+                // Preview modal helpers
+                groupedPreviewVariables() {
+                    const groups = {};
+                    for (const v of this.previewVariables) {
+                        const g = v.group || 'Autre';
+                        if (!groups[g]) groups[g] = [];
+                        groups[g].push(v);
+                    }
+                    return Object.entries(groups).map(([name, items]) => ({ name, items }));
+                },
+
+                getGroupIcon(group) {
+                    const icons = {
+                        'Utilisateur': 'solar:user-bold-duotone',
+                        'Système': 'solar:settings-bold-duotone',
+                        'Classification': 'solar:tag-bold-duotone',
+                        'Relation': 'solar:link-round-bold-duotone',
+                        'Saisie': 'solar:pen-bold-duotone',
+                        'Champ': 'solar:text-field-bold-duotone',
+                        'Autre': 'solar:widget-5-bold-duotone'
+                    };
+                    return icons[group] || icons['Autre'];
+                },
+
+                getGroupColor(group) {
+                    const colors = {
+                        'Utilisateur': 'text-info',
+                        'Système': 'text-secondary',
+                        'Classification': 'text-warning',
+                        'Relation': 'text-success',
+                        'Saisie': 'text-primary',
+                        'Champ': 'text-gray-500',
+                        'Autre': 'text-gray-400'
+                    };
+                    return colors[group] || colors['Autre'];
                 }
             }));
         });

@@ -408,6 +408,9 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
         // 6. Resolve tokens in the document template
         const resolvedHtml = resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecordsMap, req.user);
 
+        // 6b. Extract used variables for preview sidebar
+        const usedVariables = extractUsedVariables(docTemplate, record, entity, inputs, relatedRecordsMap, req.user);
+
         // 7. Generate output file name
         const outputName = resolveOutputName(
             smartDocTemplate.outputNameTemplate || '{{templateName}} - {{recordTitle}}',
@@ -475,7 +478,10 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
                 ...newAttachment,
                 url: `/uploads/attachments/${req.account_number}/${savedFilename}`,
                 sizeFormatted: formatSize(savedSize)
-            }
+            },
+            previewHtml: resolvedHtml,
+            usedVariables,
+            outputName
         });
     } catch (error) {
         console.error('[SmartDoc] Generate error:', error);
@@ -870,6 +876,177 @@ async function generatePDF(html, outputPath, docTemplate) {
     } finally {
         if (browser) await browser.close();
     }
+}
+
+/**
+ * Extract which variables were used in the document and their resolved values
+ * Returns an array of { path, label, value, group }
+ */
+function extractUsedVariables(docTemplate, record, entity, inputs, relatedRecordsMap, user) {
+    // Build the same context as resolveDocumentTokens
+    const context = {
+        title: record.title || '',
+        computedTitle: record.computedTitle || record.title || '',
+        description: record.description || '',
+        today: formatDate(new Date()),
+        currentYear: new Date().getFullYear().toString(),
+        currentMonth: formatDate(new Date(), 'month'),
+        currentTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        user: {
+            name: user ? (user.name || user.fullName || user.email || '') : '',
+            email: user ? (user.email || '') : ''
+        },
+        ...extractCustomFields(record, entity),
+        ...inputs
+    };
+
+    // Entity-scoped context
+    if (entity && entity.slug) {
+        const entityContext = {
+            title: record.title || '',
+            computedTitle: record.computedTitle || record.title || '',
+            description: record.description || '',
+            createdAt: record.createdAt ? formatDate(record.createdAt) : '',
+            updatedAt: record.updatedAt ? formatDate(record.updatedAt) : '',
+            ...extractCustomFields(record, entity)
+        };
+
+        // Classification values
+        if (record.classificationValues && record.classificationValues.length > 0) {
+            const classifContext = {};
+            const allClassifs = [
+                ...(entity.statusClassification ? [entity.statusClassification] : []),
+                ...(entity.classifications || [])
+            ];
+            for (const cv of record.classificationValues) {
+                const classifDef = allClassifs.find(c => c && c._id && c._id.toString() === cv.classificationId?.toString());
+                if (classifDef && classifDef.key) {
+                    classifContext[classifDef.key] = cv.label || '';
+                }
+            }
+            entityContext.classification = classifContext;
+        }
+
+        // Related entity data
+        if (entity.relations && relatedRecordsMap) {
+            for (const rel of entity.relations) {
+                const targetEntity = rel.targetEntity;
+                if (!targetEntity || typeof targetEntity !== 'object') continue;
+                const relData = relatedRecordsMap[rel.key];
+                if (relData && relData.record) {
+                    const relRecord = relData.record;
+                    const relEntityDef = relData.entity;
+                    entityContext[targetEntity.slug] = {
+                        title: relRecord.title || '',
+                        computedTitle: relRecord.computedTitle || relRecord.title || '',
+                        description: relRecord.description || '',
+                        ...extractCustomFields(relRecord, relEntityDef)
+                    };
+                }
+            }
+        }
+
+        context[entity.slug] = entityContext;
+    }
+
+    // Now scan document content for tokens
+    const usedTokenPaths = new Set();
+    let contentStr = '';
+
+    if (docTemplate.contentBlocks && docTemplate.contentBlocks.length > 0) {
+        for (const block of docTemplate.contentBlocks) {
+            if (block.html) contentStr += block.html + ' ';
+        }
+    } else if (docTemplate.pages && docTemplate.pages.length > 0) {
+        for (const page of docTemplate.pages) {
+            if (page.content) contentStr += page.content + ' ';
+            if (page.elements) {
+                for (const el of page.elements) {
+                    if (el.content && typeof el.content === 'object') {
+                        if (el.content.text) contentStr += el.content.text + ' ';
+                        if (el.content.html) contentStr += el.content.html + ' ';
+                    }
+                }
+            }
+        }
+    }
+
+    // Also scan header/footer
+    if (docTemplate.headerHtml) contentStr += docTemplate.headerHtml + ' ';
+    if (docTemplate.footerHtml) contentStr += docTemplate.footerHtml + ' ';
+
+    // Extract {{token}} patterns
+    const tokenRegex = /\{\{([^}]+)\}\}/g;
+    let match;
+    while ((match = tokenRegex.exec(contentStr)) !== null) {
+        usedTokenPaths.add(match[1].trim());
+    }
+
+    // Extract data-token from template-token spans
+    const spanRegex = /data-token=["']([^"']*?)["']/gi;
+    while ((match = spanRegex.exec(contentStr)) !== null) {
+        try {
+            const decoded = match[1]
+                .replace(/&quot;/g, '"')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&#39;/g, "'");
+            const tokenData = JSON.parse(decoded);
+            if (tokenData.path) usedTokenPaths.add(tokenData.path);
+        } catch (e) { /* skip unparseable */ }
+    }
+
+    // Resolve each token to its value and categorize
+    const variables = [];
+    for (const tokenPath of usedTokenPaths) {
+        const value = resolveNestedValue(context, tokenPath);
+        let group = 'Autre';
+        let label = tokenPath;
+
+        if (tokenPath.startsWith('user.')) {
+            group = 'Utilisateur';
+            label = tokenPath === 'user.name' ? "Nom de l'utilisateur" : tokenPath === 'user.email' ? 'Email' : tokenPath;
+        } else if (['today', 'currentYear', 'currentMonth', 'currentTime'].includes(tokenPath)) {
+            group = 'Système';
+            const labels = { today: 'Date du jour', currentYear: 'Année', currentMonth: 'Mois', currentTime: 'Heure' };
+            label = labels[tokenPath] || tokenPath;
+        } else if (entity && entity.slug && tokenPath.startsWith(entity.slug + '.')) {
+            const rest = tokenPath.slice(entity.slug.length + 1);
+            if (rest.startsWith('classification.')) {
+                group = 'Classification';
+                label = rest.replace('classification.', '');
+            } else if (rest.includes('.')) {
+                group = 'Relation';
+                label = rest;
+            } else {
+                group = entity.name || 'Entité';
+                label = rest;
+            }
+        } else if (inputs && inputs[tokenPath] !== undefined) {
+            group = 'Saisie';
+            label = tokenPath;
+        } else {
+            group = 'Champ';
+        }
+
+        variables.push({
+            path: tokenPath,
+            label,
+            value: value !== null && value !== undefined ? String(value) : '—',
+            group
+        });
+    }
+
+    // Sort by group
+    const groupOrder = ['Entité', 'Champ', 'Classification', 'Relation', 'Saisie', 'Utilisateur', 'Système', 'Autre'];
+    variables.sort((a, b) => {
+        const ai = groupOrder.indexOf(a.group) === -1 ? 99 : groupOrder.indexOf(a.group);
+        const bi = groupOrder.indexOf(b.group) === -1 ? 99 : groupOrder.indexOf(b.group);
+        return ai - bi;
+    });
+
+    return variables;
 }
 
 module.exports = router;

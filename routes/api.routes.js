@@ -553,23 +553,33 @@ router.post('/api/user/view-preferences', async (req, res) => {
             return res.status(401).json({ error: 'User not authenticated' })
         }
 
+        // Build $set object — only update fields that were actually sent
+        // This prevents one save call from overwriting fields set by another
+        const setFields = {
+            userId: req.user._id,
+            viewId,
+            updatedAt: new Date()
+        }
+
+        // Map all possible preference keys to their $set paths
+        const prefKeys = [
+            'columns', 'sort', 'density', 'pageSize', 'titleDisplay',
+            'showSidebar', 'viewMode', 'enabledViews',
+            // Record-edit panel layout
+            'columnWidths', 'extraColumns', 'panelLayout', 'sidebarWidth',
+            // Kanban
+            'kanban'
+        ]
+
+        prefKeys.forEach(key => {
+            if (preferences[key] !== undefined) {
+                setFields[`preferences.${key}`] = preferences[key]
+            }
+        })
+
         await UserPreferences.findOneAndUpdate(
             { userId: req.user._id, viewId },
-            {
-                userId: req.user._id,
-                viewId,
-                preferences: {
-                    columns: preferences.columns || [],
-                    sort: preferences.sort || { field: 'createdAt', direction: 'desc' },
-                    density: preferences.density || 'normal',
-                    pageSize: preferences.pageSize || 25,
-                    titleDisplay: preferences.titleDisplay || 'avatar',
-                    showSidebar: preferences.showSidebar !== undefined ? preferences.showSidebar : true,
-                    viewMode: preferences.viewMode || null,
-                    enabledViews: preferences.enabledViews || ['table', 'kanban', 'notes']
-                },
-                updatedAt: new Date()
-            },
+            { $set: setFields },
             { upsert: true, new: true }
         )
 

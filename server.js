@@ -1,6 +1,11 @@
 //Charger les variables d'environnement
 require('dotenv').config();
 
+// Prevent unhandled promise rejections from crashing the server
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Server] Unhandled Promise Rejection:', reason);
+});
+
 //Initialiser les modules qu'on va utiliser
 const express = require("express");
 const expressLayouts = require("express-ejs-layouts");

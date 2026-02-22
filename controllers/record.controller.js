@@ -603,6 +603,7 @@ module.exports = {
             // Try to load from EntityForm (multi-form architecture)
             let resolvedLayout = entity.layout || [];
             let activeFormName = null;
+            let activeFormId = null;
             let entityFormLayout = null;
             let entityFormFieldDefs = null;
             const EntityForm = await tenantCollection(req, "EntityForm");
@@ -621,6 +622,7 @@ module.exports = {
 
                 if (selectedForm && selectedForm.layout && selectedForm.layout.version) {
                     activeFormName = selectedForm.name;
+                    activeFormId = selectedForm._id.toString();
                     entityFormLayout = selectedForm.layout;
 
                     // Build field definitions map
@@ -747,6 +749,7 @@ module.exports = {
                 activeFormName,
                 entityFormLayout,
                 entityFormFieldDefs,
+                activeFormId,
                 recordValues,
                 relatedRecordsData,
                 allFieldTemplates,

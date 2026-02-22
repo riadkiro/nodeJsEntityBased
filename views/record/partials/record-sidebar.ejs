@@ -1,7 +1,14 @@
-    <div class="space-y-3 sticky top-20" x-data="recordSidebar" id="sidebar-main-sortable">
-        <% ['classifications', 'attachments'].forEach(function(sectionId) { %>
+    <div class="space-y-3 sticky top-20" x-data="recordSidebar">
+        <% ['classifications', 'attachments', 'smartdoc', 'relations'].forEach(function(sectionId) { %>
             <% if (sectionId==='classifications' ) { %>
                         <!-- Dynamic Classifications (Shared Data) -->
+                        <div class="panel-sortable-item" data-panel-id="classifications">
+                            <template x-if="designMode">
+                                <div class="panel-drag-handle">
+                                    <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
+                                    <span>Classification</span>
+                                </div>
+                            </template>
                         <div class="panel !p-0 group/panel relative z-10" data-id="classifications">
                             <% const allEntityClassifications=[];
                                 // Include statusClassification first (if populated)
@@ -387,9 +394,17 @@
                                             </div>
                                             <% } %>
                         </div>
+                        </div><!-- end panel-sortable-item classifications -->
                         <% } else if (sectionId==='attachments' && locals.entity && entity.enableAttachments) { %>
-                            <!-- 📎 Attachments (Mission 4 - Minimalist) -->
+                            <!-- 📎 Attachments (Standalone Panel) -->
                             <% const sidebarSectionAttachments=locals.user?.preferences?.sidebar_section_attachments!==false; %>
+                            <div class="panel-sortable-item" data-panel-id="attachments">
+                                <template x-if="designMode">
+                                    <div class="panel-drag-handle">
+                                        <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
+                                        <span>Pièces jointes</span>
+                                    </div>
+                                </template>
                             <div class="panel !p-0 overflow-hidden" data-id="attachments"
                                 x-data='attachmentPanel({
                                     recordId: "<%= locals.record && record._id ? record._id : "" %>",
@@ -406,7 +421,7 @@
                                         <span x-show="attachments.length > 0" class="text-[9px] bg-primary/10 text-primary w-4 h-4 rounded-full flex items-center justify-center font-bold" x-text="attachments.length"></span>
                                     </div>
                                     <div class="flex items-center gap-1">
-                                        <button type="button" @click.stop="$refs.fileInput.click()" class="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-primary/5 transition-all" title="Ajouter">
+                                        <button type="button" @click.stop="showUploadModal = true" class="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-primary/5 transition-all" title="Ajouter">
                                             <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
                                         </button>
                                         <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="isOpen ? '' : '-rotate-90'" class="transition-transform text-gray-300"></iconify-icon>
@@ -451,68 +466,166 @@
                                         </template>
                                     </div>
 
-                                    <!-- Drop zone (compact) -->
-                                    <div class="px-3 py-2 border-t border-gray-50 dark:border-gray-700/20">
-                                        <div class="border border-dashed border-gray-200 dark:border-gray-700 rounded-lg p-2 text-center cursor-pointer hover:border-primary/40 hover:bg-primary/[0.02] transition-all"
-                                            :class="isDragging ? 'border-primary bg-primary/5' : ''"
-                                            @click="$refs.fileInput.click()"
-                                            @dragover.prevent="isDragging = true"
-                                            @dragleave.prevent="isDragging = false"
-                                            @drop.prevent="handleDrop($event)">
-                                            <div class="flex items-center justify-center gap-1.5">
-                                                <iconify-icon :icon="isDragging ? 'solar:cloud-download-bold-duotone' : 'solar:upload-minimalistic-linear'" width="14"
-                                                    :class="isDragging ? 'text-primary' : 'text-gray-300'"></iconify-icon>
-                                                <span class="text-[9px] font-medium" :class="isDragging ? 'text-primary' : 'text-gray-400'" x-text="isDragging ? 'Déposer ici' : 'Glisser ou cliquer'"></span>
+                                    <!-- Empty state (minimalist) -->
+                                    <template x-if="attachments.length === 0 && !uploading">
+                                        <div class="flex items-center justify-center py-3 border-t border-gray-50 dark:border-gray-700/20">
+                                            <button type="button" @click.stop="showUploadModal = true"
+                                                class="flex items-center gap-1.5 text-[10px] text-gray-400 hover:text-primary transition-colors">
+                                                <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
+                                                <span>Ajouter un fichier</span>
+                                            </button>
+                                        </div>
+                                    </template>
+
+                                    <!-- Upload Modal -->
+                                    <template x-teleport="body">
+                                        <div x-show="showUploadModal" x-transition:enter="transition ease-out duration-200"
+                                            x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                                            x-transition:leave="transition ease-in duration-150"
+                                            x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                                            class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                                            style="display:none;"
+                                            @click.self="showUploadModal = false">
+                                            <div class="bg-white dark:bg-[#1b2e4b] rounded-2xl shadow-2xl w-[420px] max-w-[90vw] overflow-hidden"
+                                                @click.stop>
+                                                <!-- Modal Header -->
+                                                <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-700">
+                                                    <div class="flex items-center gap-2.5">
+                                                        <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                                            <iconify-icon icon="solar:cloud-upload-bold-duotone" width="18" class="text-primary"></iconify-icon>
+                                                        </div>
+                                                        <div>
+                                                            <h4 class="text-sm font-bold text-gray-800 dark:text-white">Ajouter des fichiers</h4>
+                                                            <p class="text-[10px] text-gray-400">Glissez-déposez ou sélectionnez des fichiers</p>
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" @click="showUploadModal = false"
+                                                        class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
+                                                        <iconify-icon icon="solar:close-circle-linear" width="16"></iconify-icon>
+                                                    </button>
+                                                </div>
+                                                <!-- Drop Area -->
+                                                <div class="p-5">
+                                                    <div class="border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer"
+                                                        :class="isDragging ? 'border-primary bg-primary/5' : 'border-gray-200 dark:border-gray-600 hover:border-primary/40 hover:bg-primary/[0.02]'"
+                                                        @click="$refs.modalFileInput.click()"
+                                                        @dragover.prevent="isDragging = true"
+                                                        @dragleave.prevent="isDragging = false"
+                                                        @drop.prevent="handleModalDrop($event)">
+                                                        <iconify-icon :icon="isDragging ? 'solar:cloud-download-bold-duotone' : 'solar:cloud-upload-bold-duotone'"
+                                                            width="40" :class="isDragging ? 'text-primary' : 'text-gray-300'"></iconify-icon>
+                                                        <p class="text-sm font-medium mt-2" :class="isDragging ? 'text-primary' : 'text-gray-500 dark:text-gray-400'">
+                                                            <span x-text="isDragging ? 'Déposer ici' : 'Glissez vos fichiers ici'"></span>
+                                                        </p>
+                                                        <p class="text-[10px] text-gray-400 mt-1">ou cliquez pour parcourir</p>
+                                                    </div>
+                                                    <input type="file" x-ref="modalFileInput" multiple class="hidden"
+                                                        @change="handleModalFiles($event.target.files)"
+                                                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mp4,.webm,.mp3,.wav,.zip,.rar,.txt,.csv">
+                                                    <!-- Upload progress in modal -->
+                                                    <template x-if="uploading">
+                                                        <div class="flex items-center gap-2 mt-3 p-2 rounded-lg bg-primary/5">
+                                                            <iconify-icon icon="line-md:loading-twotone-loop" width="14" class="text-primary"></iconify-icon>
+                                                            <span class="text-xs text-primary font-medium">Upload en cours...</span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                                <!-- Modal Footer -->
+                                                <div class="flex items-center justify-between px-5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30">
+                                                    <span class="text-[10px] text-gray-400" x-text="attachments.length + ' fichier(s) joint(s)'"></span>
+                                                    <button type="button" @click="showUploadModal = false"
+                                                        class="btn btn-sm btn-primary text-[11px] px-4 py-1.5">
+                                                        Terminé
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </template>
 
-                                    <!-- ✨ SmartDoc (Mission 5) -->
+                                    <!-- Empty state -->
+                                    <div x-show="attachments.length === 0 && !uploading && !recordId" class="text-center px-3 py-2 border-t border-gray-50 dark:border-gray-700/20">
+                                        <span class="text-[9px] text-gray-400 italic">Aucune pièce jointe</span>
+                                    </div>
+                                </div>
+
+                            </div>
+                            </div><!-- end panel-sortable-item attachments -->
+                        <% } else if (sectionId==='smartdoc' && locals.entity && entity.enableAttachments) { %>
+                            <!-- ✨ SmartDoc (Standalone Panel) -->
+                            <div class="panel-sortable-item" data-panel-id="smartdoc">
+                                <template x-if="designMode">
+                                    <div class="panel-drag-handle">
+                                        <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
+                                        <span>SmartDoc</span>
+                                    </div>
+                                </template>
+                            <div class="panel !p-0 overflow-hidden" data-id="smartdoc"
+                                x-data='smartDocPanel({
+                                    recordId: "<%= locals.record && record._id ? record._id : '' %>",
+                                    accountNumber: "<%= account_number %>"
+                                })'>
+                                <!-- Header -->
+                                <div class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
+                                    @click="isOpen = !isOpen">
+                                    <div class="flex items-center gap-2">
+                                        <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="14" class="text-warning"></iconify-icon>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">SmartDoc</span>
+                                        <span x-show="smartDocTemplates.length > 0" class="text-[9px] bg-warning/10 text-warning w-4 h-4 rounded-full flex items-center justify-center font-bold" x-text="smartDocTemplates.length"></span>
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <button type="button" @click.stop="openSmartDocEditor()" class="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-warning hover:bg-warning/10 transition-all" title="Nouveau SmartDoc">
+                                            <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
+                                        </button>
+                                        <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="isOpen ? '' : '-rotate-90'" class="transition-transform text-gray-300"></iconify-icon>
+                                    </div>
+                                </div>
+
+                                <div x-show="isOpen" x-collapse>
                                     <template x-if="recordId">
-                                        <div class="px-3 py-2 border-t border-gray-100 dark:border-gray-700/30">
-                                            <div class="flex items-center justify-between mb-1.5">
-                                                <div class="flex items-center gap-1.5">
-                                                    <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="12" class="text-warning"></iconify-icon>
-                                                    <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">SmartDoc</span>
-                                                </div>
-                                                <button type="button" @click.stop="openSmartDocEditor()"
-                                                    class="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-warning hover:bg-warning/10 transition-all" title="Nouveau SmartDoc">
-                                                    <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
-                                                </button>
-                                            </div>
+                                        <div class="px-3 py-2">
                                             <template x-if="smartDocTemplates.length > 0">
                                                 <div class="space-y-0.5">
                                                     <template x-for="tpl in smartDocTemplates" :key="tpl._id">
                                                         <button type="button" @click="generateSmartDoc(tpl)" :disabled="generatingDocId === tpl._id"
-                                                            class="w-full flex items-start gap-2 px-2 py-1.5 rounded-lg text-left transition-all hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent group/sdoc border border-transparent hover:border-primary/10">
+                                                            class="w-full flex items-start gap-2 px-2 py-1.5 rounded-lg text-left transition-all hover:bg-gradient-to-r hover:from-warning/5 hover:to-transparent group/sdoc border border-transparent hover:border-warning/10">
                                                             <div class="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-transform group-hover/sdoc:scale-110 mt-0.5"
-                                                                :style="'background:' + (tpl.color || '#4361ee') + '20; color:' + (tpl.color || '#4361ee')">
+                                                                :style="'background:' + (tpl.color || '#e2a03f') + '20; color:' + (tpl.color || '#e2a03f')">
                                                                 <iconify-icon :icon="generatingDocId === tpl._id ? 'line-md:loading-twotone-loop' : (tpl.icon || 'solar:document-bold-duotone')" width="11"></iconify-icon>
                                                             </div>
                                                             <div class="flex-1 min-w-0">
                                                                 <span class="text-[10px] font-medium text-gray-600 dark:text-gray-300 leading-snug" x-text="tpl.name"></span>
                                                             </div>
-                                                            <iconify-icon icon="solar:alt-arrow-right-bold" width="10" class="text-gray-300 group-hover/sdoc:text-primary transition-colors shrink-0 mt-0.5"></iconify-icon>
+                                                            <iconify-icon icon="solar:alt-arrow-right-bold" width="10" class="text-gray-300 group-hover/sdoc:text-warning transition-colors shrink-0 mt-0.5"></iconify-icon>
                                                         </button>
                                                     </template>
                                                 </div>
                                             </template>
                                             <template x-if="smartDocTemplates.length === 0">
-                                                <div class="text-center py-1">
-                                                    <span class="text-[9px] text-gray-400 italic">Aucun template SmartDoc</span>
+                                                <div class="flex items-center justify-center py-3">
+                                                    <button type="button" @click.stop="openSmartDocEditor()"
+                                                        class="flex items-center gap-1.5 text-[10px] text-gray-400 hover:text-warning transition-colors">
+                                                        <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
+                                                        <span>Créer un template</span>
+                                                    </button>
                                                 </div>
                                             </template>
                                         </div>
                                     </template>
+                                    <template x-if="!recordId">
+                                        <div class="text-center px-3 py-2">
+                                            <span class="text-[9px] text-gray-400 italic">Enregistrez d'abord pour utiliser SmartDoc</span>
+                                        </div>
+                                    </template>
+                                </div>
 
                                     <!-- SmartDoc Input Modal -->
                                     <template x-if="showSmartDocModal">
                                         <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm" @click.self="showSmartDocModal = false">
                                             <div class="bg-white dark:bg-[#1b2e4b] rounded-xl shadow-2xl w-[380px] max-w-[90vw] overflow-hidden animate__animated animate__fadeInUp animate__faster">
-                                                <div class="px-5 py-4 border-b dark:border-gray-700 bg-gradient-to-r from-primary/5 to-transparent">
+                                                <div class="px-5 py-4 border-b dark:border-gray-700 bg-gradient-to-r from-warning/5 to-transparent">
                                                     <div class="flex items-center gap-3">
                                                         <div class="w-9 h-9 rounded-lg flex items-center justify-center"
-                                                            :style="'background:' + (smartDocModalTemplate?.color || '#4361ee') + '15; color:' + (smartDocModalTemplate?.color || '#4361ee')">
+                                                            :style="'background:' + (smartDocModalTemplate?.color || '#e2a03f') + '15; color:' + (smartDocModalTemplate?.color || '#e2a03f')">
                                                             <iconify-icon :icon="smartDocModalTemplate?.icon || 'solar:document-bold-duotone'" width="20"></iconify-icon>
                                                         </div>
                                                         <div>
@@ -567,74 +680,105 @@
                                     <template x-teleport="body">
                                         <div x-show="showSmartDocPreview" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
                                             x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                                            class="fixed inset-0 flex bg-black/50 backdrop-blur-sm" style="display:none; z-index: 99998;" @click.self="showSmartDocPreview = false">
+                                            class="fixed inset-0 flex bg-black/60 backdrop-blur-sm" style="display:none; z-index: 99998;">
                                             <div class="flex w-full h-full max-w-[95vw] max-h-[95vh] m-auto bg-white dark:bg-[#0e1726] rounded-2xl shadow-2xl overflow-hidden animate__animated animate__fadeInUp animate__faster">
-                                                <!-- Left: Document Preview -->
-                                                <div class="flex-1 flex flex-col min-w-0 border-r border-gray-200 dark:border-gray-700">
+                                                <!-- Left: Document Preview (A4) -->
+                                                <div class="flex-1 flex flex-col min-w-0">
                                                     <!-- Preview Header -->
-                                                    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1b2e4b]">
+                                                    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1b2e4b]">
                                                         <div class="flex items-center gap-3">
-                                                            <div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
-                                                                <iconify-icon icon="solar:document-bold-duotone" width="18" class="text-success"></iconify-icon>
+                                                            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-info/20 flex items-center justify-center">
+                                                                <iconify-icon icon="solar:document-bold-duotone" width="20" class="text-primary"></iconify-icon>
                                                             </div>
                                                             <div>
-                                                                <h3 class="text-sm font-bold text-gray-800 dark:text-white" x-text="previewOutputName || 'Aperçu du document'"></h3>
-                                                                <p class="text-[10px] text-gray-400">Document généré avec succès</p>
+                                                                <h3 class="text-[13px] font-bold text-gray-800 dark:text-white" x-text="previewOutputName || 'Aperçu du document'"></h3>
+                                                                <p class="text-[10px] text-gray-400 flex items-center gap-1">
+                                                                    <iconify-icon icon="solar:check-circle-bold" width="10" class="text-success"></iconify-icon>
+                                                                    Aperçu prêt — vérifiez le contenu avant de valider
+                                                                </p>
                                                             </div>
                                                         </div>
                                                         <div class="flex items-center gap-2">
+                                                            <button type="button" @click="cancelSmartDocPreview()"
+                                                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-500 hover:text-danger hover:bg-danger/5 border border-gray-200 dark:border-gray-600 transition-all">
+                                                                <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
+                                                                Annuler
+                                                            </button>
                                                             <a :href="previewAttachment?.url" target="_blank"
-                                                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
+                                                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600 transition-all">
                                                                 <iconify-icon icon="solar:download-minimalistic-bold" width="14"></iconify-icon>
                                                                 Télécharger
                                                             </a>
-                                                            <button type="button" @click="showSmartDocPreview = false"
+                                                            <button type="button" @click="confirmSmartDocPreview()"
                                                                 class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold bg-success text-white hover:bg-success/90 transition-all shadow-sm">
                                                                 <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
-                                                                Fermer
+                                                                Générer
                                                             </button>
                                                         </div>
                                                     </div>
-                                                    <!-- Preview iframe -->
-                                                    <div class="flex-1 overflow-hidden bg-gray-100 dark:bg-gray-900/50 p-4">
-                                                        <div class="w-full h-full bg-white rounded-lg shadow-lg overflow-hidden">
-                                                            <iframe id="smartdoc-preview-iframe" class="w-full h-full border-0" sandbox="allow-same-origin"></iframe>
+                                                    <!-- A4 Preview Area -->
+                                                    <div class="flex-1 overflow-auto" style="background: linear-gradient(135deg, #e8ecf1 0%, #dfe4ea 50%, #e2e6ec 100%);">
+                                                        <div class="flex justify-center py-6 px-4" style="min-height: 100%;">
+                                                            <div class="bg-white shadow-[0_4px_24px_rgba(0,0,0,0.12)] overflow-hidden relative" 
+                                                                style="width: 595px; min-height: 842px; border-radius: 2px;">
+                                                                <iframe id="smartdoc-preview-iframe-sd" class="w-full border-0 absolute inset-0" style="height: 100%; min-height: 842px;" sandbox="allow-same-origin"></iframe>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <!-- Right: Variables Sidebar -->
-                                                <div class="w-[320px] shrink-0 flex flex-col bg-gray-50/50 dark:bg-[#0e1726]">
-                                                    <!-- Sidebar Header -->
-                                                    <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-[#1b2e4b]">
-                                                        <div class="flex items-center gap-2">
-                                                            <iconify-icon icon="solar:tuning-2-bold-duotone" width="16" class="text-primary"></iconify-icon>
-                                                            <span class="text-xs font-bold text-gray-700 dark:text-gray-200">Variables utilisées</span>
-                                                            <span class="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold" x-text="previewVariables.length"></span>
+                                                <div class="w-[340px] shrink-0 flex flex-col border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#0e1726]">
+                                                    <div class="px-4 py-3.5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1b2e4b]">
+                                                        <div class="flex items-center justify-between">
+                                                            <div class="flex items-center gap-2.5">
+                                                                <div class="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                                                                    <iconify-icon icon="solar:tuning-2-bold-duotone" width="15" class="text-primary"></iconify-icon>
+                                                                </div>
+                                                                <div>
+                                                                    <span class="text-xs font-bold text-gray-700 dark:text-gray-200">Variables</span>
+                                                                    <p class="text-[9px] text-gray-400">Données injectées</p>
+                                                                </div>
+                                                            </div>
+                                                            <span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold" x-text="previewVariables.length"></span>
                                                         </div>
                                                     </div>
-                                                    <!-- Variables List -->
-                                                    <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
+                                                    <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
                                                         <template x-if="previewVariables.length === 0">
-                                                            <div class="text-center py-8">
-                                                                <iconify-icon icon="solar:document-text-bold-duotone" width="32" class="text-gray-300 dark:text-gray-600"></iconify-icon>
-                                                                <p class="text-[11px] text-gray-400 mt-2">Aucune variable détectée</p>
+                                                            <div class="text-center py-12">
+                                                                <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                                                    <iconify-icon icon="solar:document-text-bold-duotone" width="24" class="text-gray-300 dark:text-gray-600"></iconify-icon>
+                                                                </div>
+                                                                <p class="text-[11px] text-gray-400 font-medium">Aucune variable détectée</p>
+                                                                <p class="text-[9px] text-gray-300 mt-1">Le template n'utilise pas de tokens</p>
                                                             </div>
                                                         </template>
                                                         <template x-for="group in groupedPreviewVariables()" :key="group.name">
-                                                            <div>
-                                                                <div class="flex items-center gap-1.5 mb-1.5">
-                                                                    <iconify-icon :icon="getGroupIcon(group.name)" width="12" :class="getGroupColor(group.name)"></iconify-icon>
-                                                                    <span class="text-[9px] font-bold uppercase tracking-wider" :class="getGroupColor(group.name)" x-text="group.name"></span>
-                                                                    <span class="text-[8px] text-gray-400" x-text="'(' + group.items.length + ')'"></span>
+                                                            <div class="space-y-1.5">
+                                                                <div class="flex items-center gap-2 px-1">
+                                                                    <div class="w-5 h-5 rounded-md flex items-center justify-center" :class="getGroupBg(group.name)">
+                                                                        <iconify-icon :icon="getGroupIcon(group.name)" width="11" :class="getGroupColor(group.name)"></iconify-icon>
+                                                                    </div>
+                                                                    <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400" x-text="group.name"></span>
+                                                                    <div class="flex-1 h-px bg-gray-200 dark:bg-gray-700"></div>
+                                                                    <span class="text-[9px] font-medium text-gray-400" x-text="group.items.length"></span>
                                                                 </div>
                                                                 <div class="space-y-1">
                                                                     <template x-for="v in group.items" :key="v.path">
-                                                                        <div class="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-white dark:bg-[#1b2e4b] border border-gray-100 dark:border-gray-700/50 transition-all hover:border-primary/20">
-                                                                            <div class="flex-1 min-w-0">
-                                                                                <div class="text-[10px] font-semibold text-gray-600 dark:text-gray-300 truncate" x-text="v.label"></div>
-                                                                                <div class="text-[10px] text-gray-400 dark:text-gray-500 truncate font-mono" x-text="'{{' + v.path + '}}'"></div>
+                                                                        <div class="rounded-lg bg-white dark:bg-[#1b2e4b] border border-gray-100 dark:border-gray-700/50 transition-all hover:shadow-sm hover:border-primary/20 overflow-hidden">
+                                                                            <div class="px-3 py-2">
+                                                                                <div class="flex items-center justify-between gap-2 mb-1">
+                                                                                    <span class="text-[10px] font-semibold text-gray-700 dark:text-gray-200 truncate" x-text="v.label"></span>
+                                                                                    <iconify-icon icon="solar:copy-linear" width="10" class="text-gray-300 hover:text-primary cursor-pointer transition-colors shrink-0" 
+                                                                                        @click="navigator.clipboard.writeText('{{' + v.path + '}}'); $el.setAttribute('icon','solar:check-circle-bold'); setTimeout(() => $el.setAttribute('icon','solar:copy-linear'), 1500)" title="Copier"></iconify-icon>
+                                                                                </div>
+                                                                                <div class="flex items-center gap-2">
+                                                                                    <code class="text-[8px] text-gray-400 dark:text-gray-500 font-mono bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 rounded" x-text="v.path"></code>
+                                                                                    <iconify-icon icon="solar:arrow-right-linear" width="8" class="text-gray-300 shrink-0"></iconify-icon>
+                                                                                    <span class="text-[10px] font-medium truncate" 
+                                                                                        :class="v.value && v.value !== '—' ? 'text-success dark:text-green-400' : 'text-gray-300 italic'"
+                                                                                        :title="v.value" x-text="v.value && v.value !== '—' ? v.value : 'vide'"></span>
+                                                                                </div>
                                                                             </div>
-                                                                            <div class="text-[10px] font-medium text-gray-800 dark:text-gray-200 text-right max-w-[120px] truncate" :title="v.value" x-text="v.value || '—'"></div>
                                                                         </div>
                                                                     </template>
                                                                 </div>
@@ -646,47 +790,116 @@
                                         </div>
                                     </template>
 
-                                    <!-- Empty state -->
-                                    <div x-show="attachments.length === 0 && !uploading && !recordId" class="text-center px-3 py-2 border-t border-gray-50 dark:border-gray-700/20">
-                                        <span class="text-[9px] text-gray-400 italic">Aucune pièce jointe</span>
-                                    </div>
-                                </div>
-
-                                <!-- ✨ SmartDoc Editor Modal (Full-screen React Island) -->
-                                <template x-teleport="body">
-                                    <div x-show="showSmartDocEditor" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                                        x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                                        class="fixed inset-0 flex flex-col bg-white dark:bg-[#0e1726]" style="display:none; z-index: 99999;">
-                                        <!-- Header -->
-                                        <div class="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1b2e4b]" style="min-height: 48px;">
-                                            <div class="flex items-center gap-3">
-                                                <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="18" class="text-warning"></iconify-icon>
-                                                <span class="text-sm font-bold text-gray-700 dark:text-gray-200">Nouveau SmartDoc</span>
-                                                <span class="text-[10px] text-gray-400">— lié à <strong><%= locals.entity ? entity.name : '' %></strong></span>
+                                    <!-- ✨ SmartDoc Editor Modal (Full-screen React Island) -->
+                                    <template x-teleport="body">
+                                        <div x-show="showSmartDocEditor" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                                            x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                                            class="fixed inset-0 flex flex-col bg-white dark:bg-[#0e1726]" style="display:none; z-index: 99999;">
+                                            <div class="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1b2e4b]" style="min-height: 48px;">
+                                                <div class="flex items-center gap-3">
+                                                    <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="18" class="text-warning"></iconify-icon>
+                                                    <span class="text-sm font-bold text-gray-700 dark:text-gray-200">Nouveau SmartDoc</span>
+                                                    <span class="text-[10px] text-gray-400">— lié à <strong><%= locals.entity ? entity.name : '' %></strong></span>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <span x-show="smartDocTitleError" x-transition
+                                                        class="text-[11px] text-danger font-medium flex items-center gap-1" style="display:none;">
+                                                        <iconify-icon icon="solar:danger-triangle-bold" width="14"></iconify-icon>
+                                                        <span x-text="smartDocTitleError"></span>
+                                                    </span>
+                                                    <button type="button" @click="finishSmartDocEditor()"
+                                                        class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold bg-success text-white hover:bg-success/90 transition-all shadow-sm">
+                                                        <iconify-icon icon="solar:check-circle-bold" width="16"></iconify-icon>
+                                                        Terminer
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div class="flex items-center gap-2">
-                                                <!-- Title validation error -->
-                                                <span x-show="smartDocTitleError" x-transition
-                                                    class="text-[11px] text-danger font-medium flex items-center gap-1" style="display:none;">
-                                                    <iconify-icon icon="solar:danger-triangle-bold" width="14"></iconify-icon>
-                                                    <span x-text="smartDocTitleError"></span>
-                                                </span>
-                                                <!-- Terminer button -->
-                                                <button type="button" @click="finishSmartDocEditor()"
-                                                    class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold bg-success text-white hover:bg-success/90 transition-all shadow-sm">
-                                                    <iconify-icon icon="solar:check-circle-bold" width="16"></iconify-icon>
-                                                    Terminer
-                                                </button>
+                                            <div class="flex-1 overflow-hidden">
+                                                <div id="smartdoc-editor-mount-sd" class="h-full"></div>
                                             </div>
                                         </div>
-                                        <!-- React Editor Mount Point -->
-                                        <div class="flex-1 overflow-hidden">
-                                            <div id="smartdoc-editor-mount" class="h-full"></div>
-                                        </div>
-                                    </div>
-                                </template>
+                                    </template>
 
                             </div>
+                            </div><!-- end panel-sortable-item smartdoc -->
+
+                        <% } else if (sectionId==='relations') { %>
+                            <!-- 👤 Relations / Patient (Sidebar Panel) -->
+                            <% (entity.relations || []).forEach(function(rel) { %>
+                                <% const relRecords = locals.relatedRecordsData && locals.relatedRecordsData[rel.key]; %>
+                                <% if (relRecords && relRecords.length > 0) { %>
+                                    <% relRecords.forEach(function(relRec) { %>
+                                        <% const relIcon = (rel.targetEntity && rel.targetEntity.icon) || 'solar:user-bold-duotone'; %>
+                                        <% const relColor = (rel.targetEntity && rel.targetEntity.color) || '#4361ee'; %>
+                                        <% const relEntityName = (rel.targetEntity && rel.targetEntity.name) || rel.label || 'Relation'; %>
+                                        <% const relEntitySlug = (rel.targetEntity && rel.targetEntity.slug) || ''; %>
+                                        <div class="panel-sortable-item" data-panel-id="relation-<%= rel.key %>">
+                                            <template x-if="designMode">
+                                                <div class="panel-drag-handle">
+                                                    <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
+                                                    <span><%= rel.label || relEntityName %></span>
+                                                </div>
+                                            </template>
+                                        <div class="panel !p-0 overflow-hidden" x-data="{ open: true }">
+                                            <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-700/30">
+                                                <div class="flex items-center gap-2 cursor-pointer flex-1" @click="open = !open">
+                                                    <div class="w-6 h-6 rounded-lg flex items-center justify-center flex-none" style="background: <%= relColor %>15;">
+                                                        <iconify-icon icon="<%= relIcon %>" width="12" style="color: <%= relColor %>"></iconify-icon>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500"><%= rel.label || relEntityName %></span>
+                                                        <div class="text-[12px] font-semibold text-gray-700 dark:text-gray-200 -mt-0.5 truncate"><%= relRec.title || 'Sans titre' %></div>
+                                                    </div>
+                                                </div>
+                                                <div class="flex items-center gap-1 flex-none">
+                                                    <% if (relEntitySlug) { %>
+                                                        <a href="/account/<%= account_number %>/record/<%= relEntitySlug %>/edit/<%= relRec._id %>"
+                                                            class="flex items-center justify-center w-5 h-5 rounded-md text-gray-400 hover:text-primary hover:bg-primary/5 transition-all"
+                                                            title="Ouvrir" target="_blank">
+                                                            <iconify-icon icon="solar:arrow-right-up-linear" width="12"></iconify-icon>
+                                                        </a>
+                                                    <% } %>
+                                                    <button type="button" @click="open = !open"
+                                                        class="flex items-center justify-center w-5 h-5 rounded-md text-gray-400 hover:text-gray-600 transition-all">
+                                                        <iconify-icon :icon="open ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'" width="12"></iconify-icon>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div x-show="open" x-collapse class="px-3 py-2">
+                                                <div class="grid grid-cols-1 gap-y-2">
+                                                    <% if (relRec.slug) { %>
+                                                        <div>
+                                                            <div class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5">Identifiant</div>
+                                                            <div class="text-xs text-gray-700 dark:text-gray-300"><%= relRec.slug %></div>
+                                                        </div>
+                                                    <% } %>
+                                                    <% if (relRec.date) { %>
+                                                        <div>
+                                                            <div class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5">Date</div>
+                                                            <div class="text-xs text-gray-700 dark:text-gray-300"><%= new Date(relRec.date).toLocaleDateString('fr-FR') %></div>
+                                                        </div>
+                                                    <% } %>
+                                                    <% (relRec.customFields || []).forEach(function(cf) { %>
+                                                        <% if (cf.value && cf.field_id && cf.field_id.label) { %>
+                                                            <div>
+                                                                <div class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5"><%= cf.field_id.label %></div>
+                                                                <div class="text-xs text-gray-700 dark:text-gray-300 line-clamp-2">
+                                                                    <% if (typeof cf.value === 'object' && cf.value !== null) { %>
+                                                                        <%= JSON.stringify(cf.value) %>
+                                                                    <% } else { %>
+                                                                        <%= String(cf.value).substring(0, 80) %><%= String(cf.value).length > 80 ? '...' : '' %>
+                                                                    <% } %>
+                                                                </div>
+                                                            </div>
+                                                        <% } %>
+                                                    <% }) %>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        </div><!-- end panel-sortable-item relation -->
+                                    <% }) %>
+                                <% } %>
+                            <% }) %>
                         <% } %>
                     <% }); %>
     </div>
@@ -989,245 +1202,36 @@
                 isOpen: config.initialOpen !== false,
                 isDragging: false,
                 uploading: false,
-
-                // SmartDoc state
-                smartDocTemplates: [],
-                generatingDocId: null,
-                showSmartDocModal: false,
-                smartDocModalTemplate: null,
-                smartDocModalInputs: {},
-                showSmartDocEditor: false,
-                smartDocTitleError: '',
-
-                // SmartDoc Preview state
-                showSmartDocPreview: false,
-                previewHtml: '',
-                previewVariables: [],
-                previewAttachment: null,
-                previewOutputName: '',
+                showUploadModal: false,
 
                 init() {
-                    if (this.recordId) {
-                        this.loadSmartDocTemplates();
-                    }
+                    // Listen for SmartDoc-generated attachments
+                    window.addEventListener('smartdoc-attachment-created', (e) => {
+                        if (e.detail && e.detail.attachment) {
+                            this.attachments.push(e.detail.attachment);
+                        }
+                    });
                 },
 
-                async loadSmartDocTemplates() {
-                    try {
-                        const entityId = '<%= locals.entity ? entity._id : "" %>';
-                        if (!entityId) return;
-                        const res = await fetch(`/account/${this.accountNumber}/api/smartdoc/templates/${entityId}`, {
-                            credentials: 'include'
-                        });
-                        const data = await res.json();
-                        if (data.success && data.templates) {
-                            this.smartDocTemplates = data.templates;
-                        }
-                    } catch (e) { console.error('[SmartDoc] Load templates error:', e); }
-                },
 
-                generateSmartDoc(tpl) {
-                    // If template has input fields → show modal
-                    if (tpl.inputFields && tpl.inputFields.length > 0) {
-                        this.smartDocModalTemplate = tpl;
-                        this.smartDocModalInputs = {};
-                        // Pre-fill defaults
-                        for (const field of tpl.inputFields) {
-                            if (field.defaultValue !== undefined && field.defaultValue !== null) {
-                                this.smartDocModalInputs[field.key] = field.defaultValue;
-                            } else {
-                                this.smartDocModalInputs[field.key] = '';
-                            }
-                        }
-                        this.showSmartDocModal = true;
-                    } else {
-                        // No inputs needed → generate directly
-                        this._executeGeneration(tpl._id, {});
-                    }
-                },
 
-                confirmSmartDocGeneration() {
-                    if (!this.smartDocModalTemplate) return;
-                    // Validate required fields
-                    const missing = [];
-                    for (const field of this.smartDocModalTemplate.inputFields || []) {
-                        if (field.required && !this.smartDocModalInputs[field.key]) {
-                            missing.push(field.label);
-                        }
-                    }
-                    if (missing.length > 0) {
-                        alert('Veuillez remplir : ' + missing.join(', '));
-                        return;
-                    }
-                    this._executeGeneration(
-                        this.smartDocModalTemplate._id,
-                        { ...this.smartDocModalInputs }
-                    );
-                    this.showSmartDocModal = false;
-                },
 
-                async _executeGeneration(templateId, inputs) {
-                    this.generatingDocId = templateId;
-                    try {
-                        const res = await fetch(`/account/${this.accountNumber}/api/smartdoc/generate/${templateId}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify({
-                                recordId: this.recordId,
-                                inputs
-                            })
-                        });
-                        const data = await res.json();
-                        if (data.success && data.attachment) {
-                            // Add to the attachments list
-                            this.attachments.push(data.attachment);
 
-                            // Show preview modal
-                            this.previewAttachment = data.attachment;
-                            this.previewVariables = data.usedVariables || [];
-                            this.previewOutputName = data.outputName || data.attachment.originalName || 'Document';
-                            this.previewHtml = data.previewHtml || '';
-                            this.showSmartDocPreview = true;
-
-                            // Inject preview HTML into iframe
-                            this.$nextTick(() => {
-                                const iframe = document.getElementById('smartdoc-preview-iframe');
-                                if (iframe && this.previewHtml) {
-                                    const doc = iframe.contentDocument || iframe.contentWindow.document;
-                                    doc.open();
-                                    doc.write(this.previewHtml);
-                                    doc.close();
-                                }
-                            });
-
-                            if (window.showMessage) {
-                                window.showMessage('Document généré avec succès !', 'success');
-                            }
-                        } else {
-                            alert(data.error || 'Erreur lors de la génération');
-                        }
-                    } catch (e) {
-                        console.error('[SmartDoc] Generation error:', e);
-                        alert('Erreur lors de la génération du document');
-                    } finally {
-                        this.generatingDocId = null;
-                    }
-                },
-
-                async openSmartDocEditor() {
-                    const entityId = '<%= locals.entity ? entity._id : "" %>';
-                    if (!entityId) return;
-                    this.smartDocTitleError = '';
-
-                    try {
-                        // Create a new document linked to this entity as a template
-                        const res = await fetch(`/account/${this.accountNumber}/documents/api`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify({
-                                name: 'Nouveau SmartDoc',
-                                isTemplate: true,
-                                entityId: entityId,
-                                entityIds: [entityId],
-                                status: 'draft',
-                                pages: [{ content: '', elements: [], rows: [], mode: 'edition', background: '#ffffff', order: 0 }]
-                            })
-                        });
-                        const data = await res.json();
-                        if (!data.success || !data.document) {
-                            alert('Erreur lors de la création du document');
-                            return;
-                        }
-
-                        this.showSmartDocEditor = true;
-
-                        // Load the React editor in an iframe
-                        this.$nextTick(() => {
-                            const container = document.getElementById('smartdoc-editor-mount');
-                            if (!container) return;
-                            container.innerHTML = `<iframe src="/account/${this.accountNumber}/documents/${data.document._id}/edit-react?minimal=true" class="w-full h-full border-0" allow="clipboard-read; clipboard-write"></iframe>`;
-                        });
-                    } catch (e) {
-                        console.error('[SmartDoc] Error creating document:', e);
-                        alert('Erreur lors de la création du SmartDoc');
-                    }
-                },
-
-                finishSmartDocEditor() {
-                    this.smartDocTitleError = '';
-
-                    // Get the document title from the iframe
-                    const container = document.getElementById('smartdoc-editor-mount');
-                    const iframe = container?.querySelector('iframe');
-                    if (!iframe) return;
-
-                    try {
-                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                        // The title input in the React editor header
-                        const titleInput = iframeDoc.querySelector('input[type="text"]');
-                        const docTitle = titleInput ? titleInput.value.trim() : '';
-
-                        // Validate title
-                        const invalidTitles = ['', 'nouveau smartdoc', 'document sans titre'];
-                        if (invalidTitles.includes(docTitle.toLowerCase())) {
-                            this.smartDocTitleError = 'Veuillez saisir un titre pour le document';
-                            // Focus and highlight the title input in the iframe
-                            if (titleInput) {
-                                // Inject shake keyframe into iframe if not already present
-                                if (!iframeDoc.getElementById('smartdoc-shake-style')) {
-                                    const style = iframeDoc.createElement('style');
-                                    style.id = 'smartdoc-shake-style';
-                                    style.textContent = '@keyframes smartdoc-shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }';
-                                    iframeDoc.head.appendChild(style);
-                                }
-                                titleInput.focus();
-                                titleInput.style.border = '2px solid #e7515a';
-                                titleInput.style.borderRadius = '6px';
-                                titleInput.style.padding = '2px 8px';
-                                titleInput.style.animation = 'smartdoc-shake 0.4s ease-in-out';
-                                setTimeout(() => {
-                                    titleInput.style.border = '';
-                                    titleInput.style.borderRadius = '';
-                                    titleInput.style.padding = '';
-                                    titleInput.style.animation = '';
-                                }, 3000);
-                            }
-                            // Clear error after 5s
-                            setTimeout(() => { this.smartDocTitleError = ''; }, 5000);
-                            return;
-                        }
-
-                        // Trigger save in the iframe before closing (press a key event to trigger autosave)
-                        if (titleInput) {
-                            titleInput.dispatchEvent(new Event('input', { bubbles: true }));
-                        }
-
-                        // Wait a moment for autosave to complete, then close
-                        setTimeout(() => {
-                            if (container) container.innerHTML = '';
-                            this.showSmartDocEditor = false;
-                            this.smartDocTitleError = '';
-                            // Refresh templates list
-                            this.loadSmartDocTemplates();
-                            if (window.showMessage) {
-                                window.showMessage('SmartDoc "' + docTitle + '" créé avec succès !', 'success');
-                            }
-                        }, 1000);
-                    } catch (e) {
-                        console.error('[SmartDoc] Error checking title:', e);
-                        // If we can't access the iframe (should not happen with same-origin), just close
-                        if (container) container.innerHTML = '';
-                        this.showSmartDocEditor = false;
-                        this.loadSmartDocTemplates();
-                    }
-                },
 
                 handleDrop(e) {
                     this.isDragging = false;
                     const files = e.dataTransfer?.files;
                     if (files && files.length > 0) this.handleFiles(files);
+                },
+
+                handleModalDrop(e) {
+                    this.isDragging = false;
+                    const files = e.dataTransfer?.files;
+                    if (files && files.length > 0) this.handleFiles(files);
+                },
+
+                handleModalFiles(files) {
+                    this.handleFiles(files);
                 },
 
                 async handleFiles(files) {
@@ -1314,7 +1318,255 @@
                     return colors[cat] || colors.other;
                 },
 
-                // Preview modal helpers
+
+
+            }));
+
+            // ========== SMARTDOC PANEL (STANDALONE) ==========
+            Alpine.data('smartDocPanel', (config) => ({
+                recordId: config.recordId,
+                accountNumber: config.accountNumber,
+                isOpen: true,
+                smartDocTemplates: [],
+                generatingDocId: null,
+                showSmartDocModal: false,
+                smartDocModalTemplate: null,
+                smartDocModalInputs: {},
+                showSmartDocEditor: false,
+                smartDocTitleError: '',
+                showSmartDocPreview: false,
+                previewHtml: '',
+                previewVariables: [],
+                previewAttachment: null,
+                previewOutputName: '',
+
+                init() {
+                    if (this.recordId) {
+                        this.loadSmartDocTemplates();
+                    }
+                },
+
+                async loadSmartDocTemplates() {
+                    try {
+                        const entityId = '<%= locals.entity ? entity._id : "" %>';
+                        if (!entityId) return;
+                        const res = await fetch(`/account/${this.accountNumber}/api/smartdoc/templates/${entityId}`, {
+                            credentials: 'include'
+                        });
+                        const data = await res.json();
+                        if (data.success && data.templates) {
+                            this.smartDocTemplates = data.templates;
+                        }
+                    } catch (e) { console.error('[SmartDoc] Load templates error:', e); }
+                },
+
+                generateSmartDoc(tpl) {
+                    if (tpl.inputFields && tpl.inputFields.length > 0) {
+                        this.smartDocModalTemplate = tpl;
+                        this.smartDocModalInputs = {};
+                        for (const field of tpl.inputFields) {
+                            if (field.defaultValue !== undefined && field.defaultValue !== null) {
+                                this.smartDocModalInputs[field.key] = field.defaultValue;
+                            } else {
+                                this.smartDocModalInputs[field.key] = '';
+                            }
+                        }
+                        this.showSmartDocModal = true;
+                    } else {
+                        this._executeGeneration(tpl._id, {});
+                    }
+                },
+
+                confirmSmartDocGeneration() {
+                    if (!this.smartDocModalTemplate) return;
+                    const missing = [];
+                    for (const field of this.smartDocModalTemplate.inputFields || []) {
+                        if (field.required && !this.smartDocModalInputs[field.key]) {
+                            missing.push(field.label);
+                        }
+                    }
+                    if (missing.length > 0) {
+                        alert('Veuillez remplir : ' + missing.join(', '));
+                        return;
+                    }
+                    this._executeGeneration(
+                        this.smartDocModalTemplate._id,
+                        { ...this.smartDocModalInputs }
+                    );
+                    this.showSmartDocModal = false;
+                },
+
+                async _executeGeneration(templateId, inputs) {
+                    this.generatingDocId = templateId;
+                    try {
+                        const res = await fetch(`/account/${this.accountNumber}/api/smartdoc/generate/${templateId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                recordId: this.recordId,
+                                inputs
+                            })
+                        });
+                        const data = await res.json();
+                        if (data.success && data.attachment) {
+                            this.previewAttachment = data.attachment;
+                            this.previewVariables = data.usedVariables || [];
+                            this.previewOutputName = data.outputName || data.attachment.originalName || 'Document';
+                            this.previewHtml = data.previewHtml || '';
+                            this.showSmartDocPreview = true;
+
+                            this.$nextTick(() => {
+                                const iframe = document.getElementById('smartdoc-preview-iframe-sd');
+                                if (iframe && this.previewHtml) {
+                                    const doc = iframe.contentDocument || iframe.contentWindow.document;
+                                    doc.open();
+                                    doc.write(this.previewHtml);
+                                    doc.close();
+                                }
+                            });
+                        } else {
+                            alert(data.error || 'Erreur lors de la génération');
+                        }
+                    } catch (e) {
+                        console.error('[SmartDoc] Generation error:', e);
+                        alert('Erreur lors de la génération du document');
+                    } finally {
+                        this.generatingDocId = null;
+                    }
+                },
+
+                confirmSmartDocPreview() {
+                    if (this.previewAttachment) {
+                        // Dispatch event so attachmentPanel can pick it up
+                        window.dispatchEvent(new CustomEvent('smartdoc-attachment-created', {
+                            detail: { attachment: this.previewAttachment }
+                        }));
+                        if (window.showMessage) {
+                            window.showMessage('Document généré avec succès !', 'success');
+                        }
+                    }
+                    this.showSmartDocPreview = false;
+                    this.previewAttachment = null;
+                    this.previewHtml = '';
+                    this.previewVariables = [];
+                    this.previewOutputName = '';
+                },
+
+                async cancelSmartDocPreview() {
+                    if (this.previewAttachment && this.previewAttachment._id) {
+                        try {
+                            await fetch(`/account/${this.accountNumber}/api/records/${this.recordId}/attachments/${this.previewAttachment._id}`, {
+                                method: 'DELETE',
+                                credentials: 'include'
+                            });
+                        } catch (e) {
+                            console.error('[SmartDoc] Cancel delete error:', e);
+                        }
+                    }
+                    this.showSmartDocPreview = false;
+                    this.previewAttachment = null;
+                    this.previewHtml = '';
+                    this.previewVariables = [];
+                    this.previewOutputName = '';
+                },
+
+                async openSmartDocEditor() {
+                    const entityId = '<%= locals.entity ? entity._id : "" %>';
+                    if (!entityId) return;
+                    this.smartDocTitleError = '';
+
+                    try {
+                        const res = await fetch(`/account/${this.accountNumber}/documents/api`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                name: 'Nouveau SmartDoc',
+                                isTemplate: true,
+                                entityId: entityId,
+                                entityIds: [entityId],
+                                status: 'draft',
+                                pages: [{ content: '', elements: [], rows: [], mode: 'edition', background: '#ffffff', order: 0 }]
+                            })
+                        });
+                        const data = await res.json();
+                        if (!data.success || !data.document) {
+                            alert('Erreur lors de la création du document');
+                            return;
+                        }
+
+                        this.showSmartDocEditor = true;
+
+                        this.$nextTick(() => {
+                            const container = document.getElementById('smartdoc-editor-mount-sd');
+                            if (!container) return;
+                            container.innerHTML = `<iframe src="/account/${this.accountNumber}/documents/${data.document._id}/edit-react?minimal=true" class="w-full h-full border-0" allow="clipboard-read; clipboard-write"></iframe>`;
+                        });
+                    } catch (e) {
+                        console.error('[SmartDoc] Error creating document:', e);
+                        alert('Erreur lors de la création du SmartDoc');
+                    }
+                },
+
+                finishSmartDocEditor() {
+                    this.smartDocTitleError = '';
+                    const container = document.getElementById('smartdoc-editor-mount-sd');
+                    const iframe = container?.querySelector('iframe');
+                    if (!iframe) return;
+
+                    try {
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        const titleInput = iframeDoc.querySelector('input[type="text"]');
+                        const docTitle = titleInput ? titleInput.value.trim() : '';
+
+                        const invalidTitles = ['', 'nouveau smartdoc', 'document sans titre'];
+                        if (invalidTitles.includes(docTitle.toLowerCase())) {
+                            this.smartDocTitleError = 'Veuillez saisir un titre pour le document';
+                            if (titleInput) {
+                                if (!iframeDoc.getElementById('smartdoc-shake-style')) {
+                                    const style = iframeDoc.createElement('style');
+                                    style.id = 'smartdoc-shake-style';
+                                    style.textContent = '@keyframes smartdoc-shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }';
+                                    iframeDoc.head.appendChild(style);
+                                }
+                                titleInput.focus();
+                                titleInput.style.border = '2px solid #e7515a';
+                                titleInput.style.borderRadius = '6px';
+                                titleInput.style.padding = '2px 8px';
+                                titleInput.style.animation = 'smartdoc-shake 0.4s ease-in-out';
+                                setTimeout(() => {
+                                    titleInput.style.border = '';
+                                    titleInput.style.borderRadius = '';
+                                    titleInput.style.padding = '';
+                                    titleInput.style.animation = '';
+                                }, 3000);
+                            }
+                            setTimeout(() => { this.smartDocTitleError = ''; }, 5000);
+                            return;
+                        }
+
+                        if (titleInput) {
+                            titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+
+                        setTimeout(() => {
+                            if (container) container.innerHTML = '';
+                            this.showSmartDocEditor = false;
+                            this.smartDocTitleError = '';
+                            this.loadSmartDocTemplates();
+                            if (window.showMessage) {
+                                window.showMessage('SmartDoc "' + docTitle + '" créé avec succès !', 'success');
+                            }
+                        }, 1000);
+                    } catch (e) {
+                        console.error('[SmartDoc] Error checking title:', e);
+                        if (container) container.innerHTML = '';
+                        this.showSmartDocEditor = false;
+                        this.loadSmartDocTemplates();
+                    }
+                },
+
                 groupedPreviewVariables() {
                     const groups = {};
                     for (const v of this.previewVariables) {
@@ -1349,6 +1601,19 @@
                         'Autre': 'text-gray-400'
                     };
                     return colors[group] || colors['Autre'];
+                },
+
+                getGroupBg(group) {
+                    const bgs = {
+                        'Utilisateur': 'bg-info/10',
+                        'Système': 'bg-secondary/10',
+                        'Classification': 'bg-warning/10',
+                        'Relation': 'bg-success/10',
+                        'Saisie': 'bg-primary/10',
+                        'Champ': 'bg-gray-100 dark:bg-gray-700',
+                        'Autre': 'bg-gray-100 dark:bg-gray-700'
+                    };
+                    return bgs[group] || bgs['Autre'];
                 }
             }));
         });

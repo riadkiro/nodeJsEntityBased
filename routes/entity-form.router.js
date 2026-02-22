@@ -12,6 +12,7 @@ router.post("/api/save", ctrl.saveForm_Api);
 router.post("/api/update/:formId", ctrl.updateForm_Api);
 router.post("/api/publish/:formId", ctrl.publishForm_Api);
 router.post("/api/set-default/:formId", ctrl.setDefault_Api);
+router.post("/api/auto-create", ctrl.autoCreateForm_Api);
 router.delete("/api/:formId", ctrl.deleteForm_Api);
 
 module.exports = router;

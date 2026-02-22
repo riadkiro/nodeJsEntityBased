@@ -304,5 +304,159 @@ module.exports = {
             console.error("❌ Error setting default form:", err);
             res.status(500).json({ error: err.message });
         }
+    },
+
+    /**
+     * Auto-create a form from entity fields (used by design mode on record-edit)
+     * POST /entity/:entityId/forms/api/auto-create
+     */
+    autoCreateForm_Api: async (req, res) => {
+        try {
+            const Entity = await tenantCollection(req, "Entity");
+            const EntityForm = await tenantCollection(req, "EntityForm");
+            const FieldTemplate = await tenantCollection(req, "FieldTemplate");
+
+            const entity = await Entity.findById(req.params.entityId)
+                .populate('customFields')
+                .populate('classifications')
+                .populate('relations.targetEntity');
+
+            if (!entity) {
+                return res.status(404).json({ error: "Entity not found" });
+            }
+
+            // Check if a form already exists
+            const existingForm = await EntityForm.findOne({ entityId: entity._id, status: 'published' });
+            if (existingForm) {
+                return res.json({ success: true, form: existingForm, existing: true });
+            }
+
+            // Build rows/columns from entity fields
+            const rows = [];
+            let currentRowFields = [];
+
+            // Helper: flush current row fields into a row
+            const flushRow = () => {
+                if (currentRowFields.length === 0) return;
+                const totalWidth = currentRowFields.reduce((sum, f) => sum + f.width, 0);
+                // If total width exceeds 12, split into multiple rows
+                if (totalWidth <= 12) {
+                    rows.push({
+                        columns: currentRowFields.map(f => ({
+                            width: f.width,
+                            fields: [{ id: f.id, fieldId: f.fieldId, type: f.type, label: f.label }]
+                        }))
+                    });
+                } else {
+                    // Split evenly
+                    currentRowFields.forEach(f => {
+                        rows.push({
+                            columns: [{ width: 12, fields: [{ id: f.id, fieldId: f.fieldId, type: f.type, label: f.label }] }]
+                        });
+                    });
+                }
+                currentRowFields = [];
+            };
+
+            // Add standard "enabled" fields
+            const standardFields = [];
+            const enabled = entity.enabledStandardFields || [];
+            if (enabled.includes('description')) {
+                standardFields.push({ id: `std_description`, fieldId: 'description', type: 'standard', label: 'Description', width: 12 });
+            }
+            if (enabled.includes('date')) {
+                standardFields.push({ id: `std_date`, fieldId: 'date', type: 'standard', label: 'Date', width: 6 });
+            }
+            if (enabled.includes('slug')) {
+                standardFields.push({ id: `std_slug`, fieldId: 'slug', type: 'standard', label: 'Slug', width: 6 });
+            }
+
+            // Add custom fields with smart widths
+            const customFieldItems = (entity.customFields || []).map((cf, idx) => {
+                const cfType = cf.type || 'string';
+                const cfSubtype = cf.subtype || '';
+                let width = 6;
+                if (['textarea', 'richtext'].includes(cfType) || ['textarea', 'richtext'].includes(cfSubtype)) {
+                    width = 12;
+                }
+                return {
+                    id: `cf_${cf._id.toString()}`,
+                    fieldId: cf._id.toString(),
+                    type: 'custom',
+                    label: cf.label || cf.name || 'Champ',
+                    width
+                };
+            });
+
+            // Add relation fields
+            const relationItems = (entity.relations || []).map(r => ({
+                id: `rel_${r.key}`,
+                fieldId: r.key,
+                type: 'relation',
+                label: r.label || (r.targetEntity && r.targetEntity.name) || 'Relation',
+                width: 6
+            }));
+
+            // Add classification fields
+            const classificationItems = (entity.classifications || []).map(c => {
+                const cls = typeof c === 'object' ? c : null;
+                if (!cls) return null;
+                return {
+                    id: `cls_${cls._id.toString()}`,
+                    fieldId: cls._id.toString(),
+                    type: 'classification',
+                    label: cls.name || 'Classification',
+                    width: 6
+                };
+            }).filter(Boolean);
+
+            // Combine all and build rows (pair fields into 2-column rows)
+            const allFields = [...standardFields, ...customFieldItems, ...relationItems, ...classificationItems];
+
+            for (let i = 0; i < allFields.length; i++) {
+                const field = allFields[i];
+                if (field.width >= 12) {
+                    flushRow();
+                    rows.push({
+                        columns: [{ width: 12, fields: [{ id: field.id, fieldId: field.fieldId, type: field.type, label: field.label }] }]
+                    });
+                } else {
+                    currentRowFields.push(field);
+                    if (currentRowFields.reduce((s, f) => s + f.width, 0) >= 12) {
+                        flushRow();
+                    }
+                }
+            }
+            flushRow();
+
+            const layout = {
+                version: 1,
+                rows,
+                settings: { showRightSidebar: true }
+            };
+
+            // Create the form
+            const count = await EntityForm.countDocuments({ entityId: entity._id });
+            const form = new EntityForm({
+                entityId: entity._id,
+                name: 'Formulaire principal',
+                layout,
+                status: 'published',
+                isDefault: true,
+                order: 0
+            });
+
+            // Remove default from other forms
+            if (count > 0) {
+                await EntityForm.updateMany({ entityId: entity._id }, { isDefault: false });
+            }
+
+            await form.save();
+            console.log("✅ Auto-created form:", form._id, "with", rows.length, "rows");
+            res.json({ success: true, form, created: true });
+        } catch (err) {
+            console.error("❌ Error auto-creating form:", err);
+            res.status(500).json({ error: err.message });
+        }
     }
 };

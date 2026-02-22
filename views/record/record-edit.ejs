@@ -92,9 +92,29 @@
             </div>
         </div>
 
-        <div class="flex flex-col lg:flex-row gap-4">
-            <!-- Main Form Content -->
-            <div class="flex-1 space-y-4">
+        <div class="record-layout-container" x-data="panelLayout()" id="panels-container"
+            :style="'grid-template-columns: repeat(12, 1fr)'">
+            
+            <!-- ═══ Main Form Content (Column 0) ═══ -->
+            <div class="record-layout-col relative" 
+                :style="'grid-column: span ' + columns[0].width"
+                id="panels-main-zone">
+
+                <!-- Resize Handle on right edge -->
+                <div class="record-layout-resize-handle"
+                    @mousedown.prevent="startResize(0, $event)">
+                    <iconify-icon icon="solar:alt-arrow-left-bold" width="10"></iconify-icon>
+                    <iconify-icon icon="solar:alt-arrow-right-bold" width="10" style="margin-left: -3px;"></iconify-icon>
+                </div>
+
+                <div class="space-y-4">
+                <div class="panel-sortable-item" data-panel-id="attributs">
+                    <template x-if="designMode">
+                        <div class="panel-drag-handle">
+                            <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
+                            <span>Attributs</span>
+                        </div>
+                    </template>
                 <div class="panel">
                     <div class="space-y-8">
 
@@ -635,84 +655,76 @@
                     </div>
                 </div>
 
-                <!-- ═══════════════ RELATION DATA PANELS (Mission 3) ═══════════════ -->
-                <% (entity.relations || []).forEach(function(rel) { %>
-                    <% const relRecords = locals.relatedRecordsData && locals.relatedRecordsData[rel.key]; %>
-                    <% if (relRecords && relRecords.length > 0) { %>
-                        <% relRecords.forEach(function(relRec) { %>
-                            <% const relIcon = (rel.targetEntity && rel.targetEntity.icon) || 'solar:user-bold-duotone'; %>
-                            <% const relColor = (rel.targetEntity && rel.targetEntity.color) || '#4361ee'; %>
-                            <% const relEntityName = (rel.targetEntity && rel.targetEntity.name) || rel.label || 'Relation'; %>
-                            <% const relEntitySlug = (rel.targetEntity && rel.targetEntity.slug) || ''; %>
-                            <div class="panel !p-0 overflow-hidden" x-data="{ open: true }">
-                                <div class="flex items-center justify-between px-4 py-2.5 border-b border-gray-50 dark:border-gray-700/30">
-                                    <div class="flex items-center gap-2.5 cursor-pointer flex-1" @click="open = !open">
-                                        <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-none" style="background: <%= relColor %>15;">
-                                            <iconify-icon icon="<%= relIcon %>" width="14" style="color: <%= relColor %>"></iconify-icon>
-                                        </div>
-                                        <div class="min-w-0">
-                                            <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500"><%= rel.label || relEntityName %></span>
-                                            <div class="text-[13px] font-semibold text-gray-700 dark:text-gray-200 -mt-0.5 truncate"><%= relRec.title || 'Sans titre' %></div>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-1.5 flex-none">
-                                        <% if (relEntitySlug) { %>
-                                            <a href="/account/<%= account_number %>/record/<%= relEntitySlug %>/edit/<%= relRec._id %>"
-                                                class="flex items-center justify-center w-6 h-6 rounded-md text-gray-400 hover:text-primary hover:bg-primary/5 transition-all"
-                                                title="Ouvrir dans un nouvel onglet" target="_blank">
-                                                <iconify-icon icon="solar:arrow-right-up-linear" width="13"></iconify-icon>
-                                            </a>
-                                        <% } %>
-                                        <button type="button" @click="open = !open"
-                                            class="flex items-center justify-center w-6 h-6 rounded-md text-gray-400 hover:text-gray-600 transition-all">
-                                            <iconify-icon :icon="open ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'" width="14"></iconify-icon>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div x-show="open" x-collapse class="px-4 py-3">
-                                    <div class="grid grid-cols-2 gap-x-6 gap-y-2.5">
-                                        <% if (relRec.slug) { %>
-                                            <div>
-                                                <div class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5">Identifiant</div>
-                                                <div class="text-xs text-gray-700 dark:text-gray-300"><%= relRec.slug %></div>
-                                            </div>
-                                        <% } %>
-                                        <% if (relRec.date) { %>
-                                            <div>
-                                                <div class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5">Date</div>
-                                                <div class="text-xs text-gray-700 dark:text-gray-300"><%= new Date(relRec.date).toLocaleDateString('fr-FR') %></div>
-                                            </div>
-                                        <% } %>
-                                        <% (relRec.customFields || []).forEach(function(cf) { %>
-                                            <% if (cf.value && cf.field_id && cf.field_id.label) { %>
-                                                <div>
-                                                    <div class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5"><%= cf.field_id.label %></div>
-                                                    <div class="text-xs text-gray-700 dark:text-gray-300 line-clamp-2">
-                                                        <% if (typeof cf.value === 'object' && cf.value !== null) { %>
-                                                            <%= JSON.stringify(cf.value) %>
-                                                        <% } else { %>
-                                                            <%= String(cf.value).substring(0, 120) %><%= String(cf.value).length > 120 ? '...' : '' %>
-                                                        <% } %>
-                                                    </div>
-                                                </div>
-                                            <% } %>
-                                        <% }) %>
-                                    </div>
-                                </div>
-                            </div>
-                        <% }) %>
-                    <% } %>
-                <% }) %>
+                </div><!-- end panel-sortable-item attributs -->
 
-            </div>
+
+            </div><!-- end space-y-4 -->
+            </div><!-- end record-layout-col main -->
 
             <% const _showRightSidebar = !(locals.entityFormLayout && locals.entityFormLayout.settings && locals.entityFormLayout.settings.showRightSidebar === false); %>
             <% if (_showRightSidebar) { %>
-            <!-- Sidebar Content -->
-            <div class="flex-none space-y-3 overflow-hidden" style="width: 260px; min-width: 260px; max-width: 260px;">
-                <%- include('partials/record-sidebar') %>
+            <!-- ═══ Sidebar Content (Column 1) ═══ -->
+            <div class="record-layout-col relative"
+                :style="'grid-column: span ' + columns[1].width"
+                id="panels-sidebar-zone">
+
+                <!-- Resize Handle on right edge (creates new column when resized) -->
+                <div class="record-layout-resize-handle"
+                    @mousedown.prevent="startResize(1, $event)">
+                    <iconify-icon icon="solar:alt-arrow-left-bold" width="10"></iconify-icon>
+                    <iconify-icon icon="solar:alt-arrow-right-bold" width="10" style="margin-left: -3px;"></iconify-icon>
+                </div>
+
+                <div class="space-y-3" id="sidebar-main-sortable">
+                <div class="panel-sortable-item" data-panel-id="sidebar-content">
+                    <template x-if="designMode">
+                        <div class="panel-drag-handle">
+                            <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
+                            <span>Sidebar</span>
+                        </div>
+                    </template>
+                    <%- include('partials/record-sidebar') %>
+                </div>
+                </div>
             </div>
             <% } %>
+
+            <!-- ═══ Dynamic Extra Columns (created by resizing last column) ═══ -->
+            <template x-for="(col, idx) in extraColumns" :key="col.id">
+                <div class="record-layout-col relative"
+                    :class="{ 'record-layout-col--empty': !col.panels || col.panels.length === 0 }"
+                    :style="'grid-column: span ' + col.width"
+                    :id="'panels-extra-zone-' + idx"
+                    x-init="$nextTick(() => initExtraColSortable(idx))">
+
+                    <!-- Resize Handle -->
+                    <div class="record-layout-resize-handle"
+                        @mousedown.prevent="startResize(2 + idx, $event)">
+                        <iconify-icon icon="solar:alt-arrow-left-bold" width="10"></iconify-icon>
+                        <iconify-icon icon="solar:alt-arrow-right-bold" width="10" style="margin-left: -3px;"></iconify-icon>
+                    </div>
+
+                    <!-- Sortable drop zone for panels -->
+                    <div class="space-y-3 extra-col-sortable" :id="'extra-col-sortable-' + idx"
+                        style="min-height: 80px;">
+                        <!-- Panels dropped here will appear -->
+                    </div>
+
+                    <!-- Empty state placeholder (shown when no panels) -->
+                    <template x-if="!col.panels || col.panels.length === 0">
+                        <div class="record-layout-empty-placeholder">
+                            <iconify-icon icon="solar:widget-add-bold-duotone" width="24" class="text-gray-400"></iconify-icon>
+                            <span class="text-xs text-gray-400 mt-1">Colonne vide</span>
+                            <span class="text-[10px] text-gray-300 mt-0.5">Glissez un panel ici</span>
+                            <button @click.stop="removeExtraColumn(idx)" 
+                                class="mt-2 w-7 h-7 rounded-full bg-danger/10 hover:bg-danger/20 flex items-center justify-center transition-all"
+                                title="Supprimer cette colonne">
+                                <iconify-icon icon="solar:trash-bin-trash-bold" width="14" class="text-danger"></iconify-icon>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </template>
         </div>
     </form>
 
@@ -721,6 +733,132 @@
         <%- include('../entity/components/entity-modal') %>
     </template>
 </div>
+
+<!-- ═══ PANEL LAYOUT STYLES ═══ -->
+<style>
+    /* ═══ Record Layout Grid (12-unit, page-builder style) ═══ */
+    .record-layout-container {
+        display: grid;
+        gap: 24px;
+        align-items: start;
+    }
+    @media (max-width: 1023px) {
+        .record-layout-container { grid-template-columns: 1fr !important; }
+        .record-layout-resize-handle { display: none !important; }
+        .record-layout-col { grid-column: span 12 !important; }
+    }
+    .record-layout-col {
+        min-width: 0;
+        position: relative;
+    }
+    .record-layout-col--empty {
+        min-height: 120px;
+        border: 2px dashed #e2e8f0;
+        border-radius: 8px;
+    }
+    .dark .record-layout-col--empty {
+        border-color: #334155;
+    }
+    .extra-col-sortable:empty + * .record-layout-empty-placeholder,
+    .record-layout-empty-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 12px;
+        min-height: 120px;
+    }
+
+    /* ═══ Resize Handle (positioned on right edge of each column) ═══ */
+    .record-layout-resize-handle {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translate(50%, -50%);
+        cursor: col-resize;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        color: #94a3b8;
+        opacity: 0;
+        transition: opacity 0.15s ease, color 0.15s ease;
+        padding: 6px 2px;
+        border-radius: 4px;
+    }
+    .record-layout-col:hover .record-layout-resize-handle,
+    .record-layout-resize-handle--active {
+        opacity: 1;
+    }
+    .record-layout-resize-handle:hover,
+    .record-layout-resize-handle--active {
+        color: #4361ee;
+        background: rgba(67, 97, 238, 0.08);
+    }
+    .dark .record-layout-resize-handle {
+        color: #64748b;
+    }
+    .dark .record-layout-resize-handle:hover,
+    .dark .record-layout-resize-handle--active {
+        color: #4361ee;
+        background: rgba(67, 97, 238, 0.15);
+    }
+
+
+    /* ═══ Panel Drag Handle ═══ */
+    .panel-drag-handle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        margin-bottom: 4px;
+        background: rgba(67, 97, 238, 0.06);
+        border: 1px dashed rgba(67, 97, 238, 0.25);
+        border-radius: 6px;
+        color: #4361ee;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        cursor: grab;
+        user-select: none;
+        transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .panel-drag-handle:hover {
+        background: rgba(67, 97, 238, 0.12);
+        border-color: rgba(67, 97, 238, 0.4);
+    }
+    .panel-drag-handle:active { cursor: grabbing; }
+
+    .panel-drop-zone {
+        border: 2px dashed rgba(67, 97, 238, 0.15);
+        border-radius: 8px;
+        padding: 4px;
+        transition: border-color 0.2s ease;
+    }
+    .panel-drop-zone:hover { border-color: rgba(67, 97, 238, 0.3); }
+
+    .panel-sortable-ghost {
+        opacity: 0.25;
+        border: 2px dashed #4361ee;
+        border-radius: 8px;
+    }
+    .panel-sortable-chosen {
+        box-shadow: 0 4px 20px rgba(67, 97, 238, 0.15);
+        border-radius: 8px;
+    }
+    .panel-sortable-drag {
+        opacity: 0.9;
+        transform: rotate(1deg);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+    }
+
+    .dark .panel-drag-handle {
+        background: rgba(67, 97, 238, 0.1);
+        border-color: rgba(67, 97, 238, 0.3);
+    }
+    .dark .panel-drop-zone { border-color: rgba(67, 97, 238, 0.2); }
+</style>
 
 <!-- DATA PIPELINE -->
 <script type="application/json" id="all-templates">
@@ -750,6 +888,443 @@
 
 <script>
     document.addEventListener("alpine:init", () => {
+
+        // ═══ PANEL LAYOUT (12-Unit Grid Resize + Drag & Drop Panels) ═══
+        Alpine.data("panelLayout", () => {
+            const entityId = '<%= locals.entity ? locals.entity._id : "" %>';
+            const accountNumber = '<%= account_number %>';
+            let mainSortable = null;
+            let sidebarSortable = null;
+            let resizeState = null;
+
+            return {
+                // 12-unit grid: main=8, sidebar=4 by default
+                columns: [
+                    { id: 'main', width: 8 },
+                    { id: 'sidebar', width: 4 }
+                ],
+                extraColumns: [],  // dynamically created empty columns
+                resizeActive: false,
+                resizeColIndex: -1,
+                layoutHover: false,
+
+                init() {
+                    this.loadColumnLayout();
+                    this.$watch('designMode', (val) => {
+                        if (val) {
+                            this.$nextTick(() => this.initPanelSortables());
+                        } else {
+                            this.destroyPanelSortables();
+                        }
+                    });
+                    window.addEventListener('mousemove', (e) => this.doResize(e));
+                    window.addEventListener('mouseup', () => this.endResize());
+                },
+
+                // ═══ RESIZE LOGIC (rewritten from page-builder — exact same pattern) ═══
+                startResize(colIndex, event) {
+                    const container = document.getElementById('panels-container');
+                    if (!container) return;
+
+                    const allCols = this.getAllColumns();
+                    resizeState = {
+                        colIndex,
+                        startX: event.clientX,
+                        startWidths: allCols.map(c => c.width),
+                        startColCount: allCols.length
+                    };
+                    this.resizeActive = true;
+                    this.resizeColIndex = colIndex;
+                    document.body.style.cursor = 'col-resize';
+                    document.body.style.userSelect = 'none';
+
+                    console.log('[RESIZE] startResize colIndex=', colIndex,
+                        'startWidths=', JSON.stringify(resizeState.startWidths),
+                        'startColCount=', resizeState.startColCount,
+                        'isLastColumn=', colIndex === allCols.length - 1);
+                },
+
+                doResize(event) {
+                    if (!resizeState) return;
+                    const { colIndex, startX, startWidths, startColCount } = resizeState;
+
+                    // Get the grid container width
+                    const gridContainer = document.getElementById('panels-container');
+                    if (!gridContainer) return;
+                    const gridWidth = gridContainer.offsetWidth;
+                    const colUnitWidth = gridWidth / 12;
+
+                    // Calculate delta in grid units
+                    const deltaX = event.clientX - startX;
+                    const deltaUnits = Math.round(deltaX / colUnitWidth);
+                    if (deltaUnits === 0) return;
+
+                    const allCols = this.getAllColumns();
+                    const isLastColumn = colIndex === allCols.length - 1;
+                    const leftWidth = startWidths[colIndex];
+
+                    console.log('[RESIZE] doResize deltaUnits=', deltaUnits,
+                        'colIndex=', colIndex,
+                        'isLastColumn=', isLastColumn,
+                        'leftWidth=', leftWidth,
+                        'allCols.length=', allCols.length,
+                        'startColCount=', startColCount);
+
+                    if (isLastColumn) {
+                        // ═══ LAST COLUMN: shrinking creates new column ═══
+                        // (exact page-builder logic)
+                        let newLeftWidth = leftWidth + deltaUnits;
+                        if (newLeftWidth < 1) newLeftWidth = 1;
+
+                        // Calculate remaining space (total must always = 12)
+                        const totalUsed = allCols.reduce((sum, col, idx) =>
+                            sum + (idx === colIndex ? newLeftWidth : col.width), 0);
+                        const remaining = 12 - totalUsed;
+
+                        console.log('[RESIZE] LAST COL: newLeftWidth=', newLeftWidth,
+                            'totalUsed=', totalUsed, 'remaining=', remaining);
+
+                        if (remaining > 0) {
+                            // Create or update extra column to fill remaining space
+                            if (allCols.length === startColCount) {
+                                // Add new empty column
+                                console.log('[RESIZE] Creating new extra column, width=', remaining);
+                                const newCol = {
+                                    id: 'extra_' + Date.now(),
+                                    width: remaining,
+                                    panels: []
+                                };
+                                this.extraColumns.push(newCol);
+                                resizeState.startWidths.push(0); // Track the new column (like page builder)
+                                resizeState.startColCount = allCols.length + 1;
+                                this.$nextTick(() => this.initExtraColSortable(this.extraColumns.length - 1));
+                            } else {
+                                // Update existing trailing extra column
+                                const lastExtra = this.extraColumns[this.extraColumns.length - 1];
+                                if (lastExtra) {
+                                    console.log('[RESIZE] Updating existing extra column, width=', remaining);
+                                    lastExtra.width = remaining;
+                                }
+                            }
+                            this.setColWidth(colIndex, newLeftWidth);
+                        } else if (remaining <= 0) {
+                            // Remove extra column if no space (dragging back right)
+                            if (allCols.length > startColCount && this.extraColumns.length > 0) {
+                                console.log('[RESIZE] Removing extra column');
+                                this.extraColumns.pop();
+                                resizeState.startWidths.pop(); // Keep in sync
+                                resizeState.startColCount = allCols.length - 1;
+                            }
+                            this.setColWidth(colIndex, leftWidth); // Reset to original
+                        }
+                    } else {
+                        // ═══ NORMAL RESIZE between two adjacent columns ═══
+                        const rightWidth = startWidths[colIndex + 1];
+
+                        let newLeftWidth = leftWidth + deltaUnits;
+                        let newRightWidth = rightWidth - deltaUnits;
+
+                        // Check if the right column is an extra column
+                        const isRightColumnExtra = (colIndex + 1 >= this.columns.length);
+
+                        // If right column is an extra and would shrink to 0 → remove it
+                        if (newRightWidth <= 0 && isRightColumnExtra) {
+                            console.log('[RESIZE] NORMAL: Removing extra column (right col squeezed to 0)');
+                            const extraIdx = colIndex + 1 - this.columns.length;
+                            const removedWidth = this.extraColumns[extraIdx]?.width || 0;
+                            this.extraColumns.splice(extraIdx, 1);
+                            resizeState.startWidths.splice(colIndex + 1, 1);
+                            resizeState.startColCount = this.getAllColumns().length;
+                            // Give the freed space to the left column
+                            this.setColWidth(colIndex, leftWidth + removedWidth);
+                            return;
+                        }
+
+                        // Enforce min width of 1 for each column
+                        if (newLeftWidth < 1) {
+                            newLeftWidth = 1;
+                            newRightWidth = leftWidth + rightWidth - 1;
+                        }
+                        if (newRightWidth < 1) {
+                            newRightWidth = 1;
+                            newLeftWidth = leftWidth + rightWidth - 1;
+                        }
+
+                        console.log('[RESIZE] NORMAL: newLeftWidth=', newLeftWidth,
+                            'newRightWidth=', newRightWidth);
+
+                        // Apply new widths
+                        this.setColWidth(colIndex, newLeftWidth);
+                        this.setColWidth(colIndex + 1, newRightWidth);
+                    }
+                },
+
+                endResize() {
+                    if (!resizeState) return;
+                    const allCols = this.getAllColumns();
+                    console.log('[RESIZE] endResize — final widths:',
+                        JSON.stringify(allCols.map(c => ({ id: c.id, w: c.width }))),
+                        'total=', allCols.reduce((s, c) => s + c.width, 0));
+                    resizeState = null;
+                    this.resizeActive = false;
+                    this.resizeColIndex = -1;
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                    this.saveColumnLayout();
+                },
+
+                // Helper: get all columns (main + sidebar + extras)
+                getAllColumns() {
+                    return [...this.columns, ...this.extraColumns];
+                },
+
+                // Helper: set width on the right column array (columns or extraColumns)
+                setColWidth(index, width) {
+                    if (index < this.columns.length) {
+                        this.columns[index].width = width;
+                    } else {
+                        const extraIdx = index - this.columns.length;
+                        if (this.extraColumns[extraIdx]) {
+                            this.extraColumns[extraIdx].width = width;
+                        }
+                    }
+                },
+
+                // Remove an extra (empty) column
+                removeExtraColumn(idx) {
+                    const removed = this.extraColumns.splice(idx, 1);
+                    if (removed.length > 0) {
+                        // Give the freed space back to the previous column
+                        const allCols = this.getAllColumns();
+                        if (allCols.length > 0) {
+                            const lastCol = allCols[allCols.length - 1];
+                            lastCol.width += removed[0].width;
+                        }
+                    }
+                    this.saveColumnLayout();
+                },
+
+                // ═══ DRAG & DROP (Sortable) ═══
+                extraSortables: [],
+
+                getSortableOpts() {
+                    return {
+                        group: 'panels',
+                        animation: 250,
+                        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                        handle: '.panel-drag-handle',
+                        draggable: '.panel-sortable-item',
+                        ghostClass: 'panel-sortable-ghost',
+                        chosenClass: 'panel-sortable-chosen',
+                        dragClass: 'panel-sortable-drag',
+                        fallbackOnBody: true,
+                        swapThreshold: 0.65,
+                        onEnd: () => this.savePanelLayout()
+                    };
+                },
+
+                initPanelSortables() {
+                    const mainZone = document.getElementById('panels-main-zone');
+                    const mainInner = mainZone?.querySelector('.space-y-4') || mainZone;
+                    const sidebarInner = document.getElementById('sidebar-main-sortable');
+                    if (!mainInner) return;
+                    const opts = this.getSortableOpts();
+                    mainSortable = new Sortable(mainInner, opts);
+                    if (sidebarInner) {
+                        sidebarSortable = new Sortable(sidebarInner, opts);
+                    }
+                    // Init sortables for any existing extra columns
+                    this.initAllExtraColSortables();
+                },
+
+                destroyPanelSortables() {
+                    if (mainSortable) { mainSortable.destroy(); mainSortable = null; }
+                    if (sidebarSortable) { sidebarSortable.destroy(); sidebarSortable = null; }
+                    this.destroyExtraSortables();
+                },
+
+                initExtraColSortable(idx) {
+                    if (!this.designMode) return;
+                    const el = document.getElementById('extra-col-sortable-' + idx);
+                    if (!el || el._sortableInit) return;
+                    const sortable = new Sortable(el, this.getSortableOpts());
+                    el._sortableInit = true;
+                    this.extraSortables.push({ idx, sortable, el });
+                },
+
+                initAllExtraColSortables() {
+                    this.destroyExtraSortables();
+                    this.extraColumns.forEach((col, idx) => {
+                        this.$nextTick(() => this.initExtraColSortable(idx));
+                    });
+                },
+
+                destroyExtraSortables() {
+                    this.extraSortables.forEach(s => {
+                        if (s.sortable) s.sortable.destroy();
+                        if (s.el) s.el._sortableInit = false;
+                    });
+                    this.extraSortables = [];
+                },
+
+                initSortableCol(el, colIndex) {
+                    // Future: initialize sortable for individual columns
+                },
+
+                getPanelLabel(panelId) {
+                    const labels = { attributs: 'Attributs', sidebar: 'Sidebar' };
+                    return labels[panelId] || panelId;
+                },
+
+                // ═══ PERSISTENCE ═══
+                async loadColumnLayout() {
+                    try {
+                        const resp = await fetch(`/account/${accountNumber}/api/user/view-preferences/record_panels_${entityId}`, { credentials: 'include' });
+                        if (resp.ok) {
+                            const data = await resp.json();
+                            if (data?.preferences?.columnWidths) {
+                                const saved = data.preferences.columnWidths;
+                                // Migrate from old percentage format (75/25) to 12-unit grid (8/4)
+                                const isOldFormat = saved.some(c => c.width > 12);
+                                if (isOldFormat) {
+                                    const total = saved.reduce((sum, c) => sum + c.width, 0);
+                                    saved.forEach(c => {
+                                        c.width = Math.round((c.width / total) * 12);
+                                    });
+                                    // Ensure total is exactly 12
+                                    const newTotal = saved.reduce((sum, c) => sum + c.width, 0);
+                                    if (newTotal !== 12) saved[0].width += (12 - newTotal);
+                                }
+                                this.columns = saved;
+                            }
+                            if (data?.preferences?.extraColumns) {
+                                this.extraColumns = data.preferences.extraColumns;
+                            }
+                            // Validate total = 12 (fix corrupted saved data)
+                            const allTotal = this.columns.reduce((s, c) => s + c.width, 0) + this.extraColumns.reduce((s, c) => s + c.width, 0);
+                            if (allTotal !== 12 && allTotal > 0) {
+                                const deficit = 12 - allTotal;
+                                if (deficit > 0) {
+                                    this.columns[this.columns.length - 1].width += deficit;
+                                } else {
+                                    let excess = -deficit;
+                                    while (excess > 0 && this.extraColumns.length > 0) {
+                                        const last = this.extraColumns[this.extraColumns.length - 1];
+                                        if (last.width <= excess) { excess -= last.width; this.extraColumns.pop(); }
+                                        else { last.width -= excess; excess = 0; }
+                                    }
+                                    if (excess > 0) this.columns[this.columns.length - 1].width = Math.max(2, this.columns[this.columns.length - 1].width - excess);
+                                }
+                            }
+                            // Load panel layout (panel order + column assignments)
+                            if (data?.preferences?.panelLayout) {
+                                this.$nextTick(() => this.applyPanelLayout(data.preferences.panelLayout));
+                            }
+                        }
+                    } catch(e) { console.warn('Could not load column layout:', e); }
+                },
+
+                applyPanelLayout(layout) {
+                    // Collect all panel-sortable-item elements from all zones
+                    const allPanels = new Map();
+                    document.querySelectorAll('.panel-sortable-item[data-panel-id]').forEach(el => {
+                        allPanels.set(el.dataset.panelId, el);
+                    });
+                    if (allPanels.size === 0) return;
+
+                    const mainZone = document.getElementById('panels-main-zone');
+                    const sidebarZone = document.getElementById('sidebar-main-sortable');
+
+                    // Helper: move panels into a zone in specified order
+                    const movePanelsToZone = (zone, panelIds) => {
+                        if (!zone || !panelIds) return;
+                        panelIds.forEach(id => {
+                            const el = allPanels.get(id);
+                            if (el) {
+                                zone.appendChild(el);
+                                allPanels.delete(id);
+                            }
+                        });
+                    };
+
+                    // Apply main column order
+                    if (layout.main && mainZone) {
+                        // Get the inner sortable container (first child div)
+                        const mainInner = mainZone.querySelector('.space-y-4') || mainZone;
+                        movePanelsToZone(mainInner, layout.main);
+                    }
+
+                    // Apply sidebar order
+                    if (layout.sidebar && sidebarZone) {
+                        movePanelsToZone(sidebarZone, layout.sidebar);
+                    }
+
+                    // Apply extra column panels
+                    if (layout.extra && this.extraColumns.length > 0) {
+                        this.$nextTick(() => {
+                            this.extraColumns.forEach((col, idx) => {
+                                const extraZone = document.getElementById('extra-col-sortable-' + idx);
+                                const panelIds = layout.extra[col.id];
+                                if (extraZone && panelIds) {
+                                    movePanelsToZone(extraZone, panelIds);
+                                    col.panels = panelIds;
+                                }
+                            });
+                        });
+                    }
+                },
+
+                async saveColumnLayout() {
+                    try {
+                        await fetch(`/account/${accountNumber}/api/user/view-preferences`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                viewId: `record_panels_${entityId}`,
+                                preferences: {
+                                    columnWidths: JSON.parse(JSON.stringify(this.columns)),
+                                    extraColumns: JSON.parse(JSON.stringify(this.extraColumns))
+                                }
+                            })
+                        });
+                    } catch(e) { console.error('Failed to save column layout:', e); }
+                },
+
+                async savePanelLayout() {
+                    const mainZone = document.getElementById('panels-main-zone');
+                    const mainInner = mainZone?.querySelector('.space-y-4') || mainZone;
+                    const sidebarInner = document.getElementById('sidebar-main-sortable');
+                    const mainPanels = mainInner ? Array.from(mainInner.querySelectorAll(':scope > .panel-sortable-item')).map(el => el.dataset.panelId) : [];
+                    const sidebarPanels = sidebarInner ? Array.from(sidebarInner.querySelectorAll(':scope > .panel-sortable-item')).map(el => el.dataset.panelId) : [];
+                    
+                    // Collect panels from extra columns
+                    const extraPanels = {};
+                    this.extraColumns.forEach((col, idx) => {
+                        const zone = document.getElementById('extra-col-sortable-' + idx);
+                        if (zone) {
+                            const panels = Array.from(zone.querySelectorAll(':scope > .panel-sortable-item')).map(el => el.dataset.panelId);
+                            extraPanels[col.id] = panels;
+                            // Update the panels array on the column
+                            col.panels = panels;
+                        }
+                    });
+
+                    try {
+                        await fetch(`/account/${accountNumber}/api/user/view-preferences`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                viewId: `record_panels_${entityId}`,
+                                preferences: { panelLayout: { main: mainPanels, sidebar: sidebarPanels, extra: extraPanels } }
+                            })
+                        });
+                    } catch(e) { console.error('Failed to save panel layout:', e); }
+                }
+            };
+        });
+
         Alpine.data("recordForm", () => {
             const initialLayout = JSON.parse('<%- JSON.stringify(locals.formLayout || []) %>');
             const allTemplates = JSON.parse(document.getElementById("all-templates").textContent);

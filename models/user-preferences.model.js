@@ -53,6 +53,28 @@ const userPreferencesSchema = new mongoose.Schema({
         enabledViews: {
             type: [String],
             default: ['table', 'kanban', 'notes']
+        },
+        // Record-edit panel layout preferences
+        columnWidths: {
+            type: mongoose.Schema.Types.Mixed,
+            default: undefined
+        },
+        extraColumns: {
+            type: mongoose.Schema.Types.Mixed,
+            default: undefined
+        },
+        panelLayout: {
+            type: mongoose.Schema.Types.Mixed,
+            default: undefined
+        },
+        sidebarWidth: {
+            type: Number,
+            default: undefined
+        },
+        // Kanban preferences
+        kanban: {
+            type: mongoose.Schema.Types.Mixed,
+            default: undefined
         }
     },
     updatedAt: {

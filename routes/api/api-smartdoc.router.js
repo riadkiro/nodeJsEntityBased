@@ -99,6 +99,37 @@ router.delete('/smartdoc/templates/:id', async (req, res) => {
 });
 
 /**
+ * POST /api/smartdoc/templates/:id/unlink
+ * Unlink a SmartDoc template from an entity (removes entityId reference)
+ * Body: { entityId: "..." }
+ */
+router.post('/smartdoc/templates/:id/unlink', async (req, res) => {
+    try {
+        const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
+        const Document = await tenantCollection(req, 'Document');
+        const template = await SmartDocTemplate.findById(req.params.id);
+        if (!template) return res.status(404).json({ error: 'Template introuvable' });
+
+        const entityId = req.body.entityId;
+
+        // Remove from SmartDocTemplate
+        await SmartDocTemplate.findByIdAndUpdate(req.params.id, { active: false });
+
+        // Also remove entityId from the linked Document's entityIds array
+        if (template.documentId && entityId) {
+            await Document.findByIdAndUpdate(template.documentId, {
+                $pull: { entityIds: entityId }
+            });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[SmartDoc] Unlink template error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
  * GET /api/smartdoc/documents?entityId=xxx
  * List available Document templates that are linked to an entity
  * Supports both legacy entityId and new entityIds array

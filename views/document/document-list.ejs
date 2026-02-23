@@ -1,835 +1,285 @@
 <div x-data="documentList()">
-  <!-- Header with Breadcrumb and Layout Toggle -->
-  <div class="flex items-center justify-between">
-    <div class="flex-1">
+
+  <!-- Breadcrumb + Actions -->
+  <div class="flex items-center justify-between mb-5">
+    <div class="flex items-center gap-2">
       <%- include("../nav/nav-breadcrumb") %>
     </div>
-    <!-- Layout Toggle - minimal like kanban/table -->
-    <div class="flex items-center gap-1">
-      <button 
-        @click="layoutMode = 'dashboard'" 
-        class="p-1.5 rounded transition-colors"
-        :class="layoutMode === 'dashboard' ? 'text-primary' : 'text-[#888ea8] hover:text-primary'"
-        title="Vue Dashboard"
-      >
-        <!-- Grid icon -->
-        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
-          <path d="M2 6.5C2 4.37868 2 3.31802 2.65901 2.65901C3.31802 2 4.37868 2 6.5 2C8.62132 2 9.68198 2 10.341 2.65901C11 3.31802 11 4.37868 11 6.5C11 8.62132 11 9.68198 10.341 10.341C9.68198 11 8.62132 11 6.5 11C4.37868 11 3.31802 11 2.65901 10.341C2 9.68198 2 8.62132 2 6.5Z" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M13 6.5C13 4.37868 13 3.31802 13.659 2.65901C14.318 2 15.3787 2 17.5 2C19.6213 2 20.682 2 21.341 2.65901C22 3.31802 22 4.37868 22 6.5C22 8.62132 22 9.68198 21.341 10.341C20.682 11 19.6213 11 17.5 11C15.3787 11 14.318 11 13.659 10.341C13 9.68198 13 8.62132 13 6.5Z" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M2 17.5C2 15.3787 2 14.318 2.65901 13.659C3.31802 13 4.37868 13 6.5 13C8.62132 13 9.68198 13 10.341 13.659C11 14.318 11 15.3787 11 17.5C11 19.6213 11 20.682 10.341 21.341C9.68198 22 8.62132 22 6.5 22C4.37868 22 3.31802 22 2.65901 21.341C2 20.682 2 19.6213 2 17.5Z" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M13 17.5C13 15.3787 13 14.318 13.659 13.659C14.318 13 15.3787 13 17.5 13C19.6213 13 20.682 13 21.341 13.659C22 14.318 22 15.3787 22 17.5C22 19.6213 22 20.682 21.341 21.341C20.682 22 19.6213 22 17.5 22C15.3787 22 14.318 22 13.659 21.341C13 20.682 13 19.6213 13 17.5Z" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-      </button>
-      <button 
-        @click="layoutMode = 'notes'" 
-        class="p-1.5 rounded transition-colors"
-        :class="layoutMode === 'notes' ? 'text-primary' : 'text-[#888ea8] hover:text-primary'"
-        title="Vue Sidebar"
-      >
-        <!-- Sidebar layout icon -->
-        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
-          <path d="M2 6C2 4.11438 2 3.17157 2.58579 2.58579C3.17157 2 4.11438 2 6 2H18C19.8856 2 20.8284 2 21.4142 2.58579C22 3.17157 22 4.11438 22 6V18C22 19.8856 22 20.8284 21.4142 21.4142C20.8284 22 19.8856 22 18 22H6C4.11438 22 3.17157 22 2.58579 21.4142C2 20.8284 2 19.8856 2 18V6Z" stroke="currentColor" stroke-width="1.5"/>
-          <path opacity="0.5" d="M8 2V22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
+    <div class="flex items-center gap-2">
+      <a href="/account/<%= account_number %>/documents/templates" 
+         class="btn btn-outline-dark btn-sm rounded-lg gap-1.5 dark:border-[#253b5c] dark:text-gray-300 dark:hover:bg-dark/60">
+        <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="15" class="text-amber-500"></iconify-icon>
+        Templates
+        <span class="text-[10px] px-1.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-bold" 
+              x-text="templateDocs.length" x-show="templateDocs.length > 0"></span>
+      </a>
+      <button @click="openTemplateModal()" class="btn btn-primary btn-sm rounded-lg gap-1.5">
+        <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
+        Nouveau
       </button>
     </div>
   </div>
 
-  <!-- ============================================ -->
-  <!-- LAYOUT 1: DASHBOARD (Default) -->
-  <!-- ============================================ -->
-  <template x-if="layoutMode === 'dashboard'">
-    <div class="pt-5">
-      <!-- Compact Header -->
-      <div class="mb-5 flex flex-col gap-4">
-        <!-- Top row: Actions -->
-        <div class="flex items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-            <template x-if="activeFolder !== null">
-              <button @click="activeFolder = null; folderTab = 'all'" class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-[#888ea8] hover:text-primary hover:bg-primary/5 transition-all">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M5 12L11 6M5 12L11 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Dossiers
-              </button>
-            </template>
-            <template x-if="activeFolder !== null">
-              <h3 class="text-base font-semibold dark:text-white-light" x-text="getFolderLabel(activeFolder)"></h3>
-            </template>
-          </div>
-          <div class="flex items-center gap-3">
-            <!-- Search -->
-            <div class="relative w-64">
-              <input type="text" x-model="searchQuery" placeholder="Rechercher un document..." class="form-input w-full pl-10 py-2 text-sm dark:bg-[#1b2e4b] dark:border-[#1b2e4b] rounded-xl"/>
-              <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#888ea8]" viewBox="0 0 24 24" fill="none">
-                <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5" opacity="0.5"></circle>
-                <path d="M20 20L17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
+  <!-- Tabs + Search -->
+  <div class="panel p-3 mb-5">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div class="flex items-center gap-1">
+        <button @click="activeSection = 'recent'" 
+                class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium transition-all"
+                :class="activeSection === 'recent' 
+                  ? 'bg-primary text-white shadow-sm' 
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-white-light/60 dark:hover:bg-dark/40'">
+          <iconify-icon icon="solar:document-text-bold-duotone" width="15"></iconify-icon>
+          Documents
+          <span class="text-[11px] px-1.5 rounded-full ml-0.5"
+                :class="activeSection === 'recent' ? 'bg-white/20' : 'bg-gray-200 dark:bg-dark text-gray-500 dark:text-gray-500'"
+                x-text="allDocs().length"></span>
+        </button>
+        <button @click="activeSection = 'generated'" 
+                class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium transition-all"
+                :class="activeSection === 'generated' 
+                  ? 'bg-primary text-white shadow-sm' 
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-white-light/60 dark:hover:bg-dark/40'"
+                x-show="generatedDocs.length > 0">
+          <iconify-icon icon="solar:document-add-bold-duotone" width="15"></iconify-icon>
+          Générés
+          <span class="text-[11px] px-1.5 rounded-full ml-0.5"
+                :class="activeSection === 'generated' ? 'bg-white/20' : 'bg-gray-200 dark:bg-dark text-gray-500 dark:text-gray-500'"
+                x-text="generatedDocs.length"></span>
+        </button>
+        <button @click="activeSection = 'uploads'" 
+                class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium transition-all"
+                :class="activeSection === 'uploads' 
+                  ? 'bg-primary text-white shadow-sm' 
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-white-light/60 dark:hover:bg-dark/40'">
+          <iconify-icon icon="solar:cloud-upload-bold-duotone" width="15"></iconify-icon>
+          Fichiers
+          <span class="text-[11px] px-1.5 rounded-full ml-0.5"
+                :class="activeSection === 'uploads' ? 'bg-white/20' : 'bg-gray-200 dark:bg-dark text-gray-500 dark:text-gray-500'"
+                x-text="uploadedDocs.length" x-show="uploadedDocs.length > 0"></span>
+        </button>
+      </div>
+      <div class="relative w-full sm:w-56">
+        <iconify-icon icon="solar:magnifer-line-duotone" width="15" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"></iconify-icon>
+        <input type="text" x-model="searchQuery" placeholder="Rechercher..." 
+               class="form-input w-full pl-8 py-1.5 text-[13px] rounded-lg dark:bg-[#121e32] dark:border-[#253b5c]" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================ -->
+  <!-- SECTION: Documents Grid          -->
+  <!-- ================================ -->
+  <template x-if="activeSection === 'recent'">
+    <div>
+      <template x-if="filteredDocs().length > 0">
+        <div class="doc-grid">
+          <template x-for="doc in filteredDocs()" :key="doc._id">
+            <div class="doc-card group">
+              <!-- A4 Paper Preview -->
+              <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="doc-card__preview">
+                <div class="doc-card__paper" :style="getPaperStyle(doc)">
+                  <template x-if="doc.pages && doc.pages[0] && doc.pages[0].content">
+                    <div class="doc-card__paper-content" x-html="getPreviewHtml(doc)"></div>
+                  </template>
+                  <template x-if="!doc.pages || !doc.pages[0] || !doc.pages[0].content">
+                    <div class="doc-card__paper-empty">
+                      <iconify-icon icon="solar:document-text-bold-duotone" width="18" class="text-gray-300 dark:text-gray-600"></iconify-icon>
+                    </div>
+                  </template>
+                </div>
+                <span class="doc-card__format" x-text="doc.format || 'A4'"></span>
+                <!-- Type badge -->
+                <span class="doc-card__badge" 
+                      :class="doc.isTemplate ? 'doc-card__badge--tpl' : 'doc-card__badge--doc'"
+                      x-text="doc.isTemplate ? 'TPL' : 'DOC'"></span>
+              </a>
+
+              <!-- Info -->
+              <div class="doc-card__body">
+                <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
+                   class="doc-card__name" x-text="doc.name || 'Sans titre'"></a>
+                <div class="doc-card__meta">
+                  <iconify-icon icon="solar:clock-circle-line-duotone" width="11"></iconify-icon>
+                  <span x-text="formatRelativeDate(doc.updatedAt)"></span>
+                </div>
+              </div>
+
+              <!-- Hover actions -->
+              <div class="doc-card__hover-actions">
+                <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" 
+                   class="doc-card__action" title="Modifier">
+                  <iconify-icon icon="solar:pen-2-line-duotone" width="14"></iconify-icon>
+                </a>
+                <button @click.prevent="confirmDelete(doc)" class="doc-card__action doc-card__action--danger" title="Supprimer">
+                  <iconify-icon icon="solar:trash-bin-trash-line-duotone" width="14"></iconify-icon>
+                </button>
+              </div>
             </div>
-            <!-- View toggle -->
-            <div class="flex gap-0.5 bg-gray-100 dark:bg-[#1b2e4b] p-0.5 rounded-lg" x-show="activeFolder !== null" x-cloak>
-              <button @click="viewMode = 'grid'" class="p-1.5 rounded-md transition-all" :class="viewMode === 'grid' ? 'bg-white dark:bg-dark shadow-sm text-primary' : 'text-[#888ea8] hover:text-primary'">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M2 6.5C2 4.37868 2 3.31802 2.65901 2.65901C3.31802 2 4.37868 2 6.5 2C8.62132 2 9.68198 2 10.341 2.65901C11 3.31802 11 4.37868 11 6.5C11 8.62132 11 9.68198 10.341 10.341C9.68198 11 8.62132 11 6.5 11C4.37868 11 3.31802 11 2.65901 10.341C2 9.68198 2 8.62132 2 6.5Z" stroke="currentColor" stroke-width="1.5"/><path d="M13 6.5C13 4.37868 13 3.31802 13.659 2.65901C14.318 2 15.3787 2 17.5 2C19.6213 2 20.682 2 21.341 2.65901C22 3.31802 22 4.37868 22 6.5C22 8.62132 22 9.68198 21.341 10.341C20.682 11 19.6213 11 17.5 11C15.3787 11 14.318 11 13.659 10.341C13 9.68198 13 8.62132 13 6.5Z" stroke="currentColor" stroke-width="1.5"/><path d="M2 17.5C2 15.3787 2 14.318 2.65901 13.659C3.31802 13 4.37868 13 6.5 13C8.62132 13 9.68198 13 10.341 13.659C11 14.318 11 15.3787 11 17.5C11 19.6213 11 20.682 10.341 21.341C9.68198 22 8.62132 22 6.5 22C4.37868 22 3.31802 22 2.65901 21.341C2 20.682 2 19.6213 2 17.5Z" stroke="currentColor" stroke-width="1.5"/><path d="M13 17.5C13 15.3787 13 14.318 13.659 13.659C14.318 13 15.3787 13 17.5 13C19.6213 13 20.682 13 21.341 13.659C22 14.318 22 15.3787 22 17.5C22 19.6213 22 20.682 21.341 21.341C20.682 22 19.6213 22 17.5 22C15.3787 22 14.318 22 13.659 21.341C13 20.682 13 19.6213 13 17.5Z" stroke="currentColor" stroke-width="1.5"/></svg>
-              </button>
-              <button @click="viewMode = 'list'" class="p-1.5 rounded-md transition-all" :class="viewMode === 'list' ? 'bg-white dark:bg-dark shadow-sm text-primary' : 'text-[#888ea8] hover:text-primary'">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M21 6H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M21 12H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M21 18H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="5" cy="6" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="5" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="5" cy="18" r="2" stroke="currentColor" stroke-width="1.5"/></svg>
-              </button>
+          </template>
+        </div>
+      </template>
+
+      <!-- Empty State -->
+      <template x-if="filteredDocs().length === 0 && !searchQuery">
+        <div class="panel">
+          <div class="flex flex-col items-center justify-center py-14 text-center">
+            <div class="w-16 h-16 rounded-2xl bg-white-light dark:bg-dark/60 flex items-center justify-center mb-4">
+              <iconify-icon icon="solar:document-text-broken" width="32" class="text-gray-300 dark:text-gray-600"></iconify-icon>
             </div>
-            <!-- Templates button -->
-            <a href="/account/<%= account_number %>/documents/templates" class="btn btn-sm rounded-xl gap-1.5 border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/15 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all">
-              <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="16"></iconify-icon>
-              Templates
-            </a>
-            <!-- New document button -->
-            <button @click="openTemplateModal()" class="btn btn-primary btn-sm rounded-xl gap-1.5">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              Nouveau
+            <h3 class="text-sm font-semibold dark:text-white mb-1">Aucun document</h3>
+            <p class="text-xs text-gray-400 max-w-xs mb-4">Créez votre premier document ou choisissez un template</p>
+            <button @click="openTemplateModal()" class="btn btn-primary btn-sm rounded-lg gap-1.5">
+              <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
+              Créer
             </button>
           </div>
         </div>
+      </template>
+      <template x-if="filteredDocs().length === 0 && searchQuery">
+        <div class="panel py-10 text-center">
+          <iconify-icon icon="solar:magnifer-broken" width="28" class="text-gray-300 dark:text-gray-600 mb-2"></iconify-icon>
+          <p class="text-xs text-gray-400">Aucun résultat pour "<span x-text="searchQuery" class="font-medium"></span>"</p>
+        </div>
+      </template>
+    </div>
+  </template>
 
-        <!-- Windows-style Folder Icons (landing page) -->
-        <template x-if="activeFolder === null">
-          <div class="relative" @contextmenu.prevent="contextMenu = { show: true, x: $event.clientX, y: $event.clientY, folderId: null, folderName: null }">
-            <div class="flex flex-wrap gap-2 pt-2">
-            <!-- + Nouveau -->
-            <button @click="openTemplateModal()" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-primary/5 dark:hover:bg-primary/10 transition-all cursor-pointer">
-              <div class="relative mb-2">
-                <svg class="w-16 h-16 text-primary/70 group-hover:text-primary transition-colors" viewBox="0 0 64 64" fill="none">
-                  <rect x="12" y="8" width="40" height="48" rx="3" fill="currentColor" opacity="0.08" stroke="currentColor" stroke-width="1.5"/>
-                  <path d="M32 24V40M24 32H40" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-                </svg>
+  <!-- ================================ -->
+  <!-- SECTION: Generated Documents     -->
+  <!-- ================================ -->
+  <template x-if="activeSection === 'generated'">
+    <div class="panel p-0 overflow-hidden">
+      <!-- Table header -->
+      <div class="flex items-center gap-3 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400 bg-gray-50 dark:bg-[#1b2e4b] border-b border-gray-200 dark:border-[#253b5c]">
+        <div class="flex-1 min-w-0">Document</div>
+        <div class="w-36 hidden md:block">Template source</div>
+        <div class="w-36 hidden lg:block">Lié à</div>
+        <div class="w-28 text-right">Date</div>
+      </div>
+      <template x-for="(gdoc, idx) in generatedDocs" :key="gdoc._id">
+        <div class="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-[#1b2e4b]/40"
+             :class="idx < generatedDocs.length - 1 ? 'border-b border-gray-100 dark:border-[#1a2941]' : ''">
+          <div class="flex-1 min-w-0 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                 :class="gdoc.status === 'finalized' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-500'">
+              <iconify-icon icon="solar:document-add-bold-duotone" width="16"></iconify-icon>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate" x-text="gdoc.name || 'Document généré'"></p>
+              <p class="text-[11px] text-gray-400 md:hidden" x-text="gdoc.templateName"></p>
+            </div>
+          </div>
+          <div class="w-36 hidden md:flex items-center gap-1.5">
+            <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="14" class="text-amber-500 flex-shrink-0"></iconify-icon>
+            <span class="text-sm text-gray-400 truncate" x-text="gdoc.templateName"></span>
+          </div>
+          <div class="w-36 hidden lg:flex items-center gap-1.5">
+            <template x-if="gdoc.entityName || gdoc.recordTitle">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <iconify-icon :icon="gdoc.entityIcon || 'solar:layers-bold-duotone'" width="14" class="text-primary flex-shrink-0"></iconify-icon>
+                <span class="text-sm text-gray-500 dark:text-gray-400 truncate" x-text="gdoc.recordTitle || gdoc.entityName"></span>
               </div>
-              <span class="text-xs font-medium text-primary/80 group-hover:text-primary text-center leading-tight transition-colors">Nouveau</span>
-            </button>
-
-            <!-- Récents folder -->
-            <button @click="activeFolder = 'recent'; folderTab = 'all'" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-[#eef2ff] dark:hover:bg-[#1b2e4b]/60 transition-all cursor-pointer">
-              <div class="relative mb-2">
-                <svg class="w-16 h-16 drop-shadow-sm" viewBox="0 0 64 64" fill="none">
-                  <path d="M6 18C6 15.8 6 14.7 6.654 13.91C6.8 13.73 6.965 13.565 7.145 13.419C7.935 12.765 9.035 12.765 11.235 12.765H15.5C16.44 12.765 16.91 12.765 17.34 12.9C17.77 13.035 18.135 13.295 18.865 13.815L21.135 15.39C21.865 15.91 22.23 16.17 22.66 16.305C23.09 16.44 23.56 16.44 24.5 16.44H42C46.4 16.44 48.6 16.44 50 17.84C51.4 19.24 51.4 21.44 51.4 25.84V26" stroke="#e2a03f" stroke-width="2"/>
-                  <rect x="4" y="22" width="56" height="32" rx="4" fill="#f5c542" stroke="#e2a03f" stroke-width="1.5"/>
-                  <rect x="4" y="22" width="56" height="8" rx="4" fill="#e2a03f" opacity="0.3"/>
-                </svg>
-                <span class="absolute -top-1 -right-1 text-[10px] min-w-[20px] h-[20px] flex items-center justify-center px-1 rounded-full bg-primary text-white font-bold shadow-sm" x-text="getRecentDocs().length"></span>
-              </div>
-              <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary text-center leading-tight transition-colors">Récents</span>
-            </button>
-
-            <!-- Brouillons folder -->
-            <button @click="activeFolder = 'draft'; folderTab = 'draft'" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-[#fff8ed] dark:hover:bg-[#1b2e4b]/60 transition-all cursor-pointer">
-              <div class="relative mb-2">
-                <svg class="w-16 h-16 drop-shadow-sm" viewBox="0 0 64 64" fill="none">
-                  <path d="M6 18C6 15.8 6 14.7 6.654 13.91C6.8 13.73 6.965 13.565 7.145 13.419C7.935 12.765 9.035 12.765 11.235 12.765H15.5C16.44 12.765 16.91 12.765 17.34 12.9C17.77 13.035 18.135 13.295 18.865 13.815L21.135 15.39C21.865 15.91 22.23 16.17 22.66 16.305C23.09 16.44 23.56 16.44 24.5 16.44H42C46.4 16.44 48.6 16.44 50 17.84C51.4 19.24 51.4 21.44 51.4 25.84V26" stroke="#e2a03f" stroke-width="2"/>
-                  <rect x="4" y="22" width="56" height="32" rx="4" fill="#f5c542" stroke="#e2a03f" stroke-width="1.5"/>
-                  <rect x="4" y="22" width="56" height="8" rx="4" fill="#e2a03f" opacity="0.3"/>
-                </svg>
-                <span class="absolute -top-1 -right-1 text-[10px] min-w-[20px] h-[20px] flex items-center justify-center px-1 rounded-full bg-warning text-white font-bold shadow-sm" x-text="documents.filter(d => d.status === 'draft').length"></span>
-              </div>
-              <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-warning text-center leading-tight transition-colors">Brouillons</span>
-            </button>
-
-            <!-- Publiés folder -->
-            <button @click="activeFolder = 'published'; folderTab = 'published'" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-[#edfff5] dark:hover:bg-[#1b2e4b]/60 transition-all cursor-pointer">
-              <div class="relative mb-2">
-                <svg class="w-16 h-16 drop-shadow-sm" viewBox="0 0 64 64" fill="none">
-                  <path d="M6 18C6 15.8 6 14.7 6.654 13.91C6.8 13.73 6.965 13.565 7.145 13.419C7.935 12.765 9.035 12.765 11.235 12.765H15.5C16.44 12.765 16.91 12.765 17.34 12.9C17.77 13.035 18.135 13.295 18.865 13.815L21.135 15.39C21.865 15.91 22.23 16.17 22.66 16.305C23.09 16.44 23.56 16.44 24.5 16.44H42C46.4 16.44 48.6 16.44 50 17.84C51.4 19.24 51.4 21.44 51.4 25.84V26" stroke="#00ab55" stroke-width="2"/>
-                  <rect x="4" y="22" width="56" height="32" rx="4" fill="#34d399" stroke="#00ab55" stroke-width="1.5"/>
-                  <rect x="4" y="22" width="56" height="8" rx="4" fill="#00ab55" opacity="0.3"/>
-                </svg>
-                <span class="absolute -top-1 -right-1 text-[10px] min-w-[20px] h-[20px] flex items-center justify-center px-1 rounded-full bg-success text-white font-bold shadow-sm" x-text="documents.filter(d => d.status === 'published').length"></span>
-              </div>
-              <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-success text-center leading-tight transition-colors">Publiés</span>
-            </button>
-
-            <!-- Favoris folder -->
-            <button @click="activeFolder = 'fav'; folderTab = 'fav'" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-[#fef3f2] dark:hover:bg-[#1b2e4b]/60 transition-all cursor-pointer">
-              <div class="relative mb-2">
-                <svg class="w-16 h-16 drop-shadow-sm" viewBox="0 0 64 64" fill="none">
-                  <path d="M6 18C6 15.8 6 14.7 6.654 13.91C6.8 13.73 6.965 13.565 7.145 13.419C7.935 12.765 9.035 12.765 11.235 12.765H15.5C16.44 12.765 16.91 12.765 17.34 12.9C17.77 13.035 18.135 13.295 18.865 13.815L21.135 15.39C21.865 15.91 22.23 16.17 22.66 16.305C23.09 16.44 23.56 16.44 24.5 16.44H42C46.4 16.44 48.6 16.44 50 17.84C51.4 19.24 51.4 21.44 51.4 25.84V26" stroke="#e7515a" stroke-width="2"/>
-                  <rect x="4" y="22" width="56" height="32" rx="4" fill="#fca5a5" stroke="#e7515a" stroke-width="1.5"/>
-                  <rect x="4" y="22" width="56" height="8" rx="4" fill="#e7515a" opacity="0.3"/>
-                  <!-- Star icon inside -->
-                  <path d="M32 30L34.5 35.5L40.5 36L36 40L37.5 46L32 43L26.5 46L28 40L23.5 36L29.5 35.5Z" fill="#e7515a" opacity="0.5"/>
-                </svg>
-                <span class="absolute -top-1 -right-1 text-[10px] min-w-[20px] h-[20px] flex items-center justify-center px-1 rounded-full bg-danger text-white font-bold shadow-sm" x-text="documents.filter(d => d.isFav).length"></span>
-              </div>
-              <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-danger text-center leading-tight transition-colors">Favoris</span>
-            </button>
-
-            <!-- Mes templates folder -->
-            <a href="/account/<%= account_number %>/documents/templates" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-[#fffbeb] dark:hover:bg-[#1b2e4b]/60 transition-all cursor-pointer">
-              <div class="relative mb-2">
-                <svg class="w-16 h-16 drop-shadow-sm" viewBox="0 0 64 64" fill="none">
-                  <path d="M6 18C6 15.8 6 14.7 6.654 13.91C6.8 13.73 6.965 13.565 7.145 13.419C7.935 12.765 9.035 12.765 11.235 12.765H15.5C16.44 12.765 16.91 12.765 17.34 12.9C17.77 13.035 18.135 13.295 18.865 13.815L21.135 15.39C21.865 15.91 22.23 16.17 22.66 16.305C23.09 16.44 23.56 16.44 24.5 16.44H42C46.4 16.44 48.6 16.44 50 17.84C51.4 19.24 51.4 21.44 51.4 25.84V26" stroke="#d97706" stroke-width="2"/>
-                  <rect x="4" y="22" width="56" height="32" rx="4" fill="#fbbf24" stroke="#d97706" stroke-width="1.5"/>
-                  <rect x="4" y="22" width="56" height="8" rx="4" fill="#d97706" opacity="0.3"/>
-                  <!-- Wand icon inside -->
-                  <path d="M28 34L36 42M35 33L37 35L29 43L27 41Z" fill="#d97706" opacity="0.5"/>
-                </svg>
-                <span class="absolute -top-1 -right-1 text-[10px] min-w-[20px] h-[20px] flex items-center justify-center px-1 rounded-full bg-amber-500 text-white font-bold shadow-sm" x-text="templateDocs.length"></span>
-              </div>
-              <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-amber-500 text-center leading-tight transition-colors">Templates</span>
-            </a>
-
-            <!-- Tous les documents folder -->
-            <button @click="activeFolder = 'all'; folderTab = 'all'" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-[#eff6ff] dark:hover:bg-[#1b2e4b]/60 transition-all cursor-pointer">
-              <div class="relative mb-2">
-                <svg class="w-16 h-16 drop-shadow-sm" viewBox="0 0 64 64" fill="none">
-                  <path d="M6 18C6 15.8 6 14.7 6.654 13.91C6.8 13.73 6.965 13.565 7.145 13.419C7.935 12.765 9.035 12.765 11.235 12.765H15.5C16.44 12.765 16.91 12.765 17.34 12.9C17.77 13.035 18.135 13.295 18.865 13.815L21.135 15.39C21.865 15.91 22.23 16.17 22.66 16.305C23.09 16.44 23.56 16.44 24.5 16.44H42C46.4 16.44 48.6 16.44 50 17.84C51.4 19.24 51.4 21.44 51.4 25.84V26" stroke="#2196f3" stroke-width="2"/>
-                  <rect x="4" y="22" width="56" height="32" rx="4" fill="#64b5f6" stroke="#2196f3" stroke-width="1.5"/>
-                  <rect x="4" y="22" width="56" height="8" rx="4" fill="#2196f3" opacity="0.3"/>
-                </svg>
-                <span class="absolute -top-1 -right-1 text-[10px] min-w-[20px] h-[20px] flex items-center justify-center px-1 rounded-full bg-info text-white font-bold shadow-sm" x-text="documents.length"></span>
-              </div>
-              <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-info text-center leading-tight transition-colors">Tous</span>
-            </button>
-
-            <!-- User-created custom folders -->
-            <template x-for="folder in customFolders" :key="folder._id">
-              <button @click="activeFolder = 'custom-' + folder._id; folderTab = 'all'" class="group flex flex-col items-center justify-center w-[100px] py-4 px-2 rounded-xl hover:bg-[#fff8ed] dark:hover:bg-[#1b2e4b]/60 transition-all cursor-pointer" @contextmenu.prevent.stop="contextMenu = { show: true, x: $event.clientX, y: $event.clientY, folderId: folder._id, folderName: folder.name }">
-                <div class="relative mb-2">
-                  <svg class="w-16 h-16 drop-shadow-sm" viewBox="0 0 64 64" fill="none">
-                    <path d="M6 18C6 15.8 6 14.7 6.654 13.91C6.8 13.73 6.965 13.565 7.145 13.419C7.935 12.765 9.035 12.765 11.235 12.765H15.5C16.44 12.765 16.91 12.765 17.34 12.9C17.77 13.035 18.135 13.295 18.865 13.815L21.135 15.39C21.865 15.91 22.23 16.17 22.66 16.305C23.09 16.44 23.56 16.44 24.5 16.44H42C46.4 16.44 48.6 16.44 50 17.84C51.4 19.24 51.4 21.44 51.4 25.84V26" :stroke="folder.color || '#e2a03f'" stroke-width="2"/>
-                    <rect x="4" y="22" width="56" height="32" rx="4" :fill="folder.color || '#f5c542'" :stroke="folder.color || '#e2a03f'" stroke-width="1.5" opacity="0.7"/>
-                    <rect x="4" y="22" width="56" height="8" rx="4" :fill="folder.color || '#e2a03f'" opacity="0.3"/>
-                  </svg>
-                  <span class="absolute -top-1 -right-1 text-[10px] min-w-[20px] h-[20px] flex items-center justify-center px-1 rounded-full bg-gray-500 text-white font-bold shadow-sm" x-text="documents.filter(d => d.folderId === folder._id).length"></span>
-                </div>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white text-center leading-tight transition-colors truncate max-w-[90px]" x-text="folder.name"></span>
-              </button>
             </template>
-            </div>
+            <template x-if="!gdoc.entityName && !gdoc.recordTitle">
+              <span class="text-xs text-gray-300">—</span>
+            </template>
+          </div>
+          <div class="w-28 text-right">
+            <span class="text-sm text-gray-400" x-text="formatRelativeDate(gdoc.createdAt)"></span>
+          </div>
+        </div>
+      </template>
+    </div>
+  </template>
 
-            <!-- Right-click Context Menu -->
-            <div x-show="contextMenu.show" x-cloak
-              @click.outside="contextMenu.show = false"
-              :style="'left:' + contextMenu.x + 'px; top:' + contextMenu.y + 'px'"
-              class="fixed z-50 bg-white dark:bg-[#1b2e4b] border border-[#e0e6ed] dark:border-gray-700 rounded-lg shadow-xl py-1.5 min-w-[180px]"
-              x-transition:enter="transition ease-out duration-100"
-              x-transition:enter-start="opacity-0 scale-95"
-              x-transition:enter-end="opacity-100 scale-100">
-              <template x-if="!contextMenu.folderId">
-                <div>
-                  <button @click="createFolder(); contextMenu.show = false" class="flex items-center gap-2.5 w-full px-3.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#f4f4f4] dark:hover:bg-[#253b5c] transition-colors">
-                    <svg class="w-4 h-4 text-warning" viewBox="0 0 24 24" fill="none"><path d="M2 6.95c0-.883 0-1.324.07-1.692A4 4 0 015.257 2.07C5.626 2 6.068 2 6.95 2c.386 0 .58 0 .766.017a4 4 0 012.18.904c.144.119.28.255.554.529L11 4h5c1.886 0 2.828 0 3.414.586C20 5.172 20 6.114 20 8v1" stroke="currentColor" stroke-width="1.5"/><path d="M2 10c0-1.886 0-2.828.586-3.414C3.172 6 4.114 6 6 6h12c1.886 0 2.828 0 3.414.586C22 7.172 22 8.114 22 10v5c0 1.886 0 2.828-.586 3.414C20.828 19 19.886 19 18 19H6c-1.886 0-2.828 0-3.414-.586C2 17.828 2 16.886 2 15v-5z" stroke="currentColor" stroke-width="1.5"/></svg>
-                    Nouveau dossier
-                  </button>
-                  <button @click="openTemplateModal(); contextMenu.show = false" class="flex items-center gap-2.5 w-full px-3.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#f4f4f4] dark:hover:bg-[#253b5c] transition-colors">
-                    <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                    Nouveau document
-                  </button>
-                </div>
-              </template>
-              <template x-if="contextMenu.folderId">
-                <div>
-                  <button @click="renameFolder(contextMenu.folderId, contextMenu.folderName); contextMenu.show = false" class="flex items-center gap-2.5 w-full px-3.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#f4f4f4] dark:hover:bg-[#253b5c] transition-colors">
-                    <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none"><path d="M15.6287 5.12132L4.31497 16.435C4.18538 16.5646 4.09816 16.7304 4.06417 16.9108L3.54167 19.6667C3.48335 19.9735 3.73482 20.2425 4.04497 20.2012L6.8675 19.8243C7.03693 19.8017 7.19326 19.7258 7.31639 19.6068L18.5355 8.71751" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12.5 7.5L16.5 11.5" stroke="currentColor" stroke-width="1.5"/></svg>
-                    Renommer
-                  </button>
-                  <button @click="deleteFolder(contextMenu.folderId); contextMenu.show = false" class="flex items-center gap-2.5 w-full px-3.5 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M20.5 6H3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M18.833 8.5L18.373 15.4C18.197 18.054 18.109 19.381 17.243 20.19C16.378 21 15.048 21 12.388 21H11.612C8.952 21 7.622 21 6.757 20.19C5.891 19.381 5.803 18.054 5.627 15.4L5.167 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                    Supprimer
-                  </button>
-                </div>
-              </template>
-            </div>
-
-            <!-- Upload zone -->
-            <div class="mt-8">
-              <h3 class="text-sm font-semibold text-[#888ea8] mb-3 flex items-center gap-2">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M12 15V3M12 3L8 7.5M12 3L16 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17L2.621 19.485C2.72 19.878 2.769 20.074 2.871 20.226C2.96 20.361 3.082 20.471 3.224 20.545C3.385 20.63 3.585 20.66 3.984 20.72L11.326 21.82C11.549 21.854 11.661 21.87 11.774 21.876C11.874 21.881 11.974 21.881 12.074 21.876C12.187 21.87 12.298 21.854 12.522 21.82L19.864 20.72C20.263 20.66 20.462 20.63 20.624 20.545C20.766 20.471 20.888 20.361 20.977 20.226C21.079 20.074 21.128 19.878 21.227 19.485L21.848 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                Documents uploadés
-                <span class="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full" x-text="uploadedDocs.length"></span>
-              </h3>
-              <div class="border-2 border-dashed rounded-xl p-6 text-center transition-all"
-                :class="isDraggingFile ? 'border-primary bg-primary/5 dark:bg-primary/10' : 'border-[#e0e6ed] dark:border-gray-700 hover:border-primary/40'"
-                @dragover.prevent="isDraggingFile = true"
-                @dragleave.prevent="isDraggingFile = false"
-                @drop.prevent="handleFileDrop($event); isDraggingFile = false">
-                <template x-if="uploadedDocs.length === 0 && !isUploading">
-                  <div>
-                    <svg class="w-10 h-10 mx-auto mb-2 text-[#888ea8]/50" viewBox="0 0 24 24" fill="none"><path d="M12 15V3M12 3L8 7.5M12 3L16 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17L2.621 19.485C2.72 19.878 2.769 20.074 2.871 20.226C2.96 20.361 3.082 20.471 3.224 20.545C3.385 20.63 3.585 20.66 3.984 20.72L11.326 21.82C11.549 21.854 11.661 21.87 11.774 21.876C11.874 21.881 11.974 21.881 12.074 21.876C12.187 21.87 12.298 21.854 12.522 21.82L19.864 20.72C20.263 20.66 20.462 20.63 20.624 20.545C20.766 20.471 20.888 20.361 20.977 20.226C21.079 20.074 21.128 19.878 21.227 19.485L21.848 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                    <p class="text-sm text-[#888ea8] mb-1">Glissez-déposez vos fichiers ici</p>
-                    <p class="text-[11px] text-[#888ea8]/70 mb-3">PDF, Word, Images, Excel...</p>
-                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium cursor-pointer hover:bg-primary/20 transition-colors">
-                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><path d="M12 15V3M12 3L8 7.5M12 3L16 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                      Parcourir
-                      <input type="file" multiple class="hidden" @change="handleFileSelect($event)">
-                    </label>
-                  </div>
-                </template>
-                <template x-if="uploadedDocs.length > 0 || isUploading">
-                  <div class="text-left">
-                    <div class="flex flex-wrap gap-3">
-                      <template x-for="udoc in uploadedDocs" :key="udoc._id">
-                        <a :href="udoc.uploadedFile?.path" target="_blank" class="group flex flex-col items-center w-[80px] py-2 px-1 rounded-lg hover:bg-gray-50 dark:hover:bg-[#1b2e4b]/40 transition-colors">
-                          <div class="w-10 h-12 rounded-md flex items-center justify-center mb-1.5" :class="getFileIconClass(udoc.uploadedFile?.mimeType)">
-                            <span class="text-[10px] font-bold uppercase" x-text="getFileExt(udoc.uploadedFile?.originalName)"></span>
-                          </div>
-                          <span class="text-[11px] text-gray-600 dark:text-gray-400 truncate w-full text-center" x-text="udoc.name"></span>
-                        </a>
-                      </template>
-                      <label class="flex flex-col items-center justify-center w-[80px] py-2 px-1 rounded-lg border border-dashed border-[#e0e6ed] dark:border-gray-700 hover:border-primary/40 cursor-pointer transition-colors">
-                        <svg class="w-6 h-6 text-[#888ea8]/50 mb-1" viewBox="0 0 24 24" fill="none"><path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                        <span class="text-[10px] text-[#888ea8]">Ajouter</span>
-                        <input type="file" multiple class="hidden" @change="handleFileSelect($event)">
-                      </label>
-                    </div>
-                    <template x-if="isUploading">
-                      <div class="mt-3 flex items-center gap-2 text-xs text-primary">
-                        <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                        Upload en cours...
-                      </div>
-                    </template>
-                  </div>
-                </template>
-              </div>
-            </div>
-
-            <!-- Recent documents preview -->
-            <div class="mt-6" x-show="getRecentDocs().length > 0">
-              <h3 class="text-sm font-semibold text-[#888ea8] mb-3 flex items-center gap-2">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M12 8V12L14.5 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Modifiés récemment
-              </h3>
-              <div class="panel p-0 overflow-hidden">
-                <template x-for="(doc, idx) in getRecentDocs().slice(0, 5)" :key="doc._id">
-                  <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="flex items-center gap-3 px-4 py-3 hover:bg-[#f8f9fa] dark:hover:bg-[#1b2e4b]/50 transition-colors" :class="idx < 4 ? 'border-b border-[#e0e6ed] dark:border-[#1b2e4b]' : ''">
-                    <div class="flex h-9 w-9 items-center justify-center rounded-lg flex-shrink-0" :class="doc.status === 'published' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'">
-                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <div class="font-medium text-sm dark:text-white-light truncate" x-text="doc.name || 'Document sans titre'"></div>
-                      <div class="text-[11px] text-[#888ea8]" x-text="formatDate(doc.updatedAt)"></div>
-                    </div>
-                    <span class="badge text-[10px]" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
-                  </a>
-                </template>
-              </div>
-            </div>
+  <!-- ================================ -->
+  <!-- SECTION: Upload Zone             -->
+  <!-- ================================ -->
+  <template x-if="activeSection === 'uploads'">
+    <div class="space-y-4">
+      <!-- Upload dropzone -->
+      <div class="doc-upload-zone"
+           :class="isDraggingFile ? 'doc-upload-zone--active' : ''"
+           @dragover.prevent="isDraggingFile = true"
+           @dragleave.prevent="isDraggingFile = false"
+           @drop.prevent="handleFileDrop($event); isDraggingFile = false">
+        <div class="flex flex-col items-center py-8">
+          <iconify-icon icon="solar:cloud-upload-bold-duotone" width="36" class="text-gray-300 dark:text-gray-600 mb-3"></iconify-icon>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Glissez-déposez vos fichiers ici</p>
+          <p class="text-[11px] text-gray-400 dark:text-gray-500 mb-3">PDF, Word, Images, Excel...</p>
+          <label class="btn btn-outline-primary btn-sm rounded-lg gap-1.5 cursor-pointer">
+            <iconify-icon icon="solar:upload-line-duotone" width="14"></iconify-icon>
+            Parcourir
+            <input type="file" multiple class="hidden" @change="handleFileSelect($event)">
+          </label>
+        </div>
+        <template x-if="isUploading">
+          <div class="pb-4 flex items-center justify-center gap-2 text-xs text-primary">
+            <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+            Upload en cours...
           </div>
         </template>
       </div>
-      <!-- Template documents content (when templates folder is active) -->
-      <template x-if="activeFolder === 'templates'">
-        <div class="space-y-4">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-sm font-semibold text-gray-500 flex items-center gap-2">
-              <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="16" class="text-amber-500"></iconify-icon>
-              Mes templates
-              <span class="text-xs bg-amber-100 dark:bg-amber-900/20 text-amber-600 px-2 py-0.5 rounded-full" x-text="templateDocs.length"></span>
-            </h3>
-          </div>
-          <template x-if="templateDocs.length === 0">
-            <div class="flex flex-col items-center justify-center py-16 text-center">
-              <iconify-icon icon="solar:magic-stick-3-broken" width="48" class="text-gray-300 mb-3"></iconify-icon>
-              <p class="text-sm text-gray-400 font-medium">Aucun template créé</p>
-              <p class="text-xs text-gray-300 mt-1">Créez un document et activez le mode template depuis l'éditeur</p>
-            </div>
-          </template>
-          <template x-if="templateDocs.length > 0">
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              <template x-for="tDoc in templateDocs" :key="tDoc._id">
-                <a :href="'/account/<%= account_number %>/documents/' + tDoc._id + '/edit-react'" class="panel p-4 hover:shadow-lg transition-all group relative border-l-[3px] border-l-amber-400">
-                  <div class="flex items-start justify-between mb-3">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-colors dark:bg-amber-900/20">
-                      <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="22"></iconify-icon>
-                    </div>
-                    <span class="badge badge-outline-warning text-[10px]">Template</span>
-                  </div>
-                  <h4 class="font-semibold dark:text-white-light mb-1 truncate text-sm" x-text="tDoc.name || 'Template sans titre'"></h4>
-                  <p class="text-[11px] text-[#888ea8] mb-2" x-text="formatDate(tDoc.updatedAt)"></p>
-                  <!-- Linked entities badges -->
-                  <div class="flex flex-wrap gap-1" x-show="tDoc.entityIds && tDoc.entityIds.length > 0">
-                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500" x-text="(tDoc.entityIds || []).length + ' collection' + ((tDoc.entityIds || []).length > 1 ? 's' : '')"></span>
-                  </div>
-                </a>
-              </template>
-            </div>
+
+      <!-- Uploaded files grid -->
+      <template x-if="uploadedDocs.length > 0">
+        <div class="doc-grid">
+          <template x-for="udoc in uploadedDocs" :key="udoc._id">
+            <a :href="udoc.uploadedFile?.path" target="_blank" 
+               class="doc-card group">
+              <div class="doc-card__preview" style="min-height: 90px;">
+                <div class="w-10 h-12 rounded-md flex items-center justify-center" :class="getFileIconClass(udoc.uploadedFile?.mimeType)">
+                  <span class="text-[10px] font-bold uppercase" x-text="getFileExt(udoc.uploadedFile?.originalName)"></span>
+                </div>
+              </div>
+              <div class="doc-card__body">
+                <span class="doc-card__name" x-text="udoc.name || 'Fichier'"></span>
+              </div>
+            </a>
           </template>
         </div>
       </template>
 
-      <!-- Document contents (shown when a folder is active) -->
-      <template x-if="activeFolder !== null && activeFolder !== 'templates'">
-      <div class="space-y-6">
-      <!-- Grid View with Time Grouping -->
-      <template x-if="viewMode === 'grid'">
-        <div class="space-y-6">
-
-          <!-- Today -->
-          <template x-if="getDocumentsByPeriod('today').length > 0">
-            <div>
-              <h3 class="text-sm font-semibold text-[#888ea8] mb-3 flex items-center gap-2">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M12 8V12L14.5 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Aujourd'hui
-                <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="getDocumentsByPeriod('today').length"></span>
-              </h3>
-              <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-                <template x-for="doc in getDocumentsByPeriod('today')" :key="doc._id">
-                  <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="panel p-4 hover:shadow-lg transition-all group relative border-l-[3px]" :class="{'border-l-warning': doc.status === 'draft', 'border-l-success': doc.status === 'published', 'border-l-secondary': doc.status === 'archived', 'border-l-primary': !doc.status}">
-                    <div class="flex items-start justify-between mb-3">
-                      <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                      </div>
-                      <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
-                    </div>
-                    <h4 class="font-semibold dark:text-white-light mb-1 truncate" x-text="doc.name"></h4>
-                    <p class="text-xs text-[#888ea8]" x-text="formatDate(doc.updatedAt)"></p>
-                    <div class="absolute bottom-3 right-3 flex" x-data="{ count: (getDocumentsByPeriod('today').indexOf(doc) % 3) + 1, names: ['Marie L.', 'Jean D.', 'Sophie M.', 'Pierre B.', 'Emma R.'], groupHover: false, activeAvatar: null }" @mouseenter="groupHover = true" @mouseleave="groupHover = false; activeAvatar = null" :class="groupHover ? 'gap-1' : '-space-x-2'">
-                      <template x-for="i in count" :key="i">
-                        <div class="relative" @mouseenter="activeAvatar = i" @mouseleave="activeAvatar = null">
-                          <img :src="'/assets/images/profile-' + (((getDocumentsByPeriod('today').indexOf(doc) * 3 + i) % 35) + 1) + '.jpeg'" class="w-6 h-6 rounded-full object-cover border-2 border-white dark:border-[#1b2e4b] transition-transform duration-200 cursor-pointer" :style="groupHover ? 'transform: scale(1.2); z-index: ' + (50 + i) : ''" alt="Collaborateur"/>
-                          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-dark text-white text-[9px] rounded whitespace-nowrap pointer-events-none transition-opacity duration-150" :class="activeAvatar === i ? 'opacity-100' : 'opacity-0'" style="z-index: 60;" x-text="names[(getDocumentsByPeriod('today').indexOf(doc) + i) % 5]"></div>
-                        </div>
-                      </template>
-                    </div>
-                  </a>
-                </template>
-              </div>
-            </div>
-          </template>
-
-          <!-- Yesterday -->
-          <template x-if="getDocumentsByPeriod('yesterday').length > 0">
-            <div>
-              <h3 class="text-sm font-semibold text-[#888ea8] mb-3 flex items-center gap-2">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M7 12L10.5 15.5L17 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Hier
-                <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="getDocumentsByPeriod('yesterday').length"></span>
-              </h3>
-              <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-                <template x-for="doc in getDocumentsByPeriod('yesterday')" :key="doc._id">
-                  <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="panel p-4 hover:shadow-lg transition-all group relative border-l-[3px]" :class="{'border-l-warning': doc.status === 'draft', 'border-l-success': doc.status === 'published', 'border-l-secondary': doc.status === 'archived', 'border-l-primary': !doc.status}">
-                    <div class="flex items-start justify-between mb-3">
-                      <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                      </div>
-                      <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
-                    </div>
-                    <h4 class="font-semibold dark:text-white-light mb-1 truncate" x-text="doc.name"></h4>
-                    <p class="text-xs text-[#888ea8]" x-text="formatDate(doc.updatedAt)"></p>
-                    <div class="absolute bottom-3 right-3 flex -space-x-2">
-                      <template x-for="i in Math.min((getDocumentsByPeriod('yesterday').indexOf(doc) % 3) + 1, 3)" :key="i">
-                        <img :src="'/assets/images/profile-' + (((getDocumentsByPeriod('yesterday').indexOf(doc) * 3 + i) % 35) + 1) + '.jpeg'" class="w-6 h-6 rounded-full object-cover border-2 border-white dark:border-[#1b2e4b]" alt="Collaborateur"/>
-                      </template>
-                    </div>
-                  </a>
-                </template>
-              </div>
-            </div>
-          </template>
-
-          <!-- "Voir plus" button -->
-          <template x-if="!showAllDocs && getOlderDocsCount() > 0">
-            <div class="flex justify-center pt-2">
-              <button @click="showAllDocs = true" class="group flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-[#1b2e4b] border border-[#e0e6ed] dark:border-[#1b2e4b] hover:border-primary/50 hover:shadow-md transition-all text-sm font-medium text-[#888ea8] hover:text-primary">
-                <svg class="w-4 h-4 transition-transform group-hover:translate-y-0.5" viewBox="0 0 24 24" fill="none"><path d="M19 9L12 15L5 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Voir plus
-                <span class="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary tabular-nums" x-text="getOlderDocsCount() + ' documents'"></span>
-              </button>
-            </div>
-          </template>
-
-          <!-- Older docs (hidden by default) -->
-          <template x-if="showAllDocs">
-            <div class="space-y-6">
-              <!-- This Week -->
-              <template x-if="getDocumentsByPeriod('week').length > 0">
-                <div>
-                  <h3 class="text-sm font-semibold text-[#888ea8] mb-3 flex items-center gap-2">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M7 4V2.5M17 4V2.5M2.5 9H21.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                    Cette semaine
-                    <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="getDocumentsByPeriod('week').length"></span>
-                  </h3>
-                  <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-                    <template x-for="doc in getDocumentsByPeriod('week')" :key="doc._id">
-                      <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="panel p-4 hover:shadow-lg transition-all group relative border-l-[3px]" :class="{'border-l-warning': doc.status === 'draft', 'border-l-success': doc.status === 'published', 'border-l-secondary': doc.status === 'archived', 'border-l-primary': !doc.status}">
-                        <div class="flex items-start justify-between mb-3">
-                          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                          </div>
-                          <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
-                        </div>
-                        <h4 class="font-semibold dark:text-white-light mb-1 truncate" x-text="doc.name"></h4>
-                        <p class="text-xs text-[#888ea8]" x-text="formatDate(doc.updatedAt)"></p>
-                        <div class="absolute bottom-3 right-3 flex -space-x-2">
-                          <template x-for="i in Math.min((getDocumentsByPeriod('week').indexOf(doc) % 3) + 1, 3)" :key="i">
-                            <img :src="'/assets/images/profile-' + (((getDocumentsByPeriod('week').indexOf(doc) * 3 + i) % 35) + 1) + '.jpeg'" class="w-6 h-6 rounded-full object-cover border-2 border-white dark:border-[#1b2e4b]" alt="Collaborateur"/>
-                          </template>
-                        </div>
-                      </a>
-                    </template>
-                  </div>
-                </div>
-              </template>
-
-              <!-- By Month -->
-              <template x-for="month in getMonthGroups()" :key="month.key">
-                <div>
-                  <h3 class="text-sm font-semibold text-[#888ea8] mb-3 flex items-center gap-2">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M7 4V2.5M17 4V2.5M2.5 9H21.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                    <span x-text="month.label"></span>
-                    <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="month.docs.length"></span>
-                  </h3>
-                  <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-                    <template x-for="doc in month.docs" :key="doc._id">
-                      <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="panel p-4 hover:shadow-lg transition-all group relative border-l-[3px]" :class="{'border-l-warning': doc.status === 'draft', 'border-l-success': doc.status === 'published', 'border-l-secondary': doc.status === 'archived', 'border-l-primary': !doc.status}">
-                        <div class="flex items-start justify-between mb-3">
-                          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                          </div>
-                          <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
-                        </div>
-                        <h4 class="font-semibold dark:text-white-light mb-1 truncate" x-text="doc.name"></h4>
-                        <p class="text-xs text-[#888ea8]" x-text="formatDate(doc.updatedAt)"></p>
-                        <div class="absolute bottom-3 right-3 flex -space-x-2">
-                          <template x-for="i in Math.min((month.docs.indexOf(doc) % 3) + 1, 3)" :key="i">
-                            <img :src="'/assets/images/profile-' + (((month.docs.indexOf(doc) * 3 + i) % 35) + 1) + '.jpeg'" class="w-6 h-6 rounded-full object-cover border-2 border-white dark:border-[#1b2e4b]" alt="Collaborateur"/>
-                          </template>
-                        </div>
-                      </a>
-                    </template>
-                  </div>
-                </div>
-              </template>
-
-              <!-- Collapse button -->
-              <div class="flex justify-center pt-2">
-                <button @click="showAllDocs = false" class="group flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-[#1b2e4b] border border-[#e0e6ed] dark:border-[#1b2e4b] hover:border-primary/50 hover:shadow-md transition-all text-sm font-medium text-[#888ea8] hover:text-primary">
-                  <svg class="w-4 h-4 transition-transform group-hover:-translate-y-0.5" viewBox="0 0 24 24" fill="none"><path d="M5 15L12 9L19 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  Voir moins
-                </button>
-              </div>
-            </div>
-          </template>
+      <template x-if="uploadedDocs.length === 0 && !isUploading">
+        <div class="panel py-10 text-center">
+          <iconify-icon icon="solar:cloud-upload-broken" width="28" class="text-gray-300 dark:text-gray-600 mb-2"></iconify-icon>
+          <p class="text-xs text-gray-400">Aucun fichier uploadé</p>
         </div>
-      </template>
-
-      <!-- List View with Time Grouping -->
-      <template x-if="viewMode === 'list'">
-        <div class="space-y-4">
-          <!-- Today -->
-          <template x-if="getDocumentsByPeriod('today').length > 0">
-            <div class="panel p-0">
-              <div class="py-2 px-4 border-b border-[#e0e6ed] dark:border-[#1b2e4b] bg-[#f8f9fa] dark:bg-[#1b2e4b]/30">
-                <h3 class="text-sm font-semibold text-[#888ea8] flex items-center gap-2">
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M12 8V12L14.5 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  Aujourd'hui
-                  <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="getDocumentsByPeriod('today').length"></span>
-                </h3>
-              </div>
-              <table class="w-full">
-                <tbody>
-                  <template x-for="doc in getDocumentsByPeriod('today')" :key="doc._id">
-                    <tr class="border-b border-[#e0e6ed] dark:border-[#1b2e4b] hover:bg-[#f8f9fa] dark:hover:bg-[#1b2e4b]/50">
-                      <td class="py-2 px-4">
-                        <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="flex items-center gap-3 hover:text-primary">
-                          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary flex-shrink-0">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                          </div>
-                          <span class="font-medium dark:text-white-light truncate text-sm" x-text="doc.name"></span>
-                        </a>
-                      </td>
-                      <td class="py-2 px-4 hidden md:table-cell">
-                        <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
-                      </td>
-                      <td class="py-2 px-4 text-right">
-                        <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="px-3 py-1 text-xs border border-primary text-primary rounded hover:bg-primary hover:text-white transition-colors">Modifier</a>
-                      </td>
-                    </tr>
-                  </template>
-                </tbody>
-              </table>
-            </div>
-          </template>
-
-          <!-- Yesterday -->
-          <template x-if="getDocumentsByPeriod('yesterday').length > 0">
-            <div class="panel p-0">
-              <div class="py-2 px-4 border-b border-[#e0e6ed] dark:border-[#1b2e4b] bg-[#f8f9fa] dark:bg-[#1b2e4b]/30">
-                <h3 class="text-sm font-semibold text-[#888ea8] flex items-center gap-2">
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M7 12L10.5 15.5L17 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  Hier
-                  <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="getDocumentsByPeriod('yesterday').length"></span>
-                </h3>
-              </div>
-              <table class="w-full">
-                <tbody>
-                  <template x-for="doc in getDocumentsByPeriod('yesterday')" :key="doc._id">
-                    <tr class="border-b border-[#e0e6ed] dark:border-[#1b2e4b] hover:bg-[#f8f9fa] dark:hover:bg-[#1b2e4b]/50">
-                      <td class="py-2 px-4">
-                        <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="flex items-center gap-3 hover:text-primary">
-                          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary flex-shrink-0">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                          </div>
-                          <span class="font-medium dark:text-white-light truncate text-sm" x-text="doc.name"></span>
-                        </a>
-                      </td>
-                      <td class="py-2 px-4 hidden md:table-cell">
-                        <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
-                      </td>
-                      <td class="py-2 px-4 text-right">
-                        <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="px-3 py-1 text-xs border border-primary text-primary rounded hover:bg-primary hover:text-white transition-colors">Modifier</a>
-                      </td>
-                    </tr>
-                  </template>
-                </tbody>
-              </table>
-            </div>
-          </template>
-
-          <!-- "Voir plus" button (list view) -->
-          <template x-if="!showAllDocs && getOlderDocsCount() > 0">
-            <div class="flex justify-center pt-2">
-              <button @click="showAllDocs = true" class="group flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-[#1b2e4b] border border-[#e0e6ed] dark:border-[#1b2e4b] hover:border-primary/50 hover:shadow-md transition-all text-sm font-medium text-[#888ea8] hover:text-primary">
-                <svg class="w-4 h-4 transition-transform group-hover:translate-y-0.5" viewBox="0 0 24 24" fill="none"><path d="M19 9L12 15L5 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Voir plus
-                <span class="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary tabular-nums" x-text="getOlderDocsCount() + ' documents'"></span>
-              </button>
-            </div>
-          </template>
-
-          <!-- Older docs (list view, hidden by default) -->
-          <template x-if="showAllDocs">
-            <div class="space-y-4">
-              <!-- This Week -->
-              <template x-if="getDocumentsByPeriod('week').length > 0">
-                <div class="panel p-0">
-                  <div class="py-2 px-4 border-b border-[#e0e6ed] dark:border-[#1b2e4b] bg-[#f8f9fa] dark:bg-[#1b2e4b]/30">
-                    <h3 class="text-sm font-semibold text-[#888ea8] flex items-center gap-2">
-                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M7 4V2.5M17 4V2.5M2.5 9H21.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                      Cette semaine
-                      <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="getDocumentsByPeriod('week').length"></span>
-                    </h3>
-                  </div>
-                  <table class="w-full">
-                    <tbody>
-                      <template x-for="doc in getDocumentsByPeriod('week')" :key="doc._id">
-                        <tr class="border-b border-[#e0e6ed] dark:border-[#1b2e4b] hover:bg-[#f8f9fa] dark:hover:bg-[#1b2e4b]/50">
-                          <td class="py-2 px-4">
-                            <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="flex items-center gap-3 hover:text-primary">
-                              <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary flex-shrink-0">
-                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                              </div>
-                              <span class="font-medium dark:text-white-light truncate text-sm" x-text="doc.name"></span>
-                            </a>
-                          </td>
-                          <td class="py-2 px-4 hidden md:table-cell">
-                            <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
-                          </td>
-                          <td class="py-2 px-4 text-right">
-                            <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="px-3 py-1 text-xs border border-primary text-primary rounded hover:bg-primary hover:text-white transition-colors">Modifier</a>
-                          </td>
-                        </tr>
-                      </template>
-                    </tbody>
-                  </table>
-                </div>
-              </template>
-
-              <!-- By Month -->
-              <template x-for="month in getMonthGroups()" :key="month.key">
-                <div class="panel p-0">
-                  <div class="py-2 px-4 border-b border-[#e0e6ed] dark:border-[#1b2e4b] bg-[#f8f9fa] dark:bg-[#1b2e4b]/30">
-                    <h3 class="text-sm font-semibold text-[#888ea8] flex items-center gap-2">
-                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M7 4V2.5M17 4V2.5M2.5 9H21.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                      <span x-text="month.label"></span>
-                      <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full" x-text="month.docs.length"></span>
-                    </h3>
-                  </div>
-                  <table class="w-full">
-                    <tbody>
-                      <template x-for="doc in month.docs" :key="doc._id">
-                        <tr class="border-b border-[#e0e6ed] dark:border-[#1b2e4b] hover:bg-[#f8f9fa] dark:hover:bg-[#1b2e4b]/50">
-                          <td class="py-2 px-4">
-                            <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="flex items-center gap-3 hover:text-primary">
-                              <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary flex-shrink-0">
-                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                              </div>
-                              <span class="font-medium dark:text-white-light truncate text-sm" x-text="doc.name"></span>
-                            </a>
-                          </td>
-                          <td class="py-2 px-4 hidden md:table-cell">
-                            <span class="badge text-xs" :class="{'badge-outline-warning': doc.status === 'draft', 'badge-outline-success': doc.status === 'published', 'badge-outline-secondary': doc.status === 'archived'}" x-text="doc.status === 'draft' ? 'Brouillon' : doc.status === 'published' ? 'Publié' : 'Archivé'"></span>
-                          </td>
-                          <td class="py-2 px-4 text-right">
-                            <a :href="'/account/<%= account_number %>/documents/' + doc._id + '/edit-react'" class="px-3 py-1 text-xs border border-primary text-primary rounded hover:bg-primary hover:text-white transition-colors">Modifier</a>
-                          </td>
-                        </tr>
-                      </template>
-                    </tbody>
-                  </table>
-                </div>
-              </template>
-
-              <!-- Collapse button -->
-              <div class="flex justify-center pt-2">
-                <button @click="showAllDocs = false" class="group flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-[#1b2e4b] border border-[#e0e6ed] dark:border-[#1b2e4b] hover:border-primary/50 hover:shadow-md transition-all text-sm font-medium text-[#888ea8] hover:text-primary">
-                  <svg class="w-4 h-4 transition-transform group-hover:-translate-y-0.5" viewBox="0 0 24 24" fill="none"><path d="M5 15L12 9L19 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  Voir moins
-                </button>
-              </div>
-            </div>
-          </template>
-        </div>
-      </template>
-      </div>
       </template>
     </div>
   </template>
 
   <!-- ============================================ -->
-  <!-- LAYOUT 2: NOTES STYLE -->
+  <!-- DELETE MODAL                                 -->
   <!-- ============================================ -->
-  <template x-if="layoutMode === 'notes'">
-    <div class="relative flex h-full gap-5 sm:h-[calc(100vh_-_150px)]">
-      <!-- Overlay for mobile -->
-      <div
-        class="absolute z-10 hidden h-full w-full rounded-md bg-black/60"
-        :class="{ '!block xl:!hidden': isShowDocMenu }"
-        @click="isShowDocMenu = !isShowDocMenu"
-      ></div>
-      
-      <!-- Left Sidebar -->
-      <div
-        class="panel absolute z-10 hidden h-full w-[240px] flex-none space-y-4 overflow-hidden p-4 ltr:rounded-r-none rtl:rounded-l-none ltr:lg:rounded-r-md rtl:lg:rounded-l-md xl:relative xl:block xl:h-auto"
-        :class="{ 'hidden shadow': !isShowDocMenu, 'h-full ltr:left-0 rtl:right-0': isShowDocMenu }"
-      >
-        <div class="flex h-full flex-col pb-16">
-          <div class="flex items-center text-center">
-            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none">
-              <path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/>
-              <path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-            <h3 class="text-lg font-semibold ltr:ml-3 rtl:mr-3">Documents</h3>
-          </div>
-          
-          <div class="my-4 h-px w-full border-b border-[#e0e6ed] dark:border-[#1b2e4b]"></div>
-          
-          <div class="perfect-scrollbar relative -mr-3.5 h-full grow pr-3.5">
-            <div class="space-y-1">
-              <button type="button" class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-primary dark:hover:bg-[#181F32]" :class="{ 'bg-gray-100 dark:text-primary text-primary dark:bg-[#181F32]': selectedTab === 'all' }" @click="tabChanged('all')">
-                <div class="flex items-center">
-                  <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/><path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                  <div class="ltr:ml-3 rtl:mr-3">Tous</div>
-                </div>
-                <span class="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary" x-text="documents.length"></span>
-              </button>
-              
-              <button type="button" class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-primary dark:hover:bg-[#181F32]" :class="{ 'bg-gray-100 dark:text-primary text-primary dark:bg-[#181F32]': selectedTab === 'fav' }" @click="tabChanged('fav')">
-                <div class="flex items-center">
-                  <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M9.15316 5.40838C10.4198 3.13613 11.0531 2 12 2C12.9469 2 13.5802 3.13612 14.8468 5.40837L15.1745 5.99623C15.5345 6.64193 15.7144 6.96479 15.9951 7.17781C16.2757 7.39083 16.6251 7.4699 17.3241 7.62805L17.9605 7.77203C20.4201 8.32856 21.65 8.60682 21.9426 9.54773C22.2352 10.4886 21.3968 11.4691 19.7199 13.4299L19.2861 13.9372C18.8096 14.4944 18.5713 14.773 18.4641 15.1177C18.357 15.4624 18.393 15.8341 18.465 16.5776L18.5306 17.2544C18.7841 19.8706 18.9109 21.1787 18.1449 21.7602C17.3788 22.3417 16.2273 21.8115 13.9243 20.7512L13.3285 20.4768C12.6741 20.1755 12.3469 20.0248 12 20.0248C11.6531 20.0248 11.3259 20.1755 10.6715 20.4768L10.0757 20.7512C7.77268 21.8115 6.62118 22.3417 5.85515 21.7602C5.08912 21.1787 5.21588 19.8706 5.4694 17.2544L5.53498 16.5776C5.60703 15.8341 5.64305 15.4624 5.53586 15.1177C5.42868 14.773 5.19043 14.4944 4.71392 13.9372L4.2801 13.4299C2.60325 11.4691 1.76482 10.4886 2.05742 9.54773C2.35002 8.60682 3.57986 8.32856 6.03954 7.77203L6.67589 7.62805C7.37485 7.4699 7.72433 7.39083 8.00494 7.17781C8.28555 6.96479 8.46553 6.64194 8.82547 5.99623L9.15316 5.40838Z" stroke="currentColor" stroke-width="1.5"/></svg>
-                  <div class="ltr:ml-3 rtl:mr-3">Favoris</div>
-                </div>
-              </button>
-
-              <button type="button" class="flex h-10 w-full items-center justify-between rounded-md p-2 font-medium hover:bg-white-dark/10 hover:text-amber-500 dark:hover:bg-[#181F32]" :class="{ 'bg-amber-50 dark:text-amber-500 text-amber-500 dark:bg-amber-900/10': selectedTab === 'templates' }" @click="tabChanged('templates')">
-                <div class="flex items-center">
-                  <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="20" class="text-amber-500"></iconify-icon>
-                  <div class="ltr:ml-3 rtl:mr-3">Mes templates</div>
-                </div>
-                <span class="rounded-full bg-amber-100 dark:bg-amber-900/20 px-2 py-0.5 text-xs text-amber-600" x-text="templateDocs.length"></span>
-              </button>
-              
-              <div class="h-px w-full border-b border-[#e0e6ed] dark:border-[#1b2e4b]"></div>
-              <div class="px-1 py-3 text-white-dark">Statut</div>
-              
-              <button type="button" class="flex h-10 w-full items-center rounded-md p-1 font-medium text-warning duration-300 hover:bg-white-dark/10 ltr:hover:pl-3 rtl:hover:pr-3 dark:hover:bg-[#181F32]" :class="{ 'ltr:pl-3 rtl:pr-3 bg-gray-100 dark:bg-[#181F32]': selectedTab === 'draft' }" @click="tabChanged('draft')">
-                <svg class="h-3 w-3 rotate-45 fill-warning" viewBox="0 0 24 24"><path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" stroke-width="1.5"/></svg>
-                <div class="ltr:ml-3 rtl:mr-3">Brouillons</div>
-              </button>
-              
-              <button type="button" class="flex h-10 w-full items-center rounded-md p-1 font-medium text-success duration-300 hover:bg-white-dark/10 ltr:hover:pl-3 rtl:hover:pr-3 dark:hover:bg-[#181F32]" :class="{ 'ltr:pl-3 rtl:pr-3 bg-gray-100 dark:bg-[#181F32]': selectedTab === 'published' }" @click="tabChanged('published')">
-                <svg class="h-3 w-3 rotate-45 fill-success" viewBox="0 0 24 24"><path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" stroke-width="1.5"/></svg>
-                <div class="ltr:ml-3 rtl:mr-3">Publiés</div>
-              </button>
-              
-              <button type="button" class="flex h-10 w-full items-center rounded-md p-1 font-medium text-secondary duration-300 hover:bg-white-dark/10 ltr:hover:pl-3 rtl:hover:pr-3 dark:hover:bg-[#181F32]" :class="{ 'ltr:pl-3 rtl:pr-3 bg-gray-100 dark:bg-[#181F32]': selectedTab === 'archived' }" @click="tabChanged('archived')">
-                <svg class="h-3 w-3 rotate-45 fill-secondary" viewBox="0 0 24 24"><path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" stroke-width="1.5"/></svg>
-                <div class="ltr:ml-3 rtl:mr-3">Archivés</div>
-              </button>
-            </div>
-          </div>
+  <template x-if="deleteTarget">
+    <div class="fixed inset-0 z-[999] flex items-center justify-center" @click.self="deleteTarget = null">
+      <div class="fixed inset-0 bg-black/40 backdrop-filter backdrop-blur-sm" @click="deleteTarget = null"></div>
+      <div class="panel relative z-10 w-full max-w-sm p-6 text-center animate__animated animate__fadeInUp animate__faster">
+        <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-danger/10 flex items-center justify-center">
+          <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="24" class="text-danger"></iconify-icon>
         </div>
-        
-        <div class="absolute bottom-0 w-full p-4 ltr:left-0 rtl:right-0">
-          <a href="/account/<%= account_number %>/documents/new" class="btn btn-primary w-full">
-            <svg class="h-5 w-5 ltr:mr-2 rtl:ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Nouveau Document
-          </a>
-        </div>
-      </div>
-
-      <!-- Main Content Panel -->
-      <div class="panel h-full flex-1 overflow-auto">
-        <div class="pb-5">
-          <button type="button" class="hover:text-primary xl:hidden" @click="isShowDocMenu = !isShowDocMenu">
-            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none"><path d="M20 7L4 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path><path opacity="0.5" d="M20 12L4 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path><path d="M20 17L4 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>
+        <h3 class="text-base font-bold dark:text-white mb-1">Supprimer ce document ?</h3>
+        <p class="text-xs text-gray-500 mb-5 leading-relaxed">
+          "<strong x-text="deleteTarget.name || 'Sans titre'"></strong>" sera définitivement supprimé.
+        </p>
+        <div class="flex gap-2">
+          <button @click="deleteTarget = null" class="btn btn-outline-dark flex-1 btn-sm rounded-lg dark:border-[#253b5c] dark:text-gray-300">Annuler</button>
+          <button @click="executeDelete()" class="btn btn-danger flex-1 btn-sm rounded-lg" :disabled="deleting">
+            <span x-show="!deleting" class="flex items-center justify-center gap-1.5">
+              <iconify-icon icon="solar:trash-bin-trash-bold" width="14"></iconify-icon>
+              Supprimer
+            </span>
+            <span x-show="deleting">Suppression...</span>
           </button>
         </div>
-
-        <div class="mb-5 flex flex-wrap items-center justify-between gap-4">
-          <div class="relative w-full max-w-xs">
-            <input type="text" x-model="searchQuery" placeholder="Rechercher..." class="form-input w-full pl-10 dark:bg-[#1b2e4b] dark:border-[#1b2e4b]"/>
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#888ea8]" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5" opacity="0.5"></circle><path d="M20 20L17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </div>
-        </div>
-
-        <template x-if="!filteredDocuments().length">
-          <div class="flex h-full min-h-[400px] items-center justify-center text-lg font-semibold">Aucun document trouvé</div>
-        </template>
-
-        <template x-if="filteredDocuments().length > 0">
-          <div class="min-h-[400px]">
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-              <template x-for="doc in filteredDocuments()" :key="doc._id">
-                <div class="panel pb-12 relative cursor-pointer hover:shadow-lg transition-shadow"
-                     :class="{'bg-warning-light shadow-warning': doc.status === 'draft', 'bg-success-light shadow-success': doc.status === 'published', 'bg-secondary-light shadow-secondary': doc.status === 'archived', 'dark:shadow-dark': !doc.status}"
-                     @click="window.location.href = '/account/<%= account_number %>/documents/' + doc._id + '/edit-react'">
-                  <div class="min-h-[142px]">
-                    <div class="flex justify-between">
-                      <div class="flex w-max items-center">
-                        <div class="flex-none">
-                          <div class="flex -space-x-2" x-data="{ count: (filteredDocuments().indexOf(doc) % 3) + 1, names: ['Marie L.', 'Jean D.', 'Sophie M.', 'Pierre B.', 'Emma R.'], groupHover: false, activeAvatar: null }" @mouseenter="groupHover = true" @mouseleave="groupHover = false; activeAvatar = null" :class="groupHover ? 'gap-1' : '-space-x-2'">
-                            <template x-for="i in count" :key="i">
-                              <div class="relative" @mouseenter="activeAvatar = i" @mouseleave="activeAvatar = null">
-                                <img :src="'/assets/images/profile-' + (((filteredDocuments().indexOf(doc) * 3 + i) % 35) + 1) + '.jpeg'" class="h-8 w-8 rounded-full object-cover border-2 border-white dark:border-[#1b2e4b] transition-transform" :style="groupHover ? 'transform: scale(1.1)' : ''" alt="Collaborateur"/>
-                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 bg-dark text-white text-[9px] rounded whitespace-nowrap pointer-events-none transition-opacity" :class="activeAvatar === i ? 'opacity-100' : 'opacity-0'" style="z-index: 60;" x-text="names[(filteredDocuments().indexOf(doc) + i) % 5]"></div>
-                              </div>
-                            </template>
-                          </div>
-                        </div>
-                        <div class="ltr:ml-2 rtl:mr-2">
-                          <div class="font-semibold" x-text="doc.createdBy || 'Utilisateur'"></div>
-                          <div class="text-xs text-white-dark" x-text="formatDate(doc.updatedAt)"></div>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 class="mt-4 font-semibold" x-text="doc.name"></h4>
-                      <p class="mt-2 text-white-dark text-sm line-clamp-2" x-text="doc.description || 'Aucune description'"></p>
-                    </div>
-                  </div>
-                  <div class="absolute bottom-5 left-0 w-full px-5">
-                    <div class="mt-2 flex items-center justify-between">
-                      <svg class="h-3 w-3 rotate-45" viewBox="0 0 24 24" :class="{'fill-warning text-warning': doc.status === 'draft', 'fill-success text-success': doc.status === 'published', 'fill-secondary text-secondary': doc.status === 'archived'}"><path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" stroke-width="1.5"/></svg>
-                      <div class="flex items-center">
-                        <button type="button" class="group text-warning" @click.stop="toggleFav(doc)">
-                          <svg class="h-4.5 w-4.5 group-hover:fill-warning" :class="{ 'fill-warning': doc.isFav }" viewBox="0 0 24 24" fill="none"><path d="M9.15316 5.40838C10.4198 3.13613 11.0531 2 12 2C12.9469 2 13.5802 3.13612 14.8468 5.40837L15.1745 5.99623C15.5345 6.64193 15.7144 6.96479 15.9951 7.17781C16.2757 7.39083 16.6251 7.4699 17.3241 7.62805L17.9605 7.77203C20.4201 8.32856 21.65 8.60682 21.9426 9.54773C22.2352 10.4886 21.3968 11.4691 19.7199 13.4299L19.2861 13.9372C18.8096 14.4944 18.5713 14.773 18.4641 15.1177C18.357 15.4624 18.393 15.8341 18.465 16.5776L18.5306 17.2544C18.7841 19.8706 18.9109 21.1787 18.1449 21.7602C17.3788 22.3417 16.2273 21.8115 13.9243 20.7512L13.3285 20.4768C12.6741 20.1755 12.3469 20.0248 12 20.0248C11.6531 20.0248 11.3259 20.1755 10.6715 20.4768L10.0757 20.7512C7.77268 21.8115 6.62118 22.3417 5.85515 21.7602C5.08912 21.1787 5.21588 19.8706 5.4694 17.2544L5.53498 16.5776C5.60703 15.8341 5.64305 15.4624 5.53586 15.1177C5.42868 14.773 5.19043 14.4944 4.71392 13.9372L4.2801 13.4299C2.60325 11.4691 1.76482 10.4886 2.05742 9.54773C2.35002 8.60682 3.57986 8.32856 6.03954 7.77203L6.67589 7.62805C7.37485 7.4699 7.72433 7.39083 8.00494 7.17781C8.28555 6.96479 8.46553 6.64194 8.82547 5.99623L9.15316 5.40838Z" stroke="currentColor" stroke-width="1.5"/></svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </template>
-            </div>
-          </div>
-        </template>
       </div>
     </div>
   </template>
+
   <!-- ============================================ -->
-  <!-- TEMPLATE CHOOSER MODAL -->
+  <!-- TEMPLATE CHOOSER MODAL                       -->
   <!-- ============================================ -->
   <template x-teleport="body">
     <div x-show="showTemplateModal" 
@@ -846,7 +296,7 @@
         <div class="flex items-center justify-between p-5 border-b border-[#e0e6ed] dark:border-[#1b2e4b]">
           <div>
             <h3 class="text-lg font-bold dark:text-white-light">Créer un document</h3>
-            <p class="text-sm text-[#888ea8] mt-1">Commencez avec un document vierge ou choisissez un modèle professionnel</p>
+            <p class="text-sm text-[#888ea8] mt-1">Commencez avec un document vierge ou choisissez un modèle</p>
           </div>
           <button @click="showTemplateModal = false" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
             <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -871,7 +321,6 @@
         <!-- Modal Body -->
         <div class="flex-1 overflow-y-auto p-5" style="scrollbar-width: thin;">
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            
             <!-- Blank Document Card -->
             <a href="/account/<%= account_number %>/documents/new" 
                class="group border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 flex flex-col items-center justify-center gap-3 hover:border-primary hover:bg-primary/5 transition-all min-h-[200px]">
@@ -888,31 +337,21 @@
             <template x-for="tpl in filteredTemplates()" :key="tpl._id">
               <a :href="'/account/<%= account_number %>/documents/new?template=' + tpl._id" 
                  class="group relative bg-white dark:bg-[#1b2e4b] rounded-xl border border-[#e0e6ed] dark:border-[#1b2e4b] overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all min-h-[200px] flex flex-col">
-                
-                <!-- Color Bar -->
                 <div class="h-1.5 w-full" :style="'background:' + (tpl.metadata?.color || '#6366f1')"></div>
-                
-                <!-- Template Preview (scaled down content) -->
                 <div class="flex-1 p-4 overflow-hidden relative">
                   <div class="absolute inset-0 p-3 overflow-hidden opacity-25 pointer-events-none" style="transform: scale(0.35); transform-origin: top left; width: 286%; height: 286%;">
                     <div x-html="tpl.pages?.[0]?.content?.substring(0, 600) || ''"></div>
                   </div>
-                  
-                  <!-- Center Icon -->
                   <div class="absolute inset-0 flex items-center justify-center">
                     <div class="w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform" :style="'background:' + (tpl.metadata?.color || '#6366f1') + '20'">
                       <iconify-icon :icon="tpl.metadata?.icon || 'tabler:file-text'" width="24" :style="'color:' + (tpl.metadata?.color || '#6366f1')"></iconify-icon>
                     </div>
                   </div>
                 </div>
-                
-                <!-- Template Info -->
                 <div class="p-3 border-t border-[#e0e6ed] dark:border-gray-700/50 bg-[#f8f9fa] dark:bg-[#0e1726]/50">
                   <p class="font-semibold text-sm dark:text-white-light truncate" x-text="tpl.name"></p>
                   <p class="text-[11px] text-[#888ea8] mt-0.5 line-clamp-1" x-text="tpl.metadata?.description || 'Modèle de document'"></p>
                 </div>
-
-                <!-- Hover Overlay -->
                 <div class="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors pointer-events-none"></div>
               </a>
             </template>
@@ -925,7 +364,6 @@
             </div>
           </template>
 
-          <!-- Empty state for filtered -->
           <template x-if="!templatesLoading && filteredTemplates().length === 0 && templateCategory !== 'all'">
             <div class="text-center py-12">
               <iconify-icon icon="tabler:template-off" width="48" class="text-[#888ea8] mx-auto mb-3"></iconify-icon>
@@ -936,21 +374,267 @@
       </div>
     </div>
   </template>
+
 </div>
+
+<style>
+/* ============================================ */
+/* Document Grid - 8 cols on XL                 */
+/* ============================================ */
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (min-width: 640px) {
+  .doc-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (min-width: 1024px) {
+  .doc-grid { grid-template-columns: repeat(6, 1fr); }
+}
+@media (min-width: 1440px) {
+  .doc-grid { grid-template-columns: repeat(8, 1fr); }
+}
+
+/* Card */
+.doc-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+}
+.doc-card:hover {
+  border-color: #22bce9;
+  box-shadow: 0 4px 16px rgba(34, 188, 233, 0.08);
+}
+.dark .doc-card {
+  background: #0e1726;
+  border-color: #253b5c;
+}
+.dark .doc-card:hover {
+  border-color: #22bce9;
+  box-shadow: 0 4px 16px rgba(34, 188, 233, 0.1);
+}
+
+/* Preview */
+.doc-card__preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 10px;
+  min-height: 120px;
+  background: #fafbfc;
+  border-bottom: 1px solid #f0f0f0;
+  text-decoration: none;
+}
+.dark .doc-card__preview {
+  background: #0a1120;
+  border-bottom-color: #1a2941;
+}
+
+/* Paper */
+.doc-card__paper {
+  background: white;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.06),
+    0 3px 8px rgba(0,0,0,0.03);
+  overflow: hidden;
+  pointer-events: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.group:hover .doc-card__paper {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.1),
+    0 6px 16px rgba(0,0,0,0.04);
+}
+.dark .doc-card__paper {
+  background: #1b2e4b;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.doc-card__paper-content {
+  transform: scale(0.1);
+  transform-origin: top left;
+  width: 1000%;
+  height: 1000%;
+  padding: 40px;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: hidden;
+  color: #374151;
+}
+.dark .doc-card__paper-content {
+  color: #d1d5db;
+}
+
+.doc-card__paper-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Format label */
+.doc-card__format {
+  position: absolute;
+  bottom: 4px;
+  left: 8px;
+  font-size: 8px;
+  font-weight: 700;
+  color: #c0c5d0;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.dark .doc-card__format {
+  color: #3b4a63;
+}
+
+/* Type badge */
+.doc-card__badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  z-index: 2;
+}
+.doc-card__badge--doc {
+  background: rgba(34, 188, 233, 0.1);
+  color: #22bce9;
+}
+.doc-card__badge--tpl {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+/* Body */
+.doc-card__body {
+  padding: 8px 10px 10px;
+  flex: 1;
+  min-width: 0;
+}
+.doc-card__name {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f2937;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 2px;
+}
+.doc-card__name:hover {
+  color: #22bce9;
+}
+.dark .doc-card__name {
+  color: #e5e7eb;
+}
+.dark .doc-card__name:hover {
+  color: #22bce9;
+}
+
+.doc-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+/* Hover actions */
+.doc-card__hover-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 3;
+}
+.doc-card:hover .doc-card__hover-actions {
+  opacity: 1;
+}
+.doc-card__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  background: white;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  text-decoration: none;
+}
+.doc-card__action:hover {
+  background: #22bce9;
+  color: white;
+}
+.dark .doc-card__action {
+  background: #1b2e4b;
+  color: #9ca3af;
+}
+.dark .doc-card__action:hover {
+  background: #22bce9;
+  color: white;
+}
+.doc-card__action--danger:hover {
+  background: #ef4444 !important;
+  color: white !important;
+}
+
+/* Upload Zone */
+.doc-upload-zone {
+  border: 2px dashed #e5e7eb;
+  border-radius: 14px;
+  transition: all 0.2s ease;
+  text-align: center;
+  background: white;
+}
+.doc-upload-zone:hover {
+  border-color: rgba(34, 188, 233, 0.3);
+}
+.doc-upload-zone--active {
+  border-color: #22bce9;
+  background: rgba(34, 188, 233, 0.03);
+}
+.dark .doc-upload-zone {
+  border-color: #253b5c;
+  background: #0e1726;
+}
+.dark .doc-upload-zone:hover {
+  border-color: rgba(34, 188, 233, 0.4);
+}
+</style>
 
 <script>
 document.addEventListener('alpine:init', () => {
   Alpine.data('documentList', () => ({
     documents: <%- JSON.stringify(documents || []) %>,
     templateDocs: <%- JSON.stringify(templateDocs || []) %>,
+    generatedDocs: <%- JSON.stringify(generatedDocs || []) %>,
+    uploadedDocs: <%- JSON.stringify(uploadedDocs || []) %>,
     searchQuery: '',
-    viewMode: 'grid',
-    layoutMode: 'dashboard',
-    selectedTab: 'all',
-    folderTab: 'all',
-    activeFolder: null,
-    isShowDocMenu: false,
-    showAllDocs: false,
+    activeSection: 'recent',
     showTemplateModal: false,
     templates: [],
     templatesLoading: false,
@@ -963,12 +647,24 @@ document.addEventListener('alpine:init', () => {
       { id: 'courrier', label: 'Courrier', color: '#dc2626' },
       { id: 'rapport', label: 'Rapport', color: '#0891b2' }
     ],
-    // New: custom folders, uploads, context menu
-    customFolders: <%- JSON.stringify(folders || []) %>,
-    uploadedDocs: <%- JSON.stringify(uploadedDocs || []) %>,
-    contextMenu: { show: false, x: 0, y: 0, folderId: null, folderName: null },
     isDraggingFile: false,
     isUploading: false,
+    deleteTarget: null,
+    deleting: false,
+
+    allDocs() {
+      return [...this.documents, ...this.templateDocs]
+        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    },
+
+    filteredDocs() {
+      let docs = this.allDocs();
+      if (this.searchQuery) {
+        const q = this.searchQuery.toLowerCase();
+        docs = docs.filter(d => (d.name || '').toLowerCase().includes(q));
+      }
+      return docs;
+    },
 
     async openTemplateModal() {
       this.showTemplateModal = true;
@@ -994,83 +690,46 @@ document.addEventListener('alpine:init', () => {
       return this.templates.filter(t => t.metadata?.category === this.templateCategory);
     },
 
-    // ==========================================
-    // Folder CRUD
-    // ==========================================
-    async createFolder() {
-      const name = prompt('Nom du nouveau dossier :');
-      if (!name || !name.trim()) return;
-      try {
-        const res = await fetch('/account/<%= account_number %>/documents/api/folders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ name: name.trim() })
-        });
-        const data = await res.json();
-        if (data.success) {
-          this.customFolders.push(data.folder);
-        }
-      } catch (e) {
-        console.error('Error creating folder:', e);
-      }
+    confirmDelete(doc) {
+      this.deleteTarget = doc;
     },
 
-    async renameFolder(folderId, currentName) {
-      const name = prompt('Nouveau nom du dossier :', currentName);
-      if (!name || !name.trim() || name.trim() === currentName) return;
+    async executeDelete() {
+      if (!this.deleteTarget || this.deleting) return;
+      this.deleting = true;
       try {
-        const res = await fetch(`/account/<%= account_number %>/documents/api/folders/${folderId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ name: name.trim() })
-        });
-        const data = await res.json();
-        if (data.success) {
-          const idx = this.customFolders.findIndex(f => f._id === folderId);
-          if (idx !== -1) this.customFolders[idx].name = name.trim();
-        }
-      } catch (e) {
-        console.error('Error renaming folder:', e);
-      }
-    },
-
-    async deleteFolder(folderId) {
-      if (!confirm('Supprimer ce dossier ? Les documents seront déplacés à la racine.')) return;
-      try {
-        const res = await fetch(`/account/<%= account_number %>/documents/api/folders/${folderId}`, {
+        const res = await fetch('/account/<%= account_number %>/documents/api/documents/' + this.deleteTarget._id, {
           method: 'DELETE',
           credentials: 'include'
         });
         const data = await res.json();
         if (data.success) {
-          this.customFolders = this.customFolders.filter(f => f._id !== folderId);
-          // Move docs back to root in local state
-          this.documents.forEach(d => {
-            if (d.folderId === folderId) d.folderId = null;
-          });
+          const id = this.deleteTarget._id;
+          this.documents = this.documents.filter(d => d._id !== id);
+          this.templateDocs = this.templateDocs.filter(d => d._id !== id);
+          this.deleteTarget = null;
+        } else {
+          alert('Erreur: ' + (data.error || 'Impossible de supprimer'));
         }
       } catch (e) {
-        console.error('Error deleting folder:', e);
+        console.error('Delete error:', e);
+        alert('Erreur lors de la suppression');
+      } finally {
+        this.deleting = false;
       }
     },
 
-    // ==========================================
     // File Upload
-    // ==========================================
     handleFileDrop(event) {
       const files = event.dataTransfer?.files;
-      if (files && files.length > 0) {
-        this.uploadFiles(files);
-      }
+      if (files && files.length > 0) this.uploadFiles(files);
     },
 
     handleFileSelect(event) {
       const files = event.target?.files;
       if (files && files.length > 0) {
         this.uploadFiles(files);
-        event.target.value = ''; // reset input
+        event.target.value = '';
       }
     },
 
@@ -1078,9 +737,7 @@ document.addEventListener('alpine:init', () => {
       this.isUploading = true;
       try {
         const formData = new FormData();
-        for (const file of fileList) {
-          formData.append('files', file);
-        }
+        for (const file of fileList) formData.append('files', file);
         const res = await fetch('/account/<%= account_number %>/documents/api/upload-files', {
           method: 'POST',
           credentials: 'include',
@@ -1103,7 +760,6 @@ document.addEventListener('alpine:init', () => {
       if (mimeType.includes('word') || mimeType.includes('document')) return 'bg-blue-50 dark:bg-blue-900/20 text-blue-500';
       if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'bg-green-50 dark:bg-green-900/20 text-green-600';
       if (mimeType.includes('image')) return 'bg-purple-50 dark:bg-purple-900/20 text-purple-500';
-      if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return 'bg-orange-50 dark:bg-orange-900/20 text-orange-500';
       return 'bg-gray-100 dark:bg-gray-800 text-gray-500';
     },
 
@@ -1112,150 +768,36 @@ document.addEventListener('alpine:init', () => {
       const parts = filename.split('.');
       return parts.length > 1 ? parts.pop() : '?';
     },
-    
-    formatDate(dateString) {
+
+    getPaperStyle(doc) {
+      const w = doc.dimensions?.width || 794;
+      const h = doc.dimensions?.height || 1123;
+      const paperH = 90;
+      const paperW = Math.round(paperH * (w / h));
+      return `width: ${paperW}px; height: ${paperH}px;`;
+    },
+
+    getPreviewHtml(doc) {
+      let html = (doc.pages?.[0]?.content || '').substring(0, 600);
+      html = html.replace(/<img[^>]*>/gi, '');
+      return html;
+    },
+
+    formatRelativeDate(dateString) {
       if (!dateString) return '';
       const date = new Date(dateString);
-      return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    },
-    
-    tabChanged(tab) {
-      this.selectedTab = tab;
-    },
-    
-    filteredDocuments() {
-      let docs = this.documents;
-      
-      // Apply folder tab filter (used in dashboard layout)
-      if (this.layoutMode === 'dashboard') {
-        // Custom folder filter
-        if (this.activeFolder && this.activeFolder.startsWith('custom-')) {
-          const folderId = this.activeFolder.replace('custom-', '');
-          docs = docs.filter(d => d.folderId === folderId);
-        } else if (this.activeFolder === 'recent') {
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-          docs = docs.filter(d => new Date(d.updatedAt) >= sevenDaysAgo);
-        } else if (this.folderTab === 'draft') {
-          docs = docs.filter(d => d.status === 'draft');
-        } else if (this.folderTab === 'published') {
-          docs = docs.filter(d => d.status === 'published');
-        } else if (this.folderTab === 'created') {
-          docs = docs.filter(d => !d.isTemplate);
-        } else if (this.folderTab === 'fav') {
-          docs = docs.filter(d => d.isFav);
-        }
-      }
-      
-      // Apply sidebar tab filter (used in notes layout)
-      if (this.layoutMode === 'notes') {
-        if (this.selectedTab === 'templates') {
-          docs = this.templateDocs;
-        } else if (this.selectedTab === 'fav') {
-          docs = docs.filter(d => d.isFav);
-        } else if (this.selectedTab === 'draft') {
-          docs = docs.filter(d => d.status === 'draft');
-        } else if (this.selectedTab === 'published') {
-          docs = docs.filter(d => d.status === 'published');
-        } else if (this.selectedTab === 'archived') {
-          docs = docs.filter(d => d.status === 'archived');
-        }
-      }
-      
-      if (this.searchQuery) {
-        const query = this.searchQuery.toLowerCase();
-        docs = docs.filter(d => d.name.toLowerCase().includes(query));
-      }
-      
-      return docs;
-    },
-    
-    getRecentDocs() {
       const now = new Date();
-      const sevenDaysAgo = new Date(now);
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      return this.documents.filter(d => new Date(d.updatedAt) >= sevenDaysAgo)
-        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-    },
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
 
-    getFolderLabel(folder) {
-      const labels = { recent: 'Récents', draft: 'Brouillons', published: 'Publiés', fav: 'Favoris', templates: 'Mes templates', all: 'Tous les documents' };
-      if (folder && folder.startsWith('custom-')) {
-        const folderId = folder.replace('custom-', '');
-        const found = this.customFolders.find(f => f._id === folderId);
-        return found ? found.name : 'Dossier';
-      }
-      return labels[folder] || 'Documents';
-    },
-
-    toggleFav(doc) {
-      doc.isFav = !doc.isFav;
-    },
-    
-    getDocumentsByPeriod(period) {
-      const docs = this.filteredDocuments();
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const weekStart = new Date(today);
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Monday
-      
-      return docs.filter(doc => {
-        const docDate = new Date(doc.updatedAt);
-        const docDay = new Date(docDate.getFullYear(), docDate.getMonth(), docDate.getDate());
-        
-        if (period === 'today') {
-          return docDay.getTime() === today.getTime();
-        } else if (period === 'yesterday') {
-          return docDay.getTime() === yesterday.getTime();
-        } else if (period === 'week') {
-          return docDay >= weekStart && docDay < yesterday;
-        }
-        return false;
-      }).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-    },
-    
-    getOlderDocsCount() {
-      return this.getDocumentsByPeriod('week').length + this.getMonthGroups().reduce((sum, m) => sum + m.docs.length, 0);
-    },
-    
-    getMonthGroups() {
-      const docs = this.filteredDocuments();
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const weekStart = new Date(today);
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
-      
-      // Filter docs older than this week
-      const olderDocs = docs.filter(doc => {
-        const docDate = new Date(doc.updatedAt);
-        const docDay = new Date(docDate.getFullYear(), docDate.getMonth(), docDate.getDate());
-        return docDay < weekStart;
-      });
-      
-      // Group by month
-      const months = {};
-      const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-      
-      olderDocs.forEach(doc => {
-        const date = new Date(doc.updatedAt);
-        const key = `${date.getFullYear()}-${date.getMonth()}`;
-        const label = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
-        
-        if (!months[key]) {
-          months[key] = { key, label, docs: [], sortKey: date.getFullYear() * 12 + date.getMonth() };
-        }
-        months[key].docs.push(doc);
-      });
-      
-      // Sort months descending and docs within each month
-      return Object.values(months)
-        .sort((a, b) => b.sortKey - a.sortKey)
-        .map(m => ({
-          ...m,
-          docs: m.docs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
-        }));
+      if (diffMins < 1) return "À l'instant";
+      if (diffMins < 60) return `${diffMins}min`;
+      if (diffHours < 24) return `${diffHours}h`;
+      if (diffDays === 1) return 'Hier';
+      if (diffDays < 7) return `${diffDays}j`;
+      return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
     }
   }));
 });

@@ -551,72 +551,181 @@
                             </div>
                             </div><!-- end panel-sortable-item attachments -->
                         <% } else if (sectionId==='smartdoc' && locals.entity && entity.enableAttachments) { %>
-                            <!-- ✨ SmartDoc (Standalone Panel) -->
+                            <!-- ✨ Documents modèles (Standalone Panel) -->
                             <div class="panel-sortable-item" data-panel-id="smartdoc">
                                 <template x-if="designMode">
                                     <div class="panel-drag-handle">
                                         <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
-                                        <span>SmartDoc</span>
+                                        <span>Documents modèles</span>
                                     </div>
                                 </template>
                             <div class="panel !p-0 overflow-hidden" data-id="smartdoc"
                                 x-data='smartDocPanel({
                                     recordId: "<%= locals.record && record._id ? record._id : '' %>",
-                                    accountNumber: "<%= account_number %>"
+                                    accountNumber: "<%= account_number %>",
+                                    entityName: "<%= locals.entity ? entity.name : '' %>"
                                 })'>
                                 <!-- Header -->
                                 <div class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
                                     @click="isOpen = !isOpen">
-                                    <div class="flex items-center gap-2">
-                                        <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="14" class="text-warning"></iconify-icon>
-                                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">SmartDoc</span>
-                                        <span x-show="smartDocTemplates.length > 0" class="text-[9px] bg-warning/10 text-warning w-4 h-4 rounded-full flex items-center justify-center font-bold" x-text="smartDocTemplates.length"></span>
-                                    </div>
-                                    <div class="flex items-center gap-1">
-                                        <button type="button" @click.stop="openSmartDocEditor()" class="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-warning hover:bg-warning/10 transition-all" title="Nouveau SmartDoc">
-                                            <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
+                                    <div class="flex items-center gap-1.5">
+                                        <iconify-icon icon="solar:document-medicine-bold-duotone" width="14" class="text-primary"></iconify-icon>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Documents modèles</span>
+                                        <span x-show="smartDocTemplates.length > 0" class="text-[9px] bg-primary/10 text-primary min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1" x-text="smartDocTemplates.length"></span>
+                                        <button type="button" @click.stop="showNewDocModal = true" class="w-5 h-5 flex items-center justify-center rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all ml-0.5" title="Nouveau document">
+                                            <iconify-icon icon="tabler:plus" width="11"></iconify-icon>
                                         </button>
-                                        <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="isOpen ? '' : '-rotate-90'" class="transition-transform text-gray-300"></iconify-icon>
                                     </div>
+                                    <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="isOpen ? '' : '-rotate-90'" class="transition-transform text-gray-300"></iconify-icon>
                                 </div>
 
                                 <div x-show="isOpen" x-collapse>
                                     <template x-if="recordId">
-                                        <div class="px-3 py-2">
+                                        <div class="px-1.5 pb-1.5">
                                             <template x-if="smartDocTemplates.length > 0">
-                                                <div class="space-y-0.5">
+                                                <div>
                                                     <template x-for="tpl in smartDocTemplates" :key="tpl._id">
-                                                        <button type="button" @click="generateSmartDoc(tpl)" :disabled="generatingDocId === tpl._id"
-                                                            class="w-full flex items-start gap-2 px-2 py-1.5 rounded-lg text-left transition-all hover:bg-gradient-to-r hover:from-warning/5 hover:to-transparent group/sdoc border border-transparent hover:border-warning/10">
-                                                            <div class="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-transform group-hover/sdoc:scale-110 mt-0.5"
-                                                                :style="'background:' + (tpl.color || '#e2a03f') + '20; color:' + (tpl.color || '#e2a03f')">
-                                                                <iconify-icon :icon="generatingDocId === tpl._id ? 'line-md:loading-twotone-loop' : (tpl.icon || 'solar:document-bold-duotone')" width="11"></iconify-icon>
+                                                        <div class="group/sdoc flex items-center gap-2 px-2 py-[5px] rounded-md transition-all hover:bg-gray-50 dark:hover:bg-gray-800/40 cursor-default">
+                                                            <!-- Doc icon -->
+                                                            <div class="w-[22px] h-[22px] rounded flex items-center justify-center shrink-0"
+                                                                :style="'background:' + (tpl.color || '#4361ee') + '18; color:' + (tpl.color || '#4361ee')">
+                                                                <iconify-icon :icon="tpl.icon || 'solar:document-text-bold-duotone'" width="12"></iconify-icon>
                                                             </div>
-                                                            <div class="flex-1 min-w-0">
-                                                                <span class="text-[10px] font-medium text-gray-600 dark:text-gray-300 leading-snug" x-text="tpl.name"></span>
-                                                            </div>
-                                                            <iconify-icon icon="solar:alt-arrow-right-bold" width="10" class="text-gray-300 group-hover/sdoc:text-warning transition-colors shrink-0 mt-0.5"></iconify-icon>
-                                                        </button>
+                                                            <!-- Title -->
+                                                            <span class="flex-1 min-w-0 text-[11px] font-medium text-gray-600 dark:text-gray-300 truncate" x-text="tpl.name"></span>
+                                                            <!-- Generate button (always visible) -->
+                                                            <button type="button" @click.stop="generateSmartDoc(tpl)" :disabled="generatingDocId === tpl._id"
+                                                                class="shrink-0 w-[22px] h-[22px] flex items-center justify-center rounded transition-all"
+                                                                :style="generatingDocId === tpl._id ? 'color:#9ca3af' : 'color:#00ab55; background:rgba(0,171,85,0.08)'"
+                                                                @mouseenter="if(generatingDocId !== tpl._id) $el.style.background='rgba(0,171,85,0.16)'"
+                                                                @mouseleave="if(generatingDocId !== tpl._id) $el.style.background='rgba(0,171,85,0.08)'"
+                                                                title="Générer">
+                                                                <iconify-icon :icon="generatingDocId === tpl._id ? 'line-md:loading-twotone-loop' : 'solar:play-bold'" width="11"></iconify-icon>
+                                                            </button>
+                                                            <!-- Edit button (always visible) -->
+                                                            <a :href="'/account/<%= account_number %>/documents/' + tpl.documentId + '/edit-react'" target="_blank"
+                                                                class="shrink-0 w-[22px] h-[22px] flex items-center justify-center rounded transition-all"
+                                                                style="color:#4361ee; background:rgba(67,97,238,0.08)"
+                                                                @mouseenter="$el.style.background='rgba(67,97,238,0.16)'"
+                                                                @mouseleave="$el.style.background='rgba(67,97,238,0.08)'"
+                                                                title="Modifier le modèle"
+                                                                x-show="tpl.documentId" @click.stop>
+                                                                <iconify-icon icon="solar:pen-new-square-linear" width="11"></iconify-icon>
+                                                            </a>
+                                                            <!-- Unlink button (always visible) -->
+                                                            <button type="button" @click.stop="confirmUnlink(tpl)"
+                                                                class="shrink-0 w-[22px] h-[22px] flex items-center justify-center rounded transition-all"
+                                                                style="color:#e7515a; background:rgba(231,81,90,0.08)"
+                                                                @mouseenter="$el.style.background='rgba(231,81,90,0.16)'"
+                                                                @mouseleave="$el.style.background='rgba(231,81,90,0.08)'"
+                                                                title="Délier ce document">
+                                                                <iconify-icon icon="solar:link-broken-minimalistic-linear" width="11"></iconify-icon>
+                                                            </button>
+                                                        </div>
                                                     </template>
                                                 </div>
                                             </template>
                                             <template x-if="smartDocTemplates.length === 0">
-                                                <div class="flex items-center justify-center py-3">
-                                                    <button type="button" @click.stop="openSmartDocEditor()"
-                                                        class="flex items-center gap-1.5 text-[10px] text-gray-400 hover:text-warning transition-colors">
-                                                        <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
-                                                        <span>Créer un template</span>
-                                                    </button>
+                                                <div class="flex flex-col items-center py-3 gap-1.5">
+                                                    <iconify-icon icon="solar:document-add-linear" width="20" class="text-gray-300 dark:text-gray-600"></iconify-icon>
+                                                    <p class="text-[9px] text-gray-400">Aucun document modèle</p>
+                                                    <button type="button" @click.stop="showNewDocModal = true"
+                                                        class="text-[9px] font-semibold text-primary hover:underline transition-all">+ Créer</button>
                                                 </div>
                                             </template>
                                         </div>
                                     </template>
                                     <template x-if="!recordId">
                                         <div class="text-center px-3 py-2">
-                                            <span class="text-[9px] text-gray-400 italic">Enregistrez d'abord pour utiliser SmartDoc</span>
+                                            <span class="text-[9px] text-gray-400 italic">Enregistrez d'abord</span>
                                         </div>
                                     </template>
                                 </div>
+
+                                    <!-- New Document Choice Modal -->
+                                    <template x-teleport="body">
+                                        <div x-show="showNewDocModal" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                                            x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                                            class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" style="display:none;"
+                                            @click.self="showNewDocModal = false">
+                                            <div class="bg-white dark:bg-[#1b2e4b] rounded-2xl shadow-2xl w-[400px] max-w-[90vw] overflow-hidden animate__animated animate__fadeInUp animate__faster" @click.stop>
+                                                <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                                                            <iconify-icon icon="solar:document-add-bold-duotone" width="20" class="text-primary"></iconify-icon>
+                                                        </div>
+                                                        <div>
+                                                            <h4 class="text-sm font-bold text-gray-800 dark:text-white">Nouveau document</h4>
+                                                            <p class="text-[10px] text-gray-400">Choisissez le type de document à créer</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="p-4 space-y-3">
+                                                    <!-- Document Simple -->
+                                                    <button type="button" @click="createSimpleDoc()" 
+                                                        class="w-full flex items-start gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-primary/30 hover:bg-primary/[0.02] transition-all text-left group/choice">
+                                                        <div class="w-10 h-10 rounded-xl bg-info/10 flex items-center justify-center shrink-0 group-hover/choice:scale-110 transition-transform">
+                                                            <iconify-icon icon="solar:document-text-bold-duotone" width="22" class="text-info"></iconify-icon>
+                                                        </div>
+                                                        <div>
+                                                            <span class="text-[12px] font-bold text-gray-700 dark:text-gray-200 block">Document simple</span>
+                                                            <span class="text-[10px] text-gray-400 leading-snug block mt-0.5">Créer un document unique lié à cet enregistrement</span>
+                                                        </div>
+                                                    </button>
+                                                    <!-- Document Modèle -->
+                                                    <button type="button" @click="openSmartDocEditor()"
+                                                        class="w-full flex items-start gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-warning/30 hover:bg-warning/[0.02] transition-all text-left group/choice">
+                                                        <div class="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center shrink-0 group-hover/choice:scale-110 transition-transform">
+                                                            <iconify-icon icon="solar:copy-bold-duotone" width="22" class="text-warning"></iconify-icon>
+                                                        </div>
+                                                        <div>
+                                                            <span class="text-[12px] font-bold text-gray-700 dark:text-gray-200 block">Document modèle</span>
+                                                            <span class="text-[10px] text-gray-400 leading-snug block mt-0.5">Réutilisable pour d'autres <span class="lowercase"><%= locals.entity ? entity.name : 'enregistrements' %></span> — génère un PDF à chaque utilisation</span>
+                                                        </div>
+                                                    </button>
+                                                </div>
+                                                <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 flex justify-end">
+                                                    <button type="button" @click="showNewDocModal = false" class="btn btn-sm btn-outline-secondary text-[10px] px-4 py-1.5">Annuler</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Unlink Confirmation Modal -->
+                                    <template x-teleport="body">
+                                        <div x-show="showUnlinkConfirm" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                                            x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                                            class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" style="display:none;"
+                                            @click.self="showUnlinkConfirm = false">
+                                            <div class="bg-white dark:bg-[#1b2e4b] rounded-2xl shadow-2xl w-[380px] max-w-[90vw] overflow-hidden" @click.stop>
+                                                <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="w-9 h-9 rounded-xl bg-danger/10 flex items-center justify-center">
+                                                            <iconify-icon icon="solar:link-broken-minimalistic-bold" width="20" class="text-danger"></iconify-icon>
+                                                        </div>
+                                                        <div>
+                                                            <h4 class="text-sm font-bold text-gray-800 dark:text-white">Délier le document</h4>
+                                                            <p class="text-[10px] text-gray-400">Cette action est irréversible</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="px-5 py-4">
+                                                    <p class="text-xs text-gray-600 dark:text-gray-300">
+                                                        Le document modèle «&nbsp;<strong class="text-gray-800 dark:text-white" x-text="unlinkTarget?.name"></strong>&nbsp;» ne sera plus lié à cette collection.
+                                                        Il restera disponible dans vos documents mais ne pourra plus générer de PDF pour cet enregistrement.
+                                                    </p>
+                                                </div>
+                                                <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 flex items-center justify-end gap-2">
+                                                    <button type="button" @click="showUnlinkConfirm = false" class="btn btn-sm btn-outline-secondary text-[10px] px-3 py-1.5">Annuler</button>
+                                                    <button type="button" @click="executeUnlink()" :disabled="unlinking"
+                                                        class="btn btn-sm text-[10px] px-4 py-1.5 flex items-center gap-1.5 bg-danger text-white hover:bg-danger/90 transition-all">
+                                                        <iconify-icon :icon="unlinking ? 'line-md:loading-twotone-loop' : 'solar:link-broken-minimalistic-bold'" width="13"></iconify-icon>
+                                                        <span x-text="unlinking ? 'Suppression...' : 'Délier'"></span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
 
                                     <!-- SmartDoc Input Modal -->
                                     <template x-if="showSmartDocModal">
@@ -947,22 +1056,9 @@
             Alpine.data("recordSidebar", () => ({
                 classificationsOpen: true,
                 init() {
-                    this.initMainSortable();
+                    // Drag & drop is handled by panelLayout.initPanelSortables() in record-edit.ejs
                     window.addEventListener('save-pref', (e) => {
                         this.savePreference(e.detail.key, e.detail.value);
-                    });
-                },
-                initMainSortable() {
-                    const el = document.getElementById('sidebar-main-sortable');
-                    if (!el) return;
-                    new Sortable(el, {
-                        animation: 150,
-                        handle: '.drag-handle-panel',
-                        ghostClass: 'sortable-ghost',
-                        onEnd: (evt) => {
-                            const order = Array.from(el.children).map(child => child.dataset.id).filter(id => id);
-                            this.savePreference('record_sidebar_blocks_order', order);
-                        }
                     });
                 },
                 async savePreference(key, value) {
@@ -1326,6 +1422,7 @@
             Alpine.data('smartDocPanel', (config) => ({
                 recordId: config.recordId,
                 accountNumber: config.accountNumber,
+                entityName: config.entityName || '',
                 isOpen: true,
                 smartDocTemplates: [],
                 generatingDocId: null,
@@ -1339,6 +1436,11 @@
                 previewVariables: [],
                 previewAttachment: null,
                 previewOutputName: '',
+                // New doc modal & unlink
+                showNewDocModal: false,
+                showUnlinkConfirm: false,
+                unlinkTarget: null,
+                unlinking: false,
 
                 init() {
                     if (this.recordId) {
@@ -1472,6 +1574,7 @@
                 },
 
                 async openSmartDocEditor() {
+                    this.showNewDocModal = false;
                     const entityId = '<%= locals.entity ? entity._id : "" %>';
                     if (!entityId) return;
                     this.smartDocTitleError = '';
@@ -1614,6 +1717,70 @@
                         'Autre': 'bg-gray-100 dark:bg-gray-700'
                     };
                     return bgs[group] || bgs['Autre'];
+                },
+
+                // ═══ NEW DOC & UNLINK ═══
+                async createSimpleDoc() {
+                    this.showNewDocModal = false;
+                    const entityId = '<%= locals.entity ? entity._id : "" %>';
+                    try {
+                        const res = await fetch(`/account/${this.accountNumber}/documents/api`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                name: 'Nouveau document',
+                                isTemplate: false,
+                                entityId: entityId,
+                                status: 'draft',
+                                pages: [{ content: '', elements: [], rows: [], mode: 'edition', background: '#ffffff', order: 0 }]
+                            })
+                        });
+                        const data = await res.json();
+                        if (data.success && data.document) {
+                            window.open(`/account/${this.accountNumber}/documents/${data.document._id}/edit-react`, '_blank');
+                        } else {
+                            alert('Erreur lors de la création du document');
+                        }
+                    } catch (e) {
+                        console.error('[SmartDoc] Create simple doc error:', e);
+                        alert('Erreur lors de la création du document');
+                    }
+                },
+
+                confirmUnlink(tpl) {
+                    this.unlinkTarget = tpl;
+                    this.showUnlinkConfirm = true;
+                },
+
+                async executeUnlink() {
+                    if (!this.unlinkTarget || this.unlinking) return;
+                    this.unlinking = true;
+                    const entityId = '<%= locals.entity ? entity._id : "" %>';
+                    try {
+                        const res = await fetch(`/account/${this.accountNumber}/api/smartdoc/templates/${this.unlinkTarget._id}/unlink`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ entityId })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.smartDocTemplates = this.smartDocTemplates.filter(t => t._id !== this.unlinkTarget._id);
+                            if (window.showMessage) {
+                                window.showMessage('Document délié avec succès', 'success');
+                            }
+                        } else {
+                            alert(data.error || 'Erreur lors de la suppression du lien');
+                        }
+                    } catch (e) {
+                        console.error('[SmartDoc] Unlink error:', e);
+                        alert('Erreur lors de la suppression du lien');
+                    } finally {
+                        this.unlinking = false;
+                        this.showUnlinkConfirm = false;
+                        this.unlinkTarget = null;
+                    }
                 }
             }));
         });

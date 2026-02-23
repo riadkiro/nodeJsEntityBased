@@ -54,14 +54,29 @@ const CanvasContainer = forwardRef(function CanvasContainer({
 
     useEffect(() => {
         const checkDarkMode = () => {
-            setIsDark(document.documentElement.classList.contains('dark'))
+            // Check both body (where Alpine.js applies 'dark' class via $store.app.theme)
+            // and documentElement (fallback)
+            const dark = document.body.classList.contains('dark') || document.documentElement.classList.contains('dark');
+            setIsDark(dark);
         }
+        // Also check localStorage for immediate detection before Alpine init
+        try {
+            const stored = localStorage.getItem('_x_theme');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (parsed === 'dark') setIsDark(true);
+            }
+        } catch (e) { /* ignore */ }
         checkDarkMode()
 
-        // Watch for dark mode changes
+        // Watch for dark mode changes on both body and html
         const observer = new MutationObserver(checkDarkMode)
+        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] })
         observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-        return () => observer.disconnect()
+
+        // Re-check after Alpine init delay
+        const timer = setTimeout(checkDarkMode, 100);
+        return () => { observer.disconnect(); clearTimeout(timer); }
     }, [])
 
     // Clamp zoom level
@@ -230,7 +245,7 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                                     onClick={() => setPageMode(pageIndex, 'edition')}
                                     className={`px-2 py-0.5 text-[10px] rounded-lg transition-colors ${page.mode === 'edition'
                                         ? 'bg-primary text-white'
-                                        : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                                         }`}
                                 >
                                     Édition
@@ -239,7 +254,7 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                                     onClick={() => setPageMode(pageIndex, 'layout')}
                                     className={`px-2 py-0.5 text-[10px] rounded-lg transition-colors ${page.mode === 'layout'
                                         ? 'bg-primary text-white'
-                                        : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                                         }`}
                                 >
                                     Layout
@@ -248,7 +263,7 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                                     onClick={() => setPageMode(pageIndex, 'designer')}
                                     className={`px-2 py-0.5 text-[10px] rounded-lg transition-colors ${page.mode === 'designer'
                                         ? 'bg-primary text-white'
-                                        : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                                         }`}
                                 >
                                     Designer
@@ -261,7 +276,7 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                                             onClick={() => setShowConfig(showConfig === pageIndex ? null : pageIndex)}
                                             className={`px-1.5 py-0.5 text-[10px] rounded-lg transition-colors ${showConfig === pageIndex
                                                 ? 'bg-primary text-white'
-                                                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                                                 }`}
                                             title="Configuration du layout"
                                         >

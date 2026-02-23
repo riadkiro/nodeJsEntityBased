@@ -17,9 +17,11 @@ router.get('/', async (req, res) => {
             return res.status(500).send('Erreur de connexion base de données');
         }
 
+        // Normal documents (not templates, not uploaded files)
         const documents = await Document.find({
             isTemplate: false,
-            createdBy: req.user._id
+            createdBy: req.user._id,
+            'uploadedFile.path': { $exists: false }
         })
             .sort({ updatedAt: -1 })
             .lean();
@@ -48,12 +50,108 @@ router.get('/', async (req, res) => {
             .sort({ createdAt: -1 })
             .lean();
 
+        // Fetch auto-generated document instances
+        let generatedDocs = [];
+        try {
+            const DocumentInstance = await tenantCollection(req, 'DocumentInstance');
+            if (DocumentInstance) {
+                generatedDocs = await DocumentInstance.find({
+                    createdBy: req.user._id
+                })
+                    .sort({ createdAt: -1 })
+                    .limit(20)
+                    .lean();
+
+                // Populate template names
+                if (generatedDocs.length > 0) {
+                    const templateIds = [...new Set(generatedDocs.map(d => d.templateId?.toString()).filter(Boolean))];
+                    const templates = await Document.find({ _id: { $in: templateIds } }).select('name entityId entityIds').lean();
+                    const templateMap = {};
+                    templates.forEach(t => { templateMap[t._id.toString()] = t; });
+
+                    // Try to fetch entity names for context
+                    let entityMap = {};
+                    try {
+                        const Entity = await tenantCollection(req, 'Entity');
+                        if (Entity) {
+                            const allEntityIds = [];
+                            templates.forEach(t => {
+                                if (t.entityId) allEntityIds.push(t.entityId);
+                                if (t.entityIds) allEntityIds.push(...t.entityIds);
+                            });
+                            if (allEntityIds.length > 0) {
+                                const entities = await Entity.find({ _id: { $in: allEntityIds } }).select('name icon slug').lean();
+                                entities.forEach(e => { entityMap[e._id.toString()] = e; });
+                            }
+                        }
+                    } catch (e) { /* ignore */ }
+
+                    // Try to get record titles from bindings
+                    let recordMap = {};
+                    try {
+                        const Record = await tenantCollection(req, 'Record');
+                        if (Record) {
+                            const allRecordIds = [];
+                            generatedDocs.forEach(d => {
+                                if (d.bindingsSelected && typeof d.bindingsSelected === 'object') {
+                                    Object.values(d.bindingsSelected).forEach(v => {
+                                        if (v && typeof v === 'string' && v.match(/^[a-f0-9]{24}$/i)) allRecordIds.push(v);
+                                        else if (v && v._id) allRecordIds.push(v._id);
+                                    });
+                                }
+                            });
+                            if (allRecordIds.length > 0) {
+                                const records = await Record.find({ _id: { $in: allRecordIds } }).select('title').lean();
+                                records.forEach(r => { recordMap[r._id.toString()] = r; });
+                            }
+                        }
+                    } catch (e) { /* ignore */ }
+
+                    // Enrich generated docs
+                    generatedDocs = generatedDocs.map(d => {
+                        const tpl = templateMap[d.templateId?.toString()];
+                        const enriched = { ...d, templateName: tpl?.name || 'Template supprimé' };
+
+                        // Get entity info
+                        if (tpl) {
+                            const eId = tpl.entityId || (tpl.entityIds && tpl.entityIds[0]);
+                            if (eId) {
+                                const entity = entityMap[eId.toString()];
+                                if (entity) {
+                                    enriched.entityName = entity.name;
+                                    enriched.entityIcon = entity.icon;
+                                    enriched.entitySlug = entity.slug;
+                                }
+                            }
+                        }
+
+                        // Get first record title from bindings
+                        if (d.bindingsSelected && typeof d.bindingsSelected === 'object') {
+                            for (const [alias, val] of Object.entries(d.bindingsSelected)) {
+                                const recId = (typeof val === 'string') ? val : val?._id?.toString();
+                                if (recId && recordMap[recId]) {
+                                    enriched.recordTitle = recordMap[recId].title;
+                                    enriched.recordAlias = alias;
+                                    break;
+                                }
+                            }
+                        }
+
+                        return enriched;
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn('[Documents] Could not fetch generated docs:', e.message);
+        }
+
         res.render('document/document-list', {
             title: 'Documents',
             documents,
             templateDocs,
             folders,
             uploadedDocs,
+            generatedDocs,
             account_number: req.account_number,
             layout: 'layout-app'
         });
@@ -532,6 +630,32 @@ router.post('/api/:id/pdf', async (req, res) => {
         if (browser) {
             await browser.close();
         }
+    }
+});
+
+// ============================================
+// DELETE - Delete a document
+// ============================================
+router.delete('/api/documents/:id', async (req, res) => {
+    try {
+        const Document = await tenantCollection(req, 'Document');
+        if (!Document) {
+            return res.status(500).json({ success: false, error: 'DB error' });
+        }
+
+        const result = await Document.deleteOne({
+            _id: req.params.id,
+            createdBy: req.user._id
+        });
+
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ success: false, error: 'Document introuvable' });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[Documents] Error deleting document:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 

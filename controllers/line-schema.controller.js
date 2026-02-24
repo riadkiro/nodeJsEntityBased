@@ -38,15 +38,23 @@ module.exports = {
             if (!LineSchema) return res.status(500).json({ error: 'Model not available' });
 
             const { entityId, documentType } = req.query;
-            const query = {};
 
-            if (entityId) query['appliesTo.entityId'] = entityId;
+            // Build OR query: entity-specific + global schemas (no entityId set)
+            const conditions = [];
+            if (entityId) {
+                conditions.push({ 'appliesTo.entityId': entityId });
+            }
+            // Also include global schemas (no entity restriction)
+            conditions.push({ 'appliesTo.entityId': null });
+            conditions.push({ 'appliesTo.entityId': { $exists: false } });
+            conditions.push({ 'appliesTo': { $exists: false } });
+
+            let query = conditions.length > 0 ? { $or: conditions } : {};
             if (documentType) query['appliesTo.documentType'] = documentType;
 
-            const schema = await LineSchema.findOne(query).lean();
-            if (!schema) return res.status(404).json({ error: 'No schema found for this context' });
+            const schemas = await LineSchema.find(query).sort({ name: 1 }).lean();
 
-            res.json({ data: schema });
+            res.json({ data: schemas });
         } catch (error) {
             console.error('[LineSchema] GetByContext error:', error);
             res.status(500).json({ error: error.message });

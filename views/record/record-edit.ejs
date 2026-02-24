@@ -895,6 +895,7 @@
             const accountNumber = '<%= account_number %>';
             let mainSortable = null;
             let sidebarSortable = null;
+            let sidebarInnerSortable = null;
             let resizeState = null;
 
             return {
@@ -1126,12 +1127,17 @@
                 initPanelSortables() {
                     const mainZone = document.getElementById('panels-main-zone');
                     const mainInner = mainZone?.querySelector('.space-y-4') || mainZone;
-                    const sidebarInner = document.getElementById('sidebar-main-sortable');
+                    const sidebarOuter = document.getElementById('sidebar-main-sortable');
+                    const sidebarInner = document.getElementById('sidebar-inner-sortable');
                     if (!mainInner) return;
                     const opts = this.getSortableOpts();
                     mainSortable = new Sortable(mainInner, opts);
+                    if (sidebarOuter) {
+                        sidebarSortable = new Sortable(sidebarOuter, opts);
+                    }
+                    // Inner sidebar: allows reordering individual panels within the sidebar
                     if (sidebarInner) {
-                        sidebarSortable = new Sortable(sidebarInner, opts);
+                        sidebarInnerSortable = new Sortable(sidebarInner, opts);
                     }
                     // Init sortables for any existing extra columns
                     this.initAllExtraColSortables();
@@ -1140,6 +1146,7 @@
                 destroyPanelSortables() {
                     if (mainSortable) { mainSortable.destroy(); mainSortable = null; }
                     if (sidebarSortable) { sidebarSortable.destroy(); sidebarSortable = null; }
+                    if (sidebarInnerSortable) { sidebarInnerSortable.destroy(); sidebarInnerSortable = null; }
                     this.destroyExtraSortables();
                 },
 
@@ -1259,6 +1266,14 @@
                         movePanelsToZone(sidebarZone, layout.sidebar);
                     }
 
+                    // Apply inner sidebar panel ordering
+                    if (layout.sidebarInner) {
+                        const sidebarInnerZone = document.getElementById('sidebar-inner-sortable');
+                        if (sidebarInnerZone) {
+                            movePanelsToZone(sidebarInnerZone, layout.sidebarInner);
+                        }
+                    }
+
                     // Apply extra column panels
                     if (layout.extra && this.extraColumns.length > 0) {
                         this.$nextTick(() => {
@@ -1294,9 +1309,12 @@
                 async savePanelLayout() {
                     const mainZone = document.getElementById('panels-main-zone');
                     const mainInner = mainZone?.querySelector('.space-y-4') || mainZone;
-                    const sidebarInner = document.getElementById('sidebar-main-sortable');
+                    const sidebarOuter = document.getElementById('sidebar-main-sortable');
+                    const sidebarInner = document.getElementById('sidebar-inner-sortable');
                     const mainPanels = mainInner ? Array.from(mainInner.querySelectorAll(':scope > .panel-sortable-item')).map(el => el.dataset.panelId) : [];
-                    const sidebarPanels = sidebarInner ? Array.from(sidebarInner.querySelectorAll(':scope > .panel-sortable-item')).map(el => el.dataset.panelId) : [];
+                    const sidebarPanels = sidebarOuter ? Array.from(sidebarOuter.querySelectorAll(':scope > .panel-sortable-item')).map(el => el.dataset.panelId) : [];
+                    // Also save the inner sidebar panel ordering
+                    const sidebarInnerPanels = sidebarInner ? Array.from(sidebarInner.querySelectorAll(':scope > .panel-sortable-item')).map(el => el.dataset.panelId) : [];
                     
                     // Collect panels from extra columns
                     const extraPanels = {};
@@ -1317,7 +1335,7 @@
                             credentials: 'include',
                             body: JSON.stringify({
                                 viewId: `record_panels_${entityId}`,
-                                preferences: { panelLayout: { main: mainPanels, sidebar: sidebarPanels, extra: extraPanels } }
+                                preferences: { panelLayout: { main: mainPanels, sidebar: sidebarPanels, sidebarInner: sidebarInnerPanels, extra: extraPanels } }
                             })
                         });
                     } catch(e) { console.error('Failed to save panel layout:', e); }

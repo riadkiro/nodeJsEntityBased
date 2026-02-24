@@ -1,0 +1,936 @@
+<%# ═══════════════════════════════════════════════════════════════════
+    Lines Generator Panel — Mission 10
+    Dynamic line table for records (invoices, prescriptions, etc.)
+    ═══════════════════════════════════════════════════════════════════ %>
+
+<style>
+    /* ── Lines Panel Styles ───────────────────────────────── */
+    .lines-panel-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    .lines-panel-table th {
+        background: #f8f9fa;
+        padding: 6px 8px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        border-bottom: 2px solid #e5e7eb;
+        text-align: left;
+        white-space: nowrap;
+        user-select: none;
+    }
+    .dark .lines-panel-table th {
+        background: #1b2e4b;
+        color: #888ea8;
+        border-color: #253b5c;
+    }
+    .lines-panel-table td {
+        padding: 4px 6px;
+        border-bottom: 1px solid #f0f0f0;
+        vertical-align: middle;
+    }
+    .dark .lines-panel-table td {
+        border-color: #1b2e4b;
+    }
+    .lines-panel-table tbody tr:hover {
+        background: rgba(67, 97, 238, 0.03);
+    }
+    .dark .lines-panel-table tbody tr:hover {
+        background: rgba(67, 97, 238, 0.06);
+    }
+    .lines-panel-table .lp-input {
+        width: 100%;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        padding: 5px 8px;
+        font-size: 12px;
+        background: transparent;
+        transition: all 0.15s;
+        color: inherit;
+    }
+    .lines-panel-table .lp-input:hover {
+        border-color: #e5e7eb;
+        background: #fafbfc;
+    }
+    .dark .lines-panel-table .lp-input:hover {
+        border-color: #253b5c;
+        background: #0e1726;
+    }
+    .lines-panel-table .lp-input:focus {
+        outline: none;
+        border-color: #4361ee;
+        background: #fff;
+        box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.1);
+    }
+    .dark .lines-panel-table .lp-input:focus {
+        background: #0e1726;
+    }
+    .lines-panel-table select.lp-input {
+        cursor: pointer;
+        padding-right: 20px;
+    }
+    /* Formula / computed cells */
+    .lp-computed {
+        font-weight: 600;
+        color: #4361ee;
+        font-size: 12px;
+        text-align: right;
+        padding: 5px 8px;
+    }
+    .dark .lp-computed {
+        color: #6993ff;
+    }
+    /* Drag handle */
+    .lp-drag-handle {
+        cursor: grab;
+        color: #d1d5db;
+        transition: color 0.15s;
+        padding: 2px;
+    }
+    .lp-drag-handle:active { cursor: grabbing; }
+    .lp-drag-handle:hover { color: #6b7280; }
+    .dark .lp-drag-handle { color: #3b4a5e; }
+    .dark .lp-drag-handle:hover { color: #888ea8; }
+    /* Row delete button */
+    .lp-row-delete {
+        opacity: 0;
+        transition: opacity 0.15s;
+        color: #ef4444;
+        padding: 2px;
+    }
+    .lines-panel-table tbody tr:hover .lp-row-delete { opacity: 1; }
+    /* Relation search dropdown */
+    .lp-relation-wrap { position: relative; }
+    .lp-relation-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 50;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        max-height: 180px;
+        overflow-y: auto;
+        margin-top: 2px;
+    }
+    .dark .lp-relation-dropdown {
+        background: #0e1726;
+        border-color: #253b5c;
+    }
+    .lp-relation-dropdown .lp-rel-item {
+        padding: 6px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: background 0.1s;
+    }
+    .lp-relation-dropdown .lp-rel-item:hover {
+        background: rgba(67, 97, 238, 0.08);
+    }
+    /* Totals row */
+    .lp-totals-bar {
+        display: flex;
+        justify-content: flex-end;
+        gap: 24px;
+        padding: 10px 12px;
+        background: #f8f9fa;
+        border-top: 2px solid #e5e7eb;
+        border-radius: 0 0 8px 8px;
+        font-size: 12px;
+    }
+    .dark .lp-totals-bar {
+        background: #1b2e4b;
+        border-color: #253b5c;
+    }
+    .lp-totals-bar .lp-total-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .lp-totals-bar .lp-total-label {
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        font-size: 10px;
+        letter-spacing: 0.05em;
+    }
+    .dark .lp-totals-bar .lp-total-label { color: #888ea8; }
+    .lp-totals-bar .lp-total-value {
+        font-weight: 700;
+        font-size: 14px;
+        color: #1f2937;
+    }
+    .dark .lp-totals-bar .lp-total-value { color: #e0e6ed; }
+    /* Width classes */
+    .lp-w-xs { min-width: 50px; max-width: 70px; }
+    .lp-w-s  { min-width: 70px; max-width: 100px; }
+    .lp-w-m  { min-width: 120px; }
+    .lp-w-l  { min-width: 180px; }
+    .lp-w-xl { min-width: 240px; }
+    /* Schema selector */
+    .lp-schema-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1.5px solid #e5e7eb;
+        color: #6b7280;
+        background: #fff;
+        transition: all 0.15s;
+    }
+    .dark .lp-schema-pill {
+        border-color: #253b5c;
+        background: #0e1726;
+        color: #888ea8;
+    }
+    .lp-schema-pill:hover, .lp-schema-pill.active {
+        border-color: #4361ee;
+        color: #4361ee;
+        background: rgba(67, 97, 238, 0.06);
+    }
+    .lp-schema-pill.active {
+        background: rgba(67, 97, 238, 0.1);
+    }
+    /* Multiselect tags */
+    .lp-ms-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        background: rgba(67, 97, 238, 0.1);
+        color: #4361ee;
+        margin: 1px;
+    }
+    .lp-ms-tag .lp-ms-tag-x {
+        cursor: pointer;
+        font-size: 12px;
+        line-height: 1;
+        opacity: 0.6;
+    }
+    .lp-ms-tag .lp-ms-tag-x:hover { opacity: 1; }
+    /* Add row button area */
+    .lp-add-row-area {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+        border-top: 1px dashed #e5e7eb;
+        cursor: pointer;
+        color: #9ca3af;
+        font-size: 12px;
+        transition: all 0.15s;
+        gap: 6px;
+    }
+    .dark .lp-add-row-area { border-color: #1b2e4b; color: #4a5568; }
+    .lp-add-row-area:hover {
+        background: rgba(67, 97, 238, 0.04);
+        color: #4361ee;
+    }
+    /* Sortable ghost */
+    .lines-panel-table .sortable-ghost { opacity: 0.3; }
+    .lines-panel-table .sortable-chosen { background: rgba(67, 97, 238, 0.05); }
+</style>
+
+<div class="panel !p-0 overflow-hidden" data-id="lines"
+    x-data='linesPanel({
+        recordId: "<%= locals.record && record._id ? record._id : '' %>",
+        accountNumber: "<%= account_number %>",
+        entityId: "<%= locals.entity ? entity._id : '' %>"
+    })'
+>
+    <!-- Header -->
+    <div class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
+        @click="isOpen = !isOpen">
+        <div class="flex items-center gap-1.5">
+            <iconify-icon icon="solar:document-text-bold-duotone" width="14" class="text-success"></iconify-icon>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Lignes</span>
+            <span x-show="lines.length > 0" class="text-[9px] bg-success/10 text-success min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1" x-text="lines.length"></span>
+        </div>
+        <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="isOpen ? '' : '-rotate-90'" class="transition-transform text-gray-300"></iconify-icon>
+    </div>
+
+    <!-- Body -->
+    <div x-show="isOpen" x-collapse>
+        <!-- Loading state -->
+        <template x-if="loading">
+            <div class="px-4 py-8 text-center">
+                <iconify-icon icon="svg-spinners:ring-resize" width="24" class="text-primary"></iconify-icon>
+                <p class="text-xs text-gray-400 mt-2">Chargement des schémas...</p>
+            </div>
+        </template>
+
+        <!-- No schemas available -->
+        <template x-if="!loading && schemas.length === 0">
+            <div class="px-4 py-6 text-center">
+                <iconify-icon icon="solar:document-text-linear" width="28" class="text-gray-300 dark:text-gray-600 mb-2"></iconify-icon>
+                <p class="text-xs text-gray-400">Aucun schéma de lignes disponible pour cette entité</p>
+            </div>
+        </template>
+
+        <!-- Schema selector (if multiple schemas) -->
+        <template x-if="!loading && schemas.length > 0">
+            <div>
+                <!-- Schema pills (only if multiple) -->
+                <div x-show="schemas.length > 1" class="px-3 py-2 flex flex-wrap gap-1.5 border-b border-gray-100 dark:border-gray-800">
+                    <template x-for="s in schemas" :key="s._id">
+                        <button
+                            class="lp-schema-pill"
+                            :class="activeSchemaId === s._id ? 'active' : ''"
+                            @click.stop="selectSchema(s._id)"
+                            x-text="s.name"
+                        ></button>
+                    </template>
+                </div>
+
+                <!-- Line Type selector (if schema has multiple line types) -->
+                <div x-show="activeSchema && activeSchema.lineTypes && activeSchema.lineTypes.length > 1"
+                    class="px-3 py-1.5 flex items-center gap-2 border-b border-gray-100 dark:border-gray-800">
+                    <span class="text-[10px] font-semibold text-gray-400 uppercase">Type:</span>
+                    <select class="lp-input !w-auto !text-[11px] !py-1 !px-2 !border-gray-200 dark:!border-gray-700"
+                        x-model="newLineType">
+                        <template x-for="lt in activeSchema.lineTypes" :key="lt">
+                            <option :value="lt" x-text="lt"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <!-- Table -->
+                <div class="overflow-x-auto" x-show="activeSchema">
+                    <table class="lines-panel-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 28px;"></th>
+                                <th style="width: 24px;">#</th>
+                                <template x-for="col in visibleColumns" :key="col.key">
+                                    <th :class="'lp-w-' + (col.width || 'M').toLowerCase()" x-text="col.label"></th>
+                                </template>
+                                <th style="width: 28px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody x-ref="linesSortable">
+                            <template x-for="(line, lineIdx) in lines" :key="line._tempId || line._id || lineIdx">
+                                <tr>
+                                    <!-- Drag handle -->
+                                    <td>
+                                        <span class="lp-drag-handle">
+                                            <iconify-icon icon="tabler:grip-vertical" width="14"></iconify-icon>
+                                        </span>
+                                    </td>
+                                    <!-- Row number -->
+                                    <td class="text-[11px] text-gray-400" x-text="lineIdx + 1"></td>
+                                    <!-- Dynamic columns -->
+                                    <template x-for="col in getVisibleColumnsForLine(line)" :key="col.key">
+                                        <td :class="'lp-w-' + (col.width || 'M').toLowerCase()">
+                                            <!-- Text -->
+                                            <template x-if="col.type === 'text'">
+                                                <input type="text" class="lp-input"
+                                                    :value="line.values[col.key] || ''"
+                                                    @input="line.values[col.key] = $event.target.value; debouncedSave()"
+                                                    :placeholder="col.label" />
+                                            </template>
+
+                                            <!-- Textarea -->
+                                            <template x-if="col.type === 'textarea'">
+                                                <input type="text" class="lp-input"
+                                                    :value="line.values[col.key] || ''"
+                                                    @input="line.values[col.key] = $event.target.value; debouncedSave()"
+                                                    :placeholder="col.label" />
+                                            </template>
+
+                                            <!-- Number -->
+                                            <template x-if="col.type === 'number'">
+                                                <input type="number" class="lp-input text-right"
+                                                    :value="line.values[col.key] || ''"
+                                                    @input="line.values[col.key] = parseFloat($event.target.value) || 0; recomputeLine(line); debouncedSave()"
+                                                    step="any" />
+                                            </template>
+
+                                            <!-- Money -->
+                                            <template x-if="col.type === 'money'">
+                                                <input type="number" class="lp-input text-right"
+                                                    :value="line.values[col.key] || ''"
+                                                    @input="line.values[col.key] = parseFloat($event.target.value) || 0; recomputeLine(line); debouncedSave()"
+                                                    step="0.01" />
+                                            </template>
+
+                                            <!-- Date -->
+                                            <template x-if="col.type === 'date'">
+                                                <input type="date" class="lp-input"
+                                                    :value="line.values[col.key] || ''"
+                                                    @input="line.values[col.key] = $event.target.value; debouncedSave()" />
+                                            </template>
+
+                                            <!-- Select -->
+                                            <template x-if="col.type === 'select'">
+                                                <select class="lp-input"
+                                                    :value="line.values[col.key] || ''"
+                                                    @change="line.values[col.key] = $event.target.value; debouncedSave()">
+                                                    <option value="">—</option>
+                                                    <template x-for="opt in getSelectOptions(col, line)" :key="opt.value">
+                                                        <option :value="opt.value" x-text="opt.label" :selected="line.values[col.key] === opt.value"></option>
+                                                    </template>
+                                                </select>
+                                            </template>
+
+                                            <!-- Multiselect (tag-style) -->
+                                            <template x-if="col.type === 'multiselect'">
+                                                <div>
+                                                    <div class="flex flex-wrap gap-0.5 mb-1">
+                                                        <template x-for="(val, vi) in (line.values[col.key] || [])" :key="vi">
+                                                            <span class="lp-ms-tag">
+                                                                <span x-text="getOptionLabel(col, val)"></span>
+                                                                <span class="lp-ms-tag-x" @click="removeMultiselectValue(line, col.key, vi)">&times;</span>
+                                                            </span>
+                                                        </template>
+                                                    </div>
+                                                    <select class="lp-input !text-[10px]"
+                                                        @change="addMultiselectValue(line, col.key, $event.target.value); $event.target.value = ''">
+                                                        <option value="">+ ajouter</option>
+                                                        <template x-for="opt in getSelectOptions(col, line)" :key="opt.value">
+                                                            <option :value="opt.value" x-text="opt.label"></option>
+                                                        </template>
+                                                    </select>
+                                                </div>
+                                            </template>
+
+                                            <!-- Duration -->
+                                            <template x-if="col.type === 'duration'">
+                                                <div class="flex gap-1 items-center">
+                                                    <input type="number" class="lp-input text-right !w-14"
+                                                        :value="line.values[col.key]?.value || ''"
+                                                        @input="if(!line.values[col.key]) line.values[col.key] = {}; line.values[col.key].value = parseFloat($event.target.value) || 0; debouncedSave()"
+                                                        min="0" step="1" />
+                                                    <select class="lp-input !w-16 !text-[10px]"
+                                                        :value="line.values[col.key]?.unit || (col.config?.units?.[0] || 'day')"
+                                                        @change="if(!line.values[col.key]) line.values[col.key] = {}; line.values[col.key].unit = $event.target.value; debouncedSave()">
+                                                        <template x-for="u in (col.config?.units || ['day','week','month'])" :key="u">
+                                                            <option :value="u" x-text="durationLabel(u)"></option>
+                                                        </template>
+                                                    </select>
+                                                </div>
+                                            </template>
+
+                                            <!-- Dosage -->
+                                            <template x-if="col.type === 'dosage'">
+                                                <div class="flex gap-1 items-center">
+                                                    <input type="number" class="lp-input text-right !w-14"
+                                                        :value="line.values[col.key]?.value || ''"
+                                                        @input="if(!line.values[col.key]) line.values[col.key] = {}; line.values[col.key].value = parseFloat($event.target.value) || 0; debouncedSave()"
+                                                        min="0" step="any" />
+                                                    <select class="lp-input !w-16 !text-[10px]"
+                                                        :value="line.values[col.key]?.unit || (col.config?.units?.[0] || 'mg')"
+                                                        @change="if(!line.values[col.key]) line.values[col.key] = {}; line.values[col.key].unit = $event.target.value; debouncedSave()">
+                                                        <template x-for="u in (col.config?.units || ['mg','ml','g','cp'])" :key="u">
+                                                            <option :value="u" x-text="u"></option>
+                                                        </template>
+                                                    </select>
+                                                </div>
+                                            </template>
+
+                                            <!-- Relation (autocomplete search) -->
+                                            <template x-if="col.type === 'relation'">
+                                                <div class="lp-relation-wrap">
+                                                    <input type="text" class="lp-input"
+                                                        :value="line.values[col.key + '_label'] || ''"
+                                                        @focus="openRelationSearch(lineIdx, col.key)"
+                                                        @input="searchRelation(lineIdx, col.key, $event.target.value)"
+                                                        @keydown.escape="closeRelationSearch()"
+                                                        :placeholder="'🔍 ' + col.label" />
+                                                    <!-- Dropdown -->
+                                                    <div x-show="relationSearch.lineIdx === lineIdx && relationSearch.colKey === col.key && relationSearch.open"
+                                                        class="lp-relation-dropdown"
+                                                        @click.outside="closeRelationSearch()">
+                                                        <template x-if="relationSearch.loading">
+                                                            <div class="px-3 py-2 text-xs text-gray-400 text-center">
+                                                                <iconify-icon icon="svg-spinners:ring-resize" width="14"></iconify-icon>
+                                                            </div>
+                                                        </template>
+                                                        <template x-if="!relationSearch.loading && relationSearch.results.length === 0">
+                                                            <div class="px-3 py-2 text-xs text-gray-400 text-center">Aucun résultat</div>
+                                                        </template>
+                                                        <template x-for="item in relationSearch.results" :key="item._id">
+                                                            <div class="lp-rel-item"
+                                                                @click="selectRelation(lineIdx, col, item)">
+                                                                <span x-text="item.label || item.title"></span>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </template>
+
+                                            <!-- Formula (computed, read-only) -->
+                                            <template x-if="col.type === 'formula'">
+                                                <div class="lp-computed" x-text="formatComputed(line, col)"></div>
+                                            </template>
+                                        </td>
+                                    </template>
+                                    <!-- Delete -->
+                                    <td>
+                                        <button class="lp-row-delete" @click="removeLine(lineIdx)" title="Supprimer">
+                                            <iconify-icon icon="tabler:trash" width="14"></iconify-icon>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Add row -->
+                <div class="lp-add-row-area" @click.stop="addLine()" x-show="activeSchema">
+                    <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
+                    <span>Ajouter une ligne</span>
+                </div>
+
+                <!-- Totals -->
+                <div x-show="activeSchema && activeSchema.totals && (activeSchema.totals.subtotalKey || activeSchema.totals.totalFormula)"
+                    class="lp-totals-bar">
+                    <template x-if="totals.subtotal !== undefined">
+                        <div class="lp-total-item">
+                            <span class="lp-total-label">Sous-total</span>
+                            <span class="lp-total-value" x-text="formatMoney(totals.subtotal)"></span>
+                        </div>
+                    </template>
+                    <template x-if="totals.vat !== undefined">
+                        <div class="lp-total-item">
+                            <span class="lp-total-label">TVA</span>
+                            <span class="lp-total-value" x-text="formatMoney(totals.vat)"></span>
+                        </div>
+                    </template>
+                    <template x-if="totals.total !== undefined">
+                        <div class="lp-total-item">
+                            <span class="lp-total-label">Total</span>
+                            <span class="lp-total-value" x-text="formatMoney(totals.total)"></span>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Save indicator -->
+                <div x-show="saving" class="px-3 py-1 text-center">
+                    <span class="text-[10px] text-gray-400 flex items-center justify-center gap-1">
+                        <iconify-icon icon="svg-spinners:ring-resize" width="10"></iconify-icon>
+                        Enregistrement...
+                    </span>
+                </div>
+            </div>
+        </template>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('linesPanel', (config) => ({
+        recordId: config.recordId,
+        accountNumber: config.accountNumber,
+        entityId: config.entityId,
+        isOpen: true,
+        loading: true,
+        saving: false,
+
+        schemas: [],
+        activeSchemaId: null,
+        lines: [],
+        totals: {},
+        newLineType: '',
+
+        // Relation search state
+        relationSearch: {
+            lineIdx: -1,
+            colKey: '',
+            open: false,
+            loading: false,
+            results: [],
+            query: '',
+            debounceTimer: null
+        },
+
+        _saveTimer: null,
+
+        get activeSchema() {
+            return this.schemas.find(s => s._id === this.activeSchemaId) || null;
+        },
+
+        get visibleColumns() {
+            if (!this.activeSchema) return [];
+            return (this.activeSchema.columns || [])
+                .filter(c => c.visible !== false)
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
+        },
+
+        async init() {
+            if (!this.recordId) {
+                this.loading = false;
+                return;
+            }
+            await this.loadSchemas();
+        },
+
+        async loadSchemas() {
+            try {
+                const url = `/account/${this.accountNumber}/api/line-schemas/by-context?entityId=${this.entityId}`;
+                const res = await fetch(url, { credentials: 'include' });
+                const data = await res.json();
+                this.schemas = data.data || [];
+
+                if (this.schemas.length > 0) {
+                    this.activeSchemaId = this.schemas[0]._id;
+                    this.newLineType = this.schemas[0].defaultLineType || this.schemas[0].lineTypes?.[0] || 'product';
+                    await this.loadLines();
+                }
+            } catch (e) {
+                console.error('[LinesPanel] Load schemas error:', e);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async loadLines() {
+            try {
+                const res = await fetch(`/account/${this.accountNumber}/api/document-lines/${this.recordId}`, {
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                this.lines = (data.data || []).map(l => ({
+                    ...l,
+                    values: l.values || {},
+                    computed: l.computed || {},
+                    _tempId: l._id || ('tmp_' + Date.now() + '_' + Math.random())
+                }));
+
+                // Recompute all formulas client-side
+                this.lines.forEach(l => this.recomputeLine(l));
+                this.recomputeTotals();
+                this.initSortable();
+            } catch (e) {
+                console.error('[LinesPanel] Load lines error:', e);
+            }
+        },
+
+        selectSchema(schemaId) {
+            this.activeSchemaId = schemaId;
+            const schema = this.activeSchema;
+            if (schema) {
+                this.newLineType = schema.defaultLineType || schema.lineTypes?.[0] || 'product';
+            }
+            // Lines are still the same — they exist on the record regardless of schema
+        },
+
+        getVisibleColumnsForLine(line) {
+            if (!this.activeSchema) return [];
+            return (this.activeSchema.columns || [])
+                .filter(c => c.visible !== false)
+                .filter(c => {
+                    // Show if no lineType restriction, or if matches current line's type
+                    if (!c.showWhen || !c.showWhen.lineType || c.showWhen.lineType.length === 0) return true;
+                    return c.showWhen.lineType.includes(line.lineType);
+                })
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
+        },
+
+        addLine() {
+            this.lines.push({
+                _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
+                lineType: this.newLineType,
+                values: {},
+                computed: {},
+                order: this.lines.length
+            });
+            this.debouncedSave();
+        },
+
+        removeLine(idx) {
+            this.lines.splice(idx, 1);
+            this.recomputeTotals();
+            this.debouncedSave();
+        },
+
+        // ── Formula evaluation ────────────────────────────
+        recomputeLine(line) {
+            if (!this.activeSchema) return;
+            const formulaCols = (this.activeSchema.columns || []).filter(c => c.type === 'formula');
+            const computed = {};
+            for (const col of formulaCols) {
+                if (col.config?.expression) {
+                    const ctx = { ...line.values, ...computed };
+                    computed[col.key] = this.evaluateFormula(col.config.expression, ctx);
+                }
+            }
+            line.computed = computed;
+            this.recomputeTotals();
+        },
+
+        evaluateFormula(expression, context) {
+            try {
+                const safeExpr = expression.replace(/[a-zA-Z_]\w*/g, (varName) => {
+                    if (context.hasOwnProperty(varName)) {
+                        const val = parseFloat(context[varName]);
+                        return isNaN(val) ? '0' : val.toString();
+                    }
+                    return '0';
+                });
+                if (!/^[\d\s.+\-*/()]+$/.test(safeExpr)) return 0;
+                return Function('"use strict"; return (' + safeExpr + ')')();
+            } catch (e) {
+                return 0;
+            }
+        },
+
+        recomputeTotals() {
+            const schema = this.activeSchema;
+            if (!schema || !schema.totals) { this.totals = {}; return; }
+
+            const t = {};
+            if (schema.totals.subtotalKey) {
+                t.subtotal = this.lines.reduce((sum, line) => {
+                    const val = line.computed?.[schema.totals.subtotalKey] ??
+                                line.values?.[schema.totals.subtotalKey] ?? 0;
+                    return sum + (parseFloat(val) || 0);
+                }, 0);
+            }
+            if (schema.totals.vatKey) {
+                t.vat = this.lines.reduce((sum, line) => {
+                    const val = line.computed?.[schema.totals.vatKey] ??
+                                line.values?.[schema.totals.vatKey] ?? 0;
+                    return sum + (parseFloat(val) || 0);
+                }, 0);
+            }
+            if (schema.totals.totalFormula) {
+                t.total = this.evaluateFormula(schema.totals.totalFormula, t);
+            }
+            this.totals = t;
+        },
+
+        formatComputed(line, col) {
+            const val = line.computed?.[col.key];
+            if (val === undefined || val === null) return '—';
+            if (col.type === 'formula' && (col.config?.currency || true)) {
+                return this.formatMoney(val);
+            }
+            return val;
+        },
+
+        formatMoney(val) {
+            if (val === undefined || val === null) return '—';
+            return parseFloat(val).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' €';
+        },
+
+        // ── Select / multiselect helpers ───────────────────
+        getSelectOptions(col, line) {
+            // Hybrid: merge schema options with catalog-fetched options
+            const opts = [];
+            if (col.config?.options) {
+                opts.push(...col.config.options);
+            }
+            // If line has _catalogOptions for this column, merge them
+            if (line._catalogOptions?.[col.key]) {
+                for (const co of line._catalogOptions[col.key]) {
+                    if (!opts.find(o => o.value === co.value)) {
+                        opts.push(co);
+                    }
+                }
+            }
+            return opts;
+        },
+
+        getOptionLabel(col, value) {
+            const opts = col.config?.options || [];
+            const found = opts.find(o => o.value === value);
+            return found ? found.label : value;
+        },
+
+        addMultiselectValue(line, key, value) {
+            if (!value) return;
+            if (!line.values[key]) line.values[key] = [];
+            if (!line.values[key].includes(value)) {
+                line.values[key].push(value);
+                this.debouncedSave();
+            }
+        },
+
+        removeMultiselectValue(line, key, idx) {
+            if (line.values[key]) {
+                line.values[key].splice(idx, 1);
+                this.debouncedSave();
+            }
+        },
+
+        // ── Duration label ────────────────────────────────
+        durationLabel(unit) {
+            const map = { day: 'jour(s)', week: 'sem.', month: 'mois', year: 'an(s)' };
+            return map[unit] || unit;
+        },
+
+        // ── Relation search (autocomplete) ─────────────────
+        openRelationSearch(lineIdx, colKey) {
+            this.relationSearch.lineIdx = lineIdx;
+            this.relationSearch.colKey = colKey;
+            this.relationSearch.open = true;
+            this.relationSearch.results = [];
+            this.relationSearch.query = '';
+        },
+
+        closeRelationSearch() {
+            this.relationSearch.open = false;
+        },
+
+        searchRelation(lineIdx, colKey, query) {
+            this.relationSearch.query = query;
+            this.relationSearch.lineIdx = lineIdx;
+            this.relationSearch.colKey = colKey;
+            this.relationSearch.open = true;
+
+            clearTimeout(this.relationSearch.debounceTimer);
+            this.relationSearch.debounceTimer = setTimeout(() => {
+                this._doRelationSearch(colKey, query);
+            }, 250);
+        },
+
+        async _doRelationSearch(colKey, query) {
+            const col = (this.activeSchema?.columns || []).find(c => c.key === colKey);
+            if (!col || !col.config?.targetEntity) return;
+
+            this.relationSearch.loading = true;
+            try {
+                const searchFields = (col.config.searchFields || ['title']).join(',');
+                const url = `/account/${this.accountNumber}/api/catalog-search?entityId=${col.config.targetEntity}&q=${encodeURIComponent(query)}&searchFields=${searchFields}`;
+                const res = await fetch(url, { credentials: 'include' });
+                const data = await res.json();
+                this.relationSearch.results = data.data || [];
+            } catch (e) {
+                console.error('[LinesPanel] Relation search error:', e);
+                this.relationSearch.results = [];
+            } finally {
+                this.relationSearch.loading = false;
+            }
+        },
+
+        selectRelation(lineIdx, col, item) {
+            const line = this.lines[lineIdx];
+            if (!line) return;
+
+            // Set the relation value (ID + label)
+            line.values[col.key] = item._id;
+            line.values[col.key + '_label'] = item.label || item.title;
+
+            // Apply defaults from the catalog item (hybrid mode)
+            if (col.config?.applyDefaults && item.customFields) {
+                for (const [targetKey, sourceExpr] of Object.entries(col.config.applyDefaults)) {
+                    let val;
+                    if (sourceExpr.startsWith('cf.')) {
+                        // Custom field reference
+                        const cfId = sourceExpr.substring(3);
+                        val = item.customFields[cfId];
+                    } else {
+                        val = item[sourceExpr];
+                    }
+                    if (val !== undefined && val !== null) {
+                        line.values[targetKey] = val;
+
+                        // HYBRID: If this is a select/multiselect column, also inject the
+                        // value as an available option so it appears in the dropdown
+                        const targetCol = (this.activeSchema?.columns || []).find(c => c.key === targetKey);
+                        if (targetCol && (targetCol.type === 'select' || targetCol.type === 'multiselect')) {
+                            if (!line._catalogOptions) line._catalogOptions = {};
+                            if (!line._catalogOptions[targetKey]) line._catalogOptions[targetKey] = [];
+                            if (typeof val === 'string' && !line._catalogOptions[targetKey].find(o => o.value === val)) {
+                                line._catalogOptions[targetKey].push({ value: val, label: val });
+                            } else if (Array.isArray(val)) {
+                                val.forEach(v => {
+                                    if (!line._catalogOptions[targetKey].find(o => o.value === v)) {
+                                        line._catalogOptions[targetKey].push({ value: v, label: v });
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            this.recomputeLine(line);
+            this.closeRelationSearch();
+            this.debouncedSave();
+        },
+
+        // ── Debounced save ──────────────────────────────────
+        debouncedSave() {
+            clearTimeout(this._saveTimer);
+            this._saveTimer = setTimeout(() => this.saveLines(), 800);
+        },
+
+        async saveLines() {
+            if (!this.recordId || !this.activeSchemaId) return;
+            this.saving = true;
+            try {
+                const payload = {
+                    schemaId: this.activeSchemaId,
+                    lines: this.lines.map((l, i) => ({
+                        _id: l._id || undefined,
+                        lineType: l.lineType,
+                        values: l.values,
+                        order: i
+                    }))
+                };
+
+                const res = await fetch(`/account/${this.accountNumber}/api/document-lines/${this.recordId}/bulk`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.data) {
+                    // Update lines with server IDs (for new lines)
+                    this.lines = data.data.map(l => ({
+                        ...l,
+                        values: l.values || {},
+                        computed: l.computed || {},
+                        _tempId: l._id
+                    }));
+                    // Recompute locally (formulas)
+                    this.lines.forEach(l => this.recomputeLine(l));
+                }
+                if (data.totals) {
+                    this.totals = data.totals;
+                }
+            } catch (e) {
+                console.error('[LinesPanel] Save error:', e);
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        // ── Sortable init ───────────────────────────────────
+        initSortable() {
+            this.$nextTick(() => {
+                if (this.$refs.linesSortable && typeof Sortable !== 'undefined') {
+                    Sortable.create(this.$refs.linesSortable, {
+                        handle: '.lp-drag-handle',
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        chosenClass: 'sortable-chosen',
+                        onEnd: (evt) => {
+                            const items = [...this.lines];
+                            const [moved] = items.splice(evt.oldIndex, 1);
+                            items.splice(evt.newIndex, 0, moved);
+                            this.lines = items;
+                            this.debouncedSave();
+                        }
+                    });
+                }
+            });
+        }
+    }));
+});
+</script>

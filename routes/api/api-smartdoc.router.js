@@ -521,8 +521,463 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
 });
 
 // ============================================================================
+// DRAFT-BASED GENERATION (Mission 9)
+// Generate an editable draft document from a template, allowing user
+// modifications before finalizing into a PDF attachment.
+// ============================================================================
+
+/**
+ * POST /api/smartdoc/generate-draft/:templateId
+ * Creates a temporary copy of the template document with tokens resolved,
+ * so the user can edit it in the React editor before finalizing.
+ * 
+ * Body:
+ *   - recordId: ID of the record to generate for
+ *   - inputs: { ... } - extra inputs if required
+ * 
+ * Returns: { success, draftDocumentId, outputName }
+ */
+router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
+    try {
+        const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
+        const Document = await tenantCollection(req, 'Document');
+        const Record = await tenantCollection(req, 'Record');
+        const Entity = await tenantCollection(req, 'Entity');
+
+        // 1. Load the SmartDoc template
+        const smartDocTemplate = await SmartDocTemplate.findById(req.params.templateId);
+        if (!smartDocTemplate) {
+            return res.status(404).json({ error: 'SmartDoc template introuvable' });
+        }
+
+        // 2. Load the record
+        const record = await Record.findById(req.body.recordId);
+        if (!record) {
+            return res.status(404).json({ error: 'Record introuvable' });
+        }
+
+        // 3. Load the entity with full population
+        const entity = await Entity.findById(smartDocTemplate.entityId)
+            .populate('customFields')
+            .populate('classifications')
+            .populate('statusClassification')
+            .populate({
+                path: 'relations.targetEntity',
+                select: 'name icon slug customFields classifications statusClassification',
+                populate: [
+                    { path: 'customFields', model: 'FieldTemplate' },
+                    { path: 'classifications', model: 'Classification' },
+                    { path: 'statusClassification', model: 'Classification' }
+                ]
+            })
+            .lean();
+
+        // 3b. Load related records
+        const relatedRecordsMap = {};
+        if (entity && entity.relations && record.relations) {
+            for (const rel of entity.relations) {
+                const targetEntity = rel.targetEntity;
+                if (!targetEntity || typeof targetEntity !== 'object') continue;
+                const recRelation = record.relations.find(r => r.relationKey === rel.key);
+                if (!recRelation || !recRelation.value) continue;
+                const relatedId = Array.isArray(recRelation.value) ? recRelation.value[0] : recRelation.value;
+                if (!relatedId) continue;
+                try {
+                    const relatedRecord = await Record.findById(relatedId).lean();
+                    if (relatedRecord) {
+                        relatedRecordsMap[rel.key] = { record: relatedRecord, entity: targetEntity };
+                    }
+                } catch (e) {
+                    console.warn('[SmartDoc] Could not load related record:', relatedId, e.message);
+                }
+            }
+        }
+
+        // 4. Validate required inputs
+        const inputs = req.body.inputs || {};
+        const missingInputs = [];
+        for (const field of smartDocTemplate.inputFields || []) {
+            if (field.required && !inputs[field.key] && inputs[field.key] !== 0) {
+                missingInputs.push(field.label || field.key);
+            }
+        }
+        if (missingInputs.length > 0) {
+            return res.status(400).json({
+                error: 'Champs obligatoires manquants',
+                missingFields: missingInputs
+            });
+        }
+
+        // 5. Load the document template
+        const docTemplate = await Document.findById(smartDocTemplate.documentId);
+        if (!docTemplate) {
+            return res.status(404).json({ error: 'Document template introuvable' });
+        }
+
+        // 6. Build token context (same as resolveDocumentTokens)
+        const context = buildTokenContext(record, entity, inputs, relatedRecordsMap, req.user);
+
+        // 7. Create a COPY of the document with tokens resolved in pages
+        const draftPages = (docTemplate.pages || []).map(page => {
+            const resolvedPage = { ...page.toObject ? page.toObject() : { ...page } };
+            // Resolve tokens in page content
+            if (resolvedPage.content) {
+                resolvedPage.content = resolveTokensInString(resolvedPage.content, context);
+            }
+            // Resolve tokens in elements
+            if (resolvedPage.elements && Array.isArray(resolvedPage.elements)) {
+                resolvedPage.elements = resolvedPage.elements.map(el => {
+                    const resolvedEl = { ...el };
+                    if (resolvedEl.content && typeof resolvedEl.content === 'object') {
+                        resolvedEl.content = { ...resolvedEl.content };
+                        if (resolvedEl.content.text) {
+                            resolvedEl.content.text = resolveTokensInString(resolvedEl.content.text, context);
+                        }
+                        if (resolvedEl.content.html) {
+                            resolvedEl.content.html = resolveTokensInString(resolvedEl.content.html, context);
+                        }
+                    }
+                    return resolvedEl;
+                });
+            }
+            // Resolve tokens in rows (layout mode)
+            if (resolvedPage.rows && Array.isArray(resolvedPage.rows)) {
+                resolvedPage.rows = resolvedPage.rows.map(row => {
+                    const resolvedRow = { ...row.toObject ? row.toObject() : { ...row } };
+                    if (resolvedRow.columns && Array.isArray(resolvedRow.columns)) {
+                        resolvedRow.columns = resolvedRow.columns.map(col => {
+                            const resolvedCol = { ...col.toObject ? col.toObject() : { ...col } };
+                            if (resolvedCol.blocks && Array.isArray(resolvedCol.blocks)) {
+                                resolvedCol.blocks = resolvedCol.blocks.map(block => {
+                                    const resolvedBlock = { ...block.toObject ? block.toObject() : { ...block } };
+                                    if (resolvedBlock.content) {
+                                        resolvedBlock.content = resolveTokensInString(resolvedBlock.content, context);
+                                    }
+                                    if (resolvedBlock.html) {
+                                        resolvedBlock.html = resolveTokensInString(resolvedBlock.html, context);
+                                    }
+                                    return resolvedBlock;
+                                });
+                            }
+                            return resolvedCol;
+                        });
+                    }
+                    return resolvedRow;
+                });
+            }
+            return resolvedPage;
+        });
+
+        // Resolve header/footer
+        const resolvedHeaderHtml = docTemplate.headerHtml
+            ? resolveTokensInString(docTemplate.headerHtml, context) : '';
+        const resolvedFooterHtml = docTemplate.footerHtml
+            ? resolveTokensInString(docTemplate.footerHtml, context) : '';
+
+        // 8. Generate output name
+        const outputName = resolveOutputName(
+            smartDocTemplate.outputNameTemplate || '{{templateName}} - {{recordTitle}}',
+            smartDocTemplate.name,
+            record.computedTitle || record.title || 'Record',
+            inputs
+        );
+
+        // 9. Save as a draft document (temporary, flagged for cleanup)
+        const draftDoc = new Document({
+            name: outputName,
+            pages: draftPages,
+            headerHtml: resolvedHeaderHtml,
+            footerHtml: resolvedFooterHtml,
+            format: docTemplate.format || 'A4',
+            orientation: docTemplate.orientation || 'portrait',
+            isTemplate: false,
+            isDraft: true,               // Flag as draft for cleanup
+            draftSourceTemplateId: smartDocTemplate._id,
+            draftRecordId: req.body.recordId,
+            draftOutputName: outputName,
+            draftOutputFormat: smartDocTemplate.outputFormat || 'pdf',
+            status: 'draft',
+            createdBy: req.user?._id,
+            createdAt: new Date()
+        });
+
+        await draftDoc.save();
+
+        console.log(`[SmartDoc] Draft created: ${draftDoc._id} from template "${smartDocTemplate.name}" for record ${req.body.recordId}`);
+
+        res.json({
+            success: true,
+            draftDocumentId: draftDoc._id.toString(),
+            outputName
+        });
+
+    } catch (error) {
+        console.error('[SmartDoc] Generate-draft error:', error);
+        res.status(500).json({ error: error.message || 'Erreur lors de la création du brouillon' });
+    }
+});
+
+/**
+ * POST /api/smartdoc/finalize-draft/:draftDocId
+ * Takes the draft document (possibly edited by user), generates PDF/HTML,
+ * attaches it to the record, and deletes the draft document.
+ * 
+ * Body:
+ *   - recordId: ID of the record to attach the file to
+ */
+router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
+    try {
+        const Document = await tenantCollection(req, 'Document');
+        const Record = await tenantCollection(req, 'Record');
+
+        // 1. Load the draft document
+        const draftDoc = await Document.findById(req.params.draftDocId);
+        if (!draftDoc) {
+            return res.status(404).json({ error: 'Document brouillon introuvable' });
+        }
+
+        // 2. Load the record
+        const recordId = req.body.recordId || draftDoc.draftRecordId;
+        const record = await Record.findById(recordId);
+        if (!record) {
+            return res.status(404).json({ error: 'Record introuvable' });
+        }
+
+        // 3. Build HTML from draft pages (tokens already resolved)
+        let html = '';
+        if (draftDoc.pages && draftDoc.pages.length > 0) {
+            for (const page of draftDoc.pages) {
+                if (page.content) {
+                    html += page.content;
+                }
+                if (page.elements) {
+                    for (const el of page.elements) {
+                        if (el.content && typeof el.content === 'object') {
+                            if (el.content.text) html += el.content.text;
+                            if (el.content.html) html += el.content.html;
+                        }
+                    }
+                }
+            }
+        }
+
+        const fullHtml = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { margin: 20mm; size: ${draftDoc.format || 'A4'}${draftDoc.orientation === 'landscape' ? ' landscape' : ''}; }
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            font-size: 12pt; 
+            line-height: 1.5;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 20mm;
+        }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f5f5f5; font-weight: 600; }
+        h1, h2, h3 { color: #333; }
+        .header-block { text-align: center; margin-bottom: 30px; }
+        .footer-block { text-align: center; margin-top: 30px; font-size: 10pt; color: #888; }
+    </style>
+</head>
+<body>
+${draftDoc.headerHtml || ''}
+${html}
+${draftDoc.footerHtml || ''}
+</body>
+</html>`;
+
+        // 4. Generate output file
+        const outputName = draftDoc.draftOutputName || draftDoc.name || 'Document';
+        const outputFormat = draftDoc.draftOutputFormat || 'pdf';
+        let savedFilename;
+        let savedSize;
+        const outputDir = path.join(__dirname, '../../public/uploads/attachments', String(req.account_number));
+        fs.mkdirSync(outputDir, { recursive: true });
+
+        if (outputFormat === 'pdf' || outputFormat === 'both') {
+            const pdfFilename = Date.now() + '-' + Math.round(Math.random() * 1E9) + '.pdf';
+            const pdfPath = path.join(outputDir, pdfFilename);
+            try {
+                await generatePDF(fullHtml, pdfPath, draftDoc);
+                savedFilename = pdfFilename;
+                savedSize = fs.statSync(pdfPath).size;
+            } catch (pdfErr) {
+                console.error('[SmartDoc] PDF generation error:', pdfErr);
+                const htmlFilename = Date.now() + '-' + Math.round(Math.random() * 1E9) + '.html';
+                const htmlPath = path.join(outputDir, htmlFilename);
+                fs.writeFileSync(htmlPath, fullHtml, 'utf8');
+                savedFilename = htmlFilename;
+                savedSize = fs.statSync(htmlPath).size;
+            }
+        } else {
+            const htmlFilename = Date.now() + '-' + Math.round(Math.random() * 1E9) + '.html';
+            const htmlPath = path.join(outputDir, htmlFilename);
+            fs.writeFileSync(htmlPath, fullHtml, 'utf8');
+            savedFilename = htmlFilename;
+            savedSize = fs.statSync(htmlPath).size;
+        }
+
+        // 5. Save as record attachment
+        const newAttachment = {
+            filename: savedFilename,
+            originalName: outputName + (savedFilename.endsWith('.pdf') ? '.pdf' : '.html'),
+            mimeType: savedFilename.endsWith('.pdf') ? 'application/pdf' : 'text/html',
+            size: savedSize,
+            category: 'pdf',
+            isGenerated: true,
+            generatedFrom: (draftDoc.draftSourceTemplateId || '').toString(),
+            uploadedAt: new Date(),
+            uploadedBy: req.user?._id
+        };
+
+        record.attachments = record.attachments || [];
+        record.attachments.push(newAttachment);
+        await record.save();
+
+        const addedAttachment = record.attachments[record.attachments.length - 1];
+
+        // 6. Delete the draft document (cleanup)
+        await Document.findByIdAndDelete(draftDoc._id);
+        console.log(`[SmartDoc] Draft ${draftDoc._id} finalized and deleted`);
+
+        res.json({
+            success: true,
+            attachment: {
+                _id: addedAttachment._id,
+                ...newAttachment,
+                url: `/uploads/attachments/${req.account_number}/${savedFilename}`,
+                sizeFormatted: formatSize(savedSize)
+            },
+            outputName
+        });
+
+    } catch (error) {
+        console.error('[SmartDoc] Finalize-draft error:', error);
+        res.status(500).json({ error: error.message || 'Erreur lors de la finalisation' });
+    }
+});
+
+/**
+ * DELETE /api/smartdoc/draft/:draftDocId
+ * Cancel and delete a draft document without generating anything
+ */
+router.delete('/smartdoc/draft/:draftDocId', async (req, res) => {
+    try {
+        const Document = await tenantCollection(req, 'Document');
+        const result = await Document.findByIdAndDelete(req.params.draftDocId);
+        if (!result) {
+            return res.status(404).json({ error: 'Document brouillon introuvable' });
+        }
+        console.log(`[SmartDoc] Draft ${req.params.draftDocId} cancelled and deleted`);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[SmartDoc] Delete draft error:', error);
+        res.status(500).json({ error: error.message || 'Erreur' });
+    }
+});
+
+// ============================================================================
 // Helpers
 // ============================================================================
+
+/**
+ * Build token context from record + entity data (shared between generate and generate-draft)
+ */
+function buildTokenContext(record, entity, inputs, relatedRecordsMap, user) {
+    const context = {
+        title: record.title || '',
+        computedTitle: record.computedTitle || record.title || '',
+        description: record.description || '',
+        slug: record.slug || '',
+        date: record.date ? formatDate(record.date) : '',
+        createdAt: record.createdAt ? formatDate(record.createdAt) : '',
+        updatedAt: record.updatedAt ? formatDate(record.updatedAt) : '',
+        ...extractCustomFields(record, entity),
+        ...inputs,
+        today: formatDate(new Date()),
+        currentYear: new Date().getFullYear().toString(),
+        currentMonth: formatDate(new Date(), 'month'),
+        currentTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        user: {
+            name: user ? (user.name || user.fullName || user.email || '') : '',
+            email: user ? (user.email || '') : ''
+        }
+    };
+
+    if (entity && entity.slug) {
+        const entityContext = {
+            title: record.title || '',
+            computedTitle: record.computedTitle || record.title || '',
+            description: record.description || '',
+            slug: record.slug || '',
+            date: record.date ? formatDate(record.date) : '',
+            createdAt: record.createdAt ? formatDate(record.createdAt) : '',
+            updatedAt: record.updatedAt ? formatDate(record.updatedAt) : '',
+            ...extractCustomFields(record, entity)
+        };
+
+        if (record.classificationValues && record.classificationValues.length > 0) {
+            const classifContext = {};
+            const allClassifs = [
+                ...(entity.statusClassification ? [entity.statusClassification] : []),
+                ...(entity.classifications || [])
+            ];
+            for (const cv of record.classificationValues) {
+                const classifDef = allClassifs.find(c => c && c._id && c._id.toString() === cv.classificationId?.toString());
+                if (classifDef && classifDef.key) {
+                    classifContext[classifDef.key] = cv.label || '';
+                }
+                if (cv.classificationId) {
+                    classifContext[cv.classificationId.toString()] = cv.label || '';
+                }
+            }
+            entityContext.classification = classifContext;
+        }
+
+        if (entity.relations && relatedRecordsMap) {
+            for (const rel of entity.relations) {
+                const targetEntity = rel.targetEntity;
+                if (!targetEntity || typeof targetEntity !== 'object') continue;
+                const relData = relatedRecordsMap[rel.key];
+                if (relData && relData.record) {
+                    const relRecord = relData.record;
+                    const relEntityDef = relData.entity;
+                    const relContext = {
+                        title: relRecord.title || '',
+                        computedTitle: relRecord.computedTitle || relRecord.title || '',
+                        description: relRecord.description || '',
+                        createdAt: relRecord.createdAt ? formatDate(relRecord.createdAt) : '',
+                        updatedAt: relRecord.updatedAt ? formatDate(relRecord.updatedAt) : '',
+                        ...extractCustomFields(relRecord, relEntityDef)
+                    };
+                    if (relRecord.classificationValues && relRecord.classificationValues.length > 0) {
+                        const relClassifContext = {};
+                        const relAllClassifs = [
+                            ...(relEntityDef.statusClassification ? [relEntityDef.statusClassification] : []),
+                            ...(relEntityDef.classifications || [])
+                        ];
+                        for (const cv of relRecord.classificationValues) {
+                            const classifDef = relAllClassifs.find(c => c && c._id && c._id.toString() === cv.classificationId?.toString());
+                            if (classifDef && classifDef.key) {
+                                relClassifContext[classifDef.key] = cv.label || '';
+                            }
+                        }
+                        relContext.classification = relClassifContext;
+                    }
+                    entityContext[targetEntity.slug] = relContext;
+                }
+            }
+        }
+
+        context[entity.slug] = entityContext;
+    }
+
+    return context;
+}
 
 /**
  * Resolve document tokens by replacing {{token}} patterns with record data

@@ -1,5 +1,5 @@
-    <div class="space-y-3 sticky top-20" x-data="recordSidebar">
-        <% ['classifications', 'attachments', 'smartdoc', 'relations'].forEach(function(sectionId) { %>
+    <div class="space-y-3 sticky top-20" x-data="recordSidebar" id="sidebar-inner-sortable">
+        <% ['classifications', 'attachments', 'smartdoc', 'lines', 'relations'].forEach(function(sectionId) { %>
             <% if (sectionId==='classifications' ) { %>
                         <!-- Dynamic Classifications (Shared Data) -->
                         <div class="panel-sortable-item" data-panel-id="classifications">
@@ -789,112 +789,39 @@
                                     <template x-teleport="body">
                                         <div x-show="showSmartDocPreview" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
                                             x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                                            class="fixed inset-0 flex bg-black/60 backdrop-blur-sm" style="display:none; z-index: 99998;">
-                                            <div class="flex w-full h-full max-w-[95vw] max-h-[95vh] m-auto bg-white dark:bg-[#0e1726] rounded-2xl shadow-2xl overflow-hidden animate__animated animate__fadeInUp animate__faster">
-                                                <!-- Left: Document Preview (A4) -->
-                                                <div class="flex-1 flex flex-col min-w-0">
-                                                    <!-- Preview Header -->
-                                                    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1b2e4b]">
-                                                        <div class="flex items-center gap-3">
-                                                            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-info/20 flex items-center justify-center">
-                                                                <iconify-icon icon="solar:document-bold-duotone" width="20" class="text-primary"></iconify-icon>
-                                                            </div>
-                                                            <div>
-                                                                <h3 class="text-[13px] font-bold text-gray-800 dark:text-white" x-text="previewOutputName || 'Aperçu du document'"></h3>
-                                                                <p class="text-[10px] text-gray-400 flex items-center gap-1">
-                                                                    <iconify-icon icon="solar:check-circle-bold" width="10" class="text-success"></iconify-icon>
-                                                                    Aperçu prêt — vérifiez le contenu avant de valider
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        <div class="flex items-center gap-2">
-                                                            <button type="button" @click="cancelSmartDocPreview()"
-                                                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-500 hover:text-danger hover:bg-danger/5 border border-gray-200 dark:border-gray-600 transition-all">
-                                                                <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
-                                                                Annuler
-                                                            </button>
-                                                            <a :href="previewAttachment?.url" target="_blank"
-                                                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600 transition-all">
-                                                                <iconify-icon icon="solar:download-minimalistic-bold" width="14"></iconify-icon>
-                                                                Télécharger
-                                                            </a>
-                                                            <button type="button" @click="confirmSmartDocPreview()"
-                                                                class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold bg-success text-white hover:bg-success/90 transition-all shadow-sm">
-                                                                <iconify-icon icon="solar:check-circle-bold" width="14"></iconify-icon>
-                                                                Générer
-                                                            </button>
-                                                        </div>
+                                            class="fixed inset-0 flex flex-col bg-white dark:bg-[#0e1726]" style="display:none; z-index: 99998;">
+                                            <!-- Editor Header -->
+                                            <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1b2e4b]" style="min-height: 52px;">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-info/20 flex items-center justify-center">
+                                                        <iconify-icon icon="solar:pen-new-square-bold-duotone" width="20" class="text-primary"></iconify-icon>
                                                     </div>
-                                                    <!-- A4 Preview Area -->
-                                                    <div class="flex-1 overflow-auto" style="background: linear-gradient(135deg, #e8ecf1 0%, #dfe4ea 50%, #e2e6ec 100%);">
-                                                        <div class="flex justify-center py-6 px-4" style="min-height: 100%;">
-                                                            <div class="bg-white shadow-[0_4px_24px_rgba(0,0,0,0.12)] overflow-hidden relative" 
-                                                                style="width: 595px; min-height: 842px; border-radius: 2px;">
-                                                                <iframe id="smartdoc-preview-iframe-sd" class="w-full border-0 absolute inset-0" style="height: 100%; min-height: 842px;" sandbox="allow-same-origin"></iframe>
-                                                            </div>
-                                                        </div>
+                                                    <div>
+                                                        <h3 class="text-[13px] font-bold text-gray-800 dark:text-white" x-text="previewOutputName || 'Document en cours de génération'"></h3>
+                                                        <p class="text-[10px] text-gray-400 flex items-center gap-1">
+                                                            <iconify-icon icon="solar:pen-2-bold" width="10" class="text-info"></iconify-icon>
+                                                            Modifiez le contenu si nécessaire, puis finalisez pour générer le PDF
+                                                        </p>
                                                     </div>
                                                 </div>
-                                                <!-- Right: Variables Sidebar -->
-                                                <div class="w-[340px] shrink-0 flex flex-col border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#0e1726]">
-                                                    <div class="px-4 py-3.5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1b2e4b]">
-                                                        <div class="flex items-center justify-between">
-                                                            <div class="flex items-center gap-2.5">
-                                                                <div class="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                                                                    <iconify-icon icon="solar:tuning-2-bold-duotone" width="15" class="text-primary"></iconify-icon>
-                                                                </div>
-                                                                <div>
-                                                                    <span class="text-xs font-bold text-gray-700 dark:text-gray-200">Variables</span>
-                                                                    <p class="text-[9px] text-gray-400">Données injectées</p>
-                                                                </div>
-                                                            </div>
-                                                            <span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold" x-text="previewVariables.length"></span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
-                                                        <template x-if="previewVariables.length === 0">
-                                                            <div class="text-center py-12">
-                                                                <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                                                                    <iconify-icon icon="solar:document-text-bold-duotone" width="24" class="text-gray-300 dark:text-gray-600"></iconify-icon>
-                                                                </div>
-                                                                <p class="text-[11px] text-gray-400 font-medium">Aucune variable détectée</p>
-                                                                <p class="text-[9px] text-gray-300 mt-1">Le template n'utilise pas de tokens</p>
-                                                            </div>
-                                                        </template>
-                                                        <template x-for="group in groupedPreviewVariables()" :key="group.name">
-                                                            <div class="space-y-1.5">
-                                                                <div class="flex items-center gap-2 px-1">
-                                                                    <div class="w-5 h-5 rounded-md flex items-center justify-center" :class="getGroupBg(group.name)">
-                                                                        <iconify-icon :icon="getGroupIcon(group.name)" width="11" :class="getGroupColor(group.name)"></iconify-icon>
-                                                                    </div>
-                                                                    <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400" x-text="group.name"></span>
-                                                                    <div class="flex-1 h-px bg-gray-200 dark:bg-gray-700"></div>
-                                                                    <span class="text-[9px] font-medium text-gray-400" x-text="group.items.length"></span>
-                                                                </div>
-                                                                <div class="space-y-1">
-                                                                    <template x-for="v in group.items" :key="v.path">
-                                                                        <div class="rounded-lg bg-white dark:bg-[#1b2e4b] border border-gray-100 dark:border-gray-700/50 transition-all hover:shadow-sm hover:border-primary/20 overflow-hidden">
-                                                                            <div class="px-3 py-2">
-                                                                                <div class="flex items-center justify-between gap-2 mb-1">
-                                                                                    <span class="text-[10px] font-semibold text-gray-700 dark:text-gray-200 truncate" x-text="v.label"></span>
-                                                                                    <iconify-icon icon="solar:copy-linear" width="10" class="text-gray-300 hover:text-primary cursor-pointer transition-colors shrink-0" 
-                                                                                        @click="navigator.clipboard.writeText('{{' + v.path + '}}'); $el.setAttribute('icon','solar:check-circle-bold'); setTimeout(() => $el.setAttribute('icon','solar:copy-linear'), 1500)" title="Copier"></iconify-icon>
-                                                                                </div>
-                                                                                <div class="flex items-center gap-2">
-                                                                                    <code class="text-[8px] text-gray-400 dark:text-gray-500 font-mono bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 rounded" x-text="v.path"></code>
-                                                                                    <iconify-icon icon="solar:arrow-right-linear" width="8" class="text-gray-300 shrink-0"></iconify-icon>
-                                                                                    <span class="text-[10px] font-medium truncate" 
-                                                                                        :class="v.value && v.value !== '—' ? 'text-success dark:text-green-400' : 'text-gray-300 italic'"
-                                                                                        :title="v.value" x-text="v.value && v.value !== '—' ? v.value : 'vide'"></span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </template>
-                                                                </div>
-                                                            </div>
-                                                        </template>
-                                                    </div>
+                                                <div class="flex items-center gap-2">
+                                                    <button type="button" @click="cancelSmartDocPreview()"
+                                                        :disabled="finalizingDraft"
+                                                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-500 hover:text-danger hover:bg-danger/5 border border-gray-200 dark:border-gray-600 transition-all">
+                                                        <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
+                                                        Annuler
+                                                    </button>
+                                                    <button type="button" @click="confirmSmartDocPreview()"
+                                                        :disabled="finalizingDraft"
+                                                        class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold bg-success text-white hover:bg-success/90 transition-all shadow-sm disabled:opacity-50">
+                                                        <iconify-icon :icon="finalizingDraft ? 'line-md:loading-twotone-loop' : 'solar:check-circle-bold'" width="14"></iconify-icon>
+                                                        <span x-text="finalizingDraft ? 'Génération en cours...' : 'Finaliser et générer le PDF'"></span>
+                                                    </button>
                                                 </div>
+                                            </div>
+                                            <!-- Full-screen Editor (React editor in iframe) -->
+                                            <div class="flex-1 overflow-hidden">
+                                                <iframe id="smartdoc-preview-iframe-sd" class="w-full h-full border-0" allow="clipboard-read; clipboard-write"></iframe>
                                             </div>
                                         </div>
                                     </template>
@@ -1009,6 +936,17 @@
                                     <% }) %>
                                 <% } %>
                             <% }) %>
+                        <% } else if (sectionId==='lines') { %>
+                            <!-- 📊 Lines Generator Panel -->
+                            <div class="panel-sortable-item" data-panel-id="lines">
+                                <template x-if="designMode">
+                                    <div class="panel-drag-handle">
+                                        <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
+                                        <span>Lignes</span>
+                                    </div>
+                                </template>
+                                <%- include('record-lines') %>
+                            </div><!-- end panel-sortable-item lines -->
                         <% } %>
                     <% }); %>
     </div>
@@ -1436,6 +1374,9 @@
                 previewVariables: [],
                 previewAttachment: null,
                 previewOutputName: '',
+                // Draft-based generation (Mission 9)
+                draftDocumentId: null,
+                finalizingDraft: false,
                 // New doc modal & unlink
                 showNewDocModal: false,
                 showUnlinkConfirm: false,
@@ -1501,7 +1442,8 @@
                 async _executeGeneration(templateId, inputs) {
                     this.generatingDocId = templateId;
                     try {
-                        const res = await fetch(`/account/${this.accountNumber}/api/smartdoc/generate/${templateId}`, {
+                        // Create a draft (editable copy with tokens resolved)
+                        const res = await fetch(`/account/${this.accountNumber}/api/smartdoc/generate-draft/${templateId}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
@@ -1511,20 +1453,19 @@
                             })
                         });
                         const data = await res.json();
-                        if (data.success && data.attachment) {
-                            this.previewAttachment = data.attachment;
-                            this.previewVariables = data.usedVariables || [];
-                            this.previewOutputName = data.outputName || data.attachment.originalName || 'Document';
-                            this.previewHtml = data.previewHtml || '';
+                        if (data.success && data.draftDocumentId) {
+                            this.draftDocumentId = data.draftDocumentId;
+                            this.previewOutputName = data.outputName || 'Document';
+                            this.previewAttachment = null;
+                            this.previewHtml = '';
+                            this.previewVariables = [];
                             this.showSmartDocPreview = true;
 
+                            // Open the React editor in the iframe with the draft document
                             this.$nextTick(() => {
                                 const iframe = document.getElementById('smartdoc-preview-iframe-sd');
-                                if (iframe && this.previewHtml) {
-                                    const doc = iframe.contentDocument || iframe.contentWindow.document;
-                                    doc.open();
-                                    doc.write(this.previewHtml);
-                                    doc.close();
+                                if (iframe) {
+                                    iframe.src = `/account/${this.accountNumber}/documents/${data.draftDocumentId}/edit-react?minimal=true`;
                                 }
                             });
                         } else {
@@ -1538,35 +1479,59 @@
                     }
                 },
 
-                confirmSmartDocPreview() {
-                    if (this.previewAttachment) {
-                        // Dispatch event so attachmentPanel can pick it up
-                        window.dispatchEvent(new CustomEvent('smartdoc-attachment-created', {
-                            detail: { attachment: this.previewAttachment }
-                        }));
-                        if (window.showMessage) {
-                            window.showMessage('Document généré avec succès !', 'success');
+                async confirmSmartDocPreview() {
+                    if (!this.draftDocumentId) return;
+                    this.finalizingDraft = true;
+                    try {
+                        // Finalize: generate PDF from the (possibly edited) draft
+                        const res = await fetch(`/account/${this.accountNumber}/api/smartdoc/finalize-draft/${this.draftDocumentId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                recordId: this.recordId
+                            })
+                        });
+                        const data = await res.json();
+                        if (data.success && data.attachment) {
+                            // Dispatch event so attachmentPanel can pick it up
+                            window.dispatchEvent(new CustomEvent('smartdoc-attachment-created', {
+                                detail: { attachment: data.attachment }
+                            }));
+                            if (window.showMessage) {
+                                window.showMessage('Document généré avec succès !', 'success');
+                            }
+                        } else {
+                            alert(data.error || 'Erreur lors de la finalisation');
                         }
+                    } catch (e) {
+                        console.error('[SmartDoc] Finalize error:', e);
+                        alert('Erreur lors de la finalisation du document');
+                    } finally {
+                        this.finalizingDraft = false;
+                        this.showSmartDocPreview = false;
+                        this.draftDocumentId = null;
+                        this.previewAttachment = null;
+                        this.previewHtml = '';
+                        this.previewVariables = [];
+                        this.previewOutputName = '';
                     }
-                    this.showSmartDocPreview = false;
-                    this.previewAttachment = null;
-                    this.previewHtml = '';
-                    this.previewVariables = [];
-                    this.previewOutputName = '';
                 },
 
                 async cancelSmartDocPreview() {
-                    if (this.previewAttachment && this.previewAttachment._id) {
+                    // Delete the draft document
+                    if (this.draftDocumentId) {
                         try {
-                            await fetch(`/account/${this.accountNumber}/api/records/${this.recordId}/attachments/${this.previewAttachment._id}`, {
+                            await fetch(`/account/${this.accountNumber}/api/smartdoc/draft/${this.draftDocumentId}`, {
                                 method: 'DELETE',
                                 credentials: 'include'
                             });
                         } catch (e) {
-                            console.error('[SmartDoc] Cancel delete error:', e);
+                            console.error('[SmartDoc] Cancel draft delete error:', e);
                         }
                     }
                     this.showSmartDocPreview = false;
+                    this.draftDocumentId = null;
                     this.previewAttachment = null;
                     this.previewHtml = '';
                     this.previewVariables = [];

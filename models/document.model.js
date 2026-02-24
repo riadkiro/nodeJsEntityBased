@@ -226,6 +226,13 @@ const DocumentSchema = new mongoose.Schema({
         default: null
     },
 
+    // Draft generation fields (Mission 9 - editable SmartDoc drafts)
+    isDraft: { type: Boolean, default: false },
+    draftSourceTemplateId: { type: mongoose.Schema.Types.ObjectId, default: null },
+    draftRecordId: { type: mongoose.Schema.Types.ObjectId, ref: 'Record', default: null },
+    draftOutputName: { type: String, default: '' },
+    draftOutputFormat: { type: String, default: 'pdf' },
+
     // Uploaded file info (for uploaded documents, not editor-created)
     uploadedFile: {
         originalName: String,

@@ -202,13 +202,127 @@ Sortable affiche nativement un ghost avec animation qui indique la position.
 
 ---
 
+## Règle #8 : Sortable ne gère que les ENFANTS DIRECTS (CRITICAL)
+
+> **Sortable.js ne voit que les enfants directs du container.**
+> Si les `.panel-sortable-item` sont imbriqués dans un wrapper intermédiaire,
+> ils ne seront PAS draggables même si l'option `draggable` matche leur classe.
+
+### ❌ ERREUR TYPIQUE : Enfants trop profonds
+
+```html
+<!-- Sortable init sur #sortable-container -->
+<div id="sortable-container">
+  <div class="wrapper">                    <!-- ← wrapper intermédiaire -->
+    <div class="sortable-item">Panel A</div>  <!-- ❌ PAS un enfant direct ! -->
+    <div class="sortable-item">Panel B</div>  <!-- ❌ PAS un enfant direct ! -->
+  </div>
+</div>
+```
+
+### ✅ SOLUTION 1 : Sortable sur le container direct
+
+```html
+<div id="sortable-container">
+  <div class="wrapper" id="inner-sortable">   <!-- ← Sortable init ICI -->
+    <div class="sortable-item">Panel A</div>  <!-- ✅ enfant direct -->
+    <div class="sortable-item">Panel B</div>  <!-- ✅ enfant direct -->
+  </div>
+</div>
+```
+
+### ✅ SOLUTION 2 : Containers imbriqués = Sortables imbriqués
+
+Quand un container extérieur gère le déplacement de blocs entre zones (main ↔ sidebar)
+et un container intérieur gère le réordonnement des panels à l'intérieur d'un bloc :
+
+```javascript
+// Sortable extérieur : déplace le bloc "sidebar" entre zones
+sidebarSortable = new Sortable(document.getElementById('sidebar-outer'), opts);
+
+// Sortable intérieur : réordonne les panels DANS le sidebar
+sidebarInnerSortable = new Sortable(document.getElementById('sidebar-inner'), opts);
+```
+
+**⚠️ NE PAS OUBLIER de destroy les deux dans `destroyPanelSortables()` !**
+
+### Vérification obligatoire
+
+Avant d'initialiser un Sortable, TOUJOURS vérifier :
+```javascript
+const container = document.getElementById('my-sortable');
+const directChildren = container.querySelectorAll(':scope > .sortable-item');
+console.log('Direct children:', directChildren.length); // Doit être > 0 !
+```
+
+---
+
+## Règle #9 : Alpine Expression Errors cassent TOUT (CRITICAL)
+
+> **Une erreur de syntaxe dans UN SEUL attribut Alpine peut casser
+> l'initialisation de TOUS les composants Alpine sur la page.**
+> Cela inclut les watchers qui initialisent Sortable !
+
+### ❌ INTERDIT : Commentaires JS dans les expressions Alpine
+
+```html
+<!-- ❌ CRASH — Alpine parse le commentaire comme expression JS invalide -->
+<select @change="/* just a comment */">
+
+<!-- ❌ CRASH — Accolades seules -->
+<div x-data="{ }">  <!-- OK, mais attention aux templates EJS qui injectent du contenu -->
+```
+
+### ✅ Correct
+
+```html
+<!-- ✅ Si on n'a rien à faire, ne pas mettre de handler -->
+<select x-model="myValue">
+
+<!-- ✅ Ou utiliser une expression valide -->
+<select @change="null">
+<select @change="void 0">
+```
+
+### Impact cascade
+
+Une erreur Alpine sur un composant enfant (ex: `linesPanel`) peut empêcher
+l'initialisation du composant parent (ex: `panelLayout`) et donc casser :
+- Les watchers `designMode` qui initialisent Sortable
+- Le drag & drop des panels
+- La sauvegarde du layout
+
+**→ TOUJOURS vérifier la console pour les "Alpine Expression Error" quand le D&D ne marche pas.**
+
+---
+
+## Règle #10 : `:scope >` pour collecter l'ordre des panels
+
+> Quand on sauvegarde l'ordre des panels après un drag & drop,
+> utiliser `:scope > .panel-sortable-item` pour ne sélectionner que les **enfants directs**.
+
+```javascript
+// ❌ MAUVAIS — sélectionne aussi les panels imbriqués dans d'autres panels
+const panels = container.querySelectorAll('.panel-sortable-item');
+
+// ✅ BON — enfants directs uniquement
+const panels = container.querySelectorAll(':scope > .panel-sortable-item');
+```
+
+---
+
 ## Checklist avant d'implémenter du Drag & Drop
 
 - [ ] Les items sont rendus avec `x-for` ? → Pattern revert-then-splice
 - [ ] Drag entre containers différents ? → Lookup par ID, pas par index
 - [ ] Drag depuis une sidebar/palette ? → Sortable `pull: 'clone'` + `onAdd`
+- [ ] **Les items draggables sont des ENFANTS DIRECTS du container Sortable ?** (Règle #8)
+- [ ] **Aucune erreur Alpine dans la console ?** (Règle #9)
+- [ ] **Containers imbriqués = Sortables séparés ?** (Règle #8)
+- [ ] **`:scope >` utilisé pour lire l'ordre DOM ?** (Règle #10)
 - [ ] **Jamais** de `draggable="true"` + `@dragstart` HTML5 natif
 - [ ] **Jamais** de `fallbackOnBody` ou `forceFallback` avec Alpine
 - [ ] **Jamais** de `container.children` pour lire l'ordre DOM
 - [ ] Drop indicator a `pointer-events: none` ?
 - [ ] Les `data-*` attributs sont sur les items (pas des bindings Alpine dynamiques sur le clone) ?
+- [ ] **Jamais** de commentaires JS (`/* */`, `//`) dans les expressions Alpine (`@change`, `x-data`, etc.)

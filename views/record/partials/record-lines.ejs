@@ -95,14 +95,23 @@
     .lp-drag-handle:hover { color: #6b7280; }
     .dark .lp-drag-handle { color: #3b4a5e; }
     .dark .lp-drag-handle:hover { color: #888ea8; }
-    /* Row delete button */
-    .lp-row-delete {
-        opacity: 0;
-        transition: opacity 0.15s;
-        color: #ef4444;
-        padding: 2px;
+    /* Row action buttons */
+    .lp-row-actions {
+        display: flex; gap: 2px; align-items: center;
+        opacity: 0; transition: opacity 0.15s;
     }
-    .lines-panel-table tbody tr:hover .lp-row-delete { opacity: 1; }
+    .lines-panel-table tbody tr:hover .lp-row-actions { opacity: 1; }
+    .lp-row-btn {
+        padding: 3px; border-radius: 4px; border: none;
+        background: transparent; cursor: pointer; line-height: 1;
+        transition: background 0.12s, color 0.12s;
+    }
+    .lp-row-btn.edit { color: #6b7280; }
+    .lp-row-btn.edit:hover { color: #4361ee; background: rgba(67, 97, 238, 0.08); }
+    .dark .lp-row-btn.edit { color: #888ea8; }
+    .dark .lp-row-btn.edit:hover { color: #6993ff; background: rgba(67, 97, 238, 0.15); }
+    .lp-row-btn.delete { color: #ef4444; }
+    .lp-row-btn.delete:hover { background: rgba(239, 68, 68, 0.08); }
     /* Relation search dropdown */
     .lp-relation-wrap { position: relative; }
     .lp-relation-dropdown {
@@ -241,6 +250,186 @@
     /* Sortable ghost */
     .lines-panel-table .sortable-ghost { opacity: 0.3; }
     .lines-panel-table .sortable-chosen { background: rgba(67, 97, 238, 0.05); }
+
+    /* ── Add Lines Modal ─────────────────────────────── */
+    .lp-modal-overlay {
+        position: fixed; inset: 0; z-index: 9999;
+        background: rgba(0,0,0,0.45);
+        display: flex; align-items: center; justify-content: center;
+        animation: lp-fade-in 0.15s ease;
+    }
+    @keyframes lp-fade-in { from { opacity: 0; } to { opacity: 1; } }
+    .lp-modal {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        width: 680px;
+        max-width: 95vw;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        animation: lp-slide-up 0.2s ease;
+        overflow: hidden;
+    }
+    .dark .lp-modal { background: #0e1726; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+    @keyframes lp-slide-up { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .lp-modal-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 20px; border-bottom: 1px solid #e5e7eb;
+    }
+    .dark .lp-modal-header { border-color: #253b5c; }
+    .lp-modal-header h3 {
+        font-size: 15px; font-weight: 700; color: #1f2937; margin: 0;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .dark .lp-modal-header h3 { color: #e0e6ed; }
+    .lp-modal-close {
+        width: 28px; height: 28px; border-radius: 8px; border: none;
+        background: transparent; cursor: pointer; color: #9ca3af;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.15s;
+    }
+    .lp-modal-close:hover { background: #f3f4f6; color: #374151; }
+    .dark .lp-modal-close:hover { background: #1b2e4b; color: #e0e6ed; }
+    .lp-modal-search {
+        padding: 12px 20px; border-bottom: 1px solid #e5e7eb;
+    }
+    .dark .lp-modal-search { border-color: #253b5c; }
+    .lp-modal-search-input {
+        width: 100%; padding: 10px 12px 10px 36px; border-radius: 10px;
+        border: 1.5px solid #e5e7eb; font-size: 13px; background: #f8f9fa;
+        transition: all 0.15s; color: inherit;
+    }
+    .dark .lp-modal-search-input { background: #1b2e4b; border-color: #253b5c; color: #e0e6ed; }
+    .lp-modal-search-input:focus {
+        outline: none; border-color: #4361ee; background: #fff;
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
+    .dark .lp-modal-search-input:focus { background: #0e1726; }
+    .lp-modal-search-wrap {
+        position: relative;
+    }
+    .lp-modal-search-wrap .lp-search-icon {
+        position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+        color: #9ca3af; pointer-events: none;
+    }
+    .lp-modal-body {
+        flex: 1; overflow-y: auto; padding: 0;
+        min-height: 200px;
+    }
+    .lp-modal-empty {
+        padding: 40px 20px; text-align: center; color: #9ca3af;
+    }
+    .lp-modal-empty iconify-icon { display: block; margin: 0 auto 8px; opacity: 0.5; }
+    .lp-catalog-item {
+        display: flex; align-items: flex-start; gap: 10px;
+        padding: 10px 20px;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.1s;
+        cursor: pointer;
+    }
+    .dark .lp-catalog-item { border-color: #1b2e4b; }
+    .lp-catalog-item:hover { background: rgba(67, 97, 238, 0.03); }
+    .lp-catalog-item.selected { background: rgba(67, 97, 238, 0.06); }
+    .dark .lp-catalog-item.selected { background: rgba(67, 97, 238, 0.12); }
+    .lp-catalog-check {
+        width: 18px; height: 18px; border-radius: 5px;
+        border: 2px solid #d1d5db; background: #fff;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.15s; flex-shrink: 0; margin-top: 2px;
+    }
+    .dark .lp-catalog-check { border-color: #3b4a5e; background: #1b2e4b; }
+    .lp-catalog-item.selected .lp-catalog-check {
+        background: #4361ee; border-color: #4361ee;
+    }
+    .lp-catalog-info { flex: 1; min-width: 0; }
+    .lp-catalog-title {
+        font-size: 13px; font-weight: 600; color: #1f2937;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .dark .lp-catalog-title { color: #e0e6ed; }
+    .lp-catalog-sub {
+        font-size: 11px; color: #9ca3af; margin-top: 2px;
+    }
+    /* Selected item config form */
+    .lp-config-fields {
+        display: flex; flex-direction: column; gap: 6px; margin-top: 8px;
+        padding: 8px 10px; background: rgba(67, 97, 238, 0.03);
+        border-radius: 8px; border: 1px solid rgba(67, 97, 238, 0.08);
+    }
+    .dark .lp-config-fields {
+        background: rgba(67, 97, 238, 0.05);
+        border-color: rgba(67, 97, 238, 0.1);
+    }
+    .lp-config-field {
+        display: flex; align-items: flex-start; gap: 8px;
+    }
+    .lp-config-field label {
+        font-size: 10px; font-weight: 600; color: #6b7280;
+        text-transform: uppercase; letter-spacing: 0.03em;
+        white-space: nowrap; min-width: 55px; padding-top: 4px;
+    }
+    .dark .lp-config-field label { color: #888ea8; }
+    .lp-config-field input, .lp-config-field select {
+        border: 1px solid #e5e7eb; border-radius: 6px;
+        padding: 4px 6px; font-size: 12px; background: #fff;
+        color: inherit; min-width: 50px;
+    }
+    .dark .lp-config-field input, .dark .lp-config-field select {
+        background: #0e1726; border-color: #253b5c; color: #e0e6ed;
+    }
+    .lp-config-field input:focus, .lp-config-field select:focus {
+        outline: none; border-color: #4361ee;
+    }
+    .lp-config-field input[type="number"] { width: 60px; text-align: right; }
+    .lp-modal-footer {
+        padding: 12px 20px; border-top: 1px solid #e5e7eb;
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .dark .lp-modal-footer { border-color: #253b5c; }
+    .lp-modal-footer .lp-sel-count {
+        font-size: 12px; color: #6b7280; font-weight: 600;
+    }
+    .dark .lp-modal-footer .lp-sel-count { color: #888ea8; }
+    .lp-modal-footer .lp-btn-add {
+        padding: 8px 24px; border-radius: 10px; border: none;
+        background: #4361ee; color: #fff; font-size: 13px;
+        font-weight: 600; cursor: pointer; transition: all 0.15s;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .lp-modal-footer .lp-btn-add:hover { background: #3651d4; }
+    .lp-modal-footer .lp-btn-add:disabled {
+        opacity: 0.4; cursor: not-allowed;
+    }
+    .lp-modal-footer .lp-btn-cancel {
+        padding: 8px 16px; border-radius: 10px;
+        border: 1px solid #e5e7eb; background: transparent;
+        color: #6b7280; font-size: 13px; font-weight: 500;
+        cursor: pointer; transition: all 0.15s;
+    }
+    .dark .lp-modal-footer .lp-btn-cancel { border-color: #253b5c; color: #888ea8; }
+    .lp-modal-footer .lp-btn-cancel:hover { background: #f3f4f6; }
+    .dark .lp-modal-footer .lp-btn-cancel:hover { background: #1b2e4b; }
+
+    /* Multiselect toggle pills (add modal) */
+    .lp-multi-pills {
+        display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px;
+    }
+    .lp-pill {
+        padding: 3px 10px; border-radius: 20px; border: 1.5px solid #e5e7eb;
+        background: transparent; font-size: 11px; font-weight: 500;
+        color: #6b7280; cursor: pointer; transition: all 0.15s;
+        white-space: nowrap; line-height: 1.4;
+    }
+    .dark .lp-pill { border-color: #253b5c; color: #888ea8; }
+    .lp-pill:hover { border-color: #4361ee; color: #4361ee; }
+    .lp-pill.active {
+        background: rgba(67, 97, 238, 0.12); border-color: #4361ee;
+        color: #4361ee; font-weight: 600;
+    }
+    .dark .lp-pill.active {
+        background: rgba(67, 97, 238, 0.2); border-color: #6993ff; color: #6993ff;
+    }
 </style>
 
 <div class="panel !p-0 overflow-hidden" data-id="lines"
@@ -313,10 +502,13 @@
                             <tr>
                                 <th style="width: 28px;"></th>
                                 <th style="width: 24px;">#</th>
-                                <template x-for="col in visibleColumns" :key="col.key">
+                                <template x-if="getRelationCol()">
+                                    <th class="lp-w-m" x-text="getRelationCol()?.label || 'Article'"></th>
+                                </template>
+                                <template x-for="col in visibleColumns.filter(c => c.type !== 'relation')" :key="col.key">
                                     <th :class="'lp-w-' + (col.width || 'M').toLowerCase()" x-text="col.label"></th>
                                 </template>
-                                <th style="width: 28px;"></th>
+                                <th style="width: 56px;"></th>
                             </tr>
                         </thead>
                         <tbody x-ref="linesSortable">
@@ -330,8 +522,40 @@
                                     </td>
                                     <!-- Row number -->
                                     <td class="text-[11px] text-gray-400" x-text="lineIdx + 1"></td>
-                                    <!-- Dynamic columns -->
-                                    <template x-for="col in getVisibleColumnsForLine(line)" :key="col.key">
+                                    <!-- Relation name (always visible) -->
+                                    <template x-if="getRelationCol()">
+                                        <td class="lp-w-m">
+                                            <div class="lp-relation-wrap">
+                                                <input type="text" class="lp-input"
+                                                    :value="getRelationLabel(line)"
+                                                    @focus="openRelationSearch(lineIdx, getRelationCol().key)"
+                                                    @input="searchRelation(lineIdx, getRelationCol().key, $event.target.value)"
+                                                    @keydown.escape="closeRelationSearch()"
+                                                    :placeholder="'🔍 ' + (getRelationCol()?.label || 'Article')" />
+                                                <!-- Dropdown -->
+                                                <div x-show="relationSearch.lineIdx === lineIdx && relationSearch.colKey === getRelationCol().key && relationSearch.open"
+                                                    class="lp-relation-dropdown"
+                                                    @click.outside="closeRelationSearch()">
+                                                    <template x-if="relationSearch.loading">
+                                                        <div class="px-3 py-2 text-xs text-gray-400 text-center">
+                                                            <iconify-icon icon="svg-spinners:ring-resize" width="14"></iconify-icon>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="!relationSearch.loading && relationSearch.results.length === 0">
+                                                        <div class="px-3 py-2 text-xs text-gray-400 text-center">Aucun résultat</div>
+                                                    </template>
+                                                    <template x-for="item in relationSearch.results" :key="item._id">
+                                                        <div class="lp-rel-item"
+                                                            @click="selectRelation(lineIdx, getRelationCol(), item)">
+                                                            <span x-text="item.label || item.title"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </template>
+                                    <!-- Dynamic columns (excluding relation) -->
+                                    <template x-for="col in getVisibleColumnsForLine(line).filter(c => c.type !== 'relation')" :key="col.key">
                                         <td :class="'lp-w-' + (col.width || 'M').toLowerCase()">
                                             <!-- Text -->
                                             <template x-if="col.type === 'text'">
@@ -384,24 +608,17 @@
                                                 </select>
                                             </template>
 
-                                            <!-- Multiselect (tag-style) -->
+                                            <!-- Multiselect (toggle pills) -->
                                             <template x-if="col.type === 'multiselect'">
-                                                <div>
-                                                    <div class="flex flex-wrap gap-0.5 mb-1">
-                                                        <template x-for="(val, vi) in (line.values[col.key] || [])" :key="vi">
-                                                            <span class="lp-ms-tag">
-                                                                <span x-text="getOptionLabel(col, val)"></span>
-                                                                <span class="lp-ms-tag-x" @click="removeMultiselectValue(line, col.key, vi)">&times;</span>
-                                                            </span>
-                                                        </template>
-                                                    </div>
-                                                    <select class="lp-input !text-[10px]"
-                                                        @change="addMultiselectValue(line, col.key, $event.target.value); $event.target.value = ''">
-                                                        <option value="">+ ajouter</option>
-                                                        <template x-for="opt in getSelectOptions(col, line)" :key="opt.value">
-                                                            <option :value="opt.value" x-text="opt.label"></option>
-                                                        </template>
-                                                    </select>
+                                                <div class="lp-multi-pills">
+                                                    <template x-for="opt in (col.config?.options || [])" :key="opt.value">
+                                                        <button type="button"
+                                                            class="lp-pill"
+                                                            :class="{ 'active': (line.values[col.key] || []).includes(opt.value) }"
+                                                            @click.stop="toggleMultiselectValue(line, col.key, opt.value)"
+                                                            x-text="opt.label">
+                                                        </button>
+                                                    </template>
                                                 </div>
                                             </template>
 
@@ -476,11 +693,16 @@
                                             </template>
                                         </td>
                                     </template>
-                                    <!-- Delete -->
+                                    <!-- Actions (edit + delete) -->
                                     <td>
-                                        <button class="lp-row-delete" @click="removeLine(lineIdx)" title="Supprimer">
-                                            <iconify-icon icon="tabler:trash" width="14"></iconify-icon>
-                                        </button>
+                                        <div class="lp-row-actions">
+                                            <button type="button" class="lp-row-btn edit" @click="openEditLine(lineIdx)" title="Modifier">
+                                                <iconify-icon icon="tabler:pencil" width="14"></iconify-icon>
+                                            </button>
+                                            <button type="button" class="lp-row-btn delete" @click="removeLine(lineIdx)" title="Supprimer">
+                                                <iconify-icon icon="tabler:trash" width="14"></iconify-icon>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             </template>
@@ -489,9 +711,17 @@
                 </div>
 
                 <!-- Add row -->
-                <div class="lp-add-row-area" @click.stop="addLine()" x-show="activeSchema">
-                    <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
-                    <span>Ajouter une ligne</span>
+                <div class="lp-add-row-area" x-show="activeSchema" style="display: flex; gap: 0;">
+                    <div style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;"
+                         @click.stop="openAddModal()">
+                        <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
+                        <span>Ajouter des lignes</span>
+                    </div>
+                    <div style="border-left: 1px solid #e5e7eb; padding: 0 10px; display: flex; align-items: center;"
+                         class="dark:!border-gray-700"
+                         @click.stop="addLine()" title="Ajouter une ligne vide">
+                        <iconify-icon icon="tabler:row-insert-bottom" width="14"></iconify-icon>
+                    </div>
                 </div>
 
                 <!-- Totals -->
@@ -526,6 +756,342 @@
                 </div>
             </div>
         </template>
+
+        <!-- ═══ Add Lines Modal ═══ -->
+        <template x-if="addModal.open">
+            <div class="lp-modal-overlay" @click.self="closeAddModal()" @keydown.escape.window="closeAddModal()">
+                <div class="lp-modal">
+                    <!-- Header -->
+                    <div class="lp-modal-header">
+                        <h3>
+                            <iconify-icon icon="solar:document-add-bold-duotone" width="18" class="text-primary"></iconify-icon>
+                            Ajouter des lignes
+                        </h3>
+                        <button class="lp-modal-close" @click="closeAddModal()">
+                            <iconify-icon icon="tabler:x" width="16"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="lp-modal-search">
+                        <div class="lp-modal-search-wrap">
+                            <iconify-icon icon="tabler:search" width="15" class="lp-search-icon"></iconify-icon>
+                            <input type="text" class="lp-modal-search-input"
+                                   x-model="addModal.query"
+                                   @input="searchCatalog()"
+                                   placeholder="Rechercher un article, traitement..."
+                                   x-ref="modalSearchInput" />
+                        </div>
+                    </div>
+
+                    <!-- Body: Results -->
+                    <div class="lp-modal-body">
+                        <!-- Loading -->
+                        <div x-show="addModal.loading" class="lp-modal-empty">
+                            <iconify-icon icon="svg-spinners:ring-resize" width="24" class="text-primary"></iconify-icon>
+                            <p style="font-size: 12px; margin-top: 8px;">Recherche en cours...</p>
+                        </div>
+
+                        <!-- No source entity configured -->
+                        <div x-show="addModal._noTarget" class="lp-modal-empty">
+                            <iconify-icon icon="solar:danger-triangle-bold-duotone" width="32" style="color: #f59e0b;"></iconify-icon>
+                            <p style="font-size: 12px; margin-top: 8px;">Ce schéma n'a pas de source de données configurée.</p>
+                            <p style="font-size: 11px; color: #9ca3af; margin-top: 4px;">Configurez la <strong>Source de données</strong> dans les paramètres du schéma de lignes.</p>
+                        </div>
+
+                        <!-- No results -->
+                        <div x-show="!addModal.loading && !addModal._noTarget && addModal.results.length === 0 && addModal.query.length > 0" class="lp-modal-empty">
+                            <iconify-icon icon="solar:magnifer-broken" width="32"></iconify-icon>
+                            <p style="font-size: 12px;">Aucun résultat pour "<span x-text="addModal.query"></span>"</p>
+                        </div>
+
+                        <!-- Initial state -->
+                        <div x-show="!addModal.loading && !addModal._noTarget && addModal.results.length === 0 && addModal.query.length === 0" class="lp-modal-empty">
+                            <iconify-icon icon="solar:magnifer-bold-duotone" width="32"></iconify-icon>
+                            <p style="font-size: 12px;">Tapez pour rechercher dans le catalogue</p>
+                        </div>
+
+                        <!-- Results list -->
+                        <template x-for="item in addModal.results" :key="item._id">
+                            <div class="lp-catalog-item"
+                                 :class="{ 'selected': addModal.selected.find(s => s._id === item._id) }"
+                                 @click="toggleCatalogItem(item)">
+                                <!-- Checkbox -->
+                                <div class="lp-catalog-check">
+                                    <iconify-icon x-show="addModal.selected.find(s => s._id === item._id)"
+                                                  icon="tabler:check" width="12" style="color: #fff;"></iconify-icon>
+                                </div>
+                                <!-- Info -->
+                                <div class="lp-catalog-info">
+                                    <div class="lp-catalog-title" x-text="item.label || item.title"></div>
+                                    <div class="lp-catalog-sub" x-show="item.description" x-text="item.description"></div>
+
+                                    <!-- Config fields for selected items -->
+                                    <template x-if="addModal.selected.find(s => s._id === item._id)">
+                                        <div class="lp-config-fields" @click.stop>
+                                            <template x-for="col in getEditableColumns()" :key="col.key">
+                                                <div class="lp-config-field">
+                                                    <label x-text="col.label"></label>
+
+                                                    <!-- Number / Money -->
+                                                    <template x-if="col.type === 'number' || col.type === 'money'">
+                                                        <input type="number"
+                                                               :value="getSelectedItemValue(item._id, col.key)"
+                                                               @input="setSelectedItemValue(item._id, col.key, parseFloat($event.target.value) || 0)"
+                                                               :step="col.type === 'money' ? '0.01' : 'any'"
+                                                               :placeholder="col.label" />
+                                                    </template>
+
+                                                    <!-- Text -->
+                                                    <template x-if="col.type === 'text' || col.type === 'textarea'">
+                                                        <input type="text"
+                                                               :value="getSelectedItemValue(item._id, col.key)"
+                                                               @input="setSelectedItemValue(item._id, col.key, $event.target.value)"
+                                                               :placeholder="col.label"
+                                                               style="min-width: 100px;" />
+                                                    </template>
+
+                                                    <!-- Select -->
+                                                    <template x-if="col.type === 'select'">
+                                                        <select :value="getSelectedItemValue(item._id, col.key)"
+                                                                @change="setSelectedItemValue(item._id, col.key, $event.target.value)">
+                                                            <option value="">—</option>
+                                                            <template x-for="opt in (col.config?.options || [])" :key="opt.value">
+                                                                <option :value="opt.value" x-text="opt.label"></option>
+                                                            </template>
+                                                        </select>
+                                                    </template>
+
+                                                    <!-- Duration -->
+                                                    <template x-if="col.type === 'duration'">
+                                                        <div style="display: flex; gap: 4px; align-items: center;">
+                                                            <input type="number"
+                                                                   :value="getSelectedItemValue(item._id, col.key)?.value || ''"
+                                                                   @input="setSelectedItemDuration(item._id, col.key, 'value', parseFloat($event.target.value) || 0)"
+                                                                   style="width: 50px;" min="0" />
+                                                            <select :value="getSelectedItemValue(item._id, col.key)?.unit || (col.config?.units?.[0] || 'day')"
+                                                                    @change="setSelectedItemDuration(item._id, col.key, 'unit', $event.target.value)"
+                                                                    style="width: 70px; font-size: 11px;">
+                                                                <template x-for="u in (col.config?.units || ['day','week','month'])" :key="u">
+                                                                    <option :value="u" x-text="durationLabel(u)"></option>
+                                                                </template>
+                                                            </select>
+                                                        </div>
+                                                    </template>
+
+                                                    <!-- Dosage -->
+                                                    <template x-if="col.type === 'dosage'">
+                                                        <div style="display: flex; gap: 4px; align-items: center;">
+                                                            <input type="number"
+                                                                   :value="getSelectedItemValue(item._id, col.key)?.value || ''"
+                                                                   @input="setSelectedItemDuration(item._id, col.key, 'value', parseFloat($event.target.value) || 0)"
+                                                                   style="width: 50px;" min="0" step="any" />
+                                                            <select :value="getSelectedItemValue(item._id, col.key)?.unit || (col.config?.units?.[0] || 'mg')"
+                                                                    @change="setSelectedItemDuration(item._id, col.key, 'unit', $event.target.value)"
+                                                                    style="width: 55px; font-size: 11px;">
+                                                                <template x-for="u in (col.config?.units || ['mg','ml','g','cp'])" :key="u">
+                                                                    <option :value="u" x-text="u"></option>
+                                                                </template>
+                                                            </select>
+                                                        </div>
+                                                    </template>
+
+                                                    <!-- Multiselect (toggle pills) -->
+                                                    <template x-if="col.type === 'multiselect'">
+                                                        <div class="lp-multi-pills">
+                                                            <template x-for="opt in (col.config?.options || [])" :key="opt.value">
+                                                                <button type="button"
+                                                                    class="lp-pill"
+                                                                    :class="{ 'active': (getSelectedItemValue(item._id, col.key) || []).includes(opt.value) }"
+                                                                    @click.stop="toggleSelectedItemMultiselect(item._id, col.key, opt.value)"
+                                                                    x-text="opt.label">
+                                                                </button>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+
+                                                    <!-- Date -->
+                                                    <template x-if="col.type === 'date'">
+                                                        <input type="date"
+                                                               :value="getSelectedItemValue(item._id, col.key) || ''"
+                                                               @input="setSelectedItemValue(item._id, col.key, $event.target.value)" />
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="lp-modal-footer">
+                        <div class="lp-sel-count">
+                            <span x-text="addModal.selected.length"></span> sélectionné(s)
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="lp-btn-cancel" @click="closeAddModal()">Annuler</button>
+                            <button class="lp-btn-add"
+                                    :disabled="addModal.selected.length === 0"
+                                    @click="confirmAddLines()">
+                                <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
+                                Ajouter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- ═══ Edit Line Modal ═══ -->
+        <template x-if="editModal.open">
+            <div class="lp-modal-overlay" @click.self="closeEditModal()" @keydown.escape.window="closeEditModal()">
+                <div class="lp-modal" style="max-width: 520px;">
+                    <!-- Header -->
+                    <div class="lp-modal-header">
+                        <h3>
+                            <iconify-icon icon="solar:pen-bold-duotone" width="18" class="text-primary"></iconify-icon>
+                            Modifier la ligne <span x-text="'#' + (editModal.lineIdx + 1)" class="text-gray-400 text-sm font-normal"></span>
+                        </h3>
+                        <button class="lp-modal-close" @click="closeEditModal()">
+                            <iconify-icon icon="tabler:x" width="16"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <!-- Form fields -->
+                    <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; max-height: 60vh; overflow-y: auto;">
+                        <!-- Entity/Relation name (always shown first) -->
+                        <template x-if="getRelationCol()">
+                            <div style="padding: 10px 14px; background: linear-gradient(135deg, rgba(67,97,238,0.06), rgba(67,97,238,0.02)); border-radius: 8px; border: 1px solid rgba(67,97,238,0.12);">
+                                <label style="display: block; font-size: 10px; font-weight: 600; color: #4361ee; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;" x-text="getRelationCol()?.label || 'Article'"></label>
+                                <div style="font-size: 14px; font-weight: 600; color: #1e293b;" x-text="getRelationLabel(lines[editModal.lineIdx]) || '—'"></div>
+                            </div>
+                        </template>
+                        <template x-for="col in getVisibleColumnsForLine(lines[editModal.lineIdx]).filter(c => c.type !== 'relation')" :key="col.key">
+                            <div>
+                                <label style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;" x-text="col.label"></label>
+
+                                <!-- Text / Textarea -->
+                                <template x-if="col.type === 'text' || col.type === 'textarea'">
+                                    <input type="text" class="lp-input" style="width: 100%; height: 34px; font-size: 13px;"
+                                        :value="lines[editModal.lineIdx].values[col.key] || ''"
+                                        @input="lines[editModal.lineIdx].values[col.key] = $event.target.value"
+                                        :placeholder="col.label" />
+                                </template>
+
+                                <!-- Number -->
+                                <template x-if="col.type === 'number'">
+                                    <input type="number" class="lp-input" style="width: 100%; height: 34px; font-size: 13px;"
+                                        :value="lines[editModal.lineIdx].values[col.key] || ''"
+                                        @input="lines[editModal.lineIdx].values[col.key] = parseFloat($event.target.value) || 0; recomputeLine(lines[editModal.lineIdx])"
+                                        step="any" />
+                                </template>
+
+                                <!-- Money -->
+                                <template x-if="col.type === 'money'">
+                                    <input type="number" class="lp-input" style="width: 100%; height: 34px; font-size: 13px;"
+                                        :value="lines[editModal.lineIdx].values[col.key] || ''"
+                                        @input="lines[editModal.lineIdx].values[col.key] = parseFloat($event.target.value) || 0; recomputeLine(lines[editModal.lineIdx])"
+                                        step="0.01" />
+                                </template>
+
+                                <!-- Date -->
+                                <template x-if="col.type === 'date'">
+                                    <input type="date" class="lp-input" style="width: 100%; height: 34px; font-size: 13px;"
+                                        :value="lines[editModal.lineIdx].values[col.key] || ''"
+                                        @input="lines[editModal.lineIdx].values[col.key] = $event.target.value" />
+                                </template>
+
+                                <!-- Select -->
+                                <template x-if="col.type === 'select'">
+                                    <select class="lp-input" style="width: 100%; height: 34px; font-size: 13px;"
+                                        :value="lines[editModal.lineIdx].values[col.key] || ''"
+                                        @change="lines[editModal.lineIdx].values[col.key] = $event.target.value">
+                                        <option value="">—</option>
+                                        <template x-for="opt in getSelectOptions(col, lines[editModal.lineIdx])" :key="opt.value">
+                                            <option :value="opt.value" x-text="opt.label" :selected="lines[editModal.lineIdx].values[col.key] === opt.value"></option>
+                                        </template>
+                                    </select>
+                                </template>
+
+                                <!-- Multiselect (pills) -->
+                                <template x-if="col.type === 'multiselect'">
+                                    <div class="lp-multi-pills" style="padding-top: 4px;">
+                                        <template x-for="opt in (col.config?.options || [])" :key="opt.value">
+                                            <button type="button"
+                                                class="lp-pill"
+                                                :class="{ 'active': (lines[editModal.lineIdx].values[col.key] || []).includes(opt.value) }"
+                                                @click.stop="toggleMultiselectValue(lines[editModal.lineIdx], col.key, opt.value)"
+                                                x-text="opt.label">
+                                            </button>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <!-- Duration -->
+                                <template x-if="col.type === 'duration'">
+                                    <div style="display: flex; gap: 6px; align-items: center;">
+                                        <input type="number" class="lp-input" style="width: 80px; height: 34px; font-size: 13px; text-align: right;"
+                                            :value="lines[editModal.lineIdx].values[col.key]?.value || ''"
+                                            @input="if(!lines[editModal.lineIdx].values[col.key]) lines[editModal.lineIdx].values[col.key] = {}; lines[editModal.lineIdx].values[col.key].value = parseFloat($event.target.value) || 0"
+                                            min="0" step="1" />
+                                        <select class="lp-input" style="width: auto; height: 34px; font-size: 13px;"
+                                            :value="lines[editModal.lineIdx].values[col.key]?.unit || (col.config?.units?.[0] || 'day')"
+                                            @change="if(!lines[editModal.lineIdx].values[col.key]) lines[editModal.lineIdx].values[col.key] = {}; lines[editModal.lineIdx].values[col.key].unit = $event.target.value">
+                                            <template x-for="u in (col.config?.units || ['day','week','month'])" :key="u">
+                                                <option :value="u" x-text="durationLabel(u)"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </template>
+
+                                <!-- Dosage -->
+                                <template x-if="col.type === 'dosage'">
+                                    <div style="display: flex; gap: 6px; align-items: center;">
+                                        <input type="number" class="lp-input" style="width: 80px; height: 34px; font-size: 13px; text-align: right;"
+                                            :value="lines[editModal.lineIdx].values[col.key]?.value || ''"
+                                            @input="if(!lines[editModal.lineIdx].values[col.key]) lines[editModal.lineIdx].values[col.key] = {}; lines[editModal.lineIdx].values[col.key].value = parseFloat($event.target.value) || 0"
+                                            min="0" step="any" />
+                                        <select class="lp-input" style="width: auto; height: 34px; font-size: 13px;"
+                                            :value="lines[editModal.lineIdx].values[col.key]?.unit || (col.config?.units?.[0] || 'mg')"
+                                            @change="if(!lines[editModal.lineIdx].values[col.key]) lines[editModal.lineIdx].values[col.key] = {}; lines[editModal.lineIdx].values[col.key].unit = $event.target.value">
+                                            <template x-for="u in (col.config?.units || ['mg','ml','g','cp'])" :key="u">
+                                                <option :value="u" x-text="u"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </template>
+
+                                <!-- Relation (display only) -->
+                                <template x-if="col.type === 'relation'">
+                                    <div class="lp-input" style="width: 100%; height: 34px; font-size: 13px; display: flex; align-items: center; background: #f9fafb; color: #374151;"
+                                        x-text="lines[editModal.lineIdx].values[col.key + '_label'] || '—'"></div>
+                                </template>
+
+                                <!-- Formula (computed, read-only) -->
+                                <template x-if="col.type === 'formula'">
+                                    <div class="lp-input" style="width: 100%; height: 34px; font-size: 13px; display: flex; align-items: center; background: #f9fafb; color: #374151;"
+                                        x-text="formatComputed(lines[editModal.lineIdx], col)"></div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="lp-modal-footer" style="padding: 12px 20px;">
+                        <div></div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="lp-btn-cancel" @click="closeEditModal()">Annuler</button>
+                            <button class="lp-btn-add" @click="saveEditLine()">
+                                <iconify-icon icon="tabler:check" width="14"></iconify-icon>
+                                Enregistrer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
     </div>
 </div>
 
@@ -556,7 +1122,19 @@ document.addEventListener('alpine:init', () => {
             debounceTimer: null
         },
 
+        // Add Lines modal state
+        addModal: {
+            open: false,
+            query: '',
+            loading: false,
+            results: [],
+            selected: [],  // { _id, label, customFields, values: {} }
+            _searchTimer: null,
+            _noTarget: false
+        },
+
         _saveTimer: null,
+        editModal: { open: false, lineIdx: -1 },
 
         get activeSchema() {
             return this.schemas.find(s => s._id === this.activeSchemaId) || null;
@@ -627,6 +1205,31 @@ document.addEventListener('alpine:init', () => {
             // Lines are still the same — they exist on the record regardless of schema
         },
 
+        // Get the primary relation column (always, ignoring visible/showWhen)
+        getRelationCol() {
+            if (!this.activeSchema) return null;
+            return (this.activeSchema.columns || []).find(c => c.type === 'relation') || null;
+        },
+
+        // Get the relation label for a line (checks all relation columns across all schemas)
+        getRelationLabel(line) {
+            if (!line) return '';
+            // First: check the active schema's relation column
+            const relCol = this.getRelationCol();
+            if (relCol && line.values[relCol.key + '_label']) {
+                return line.values[relCol.key + '_label'];
+            }
+            // Fallback: check ALL schemas for a matching relation key with a label in the line
+            for (const schema of this.schemas) {
+                for (const col of (schema.columns || [])) {
+                    if (col.type === 'relation' && line.values[col.key + '_label']) {
+                        return line.values[col.key + '_label'];
+                    }
+                }
+            }
+            return '';
+        },
+
         getVisibleColumnsForLine(line) {
             if (!this.activeSchema) return [];
             return (this.activeSchema.columns || [])
@@ -648,6 +1251,216 @@ document.addEventListener('alpine:init', () => {
                 order: this.lines.length
             });
             this.debouncedSave();
+        },
+
+        // ── Add Lines Modal ──────────────────────────────────
+        openAddModal() {
+            // Sync lineType with current schema (in case of stale value)
+            if (this.activeSchema) {
+                const validTypes = this.activeSchema.lineTypes || [];
+                if (validTypes.length > 0 && !validTypes.includes(this.newLineType)) {
+                    this.newLineType = this.activeSchema.defaultLineType || validTypes[0];
+                }
+            }
+
+            this.addModal.open = true;
+            this.addModal.query = '';
+            this.addModal.results = [];
+            this.addModal.selected = [];
+            this.addModal.loading = false;
+            this.addModal._noTarget = false;
+            this.$nextTick(() => {
+                if (this.$refs.modalSearchInput) {
+                    this.$refs.modalSearchInput.focus();
+                }
+            });
+        },
+
+        closeAddModal() {
+            this.addModal.open = false;
+
+        },
+
+        searchCatalog() {
+            clearTimeout(this.addModal._searchTimer);
+            const query = this.addModal.query.trim();
+            if (!query) {
+                this.addModal.results = [];
+                return;
+            }
+            this.addModal._searchTimer = setTimeout(() => {
+                this._doCatalogSearch(query);
+            }, 250);
+        },
+
+        async _doCatalogSearch(query) {
+            // Use schema-level sourceEntityId first, then fallback to relation column config
+            const sourceEntity = this.activeSchema?.sourceEntityId;
+            const relCol = (this.activeSchema?.columns || []).find(c => c.type === 'relation');
+            const targetEntity = sourceEntity || relCol?.config?.targetEntity;
+
+            // CRITICAL: respect schema config — don't fallback to current entity
+            if (!targetEntity) {
+                console.warn('[LinesPanel] No source entity configured in schema');
+                this.addModal.results = [];
+                this.addModal.loading = false;
+                this.addModal._noTarget = true;
+                return;
+            }
+            this.addModal._noTarget = false;
+
+            const searchFields = (relCol?.config?.searchFields || ['title']).join(',');
+
+            this.addModal.loading = true;
+            try {
+                const url = `/account/${this.accountNumber}/api/catalog-search?entityId=${targetEntity}&q=${encodeURIComponent(query)}&searchFields=${searchFields}`;
+                const res = await fetch(url, { credentials: 'include' });
+                const data = await res.json();
+                this.addModal.results = data.data || [];
+            } catch (e) {
+                console.error('[LinesPanel] Catalog search error:', e);
+                this.addModal.results = [];
+            } finally {
+                this.addModal.loading = false;
+            }
+        },
+
+        toggleCatalogItem(item) {
+            const idx = this.addModal.selected.findIndex(s => s._id === item._id);
+            if (idx >= 0) {
+                // Deselect
+                this.addModal.selected.splice(idx, 1);
+            } else {
+                // Select — apply default values from catalog
+                const values = {};
+                const relCol = (this.activeSchema?.columns || []).find(c => c.type === 'relation');
+                const cfArray = Array.isArray(item.customFields) ? item.customFields : [];
+                if (relCol?.config?.applyDefaults && cfArray.length > 0) {
+                    const cfMap = {};
+                    cfArray.forEach(cf => {
+                        const fieldId = (cf.field_id?._id || cf.field_id)?.toString();
+                        if (fieldId) cfMap[fieldId] = cf.value;
+                    });
+                    for (const [targetKey, sourceExpr] of Object.entries(relCol.config.applyDefaults)) {
+                        let val;
+                        if (sourceExpr.startsWith('cf.')) {
+                            val = cfMap[sourceExpr.substring(3)];
+                        } else {
+                            val = item[sourceExpr];
+                        }
+                        if (val !== undefined && val !== null) values[targetKey] = val;
+                    }
+                }
+                // Set default qty to 1
+                const qtyCol = (this.activeSchema?.columns || []).find(c => c.key === 'qty');
+                if (qtyCol && !values.qty) values.qty = 1;
+
+                this.addModal.selected.push({
+                    _id: item._id,
+                    label: item.label || item.title,
+                    customFields: cfArray,
+                    values: values
+                });
+            }
+        },
+
+        getEditableColumns() {
+            if (!this.activeSchema) return [];
+            return (this.activeSchema.columns || [])
+                .filter(c => c.visible !== false && c.type !== 'formula' && c.type !== 'relation')
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
+        },
+
+        getSelectedItemValue(itemId, colKey) {
+            const sel = this.addModal.selected.find(s => s._id === itemId);
+            return sel ? sel.values[colKey] : undefined;
+        },
+
+        setSelectedItemValue(itemId, colKey, value) {
+            const sel = this.addModal.selected.find(s => s._id === itemId);
+            if (sel) sel.values[colKey] = value;
+        },
+
+        setSelectedItemDuration(itemId, colKey, prop, value) {
+            const sel = this.addModal.selected.find(s => s._id === itemId);
+            if (!sel) return;
+            if (!sel.values[colKey] || typeof sel.values[colKey] !== 'object') {
+                sel.values[colKey] = {};
+            }
+            sel.values[colKey][prop] = value;
+        },
+
+        addSelectedItemMultiselect(itemId, colKey, value) {
+            if (!value) return;
+            const sel = this.addModal.selected.find(s => s._id === itemId);
+            if (!sel) return;
+            if (!sel.values[colKey]) sel.values[colKey] = [];
+            if (!sel.values[colKey].includes(value)) {
+                sel.values[colKey].push(value);
+            }
+        },
+
+        toggleSelectedItemMultiselect(itemId, colKey, value) {
+            if (!value) return;
+            const sel = this.addModal.selected.find(s => s._id === itemId);
+            if (!sel) return;
+            if (!sel.values[colKey]) sel.values[colKey] = [];
+            const idx = sel.values[colKey].indexOf(value);
+            if (idx >= 0) {
+                sel.values[colKey].splice(idx, 1);
+            } else {
+                sel.values[colKey].push(value);
+            }
+        },
+
+        confirmAddLines() {
+            const relCol = (this.activeSchema?.columns || []).find(c => c.type === 'relation');
+            // Ensure lineType matches current schema (guards against stale value)
+            const lineType = this.newLineType || this.activeSchema?.defaultLineType || this.activeSchema?.lineTypes?.[0] || 'product';
+
+            for (const sel of this.addModal.selected) {
+                const newLine = {
+                    _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
+                    lineType: lineType,
+                    values: { ...sel.values },
+                    computed: {},
+                    order: this.lines.length
+                };
+                // Set relation ID + label
+                if (relCol) {
+                    newLine.values[relCol.key] = sel._id;
+                    newLine.values[relCol.key + '_label'] = sel.label;
+                }
+                this.recomputeLine(newLine);
+                this.lines.push(newLine);
+            }
+
+            this.recomputeTotals();
+            this.debouncedSave();
+            this.closeAddModal();
+        },
+
+        // ── Edit Line Modal ──────────────────────────────────
+        openEditLine(lineIdx) {
+            const line = this.lines[lineIdx];
+            if (!line) return;
+            this.editModal.lineIdx = lineIdx;
+            this.editModal.open = true;
+        },
+
+        closeEditModal() {
+            this.editModal.open = false;
+            this.editModal.lineIdx = -1;
+        },
+
+        saveEditLine() {
+            const line = this.lines[this.editModal.lineIdx];
+            if (line) {
+                this.recomputeLine(line);
+                this.recomputeTotals();
+                this.debouncedSave();
+            }
+            this.closeEditModal();
         },
 
         removeLine(idx) {
@@ -765,6 +1578,21 @@ document.addEventListener('alpine:init', () => {
                 this.debouncedSave();
             }
         },
+
+        toggleMultiselectValue(line, key, value) {
+            if (!value) return;
+            if (!line.values[key]) line.values[key] = [];
+            const idx = line.values[key].indexOf(value);
+            if (idx >= 0) {
+                line.values[key].splice(idx, 1);
+            } else {
+                line.values[key].push(value);
+            }
+            this.debouncedSave();
+        },
+
+
+
 
         // ── Duration label ────────────────────────────────
         durationLabel(unit) {

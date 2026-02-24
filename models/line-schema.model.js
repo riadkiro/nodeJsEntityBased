@@ -52,11 +52,14 @@ const LineSchemaSchema = new mongoose.Schema({
     slug: { type: String, required: true },         // "invoice_v1"
     description: String,
 
-    // Context: which entity or document type uses this schema
+    // Context: which entities or document type use this schema
     appliesTo: {
-        entityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Entity' },
+        entityIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Entity' }],
         documentType: String                        // "invoice","quote","prescription"
     },
+
+    // Source: which entity to search catalog items from (e.g. "Traitements", "Produits")
+    sourceEntityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Entity' },
 
     // Available line types for this schema
     lineTypes: {
@@ -84,7 +87,7 @@ const LineSchemaSchema = new mongoose.Schema({
 
 // Index for efficient lookups
 LineSchemaSchema.index({ slug: 1 });
-LineSchemaSchema.index({ 'appliesTo.entityId': 1 });
+LineSchemaSchema.index({ 'appliesTo.entityIds': 1 });
 LineSchemaSchema.index({ 'appliesTo.documentType': 1 });
 
 module.exports = mongoose.model('LineSchema', LineSchemaSchema);

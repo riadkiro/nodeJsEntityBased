@@ -38,7 +38,7 @@ async function seed() {
             name: 'Facture Standard',
             slug: 'invoice_v1',
             description: 'Schéma de lignes pour factures et devis',
-            appliesTo: { documentType: 'invoice' },
+            appliesTo: { entityIds: [], documentType: 'invoice' },  // empty = global (all entities)
             lineTypes: ['product', 'service', 'note'],
             defaultLineType: 'product',
             columns: [
@@ -173,7 +173,7 @@ async function seed() {
             name: 'Ordonnance Traitement',
             slug: 'prescription_v1',
             description: 'Schéma de lignes pour ordonnances médicales',
-            appliesTo: { documentType: 'prescription' },
+            appliesTo: { entityIds: [], documentType: 'prescription' },  // Set entity IDs after creation
             lineTypes: ['treatment', 'note'],
             defaultLineType: 'treatment',
             columns: [

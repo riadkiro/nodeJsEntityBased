@@ -82,13 +82,30 @@
                         </select>
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-semibold text-white-dark">Entité cible</label>
-                        <select x-model="schema.appliesTo.entityId" class="form-select">
-                            <option value="">— Toutes —</option>
+                        <label class="mb-1 block text-sm font-semibold text-white-dark">Source de données</label>
+                        <p class="text-xs text-white-dark mb-1">L'entité dans laquelle chercher les éléments (ex: Traitements, Produits…)</p>
+                        <select x-model="schema.sourceEntityId" class="form-select">
+                            <option value="">— Aucune —</option>
                             <% (entities || []).forEach(function(ent) { %>
                                 <option value="<%= ent._id %>"><%= ent.name %></option>
                             <% }) %>
                         </select>
+                    </div>
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-white-dark">Afficher sur</label>
+                        <p class="text-xs text-white-dark mb-2">Entités où ce schéma sera disponible. Si aucune sélectionnée, il sera disponible partout.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <% (entities || []).forEach(function(ent) { %>
+                                <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all cursor-pointer text-sm"
+                                    :class="(schema.appliesTo.entityIds || []).includes('<%= ent._id %>') ? 'border-primary bg-primary/10 text-primary font-semibold' : 'border-gray-200 dark:border-gray-700 hover:border-primary/50'"
+                                >
+                                    <input type="checkbox" class="form-checkbox !rounded" value="<%= ent._id %>"
+                                        :checked="(schema.appliesTo.entityIds || []).includes('<%= ent._id %>')"
+                                        @change="toggleEntityId('<%= ent._id %>')" />
+                                    <span><%= ent.name %></span>
+                                </label>
+                            <% }) %>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -318,7 +335,8 @@
                 <template x-if="editingCol && editingCol.type === 'relation'">
                     <div class="space-y-4">
                         <div>
-                            <label class="mb-1 block text-sm font-semibold text-white-dark">Entité cible</label>
+                            <label class="mb-1 block text-sm font-semibold text-white-dark">Source de données</label>
+                            <p class="text-xs text-white-dark mb-1">L'entité dans laquelle chercher les éléments</p>
                             <select x-model="editingCol.config.targetEntity" class="form-select">
                                 <option value="">Choisir...</option>
                                 <% (entities || []).forEach(function(ent) { %>
@@ -447,7 +465,15 @@ function lineSchemaBuilder() {
     return {
         schema: existingSchema ? {
             ...existingSchema,
-            appliesTo: existingSchema.appliesTo || {},
+            appliesTo: {
+                ...existingSchema.appliesTo || {},
+                // Migrate old single entityId → entityIds array
+                entityIds: (existingSchema.appliesTo?.entityIds && existingSchema.appliesTo.entityIds.length > 0)
+                    ? existingSchema.appliesTo.entityIds.map(id => String(id))
+                    : (existingSchema.appliesTo?.entityId ? [String(existingSchema.appliesTo.entityId)] : []),
+                documentType: existingSchema.appliesTo?.documentType || ''
+            },
+            sourceEntityId: existingSchema.sourceEntityId ? String(existingSchema.sourceEntityId) : '',
             lineTypes: existingSchema.lineTypes || ['product'],
             columns: (existingSchema.columns || []).map((col, i) => ({
                 ...col,
@@ -460,7 +486,8 @@ function lineSchemaBuilder() {
             name: '',
             slug: '',
             description: '',
-            appliesTo: {},
+            appliesTo: { entityIds: [], documentType: '' },
+            sourceEntityId: '',
             lineTypes: ['product'],
             columns: [],
             totals: { subtotalKey: '', vatKey: '', totalFormula: '' },
@@ -507,6 +534,16 @@ function lineSchemaBuilder() {
                 if (!this.schema.defaultLineType) this.schema.defaultLineType = lt;
             }
             this.newLineType = '';
+        },
+
+        toggleEntityId(entityId) {
+            if (!this.schema.appliesTo.entityIds) this.schema.appliesTo.entityIds = [];
+            const idx = this.schema.appliesTo.entityIds.indexOf(entityId);
+            if (idx >= 0) {
+                this.schema.appliesTo.entityIds.splice(idx, 1);
+            } else {
+                this.schema.appliesTo.entityIds.push(entityId);
+            }
         },
 
         addColumn() {
@@ -631,7 +668,11 @@ function lineSchemaBuilder() {
                 name: this.schema.name,
                 slug: this.schema.slug,
                 description: this.schema.description,
-                appliesTo: this.schema.appliesTo,
+                appliesTo: {
+                    entityIds: this.schema.appliesTo.entityIds || [],
+                    documentType: this.schema.appliesTo.documentType || undefined
+                },
+                sourceEntityId: this.schema.sourceEntityId || null,
                 lineTypes: this.schema.lineTypes,
                 columns: cleanColumns,
                 totals: this.schema.totals,

@@ -39,15 +39,19 @@ module.exports = {
 
             const { entityId, documentType } = req.query;
 
-            // Build OR query: entity-specific + global schemas (no entityId set)
+            // Build OR query: entity-specific + global schemas (no entityIds set or empty)
             const conditions = [];
             if (entityId) {
+                conditions.push({ 'appliesTo.entityIds': entityId });
+                // Backward compat: also match old single entityId field
                 conditions.push({ 'appliesTo.entityId': entityId });
             }
             // Also include global schemas (no entity restriction)
-            conditions.push({ 'appliesTo.entityId': null });
-            conditions.push({ 'appliesTo.entityId': { $exists: false } });
+            conditions.push({ 'appliesTo.entityIds': { $size: 0 } });
+            conditions.push({ 'appliesTo.entityIds': { $exists: false } });
             conditions.push({ 'appliesTo': { $exists: false } });
+            // Backward compat: old schemas with entityId: null
+            conditions.push({ 'appliesTo.entityId': null, 'appliesTo.entityIds': { $exists: false } });
 
             let query = conditions.length > 0 ? { $or: conditions } : {};
             if (documentType) query['appliesTo.documentType'] = documentType;
@@ -67,13 +71,14 @@ module.exports = {
             const LineSchema = await tenantCollection(req, 'LineSchema');
             if (!LineSchema) return res.status(500).json({ error: 'Model not available' });
 
-            const { name, slug, description, appliesTo, lineTypes, columns, totals, defaultLineType } = req.body;
+            const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType } = req.body;
 
             const schema = new LineSchema({
                 name,
                 slug,
                 description,
                 appliesTo: appliesTo || {},
+                sourceEntityId: sourceEntityId || null,
                 lineTypes: lineTypes || ['product'],
                 columns: (columns || []).map((col, i) => ({
                     ...col,
@@ -98,13 +103,14 @@ module.exports = {
             const LineSchema = await tenantCollection(req, 'LineSchema');
             if (!LineSchema) return res.status(500).json({ error: 'Model not available' });
 
-            const { name, slug, description, appliesTo, lineTypes, columns, totals, defaultLineType } = req.body;
+            const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType } = req.body;
 
             const updateData = {};
             if (name !== undefined) updateData.name = name;
             if (slug !== undefined) updateData.slug = slug;
             if (description !== undefined) updateData.description = description;
             if (appliesTo !== undefined) updateData.appliesTo = appliesTo;
+            if (sourceEntityId !== undefined) updateData.sourceEntityId = sourceEntityId;
             if (lineTypes !== undefined) updateData.lineTypes = lineTypes;
             if (columns !== undefined) {
                 updateData.columns = columns.map((col, i) => ({

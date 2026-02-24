@@ -2,19 +2,16 @@ Missions du jour
 
 Une foie une mission terminée et pushée, barre là ici, fais un truck super beau UX/UI
 
-Mission 6
-![alt text](image-14.png) tout ca ici c'est pas intuitif, pour générer un document et c: je dois avoir, un boutton pour ne plus lié avec le l'entité, avec confirmation prealable et message claire, je dois aussi avoir le titre a droite, une meilleure icon qui indique que c'est un doc, un boutton générer, un boutton edit pour changer le titre par exemple ou le contenu, un boutton + plus visible avec un modal genre document simple, ou document modèle, (pour modele on met en bas réutilisable pour d'autre (patients)), je veux que le user ne change pas trop d'ecran pour arriver a travailler vite, au lieux de smart doc Tu met Documents modèles, fais moi un systeme pro, ultra UX/UI, met toi a la place d'un user il doit avoir les outils en main facilement de facon propre...
+Mission 1
+![alt text](image-17.png) quand je fais generé jai ca; un melange mode dark avec mode light alors que je suis surmode light
 
-Mission 7 :
+MIssions 2 
+![alt text](image-18.png) quand je cree un template je dois pouvoir ajouter les lignes, on va appeler ca tableau dynamique, par exemple pour une ordonna que je lie a  consultation , ca dos inclure toute les lignes traitements, pour facture c produit ou services, etc, je dois avoir deux ou trois style visuel pour le tableau.
 
-![alt text](image-15.png) l'editeur ne suit pas le theme dark/light , ily'a un bug
+Mission 3 
 
-Mission 8 : 
+Si je load un evirnoement depuis nos modele predefini, ildois verifier si la collection existe deja, si elle existe il doit me propose override ou changer de slug, 
 
-![alt text](image-16.png) les elements ne sont plus draggables, il y'a un bug
+Mission 4 
 
-Mission 9 quand on fai generé, on doit pouvoir effectué des modifs qui n'impacteront que le document en cours de generation,
-
-
-Mission 10 : 
-Nous devons avoir un systeme de generation de ligne, on a deja un line shema http://localhost:3000/account/9194/line-schemas , jai crée traitement schema pour test, normalement on doit pouvoir selectioner les frequences directement depuis la base de donné traitement, genre quand j'encode Doliprane, j'encode la fréquence ou les frequence pôssible, puis depuis le genrateur de ligne on doit pouvoir selectionner la fréquence, le moment, la durée etc, amis je dois avoir un systeme hybride, genre si je nai pas encodé dans le medicament je dois avoir ca depuis line schema. le generateur nous permet de creer les ligne comme pour une facture donc on aura produits et service qte..., ou pour une ordonnance on aura les traitement/frequence etc
+dans le listing des entités je dois avoir le bulk select avec possibilité de supprimer plusieurs entités en meme temps.

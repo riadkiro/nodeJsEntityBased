@@ -63,8 +63,11 @@ const CanvasContainer = forwardRef(function CanvasContainer({
         try {
             const stored = localStorage.getItem('_x_theme');
             if (stored) {
-                const parsed = JSON.parse(stored);
-                if (parsed === 'dark') setIsDark(true);
+                let theme;
+                try { theme = JSON.parse(stored); } catch (e) { theme = stored; }
+                if (theme === 'dark') setIsDark(true);
+                else if (theme === 'system' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) setIsDark(true);
+                else if (theme === 'light') setIsDark(false);
             }
         } catch (e) { /* ignore */ }
         checkDarkMode()

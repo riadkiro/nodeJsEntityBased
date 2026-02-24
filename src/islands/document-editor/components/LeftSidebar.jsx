@@ -17,9 +17,12 @@ function useDarkMode() {
         try {
             const stored = localStorage.getItem('_x_theme');
             if (stored) {
-                // Alpine.$persist wraps values in quotes: '"dark"'
-                const parsed = JSON.parse(stored);
-                return parsed === 'dark';
+                // Handle both JSON format ("dark") and plain string (dark)
+                let theme;
+                try { theme = JSON.parse(stored); } catch (e) { theme = stored; }
+                if (theme === 'dark') return true;
+                if (theme === 'system' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) return true;
+                if (theme === 'light') return false;
             }
         } catch (e) { /* ignore */ }
         // Fallback to DOM class check

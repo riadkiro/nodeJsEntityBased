@@ -14,9 +14,28 @@
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
 </head>
 <body style="margin:0; padding:0; overflow:hidden;">
+<script>
+    // Sync theme from parent page's localStorage so Tailwind dark: classes work in iframe
+    // Handles both Alpine.$persist JSON format ("dark") and plain string (dark)
+    try {
+        var stored = localStorage.getItem('_x_theme');
+        if (stored) {
+            var theme;
+            try { theme = JSON.parse(stored); } catch(e) { theme = stored; }
+            if (theme === 'dark') {
+                document.body.classList.add('dark');
+            } else if (theme === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.body.classList.add('dark');
+            }
+        }
+    } catch(e) {}
+</script>
 <% } %>
 
 <style>

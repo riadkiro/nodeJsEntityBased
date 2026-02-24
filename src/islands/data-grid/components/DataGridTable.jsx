@@ -13,11 +13,17 @@ export default function DataGridTable({
     onColumnReorder,
     density,
     accountNumber,
-    rowClickUrl
+    rowClickUrl,
+    selectedIds = new Set(),
+    onToggleSelectRow,
+    onSelectAllOnPage
 }) {
     const [draggedColumn, setDraggedColumn] = useState(null)
     const [dragOverColumn, setDragOverColumn] = useState(null)
     const virtualRows = virtualizer.getVirtualItems()
+
+    const allOnPageSelected = rows.length > 0 && rows.every(r => selectedIds.has(r._id))
+    const someOnPageSelected = rows.some(r => selectedIds.has(r._id))
 
     const densityConfig = {
         compact: {
@@ -49,6 +55,18 @@ export default function DataGridTable({
         <table className="table-hover whitespace-nowrap dataTable-table w-full">
             <thead className="sticky top-0 bg-white dark:bg-[#1b2e4b] z-10">
                 <tr>
+                    {/* Checkbox column header */}
+                    <th className="px-2 w-10" style={{ width: '40px', minWidth: '40px' }}>
+                        <div className="flex items-center justify-center">
+                            <input
+                                type="checkbox"
+                                checked={allOnPageSelected}
+                                ref={el => { if (el) el.indeterminate = someOnPageSelected && !allOnPageSelected }}
+                                onChange={(e) => onSelectAllOnPage?.(e.target.checked)}
+                                className="form-checkbox text-primary rounded cursor-pointer w-4 h-4"
+                            />
+                        </div>
+                    </th>
                     {columns.map((col) => {
                         const isSorted = sort?.field === col.id
                         const sortDirection = sort?.direction || 'desc'
@@ -136,7 +154,7 @@ export default function DataGridTable({
                 {/* Top spacer */}
                 {virtualRows.length > 0 && virtualRows[0].start > 0 && (
                     <tr>
-                        <td colSpan={columns.length} style={{ height: virtualRows[0].start, padding: 0 }} />
+                        <td colSpan={columns.length + 1} style={{ height: virtualRows[0].start, padding: 0 }} />
                     </tr>
                 )}
 
@@ -151,13 +169,31 @@ export default function DataGridTable({
                         comfortable: '12px 12px'
                     }[density] || '12px 12px'
 
+                    const isRowSelected = selectedIds.has(row._id)
+
                     return (
                         <tr
                             key={row._id || virtualRow.index}
                             data-index={virtualRow.index}
                             ref={virtualizer.measureElement}
                             style={{ minHeight: config.rowHeight }}
+                            className={isRowSelected ? 'bg-primary/5 dark:bg-primary/10' : ''}
                         >
+                            {/* Checkbox cell */}
+                            <td
+                                className={`${config.fontSize}`}
+                                style={{ padding: cellPadding, width: '40px', minWidth: '40px' }}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="flex items-center justify-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={isRowSelected}
+                                        onChange={() => onToggleSelectRow?.(row._id)}
+                                        className="form-checkbox text-primary rounded cursor-pointer w-4 h-4"
+                                    />
+                                </div>
+                            </td>
                             {columns.map(col => (
                                 <td
                                     key={col.id}
@@ -175,7 +211,7 @@ export default function DataGridTable({
                 {virtualRows.length > 0 && (
                     <tr>
                         <td
-                            colSpan={columns.length}
+                            colSpan={columns.length + 1}
                             style={{
                                 height: Math.max(0, virtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1]?.end || 0)),
                                 padding: 0

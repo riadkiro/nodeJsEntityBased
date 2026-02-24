@@ -57,6 +57,7 @@ export default function LeftSidebar({
     activeTab,
     setActiveTab,
     insertVariableToken,
+    insertDynamicTable,
     isSettingsOpen,
     onSettingsToggle,
     settingsPanelProps,
@@ -194,7 +195,7 @@ export default function LeftSidebar({
                             <LayoutsPanel doc={doc} setDoc={setDoc} triggerSave={triggerSave} />
                         )}
                         {activeTab === 'dynamic-nav' && (
-                            <DynamicNavPanel insertVariableToken={insertVariableToken} accountNumber={accountNumber} doc={doc} />
+                            <DynamicNavPanel insertVariableToken={insertVariableToken} insertDynamicTable={insertDynamicTable} accountNumber={accountNumber} doc={doc} />
                         )}
                     </div>
                 </div>
@@ -1001,7 +1002,7 @@ function GalleryPanel() {
 }
 
 // ===== Dynamic Variables Panel =====
-function DynamicNavPanel({ insertVariableToken, accountNumber, doc }) {
+function DynamicNavPanel({ insertVariableToken, insertDynamicTable, accountNumber, doc }) {
     const isDark = useDarkMode();
     const [variables, setVariables] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -1316,6 +1317,260 @@ function DynamicNavPanel({ insertVariableToken, accountNumber, doc }) {
                     </p>
                 </div>
             )}
+
+            {/* Dynamic Tables Section */}
+            {variables.lineSchemas && variables.lineSchemas.length > 0 && (
+                <DynamicTablesSection
+                    lineSchemas={variables.lineSchemas}
+                    insertDynamicTable={insertDynamicTable}
+                    isDark={isDark}
+                />
+            )}
+        </div>
+    );
+}
+
+// ===== Dynamic Tables Section =====
+function DynamicTablesSection({ lineSchemas, insertDynamicTable, isDark }) {
+    const [expandedSchema, setExpandedSchema] = useState(null);
+    const [selectedStyle, setSelectedStyle] = useState('professional');
+
+    const tableStyles = [
+        {
+            key: 'minimal',
+            label: 'Minimal',
+            preview: { border: '#333', bg: 'transparent', header: '#f5f5f5' }
+        },
+        {
+            key: 'professional',
+            label: 'Professionnel',
+            preview: { border: '#d1d5db', bg: '#f9fafb', header: '#f3f4f6' }
+        },
+        {
+            key: 'modern',
+            label: 'Moderne',
+            preview: { border: '#c7d2fe', bg: '#f5f3ff', header: '#4f46e5' }
+        }
+    ];
+
+    return (
+        <div style={{ marginTop: '12px' }}>
+            {/* Section Header */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 10px',
+                borderRadius: '8px',
+                background: isDark ? '#1a2332' : '#f0fdf4',
+                border: `1px solid ${isDark ? '#22543d' : '#bbf7d0'}`,
+                marginBottom: '10px'
+            }}>
+                <iconify-icon icon="solar:chart-2-bold-duotone" width="18" style={{ color: '#10b981', flexShrink: 0 }}></iconify-icon>
+                <div>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: isDark ? '#86efac' : '#166534', display: 'block' }}>
+                        Tableaux dynamiques
+                    </span>
+                    <span style={{ fontSize: '10px', color: isDark ? '#4ade80' : '#15803d' }}>
+                        Insérez un tableau auto-rempli avec les lignes du record
+                    </span>
+                </div>
+            </div>
+
+            {lineSchemas.map(schema => (
+                <div key={schema._id} style={{ marginBottom: '8px' }}>
+                    {/* Schema Button */}
+                    <button
+                        style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            textAlign: 'left',
+                            borderRadius: expandedSchema === schema._id ? '8px 8px 0 0' : '8px',
+                            cursor: 'pointer',
+                            border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                            background: expandedSchema === schema._id
+                                ? (isDark ? '#1b2e4b' : '#eff6ff')
+                                : (isDark ? '#0e1726' : '#ffffff'),
+                            transition: 'all 0.15s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px'
+                        }}
+                        onClick={() => setExpandedSchema(expandedSchema === schema._id ? null : schema._id)}
+                        onMouseEnter={e => {
+                            if (expandedSchema !== schema._id) {
+                                e.currentTarget.style.background = isDark ? '#1b2e4b' : '#f8fafc';
+                                e.currentTarget.style.borderColor = isDark ? '#4361ee' : '#93c5fd';
+                            }
+                        }}
+                        onMouseLeave={e => {
+                            if (expandedSchema !== schema._id) {
+                                e.currentTarget.style.background = isDark ? '#0e1726' : '#ffffff';
+                                e.currentTarget.style.borderColor = isDark ? '#374151' : '#e5e7eb';
+                            }
+                        }}
+                    >
+                        <iconify-icon
+                            icon={expandedSchema === schema._id ? 'tabler:chevron-down' : 'tabler:chevron-right'}
+                            width="14"
+                            style={{ color: isDark ? '#4b5563' : '#94a3b8', flexShrink: 0 }}
+                        ></iconify-icon>
+                        <iconify-icon
+                            icon="solar:table-bold-duotone"
+                            width="18"
+                            style={{ color: '#10b981', flexShrink: 0 }}
+                        ></iconify-icon>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '12px', fontWeight: 600, color: isDark ? '#e2e8f0' : '#1f2937' }}>
+                                {schema.name}
+                            </div>
+                            {schema.columns && schema.columns.length > 0 && (
+                                <div style={{ fontSize: '10px', color: isDark ? '#6b7280' : '#9ca3af', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {schema.columns.map(c => c.label).join(', ')}
+                                </div>
+                            )}
+                        </div>
+                        <span style={{
+                            fontSize: '10px',
+                            color: isDark ? '#4b5563' : '#9ca3af',
+                            fontWeight: 500,
+                            flexShrink: 0
+                        }}>
+                            {(schema.columns || []).length} col.
+                        </span>
+                    </button>
+
+                    {/* Expanded: Style Picker & Insert */}
+                    {expandedSchema === schema._id && (
+                        <div style={{
+                            padding: '12px',
+                            background: isDark ? '#111827' : '#f8fafc',
+                            borderRadius: '0 0 8px 8px',
+                            border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                            borderTop: 'none'
+                        }}>
+                            {/* Style Picker */}
+                            <div style={{ fontSize: '10px', fontWeight: 600, color: isDark ? '#94a3b8' : '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                Style du tableau
+                            </div>
+                            <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
+                                {tableStyles.map(s => (
+                                    <button
+                                        key={s.key}
+                                        style={{
+                                            flex: 1,
+                                            padding: '8px 4px',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            border: selectedStyle === s.key
+                                                ? `2px solid ${isDark ? '#4361ee' : '#3b82f6'}`
+                                                : `1px solid ${isDark ? '#374151' : '#d1d5db'}`,
+                                            background: selectedStyle === s.key
+                                                ? (isDark ? 'rgba(67,97,238,0.1)' : 'rgba(59,130,246,0.05)')
+                                                : (isDark ? '#0e1726' : '#fff'),
+                                            transition: 'all 0.15s',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            gap: '4px'
+                                        }}
+                                        onClick={() => setSelectedStyle(s.key)}
+                                    >
+                                        {/* Mini Table Preview */}
+                                        <div style={{
+                                            width: '100%',
+                                            height: '28px',
+                                            borderRadius: '3px',
+                                            overflow: 'hidden',
+                                            border: `1px solid ${s.preview.border}`,
+                                            display: 'flex',
+                                            flexDirection: 'column'
+                                        }}>
+                                            <div style={{
+                                                height: '10px',
+                                                background: s.preview.header,
+                                                borderBottom: `1px solid ${s.preview.border}`
+                                            }} />
+                                            <div style={{ flex: 1, background: '#fff' }} />
+                                            <div style={{ height: '8px', background: s.preview.bg || '#fff', borderTop: `1px solid ${s.preview.border}` }} />
+                                        </div>
+                                        <span style={{
+                                            fontSize: '9px',
+                                            fontWeight: selectedStyle === s.key ? 700 : 500,
+                                            color: selectedStyle === s.key
+                                                ? (isDark ? '#93c5fd' : '#2563eb')
+                                                : (isDark ? '#6b7280' : '#9ca3af')
+                                        }}>
+                                            {s.label}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Column Preview */}
+                            <div style={{ fontSize: '10px', fontWeight: 600, color: isDark ? '#94a3b8' : '#6b7280', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                Colonnes
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
+                                {(schema.columns || []).map((col, i) => (
+                                    <span key={i} style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '3px',
+                                        padding: '2px 8px',
+                                        borderRadius: '4px',
+                                        background: isDark ? '#1b2e4b' : '#e0e7ff',
+                                        color: isDark ? '#93c5fd' : '#3730a3',
+                                        fontSize: '10px',
+                                        fontWeight: 500
+                                    }}>
+                                        {col.label}
+                                        <span style={{ fontSize: '8px', color: isDark ? '#4b5563' : '#a5b4fc', fontWeight: 400 }}>
+                                            ({col.type})
+                                        </span>
+                                    </span>
+                                ))}
+                            </div>
+
+                            {/* Insert Button */}
+                            <button
+                                style={{
+                                    width: '100%',
+                                    padding: '8px 16px',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    border: 'none',
+                                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                                    color: '#fff',
+                                    fontWeight: 600,
+                                    fontSize: '12px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '6px',
+                                    transition: 'all 0.15s'
+                                }}
+                                onClick={() => {
+                                    if (insertDynamicTable) {
+                                        insertDynamicTable(schema, selectedStyle);
+                                    }
+                                }}
+                                onMouseEnter={e => {
+                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,185,129,0.3)';
+                                }}
+                                onMouseLeave={e => {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = 'none';
+                                }}
+                            >
+                                <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
+                                Insérer le tableau
+                            </button>
+                        </div>
+                    )}
+                </div>
+            ))}
         </div>
     );
 }

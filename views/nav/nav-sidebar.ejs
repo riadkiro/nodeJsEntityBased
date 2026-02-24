@@ -2882,11 +2882,134 @@
             <button @click="saveEnvironment()"
                     class="px-5 py-2 text-sm font-semibold text-white rounded-xl transition-all hover:shadow-lg flex items-center gap-2"
                     :style="'background:' + formColor"
-                    :disabled="!formName.trim() || isSubmitting">
+                    :disabled="!formName.trim() || isSubmitting || checkingConflicts">
+              <template x-if="isSubmitting || checkingConflicts">
+                <div class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+              </template>
+              <span x-text="checkingConflicts ? 'Vérification...' : (editingEnv ? 'Enregistrer' : (selectedTemplateId ? 'Créer depuis le modèle' : 'Créer'))"></span>
+            </button>
+          </div>
+        </div>
+      </template>
+
+      <!-- ══════════════════════════════════════════ -->
+      <!-- STEP 3: Conflict Resolution                -->
+      <!-- ══════════════════════════════════════════ -->
+      <template x-if="step === 'conflicts'">
+        <div>
+          <!-- Modal Header -->
+          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+            <div class="flex items-center gap-3">
+              <button @click="step = 'customize'" class="text-gray-400 hover:text-primary transition-colors">
+                <iconify-icon icon="solar:alt-arrow-left-linear" width="20"></iconify-icon>
+              </button>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Collections existantes détectées</h3>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                  <span x-text="conflicts.length"></span> collection(s) avec le même nom existe(nt) déjà
+                </p>
+              </div>
+            </div>
+            <button @click="modalOpen = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+              <iconify-icon icon="solar:close-circle-bold" width="22"></iconify-icon>
+            </button>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="px-6 py-5">
+            <!-- Warning Banner -->
+            <div class="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 mb-5">
+              <iconify-icon icon="solar:danger-triangle-bold-duotone" width="24" class="text-amber-500 flex-shrink-0 mt-0.5"></iconify-icon>
+              <div>
+                <p class="text-sm font-semibold text-amber-800 dark:text-amber-300">Attention</p>
+                <p class="text-xs text-amber-700 dark:text-amber-400 mt-1 leading-relaxed">
+                  Certaines collections du modèle existent déjà dans votre espace de travail. 
+                  Choisissez pour chaque collection si vous souhaitez <strong>écraser</strong> (supprimer l'existante et la remplacer) 
+                  ou <strong>renommer</strong> (garder l'existante et créer une nouvelle collection avec un suffixe).
+                </p>
+              </div>
+            </div>
+
+            <!-- Conflict Cards -->
+            <div class="space-y-3 max-h-[40vh] overflow-y-auto custom-scrollbar pr-1">
+              <template x-for="conflict in conflicts" :key="conflict.templateSlug">
+                <div class="rounded-xl border transition-all duration-200"
+                     :class="conflictOverrides[conflict.templateSlug] === 'override' 
+                       ? 'border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-900/10' 
+                       : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800/50'">
+                  
+                  <!-- Entity Info -->
+                  <div class="flex items-center gap-3 px-4 py-3">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                         :style="'background:' + (conflict.color || '#4361ee') + '15'">
+                      <iconify-icon :icon="conflict.icon || 'solar:database-bold-duotone'" width="20" 
+                                    :style="'color:' + (conflict.color || '#4361ee')"></iconify-icon>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-sm font-semibold text-gray-800 dark:text-gray-200" x-text="conflict.entityName"></div>
+                      <div class="flex items-center gap-1.5 mt-0.5">
+                        <iconify-icon icon="solar:danger-circle-bold" width="12" class="text-amber-500"></iconify-icon>
+                        <span class="text-[11px] text-gray-500 dark:text-gray-400">
+                          Slug <code class="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-[10px] font-mono" x-text="conflict.existingSlug"></code> déjà utilisé par « <span x-text="conflict.existingEntityName" class="font-medium"></span> »
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Action Buttons -->
+                  <div class="flex gap-2 px-4 pb-3">
+                    <!-- Rename (safe option) -->
+                    <button @click="conflictOverrides[conflict.templateSlug] = 'rename'"
+                            class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all"
+                            :class="conflictOverrides[conflict.templateSlug] === 'rename' 
+                              ? 'bg-blue-500 text-white shadow-sm shadow-blue-500/20' 
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'">
+                      <iconify-icon icon="solar:copy-bold-duotone" width="14"></iconify-icon>
+                      Renommer (garder l'existante)
+                    </button>
+                    <!-- Override (destructive option) -->
+                    <button @click="conflictOverrides[conflict.templateSlug] = 'override'"
+                            class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all"
+                            :class="conflictOverrides[conflict.templateSlug] === 'override' 
+                              ? 'bg-red-500 text-white shadow-sm shadow-red-500/20' 
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'">
+                      <iconify-icon icon="solar:refresh-circle-bold-duotone" width="14"></iconify-icon>
+                      Écraser (remplacer)
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <!-- Override all / Rename all shortcuts -->
+            <div class="flex gap-2 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+              <button @click="conflicts.forEach(c => { conflictOverrides[c.templateSlug] = 'rename' })"
+                      class="flex-1 text-xs text-center py-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+                <iconify-icon icon="solar:copy-bold-duotone" width="12" class="mr-1"></iconify-icon>
+                Tout renommer
+              </button>
+              <button @click="conflicts.forEach(c => { conflictOverrides[c.templateSlug] = 'override' })"
+                      class="flex-1 text-xs text-center py-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors font-medium">
+                <iconify-icon icon="solar:refresh-circle-bold-duotone" width="12" class="mr-1"></iconify-icon>
+                Tout écraser
+              </button>
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+            <button @click="step = 'customize'"
+                    class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+              Retour
+            </button>
+            <button @click="applyTemplate()"
+                    class="px-5 py-2 text-sm font-semibold text-white rounded-xl transition-all hover:shadow-lg flex items-center gap-2 bg-primary"
+                    :disabled="isSubmitting">
               <template x-if="isSubmitting">
                 <div class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
               </template>
-              <span x-text="editingEnv ? 'Enregistrer' : (selectedTemplateId ? 'Créer depuis le modèle' : 'Créer')"></span>
+              <iconify-icon icon="solar:check-circle-bold" width="16"></iconify-icon>
+              Appliquer le modèle
             </button>
           </div>
         </div>
@@ -2914,11 +3037,16 @@
       libraries: [],
 
       // Template selection state
-      step: 'templates', // 'templates' or 'customize'
+      step: 'templates', // 'templates', 'customize', or 'conflicts'
       templates: [],
       loadingTemplates: false,
       selectedTemplateId: null,
       selectedTemplateObj: null,
+
+      // Conflict resolution state
+      conflicts: [],
+      conflictOverrides: {}, // { templateSlug: 'override' | 'rename' }
+      checkingConflicts: false,
 
       presetColors: [
         '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f97316',
@@ -2979,6 +3107,9 @@
             this.step = 'templates';
             this.selectedTemplateId = null;
             this.selectedTemplateObj = null;
+            this.conflicts = [];
+            this.conflictOverrides = {};
+            this.checkingConflicts = false;
             this.fetchTemplates();
           }
           this.isSubmitting = false;
@@ -3081,24 +3212,31 @@
             window.dispatchEvent(new CustomEvent('env-modal-saved', { detail: {} }));
 
           } else if (this.selectedTemplateId) {
-            // ─── Create from template ───
-            const res = await fetch(`/account/${accountNum}/api/space-templates/${this.selectedTemplateId}/apply`, {
+            // ─── Create from template: first check for conflicts ───
+            this.checkingConflicts = true;
+            const checkRes = await fetch(`/account/${accountNum}/api/space-templates/${this.selectedTemplateId}/check-conflicts`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                envName: this.formName.trim(),
-                envIcon: this.formIcon,
-                envColor: this.formColor,
-                envImage: this.formImage
-              })
+              body: JSON.stringify({ envName: this.formName.trim() })
             });
-            const data = await res.json();
-            this.modalOpen = false;
-            if (data.success && data.environment) {
-              window.dispatchEvent(new CustomEvent('env-modal-saved', { detail: { newEnv: data.environment } }));
-            } else {
-              window.dispatchEvent(new CustomEvent('env-modal-saved', { detail: {} }));
+            const checkData = await checkRes.json();
+            this.checkingConflicts = false;
+
+            if (checkData.hasConflicts && checkData.conflicts.length > 0) {
+              // Show conflicts step — user needs to decide per-entity
+              this.conflicts = checkData.conflicts;
+              this.conflictOverrides = {};
+              checkData.conflicts.forEach(c => {
+                this.conflictOverrides[c.templateSlug] = 'rename'; // default: rename
+              });
+              this.step = 'conflicts';
+              this.isSubmitting = false;
+              return;
             }
+
+            // No conflicts — apply directly
+            await this.applyTemplate();
+            return;
 
           } else {
             // ─── Create empty ───
@@ -3123,6 +3261,36 @@
         } catch (err) {
           console.error('[EnvModal] Save error:', err);
           alert('Erreur lors de la sauvegarde');
+        } finally {
+          this.isSubmitting = false;
+        }
+      },
+
+      async applyTemplate() {
+        this.isSubmitting = true;
+        const accountNum = '<%= account_number %>' || window.location.pathname.split('/')[2];
+        try {
+          const res = await fetch(`/account/${accountNum}/api/space-templates/${this.selectedTemplateId}/apply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              envName: this.formName.trim(),
+              envIcon: this.formIcon,
+              envColor: this.formColor,
+              envImage: this.formImage,
+              overrides: this.conflictOverrides || {}
+            })
+          });
+          const data = await res.json();
+          this.modalOpen = false;
+          if (data.success && data.environment) {
+            window.dispatchEvent(new CustomEvent('env-modal-saved', { detail: { newEnv: data.environment } }));
+          } else {
+            window.dispatchEvent(new CustomEvent('env-modal-saved', { detail: {} }));
+          }
+        } catch (err) {
+          console.error('[EnvModal] Apply template error:', err);
+          alert('Erreur lors de l\'application du modèle');
         } finally {
           this.isSubmitting = false;
         }

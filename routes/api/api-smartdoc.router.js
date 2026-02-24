@@ -332,6 +332,32 @@ router.get('/smartdoc/variables/:documentId', async (req, res) => {
             }
         }
 
+        // 4. Available line schemas for linked entities (for dynamic tables)
+        variables.lineSchemas = [];
+        try {
+            const LineSchema = await tenantCollection(req, 'LineSchema');
+            if (LineSchema && entityIds.length > 0) {
+                const schemas = await LineSchema.find({
+                    'appliesTo.entityIds': { $in: entityIds }
+                }).lean();
+                for (const schema of schemas) {
+                    variables.lineSchemas.push({
+                        _id: schema._id.toString(),
+                        name: schema.name,
+                        slug: schema.slug,
+                        description: schema.description || '',
+                        columns: (schema.columns || []).filter(c => c.visible !== false).map(c => ({
+                            key: c.key,
+                            label: c.label,
+                            type: c.type
+                        }))
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn('[SmartDoc] Could not load line schemas:', e.message);
+        }
+
         res.json({ success: true, variables });
     } catch (error) {
         console.error('[SmartDoc] Variables error:', error);
@@ -358,6 +384,8 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
         const Record = await tenantCollection(req, 'Record');
         const Entity = await tenantCollection(req, 'Entity');
         const Classification = await tenantCollection(req, 'Classification');
+        const DocumentLine = await tenantCollection(req, 'DocumentLine');
+        const LineSchema = await tenantCollection(req, 'LineSchema');
 
         // 1. Load the SmartDoc template
         const smartDocTemplate = await SmartDocTemplate.findById(req.params.templateId);
@@ -436,8 +464,31 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
             return res.status(404).json({ error: 'Document template introuvable' });
         }
 
+        // 5b. Load DocumentLines for this record (for dynamic tables)
+        let recordLines = [];
+        let lineSchemas = {};
+        if (DocumentLine && LineSchema) {
+            recordLines = await DocumentLine.find({ documentId: record._id }).sort({ order: 1 }).lean();
+            // Load all relevant line schemas
+            const schemaIds = [...new Set(recordLines.map(l => l.schemaId).filter(Boolean))];
+            if (schemaIds.length > 0) {
+                const schemas = await LineSchema.find({ _id: { $in: schemaIds } }).lean();
+                for (const s of schemas) lineSchemas[s._id.toString()] = s;
+            }
+            // Also load schemas by entity
+            if (entity) {
+                const entitySchemas = await LineSchema.find({ 'appliesTo.entityIds': entity._id }).lean();
+                for (const s of entitySchemas) {
+                    if (!lineSchemas[s._id.toString()]) lineSchemas[s._id.toString()] = s;
+                }
+            }
+        }
+
         // 6. Resolve tokens in the document template
-        const resolvedHtml = resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecordsMap, req.user);
+        let resolvedHtml = resolveDocumentTokens(docTemplate, record, entity, inputs, relatedRecordsMap, req.user);
+
+        // 6a. Resolve dynamic tables
+        resolvedHtml = resolveDynamicTables(resolvedHtml, recordLines, lineSchemas);
 
         // 6b. Extract used variables for preview sidebar
         const usedVariables = extractUsedVariables(docTemplate, record, entity, inputs, relatedRecordsMap, req.user);
@@ -543,6 +594,8 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
         const Document = await tenantCollection(req, 'Document');
         const Record = await tenantCollection(req, 'Record');
         const Entity = await tenantCollection(req, 'Entity');
+        const DocumentLine = await tenantCollection(req, 'DocumentLine');
+        const LineSchema = await tenantCollection(req, 'LineSchema');
 
         // 1. Load the SmartDoc template
         const smartDocTemplate = await SmartDocTemplate.findById(req.params.templateId);
@@ -614,6 +667,24 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
             return res.status(404).json({ error: 'Document template introuvable' });
         }
 
+        // 5b. Load DocumentLines for dynamic tables in draft
+        let recordLines = [];
+        let lineSchemas = {};
+        if (DocumentLine && LineSchema) {
+            recordLines = await DocumentLine.find({ documentId: record._id }).sort({ order: 1 }).lean();
+            const schemaIds = [...new Set(recordLines.map(l => l.schemaId).filter(Boolean))];
+            if (schemaIds.length > 0) {
+                const schemas = await LineSchema.find({ _id: { $in: schemaIds } }).lean();
+                for (const s of schemas) lineSchemas[s._id.toString()] = s;
+            }
+            if (entity) {
+                const entitySchemas = await LineSchema.find({ 'appliesTo.entityIds': entity._id }).lean();
+                for (const s of entitySchemas) {
+                    if (!lineSchemas[s._id.toString()]) lineSchemas[s._id.toString()] = s;
+                }
+            }
+        }
+
         // 6. Build token context (same as resolveDocumentTokens)
         const context = buildTokenContext(record, entity, inputs, relatedRecordsMap, req.user);
 
@@ -623,6 +694,8 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
             // Resolve tokens in page content
             if (resolvedPage.content) {
                 resolvedPage.content = resolveTokensInString(resolvedPage.content, context);
+                // Also resolve dynamic tables in the content
+                resolvedPage.content = resolveDynamicTables(resolvedPage.content, recordLines, lineSchemas);
             }
             // Resolve tokens in elements
             if (resolvedPage.elements && Array.isArray(resolvedPage.elements)) {
@@ -1533,6 +1606,196 @@ function extractUsedVariables(docTemplate, record, entity, inputs, relatedRecord
     });
 
     return variables;
+}
+
+/**
+ * Resolve dynamic table placeholders in HTML
+ * Finds <div class="dynamic-table" data-table="{...}"> elements and replaces with rendered tables
+ */
+function resolveDynamicTables(html, recordLines, lineSchemas) {
+    if (!html) return html;
+
+    // Match <div class="dynamic-table" data-table="{...}">...</div>
+    return html.replace(
+        /<div[^>]*class="[^"]*dynamic-table[^"]*"[^>]*data-table="([^"]*)"[^>]*>([\s\S]*?)<\/div>/gi,
+        (match, encodedConfig) => {
+            try {
+                const decoded = encodedConfig
+                    .replace(/&quot;/g, '"')
+                    .replace(/&amp;/g, '&')
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&#39;/g, "'");
+                const config = JSON.parse(decoded);
+                const schemaId = config.schemaId;
+                const style = config.style || 'professional';
+
+                if (!schemaId) return match;
+
+                const schema = lineSchemas[schemaId];
+                if (!schema) return match;
+
+                // Filter lines that belong to this schema
+                const lines = recordLines.filter(l => {
+                    // Lines may not have schemaId — match all if no filter
+                    if (l.schemaId) return l.schemaId.toString() === schemaId;
+                    return true;
+                });
+
+                return renderDynamicTable(schema, lines, style, config);
+            } catch (e) {
+                console.warn('[SmartDoc] Could not parse dynamic-table:', e.message);
+                return match;
+            }
+        }
+    );
+}
+
+/**
+ * Render an HTML table from LineSchema + DocumentLines
+ * Supports 3 styles: 'minimal', 'professional', 'modern'
+ */
+function renderDynamicTable(schema, lines, style = 'professional', config = {}) {
+    const visibleColumns = (schema.columns || []).filter(c => c.visible !== false).sort((a, b) => (a.order || 0) - (b.order || 0));
+    if (visibleColumns.length === 0) return '<p><em>Aucune colonne définie</em></p>';
+
+    const showTotals = config.showTotals !== false;
+    const title = config.title || '';
+
+    // Style definitions
+    const styles = {
+        minimal: {
+            table: 'width:100%;border-collapse:collapse;margin:16px 0;font-family:inherit;font-size:11pt;',
+            thead: 'border-bottom:2px solid #333;',
+            th: 'padding:8px 12px;text-align:left;font-weight:600;color:#333;border:none;border-bottom:2px solid #333;',
+            td: 'padding:8px 12px;border:none;border-bottom:1px solid #e5e7eb;color:#374151;',
+            trAlt: '',
+            tfoot: 'border-top:2px solid #333;font-weight:600;',
+            tfootTd: 'padding:8px 12px;border:none;border-top:2px solid #333;font-weight:600;',
+            titleStyle: 'font-size:13pt;font-weight:600;margin:16px 0 8px;color:#333;'
+        },
+        professional: {
+            table: 'width:100%;border-collapse:collapse;margin:16px 0;font-family:inherit;font-size:11pt;border:1px solid #d1d5db;',
+            thead: 'background:#f3f4f6;',
+            th: 'padding:10px 12px;text-align:left;font-weight:600;color:#1f2937;border:1px solid #d1d5db;font-size:10pt;',
+            td: 'padding:8px 12px;border:1px solid #d1d5db;color:#374151;',
+            trAlt: 'background:#f9fafb;',
+            tfoot: 'background:#f3f4f6;font-weight:600;',
+            tfootTd: 'padding:10px 12px;border:1px solid #d1d5db;font-weight:600;color:#1f2937;',
+            titleStyle: 'font-size:13pt;font-weight:600;margin:16px 0 8px;color:#1f2937;'
+        },
+        modern: {
+            table: 'width:100%;border-collapse:separate;border-spacing:0;margin:16px 0;font-family:inherit;font-size:11pt;border-radius:8px;overflow:hidden;border:1px solid #e0e7ff;',
+            thead: 'background:linear-gradient(135deg,#4f46e5,#6366f1);',
+            th: 'padding:12px 14px;text-align:left;font-weight:600;color:#ffffff;border:none;font-size:10pt;',
+            td: 'padding:10px 14px;border:none;border-bottom:1px solid #e0e7ff;color:#374151;',
+            trAlt: 'background:#f5f3ff;',
+            tfoot: 'background:#eef2ff;font-weight:600;',
+            tfootTd: 'padding:12px 14px;border:none;border-top:2px solid #c7d2fe;font-weight:700;color:#4338ca;',
+            titleStyle: 'font-size:13pt;font-weight:700;margin:16px 0 8px;color:#4338ca;'
+        }
+    };
+
+    const s = styles[style] || styles.professional;
+
+    let html = '';
+    if (title) {
+        html += `<p style="${s.titleStyle}">${escapeHtml(title)}</p>`;
+    }
+
+    html += `<table style="${s.table}">`;
+
+    // Header
+    html += `<thead style="${s.thead}"><tr>`;
+    html += `<th style="${s.th}width:40px;text-align:center;">#</th>`;
+    for (const col of visibleColumns) {
+        const align = ['number', 'money', 'formula'].includes(col.type) ? 'text-align:right;' : '';
+        html += `<th style="${s.th}${align}">${escapeHtml(col.label)}</th>`;
+    }
+    html += '</tr></thead>';
+
+    // Body
+    html += '<tbody>';
+    if (lines.length === 0) {
+        html += `<tr><td colspan="${visibleColumns.length + 1}" style="${s.td}text-align:center;color:#9ca3af;font-style:italic;padding:20px;">Aucune ligne</td></tr>`;
+    } else {
+        const totals = {};
+        lines.forEach((line, idx) => {
+            const altStyle = idx % 2 === 1 ? s.trAlt : '';
+            html += `<tr style="${altStyle}">`;
+            html += `<td style="${s.td}text-align:center;color:#9ca3af;width:40px;">${idx + 1}</td>`;
+            for (const col of visibleColumns) {
+                const raw = line.values?.[col.key] ?? line.computed?.[col.key] ?? '';
+                const align = ['number', 'money', 'formula'].includes(col.type) ? 'text-align:right;' : '';
+                const formatted = formatLineValue(raw, col);
+                html += `<td style="${s.td}${align}">${escapeHtml(String(formatted))}</td>`;
+
+                // Accumulate totals for numeric columns
+                if (['number', 'money', 'formula'].includes(col.type)) {
+                    const num = parseFloat(raw) || 0;
+                    totals[col.key] = (totals[col.key] || 0) + num;
+                }
+            }
+            html += '</tr>';
+        });
+
+        // Footer totals
+        if (showTotals && Object.keys(totals).length > 0) {
+            html += `<tfoot style="${s.tfoot}"><tr>`;
+            html += `<td style="${s.tfootTd}"></td>`;
+            for (const col of visibleColumns) {
+                if (totals[col.key] !== undefined) {
+                    const formatted = formatLineValue(totals[col.key], col);
+                    html += `<td style="${s.tfootTd}text-align:right;">${escapeHtml(String(formatted))}</td>`;
+                } else if (col === visibleColumns[0]) {
+                    html += `<td style="${s.tfootTd}">Total</td>`;
+                } else {
+                    html += `<td style="${s.tfootTd}"></td>`;
+                }
+            }
+            html += '</tr></tfoot>';
+        }
+    }
+    html += '</tbody></table>';
+
+    return html;
+}
+
+/**
+ * Format a line value based on column type
+ */
+function formatLineValue(value, column) {
+    if (value === null || value === undefined || value === '') return '';
+    switch (column.type) {
+        case 'money':
+            const decimals = column.config?.decimals ?? 2;
+            const num = parseFloat(value);
+            if (isNaN(num)) return value;
+            return num.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + ' €';
+        case 'number':
+        case 'formula':
+            const n = parseFloat(value);
+            if (isNaN(n)) return value;
+            return n.toLocaleString('fr-FR');
+        case 'date':
+            return formatDate(value);
+        default:
+            if (typeof value === 'object') return JSON.stringify(value);
+            return String(value);
+    }
+}
+
+/**
+ * Escape HTML special characters
+ */
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 module.exports = router;

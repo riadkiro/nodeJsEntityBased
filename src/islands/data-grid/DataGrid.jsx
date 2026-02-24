@@ -38,6 +38,10 @@ export default function DataGrid({
     const [entityMeta, setEntityMeta] = useState({})
     const [searchQuery, setSearchQuery] = useState('')
 
+    // Bulk selection state
+    const [selectedIds, setSelectedIds] = useState(new Set())
+    const [bulkDeleting, setBulkDeleting] = useState(false)
+
     // Preferences state
     const [preferences, setPreferences] = useState({
         columns: [],
@@ -275,6 +279,53 @@ export default function DataGrid({
         setPagination(prev => ({ ...prev, page: newPage }))
     }, [])
 
+    // Bulk selection handlers
+    const handleToggleSelectRow = useCallback((rowId) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev)
+            if (next.has(rowId)) next.delete(rowId)
+            else next.add(rowId)
+            return next
+        })
+    }, [])
+
+    const handleSelectAllOnPage = useCallback((checked) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev)
+            displayRows.forEach(row => {
+                if (checked) next.add(row._id)
+                else next.delete(row._id)
+            })
+            return next
+        })
+    }, [displayRows])
+
+    const handleClearSelection = useCallback(() => {
+        setSelectedIds(new Set())
+    }, [])
+
+    // Bulk delete handler
+    const handleBulkDelete = useCallback(async () => {
+        if (selectedIds.size === 0) return
+        setBulkDeleting(true)
+        try {
+            const deleteUrl = dataUrl.replace('/api/datagrid/', '/api/').replace(/\/[^/]+$/, '')
+            const promises = [...selectedIds].map(id =>
+                fetch(`/account/${accountNumber}/entity/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                })
+            )
+            await Promise.all(promises)
+            setSelectedIds(new Set())
+            fetchData()
+        } catch (err) {
+            console.error('[DataGrid] Bulk delete error:', err)
+        } finally {
+            setBulkDeleting(false)
+        }
+    }, [selectedIds, accountNumber, fetchData, dataUrl])
+
     const handleColumnReorder = useCallback((fromColumnId, toColumnId) => {
         setColumns(prevColumns => {
             const fromIndex = prevColumns.findIndex(c => c.id === fromColumnId)
@@ -387,6 +438,10 @@ export default function DataGrid({
                     quickAddLabel={quickAddLabel}
                     showSidebar={sidebarVisible}
                     onToggleSidebar={initialShowSidebar ? () => setSidebarVisible(v => !v) : undefined}
+                    selectedCount={selectedIds.size}
+                    onClearSelection={handleClearSelection}
+                    onBulkDelete={handleBulkDelete}
+                    bulkDeleting={bulkDeleting}
                 />
 
                 {/* Table wrapper */}
@@ -409,6 +464,9 @@ export default function DataGrid({
                             density={preferences.density}
                             accountNumber={accountNumber}
                             rowClickUrl={rowClickUrl}
+                            selectedIds={selectedIds}
+                            onToggleSelectRow={handleToggleSelectRow}
+                            onSelectAllOnPage={handleSelectAllOnPage}
                         />
                     </div>
 

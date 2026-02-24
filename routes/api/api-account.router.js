@@ -27,6 +27,7 @@ router.get('/space-templates', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+router.post('/space-templates/:id/check-conflicts', hierarchyController.checkTemplateConflicts);
 router.post('/space-templates/:id/apply', hierarchyController.applySpaceTemplate);
 
 //Generated from template

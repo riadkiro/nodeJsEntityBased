@@ -1014,6 +1014,85 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
         triggerSave()
     }, [triggerSave])
 
+    // ========== DYNAMIC TABLE INSERTION ==========
+    const insertDynamicTable = useCallback((schema, style = 'professional') => {
+        const range = savedRangeRef.current
+        if (!range) {
+            console.warn('No saved range for table insertion')
+            return
+        }
+
+        // Restore selection
+        const sel = window.getSelection()
+        sel.removeAllRanges()
+        sel.addRange(range)
+
+        // Delete any selected content
+        if (!range.collapsed) {
+            range.deleteContents()
+        }
+
+        // Build preview columns list
+        const visibleCols = (schema.columns || []).filter(c => c.visible !== false)
+        const colHeaders = visibleCols.map(c => c.label).join(' | ')
+
+        // Create the dynamic table placeholder
+        const tableDiv = document.createElement('div')
+        tableDiv.className = 'dynamic-table'
+        tableDiv.contentEditable = 'false'
+        tableDiv.dataset.table = JSON.stringify({
+            schemaId: schema._id,
+            schemaName: schema.name,
+            style: style,
+            showTotals: true,
+            title: ''
+        })
+
+        // Style mapping for preview label
+        const styleLabels = { minimal: 'Minimal', professional: 'Professionnel', modern: 'Moderne' }
+        const styleColors = {
+            minimal: { bg: '#f5f5f5', border: '#333', accent: '#333' },
+            professional: { bg: '#f3f4f6', border: '#d1d5db', accent: '#1f2937' },
+            modern: { bg: '#eef2ff', border: '#c7d2fe', accent: '#4338ca' }
+        }
+        const sc = styleColors[style] || styleColors.professional
+
+        tableDiv.innerHTML = `
+            <div style="border:2px dashed ${sc.border};border-radius:8px;padding:16px;margin:12px 0;background:${sc.bg};">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                    <span style="font-size:16px;">📊</span>
+                    <span style="font-weight:700;font-size:12pt;color:${sc.accent};">${schema.name}</span>
+                    <span style="font-size:9pt;color:#6b7280;background:#fff;padding:1px 8px;border-radius:10px;border:1px solid #e5e7eb;">${styleLabels[style] || style}</span>
+                </div>
+                <div style="font-size:10pt;color:#6b7280;margin-bottom:6px;">
+                    Colonnes : ${colHeaders || 'Aucune colonne'}
+                </div>
+                <div style="font-size:9pt;color:#9ca3af;font-style:italic;">
+                    Ce tableau sera rempli automatiquement avec les lignes du record lors de la génération.
+                </div>
+            </div>
+        `
+
+        // Insert table
+        range.insertNode(tableDiv)
+
+        // Add line break after
+        const br = document.createElement('br')
+        if (tableDiv.nextSibling) {
+            tableDiv.parentNode.insertBefore(br, tableDiv.nextSibling)
+        } else {
+            tableDiv.parentNode.appendChild(br)
+        }
+
+        // Move cursor after
+        range.setStartAfter(br)
+        range.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(range)
+
+        triggerSave()
+    }, [triggerSave])
+
     // ========== GLOBAL SELECTION ==========
     const handleGlobalSelection = useCallback(() => {
         setIsGlobalSelection(true)
@@ -1952,6 +2031,18 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     user-select: none;
                     white-space: nowrap;
                 }
+
+                /* Dynamic table placeholder */
+                .dynamic-table {
+                    user-select: none;
+                    cursor: default;
+                    margin: 8px 0;
+                    transition: box-shadow 0.2s;
+                }
+                .dynamic-table:hover {
+                    box-shadow: 0 0 0 2px rgba(67,97,238,0.3);
+                    border-radius: 8px;
+                }
             ` }} />
             {/* Header with Toolbar */}
             <EditorHeader
@@ -1991,6 +2082,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
                     insertVariableToken={insertVariableToken}
+                    insertDynamicTable={insertDynamicTable}
                     isSettingsOpen={isSettingsOpen}
                     onSettingsToggle={() => setIsSettingsOpen(!isSettingsOpen)}
                     doc={doc}

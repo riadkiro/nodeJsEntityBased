@@ -760,9 +760,66 @@ module.exports = {
     },
 
     /**
+     * Check if applying a SpaceTemplate would create entity slug conflicts.
+     * POST /api/space-templates/:id/check-conflicts
+     * Body: { envName }
+     * Returns: { success, hasConflicts, conflicts: [{ templateSlug, entityName, existingSlug, existingEntityId, existingEntityName }] }
+     */
+    checkTemplateConflicts: async (req, res) => {
+        try {
+            const SpaceTemplate = require('../models/space-template.model');
+            const EntityTemplate = require('../models/entity-template.model');
+
+            const template = await SpaceTemplate.findById(req.params.id);
+            if (!template) return res.status(404).json({ error: 'Template not found' });
+
+            const EntityModel = await tenantCollection(req, "Entity");
+            const entityTemplates = template.entities || [];
+            const conflicts = [];
+
+            for (const etRef of entityTemplates) {
+                const et = await EntityTemplate.findOne({ slug: etRef.templateSlug, active: { $ne: false } }).lean();
+                if (!et) continue;
+
+                const entityName = etRef.name || et.name;
+                // Generate the slug that would be created
+                const baseSlug = entityName.toLowerCase()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-|-$/g, '');
+
+                // Check if this slug already exists
+                const existing = await EntityModel.findOne({ slug: baseSlug }).lean();
+                if (existing) {
+                    conflicts.push({
+                        templateSlug: etRef.templateSlug,
+                        entityName: entityName,
+                        existingSlug: baseSlug,
+                        existingEntityId: existing._id.toString(),
+                        existingEntityName: existing.name,
+                        icon: etRef.icon || et.icon || 'solar:database-bold-duotone',
+                        color: etRef.color || et.color || '#4361ee'
+                    });
+                }
+            }
+
+            res.json({
+                success: true,
+                hasConflicts: conflicts.length > 0,
+                conflicts,
+                templateName: template.name,
+                totalEntities: entityTemplates.length
+            });
+        } catch (error) {
+            console.error("[Hierarchy] checkTemplateConflicts Error:", error);
+            res.status(500).json({ error: "Failed to check conflicts" });
+        }
+    },
+
+    /**
      * Apply a SpaceTemplate: creates environment + space + entities from template definitions.
      * POST /api/space-templates/:id/apply
-     * Body: { envName, envIcon, envColor, envImage }
+     * Body: { envName, envIcon, envColor, envImage, overrides: { templateSlug: 'override' | 'rename' } }
      */
     applySpaceTemplate: async (req, res) => {
         try {
@@ -772,7 +829,7 @@ module.exports = {
             const template = await SpaceTemplate.findById(req.params.id);
             if (!template) return res.status(404).json({ error: 'Template not found' });
 
-            const { envName, envIcon, envColor, envImage } = req.body;
+            const { envName, envIcon, envColor, envImage, overrides } = req.body;
 
             const EnvironmentModel = await tenantCollection(req, "Environment");
             const SpaceModel = await tenantCollection(req, "Space");
@@ -826,7 +883,42 @@ module.exports = {
                 const entityName = etRef.name || et.name;
                 const entityIcon = etRef.icon || et.icon;
                 const entityColor = etRef.color || et.color;
-                const entitySlug = await uniqueSlug(EntityModel, entityName);
+
+                // Check for override directive
+                const overrideAction = overrides && overrides[etRef.templateSlug];
+                let entitySlug;
+
+                if (overrideAction === 'override') {
+                    // Delete the existing entity and all its data, then use the base slug
+                    const baseSlug = entityName.toLowerCase()
+                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/^-|-$/g, '');
+                    const existingEntity = await EntityModel.findOne({ slug: baseSlug }).lean();
+                    if (existingEntity) {
+                        console.log(`[Template] Override: deleting existing entity "${existingEntity.name}" (${baseSlug})`);
+                        const RecordModel = await tenantCollection(req, "Record");
+                        const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
+                        // Delete records
+                        await RecordModel.deleteMany({ entityId: existingEntity._id });
+                        // Delete views
+                        await ViewModel.deleteMany({ entity: existingEntity._id });
+                        // Delete classifications
+                        if (existingEntity.classifications && existingEntity.classifications.length > 0) {
+                            await ClassificationModel.deleteMany({ _id: { $in: existingEntity.classifications } });
+                        }
+                        // Delete custom fields
+                        if (existingEntity.customFields && existingEntity.customFields.length > 0) {
+                            await FieldTemplateModel.deleteMany({ _id: { $in: existingEntity.customFields } });
+                        }
+                        // Delete the entity itself
+                        await EntityModel.findByIdAndDelete(existingEntity._id);
+                    }
+                    entitySlug = baseSlug;
+                } else {
+                    // Default behavior: auto-generate unique slug (appends -2, -3, etc. if exists)
+                    entitySlug = await uniqueSlug(EntityModel, entityName);
+                }
 
                 // Normalize referenceTitleTokens: old templates use {type, value}, new use {t, id}
                 let refTokens = [{ t: 'field', id: 'title' }]; // default

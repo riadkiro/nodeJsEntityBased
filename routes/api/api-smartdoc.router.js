@@ -482,6 +482,8 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
                     if (!lineSchemas[s._id.toString()]) lineSchemas[s._id.toString()] = s;
                 }
             }
+            // Pre-resolve relation values (ObjectId → record title)
+            recordLines = await resolveRelationValues(recordLines, lineSchemas, Record);
         }
 
         // 6. Resolve tokens in the document template
@@ -683,6 +685,8 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
                     if (!lineSchemas[s._id.toString()]) lineSchemas[s._id.toString()] = s;
                 }
             }
+            // Pre-resolve relation values (ObjectId → record title)
+            recordLines = await resolveRelationValues(recordLines, lineSchemas, Record);
         }
 
         // 6. Build token context (same as resolveDocumentTokens)
@@ -1615,40 +1619,157 @@ function extractUsedVariables(docTemplate, record, entity, inputs, relatedRecord
 function resolveDynamicTables(html, recordLines, lineSchemas) {
     if (!html) return html;
 
-    // Match <div class="dynamic-table" data-table="{...}">...</div>
-    return html.replace(
-        /<div[^>]*class="[^"]*dynamic-table[^"]*"[^>]*data-table="([^"]*)"[^>]*>([\s\S]*?)<\/div>/gi,
-        (match, encodedConfig) => {
-            try {
-                const decoded = encodedConfig
-                    .replace(/&quot;/g, '"')
-                    .replace(/&amp;/g, '&')
-                    .replace(/&lt;/g, '<')
-                    .replace(/&gt;/g, '>')
-                    .replace(/&#39;/g, "'");
-                const config = JSON.parse(decoded);
-                const schemaId = config.schemaId;
-                const style = config.style || 'professional';
+    let result = html;
+    let searchFrom = 0;
+    let safety = 0;
 
-                if (!schemaId) return match;
+    while (safety++ < 50) {
+        const markerIdx = result.indexOf('dynamic-table', searchFrom);
+        if (markerIdx === -1) break;
 
-                const schema = lineSchemas[schemaId];
-                if (!schema) return match;
+        // Find the opening <div that contains this class
+        const divOpenStart = result.lastIndexOf('<div', markerIdx);
+        if (divOpenStart === -1) { searchFrom = markerIdx + 1; continue; }
 
-                // Filter lines that belong to this schema
-                const lines = recordLines.filter(l => {
-                    // Lines may not have schemaId — match all if no filter
-                    if (l.schemaId) return l.schemaId.toString() === schemaId;
-                    return true;
-                });
+        const divOpenEnd = result.indexOf('>', divOpenStart);
+        if (divOpenEnd === -1) { searchFrom = markerIdx + 1; continue; }
 
-                return renderDynamicTable(schema, lines, style, config);
-            } catch (e) {
-                console.warn('[SmartDoc] Could not parse dynamic-table:', e.message);
-                return match;
+        const openingTag = result.substring(divOpenStart, divOpenEnd + 1);
+
+        // Extract data-table attribute (single quotes for JSON with double quotes inside)
+        let dataTableValue = '';
+        const sqMatch = openingTag.match(/data-table='([^']*)'/);
+        const dqMatch = openingTag.match(/data-table="([^"]*)"/);
+        if (sqMatch) {
+            dataTableValue = sqMatch[1];
+        } else if (dqMatch) {
+            dataTableValue = dqMatch[1];
+        } else {
+            searchFrom = markerIdx + 1;
+            continue;
+        }
+
+        // Count nested divs to find matching closing </div>
+        let depth = 1;
+        let pos = divOpenEnd + 1;
+        while (depth > 0 && pos < result.length) {
+            const nextOpen = result.indexOf('<div', pos);
+            const nextClose = result.indexOf('</div>', pos);
+            if (nextClose === -1) break;
+
+            if (nextOpen !== -1 && nextOpen < nextClose) {
+                depth++;
+                pos = nextOpen + 4;
+            } else {
+                depth--;
+                if (depth === 0) {
+                    let consumeEnd = nextClose + 6;
+                    const afterDiv = result.substring(consumeEnd);
+                    const trailingBr = afterDiv.match(/^(\s*<p>\s*<br\s*\/?>\s*<\/p>)/);
+                    if (trailingBr) consumeEnd += trailingBr[1].length;
+
+                    try {
+                        const decoded = dataTableValue
+                            .replace(/&quot;/g, '"')
+                            .replace(/&amp;/g, '&')
+                            .replace(/&lt;/g, '<')
+                            .replace(/&gt;/g, '>')
+                            .replace(/&#39;/g, "'");
+                        const config = JSON.parse(decoded);
+                        const schemaId = config.schemaId;
+                        const style = config.style || 'professional';
+
+                        if (schemaId && lineSchemas[schemaId]) {
+                            const schema = lineSchemas[schemaId];
+                            const lines = recordLines.filter(l => {
+                                if (l.schemaId) return l.schemaId.toString() === schemaId;
+                                return true;
+                            });
+                            const replacement = renderDynamicTable(schema, lines, style, config);
+                            result = result.substring(0, divOpenStart) + replacement + result.substring(consumeEnd);
+                            searchFrom = divOpenStart + replacement.length;
+                        } else {
+                            searchFrom = consumeEnd;
+                        }
+                    } catch (e) {
+                        console.warn('[SmartDoc] Could not parse dynamic-table:', e.message);
+                        searchFrom = consumeEnd;
+                    }
+                    break;
+                }
+                pos = nextClose + 6;
             }
         }
-    );
+        if (depth > 0) searchFrom = markerIdx + 1;
+    }
+
+    return result;
+}
+
+/**
+ * Pre-resolve relation column values (ObjectIds → record titles)
+ * This mutates recordLines in-place, replacing ObjectIds with resolved titles
+ */
+async function resolveRelationValues(recordLines, lineSchemas, Record) {
+    if (!Record || recordLines.length === 0) return recordLines;
+
+    // Collect all relation column keys and their ObjectId values
+    const idsToResolve = new Set();
+    const relationColumns = {}; // { colKey: true }
+
+    for (const schemaId in lineSchemas) {
+        const schema = lineSchemas[schemaId];
+        for (const col of (schema.columns || [])) {
+            if (col.type === 'relation') {
+                relationColumns[col.key] = col;
+            }
+        }
+    }
+
+    // Gather all ObjectIds from relation columns
+    for (const line of recordLines) {
+        for (const colKey in relationColumns) {
+            const val = line.values?.[colKey];
+            if (val && typeof val === 'string' && /^[a-f0-9]{24}$/i.test(val)) {
+                idsToResolve.add(val);
+            } else if (val && typeof val === 'object' && val.toString && /^[a-f0-9]{24}$/i.test(val.toString())) {
+                idsToResolve.add(val.toString());
+            }
+        }
+    }
+
+    if (idsToResolve.size === 0) return recordLines;
+
+    // Batch-fetch all referenced records
+    try {
+        const ids = [...idsToResolve];
+        const records = await Record.find({ _id: { $in: ids } })
+            .select('title computedTitle')
+            .lean();
+        const titleMap = {};
+        for (const r of records) {
+            titleMap[r._id.toString()] = r.computedTitle || r.title || r._id.toString();
+        }
+
+        // Replace ObjectIds with titles in line values
+        for (const line of recordLines) {
+            if (!line.values) continue;
+            for (const colKey in relationColumns) {
+                const val = line.values[colKey];
+                if (val) {
+                    const id = typeof val === 'string' ? val : val.toString();
+                    if (titleMap[id]) {
+                        // Store resolved title, keep original id as _originalId
+                        line.values[colKey] = titleMap[id];
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('[SmartDoc] Could not resolve relation values:', e.message);
+    }
+
+    return recordLines;
 }
 
 /**
@@ -1725,7 +1846,13 @@ function renderDynamicTable(schema, lines, style = 'professional', config = {}) 
             html += `<tr style="${altStyle}">`;
             html += `<td style="${s.td}text-align:center;color:#9ca3af;width:40px;">${idx + 1}</td>`;
             for (const col of visibleColumns) {
-                const raw = line.values?.[col.key] ?? line.computed?.[col.key] ?? '';
+                // For relation columns, prefer the _label companion field (e.g. treatment_label)
+                let raw;
+                if (col.type === 'relation') {
+                    raw = line.values?.[col.key + '_label'] || line.values?.[col.key] || '';
+                } else {
+                    raw = line.values?.[col.key] ?? line.computed?.[col.key] ?? '';
+                }
                 const align = ['number', 'money', 'formula'].includes(col.type) ? 'text-align:right;' : '';
                 const formatted = formatLineValue(raw, col);
                 html += `<td style="${s.td}${align}">${escapeHtml(String(formatted))}</td>`;
@@ -1779,7 +1906,48 @@ function formatLineValue(value, column) {
             return n.toLocaleString('fr-FR');
         case 'date':
             return formatDate(value);
+        case 'select': {
+            // Map value to label from config options
+            const options = column.config?.options || [];
+            const opt = options.find(o => o.value === value || o.label === value);
+            return opt ? opt.label : String(value);
+        }
+        case 'multiselect': {
+            // Map array of values to labels
+            const msOptions = column.config?.options || [];
+            const arr = Array.isArray(value) ? value : [value];
+            return arr.map(v => {
+                const o = msOptions.find(opt => opt.value === v || opt.label === v);
+                return o ? o.label : String(v);
+            }).join(', ');
+        }
+        case 'relation':
+            // Already resolved to title by resolveRelationValues
+            if (typeof value === 'object' && value !== null) {
+                return value.title || value.computedTitle || value.name || JSON.stringify(value);
+            }
+            return String(value);
+        case 'dosage':
+            // Format dosage value: { value: 12, unit: 'g' } or { amount: 500, unit: 'mg' }
+            if (typeof value === 'object' && value !== null) {
+                const amt = value.value || value.amount || '';
+                const unit = value.unit || '';
+                return `${amt} ${unit}`.trim();
+            }
+            return String(value);
+        case 'duration':
+            // Format duration: "3w/j" → "3 fois/jour" etc.
+            if (typeof value === 'string') {
+                return value
+                    .replace(/w\/j/g, ' fois/jour')
+                    .replace(/\/j/g, '/jour');
+            }
+            if (Array.isArray(value)) {
+                return value.map(v => String(v).replace(/w\/j/g, ' fois/jour').replace(/\/j/g, '/jour')).join(', ');
+            }
+            return String(value);
         default:
+            if (Array.isArray(value)) return value.join(', ');
             if (typeof value === 'object') return JSON.stringify(value);
             return String(value);
     }

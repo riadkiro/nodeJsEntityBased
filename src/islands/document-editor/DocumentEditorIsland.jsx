@@ -1059,16 +1059,10 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
 
         tableDiv.innerHTML = `
             <div style="border:2px dashed ${sc.border};border-radius:8px;padding:16px;margin:12px 0;background:${sc.bg};">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:8px;">
                     <span style="font-size:16px;">📊</span>
                     <span style="font-weight:700;font-size:12pt;color:${sc.accent};">${schema.name}</span>
                     <span style="font-size:9pt;color:#6b7280;background:#fff;padding:1px 8px;border-radius:10px;border:1px solid #e5e7eb;">${styleLabels[style] || style}</span>
-                </div>
-                <div style="font-size:10pt;color:#6b7280;margin-bottom:6px;">
-                    Colonnes : ${colHeaders || 'Aucune colonne'}
-                </div>
-                <div style="font-size:9pt;color:#9ca3af;font-style:italic;">
-                    Ce tableau sera rempli automatiquement avec les lignes du record lors de la génération.
                 </div>
             </div>
         `

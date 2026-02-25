@@ -189,7 +189,7 @@ export default function LeftSidebar({
                             <GalleryPanel />
                         )}
                         {activeTab === 'blocks' && (
-                            <BlocksPanel />
+                            <BlocksPanel insertDynamicTable={insertDynamicTable} accountNumber={accountNumber} doc={doc} />
                         )}
                         {activeTab === 'layouts' && (
                             <LayoutsPanel doc={doc} setDoc={setDoc} triggerSave={triggerSave} />
@@ -360,7 +360,29 @@ function TextPanel() {
 }
 
 // Blocks Panel - Professional content blocks
-function BlocksPanel() {
+function BlocksPanel({ insertDynamicTable, accountNumber, doc }) {
+    const isDark = useDarkMode();
+    const [lineSchemas, setLineSchemas] = useState([]);
+
+    // Fetch line schemas for dynamic tables section
+    useEffect(() => {
+        if (!doc?._id || !accountNumber) return;
+        const fetchSchemas = async () => {
+            try {
+                const res = await fetch(`/account/${accountNumber}/api/smartdoc/variables/${doc._id}`, {
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.success && data.variables?.lineSchemas) {
+                    setLineSchemas(data.variables.lineSchemas);
+                }
+            } catch (e) {
+                console.warn('[BlocksPanel] Could not load line schemas:', e);
+            }
+        };
+        fetchSchemas();
+    }, [doc?._id, accountNumber]);
+
     return (
         <div>
             <p style={{ fontSize: '11px', color: '#888ea8', marginBottom: '12px' }}>
@@ -523,6 +545,15 @@ function example() {
                 </table><p><br></p>`}
                 plainText="Tableau de prix"
             />
+
+            {/* Dynamic Tables Section */}
+            {lineSchemas.length > 0 && (
+                <DynamicTablesSection
+                    lineSchemas={lineSchemas}
+                    insertDynamicTable={insertDynamicTable}
+                    isDark={isDark}
+                />
+            )}
         </div>
     )
 }
@@ -1330,6 +1361,36 @@ function DynamicNavPanel({ insertVariableToken, insertDynamicTable, accountNumbe
     );
 }
 
+// ===== Helper: Build dynamic table placeholder HTML for drag-and-drop =====
+function buildDynamicTableHtml(schema, style = 'professional') {
+    const visibleCols = (schema.columns || []).filter(c => c.visible !== false)
+    const colHeaders = visibleCols.map(c => c.label).join(' | ')
+    const styleLabels = { minimal: 'Minimal', professional: 'Professionnel', modern: 'Moderne' }
+    const styleColors = {
+        minimal: { bg: '#f5f5f5', border: '#333', accent: '#333' },
+        professional: { bg: '#f3f4f6', border: '#d1d5db', accent: '#1f2937' },
+        modern: { bg: '#eef2ff', border: '#c7d2fe', accent: '#4338ca' }
+    }
+    const sc = styleColors[style] || styleColors.professional
+    const dataAttr = JSON.stringify({
+        schemaId: schema._id,
+        schemaName: schema.name,
+        style: style,
+        showTotals: true,
+        title: ''
+    })
+
+    return `<div class="dynamic-table" contenteditable="false" data-table='${dataAttr.replace(/'/g, '&#39;')}'>
+        <div style="border:2px dashed ${sc.border};border-radius:8px;padding:16px;margin:12px 0;background:${sc.bg};">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:16px;">📊</span>
+                <span style="font-weight:700;font-size:12pt;color:${sc.accent};">${schema.name}</span>
+                <span style="font-size:9pt;color:#6b7280;background:#fff;padding:1px 8px;border-radius:10px;border:1px solid #e5e7eb;">${styleLabels[style] || style}</span>
+            </div>
+        </div>
+    </div><p><br></p>`
+}
+
 // ===== Dynamic Tables Section =====
 function DynamicTablesSection({ lineSchemas, insertDynamicTable, isDark }) {
     const [expandedSchema, setExpandedSchema] = useState(null);
@@ -1372,49 +1433,51 @@ function DynamicTablesSection({ lineSchemas, insertDynamicTable, isDark }) {
                         Tableaux dynamiques
                     </span>
                     <span style={{ fontSize: '10px', color: isDark ? '#4ade80' : '#15803d' }}>
-                        Insérez un tableau auto-rempli avec les lignes du record
+                        Glissez ou cliquez pour insérer
                     </span>
                 </div>
             </div>
 
             {lineSchemas.map(schema => (
                 <div key={schema._id} style={{ marginBottom: '8px' }}>
-                    {/* Schema Button */}
-                    <button
+                    {/* Schema Item — DRAGGABLE */}
+                    <div
                         style={{
-                            width: '100%',
                             padding: '10px 12px',
                             textAlign: 'left',
                             borderRadius: expandedSchema === schema._id ? '8px 8px 0 0' : '8px',
-                            cursor: 'pointer',
-                            border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                            cursor: 'move',
+                            border: `1px dashed ${isDark ? '#4b5563' : '#bbf7d0'}`,
                             background: expandedSchema === schema._id
                                 ? (isDark ? '#1b2e4b' : '#eff6ff')
                                 : (isDark ? '#0e1726' : '#ffffff'),
                             transition: 'all 0.15s',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '10px'
+                            gap: '10px',
+                            WebkitUserSelect: 'none',
+                            userSelect: 'none'
                         }}
-                        onClick={() => setExpandedSchema(expandedSchema === schema._id ? null : schema._id)}
+                        draggable="true"
+                        onDragStart={(e) => {
+                            const html = buildDynamicTableHtml(schema, selectedStyle)
+                            e.dataTransfer.setData('text/html', html)
+                            e.dataTransfer.setData('text/plain', `[Tableau: ${schema.name}]`)
+                            e.dataTransfer.effectAllowed = 'copy'
+                        }}
                         onMouseEnter={e => {
                             if (expandedSchema !== schema._id) {
-                                e.currentTarget.style.background = isDark ? '#1b2e4b' : '#f8fafc';
-                                e.currentTarget.style.borderColor = isDark ? '#4361ee' : '#93c5fd';
+                                e.currentTarget.style.background = isDark ? '#1b2e4b' : '#f0fdf4';
+                                e.currentTarget.style.borderColor = '#10b981';
                             }
                         }}
                         onMouseLeave={e => {
                             if (expandedSchema !== schema._id) {
                                 e.currentTarget.style.background = isDark ? '#0e1726' : '#ffffff';
-                                e.currentTarget.style.borderColor = isDark ? '#374151' : '#e5e7eb';
+                                e.currentTarget.style.borderColor = isDark ? '#4b5563' : '#bbf7d0';
                             }
                         }}
                     >
-                        <iconify-icon
-                            icon={expandedSchema === schema._id ? 'tabler:chevron-down' : 'tabler:chevron-right'}
-                            width="14"
-                            style={{ color: isDark ? '#4b5563' : '#94a3b8', flexShrink: 0 }}
-                        ></iconify-icon>
                         <iconify-icon
                             icon="solar:table-bold-duotone"
                             width="18"
@@ -1430,15 +1493,31 @@ function DynamicTablesSection({ lineSchemas, insertDynamicTable, isDark }) {
                                 </div>
                             )}
                         </div>
-                        <span style={{
-                            fontSize: '10px',
-                            color: isDark ? '#4b5563' : '#9ca3af',
-                            fontWeight: 500,
-                            flexShrink: 0
-                        }}>
-                            {(schema.columns || []).length} col.
-                        </span>
-                    </button>
+                        {/* Expand button */}
+                        <button
+                            style={{
+                                padding: '4px',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                border: 'none',
+                                background: 'transparent',
+                                color: isDark ? '#6b7280' : '#9ca3af',
+                                flexShrink: 0,
+                                display: 'flex',
+                                alignItems: 'center'
+                            }}
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                setExpandedSchema(expandedSchema === schema._id ? null : schema._id)
+                            }}
+                            title="Options de style"
+                        >
+                            <iconify-icon
+                                icon={expandedSchema === schema._id ? 'tabler:chevron-up' : 'tabler:settings'}
+                                width="14"
+                            ></iconify-icon>
+                        </button>
+                    </div>
 
                     {/* Expanded: Style Picker & Insert */}
                     {expandedSchema === schema._id && (

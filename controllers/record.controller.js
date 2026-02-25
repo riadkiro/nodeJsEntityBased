@@ -843,11 +843,29 @@ module.exports = {
                 return res.status(400).send("Invalid Record ID");
             }
 
-            // Compute denormalized fields
+            // Load existing record to preserve fields not in the form submission
+            const existingRecord = await RecordModel.findById(req.params.id).lean();
+            if (!existingRecord) {
+                return res.status(404).send("Record not found");
+            }
+
+            // Compute denormalized fields — merge existing record data with form data
+            // so that computeTitle can access fields like 'title' even if not submitted
+            // Filter out empty-string standard fields so they don't override existing values
+            const standardForDenorm = {};
+            for (const [k, v] of Object.entries(standard)) {
+                if (v !== undefined && v !== null && v !== '') {
+                    standardForDenorm[k] = v;
+                }
+            }
             const recordDataForDenorm = {
-                ...standard,
-                customFields: customFieldsArray,
-                relations: relationsArray,
+                title: existingRecord.title,        // preserve existing title
+                date: existingRecord.date,          // preserve existing date
+                description: existingRecord.description, // preserve existing description
+                slug: existingRecord.slug,          // preserve existing slug
+                ...standardForDenorm,               // form-submitted NON-EMPTY fields override
+                customFields: customFieldsArray.length > 0 ? customFieldsArray : existingRecord.customFields,
+                relations: relationsArray.length > 0 ? relationsArray : existingRecord.relations,
                 classificationValues: classificationValuesArray
             };
             const denorm = await denormService.computeDenorm(recordDataForDenorm, entity, RecordModel, EntityModel);

@@ -296,7 +296,7 @@
     }
     .dark .lp-modal-search { border-color: #253b5c; }
     .lp-modal-search-input {
-        width: 100%; padding: 10px 12px 10px 36px; border-radius: 10px;
+        width: 100%; padding: 10px 12px 10px 40px; border-radius: 10px;
         border: 1.5px solid #e5e7eb; font-size: 13px; background: #f8f9fa;
         transition: all 0.15s; color: inherit;
     }
@@ -311,7 +311,60 @@
     }
     .lp-modal-search-wrap .lp-search-icon {
         position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-        color: #9ca3af; pointer-events: none;
+        color: #9ca3af; pointer-events: none; font-size: 0; line-height: 0;
+    }
+    /* Manual add section */
+    .lp-manual-add {
+        padding: 8px 20px 12px; border-bottom: 1px solid #e5e7eb;
+    }
+    .dark .lp-manual-add { border-color: #253b5c; }
+    .lp-manual-add-label {
+        font-size: 11px; color: #6b7280; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;
+    }
+    .dark .lp-manual-add-label { color: #9ca3af; }
+    .lp-manual-add-row {
+        display: flex; gap: 6px; position: relative;
+    }
+    .lp-manual-add-input {
+        flex: 1; padding: 8px 12px; border-radius: 8px;
+        border: 1.5px solid #e5e7eb; font-size: 13px; background: #fff;
+        transition: all 0.15s; color: inherit;
+    }
+    .dark .lp-manual-add-input { background: #1b2e4b; border-color: #253b5c; color: #e0e6ed; }
+    .lp-manual-add-input:focus {
+        outline: none; border-color: #4361ee; background: #fff;
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
+    .dark .lp-manual-add-input:focus { background: #0e1726; }
+    .lp-manual-add-btn {
+        width: 36px; height: 36px; border-radius: 8px; border: none;
+        background: #4361ee; color: #fff; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.15s; flex-shrink: 0;
+    }
+    .lp-manual-add-btn:hover { background: #3651d4; transform: scale(1.05); }
+    .lp-manual-add-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .lp-manual-autocomplete {
+        position: absolute; top: 100%; left: 0; right: 42px; z-index: 10;
+        background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1); max-height: 180px; overflow-y: auto;
+        margin-top: 4px;
+    }
+    .dark .lp-manual-autocomplete { background: #0e1726; border-color: #253b5c; }
+    .lp-manual-autocomplete-item {
+        padding: 8px 12px; font-size: 12px; cursor: pointer;
+        border-bottom: 1px solid #f3f4f6; transition: background 0.1s;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .dark .lp-manual-autocomplete-item { border-color: #1b2e4b; }
+    .lp-manual-autocomplete-item:hover { background: rgba(67, 97, 238, 0.06); }
+    .lp-manual-autocomplete-item:last-child { border-bottom: none; }
+    .lp-manual-autocomplete-item .lp-ac-title {
+        font-weight: 500; color: #1f2937;
+    }
+    .dark .lp-manual-autocomplete-item .lp-ac-title { color: #e0e6ed; }
+    .lp-manual-autocomplete-item .lp-ac-desc {
+        font-size: 11px; color: #9ca3af;
     }
     .lp-modal-body {
         flex: 1; overflow-y: auto; padding: 0;
@@ -444,7 +497,7 @@
         @click="isOpen = !isOpen">
         <div class="flex items-center gap-1.5">
             <iconify-icon icon="solar:document-text-bold-duotone" width="14" class="text-success"></iconify-icon>
-            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Lignes</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400" x-text="activeSchema ? activeSchema.name : 'Lignes'"></span>
             <span x-show="lines.length > 0" class="text-[9px] bg-success/10 text-success min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1" x-text="lines.length"></span>
         </div>
         <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="isOpen ? '' : '-rotate-90'" class="transition-transform text-gray-300"></iconify-icon>
@@ -781,6 +834,42 @@
                                    @input="searchCatalog()"
                                    placeholder="Rechercher un article, traitement..."
                                    x-ref="modalSearchInput" />
+                        </div>
+                    </div>
+
+                    <!-- Manual Add -->
+                    <div class="lp-manual-add">
+                        <div class="lp-manual-add-label">
+                            <iconify-icon icon="tabler:pencil-plus" width="13"></iconify-icon>
+                            Ou ajouter manuellement
+                        </div>
+                        <div class="lp-manual-add-row">
+                            <input type="text" class="lp-manual-add-input"
+                                   x-model="manualAdd.input"
+                                   @input="searchManualAutocomplete()"
+                                   @keydown.enter.prevent="addManualLine()"
+                                   @click.away="manualAdd.open = false"
+                                   placeholder="Nom de l'élément..." />
+                            <button class="lp-manual-add-btn"
+                                    @click="addManualLine()"
+                                    :disabled="!manualAdd.input.trim()">
+                                <iconify-icon icon="tabler:plus" width="16"></iconify-icon>
+                            </button>
+                            <!-- Autocomplete dropdown -->
+                            <div class="lp-manual-autocomplete"
+                                 x-show="manualAdd.open && manualAdd.suggestions.length > 0"
+                                 x-transition.opacity>
+                                <template x-for="sug in manualAdd.suggestions" :key="sug._id">
+                                    <div class="lp-manual-autocomplete-item"
+                                         @click="selectManualSuggestion(sug)">
+                                        <iconify-icon icon="tabler:file-text" width="14" style="color: #9ca3af;"></iconify-icon>
+                                        <div>
+                                            <span class="lp-ac-title" x-text="sug.label || sug.title"></span>
+                                            <span class="lp-ac-desc" x-show="sug.description" x-text="sug.description"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
                         </div>
                     </div>
 
@@ -1133,6 +1222,14 @@ document.addEventListener('alpine:init', () => {
             _noTarget: false
         },
 
+        // Manual add state
+        manualAdd: {
+            input: '',
+            suggestions: [],
+            open: false,
+            _timer: null
+        },
+
         _saveTimer: null,
         editModal: { open: false, lineIdx: -1 },
 
@@ -1269,6 +1366,10 @@ document.addEventListener('alpine:init', () => {
             this.addModal.selected = [];
             this.addModal.loading = false;
             this.addModal._noTarget = false;
+            // Reset manual add
+            this.manualAdd.input = '';
+            this.manualAdd.suggestions = [];
+            this.manualAdd.open = false;
             this.$nextTick(() => {
                 if (this.$refs.modalSearchInput) {
                     this.$refs.modalSearchInput.focus();
@@ -1278,7 +1379,9 @@ document.addEventListener('alpine:init', () => {
 
         closeAddModal() {
             this.addModal.open = false;
-
+            this.manualAdd.input = '';
+            this.manualAdd.suggestions = [];
+            this.manualAdd.open = false;
         },
 
         searchCatalog() {
@@ -1438,6 +1541,114 @@ document.addEventListener('alpine:init', () => {
             this.recomputeTotals();
             this.debouncedSave();
             this.closeAddModal();
+        },
+
+        // ── Manual Add with autocomplete ──────────────────────
+        searchManualAutocomplete() {
+            clearTimeout(this.manualAdd._timer);
+            const q = this.manualAdd.input.trim();
+            if (!q) {
+                this.manualAdd.suggestions = [];
+                this.manualAdd.open = false;
+                return;
+            }
+            this.manualAdd._timer = setTimeout(async () => {
+                try {
+                    const sourceEntity = this.activeSchema?.sourceEntityId;
+                    const relCol = (this.activeSchema?.columns || []).find(c => c.type === 'relation');
+                    const targetEntity = sourceEntity || relCol?.config?.targetEntity;
+                    if (!targetEntity) {
+                        this.manualAdd.suggestions = [];
+                        this.manualAdd.open = false;
+                        return;
+                    }
+                    const url = `/account/${this.accountNumber}/api/document-lines/catalog-search?entityId=${targetEntity}&q=${encodeURIComponent(q)}`;
+                    const res = await fetch(url, { credentials: 'include' });
+                    const data = await res.json();
+                    this.manualAdd.suggestions = (data.data || []).slice(0, 8);
+                    this.manualAdd.open = this.manualAdd.suggestions.length > 0;
+                } catch (e) {
+                    console.error('[ManualAdd] autocomplete error:', e);
+                    this.manualAdd.suggestions = [];
+                    this.manualAdd.open = false;
+                }
+            }, 300);
+        },
+
+        selectManualSuggestion(sug) {
+            const relCol = (this.activeSchema?.columns || []).find(c => c.type === 'relation');
+            const lineType = this.newLineType || this.activeSchema?.defaultLineType || this.activeSchema?.lineTypes?.[0] || 'product';
+            const values = {};
+
+            // Map custom fields from the suggestion
+            if (sug.customFields && this.activeSchema) {
+                for (const cf of sug.customFields) {
+                    const matchCol = (this.activeSchema.columns || []).find(c => c.key === cf.key);
+                    if (matchCol) {
+                        values[cf.key] = cf.value;
+                    }
+                }
+            }
+            // Set default qty to 1
+            const qtyCol = (this.activeSchema?.columns || []).find(c => c.key === 'qty');
+            if (qtyCol && !values.qty) values.qty = 1;
+
+            const newLine = {
+                _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
+                lineType,
+                values,
+                computed: {},
+                order: this.lines.length
+            };
+            if (relCol) {
+                newLine.values[relCol.key] = sug._id;
+                newLine.values[relCol.key + '_label'] = sug.label || sug.title;
+            }
+            this.recomputeLine(newLine);
+            this.lines.push(newLine);
+            this.recomputeTotals();
+            this.debouncedSave();
+
+            // Reset manual add
+            this.manualAdd.input = '';
+            this.manualAdd.suggestions = [];
+            this.manualAdd.open = false;
+        },
+
+        addManualLine() {
+            const label = this.manualAdd.input.trim();
+            if (!label) return;
+
+            const relCol = (this.activeSchema?.columns || []).find(c => c.type === 'relation');
+            const lineType = this.newLineType || this.activeSchema?.defaultLineType || this.activeSchema?.lineTypes?.[0] || 'product';
+            const values = {};
+
+            // Try to set the label in the first visible text column
+            const firstTextCol = (this.activeSchema?.columns || []).find(c => 
+                c.type === 'text' && c.visible !== false && c.type !== 'relation'
+            );
+            if (firstTextCol) values[firstTextCol.key] = label;
+            if (relCol) values[relCol.key + '_label'] = label;
+
+            const qtyCol = (this.activeSchema?.columns || []).find(c => c.key === 'qty');
+            if (qtyCol && !values.qty) values.qty = 1;
+
+            const newLine = {
+                _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
+                lineType,
+                values,
+                computed: {},
+                order: this.lines.length
+            };
+            this.recomputeLine(newLine);
+            this.lines.push(newLine);
+            this.recomputeTotals();
+            this.debouncedSave();
+
+            // Reset
+            this.manualAdd.input = '';
+            this.manualAdd.suggestions = [];
+            this.manualAdd.open = false;
         },
 
         // ── Edit Line Modal ──────────────────────────────────

@@ -20,6 +20,7 @@ export default defineConfig({
                 widgetLibrary: path.resolve(__dirname, 'src/islands/widget-library/entry.jsx'),
                 calendarWidget: path.resolve(__dirname, 'src/islands/calendar-widget/entry.jsx'),
                 aiAssistant: path.resolve(__dirname, 'src/islands/ai-assistant/entry.jsx'),
+                multiSelect: path.resolve(__dirname, 'src/islands/multi-select/entry.jsx'),
                 // Future islands:
                 // pageBuilder: path.resolve(__dirname, 'src/islands/page-builder/entry.jsx'),
             },

@@ -44,7 +44,7 @@ function ColorPicker({ colors, currentColor, onSelect, icon, title, cols = 10 })
         <div className="relative" ref={ref}>
             <button
                 onClick={() => setOpen(!open)}
-                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 flex items-center gap-0.5"
+                className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 flex items-center gap-0.5"
                 title={title}
             >
                 <div className="relative">
@@ -54,7 +54,7 @@ function ColorPicker({ colors, currentColor, onSelect, icon, title, cols = 10 })
                         style={{ backgroundColor: currentColor || '#000' }}
                     />
                 </div>
-                <iconify-icon icon="tabler:chevron-down" width="10"></iconify-icon>
+                <iconify-icon icon="tabler:chevron-down" width="8"></iconify-icon>
             </button>
             {open && (
                 <div
@@ -100,7 +100,7 @@ function TableInsertGrid({ onInsert }) {
         <div className="relative" ref={ref}>
             <button
                 onClick={() => setOpen(!open)}
-                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                 title="Insérer un tableau"
             >
                 <iconify-icon icon="tabler:table" width="18"></iconify-icon>
@@ -335,8 +335,8 @@ export default function EditorHeader({
                                             triggerSave()
                                         }}
                                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-200 ${doc.isTemplate
-                                                ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30'
-                                                : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500'
+                                            ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30'
+                                            : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500'
                                             }`}
                                     >
                                         <iconify-icon icon={doc.isTemplate ? 'tabler:check' : 'tabler:x'} width="13"></iconify-icon>
@@ -416,18 +416,18 @@ export default function EditorHeader({
             </div>
 
             {/* Toolbar Row */}
-            <div className="flex items-center px-4 py-1.5 gap-1 flex-wrap">
+            <div className="flex items-center px-3 py-1 gap-0.5 flex-wrap">
                 {/* Undo / Redo */}
                 <button
                     onMouseDown={(e) => { e.preventDefault(); document.execCommand('undo') }}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                    className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                     title="Annuler (Ctrl+Z)"
                 >
                     <iconify-icon icon="tabler:arrow-back-up" width="18"></iconify-icon>
                 </button>
                 <button
                     onMouseDown={(e) => { e.preventDefault(); document.execCommand('redo') }}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                    className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                     title="Rétablir (Ctrl+Y)"
                 >
                     <iconify-icon icon="tabler:arrow-forward-up" width="18"></iconify-icon>
@@ -440,7 +440,7 @@ export default function EditorHeader({
                 <select
                     value={detectCurrentHeading()}
                     onChange={(e) => handleHeadingChange(e.target.value)}
-                    className="form-select text-xs py-1 px-2 border-gray-200 dark:border-gray-800 dark:bg-gray-800 rounded-lg w-24"
+                    className="form-select text-[11px] py-0.5 px-1.5 border-gray-200 dark:border-gray-800 dark:bg-gray-800 rounded w-20"
                 >
                     {HEADING_OPTIONS.map(opt => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -454,7 +454,7 @@ export default function EditorHeader({
                 <select
                     value={currentFont}
                     onChange={(e) => handleFormat('fontName', e.target.value)}
-                    className="form-select text-xs py-1 px-2 border-gray-200 dark:border-gray-800 dark:bg-gray-800 rounded-lg w-32"
+                    className="form-select text-[11px] py-0.5 px-1.5 border-gray-200 dark:border-gray-800 dark:bg-gray-800 rounded w-28"
                 >
                     {FONT_FAMILIES.map(font => (
                         <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>
@@ -465,29 +465,29 @@ export default function EditorHeader({
                 <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
 
                 {/* Font Size */}
-                <div className="flex items-center gap-0.5">
+                <div className="flex items-center gap-0">
                     <button
                         onMouseDown={(e) => { e.preventDefault(); handleFontSizeChange(Math.max(8, currentFontSize - 1)) }}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                        className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                         title="Réduire la taille"
                     >
-                        <iconify-icon icon="tabler:minus" width="14"></iconify-icon>
+                        <iconify-icon icon="tabler:minus" width="12"></iconify-icon>
                     </button>
                     <input
                         type="number"
                         value={currentFontSize}
                         onChange={(e) => handleFontSizeChange(parseInt(e.target.value) || 16)}
                         onFocus={(e) => e.target.select()}
-                        className="w-10 text-center text-xs py-1 border border-gray-200 dark:border-gray-800 dark:bg-gray-800 rounded"
+                        className="w-10 text-center text-xs py-0.5 border border-gray-200 dark:border-gray-800 dark:bg-gray-800 rounded"
                         min={8}
                         max={72}
                     />
                     <button
                         onMouseDown={(e) => { e.preventDefault(); handleFontSizeChange(Math.min(72, currentFontSize + 1)) }}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                        className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                         title="Augmenter la taille"
                     >
-                        <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
+                        <iconify-icon icon="tabler:plus" width="12"></iconify-icon>
                     </button>
                 </div>
 
@@ -497,7 +497,7 @@ export default function EditorHeader({
                 {/* Bold */}
                 <button
                     onMouseDown={(e) => { e.preventDefault(); handleFormat('bold') }}
-                    className={`p-1.5 rounded-lg transition-colors ${isBold ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
+                    className={`p-1.5 rounded transition-colors ${isBold ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
                     title="Gras (Ctrl+B)"
                 >
                     <iconify-icon icon="tabler:bold" width="18"></iconify-icon>
@@ -506,7 +506,7 @@ export default function EditorHeader({
                 {/* Italic */}
                 <button
                     onMouseDown={(e) => { e.preventDefault(); handleFormat('italic') }}
-                    className={`p-1.5 rounded-lg transition-colors ${isItalic ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
+                    className={`p-1.5 rounded transition-colors ${isItalic ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
                     title="Italique (Ctrl+I)"
                 >
                     <iconify-icon icon="tabler:italic" width="18"></iconify-icon>
@@ -515,7 +515,7 @@ export default function EditorHeader({
                 {/* Underline */}
                 <button
                     onMouseDown={(e) => { e.preventDefault(); handleFormat('underline') }}
-                    className={`p-1.5 rounded-lg transition-colors ${isUnderline ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
+                    className={`p-1.5 rounded transition-colors ${isUnderline ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
                     title="Souligné (Ctrl+U)"
                 >
                     <iconify-icon icon="tabler:underline" width="18"></iconify-icon>
@@ -524,7 +524,7 @@ export default function EditorHeader({
                 {/* Strikethrough */}
                 <button
                     onMouseDown={(e) => { e.preventDefault(); handleFormat('strikeThrough') }}
-                    className={`p-1.5 rounded-lg transition-colors ${isStrikethrough ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
+                    className={`p-1.5 rounded transition-colors ${isStrikethrough ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
                     title="Barré"
                 >
                     <iconify-icon icon="tabler:strikethrough" width="18"></iconify-icon>
@@ -555,28 +555,28 @@ export default function EditorHeader({
                 {/* Alignment */}
                 <button
                     onMouseDown={(e) => { e.preventDefault(); handleFormat('justifyLeft') }}
-                    className={`p-1.5 rounded-lg transition-colors ${currentAlignment === 'left' ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
+                    className={`p-1.5 rounded transition-colors ${currentAlignment === 'left' ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
                     title="Aligner à gauche"
                 >
                     <iconify-icon icon="tabler:align-left" width="18"></iconify-icon>
                 </button>
                 <button
                     onMouseDown={(e) => { e.preventDefault(); handleFormat('justifyCenter') }}
-                    className={`p-1.5 rounded-lg transition-colors ${currentAlignment === 'center' ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
+                    className={`p-1.5 rounded transition-colors ${currentAlignment === 'center' ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
                     title="Centrer"
                 >
                     <iconify-icon icon="tabler:align-center" width="18"></iconify-icon>
                 </button>
                 <button
                     onMouseDown={(e) => { e.preventDefault(); handleFormat('justifyRight') }}
-                    className={`p-1.5 rounded-lg transition-colors ${currentAlignment === 'right' ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
+                    className={`p-1.5 rounded transition-colors ${currentAlignment === 'right' ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
                     title="Aligner à droite"
                 >
                     <iconify-icon icon="tabler:align-right" width="18"></iconify-icon>
                 </button>
                 <button
                     onMouseDown={(e) => { e.preventDefault(); handleFormat('justifyFull') }}
-                    className={`p-1.5 rounded-lg transition-colors ${currentAlignment === 'justify' ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
+                    className={`p-1.5 rounded transition-colors ${currentAlignment === 'justify' ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500'}`}
                     title="Justifier"
                 >
                     <iconify-icon icon="tabler:align-justified" width="18"></iconify-icon>
@@ -587,9 +587,9 @@ export default function EditorHeader({
 
                 {/* Line Spacing */}
                 <div className="relative group">
-                    <button className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 flex items-center gap-1">
+                    <button className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 flex items-center gap-0.5">
                         <iconify-icon icon="tabler:line-height" width="18"></iconify-icon>
-                        <span className="text-[10px]">{currentLineHeight}</span>
+                        <span className="text-[9px]">{currentLineHeight}</span>
                     </button>
                     <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-800 rounded-lg shadow-lg py-1 hidden group-hover:block z-50 min-w-[80px]">
                         {[1, 1.15, 1.5, 2, 2.5, 3].map(val => (
@@ -606,9 +606,9 @@ export default function EditorHeader({
 
                 {/* Letter Spacing */}
                 <div className="relative group">
-                    <button className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 flex items-center gap-1">
+                    <button className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 flex items-center gap-0.5">
                         <iconify-icon icon="tabler:letter-spacing" width="18"></iconify-icon>
-                        <span className="text-[10px]">{currentLetterSpacing}px</span>
+                        <span className="text-[9px]">{currentLetterSpacing}px</span>
                     </button>
                     <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-800 rounded-lg shadow-lg py-1 hidden group-hover:block z-50 min-w-[80px]">
                         {[-2, -1, 0, 1, 2, 3, 4, 5].map(val => (
@@ -629,14 +629,14 @@ export default function EditorHeader({
                 {/* Lists */}
                 <button
                     onMouseDown={(e) => { e.preventDefault(); handleFormat('insertUnorderedList') }}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                    className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                     title="Liste à puces"
                 >
                     <iconify-icon icon="tabler:list" width="18"></iconify-icon>
                 </button>
                 <button
                     onMouseDown={(e) => { e.preventDefault(); handleFormat('insertOrderedList') }}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                    className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                     title="Liste numérotée"
                 >
                     <iconify-icon icon="tabler:list-numbers" width="18"></iconify-icon>
@@ -645,14 +645,14 @@ export default function EditorHeader({
                 {/* Indent / Outdent */}
                 <button
                     onMouseDown={(e) => { e.preventDefault(); handleFormat('outdent') }}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                    className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                     title="Réduire le retrait"
                 >
                     <iconify-icon icon="tabler:indent-decrease" width="18"></iconify-icon>
                 </button>
                 <button
                     onMouseDown={(e) => { e.preventDefault(); handleFormat('indent') }}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                    className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                     title="Augmenter le retrait"
                 >
                     <iconify-icon icon="tabler:indent-increase" width="18"></iconify-icon>
@@ -667,7 +667,7 @@ export default function EditorHeader({
                 {/* Blockquote */}
                 <button
                     onMouseDown={(e) => { e.preventDefault(); handleInsertBlockquote() }}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                    className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                     title="Citation"
                 >
                     <iconify-icon icon="tabler:blockquote" width="18"></iconify-icon>
@@ -676,7 +676,7 @@ export default function EditorHeader({
                 {/* Horizontal Rule */}
                 <button
                     onMouseDown={(e) => { e.preventDefault(); handleInsertHR() }}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                    className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                     title="Séparateur horizontal"
                 >
                     <iconify-icon icon="tabler:separator" width="18"></iconify-icon>
@@ -688,7 +688,7 @@ export default function EditorHeader({
                 {/* Clear Formatting */}
                 <button
                     onMouseDown={(e) => { e.preventDefault(); handleFormat('removeFormat') }}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                    className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                     title="Supprimer le formatage"
                 >
                     <iconify-icon icon="tabler:clear-formatting" width="18"></iconify-icon>
@@ -697,11 +697,11 @@ export default function EditorHeader({
                 {/* Paste Mode */}
                 <div className="relative group">
                     <button
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 flex items-center gap-1"
+                        className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 flex items-center gap-0.5"
                         title="Mode de collage"
                     >
                         <iconify-icon icon="tabler:clipboard-text" width="18"></iconify-icon>
-                        <iconify-icon icon="tabler:chevron-down" width="12"></iconify-icon>
+                        <iconify-icon icon="tabler:chevron-down" width="10"></iconify-icon>
                     </button>
                     <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-800 rounded-lg shadow-lg py-1 hidden group-hover:block z-50 min-w-[140px]">
                         <button

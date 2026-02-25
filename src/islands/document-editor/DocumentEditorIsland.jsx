@@ -1888,7 +1888,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             onMouseUp={handleMouseUp}
             onKeyDown={handleGlobalKeyDown}
             tabIndex={-1}
-            style={{ height: 'calc(100vh - 58px)' }}
+            style={{ height: '100%' }}
         >
             {/* Word-like HTML styles for contenteditable - only applies if no inline style */}
             <style dangerouslySetInnerHTML={{

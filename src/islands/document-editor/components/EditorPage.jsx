@@ -11,6 +11,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useImageResize } from '../hooks/useImageResize'
 import GridBuilder from '../../shared/GridBuilder'
+import TableToolbar, { useTableToolbar } from './TableToolbar'
+import DynamicTableModal, { useDynamicTableOverlay, DynamicTableOverlay } from './DynamicTableModal'
 
 export default function EditorPage({
     page,
@@ -24,9 +26,20 @@ export default function EditorPage({
     handlePaste,
     handleKeyDown,
     isGlobalSelection,
-    panelMode
+    panelMode,
+    accountNumber,
+    documentId
 }) {
     const contentRef = useRef(null)
+
+    // Table toolbar for edition mode
+    const tableToolbarProps = useTableToolbar(
+        contentRef,
+        () => handlePageInput?.({ target: contentRef.current }, pageIndex)
+    )
+
+    // Dynamic table overlay for edition mode
+    const dtOverlay = useDynamicTableOverlay(contentRef)
 
     // Register ref
     useEffect(() => {
@@ -619,6 +632,32 @@ export default function EditorPage({
                     }} />
                 </div>
             )}
+
+            {/* Table Toolbar (floating, edition mode only) */}
+            {page.mode === 'edition' && (
+                <TableToolbar {...tableToolbarProps} />
+            )}
+
+            {/* Dynamic Table Overlay (floating, edition mode only) */}
+            {page.mode === 'edition' && (
+                <DynamicTableOverlay
+                    activeConfig={dtOverlay.activeConfig}
+                    overlayPos={dtOverlay.overlayPos}
+                    openModal={dtOverlay.openModal}
+                />
+            )}
+
+            {/* Dynamic Table Modal */}
+            {page.mode === 'edition' && (
+                <DynamicTableModal
+                    open={dtOverlay.modalOpen}
+                    onClose={dtOverlay.closeModal}
+                    config={dtOverlay.activeConfig}
+                    accountNumber={accountNumber}
+                    documentId={documentId}
+                />
+            )}
+
 
             {/* Global Footer (non-editable, all pages) */}
             {hasFooter && page.mode === 'edition' && (

@@ -19,6 +19,6 @@ Mission 4 :
 Mission 5 : 
 Pour les tableau dynamique, avoir le meme systeme qu'on a pour record pour ajouter des lignes depuis le modal, genre ici ![alt text](image-30.png) , ![alt text](image-31.png) mais directement via l'éditeur.
 
-Mission 6 : ![alt text](image-32.png) ici dand l'editeur react et generateur de doc, mettre une toolbare plus petite avec des icon plus petites.
+~~Mission 6 : ![alt text](image-32.png) ici dand l'editeur react et generateur de doc, mettre une toolbare plus petite avec des icon plus petites.~~
 
-Mission 7: ![alt text](image-33.png) Dans le generateur de doc, il y'a une bande un blan en bas qui n'a pas de sens, corrige ca stp
+~~Mission 7: ![alt text](image-33.png) Dans le generateur de doc, il y'a une bande un blan en bas qui n'a pas de sens, corrige ca stp~~

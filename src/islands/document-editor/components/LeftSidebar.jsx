@@ -79,69 +79,69 @@ export default function LeftSidebar({
     return (
         <div className="relative flex" style={{ zIndex: 30 }}>
             {/* Toolbar (Left) */}
-            <div className="w-12 bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col items-center py-3 gap-2">
+            <div className="w-10 bg-white dark:bg-gray-900 border-r dark:border-gray-800 flex flex-col items-center py-2 gap-1.5">
                 {/* Text Tool */}
                 <button
-                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'text'
+                    className={`w-7 h-7 rounded-full transition-colors flex items-center justify-center ${activeTab === 'text'
                         ? 'bg-primary/20 text-primary'
                         : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
                         }`}
                     title="Texte et Contenu"
                     onClick={() => toggleTab('text')}
                 >
-                    <iconify-icon icon="solar:text-bold-duotone" width="18"></iconify-icon>
+                    <iconify-icon icon="solar:text-bold-duotone" width="15"></iconify-icon>
                 </button>
 
                 {/* Gallery Tool */}
                 <button
-                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'gallery'
+                    className={`w-7 h-7 rounded-full transition-colors flex items-center justify-center ${activeTab === 'gallery'
                         ? 'bg-primary/20 text-primary'
                         : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
                         }`}
                     title="Médiathèque"
                     onClick={() => toggleTab('gallery')}
                 >
-                    <iconify-icon icon="solar:gallery-bold-duotone" width="18"></iconify-icon>
+                    <iconify-icon icon="solar:gallery-bold-duotone" width="15"></iconify-icon>
                 </button>
 
-                <div className="h-px w-6 bg-gray-200 dark:bg-gray-700"></div>
+                <div className="h-px w-5 bg-gray-200 dark:bg-gray-700"></div>
 
                 {/* Blocks Tool */}
                 <button
-                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'blocks'
+                    className={`w-7 h-7 rounded-full transition-colors flex items-center justify-center ${activeTab === 'blocks'
                         ? 'bg-primary/20 text-primary'
                         : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
                         }`}
                     title="Blocs de contenu"
                     onClick={() => toggleTab('blocks')}
                 >
-                    <iconify-icon icon="solar:widget-4-bold-duotone" width="18"></iconify-icon>
+                    <iconify-icon icon="solar:widget-4-bold-duotone" width="15"></iconify-icon>
                 </button>
 
                 {/* Layout Tools */}
                 <button
-                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'layouts'
+                    className={`w-7 h-7 rounded-full transition-colors flex items-center justify-center ${activeTab === 'layouts'
                         ? 'bg-primary/20 text-primary'
                         : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
                         }`}
                     title="Mises en page"
                     onClick={() => toggleTab('layouts')}
                 >
-                    <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="18"></iconify-icon>
+                    <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="15"></iconify-icon>
                 </button>
 
-                <div className="h-px w-6 bg-gray-200 dark:bg-gray-700"></div>
+                <div className="h-px w-5 bg-gray-200 dark:bg-gray-700"></div>
 
                 {/* Dynamic Content */}
                 <button
-                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${activeTab === 'dynamic-nav'
+                    className={`w-7 h-7 rounded-full transition-colors flex items-center justify-center ${activeTab === 'dynamic-nav'
                         ? 'bg-primary/20 text-primary'
                         : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
                         }`}
                     title="Contenu Dynamique"
                     onClick={() => toggleTab('dynamic-nav')}
                 >
-                    <iconify-icon icon="solar:database-bold-duotone" width="18"></iconify-icon>
+                    <iconify-icon icon="solar:database-bold-duotone" width="15"></iconify-icon>
                 </button>
 
                 {/* Spacer to push settings to bottom */}
@@ -149,20 +149,20 @@ export default function LeftSidebar({
 
                 {/* Settings Button */}
                 <button
-                    className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${isSettingsOpen
+                    className={`w-7 h-7 rounded-full transition-colors flex items-center justify-center ${isSettingsOpen
                         ? 'bg-primary/20 text-primary'
                         : 'bg-white-light/40 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60 text-gray-400'
                         }`}
                     title="Paramètres du document"
                     onClick={onSettingsToggle}
                 >
-                    <iconify-icon icon="solar:settings-bold-duotone" width="18"></iconify-icon>
+                    <iconify-icon icon="solar:settings-bold-duotone" width="15"></iconify-icon>
                 </button>
             </div>
 
             {/* Panel Content */}
             {activeTab && (
-                <div className="absolute top-0 bottom-0 flex flex-col shadow-xl" style={{ width: '240px', marginLeft: '49px', background: panelBg, borderRight: `1px solid ${borderColor}`, zIndex: 50 }}>
+                <div className="absolute top-0 bottom-0 flex flex-col shadow-xl" style={{ width: '240px', marginLeft: '41px', background: panelBg, borderRight: `1px solid ${borderColor}`, zIndex: 50 }}>
                     {/* Panel Header */}
                     <div style={{ padding: '16px', borderBottom: `1px solid ${borderColor}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <h3 style={{ fontSize: '13px', fontWeight: 600, color: textColor, margin: 0 }}>

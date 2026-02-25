@@ -25,7 +25,8 @@ const CanvasContainer = forwardRef(function CanvasContainer({
     setPageMode,
     addPage,
     zoomLevel,
-    setZoomLevel
+    setZoomLevel,
+    accountNumber
 }, ref) {
     // Detect dark mode from document
 
@@ -350,6 +351,8 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                                 handleKeyDown={handleKeyDown}
                                 isGlobalSelection={isGlobalSelection}
                                 panelMode={panelMode}
+                                accountNumber={accountNumber}
+                                documentId={doc._id}
                             />
                         </div>
                     ))}

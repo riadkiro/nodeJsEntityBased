@@ -2116,6 +2116,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     addPage={addPage}
                     zoomLevel={zoomLevel}
                     setZoomLevel={setZoomLevel}
+                    accountNumber={accountNumber}
                 />
 
                 {/* AI Chat Sidebar */}

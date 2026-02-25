@@ -49,9 +49,19 @@
         border-color: #b45309;
     }
     
+    /* Full-height editor: make main-content a flex column so editor fills all remaining space */
+    .main-content {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100vh !important;
+        overflow: hidden !important;
+    }
     /* Override padding for full-height editor */
     .animate__animated.p-6 {
         padding: 0 !important;
+        flex: 1 !important;
+        overflow: hidden !important;
+        min-height: 0 !important;
     }
     
     /* Print styles */
@@ -80,7 +90,8 @@
     %>"
     data-account-number="<%= account_number %>"
     data-is-new="<%= isNew ? 'true' : 'false' %>"
-    class="<%= locals.isMinimal ? 'h-screen' : 'h-[calc(100vh-80px)] -m-6' %>"
+    class="<%= locals.isMinimal ? 'h-screen' : '' %>"
+    style="<%= locals.isMinimal ? '' : 'height:100%;overflow:hidden;' %>"
 ></div>
 
 <!-- React Island Script -->
@@ -90,3 +101,4 @@
 </body>
 </html>
 <% } %>
+

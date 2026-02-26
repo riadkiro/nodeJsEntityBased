@@ -99,7 +99,8 @@ const CLEANABLE_COLLECTIONS = [
     'documents',
     'smartdoctemplates',
     'lineschemas',
-    'entityforms'
+    'entityforms',
+    'views'
 ];
 
 /**

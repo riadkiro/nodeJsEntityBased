@@ -42,6 +42,7 @@ function registerModels(conn) {
         Document: M('Document', s({ name: String, format: String, orientation: String, pages: Array, isTemplate: Boolean, entityId: mongoose.Schema.Types.ObjectId, entityIds: [mongoose.Schema.Types.ObjectId], createdBy: mongoose.Schema.Types.ObjectId, status: String, tags: [String], collections: Array, contentBlocks: Array, meta: Object }), 'documents'),
         SmartDocTemplate: M('SmartDocTemplate', s({ name: String, description: String, icon: String, color: String, documentId: mongoose.Schema.Types.ObjectId, entityId: mongoose.Schema.Types.ObjectId, inputFields: Array, outputFormat: String, order: Number, active: Boolean, meta: Object }), 'smartdoctemplates'),
         LineSchema: M('LineSchema', s({ name: String, slug: String, description: String, appliesTo: Object, sourceEntityId: mongoose.Schema.Types.ObjectId, lineTypes: [String], columns: Array, totals: Object, defaultLineType: String, meta: Object }), 'lineschemas'),
+        View: M('View', s({ name: String, slug: String, entity: mongoose.Schema.Types.ObjectId, cockpitId: mongoose.Schema.Types.ObjectId, icon: String, color: String, order: Number, viewType: String, spaces: [mongoose.Schema.Types.ObjectId], folders: [mongoose.Schema.Types.ObjectId], filters: Array, settings: Object, createdBy: mongoose.Schema.Types.ObjectId, meta: Object }), 'views'),
     };
 }
 
@@ -353,7 +354,26 @@ async function install(conn, userId, presetSlug) {
             });
         }
     }
-    console.log(`   ✅ ${spaceDefs.length} spaces + folders (entities linked)`);
+
+    // Create Views for each entity-folder link (sidebar uses Views, not Entity.spaces/folders)
+    const viewsCreated = [];
+    for (const [entitySlug, folderIds] of Object.entries(entityFolders)) {
+        const entityId = E[entitySlug];
+        if (!entityId) continue;
+        const entity = await db.Entity.findById(entityId).lean();
+        if (!entity) continue;
+        for (const folderId of folderIds) {
+            const viewSlug = `view-${entitySlug}-${folderId.toString().slice(-6)}`;
+            await upsertDoc(db.View, { slug: viewSlug, 'meta.createdByPreset': PRESET }, {
+                name: entity.name, slug: viewSlug, entity: entityId,
+                icon: entity.icon, color: entity.color, viewType: 'list', order: 0,
+                spaces: [], folders: [folderId],
+                createdBy: new mongoose.Types.ObjectId(userId)
+            });
+            viewsCreated.push(entity.name);
+        }
+    }
+    console.log(`   ✅ ${spaceDefs.length} spaces + folders + ${viewsCreated.length} views`);
 
     // =========== 6. DEMO RECORDS ===========
     console.log('\n📊 Creating demo records...');

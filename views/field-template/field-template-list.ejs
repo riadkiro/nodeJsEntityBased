@@ -1,5 +1,5 @@
 <% const rows=(locals.fields || []).map((f, i)=> [
-  i + 1,
+  f._id.toString(),
   f.name,
   f.label,
   f.type,
@@ -37,9 +37,13 @@
         { name: "Créé le", hidden: true },
         { name: "Actions", hidden: false },
       ],
-      hideCols: [0],
-      showCols: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      hideCols: [],
+      showCols: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       datatable1: null,
+
+      // Bulk select state
+      selectedIds: [],
+      allFieldIds: [],
 
       // Modal state
       showFieldModal: false,
@@ -98,6 +102,7 @@
         includeTime: false,
         defaultValue: '',
         acceptTypes: '',
+        rows: 1,
         // Recurrence slot config
         slots: {},
         allowCustomText: false
@@ -106,10 +111,12 @@
       init() {
         const jsonContent = document.getElementById('field-rows-data').textContent;
         const rows = JSON.parse(jsonContent);
+        this.allFieldIds = rows.map(r => r[0]);
         
         const entitiesJson = document.getElementById('entities-data').textContent;
         this.entities = JSON.parse(entitiesJson);
 
+        const self = this;
         this.datatable1 = new simpleDatatables.DataTable("#myTable1", {
           data: {
             headings: this.columns.map((c) => c.name),
@@ -120,8 +127,8 @@
           columns: [
             {
               select: 0,
-              sort: "asc",
-              render: (data) => `<input type="checkbox" class="form-checkbox" value="${data}" />`,
+              sortable: false,
+              render: (data) => `<input type="checkbox" class="form-checkbox bulk-check" value="${data}" />`,
             },
             {
               select: 7,
@@ -151,9 +158,83 @@
         this.datatable1.columns().hide(this.hideCols);
         this.datatable1.columns().show(this.showCols);
 
+        // Bulk checkbox listeners (delegated)
+        const tableEl = document.getElementById('myTable1');
+        tableEl.addEventListener('change', (e) => {
+          if (e.target.classList.contains('bulk-check')) {
+            const id = e.target.value;
+            if (e.target.checked) {
+              if (!self.selectedIds.includes(id)) self.selectedIds.push(id);
+            } else {
+              self.selectedIds = self.selectedIds.filter(x => x !== id);
+            }
+          }
+          if (e.target.classList.contains('bulk-check-all')) {
+            const checkboxes = tableEl.querySelectorAll('.bulk-check');
+            if (e.target.checked) {
+              checkboxes.forEach(cb => { cb.checked = true; });
+              self.selectedIds = [...new Set([...self.selectedIds, ...Array.from(checkboxes).map(cb => cb.value)])];
+            } else {
+              checkboxes.forEach(cb => { cb.checked = false; });
+              self.selectedIds = [];
+            }
+          }
+        });
+
+        // Inject select-all checkbox in the header
+        this.datatable1.on('datatable.init', () => {
+          const th = tableEl.querySelector('thead th:first-child');
+          if (th) th.innerHTML = '<input type="checkbox" class="form-checkbox bulk-check-all" />';
+        });
+        // Re-check rows after page change
+        this.datatable1.on('datatable.page', () => {
+          setTimeout(() => this.syncCheckboxes(), 50);
+        });
+
         window.addEventListener('open-field-edit-modal', (e) => {
           this.openEditModal(e.detail);
         });
+      },
+
+      syncCheckboxes() {
+        const tableEl = document.getElementById('myTable1');
+        const checkboxes = tableEl.querySelectorAll('.bulk-check');
+        checkboxes.forEach(cb => {
+          cb.checked = this.selectedIds.includes(cb.value);
+        });
+      },
+
+      async bulkDelete() {
+        if (!this.selectedIds.length) return;
+        const result = await Swal.fire({
+          title: `Supprimer ${this.selectedIds.length} champ(s) ?`,
+          text: 'Cette action est irréversible.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Supprimer',
+          cancelButtonText: 'Annuler',
+          confirmButtonColor: '#e7515a',
+          reverseButtons: true
+        });
+        if (!result.isConfirmed) return;
+
+        Swal.fire({ title: 'Suppression...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        let errors = 0;
+        for (const id of this.selectedIds) {
+          try {
+            const res = await fetch(`/account/${this.account_number}/field-template/${id}`, { method: 'DELETE' });
+            if (!res.ok) errors++;
+          } catch { errors++; }
+        }
+        
+        if (errors === 0) {
+          await Swal.fire({ icon: 'success', title: `${this.selectedIds.length} champ(s) supprimé(s)`, timer: 1500, showConfirmButton: false });
+        } else {
+          await Swal.fire({ icon: 'warning', title: `${this.selectedIds.length - errors} supprimé(s), ${errors} erreur(s)`, timer: 2000, showConfirmButton: false });
+        }
+        this.selectedIds = [];
+        location.reload();
       },
 
       showHideColumns(col, value) {
@@ -244,7 +325,8 @@
           defaultValue: field.type_config?.defaultValue || '',
           acceptTypes: field.type_config?.acceptTypes || '',
           slots: field.type_config?.slots || {},
-          allowCustomText: field.type_config?.allowCustomText || false
+          allowCustomText: field.type_config?.allowCustomText || false,
+          rows: field.ui?.rows || 1
         };
         // Ensure every slot has a complete config with defaults
         const slotNames = [...new Set((this.formData.options || []).map(o => o.slot).filter(Boolean))];
@@ -286,6 +368,7 @@
           includeTime: false,
           defaultValue: '',
           acceptTypes: '',
+          rows: 1,
           slots: {},
           allowCustomText: false
         };
@@ -318,6 +401,7 @@
         formBody.append('ui.placeholder', this.formData.placeholder);
         formBody.append('ui.width', this.formData.width);
         formBody.append('ui.icon', this.formData.icon);
+        formBody.append('ui.rows', this.formData.rows || 1);
         formBody.append('htmlTemplate', this.formData.htmlTemplate);
         formBody.append('jsTemplate', this.formData.jsTemplate);
         formBody.append('type_config.refEntity', this.formData.refEntity);
@@ -439,6 +523,26 @@
         </div>
       </div>
 
+      <!-- Bulk Action Bar -->
+      <div x-show="selectedIds.length > 0" x-transition
+           class="flex items-center justify-between mb-4 px-4 py-2.5 rounded-md border border-gray-200 bg-white-light/40 dark:bg-dark/40 dark:border-[#253b5c]">
+        <div class="flex items-center gap-2.5">
+          <iconify-icon icon="solar:check-circle-bold-duotone" width="20" class="text-primary"></iconify-icon>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <span x-text="selectedIds.length" class="font-semibold text-primary"></span> sélectionné(s)
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" class="btn btn-sm btn-outline-dark dark:btn-outline-primary" @click="selectedIds = []; syncCheckboxes(); document.querySelector('.bulk-check-all') && (document.querySelector('.bulk-check-all').checked = false)">
+            Désélectionner
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger flex items-center gap-1.5" @click="bulkDelete()">
+            <iconify-icon icon="solar:trash-bin-2-bold" width="14"></iconify-icon>
+            Supprimer
+          </button>
+        </div>
+      </div>
+
       <div class="relative">
         <div class="mb-5 sm:absolute sm:top-0 sm:mb-0 sm:ltr:right-56 sm:rtl:left-56">
           <div class="flex items-center">
@@ -550,6 +654,20 @@
           <!-- SECTION 3: Options dynamiques selon le type -->
           <!-- ═══════════════════════════════════════════ -->
           
+          <!-- Options pour TEXT (lignes) -->
+          <template x-if="formData.type === 'text'">
+            <div class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-600">
+              <label class="block text-sm font-semibold">Affichage du champ</label>
+              <div>
+                <label class="block text-xs font-medium mb-1.5 text-gray-500">Nombre de lignes visibles</label>
+                <div class="flex items-center gap-3">
+                  <input type="number" x-model.number="formData.rows" min="1" max="20" class="form-input w-24 text-sm text-center" />
+                  <span class="text-xs text-gray-400" x-text="formData.rows <= 1 ? 'Apparence une seule ligne' : formData.rows + ' lignes visibles'"></span>
+                </div>
+              </div>
+            </div>
+          </template>
+
           <!-- Options pour SELECT -->
           <template x-if="formData.type === 'select'">
             <div class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed dark:border-gray-600">

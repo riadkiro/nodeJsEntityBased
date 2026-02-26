@@ -125,6 +125,9 @@ module.exports = {
       if (req.body["ui.icon"]) {
         ui.icon = req.body["ui.icon"];
       }
+      if (req.body["ui.rows"]) {
+        ui.rows = parseInt(req.body["ui.rows"], 10) || 1;
+      }
 
       // 2. Création du field
       const fieldTemplateData = {
@@ -222,6 +225,9 @@ module.exports = {
       }
       if (req.body["ui.icon"]) {
         ui.icon = req.body["ui.icon"];
+      }
+      if (req.body["ui.rows"]) {
+        ui.rows = parseInt(req.body["ui.rows"], 10) || 1;
       }
 
       const fieldTemplateData = {

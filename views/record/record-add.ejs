@@ -113,9 +113,16 @@
                                                                     <% if (field.required) { %><span class="text-danger">*</span><% } %>
                                                                 </label>
                                                                 <% if (cf.inputType === 'textarea' || cf.inputType === 'richtext') { %>
-                                                                    <textarea name="custom[<%= cf._id %>]" class="form-textarea dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" rows="3"
-                                                                        placeholder="<%= field.placeholder || cf.label || cf.name %>"
-                                                                        <%= field.required ? 'required' : '' %>></textarea>
+                                                                    <% var cfRows = (cf.ui && cf.ui.rows) ? parseInt(cf.ui.rows) : 3; %>
+                                                                    <% if (cfRows <= 1) { %>
+                                                                        <input type="text" name="custom[<%= cf._id %>]" class="form-input dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300"
+                                                                            placeholder="<%= field.placeholder || cf.label || cf.name %>"
+                                                                            <%= field.required ? 'required' : '' %> />
+                                                                    <% } else { %>
+                                                                        <textarea name="custom[<%= cf._id %>]" class="form-textarea dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" rows="<%= cfRows %>"
+                                                                            placeholder="<%= field.placeholder || cf.label || cf.name %>"
+                                                                            <%= field.required ? 'required' : '' %>></textarea>
+                                                                    <% } %>
                                                                 <% } else if (cf.inputType === 'select' && cf.options && cf.options.length) { %>
                                                                     <% if (cf.multiple) { %>
                                                                         <div class="flex flex-wrap gap-2" x-data="{
@@ -807,7 +814,12 @@
                         const labelHtml = `<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">${field.label || field.name}</label>`;
                         
                         if (type === 'textarea' || type === 'richtext' || subtype === 'textarea' || subtype === 'richtext') {
-                            template = `${labelHtml}<textarea name="${fieldName}" class="form-textarea text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" rows="3" placeholder="${placeholder}">{{value}}</textarea>`;
+                            const fieldRows = field.ui?.rows || 3;
+                            if (fieldRows <= 1) {
+                                template = `${labelHtml}<input type="text" name="${fieldName}" class="form-input text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" placeholder="${placeholder}" value="{{value}}" />`;
+                            } else {
+                                template = `${labelHtml}<textarea name="${fieldName}" class="form-textarea text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" rows="${fieldRows}" placeholder="${placeholder}">{{value}}</textarea>`;
+                            }
                         } else if (type === 'boolean' || subtype === 'boolean' || subtype === 'checkbox') {
                             template = `<label class="flex items-center gap-3 cursor-pointer"><span class="text-sm font-semibold text-gray-700 dark:text-gray-300">${field.label || field.name}</span><label class="w-12 h-6 relative mb-0"><input type="checkbox" name="${fieldName}" class="custom_switch absolute w-full h-full opacity-0 z-10 cursor-pointer peer" value="on" {{checked}} /><span class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-4 before:h-4 before:rounded-full peer-checked:before:left-7 peer-checked:bg-primary before:transition-all before:duration-300"></span></label></label>`;
                         } else if (type === 'number' || subtype === 'number' || subtype === 'currency') {

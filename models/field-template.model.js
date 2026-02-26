@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+﻿const mongoose = require('mongoose');
 
 const FieldTemplateSchema = new mongoose.Schema({
   // 🧾 Identification
@@ -61,7 +61,8 @@ const FieldTemplateSchema = new mongoose.Schema({
     order: { type: Number, default: 0 },
     icon: { type: String },    // ex: "tabler:coin"
     couleur: { type: String }, // ex: "#00FFAA" ou class tailwind
-    image: { type: String }    // URL d’icône ou d’image
+    image: { type: String },    // URL d’icône ou d’image
+    rows: { type: Number, default: 1 } // visible rows for text long fields
   },
 
   // 🔍 Filtres

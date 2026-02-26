@@ -210,9 +210,17 @@
                                                                     <% if (field.required) { %><span class="text-danger">*</span><% } %>
                                                                 </label>
                                                                 <% if (cf.inputType === 'textarea' || cf.inputType === 'richtext') { %>
-                                                                    <textarea name="custom[<%= cf._id %>]" class="form-textarea" rows="3"
-                                                                        placeholder="<%= field.placeholder || cf.label || cf.name %>"
-                                                                        <%= field.required ? 'required' : '' %>><%= cfVal || '' %></textarea>
+                                                                    <% var cfRows = (cf.ui && cf.ui.rows) ? parseInt(cf.ui.rows) : 3; %>
+                                                                    <% if (cfRows <= 1) { %>
+                                                                        <input type="text" name="custom[<%= cf._id %>]" class="form-input"
+                                                                            placeholder="<%= field.placeholder || cf.label || cf.name %>"
+                                                                            value="<%= cfVal || '' %>"
+                                                                            <%= field.required ? 'required' : '' %> />
+                                                                    <% } else { %>
+                                                                        <textarea name="custom[<%= cf._id %>]" class="form-textarea" rows="<%= cfRows %>"
+                                                                            placeholder="<%= field.placeholder || cf.label || cf.name %>"
+                                                                            <%= field.required ? 'required' : '' %>><%= cfVal || '' %></textarea>
+                                                                    <% } %>
                                                                 <% } else if (cf.inputType === 'select' && cf.options && cf.options.length) { %>
                                                                     <% if (cf.multiple) { %>
                                                                         <% var selectedArr = Array.isArray(cfVal) ? cfVal : (cfVal ? [cfVal] : []); %>
@@ -852,6 +860,68 @@
 </div>
 
 <!-- ═══ PANEL LAYOUT STYLES ═══ -->
+<style>
+    /* ═══ Ghost Fields: border-on-hover, full styling on focus ═══ */
+    [data-panel-id="attributs"] .form-input,
+    [data-panel-id="attributs"] .form-textarea,
+    [data-panel-id="attributs"] .form-select,
+    [data-panel-id="attributs"] input.form-input,
+    [data-panel-id="attributs"] textarea.form-textarea,
+    [data-panel-id="attributs"] select.form-select {
+        background: transparent !important;
+        border-color: transparent !important;
+        border-width: 1.5px !important;
+        border-style: solid !important;
+        border-radius: 6px !important;
+        box-shadow: none !important;
+        transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+        padding: 8px 10px;
+    }
+    [data-panel-id="attributs"] .form-input:hover,
+    [data-panel-id="attributs"] .form-textarea:hover,
+    [data-panel-id="attributs"] .form-select:hover,
+    [data-panel-id="attributs"] input.form-input:hover,
+    [data-panel-id="attributs"] textarea.form-textarea:hover,
+    [data-panel-id="attributs"] select.form-select:hover {
+        border-color: #e5e7eb !important;
+        background: #fcfcfc !important;
+    }
+    .dark [data-panel-id="attributs"] .form-input:hover,
+    .dark [data-panel-id="attributs"] .form-textarea:hover,
+    .dark [data-panel-id="attributs"] .form-select:hover {
+        border-color: #253b5c !important;
+        background: rgba(27, 46, 75, 0.4) !important;
+    }
+    [data-panel-id="attributs"] .form-input:focus,
+    [data-panel-id="attributs"] .form-textarea:focus,
+    [data-panel-id="attributs"] .form-select:focus,
+    [data-panel-id="attributs"] input.form-input:focus,
+    [data-panel-id="attributs"] textarea.form-textarea:focus,
+    [data-panel-id="attributs"] select.form-select:focus {
+        border-color: #4361ee !important;
+        background: #fff !important;
+        box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.12) !important;
+        outline: none !important;
+    }
+    .dark [data-panel-id="attributs"] .form-input:focus,
+    .dark [data-panel-id="attributs"] .form-textarea:focus,
+    .dark [data-panel-id="attributs"] .form-select:focus {
+        background: #121e32 !important;
+        box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.25) !important;
+    }
+    /* Labels: smaller uppercase style */
+    [data-panel-id="attributs"] label {
+        text-transform: uppercase;
+        font-size: 11px !important;
+        letter-spacing: 0.5px;
+        color: #6b7280;
+        font-weight: 600 !important;
+    }
+    .dark [data-panel-id="attributs"] label {
+        color: #64748b;
+    }
+</style>
+
 <style>
     /* ═══ Record Layout Grid (12-unit, page-builder style) ═══ */
     .record-layout-container {
@@ -1625,7 +1695,12 @@
                         const labelHtml = `<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">${field.label || field.name}</label>`;
                         
                         if (type === 'textarea' || type === 'richtext' || subtype === 'textarea' || subtype === 'richtext') {
-                            template = `${labelHtml}<textarea name="${fieldName}" class="form-textarea text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" rows="3" placeholder="${placeholder}">{{value}}</textarea>`;
+                            const fieldRows = field.ui?.rows || 3;
+                            if (fieldRows <= 1) {
+                                template = `${labelHtml}<input type="text" name="${fieldName}" class="form-input text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" placeholder="${placeholder}" value="{{value}}" />`;
+                            } else {
+                                template = `${labelHtml}<textarea name="${fieldName}" class="form-textarea text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" rows="${fieldRows}" placeholder="${placeholder}">{{value}}</textarea>`;
+                            }
                         } else if (type === 'boolean' || subtype === 'boolean' || subtype === 'checkbox') {
                             template = `<label class="flex items-center gap-3 cursor-pointer"><span class="text-sm font-semibold text-gray-700 dark:text-gray-300">${field.label || field.name}</span><label class="w-12 h-6 relative mb-0"><input type="checkbox" name="${fieldName}" class="custom_switch absolute w-full h-full opacity-0 z-10 cursor-pointer peer" value="on" {{checked}} /><span class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-4 before:h-4 before:rounded-full peer-checked:before:left-7 peer-checked:bg-primary before:transition-all before:duration-300"></span></label></label>`;
                         } else if (type === 'number' || subtype === 'number' || subtype === 'currency') {

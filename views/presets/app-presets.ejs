@@ -1,0 +1,199 @@
+<div class="animate__animated p-6" :class="[$store.app.animation]">
+    <ul class="flex space-x-2 rtl:space-x-reverse">
+        <li>
+            <a href="/account/<%= account_number %>/dashboard" class="text-primary hover:underline">Dashboard</a>
+        </li>
+        <li class="before:content-['/'] ltr:before:mr-1 rtl:before:ml-1">
+            <a href="/account/<%= account_number %>/profile/account-settings" class="text-primary hover:underline">Paramètres</a>
+        </li>
+        <li class="before:content-['/'] ltr:before:mr-1 rtl:before:ml-1">
+            <span>Modèles prédéfinis</span>
+        </li>
+    </ul>
+
+    <div class="pt-5" x-data="presetInstaller()">
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <h5 class="text-lg font-semibold dark:text-white-light flex items-center gap-2">
+                    <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="24" height="24" class="text-primary"></iconify-icon>
+                    Modèles prédéfinis d'app
+                </h5>
+                <p class="text-sm text-gray-500 mt-1">Installez un modèle métier complet avec entités, champs, navigation, documents et données de démonstration.</p>
+            </div>
+        </div>
+
+        <!-- Warning banner -->
+        <div class="panel mb-6 border-warning/30 bg-warning/5">
+            <div class="flex items-start gap-3">
+                <iconify-icon icon="solar:danger-triangle-bold-duotone" width="24" height="24" class="text-warning mt-0.5 shrink-0"></iconify-icon>
+                <div>
+                    <h6 class="font-semibold text-warning">Attention — Factory Reset</h6>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        L'installation d'un modèle <strong>supprime toutes les données métier existantes</strong> créées par ce même modèle
+                        (entités, champs, classifications, records de démo, navigation, documents).
+                        Les comptes utilisateurs et les données personnelles ne sont <strong>jamais</strong> affectés.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Presets Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <% presets.forEach(function(preset, index) { %>
+            <div class="panel relative overflow-hidden">
+                <!-- Color accent top -->
+                <div class="absolute top-0 left-0 right-0 h-1" style="background: <%= preset.color %>;"></div>
+
+                <div class="pt-3">
+                    <!-- Header -->
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="p-3 rounded-xl shrink-0" style="background: <%= preset.color %>15;">
+                            <iconify-icon icon="<%= preset.icon %>" width="32" height="32" style="color: <%= preset.color %>;"></iconify-icon>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <h6 class="text-lg font-bold dark:text-white-light"><%= preset.name %></h6>
+                                <% if (preset.isComplete) { %>
+                                <span class="badge bg-success/10 text-success text-xs">Complet</span>
+                                <% } else { %>
+                                <span class="badge bg-warning/10 text-warning text-xs">Basique</span>
+                                <% } %>
+                            </div>
+                            <span class="text-xs text-gray-400"><%= preset.category %></span>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4"><%= preset.description %></p>
+
+                    <!-- Features -->
+                    <div class="space-y-2 mb-5">
+                        <% preset.features.forEach(function(feature) { %>
+                        <div class="flex items-center gap-2 text-sm">
+                            <iconify-icon icon="solar:check-circle-bold" width="16" height="16" style="color: <%= preset.color %>;"></iconify-icon>
+                            <span class="text-gray-600 dark:text-gray-300"><%= feature %></span>
+                        </div>
+                        <% }); %>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
+                        <button
+                            type="button"
+                            class="btn btn-primary flex-1"
+                            style="background: <%= preset.color %>; border-color: <%= preset.color %>;"
+                            @click="confirmInstall('<%= preset.slug %>', '<%= preset.name %>')"
+                            :disabled="installing"
+                        >
+                            <template x-if="installingSlug === '<%= preset.slug %>'">
+                                <span class="flex items-center justify-center gap-2">
+                                    <span class="animate-spin border-2 border-white border-l-transparent rounded-full w-4 h-4 inline-block"></span>
+                                    Installation...
+                                </span>
+                            </template>
+                            <template x-if="installingSlug !== '<%= preset.slug %>'">
+                                <span class="flex items-center justify-center gap-2">
+                                    <iconify-icon icon="solar:download-minimalistic-bold" width="18" height="18"></iconify-icon>
+                                    Installer
+                                </span>
+                            </template>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <% }); %>
+        </div>
+
+        <!-- Install result message -->
+        <div x-show="resultMessage" x-transition class="mt-6">
+            <div class="panel" :class="resultSuccess ? 'border-success/30 bg-success/5' : 'border-danger/30 bg-danger/5'">
+                <div class="flex items-center gap-3">
+                    <iconify-icon
+                        :icon="resultSuccess ? 'solar:check-circle-bold-duotone' : 'solar:close-circle-bold-duotone'"
+                        width="24" height="24"
+                        :class="resultSuccess ? 'text-success' : 'text-danger'"
+                    ></iconify-icon>
+                    <span x-text="resultMessage" class="text-sm font-medium"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('presetInstaller', () => ({
+        installing: false,
+        installingSlug: '',
+        resultMessage: '',
+        resultSuccess: false,
+
+        confirmInstall(slug, name) {
+            if (this.installing) return;
+
+            Swal.fire({
+                title: `Installer "${name}" ?`,
+                html: `<p class="text-sm text-gray-500 mt-2">Cette opération va :</p>
+                    <ul class="text-sm text-left mt-3 space-y-1">
+                        <li>🗑️ Supprimer les données créées par ce modèle</li>
+                        <li>🔄 Recréer les entités, champs et navigation</li>
+                        <li>📊 Insérer les données de démonstration</li>
+                        <li>📄 Créer les modèles de documents</li>
+                    </ul>
+                    <p class="text-xs text-warning mt-3">⚠️ Les comptes et données personnelles ne sont pas affectés.</p>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#4361ee',
+                cancelButtonColor: '#888ea8',
+                confirmButtonText: 'Oui, installer',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.doInstall(slug);
+                }
+            });
+        },
+
+        async doInstall(slug) {
+            this.installing = true;
+            this.installingSlug = slug;
+            this.resultMessage = '';
+
+            try {
+                const response = await fetch(`/account/<%= account_number %>/api/app-presets/install`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ presetSlug: slug })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.resultSuccess = true;
+                    this.resultMessage = data.message || 'Installation réussie !';
+
+                    Swal.fire({
+                        title: '🎉 Installation terminée !',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonText: 'Recharger la page'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    this.resultSuccess = false;
+                    this.resultMessage = data.error || 'Erreur lors de l\'installation';
+                }
+            } catch (err) {
+                console.error('[Presets] Install error:', err);
+                this.resultSuccess = false;
+                this.resultMessage = 'Erreur réseau : ' + err.message;
+            } finally {
+                this.installing = false;
+                this.installingSlug = '';
+            }
+        }
+    }));
+});
+</script>

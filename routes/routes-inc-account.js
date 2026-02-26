@@ -93,6 +93,9 @@ router.use("/", require("./datatable.routes.js"));
 // Profile Page
 router.use("/profile", require("./profile.routes.js"));
 
+// App Presets (factory reset / preset installer)
+router.use("/", require("./preset.router.js"));
+
 // Integration Engine
 router.use("/integrations/admin", require("../src/integrations/routes/admin.providers.routes.js"));
 router.use("/integrations/admin", require("../src/integrations/routes/admin.actions.routes.js"));

@@ -33,7 +33,7 @@ function registerModels(conn) {
     return {
         FieldTemplate: M('FieldTemplate', s({ name: String, label: String, type: String, subtype: String, description: String, required: Boolean, type_config: Object, ui: Object, isSystem: Boolean, isCustom: Boolean, category: String, meta: Object }), 'fieldtemplates'),
         Classification: M('Classification', s({ name: String, key: String, description: String, isShared: Boolean, type: String, allowMultiple: Boolean, entities: [mongoose.Schema.Types.ObjectId], options: [new mongoose.Schema({ label: String, color: String, icon: String, badgeStyle: String, type: String, order: Number }, { _id: true })], meta: Object }), 'classifications'),
-        Entity: M('Entity', s({ name: String, slug: String, description: String, icon: String, color: String, order: Number, enabledStandardFields: [String], customFields: [mongoose.Schema.Types.ObjectId], statusClassification: mongoose.Schema.Types.ObjectId, classifications: [mongoose.Schema.Types.ObjectId], relations: Array, formLayout: Object, layout: Object, enableAttachments: Boolean, meta: Object }), 'entities'),
+        Entity: M('Entity', s({ name: String, slug: String, description: String, icon: String, color: String, order: Number, enabledStandardFields: [String], customFields: [mongoose.Schema.Types.ObjectId], statusClassification: mongoose.Schema.Types.ObjectId, classifications: [mongoose.Schema.Types.ObjectId], relations: Array, formLayout: Object, layout: Object, enableAttachments: Boolean, spaces: [mongoose.Schema.Types.ObjectId], folders: [mongoose.Schema.Types.ObjectId], meta: Object }), 'entities'),
         EntityForm: M('EntityForm', s({ entityId: mongoose.Schema.Types.ObjectId, name: String, layout: Object, status: String, isDefault: Boolean, order: Number, meta: Object }), 'entityforms'),
         Environment: M('Environment', s({ name: String, slug: String, icon: String, color: String, order: Number, isDefault: Boolean, meta: Object }), 'environments'),
         Space: M('Space', s({ name: String, slug: String, icon: String, color: String, order: Number, environmentId: mongoose.Schema.Types.ObjectId, owner: mongoose.Schema.Types.ObjectId, members: Array, meta: Object }), 'spaces'),
@@ -279,39 +279,43 @@ async function install(conn, userId, presetSlug) {
     const spaceDefs = [
         {
             name: 'Activité Clinique', icon: 'solar:heart-pulse-bold-duotone', color: '#00ab55', folders: [
-                { name: 'Patients', icon: 'solar:user-heart-bold-duotone', color: '#3b82f6' },
-                { name: 'Rendez-vous', icon: 'solar:calendar-mark-bold-duotone', color: '#8b5cf6' },
-                { name: 'Consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55' },
-                { name: 'Prescriptions', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f' },
-                { name: 'Examens', icon: 'solar:test-tube-bold-duotone', color: '#f97316' },
+                { name: 'Patients', icon: 'solar:user-heart-bold-duotone', color: '#3b82f6', entitySlug: 'patients' },
+                { name: 'Rendez-vous', icon: 'solar:calendar-mark-bold-duotone', color: '#8b5cf6', entitySlug: 'rendez-vous' },
+                { name: 'Consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', entitySlug: 'consultations' },
+                { name: 'Prescriptions', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f', entitySlug: 'prescriptions' },
+                { name: 'Examens', icon: 'solar:test-tube-bold-duotone', color: '#f97316', entitySlug: 'resultats-labo' },
             ]
         },
         {
             name: 'Documents & Templates', icon: 'solar:document-bold-duotone', color: '#6366f1', folders: [
-                { name: 'Modèles', icon: 'solar:file-text-bold-duotone', color: '#6366f1' },
-                { name: 'Documents patients', icon: 'solar:folder-open-bold-duotone', color: '#6366f1' },
+                { name: 'Modèles', icon: 'solar:file-text-bold-duotone', color: '#6366f1', entitySlug: null },
+                { name: 'Documents patients', icon: 'solar:folder-open-bold-duotone', color: '#6366f1', entitySlug: 'documents-medicaux' },
             ]
         },
         {
             name: 'Facturation', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', folders: [
-                { name: 'Factures', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f' },
-                { name: 'Paiements', icon: 'solar:wallet-bold-duotone', color: '#22c55e' },
-                { name: 'Assurances', icon: 'solar:shield-bold-duotone', color: '#3b82f6' },
+                { name: 'Factures', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', entitySlug: 'factures' },
+                { name: 'Paiements', icon: 'solar:wallet-bold-duotone', color: '#22c55e', entitySlug: 'paiements' },
+                { name: 'Assurances', icon: 'solar:shield-bold-duotone', color: '#3b82f6', entitySlug: 'assurances' },
             ]
         },
         {
             name: 'Organisation', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee', folders: [
-                { name: 'Personnel', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee' },
-                { name: 'Planning', icon: 'solar:calendar-bold-duotone', color: '#8b5cf6' },
+                { name: 'Personnel', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee', entitySlug: 'personnel' },
+                { name: 'Planning', icon: 'solar:calendar-bold-duotone', color: '#8b5cf6', entitySlug: 'rendez-vous' },
             ]
         },
         {
             name: 'Stock', icon: 'solar:box-bold-duotone', color: '#94a3b8', folders: [
-                { name: 'Médicaments', icon: 'solar:pills-3-bold-duotone', color: '#ef4444' },
-                { name: 'Consommables', icon: 'solar:box-bold-duotone', color: '#94a3b8' },
+                { name: 'Médicaments', icon: 'solar:pills-3-bold-duotone', color: '#ef4444', entitySlug: 'medicaments' },
+                { name: 'Consommables', icon: 'solar:box-bold-duotone', color: '#94a3b8', entitySlug: 'stock' },
             ]
         },
     ];
+
+    // Track entity -> space/folder mappings for linking
+    const entitySpaces = {};  // entitySlug -> [spaceId]
+    const entityFolders = {}; // entitySlug -> [folderId]
 
     for (let si = 0; si < spaceDefs.length; si++) {
         const sd = spaceDefs[si];
@@ -321,13 +325,35 @@ async function install(conn, userId, presetSlug) {
         });
         for (let fi = 0; fi < sd.folders.length; fi++) {
             const fd = sd.folders[fi];
-            await upsertDoc(db.Folder, { slug: slug(fd.name), spaces: [space._id], 'meta.createdByPreset': PRESET }, {
+            const folder = await upsertDoc(db.Folder, { slug: slug(fd.name), spaces: [space._id], 'meta.createdByPreset': PRESET }, {
                 name: fd.name, slug: slug(fd.name), icon: fd.icon, color: fd.color, order: fi,
                 spaces: [space._id], parentFolders: []
             });
+            // Track entity mapping
+            if (fd.entitySlug && E[fd.entitySlug]) {
+                if (!entitySpaces[fd.entitySlug]) entitySpaces[fd.entitySlug] = [];
+                if (!entityFolders[fd.entitySlug]) entityFolders[fd.entitySlug] = [];
+                if (!entitySpaces[fd.entitySlug].includes(space._id.toString())) {
+                    entitySpaces[fd.entitySlug].push(space._id);
+                }
+                entityFolders[fd.entitySlug].push(folder._id);
+            }
         }
     }
-    console.log(`   ✅ ${spaceDefs.length} spaces + folders`);
+
+    // Link entities to their spaces and folders
+    for (const [entitySlug, spaceIds] of Object.entries(entitySpaces)) {
+        const entityId = E[entitySlug];
+        if (entityId) {
+            await db.Entity.findByIdAndUpdate(entityId, {
+                $set: {
+                    spaces: spaceIds,
+                    folders: entityFolders[entitySlug] || []
+                }
+            });
+        }
+    }
+    console.log(`   ✅ ${spaceDefs.length} spaces + folders (entities linked)`);
 
     // =========== 6. DEMO RECORDS ===========
     console.log('\n📊 Creating demo records...');

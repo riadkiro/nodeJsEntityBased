@@ -249,12 +249,14 @@ async function install(conn, userId, presetSlug) {
     // =========== 4. RELATIONS ===========
     console.log('\n🔗 Adding relations...');
     const E = ids.entities;
+    ids.relationKeys = {}; // store relation UUID keys for demo records
     const relationDefs = [
         { src: 'rendez-vous', target: 'patients', label: 'Patient', inverse: 'Rendez-vous', card: 'one-to-many' },
         { src: 'consultations', target: 'patients', label: 'Patient', inverse: 'Consultations', card: 'one-to-many' },
         { src: 'consultations', target: 'rendez-vous', label: 'Rendez-vous', inverse: 'Consultation', card: 'one-to-many' },
         { src: 'prescriptions', target: 'patients', label: 'Patient', inverse: 'Prescriptions', card: 'one-to-many' },
         { src: 'prescriptions', target: 'consultations', label: 'Consultation', inverse: 'Prescriptions', card: 'one-to-many' },
+        { src: 'prescriptions', target: 'medicaments', label: 'Médicament', inverse: 'Prescriptions', card: 'one-to-many' },
         { src: 'factures', target: 'consultations', label: 'Consultation', inverse: 'Factures', card: 'one-to-many' },
         { src: 'factures', target: 'patients', label: 'Patient', inverse: 'Factures', card: 'one-to-many' },
         { src: 'paiements', target: 'factures', label: 'Facture', inverse: 'Paiements', card: 'one-to-many' },
@@ -265,115 +267,77 @@ async function install(conn, userId, presetSlug) {
 
     for (const r of relationDefs) {
         const key = uuidv4();
+        ids.relationKeys[`${r.src}__${r.target}`] = key;
         await db.Entity.findByIdAndUpdate(E[r.src], {
             $push: { relations: { key, targetEntity: E[r.target], label: r.label, inverseLabel: r.inverse, cardinality: r.card, inputMode: 'modal-picker', storage: 'on-source', bidirectional: true, required: false } }
         });
     }
     console.log(`   ✅ ${relationDefs.length} relations`);
 
-    // =========== 5. NAVIGATION ===========
+    // =========== 5. NAVIGATION (views directly in spaces, no redundant folders) ===========
     console.log('\n🧭 Creating navigation...');
     const env = await upsertDoc(db.Environment, { slug: 'cabinet-medical', 'meta.createdByPreset': PRESET }, {
         name: 'Cabinet Médical', slug: 'cabinet-medical', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', order: 10
     });
 
-    const spaceDefs = [
+    const spaceViewDefs = [
         {
-            name: 'Activité Clinique', icon: 'solar:heart-pulse-bold-duotone', color: '#00ab55', folders: [
-                { name: 'Patients', icon: 'solar:user-heart-bold-duotone', color: '#3b82f6', entitySlug: 'patients' },
-                { name: 'Rendez-vous', icon: 'solar:calendar-mark-bold-duotone', color: '#8b5cf6', entitySlug: 'rendez-vous' },
-                { name: 'Consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', entitySlug: 'consultations' },
-                { name: 'Prescriptions', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f', entitySlug: 'prescriptions' },
-                { name: 'Examens', icon: 'solar:test-tube-bold-duotone', color: '#f97316', entitySlug: 'resultats-labo' },
+            name: 'Activité Clinique', icon: 'solar:heart-pulse-bold-duotone', color: '#00ab55', views: [
+                { entitySlug: 'patients', name: 'Patients', icon: 'solar:user-heart-bold-duotone', color: '#3b82f6' },
+                { entitySlug: 'rendez-vous', name: 'Rendez-vous', icon: 'solar:calendar-mark-bold-duotone', color: '#8b5cf6' },
+                { entitySlug: 'consultations', name: 'Consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55' },
+                { entitySlug: 'prescriptions', name: 'Ordonnances', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f' },
+                { entitySlug: 'resultats-labo', name: 'Examens', icon: 'solar:test-tube-bold-duotone', color: '#f97316' },
             ]
         },
         {
-            name: 'Documents & Templates', icon: 'solar:document-bold-duotone', color: '#6366f1', folders: [
-                { name: 'Modèles', icon: 'solar:file-text-bold-duotone', color: '#6366f1', entitySlug: null },
-                { name: 'Documents patients', icon: 'solar:folder-open-bold-duotone', color: '#6366f1', entitySlug: 'documents-medicaux' },
+            name: 'Documents', icon: 'solar:document-bold-duotone', color: '#6366f1', views: [
+                { entitySlug: 'documents-medicaux', name: 'Documents patients', icon: 'solar:folder-open-bold-duotone', color: '#6366f1' },
+                { entitySlug: 'plans-traitement', name: 'Plans de traitement', icon: 'solar:clipboard-list-bold-duotone', color: '#0ea5e9' },
             ]
         },
         {
-            name: 'Facturation', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', folders: [
-                { name: 'Factures', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', entitySlug: 'factures' },
-                { name: 'Paiements', icon: 'solar:wallet-bold-duotone', color: '#22c55e', entitySlug: 'paiements' },
-                { name: 'Assurances', icon: 'solar:shield-bold-duotone', color: '#3b82f6', entitySlug: 'assurances' },
+            name: 'Facturation', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', views: [
+                { entitySlug: 'factures', name: 'Factures', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f' },
+                { entitySlug: 'paiements', name: 'Paiements', icon: 'solar:wallet-bold-duotone', color: '#22c55e' },
+                { entitySlug: 'assurances', name: 'Assurances', icon: 'solar:shield-bold-duotone', color: '#3b82f6' },
             ]
         },
         {
-            name: 'Organisation', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee', folders: [
-                { name: 'Personnel', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee', entitySlug: 'personnel' },
-                { name: 'Planning', icon: 'solar:calendar-bold-duotone', color: '#8b5cf6', entitySlug: 'rendez-vous' },
+            name: 'Organisation', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee', views: [
+                { entitySlug: 'personnel', name: 'Personnel', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee' },
             ]
         },
         {
-            name: 'Stock', icon: 'solar:box-bold-duotone', color: '#94a3b8', folders: [
-                { name: 'Médicaments', icon: 'solar:pills-3-bold-duotone', color: '#ef4444', entitySlug: 'medicaments' },
-                { name: 'Consommables', icon: 'solar:box-bold-duotone', color: '#94a3b8', entitySlug: 'stock' },
+            name: 'Stock & Pharmacie', icon: 'solar:box-bold-duotone', color: '#94a3b8', views: [
+                { entitySlug: 'medicaments', name: 'Médicaments', icon: 'solar:pills-3-bold-duotone', color: '#ef4444' },
+                { entitySlug: 'stock', name: 'Consommables', icon: 'solar:box-bold-duotone', color: '#94a3b8' },
             ]
         },
     ];
 
-    // Track entity -> space/folder mappings for linking
-    const entitySpaces = {};  // entitySlug -> [spaceId]
-    const entityFolders = {}; // entitySlug -> [folderId]
-
-    for (let si = 0; si < spaceDefs.length; si++) {
-        const sd = spaceDefs[si];
+    let viewCount = 0;
+    for (let si = 0; si < spaceViewDefs.length; si++) {
+        const sd = spaceViewDefs[si];
         const space = await upsertDoc(db.Space, { slug: slug(sd.name), 'meta.createdByPreset': PRESET }, {
             name: sd.name, slug: slug(sd.name), icon: sd.icon, color: sd.color, order: si,
             environmentId: env._id, owner: new mongoose.Types.ObjectId(userId)
         });
-        for (let fi = 0; fi < sd.folders.length; fi++) {
-            const fd = sd.folders[fi];
-            const folder = await upsertDoc(db.Folder, { slug: slug(fd.name), spaces: [space._id], 'meta.createdByPreset': PRESET }, {
-                name: fd.name, slug: slug(fd.name), icon: fd.icon, color: fd.color, order: fi,
-                spaces: [space._id], parentFolders: []
-            });
-            // Track entity mapping
-            if (fd.entitySlug && E[fd.entitySlug]) {
-                if (!entitySpaces[fd.entitySlug]) entitySpaces[fd.entitySlug] = [];
-                if (!entityFolders[fd.entitySlug]) entityFolders[fd.entitySlug] = [];
-                if (!entitySpaces[fd.entitySlug].includes(space._id.toString())) {
-                    entitySpaces[fd.entitySlug].push(space._id);
-                }
-                entityFolders[fd.entitySlug].push(folder._id);
-            }
-        }
-    }
-
-    // Link entities to their spaces and folders
-    for (const [entitySlug, spaceIds] of Object.entries(entitySpaces)) {
-        const entityId = E[entitySlug];
-        if (entityId) {
-            await db.Entity.findByIdAndUpdate(entityId, {
-                $set: {
-                    spaces: spaceIds,
-                    folders: entityFolders[entitySlug] || []
-                }
-            });
-        }
-    }
-
-    // Create Views for each entity-folder link (sidebar uses Views, not Entity.spaces/folders)
-    const viewsCreated = [];
-    for (const [entitySlug, folderIds] of Object.entries(entityFolders)) {
-        const entityId = E[entitySlug];
-        if (!entityId) continue;
-        const entity = await db.Entity.findById(entityId).lean();
-        if (!entity) continue;
-        for (const folderId of folderIds) {
-            const viewSlug = `view-${entitySlug}-${folderId.toString().slice(-6)}`;
+        for (let vi = 0; vi < sd.views.length; vi++) {
+            const vd = sd.views[vi];
+            const entityId = E[vd.entitySlug];
+            if (!entityId) continue;
+            const viewSlug = `view-${vd.entitySlug}-${space._id.toString().slice(-6)}-${vi}`;
             await upsertDoc(db.View, { slug: viewSlug, 'meta.createdByPreset': PRESET }, {
-                name: entity.name, slug: viewSlug, entity: entityId,
-                icon: entity.icon, color: entity.color, viewType: 'list', order: 0,
-                spaces: [], folders: [folderId],
+                name: vd.name, slug: viewSlug, entity: entityId,
+                icon: vd.icon, color: vd.color, viewType: 'list', order: vi,
+                spaces: [space._id], folders: [],
                 createdBy: new mongoose.Types.ObjectId(userId)
             });
-            viewsCreated.push(entity.name);
+            viewCount++;
         }
     }
-    console.log(`   ✅ ${spaceDefs.length} spaces + folders + ${viewsCreated.length} views`);
+    console.log(`   ✅ ${spaceViewDefs.length} spaces + ${viewCount} views (no redundant folders)`);
 
     // =========== 6. DEMO RECORDS ===========
     console.log('\n📊 Creating demo records...');
@@ -396,6 +360,7 @@ async function createDemoRecords(db, ids, userId) {
     const f = ids.fields;
     const uid = new mongoose.Types.ObjectId(userId);
     const cls = ids.classifications;
+    const rk = ids.relationKeys; // relation UUID keys
 
     // Helper
     const rec = async (entitySlug, title, customs = {}, extras = {}) => {
@@ -488,7 +453,7 @@ async function createDemoRecords(db, ids, userId) {
         const doc = await rec('rendez-vous', `RDV - ${p.title}`, {
             date_rdv: d, duree_rdv: 30, objet_rdv: ['Consultation générale', 'Suivi', 'Contrôle', 'Renouvellement ordonnance'][i % 4]
         }, {
-            relations: [{ relationKey: 'patient', value: p._id }],
+            relations: [{ relationKey: rk['rendez-vous__patients'], value: p._id }],
             classificationValues: statusOpts ? [{ classificationId: cls.rdv_status, optionId: statusOpts[statusIdx]?._id, label: statusOpts[statusIdx]?.label, color: statusOpts[statusIdx]?.color }] : []
         });
         appts.push(doc);
@@ -511,20 +476,29 @@ async function createDemoRecords(db, ids, userId) {
             tension: `${12 + Math.floor(Math.random() * 4)}/${7 + Math.floor(Math.random() * 3)}`,
             temperature: (36.5 + Math.random() * 1.5).toFixed(1),
         }, {
-            relations: [{ relationKey: 'patient', value: p._id }],
+            relations: [{ relationKey: rk['consultations__patients'], value: p._id }],
             classificationValues: consultTypeOpts ? [{ classificationId: cls.consult_type, optionId: consultTypeOpts[typeIdx]?._id, label: consultTypeOpts[typeIdx]?.label, color: consultTypeOpts[typeIdx]?.color }] : []
         });
         consults.push(doc);
     }
 
-    // -- Prescriptions (10) --
+    // -- Prescriptions (10) - linked to patients, consultations AND medications --
     for (let i = 0; i < 10; i++) {
         const p = patients[i % patients.length];
         const c = consults[i % consults.length];
+        const med1 = meds[i % meds.length];
+        const med2 = meds[(i + 5) % meds.length];
         await rec('prescriptions', `Ordonnance ${p.title}`, {
-            posologie: `${meds[i % meds.length].title} - 1 cp matin et soir pendant 7 jours`,
+            posologie: `${med1.title} - 1 cp matin et soir pendant 7 jours\n${med2.title} - 1 cp le soir`,
             duree_traitement: '7 jours', notes_prescription: 'Prendre au milieu du repas.'
-        }, { relations: [{ relationKey: 'patient', value: p._id }, { relationKey: 'consultation', value: c._id }] });
+        }, {
+            relations: [
+                { relationKey: rk['prescriptions__patients'], value: p._id },
+                { relationKey: rk['prescriptions__consultations'], value: c._id },
+                { relationKey: rk['prescriptions__medicaments'], value: med1._id },
+                { relationKey: rk['prescriptions__medicaments'], value: med2._id }
+            ]
+        });
     }
 
     // -- Invoices (10) + Payments (10) --
@@ -539,7 +513,7 @@ async function createDemoRecords(db, ids, userId) {
             montant_total: amount, montant_paye: paid,
             date_echeance: new Date(Date.now() + (i < 7 ? -10 : 30) * 86400000)
         }, {
-            relations: [{ relationKey: 'patient', value: p._id }, { relationKey: 'consultation', value: c._id }],
+            relations: [{ relationKey: rk['factures__patients'], value: p._id }, { relationKey: rk['factures__consultations'], value: c._id }],
             classificationValues: invoiceStatusOpts ? [{ classificationId: cls.invoice_status, optionId: invoiceStatusOpts[statusIdx]?._id, label: invoiceStatusOpts[statusIdx]?.label, color: invoiceStatusOpts[statusIdx]?.color }] : []
         });
 
@@ -547,7 +521,7 @@ async function createDemoRecords(db, ids, userId) {
             await rec('paiements', `PAY-${String(i + 1).padStart(4, '0')}`, {
                 montant_total: paid, mode_paiement: ['cash', 'card', 'transfer', 'insurance'][i % 4],
                 reference_paiement: `REF${Date.now()}`
-            }, { relations: [{ relationKey: 'facture', value: inv._id }] });
+            }, { relations: [{ relationKey: rk['paiements__factures'], value: inv._id }] });
         }
     }
 
@@ -561,7 +535,7 @@ async function createDemoRecords(db, ids, userId) {
             resultats_labo: 'Résultats dans les normes.', valeurs_reference: 'Voir annexe.',
             interpretation: 'Pas d\'anomalie significative.'
         }, {
-            relations: [{ relationKey: 'patient', value: p._id }],
+            relations: [{ relationKey: rk['resultats-labo__patients'], value: p._id }],
             classificationValues: labTypeOpts ? [{ classificationId: cls.lab_type, optionId: labTypeOpts[typeIdx]?._id, label: labTypeOpts[typeIdx]?.label, color: labTypeOpts[typeIdx]?.color }] : []
         });
     }
@@ -571,13 +545,13 @@ async function createDemoRecords(db, ids, userId) {
         const p = patients[i % patients.length];
         await rec('documents-medicaux', `Doc médical ${p.title} #${i + 1}`, {
             type_document: ['Certificat', 'Compte-rendu', 'Lettre', 'Attestation', 'Résultat'][i % 5]
-        }, { relations: [{ relationKey: 'patient', value: p._id }] });
+        }, { relations: [{ relationKey: rk['documents-medicaux__patients'], value: p._id }] });
     }
     for (let i = 0; i < 6; i++) {
         const p = patients[i % patients.length];
         await rec('plans-traitement', `Plan ${p.title}`, {
             objectif: 'Amélioration de la condition clinique', protocole: 'Traitement médicamenteux + suivi', duree_traitement: '3 mois'
-        }, { relations: [{ relationKey: 'patient', value: p._id }] });
+        }, { relations: [{ relationKey: rk['plans-traitement__patients'], value: p._id }] });
     }
     const stockItems = ['Gants latex M', 'Gants latex L', 'Compresses stériles', 'Seringues 5ml', 'Seringues 10ml', 'Aiguilles 21G', 'Sparadrap', 'Coton', 'Bandelettes urinaires', 'Masques chirurgicaux', 'Thermomètre digital', 'Tensiomètre', 'Stéthoscope', 'Otoscope', 'Abaisse-langues', 'Désinfectant', 'Alcool 70°', 'Pansements', 'Fil de suture', 'Bistouri jetable'];
     for (let i = 0; i < stockItems.length; i++) {

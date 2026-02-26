@@ -382,7 +382,7 @@
       <!-- BOTTOM: Réglages (toggles admin panel) -->
       <a href="javascript:;"
          @click="$dispatch('toggle-admin')"
-         x-data="{ adminActive: (() => { const p = window.location.pathname; return p.includes('/entity/') || p.includes('/classification/') || p.includes('/field-template/') || p.includes('/field-type/') || p.includes('/documents') || p.includes('/db/') || p.includes('/line-schemas') || p.includes('/ordonnance') || p.includes('/datatable') || p.includes('/showcase') || p.includes('/admin'); })() }"
+         x-data="{ adminActive: (() => { const p = window.location.pathname; return p.includes('/entity/') || p.includes('/classification/') || p.includes('/field-template/') || p.includes('/field-type/') || p.includes('/documents') || p.includes('/db/') || p.includes('/line-schemas') || p.includes('/ordonnance') || p.includes('/datatable') || p.includes('/showcase') || p.includes('/admin') || p.includes('/app-presets'); })() }"
          @toggle-admin.window="adminActive = !adminActive"
          @show-spaces.window="adminActive = false"
          :data-active="adminActive"
@@ -419,7 +419,7 @@
 
 
         <!-- ═══ SIDEBAR MODE WRAPPER (Admin vs Spaces toggle) ═══ -->
-        <div x-data="{ showAdmin: (() => { const p = window.location.pathname; return p.includes('/entity/') || p.includes('/classification/') || p.includes('/field-template/') || p.includes('/field-type/') || p.includes('/documents') || p.includes('/db/') || p.includes('/line-schemas') || p.includes('/ordonnance') || p.includes('/datatable') || p.includes('/showcase') || p.includes('/admin'); })() }" @toggle-admin.window="showAdmin = !showAdmin" @show-spaces.window="showAdmin = false">
+        <div x-data="{ showAdmin: (() => { const p = window.location.pathname; return p.includes('/entity/') || p.includes('/classification/') || p.includes('/field-template/') || p.includes('/field-type/') || p.includes('/documents') || p.includes('/db/') || p.includes('/line-schemas') || p.includes('/ordonnance') || p.includes('/datatable') || p.includes('/showcase') || p.includes('/admin') || p.includes('/app-presets'); })() }" @toggle-admin.window="showAdmin = !showAdmin" @show-spaces.window="showAdmin = false">
 
         <!-- ═══ ADMIN SECTION (hidden by default, toggle with settings icon) ═══ -->
         <div x-show="showAdmin" x-collapse x-cloak>
@@ -554,6 +554,17 @@
               </div>
             </li>
           </ul>
+        </li>
+
+        <!-- 🪄 Modèles prédéfinis (App Presets) -->
+        <li class="menu nav-item">
+          <div class="nav-link group flex items-center justify-between -mx-4 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+            :class="window.location.pathname.includes('/app-presets') ? 'bg-gray-100 dark:bg-gray-800' : ''">
+            <a href="/account/<%= account_number %>/app-presets" class="flex items-center mx-2 cursor-pointer flex-1">
+              <iconify-icon icon="solar:magic-stick-3-bold-duotone" class="ml-1" width="18" height="18" style="color: #00ab55"></iconify-icon>
+              <span class="text-sm text-gray-700 dark:text-gray-400 group-hover:text-primary transition-all ltr:pl-2 rtl:pr-2">Modèles prédéfinis</span>
+            </a>
+          </div>
         </li>
 
         <!-- 🔧 Workspace Admin (owner/admin of this workspace) -->

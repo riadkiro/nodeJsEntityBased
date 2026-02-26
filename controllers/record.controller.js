@@ -679,6 +679,7 @@ module.exports = {
                             classificationDefs[cls._id.toString()] = {
                                 _id: cls._id.toString(),
                                 name: cls.name,
+                                allowMultiple: !!cls.allowMultiple,
                                 defaultOptionId: cls.defaultOptionId ? cls.defaultOptionId.toString() : null,
                                 options: (cls.options || []).map(o => ({ label: o.label || o.name || o, color: o.color || '', _id: (o._id || '').toString() }))
                             };
@@ -1158,20 +1159,23 @@ module.exports = {
     updateClassification: async (req, res) => {
         try {
             const RecordModel = await tenantCollection(req, "Record");
-            const { recordId, classificationId, optionId } = req.body;
-            console.log('[updateClassification] Received:', { recordId, classificationId, optionId });
+            const { recordId, classificationId, optionId, optionIds, allowMultiple } = req.body;
 
             const record = await RecordModel.findById(recordId);
             if (!record) return res.status(404).json({ error: "Record not found" });
-            console.log('[updateClassification] Record found, current classificationValues:', JSON.stringify(record.classificationValues));
 
-            // Remove existing values for this classification (Single Select Flow Behavior)
+            // Remove existing values for this classification
             record.classificationValues = record.classificationValues.filter(
                 cv => cv.classificationId.toString() !== classificationId
             );
 
-            // Add new value if it's not the "none" / "unclassified" column
-            if (optionId && optionId !== 'none') {
+            // Multi-select mode: optionIds is an array
+            if (allowMultiple && Array.isArray(optionIds)) {
+                optionIds.filter(id => id && id !== 'none').forEach(id => {
+                    record.classificationValues.push({ classificationId, optionId: id });
+                });
+            } else if (optionId && optionId !== 'none') {
+                // Single-select (backward compatible)
                 record.classificationValues.push({ classificationId, optionId });
             }
 

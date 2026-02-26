@@ -11,6 +11,13 @@ const DocumentLineSchema = new mongoose.Schema({
         index: true
     },
 
+    // Schema this line belongs to
+    schemaId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'LineSchema',
+        index: true
+    },
+
     // Line type from schema
     lineType: {
         type: String,
@@ -45,5 +52,6 @@ const DocumentLineSchema = new mongoose.Schema({
 
 // Indexes
 DocumentLineSchema.index({ documentId: 1, order: 1 });
+DocumentLineSchema.index({ documentId: 1, schemaId: 1, order: 1 });
 
 module.exports = mongoose.model('DocumentLine', DocumentLineSchema);

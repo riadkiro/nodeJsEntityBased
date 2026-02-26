@@ -11,6 +11,116 @@
  */
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 
+// ── Column resize logic ──
+function enableColumnResize(table, onSave) {
+    if (!table || table._resizeCleanup) return
+
+    table.style.tableLayout = 'fixed'
+    const rows = table.querySelectorAll('tr')
+    const firstRow = rows[0]
+    if (!firstRow) return
+
+    // Ensure all cells have explicit widths
+    const cells = firstRow.children
+    const tableWidth = table.offsetWidth
+    Array.from(cells).forEach(cell => {
+        if (!cell.style.width) {
+            cell.style.width = `${cell.offsetWidth}px`
+        }
+    })
+
+    // Create resize handles
+    const handles = []
+    for (let i = 0; i < cells.length - 1; i++) {
+        const handle = document.createElement('div')
+        handle.className = 'tt-col-resize-handle'
+        handle.dataset.colIndex = i
+        handle.style.cssText = `
+            position: absolute;
+            top: 0;
+            width: 6px;
+            height: 100%;
+            cursor: col-resize;
+            z-index: 10;
+            background: transparent;
+            transition: background 0.15s;
+        `
+        handle.addEventListener('mouseenter', () => {
+            handle.style.background = 'rgba(79, 70, 229, 0.3)'
+        })
+        handle.addEventListener('mouseleave', () => {
+            if (!handle._dragging) handle.style.background = 'transparent'
+        })
+        table.style.position = 'relative'
+        table.appendChild(handle)
+        handles.push(handle)
+    }
+
+    // Position handles
+    function positionHandles() {
+        const firstRowCells = table.querySelector('tr')?.children
+        if (!firstRowCells) return
+        let left = 0
+        for (let i = 0; i < firstRowCells.length - 1; i++) {
+            left += firstRowCells[i].offsetWidth
+            if (handles[i]) {
+                handles[i].style.left = `${left - 3}px`
+            }
+        }
+    }
+    positionHandles()
+
+    // Drag handlers
+    handles.forEach((handle, idx) => {
+        handle.addEventListener('mousedown', (e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            handle._dragging = true
+            handle.style.background = 'rgba(79, 70, 229, 0.5)'
+
+            const startX = e.clientX
+            const colCells = []
+            const nextColCells = []
+            rows.forEach(row => {
+                if (row.children[idx]) colCells.push(row.children[idx])
+                if (row.children[idx + 1]) nextColCells.push(row.children[idx + 1])
+            })
+            const startWidth = colCells[0]?.offsetWidth || 80
+            const nextStartWidth = nextColCells[0]?.offsetWidth || 80
+
+            function onMouseMove(ev) {
+                const diff = ev.clientX - startX
+                const newWidth = Math.max(40, startWidth + diff)
+                const nextNewWidth = Math.max(40, nextStartWidth - diff)
+                colCells.forEach(c => { c.style.width = `${newWidth}px` })
+                nextColCells.forEach(c => { c.style.width = `${nextNewWidth}px` })
+                positionHandles()
+            }
+            function onMouseUp() {
+                handle._dragging = false
+                handle.style.background = 'transparent'
+                document.removeEventListener('mousemove', onMouseMove)
+                document.removeEventListener('mouseup', onMouseUp)
+                onSave?.()
+            }
+            document.addEventListener('mousemove', onMouseMove)
+            document.addEventListener('mouseup', onMouseUp)
+        })
+    })
+
+    table._resizeCleanup = () => {
+        handles.forEach(h => h.remove())
+        table.style.tableLayout = ''
+        delete table._resizeCleanup
+    }
+}
+
+function disableColumnResize(table) {
+    if (table?._resizeCleanup) {
+        table._resizeCleanup()
+    }
+}
+
 // ── Color palette for cell backgrounds ──
 const CELL_COLORS = [
     null, '#f3f4f6', '#fef3c7', '#fee2e2', '#dcfce7', '#dbeafe',
@@ -146,12 +256,29 @@ export function useTableToolbar(contentRef, onSave) {
 export default function TableToolbar({ activeTable, activeCell, toolbarPos, clearToolbar, onSave }) {
     const [showColorPicker, setShowColorPicker] = useState(false)
     const [showStylePicker, setShowStylePicker] = useState(false)
+    const [resizeActive, setResizeActive] = useState(false)
 
     // Close pickers when table changes
     useEffect(() => {
         setShowColorPicker(false)
         setShowStylePicker(false)
+        // Cleanup resize handles on old table
+        return () => {
+            if (activeTable) disableColumnResize(activeTable)
+        }
     }, [activeTable, activeCell])
+
+    // Toggle column resize mode
+    const toggleResize = useCallback(() => {
+        if (!activeTable) return
+        if (resizeActive) {
+            disableColumnResize(activeTable)
+            setResizeActive(false)
+        } else {
+            enableColumnResize(activeTable, onSave)
+            setResizeActive(true)
+        }
+    }, [activeTable, resizeActive, onSave])
 
     // ── Helpers ──
     const getColIndex = useCallback(() => {
@@ -300,6 +427,13 @@ export default function TableToolbar({ activeTable, activeCell, toolbarPos, clea
         onSave?.()
     }, [activeCell, onSave])
 
+    // ── Cell text alignment ──
+    const setCellAlign = useCallback((align) => {
+        if (!activeCell) return
+        activeCell.style.textAlign = align
+        onSave?.()
+    }, [activeCell, onSave])
+
     // ── Table style preset ──
     const applyTableStyle = useCallback((style) => {
         if (!activeTable) return
@@ -369,6 +503,23 @@ export default function TableToolbar({ activeTable, activeCell, toolbarPos, clea
             <TtBtn icon="tabler:column-insert-left" title="Ajouter colonne à gauche" onClick={addColumnLeft} />
             <TtBtn icon="tabler:column-insert-right" title="Ajouter colonne à droite" onClick={addColumnRight} />
             <TtBtn icon="tabler:column-remove" title="Supprimer la colonne" onClick={deleteColumn} danger />
+
+            <TtSep />
+
+            {/* Column Resize Toggle */}
+            <TtBtn
+                icon="tabler:arrows-horizontal"
+                title={resizeActive ? "Désactiver le redimensionnement" : "Redimensionner les colonnes"}
+                onClick={toggleResize}
+                active={resizeActive}
+            />
+
+            <TtSep />
+
+            {/* Cell Text Alignment */}
+            <TtBtn icon="tabler:align-left" title="Aligner à gauche" onClick={() => setCellAlign('left')} />
+            <TtBtn icon="tabler:align-center" title="Centrer" onClick={() => setCellAlign('center')} />
+            <TtBtn icon="tabler:align-right" title="Aligner à droite" onClick={() => setCellAlign('right')} />
 
             <TtSep />
 

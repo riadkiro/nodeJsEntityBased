@@ -296,7 +296,7 @@
     }
     .dark .lp-modal-search { border-color: #253b5c; }
     .lp-modal-search-input {
-        width: 100%; padding: 10px 12px 10px 40px; border-radius: 10px;
+        width: 100%; padding: 10px 12px 10px 40px !important; border-radius: 10px;
         border: 1.5px solid #e5e7eb; font-size: 13px; background: #f8f9fa;
         transition: all 0.15s; color: inherit;
     }
@@ -310,8 +310,9 @@
         position: relative;
     }
     .lp-modal-search-wrap .lp-search-icon {
-        position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-        color: #9ca3af; pointer-events: none; font-size: 0; line-height: 0;
+        position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+        color: #9ca3af; pointer-events: none; z-index: 1;
+        display: flex; align-items: center; justify-content: center;
     }
     /* Manual add section */
     .lp-manual-add {
@@ -483,89 +484,129 @@
     .dark .lp-pill.active {
         background: rgba(67, 97, 238, 0.2); border-color: #6993ff; color: #6993ff;
     }
+
+    /* ── Inline multiselect tag-picker ── */
+    .lp-ms-wrap {
+        position: relative;
+        min-width: 100px;
+    }
+    .lp-ms-trigger {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+        padding: 3px 6px;
+        min-height: 28px;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: border-color 0.15s;
+        align-items: center;
+    }
+    .lp-ms-trigger:hover {
+        border-color: #d1d5db;
+    }
+    .dark .lp-ms-trigger:hover {
+        border-color: #334155;
+    }
+    .lp-ms-placeholder {
+        font-size: 11px;
+        color: #9ca3af;
+        font-style: italic;
+    }
+    .lp-ms-dropdown {
+        position: fixed;
+        min-width: 200px;
+        max-width: 280px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+        z-index: 9999;
+        overflow: hidden;
+    }
+    .dark .lp-ms-dropdown {
+        background: #0e1726;
+        border-color: #334155;
+    }
 </style>
 
-<div class="panel !p-0 overflow-hidden" data-id="lines"
+<div data-id="lines"
     x-data='linesPanel({
         recordId: "<%= locals.record && record._id ? record._id : '' %>",
         accountNumber: "<%= account_number %>",
         entityId: "<%= locals.entity ? entity._id : '' %>"
     })'
 >
-    <!-- Header -->
-    <div class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
-        @click="isOpen = !isOpen">
-        <div class="flex items-center gap-1.5">
-            <iconify-icon icon="solar:document-text-bold-duotone" width="14" class="text-success"></iconify-icon>
-            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400" x-text="activeSchema ? activeSchema.name : 'Lignes'"></span>
-            <span x-show="lines.length > 0" class="text-[9px] bg-success/10 text-success min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1" x-text="lines.length"></span>
-        </div>
-        <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="isOpen ? '' : '-rotate-90'" class="transition-transform text-gray-300"></iconify-icon>
-    </div>
-
-    <!-- Body -->
-    <div x-show="isOpen" x-collapse>
-        <!-- Loading state -->
-        <template x-if="loading">
+    <!-- Loading state -->
+    <template x-if="loading">
+        <div class="panel !p-0 overflow-hidden">
             <div class="px-4 py-8 text-center">
                 <iconify-icon icon="svg-spinners:ring-resize" width="24" class="text-primary"></iconify-icon>
                 <p class="text-xs text-gray-400 mt-2">Chargement des schémas...</p>
             </div>
-        </template>
+        </div>
+    </template>
 
-        <!-- No schemas available -->
-        <template x-if="!loading && schemas.length === 0">
+    <!-- No schemas available -->
+    <template x-if="!loading && schemas.length === 0">
+        <div class="panel !p-0 overflow-hidden">
             <div class="px-4 py-6 text-center">
                 <iconify-icon icon="solar:document-text-linear" width="28" class="text-gray-300 dark:text-gray-600 mb-2"></iconify-icon>
                 <p class="text-xs text-gray-400">Aucun schéma de lignes disponible pour cette entité</p>
             </div>
-        </template>
+        </div>
+    </template>
 
-        <!-- Schema selector (if multiple schemas) -->
-        <template x-if="!loading && schemas.length > 0">
-            <div>
-                <!-- Schema pills (only if multiple) -->
-                <div x-show="schemas.length > 1" class="px-3 py-2 flex flex-wrap gap-1.5 border-b border-gray-100 dark:border-gray-800">
-                    <template x-for="s in schemas" :key="s._id">
-                        <button
-                            class="lp-schema-pill"
-                            :class="activeSchemaId === s._id ? 'active' : ''"
-                            @click.stop="selectSchema(s._id)"
-                            x-text="s.name"
-                        ></button>
-                    </template>
+    <!-- One panel per schema -->
+    <template x-for="schema in schemas" :key="schema._id">
+        <div class="panel !p-0 overflow-hidden" :class="schemas.indexOf(schema) > 0 ? 'mt-4' : ''">
+            <!-- Schema Panel Header -->
+            <div class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
+                @click="toggleSchemaOpen(schema._id)">
+                <div class="flex items-center gap-1.5">
+                    <iconify-icon icon="solar:document-text-bold-duotone" width="14" class="text-success"></iconify-icon>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400" x-text="schema.name"></span>
+                    <span x-show="getSchemaLines(schema._id).length > 0" class="text-[9px] bg-success/10 text-success min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1" x-text="getSchemaLines(schema._id).length"></span>
                 </div>
+                <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="isSchemaOpen(schema._id) ? '' : '-rotate-90'" class="transition-transform text-gray-300"></iconify-icon>
+            </div>
+
+            <!-- Schema Body -->
+            <div x-show="isSchemaOpen(schema._id)" x-collapse
+                 @click="activeSchemaId = schema._id"
+                 @focusin="activeSchemaId = schema._id">
 
                 <!-- Line Type selector (if schema has multiple line types) -->
-                <div x-show="activeSchema && activeSchema.lineTypes && activeSchema.lineTypes.length > 1"
+                <div x-show="schema.lineTypes && schema.lineTypes.length > 1"
                     class="px-3 py-1.5 flex items-center gap-2 border-b border-gray-100 dark:border-gray-800">
                     <span class="text-[10px] font-semibold text-gray-400 uppercase">Type:</span>
                     <select class="lp-input !w-auto !text-[11px] !py-1 !px-2 !border-gray-200 dark:!border-gray-700"
-                        x-model="newLineType">
-                        <template x-for="lt in activeSchema.lineTypes" :key="lt">
+                        @change="setSchemaLineType(schema._id, $event.target.value)"
+                        :value="getSchemaLineType(schema._id)">
+                        <template x-for="lt in schema.lineTypes" :key="lt">
                             <option :value="lt" x-text="lt"></option>
                         </template>
                     </select>
                 </div>
 
                 <!-- Table -->
-                <div class="overflow-x-auto" x-show="activeSchema">
+                <div class="overflow-x-auto">
                     <table class="lines-panel-table">
                         <thead>
                             <tr>
                                 <th style="width: 28px;"></th>
                                 <th style="width: 24px;">#</th>
-                                <template x-if="getRelationCol()">
-                                    <th class="lp-w-m" x-text="getRelationCol()?.label || 'Article'"></th>
+                                <template x-if="getRelationColForSchema(schema)">
+                                    <th class="lp-w-m" x-text="getRelationColForSchema(schema)?.label || 'Article'"></th>
                                 </template>
-                                <template x-for="col in visibleColumns.filter(c => c.type !== 'relation')" :key="col.key">
+                                <template x-for="col in getVisibleColumnsForSchema(schema).filter(c => c.type !== 'relation')" :key="col.key">
                                     <th :class="'lp-w-' + (col.width || 'M').toLowerCase()" x-text="col.label"></th>
                                 </template>
                                 <th style="width: 56px;"></th>
                             </tr>
                         </thead>
-                        <tbody x-ref="linesSortable">
-                            <template x-for="(line, lineIdx) in lines" :key="line._tempId || line._id || lineIdx">
+                        <tbody :data-schema-id="schema._id">
+                            <template x-for="(line, lineIdx) in getSchemaLines(schema._id)" :key="line._tempId || line._id || lineIdx">
                                 <tr>
                                     <!-- Drag handle -->
                                     <td>
@@ -661,16 +702,56 @@
                                                 </select>
                                             </template>
 
-                                            <!-- Multiselect (toggle pills) -->
+                                            <!-- Multiselect (inline tag-picker dropdown) -->
                                             <template x-if="col.type === 'multiselect'">
-                                                <div class="lp-multi-pills">
-                                                    <template x-for="opt in (col.config?.options || [])" :key="opt.value">
-                                                        <button type="button"
-                                                            class="lp-pill"
-                                                            :class="{ 'active': (line.values[col.key] || []).includes(opt.value) }"
-                                                            @click.stop="toggleMultiselectValue(line, col.key, opt.value)"
-                                                            x-text="opt.label">
-                                                        </button>
+                                                <div class="lp-ms-wrap">
+                                                    <!-- Selected tags display (trigger) -->
+                                                    <div class="lp-ms-trigger"
+                                                         @click.stop="activeSchemaId = schema._id; openMultiselectDropdown(lineIdx, col.key, $event)">
+                                                        <template x-if="(line.values[col.key] || []).length === 0">
+                                                            <span class="lp-ms-placeholder">Sélectionner...</span>
+                                                        </template>
+                                                        <template x-for="selVal in (line.values[col.key] || [])" :key="selVal">
+                                                            <span class="tp-tag"
+                                                                  :style="'background:' + getMultiselectOptStyle(col, selVal).bg + '; color:' + getMultiselectOptStyle(col, selVal).text"
+                                                                  x-text="getMultiselectOptLabel(col, selVal)">
+                                                            </span>
+                                                        </template>
+                                                    </div>
+                                                    <!-- Backdrop + Dropdown (only rendered for the active one) -->
+                                                    <template x-if="msDropdown.lineIdx === lineIdx && msDropdown.colKey === col.key && msDropdown.open">
+                                                        <div>
+                                                            <!-- Invisible backdrop to close on click -->
+                                                            <div style="position: fixed; inset: 0; z-index: 9998;"
+                                                                 @click.stop="closeMultiselectDropdown()"></div>
+                                                            <!-- Dropdown panel -->
+                                                            <div class="lp-ms-dropdown"
+                                                                 :style="'top:' + (msDropdown.pos?.top || 0) + 'px; left:' + (msDropdown.pos?.left || 0) + 'px'">
+                                                                <div class="tp-search-wrap">
+                                                                    <input type="text" class="tp-search-input"
+                                                                           placeholder="Rechercher..."
+                                                                           :value="msDropdown.query"
+                                                                           @input="msDropdown.query = $event.target.value" />
+                                                                </div>
+                                                                <div class="tp-divider"></div>
+                                                                <div class="tp-options">
+                                                                    <template x-for="opt in filterMsOptions(col)" :key="opt.value">
+                                                                        <div class="tp-option"
+                                                                             @click.stop="toggleMultiselectValue(line, col.key, opt.value)">
+                                                                            <div class="tp-option-icon"
+                                                                                 :style="(line.values[col.key] || []).includes(opt.value)
+                                                                                     ? 'background:' + getMultiselectOptStyle(col, opt.value).bg + '; border: 2px solid ' + getMultiselectOptStyle(col, opt.value).bg
+                                                                                     : 'background: #fff; border: 2px solid #d1d5db'">
+                                                                                <iconify-icon x-show="(line.values[col.key] || []).includes(opt.value)"
+                                                                                              icon="tabler:check" width="12"
+                                                                                              :style="'color:' + getMultiselectOptStyle(col, opt.value).text"></iconify-icon>
+                                                                            </div>
+                                                                            <span class="tp-option-label" x-text="opt.label"></span>
+                                                                        </div>
+                                                                    </template>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </template>
                                                 </div>
                                             </template>
@@ -749,10 +830,10 @@
                                     <!-- Actions (edit + delete) -->
                                     <td>
                                         <div class="lp-row-actions">
-                                            <button type="button" class="lp-row-btn edit" @click="openEditLine(lineIdx)" title="Modifier">
+                                            <button type="button" class="lp-row-btn edit" @click="activeSchemaId = schema._id; openEditLine(lineIdx)" title="Modifier">
                                                 <iconify-icon icon="tabler:pencil" width="14"></iconify-icon>
                                             </button>
-                                            <button type="button" class="lp-row-btn delete" @click="removeLine(lineIdx)" title="Supprimer">
+                                            <button type="button" class="lp-row-btn delete" @click="activeSchemaId = schema._id; removeLine(lineIdx)" title="Supprimer">
                                                 <iconify-icon icon="tabler:trash" width="14"></iconify-icon>
                                             </button>
                                         </div>
@@ -764,53 +845,54 @@
                 </div>
 
                 <!-- Add row -->
-                <div class="lp-add-row-area" x-show="activeSchema" style="display: flex; gap: 0;">
+                <div class="lp-add-row-area" style="display: flex; gap: 0;">
                     <div style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;"
-                         @click.stop="openAddModal()">
+                         @click.stop="activateAndOpenModal(schema._id)">
                         <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
                         <span>Ajouter des lignes</span>
                     </div>
                     <div style="border-left: 1px solid #e5e7eb; padding: 0 10px; display: flex; align-items: center;"
                          class="dark:!border-gray-700"
-                         @click.stop="addLine()" title="Ajouter une ligne vide">
+                         @click.stop="addLineToSchema(schema._id)" title="Ajouter une ligne vide">
                         <iconify-icon icon="tabler:row-insert-bottom" width="14"></iconify-icon>
                     </div>
                 </div>
 
                 <!-- Totals -->
-                <div x-show="activeSchema && activeSchema.totals && (activeSchema.totals.subtotalKey || activeSchema.totals.totalFormula)"
+                <div x-show="schema.totals && (schema.totals.subtotalKey || schema.totals.totalFormula)"
                     class="lp-totals-bar">
-                    <template x-if="totals.subtotal !== undefined">
+                    <template x-if="getSchemaTotals(schema._id).subtotal !== undefined">
                         <div class="lp-total-item">
                             <span class="lp-total-label">Sous-total</span>
-                            <span class="lp-total-value" x-text="formatMoney(totals.subtotal)"></span>
+                            <span class="lp-total-value" x-text="formatMoney(getSchemaTotals(schema._id).subtotal)"></span>
                         </div>
                     </template>
-                    <template x-if="totals.vat !== undefined">
+                    <template x-if="getSchemaTotals(schema._id).vat !== undefined">
                         <div class="lp-total-item">
                             <span class="lp-total-label">TVA</span>
-                            <span class="lp-total-value" x-text="formatMoney(totals.vat)"></span>
+                            <span class="lp-total-value" x-text="formatMoney(getSchemaTotals(schema._id).vat)"></span>
                         </div>
                     </template>
-                    <template x-if="totals.total !== undefined">
+                    <template x-if="getSchemaTotals(schema._id).total !== undefined">
                         <div class="lp-total-item">
                             <span class="lp-total-label">Total</span>
-                            <span class="lp-total-value" x-text="formatMoney(totals.total)"></span>
+                            <span class="lp-total-value" x-text="formatMoney(getSchemaTotals(schema._id).total)"></span>
                         </div>
                     </template>
                 </div>
 
                 <!-- Save indicator -->
-                <div x-show="saving" class="px-3 py-1 text-center">
+                <div x-show="savingSchemas[schema._id]" class="px-3 py-1 text-center">
                     <span class="text-[10px] text-gray-400 flex items-center justify-center gap-1">
                         <iconify-icon icon="svg-spinners:ring-resize" width="10"></iconify-icon>
                         Enregistrement...
                     </span>
                 </div>
-            </div>
-        </template>
+            </div><!-- end schema body -->
+        </div><!-- end panel -->
+    </template>
 
-        <!-- ═══ Add Lines Modal ═══ -->
+    <!-- ═══ Add Lines Modal ═══ -->
         <template x-if="addModal.open">
             <div class="lp-modal-overlay" @click.self="closeAddModal()" @keydown.escape.window="closeAddModal()">
                 <div class="lp-modal">
@@ -828,8 +910,9 @@
                     <!-- Search -->
                     <div class="lp-modal-search">
                         <div class="lp-modal-search-wrap">
-                            <iconify-icon icon="tabler:search" width="15" class="lp-search-icon"></iconify-icon>
+                            <iconify-icon icon="tabler:search" width="15" height="15" class="lp-search-icon"></iconify-icon>
                             <input type="text" class="lp-modal-search-input"
+                                   style="padding-left: 40px !important;"
                                    x-model="addModal.query"
                                    @input="searchCatalog()"
                                    placeholder="Rechercher un article, traitement..."
@@ -985,16 +1068,52 @@
                                                         </div>
                                                     </template>
 
-                                                    <!-- Multiselect (toggle pills) -->
+                                                    <!-- Multiselect (inline tag-picker) -->
                                                     <template x-if="col.type === 'multiselect'">
-                                                        <div class="lp-multi-pills">
-                                                            <template x-for="opt in (col.config?.options || [])" :key="opt.value">
-                                                                <button type="button"
-                                                                    class="lp-pill"
-                                                                    :class="{ 'active': (getSelectedItemValue(item._id, col.key) || []).includes(opt.value) }"
-                                                                    @click.stop="toggleSelectedItemMultiselect(item._id, col.key, opt.value)"
-                                                                    x-text="opt.label">
-                                                                </button>
+                                                        <div class="lp-ms-wrap">
+                                                            <div class="lp-ms-trigger"
+                                                                 @click.stop="openMultiselectDropdown('add_' + item._id + '_' + col.key, col.key, $event)">
+                                                                <template x-if="(getSelectedItemValue(item._id, col.key) || []).length === 0">
+                                                                    <span class="lp-ms-placeholder">Sélectionner...</span>
+                                                                </template>
+                                                                <template x-for="selVal in (getSelectedItemValue(item._id, col.key) || [])" :key="selVal">
+                                                                    <span class="tp-tag"
+                                                                          :style="'background:' + getMultiselectOptStyle(col, selVal).bg + '; color:' + getMultiselectOptStyle(col, selVal).text"
+                                                                          x-text="getMultiselectOptLabel(col, selVal)">
+                                                                    </span>
+                                                                </template>
+                                                            </div>
+                                                            <template x-if="msDropdown.lineIdx === ('add_' + item._id + '_' + col.key) && msDropdown.colKey === col.key && msDropdown.open">
+                                                                <div>
+                                                                    <div style="position: fixed; inset: 0; z-index: 9998;"
+                                                                         @click.stop="closeMultiselectDropdown()"></div>
+                                                                    <div class="lp-ms-dropdown"
+                                                                         :style="'top:' + (msDropdown.pos?.top || 0) + 'px; left:' + (msDropdown.pos?.left || 0) + 'px'">
+                                                                        <div class="tp-search-wrap">
+                                                                            <input type="text" class="tp-search-input"
+                                                                                   placeholder="Rechercher..."
+                                                                                   :value="msDropdown.query"
+                                                                                   @input="msDropdown.query = $event.target.value" />
+                                                                        </div>
+                                                                        <div class="tp-divider"></div>
+                                                                        <div class="tp-options">
+                                                                            <template x-for="opt in filterMsOptions(col)" :key="opt.value">
+                                                                                <div class="tp-option"
+                                                                                     @click.stop="toggleSelectedItemMultiselect(item._id, col.key, opt.value)">
+                                                                                    <div class="tp-option-icon"
+                                                                                         :style="(getSelectedItemValue(item._id, col.key) || []).includes(opt.value)
+                                                                                             ? 'background:' + getMultiselectOptStyle(col, opt.value).bg + '; border: 2px solid ' + getMultiselectOptStyle(col, opt.value).bg
+                                                                                             : 'background: #fff; border: 2px solid #d1d5db'">
+                                                                                        <iconify-icon x-show="(getSelectedItemValue(item._id, col.key) || []).includes(opt.value)"
+                                                                                                      icon="tabler:check" width="12"
+                                                                                                      :style="'color:' + getMultiselectOptStyle(col, opt.value).text"></iconify-icon>
+                                                                                    </div>
+                                                                                    <span class="tp-option-label" x-text="opt.label"></span>
+                                                                                </div>
+                                                                            </template>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             </template>
                                                         </div>
                                                     </template>
@@ -1104,16 +1223,52 @@
                                     </select>
                                 </template>
 
-                                <!-- Multiselect (pills) -->
+                                <!-- Multiselect (inline tag-picker) -->
                                 <template x-if="col.type === 'multiselect'">
-                                    <div class="lp-multi-pills" style="padding-top: 4px;">
-                                        <template x-for="opt in (col.config?.options || [])" :key="opt.value">
-                                            <button type="button"
-                                                class="lp-pill"
-                                                :class="{ 'active': (lines[editModal.lineIdx].values[col.key] || []).includes(opt.value) }"
-                                                @click.stop="toggleMultiselectValue(lines[editModal.lineIdx], col.key, opt.value)"
-                                                x-text="opt.label">
-                                            </button>
+                                    <div class="lp-ms-wrap">
+                                        <div class="lp-ms-trigger"
+                                             @click.stop="openMultiselectDropdown('edit_' + editModal.lineIdx + '_' + col.key, col.key, $event)">
+                                            <template x-if="(lines[editModal.lineIdx].values[col.key] || []).length === 0">
+                                                <span class="lp-ms-placeholder">Sélectionner...</span>
+                                            </template>
+                                            <template x-for="selVal in (lines[editModal.lineIdx].values[col.key] || [])" :key="selVal">
+                                                <span class="tp-tag"
+                                                      :style="'background:' + getMultiselectOptStyle(col, selVal).bg + '; color:' + getMultiselectOptStyle(col, selVal).text"
+                                                      x-text="getMultiselectOptLabel(col, selVal)">
+                                                </span>
+                                            </template>
+                                        </div>
+                                        <template x-if="msDropdown.lineIdx === ('edit_' + editModal.lineIdx + '_' + col.key) && msDropdown.colKey === col.key && msDropdown.open">
+                                            <div>
+                                                <div style="position: fixed; inset: 0; z-index: 9998;"
+                                                     @click.stop="closeMultiselectDropdown()"></div>
+                                                <div class="lp-ms-dropdown"
+                                                     :style="'top:' + (msDropdown.pos?.top || 0) + 'px; left:' + (msDropdown.pos?.left || 0) + 'px'">
+                                                    <div class="tp-search-wrap">
+                                                        <input type="text" class="tp-search-input"
+                                                               placeholder="Rechercher..."
+                                                               :value="msDropdown.query"
+                                                               @input="msDropdown.query = $event.target.value" />
+                                                    </div>
+                                                    <div class="tp-divider"></div>
+                                                    <div class="tp-options">
+                                                        <template x-for="opt in filterMsOptions(col)" :key="opt.value">
+                                                            <div class="tp-option"
+                                                                 @click.stop="toggleMultiselectValue(lines[editModal.lineIdx], col.key, opt.value)">
+                                                                <div class="tp-option-icon"
+                                                                     :style="(lines[editModal.lineIdx].values[col.key] || []).includes(opt.value)
+                                                                         ? 'background:' + getMultiselectOptStyle(col, opt.value).bg + '; border: 2px solid ' + getMultiselectOptStyle(col, opt.value).bg
+                                                                         : 'background: #fff; border: 2px solid #d1d5db'">
+                                                                    <iconify-icon x-show="(lines[editModal.lineIdx].values[col.key] || []).includes(opt.value)"
+                                                                                  icon="tabler:check" width="12"
+                                                                                  :style="'color:' + getMultiselectOptStyle(col, opt.value).text"></iconify-icon>
+                                                                </div>
+                                                                <span class="tp-option-label" x-text="opt.label"></span>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </template>
                                     </div>
                                 </template>
@@ -1181,8 +1336,7 @@
                 </div>
             </div>
         </template>
-    </div>
-</div>
+</div><!-- end x-data linesPanel -->
 
 <script>
 document.addEventListener('alpine:init', () => {
@@ -1190,15 +1344,42 @@ document.addEventListener('alpine:init', () => {
         recordId: config.recordId,
         accountNumber: config.accountNumber,
         entityId: config.entityId,
-        isOpen: true,
         loading: true,
         saving: false,
 
         schemas: [],
         activeSchemaId: null,
-        lines: [],
-        totals: {},
-        newLineType: '',
+        linesMap: {},       // { schemaId: lines[] }
+        totalsMap: {},      // { schemaId: totals{} }
+        openSchemas: {},    // { schemaId: boolean } — which panels are expanded
+        lineTypeMap: {},    // { schemaId: string } — selected line type per schema
+        savingSchemas: {},  // { schemaId: boolean } — saving indicator per schema
+
+        // Keep backward-compatible getters for modal interactions
+        get lines() {
+            return this.linesMap[this.activeSchemaId] || [];
+        },
+        set lines(val) {
+            if (this.activeSchemaId) {
+                this.linesMap[this.activeSchemaId] = val;
+            }
+        },
+        get totals() {
+            return this.totalsMap[this.activeSchemaId] || {};
+        },
+        set totals(val) {
+            if (this.activeSchemaId) {
+                this.totalsMap[this.activeSchemaId] = val;
+            }
+        },
+        get newLineType() {
+            return this.lineTypeMap[this.activeSchemaId] || 'product';
+        },
+        set newLineType(val) {
+            if (this.activeSchemaId) {
+                this.lineTypeMap[this.activeSchemaId] = val;
+            }
+        },
 
         // Relation search state
         relationSearch: {
@@ -1209,6 +1390,15 @@ document.addEventListener('alpine:init', () => {
             results: [],
             query: '',
             debounceTimer: null
+        },
+
+        // Multiselect dropdown state
+        msDropdown: {
+            lineIdx: -1,
+            colKey: '',
+            open: false,
+            query: '',
+            pos: null
         },
 
         // Add Lines modal state
@@ -1230,7 +1420,7 @@ document.addEventListener('alpine:init', () => {
             _timer: null
         },
 
-        _saveTimer: null,
+        _saveTimers: {},  // per-schema save timers
         editModal: { open: false, lineIdx: -1 },
 
         get activeSchema() {
@@ -1242,6 +1432,55 @@ document.addEventListener('alpine:init', () => {
             return (this.activeSchema.columns || [])
                 .filter(c => c.visible !== false)
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
+        },
+
+        // ── Per-schema helpers ────────────────────────────────
+        getSchemaLines(schemaId) {
+            return this.linesMap[schemaId] || [];
+        },
+
+        getSchemaTotals(schemaId) {
+            return this.totalsMap[schemaId] || {};
+        },
+
+        isSchemaOpen(schemaId) {
+            return this.openSchemas[schemaId] !== false; // default open
+        },
+
+        toggleSchemaOpen(schemaId) {
+            this.openSchemas[schemaId] = !this.isSchemaOpen(schemaId);
+        },
+
+        getSchemaLineType(schemaId) {
+            return this.lineTypeMap[schemaId] || 'product';
+        },
+
+        setSchemaLineType(schemaId, value) {
+            this.lineTypeMap[schemaId] = value;
+        },
+
+        getRelationColForSchema(schema) {
+            if (!schema) return null;
+            return (schema.columns || []).find(c => c.type === 'relation') || null;
+        },
+
+        getVisibleColumnsForSchema(schema) {
+            if (!schema) return [];
+            return (schema.columns || [])
+                .filter(c => c.visible !== false)
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
+        },
+
+        // Activate a schema and open the add modal
+        activateAndOpenModal(schemaId) {
+            this.activeSchemaId = schemaId;
+            this.openAddModal();
+        },
+
+        // Add an empty line to a specific schema
+        addLineToSchema(schemaId) {
+            this.activeSchemaId = schemaId;
+            this.addLine();
         },
 
         async init() {
@@ -1259,9 +1498,17 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json();
                 this.schemas = data.data || [];
 
+                // Initialize per-schema state
+                for (const s of this.schemas) {
+                    this.linesMap[s._id] = [];
+                    this.totalsMap[s._id] = {};
+                    this.openSchemas[s._id] = true;
+                    this.lineTypeMap[s._id] = s.defaultLineType || s.lineTypes?.[0] || 'product';
+                    this.savingSchemas[s._id] = false;
+                }
+
                 if (this.schemas.length > 0) {
                     this.activeSchemaId = this.schemas[0]._id;
-                    this.newLineType = this.schemas[0].defaultLineType || this.schemas[0].lineTypes?.[0] || 'product';
                     await this.loadLines();
                 }
             } catch (e) {
@@ -1277,16 +1524,41 @@ document.addEventListener('alpine:init', () => {
                     credentials: 'include'
                 });
                 const data = await res.json();
-                this.lines = (data.data || []).map(l => ({
+                const allLines = (data.data || []).map(l => ({
                     ...l,
                     values: l.values || {},
                     computed: l.computed || {},
                     _tempId: l._id || ('tmp_' + Date.now() + '_' + Math.random())
                 }));
 
-                // Recompute all formulas client-side
-                this.lines.forEach(l => this.recomputeLine(l));
-                this.recomputeTotals();
+                // Distribute lines by schemaId
+                for (const s of this.schemas) {
+                    this.linesMap[s._id] = allLines.filter(l => 
+                        l.schemaId === s._id || 
+                        (l.schemaId && l.schemaId.toString() === s._id.toString())
+                    );
+                }
+
+                // Lines without a schemaId go to the first schema
+                const orphanLines = allLines.filter(l => !l.schemaId);
+                if (orphanLines.length > 0 && this.schemas.length > 0) {
+                    this.linesMap[this.schemas[0]._id] = [
+                        ...(this.linesMap[this.schemas[0]._id] || []),
+                        ...orphanLines
+                    ];
+                }
+
+                // Recompute formulas for each schema
+                for (const s of this.schemas) {
+                    this.activeSchemaId = s._id;
+                    (this.linesMap[s._id] || []).forEach(l => this.recomputeLine(l));
+                    this.recomputeTotals();
+                }
+
+                // Reset active to first
+                if (this.schemas.length > 0) {
+                    this.activeSchemaId = this.schemas[0]._id;
+                }
                 this.initSortable();
             } catch (e) {
                 console.error('[LinesPanel] Load lines error:', e);
@@ -1295,11 +1567,6 @@ document.addEventListener('alpine:init', () => {
 
         selectSchema(schemaId) {
             this.activeSchemaId = schemaId;
-            const schema = this.activeSchema;
-            if (schema) {
-                this.newLineType = schema.defaultLineType || schema.lineTypes?.[0] || 'product';
-            }
-            // Lines are still the same — they exist on the record regardless of schema
         },
 
         // Get the primary relation column (always, ignoring visible/showWhen)
@@ -1340,13 +1607,16 @@ document.addEventListener('alpine:init', () => {
         },
 
         addLine() {
-            this.lines.push({
+            const schemaLines = this.linesMap[this.activeSchemaId] || [];
+            schemaLines.push({
                 _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
+                schemaId: this.activeSchemaId,
                 lineType: this.newLineType,
                 values: {},
                 computed: {},
-                order: this.lines.length
+                order: schemaLines.length
             });
+            this.linesMap[this.activeSchemaId] = [...schemaLines];
             this.debouncedSave();
         },
 
@@ -1522,12 +1792,14 @@ document.addEventListener('alpine:init', () => {
             const lineType = this.newLineType || this.activeSchema?.defaultLineType || this.activeSchema?.lineTypes?.[0] || 'product';
 
             for (const sel of this.addModal.selected) {
+                const schemaLines = this.linesMap[this.activeSchemaId] || [];
                 const newLine = {
                     _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
+                    schemaId: this.activeSchemaId,
                     lineType: lineType,
                     values: { ...sel.values },
                     computed: {},
-                    order: this.lines.length
+                    order: schemaLines.length
                 };
                 // Set relation ID + label
                 if (relCol) {
@@ -1535,8 +1807,9 @@ document.addEventListener('alpine:init', () => {
                     newLine.values[relCol.key + '_label'] = sel.label;
                 }
                 this.recomputeLine(newLine);
-                this.lines.push(newLine);
+                schemaLines.push(newLine);
             }
+            this.linesMap[this.activeSchemaId] = [...(this.linesMap[this.activeSchemaId] || [])];
 
             this.recomputeTotals();
             this.debouncedSave();
@@ -1593,19 +1866,22 @@ document.addEventListener('alpine:init', () => {
             const qtyCol = (this.activeSchema?.columns || []).find(c => c.key === 'qty');
             if (qtyCol && !values.qty) values.qty = 1;
 
+            const schemaLines = this.linesMap[this.activeSchemaId] || [];
             const newLine = {
                 _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
+                schemaId: this.activeSchemaId,
                 lineType,
                 values,
                 computed: {},
-                order: this.lines.length
+                order: schemaLines.length
             };
             if (relCol) {
                 newLine.values[relCol.key] = sug._id;
                 newLine.values[relCol.key + '_label'] = sug.label || sug.title;
             }
             this.recomputeLine(newLine);
-            this.lines.push(newLine);
+            schemaLines.push(newLine);
+            this.linesMap[this.activeSchemaId] = [...schemaLines];
             this.recomputeTotals();
             this.debouncedSave();
 
@@ -1633,15 +1909,18 @@ document.addEventListener('alpine:init', () => {
             const qtyCol = (this.activeSchema?.columns || []).find(c => c.key === 'qty');
             if (qtyCol && !values.qty) values.qty = 1;
 
+            const schemaLines = this.linesMap[this.activeSchemaId] || [];
             const newLine = {
                 _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
+                schemaId: this.activeSchemaId,
                 lineType,
                 values,
                 computed: {},
-                order: this.lines.length
+                order: schemaLines.length
             };
             this.recomputeLine(newLine);
-            this.lines.push(newLine);
+            schemaLines.push(newLine);
+            this.linesMap[this.activeSchemaId] = [...schemaLines];
             this.recomputeTotals();
             this.debouncedSave();
 
@@ -1675,7 +1954,9 @@ document.addEventListener('alpine:init', () => {
         },
 
         removeLine(idx) {
-            this.lines.splice(idx, 1);
+            const schemaLines = this.linesMap[this.activeSchemaId] || [];
+            schemaLines.splice(idx, 1);
+            this.linesMap[this.activeSchemaId] = [...schemaLines];
             this.recomputeTotals();
             this.debouncedSave();
         },
@@ -1713,18 +1994,19 @@ document.addEventListener('alpine:init', () => {
 
         recomputeTotals() {
             const schema = this.activeSchema;
-            if (!schema || !schema.totals) { this.totals = {}; return; }
+            if (!schema || !schema.totals) { this.totalsMap[this.activeSchemaId] = {}; return; }
 
+            const schemaLines = this.linesMap[this.activeSchemaId] || [];
             const t = {};
             if (schema.totals.subtotalKey) {
-                t.subtotal = this.lines.reduce((sum, line) => {
+                t.subtotal = schemaLines.reduce((sum, line) => {
                     const val = line.computed?.[schema.totals.subtotalKey] ??
                                 line.values?.[schema.totals.subtotalKey] ?? 0;
                     return sum + (parseFloat(val) || 0);
                 }, 0);
             }
             if (schema.totals.vatKey) {
-                t.vat = this.lines.reduce((sum, line) => {
+                t.vat = schemaLines.reduce((sum, line) => {
                     const val = line.computed?.[schema.totals.vatKey] ??
                                 line.values?.[schema.totals.vatKey] ?? 0;
                     return sum + (parseFloat(val) || 0);
@@ -1733,7 +2015,7 @@ document.addEventListener('alpine:init', () => {
             if (schema.totals.totalFormula) {
                 t.total = this.evaluateFormula(schema.totals.totalFormula, t);
             }
-            this.totals = t;
+            this.totalsMap[this.activeSchemaId] = t;
         },
 
         formatComputed(line, col) {
@@ -1802,6 +2084,65 @@ document.addEventListener('alpine:init', () => {
             this.debouncedSave();
         },
 
+        openMultiselectDropdown(lineIdx, colKey, event) {
+            if (this.msDropdown.lineIdx === lineIdx && this.msDropdown.colKey === colKey && this.msDropdown.open) {
+                this.closeMultiselectDropdown();
+                return;
+            }
+            this.msDropdown.lineIdx = lineIdx;
+            this.msDropdown.colKey = colKey;
+            this.msDropdown.open = true;
+            this.msDropdown.query = '';
+
+            // Calculate fixed position from the trigger
+            if (event) {
+                const trigger = event.currentTarget || event.target;
+                const rect = trigger.getBoundingClientRect();
+                this.msDropdown.pos = {
+                    top: rect.bottom + 4,
+                    left: rect.left
+                };
+            }
+        },
+
+        closeMultiselectDropdown() {
+            this.msDropdown.open = false;
+            this.msDropdown.lineIdx = -1;
+            this.msDropdown.colKey = '';
+            this.msDropdown.query = '';
+        },
+
+        filterMsOptions(col) {
+            const opts = col.config?.options || [];
+            const q = (this.msDropdown.query || '').trim().toLowerCase();
+            if (!q) return opts;
+            return opts.filter(o => o.label.toLowerCase().includes(q));
+        },
+
+        getMultiselectOptLabel(col, value) {
+            const opts = col.config?.options || [];
+            const opt = opts.find(o => o.value === value);
+            return opt?.label || value;
+        },
+
+        getMultiselectOptStyle(col, value) {
+            const opts = col.config?.options || [];
+            const opt = opts.find(o => o.value === value);
+            if (opt?.bg) return { bg: opt.bg, text: opt.text || '#fff' };
+            // Default color based on value hash for consistent coloring
+            const colors = [
+                { bg: '#dbeafe', text: '#1e40af' },
+                { bg: '#dcfce7', text: '#166534' },
+                { bg: '#fef3c7', text: '#92400e' },
+                { bg: '#fce7f3', text: '#9d174d' },
+                { bg: '#e0e7ff', text: '#3730a3' },
+                { bg: '#fae8ff', text: '#86198f' },
+                { bg: '#ecfdf5', text: '#065f46' },
+            ];
+            let hash = 0;
+            for (let i = 0; i < String(value).length; i++) hash = (hash * 31 + String(value).charCodeAt(i)) % colors.length;
+            return colors[Math.abs(hash) % colors.length];
+        },
 
 
 
@@ -1904,17 +2245,20 @@ document.addEventListener('alpine:init', () => {
 
         // ── Debounced save ──────────────────────────────────
         debouncedSave() {
-            clearTimeout(this._saveTimer);
-            this._saveTimer = setTimeout(() => this.saveLines(), 800);
+            const schemaId = this.activeSchemaId;
+            if (!schemaId) return;
+            clearTimeout(this._saveTimers[schemaId]);
+            this._saveTimers[schemaId] = setTimeout(() => this.saveLinesForSchema(schemaId), 800);
         },
 
-        async saveLines() {
-            if (!this.recordId || !this.activeSchemaId) return;
-            this.saving = true;
+        async saveLinesForSchema(schemaId) {
+            if (!this.recordId || !schemaId) return;
+            this.savingSchemas[schemaId] = true;
             try {
+                const schemaLines = this.linesMap[schemaId] || [];
                 const payload = {
-                    schemaId: this.activeSchemaId,
-                    lines: this.lines.map((l, i) => ({
+                    schemaId: schemaId,
+                    lines: schemaLines.map((l, i) => ({
                         _id: l._id || undefined,
                         lineType: l.lineType,
                         values: l.values,
@@ -1931,42 +2275,52 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json();
                 if (data.data) {
                     // Update lines with server IDs (for new lines)
-                    this.lines = data.data.map(l => ({
+                    const prevActive = this.activeSchemaId;
+                    this.activeSchemaId = schemaId;
+                    this.linesMap[schemaId] = data.data.map(l => ({
                         ...l,
                         values: l.values || {},
                         computed: l.computed || {},
                         _tempId: l._id
                     }));
                     // Recompute locally (formulas)
-                    this.lines.forEach(l => this.recomputeLine(l));
+                    (this.linesMap[schemaId] || []).forEach(l => this.recomputeLine(l));
+                    this.activeSchemaId = prevActive;
                 }
                 if (data.totals) {
-                    this.totals = data.totals;
+                    this.totalsMap[schemaId] = data.totals;
                 }
             } catch (e) {
-                console.error('[LinesPanel] Save error:', e);
+                console.error('[LinesPanel] Save error for schema', schemaId, e);
             } finally {
-                this.saving = false;
+                this.savingSchemas[schemaId] = false;
             }
         },
 
         // ── Sortable init ───────────────────────────────────
         initSortable() {
             this.$nextTick(() => {
-                if (this.$refs.linesSortable && typeof Sortable !== 'undefined') {
-                    Sortable.create(this.$refs.linesSortable, {
-                        handle: '.lp-drag-handle',
-                        animation: 150,
-                        ghostClass: 'sortable-ghost',
-                        chosenClass: 'sortable-chosen',
-                        onEnd: (evt) => {
-                            const items = [...this.lines];
-                            const [moved] = items.splice(evt.oldIndex, 1);
-                            items.splice(evt.newIndex, 0, moved);
-                            this.lines = items;
-                            this.debouncedSave();
-                        }
-                    });
+                if (typeof Sortable === 'undefined') return;
+                // Init sortable for each schema's tbody
+                for (const s of this.schemas) {
+                    const tbody = this.$el.querySelector(`tbody[data-schema-id="${s._id}"]`);
+                    if (tbody) {
+                        Sortable.create(tbody, {
+                            handle: '.lp-drag-handle',
+                            animation: 150,
+                            ghostClass: 'sortable-ghost',
+                            chosenClass: 'sortable-chosen',
+                            onEnd: (evt) => {
+                                const schemaId = s._id;
+                                const items = [...(this.linesMap[schemaId] || [])];
+                                const [moved] = items.splice(evt.oldIndex, 1);
+                                items.splice(evt.newIndex, 0, moved);
+                                this.linesMap[schemaId] = items;
+                                this.activeSchemaId = schemaId;
+                                this.debouncedSave();
+                            }
+                        });
+                    }
                 }
             });
         }

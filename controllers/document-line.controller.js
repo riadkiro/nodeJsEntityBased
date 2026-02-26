@@ -32,7 +32,13 @@ module.exports = {
             const DocumentLine = await tenantCollection(req, 'DocumentLine');
             if (!DocumentLine) return res.status(500).json({ error: 'Model not available' });
 
-            const lines = await DocumentLine.find({ documentId: req.params.documentId })
+            const filter = { documentId: req.params.documentId };
+            // Optional: filter by schemaId
+            if (req.query.schemaId) {
+                filter.schemaId = req.query.schemaId;
+            }
+
+            const lines = await DocumentLine.find(filter)
                 .sort({ order: 1 })
                 .lean();
 
@@ -63,8 +69,10 @@ module.exports = {
                 schema = await LineSchema.findById(schemaId).lean();
             }
 
-            // Get existing line IDs
-            const existingLines = await DocumentLine.find({ documentId }).select('_id').lean();
+            // Get existing line IDs — SCOPED to this schema only
+            const existFilter = { documentId };
+            if (schemaId) existFilter.schemaId = schemaId;
+            const existingLines = await DocumentLine.find(existFilter).select('_id').lean();
             const existingIds = new Set(existingLines.map(l => l._id.toString()));
             const incomingIds = new Set();
 
@@ -74,6 +82,7 @@ module.exports = {
                 const line = lines[i];
                 const lineData = {
                     documentId,
+                    schemaId: schemaId || undefined,
                     lineType: line.lineType || 'product',
                     values: line.values || {},
                     order: i,
@@ -115,8 +124,10 @@ module.exports = {
                 await DocumentLine.bulkWrite(operations);
             }
 
-            // Re-fetch saved lines
-            const savedLines = await DocumentLine.find({ documentId })
+            // Re-fetch saved lines — scoped to this schema
+            const refetchFilter = { documentId };
+            if (schemaId) refetchFilter.schemaId = schemaId;
+            const savedLines = await DocumentLine.find(refetchFilter)
                 .sort({ order: 1 })
                 .lean();
 

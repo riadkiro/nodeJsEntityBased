@@ -233,5 +233,70 @@ module.exports = {
             console.error(err);
             res.status(500).json({ error: err.message });
         }
+    },
+
+    // ─── Update a single option (label, color) ────────────────────────
+    updateOption: async (req, res) => {
+        try {
+            const { classificationId, optionId, label, color } = req.body;
+            const Classification = await tenantCollection(req, "Classification");
+
+            const classification = await Classification.findById(classificationId);
+            if (!classification) return res.status(404).json({ error: "Classification non trouvée" });
+
+            const opt = classification.options.id(optionId);
+            if (!opt) return res.status(404).json({ error: "Option non trouvée" });
+
+            if (label !== undefined) opt.label = label;
+            if (color !== undefined) opt.color = color;
+
+            await classification.save();
+
+            // Cascade update: update denormalized label/color on records
+            if (label !== undefined || color !== undefined) {
+                const RecordModel = await tenantCollection(req, "Record");
+                const updateFields = {};
+                if (label !== undefined) updateFields['classificationValues.$.label'] = label;
+                if (color !== undefined) updateFields['classificationValues.$.color'] = color;
+                await RecordModel.updateMany(
+                    { 'classificationValues.optionId': new mongoose.Types.ObjectId(optionId) },
+                    { $set: updateFields }
+                );
+            }
+
+            res.json({ success: true, option: opt });
+        } catch (err) {
+            console.error('[Classification] updateOption error:', err);
+            res.status(500).json({ error: err.message });
+        }
+    },
+
+    // ─── Delete a single option ───────────────────────────────────────
+    deleteOption: async (req, res) => {
+        try {
+            const { classificationId, optionId } = req.body;
+            const Classification = await tenantCollection(req, "Classification");
+            const RecordModel = await tenantCollection(req, "Record");
+
+            const classification = await Classification.findById(classificationId);
+            if (!classification) return res.status(404).json({ error: "Classification non trouvée" });
+
+            // Remove option from classification
+            classification.options = classification.options.filter(
+                o => o._id.toString() !== optionId
+            );
+            await classification.save();
+
+            // Cascade: remove from all records
+            await RecordModel.updateMany(
+                { 'classificationValues.optionId': new mongoose.Types.ObjectId(optionId) },
+                { $pull: { classificationValues: { optionId: new mongoose.Types.ObjectId(optionId) } } }
+            );
+
+            res.json({ success: true });
+        } catch (err) {
+            console.error('[Classification] deleteOption error:', err);
+            res.status(500).json({ error: err.message });
+        }
     }
 };

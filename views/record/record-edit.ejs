@@ -1,3 +1,4 @@
+<%- include('../components/tag-picker') %>
 <div x-data="recordForm()" class="space-y-4">
     <form action="/account/<%= account_number %>/record/<%= entity.slug %>/update/<%= record._id %>" method="POST"
         enctype="multipart/form-data" id="main-record-form">
@@ -526,10 +527,14 @@
                                                         <% var cls = locals.entityFormFieldDefs && locals.entityFormFieldDefs.classification[field.fieldId]; %>
                                                         <% if (cls) { %>
                                                             <%
-                                                                var selectedClassVal = '';
+                                                                // Collect all selected option IDs for this classification
+                                                                var selectedClassIds = [];
                                                                 if (record.classificationValues) {
-                                                                    var cv = record.classificationValues.find(function(c) { return c.classificationId && c.classificationId.toString() === cls._id; });
-                                                                    if (cv) selectedClassVal = (cv.optionId || '').toString();
+                                                                    record.classificationValues.forEach(function(c) {
+                                                                        if (c.classificationId && c.classificationId.toString() === cls._id) {
+                                                                            selectedClassIds.push((c.optionId || '').toString());
+                                                                        }
+                                                                    });
                                                                 }
                                                             %>
                                                             <div class="mb-3">
@@ -537,12 +542,124 @@
                                                                     <iconify-icon icon="solar:tag-bold-duotone" width="14" class="text-success"></iconify-icon>
                                                                     <%= field.label || cls.name %>
                                                                 </label>
-                                                                <select name="classification[<%= cls._id %>]" class="form-select">
-                                                                    <option value="">-- Sélectionner --</option>
-                                                                    <% (cls.options || []).forEach(function(o) { %>
-                                                                        <option value="<%= o._id %>" <%= (selectedClassVal === o._id) ? 'selected' : '' %>><%= o.label %></option>
-                                                                    <% }); %>
-                                                                </select>
+                                                                <div class="tp-wrapper"
+                                                                     x-data="tagPicker({
+                                                                         classificationId: '<%= cls._id %>',
+                                                                         recordId: '<%= record._id %>',
+                                                                         accountNumber: '<%= account_number %>',
+                                                                         allowMultiple: <%= cls.allowMultiple ? 'true' : 'false' %>,
+                                                                         fieldName: 'classification[<%= cls._id %>]',
+                                                                         options: <%= JSON.stringify(cls.options || []) %>,
+                                                                         selectedIds: <%= JSON.stringify(selectedClassIds) %>
+                                                                     })"
+                                                                     @click.away="closeDropdown()">
+
+                                                                    <!-- Trigger: inline tag pills -->
+                                                                    <div class="tp-trigger"
+                                                                         :class="isOpen ? 'tp-trigger--active' : ''"
+                                                                         @click="toggleOpen()">
+                                                                        <template x-if="selectedOptions.length === 0">
+                                                                            <span class="tp-placeholder">Sélectionner...</span>
+                                                                        </template>
+                                                                        <template x-for="opt in selectedOptions" :key="opt._id">
+                                                                            <span class="tp-tag"
+                                                                                  :style="'background:' + opt.bg + '; color:' + opt.text">
+                                                                                <span x-text="opt.label"></span>
+                                                                                <button type="button" class="tp-tag-remove"
+                                                                                        @click.stop="removeTag(opt._id)">
+                                                                                    <iconify-icon icon="tabler:x" width="10"></iconify-icon>
+                                                                                </button>
+                                                                            </span>
+                                                                        </template>
+                                                                    </div>
+
+                                                                    <!-- Dropdown -->
+                                                                    <div class="tp-dropdown" x-show="isOpen" x-cloak
+                                                                         x-transition:enter="transition ease-out duration-150"
+                                                                         x-transition:enter-start="opacity-0 translate-y-1"
+                                                                         x-transition:enter-end="opacity-100 translate-y-0"
+                                                                         x-transition:leave="transition ease-in duration-100"
+                                                                         x-transition:leave-start="opacity-100"
+                                                                         x-transition:leave-end="opacity-0"
+                                                                         @click.stop>
+                                                                        <!-- Search -->
+                                                                        <div class="tp-search-wrap">
+                                                                            <input type="text" class="tp-search-input"
+                                                                                   placeholder="Rechercher ou créer..."
+                                                                                   x-model="searchQuery"
+                                                                                   x-ref="searchInput"
+                                                                                   @keydown.enter.prevent="canCreate ? createOption() : null" />
+                                                                        </div>
+
+                                                                        <div class="tp-divider"></div>
+
+                                                                        <!-- Options list -->
+                                                                        <div class="tp-options" style="position: relative;">
+                                                                            <template x-for="opt in filteredOptions" :key="opt._id">
+                                                                                <div class="tp-option" @click="toggleOption(opt._id)">
+                                                                                    <div class="tp-option-icon"
+                                                                                         :style="'background:' + opt.bg">
+                                                                                        <iconify-icon x-show="isSelected(opt._id)"
+                                                                                                      icon="tabler:check" width="12"
+                                                                                                      :style="'color:' + opt.text"></iconify-icon>
+                                                                                    </div>
+                                                                                    <span class="tp-option-label" x-text="opt.label"></span>
+                                                                                    <div class="tp-option-actions">
+                                                                                        <button type="button" class="tp-option-action-btn"
+                                                                                                @click.stop="startEdit(opt, $event)">
+                                                                                            <iconify-icon icon="solar:pen-2-linear" width="13"></iconify-icon>
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </template>
+
+                                                                            <template x-if="filteredOptions.length === 0 && !canCreate">
+                                                                                <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 12px;">
+                                                                                    Aucune option trouvée
+                                                                                </div>
+                                                                            </template>
+
+                                                                        </div>
+
+                                                                        <!-- Edit popover (fixed position, escapes overflow) -->
+                                                                        <template x-if="editingOption">
+                                                                            <div class="tp-edit-popover" @click.stop
+                                                                                 :style="'top:' + (_editPopoverPos?.top || 0) + 'px; left:' + (_editPopoverPos?.left || 0) + 'px'">
+                                                                                <input type="text" class="tp-edit-input"
+                                                                                       x-model="editLabel"
+                                                                                       @keydown.enter.prevent="saveEdit()"
+                                                                                       placeholder="Nom de l'option" />
+                                                                                <div class="tp-colors">
+                                                                                    <template x-for="(color, idx) in tagColors" :key="idx">
+                                                                                        <div class="tp-color-dot"
+                                                                                             :class="editColorIdx === idx ? 'tp-color-dot--active' : ''"
+                                                                                             :style="'background:' + color.bg"
+                                                                                             @click="selectColor(idx)"></div>
+                                                                                    </template>
+                                                                                </div>
+                                                                                <button type="button" class="tp-delete-btn"
+                                                                                        @click="deleteOption()">
+                                                                                    <iconify-icon icon="solar:trash-bin-trash-bold" width="13"></iconify-icon>
+                                                                                    Supprimer
+                                                                                </button>
+                                                                            </div>
+                                                                        </template>
+
+                                                                        <!-- Create new -->
+                                                                        <template x-if="canCreate">
+                                                                            <div class="tp-create-option" @click="createOption()">
+                                                                                <iconify-icon icon="tabler:plus" width="14" style="color: #6b7280;"></iconify-icon>
+                                                                                <span class="tp-create-label">Créer</span>
+                                                                                <span class="tp-create-tag" x-text="searchQuery"></span>
+                                                                            </div>
+                                                                        </template>
+                                                                    </div>
+
+                                                                    <!-- Hidden inputs for form submission -->
+                                                                    <template x-for="id in selectedIds" :key="id">
+                                                                        <input type="hidden" name="classification[<%= cls._id %>][]" :value="id" />
+                                                                    </template>
+                                                                </div>
                                                             </div>
                                                         <% } %>
                                                     <% } %>
@@ -885,6 +1002,7 @@
         }
     }))).replace(/</g, '\\u003C') %>
 </script>
+
 
 <script>
     document.addEventListener("alpine:init", () => {

@@ -48,7 +48,7 @@ const CardElementSchema = new mongoose.Schema({
     color: String,           // CSS color or 'auto' (inherits from status/context)
     visible: { type: Boolean, default: true },
     items: [String],         // For 'actions' type: ['edit', 'view', 'delete', 'open', 'close']
-}, { _id: true });
+}, { _id: false });
 
 const CardZoneSchema = new mongoose.Schema({
     id: {
@@ -70,7 +70,7 @@ const CardZoneSchema = new mongoose.Schema({
     borderTop: { type: Boolean, default: false },
     borderBottom: { type: Boolean, default: false },
     elements: [CardElementSchema],
-}, { _id: true });
+}, { _id: false });
 
 const CardTemplateSchema = new mongoose.Schema(
     {

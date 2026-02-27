@@ -288,13 +288,13 @@ function ZoneEditor({ zone, index, entityFields, onChange, onRemove, onMoveUp, o
     return (
         <div style={{
             border: '1px solid #e0e4ea', borderRadius: 10, backgroundColor: '#fff',
-            overflow: 'hidden', marginBottom: 10,
+            marginBottom: 10, position: 'relative',
         }}>
             {/* Zone header */}
             <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '8px 12px', backgroundColor: '#f4f6fa', borderBottom: collapsed ? 'none' : '1px solid #e8eaf0',
-                cursor: 'pointer',
+                cursor: 'pointer', borderRadius: collapsed ? '10px' : '10px 10px 0 0',
             }} onClick={() => setCollapsed(!collapsed)}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <iconify-icon icon={collapsed ? 'solar:alt-arrow-right-linear' : 'solar:alt-arrow-down-linear'} width="14" />
@@ -538,7 +538,16 @@ export default function CardBuilder({ accountNumber, entityId, entityName, entit
         setActiveCard(card)
         setEditName(card.name)
         setEditContext(card.context || 'kanban')
-        setEditLayout(JSON.parse(JSON.stringify(card.layout || {})))
+        // Deep clone and inject client-side _id on elements for React key usage
+        const layout = JSON.parse(JSON.stringify(card.layout || {}))
+        if (layout.zones) {
+            layout.zones.forEach(z => {
+                (z.elements || []).forEach(el => {
+                    if (!el._id) el._id = genId()
+                })
+            })
+        }
+        setEditLayout(layout)
     }, [])
 
     // ─── Create new card ─────────────────────────────────────────────
@@ -573,16 +582,26 @@ export default function CardBuilder({ accountNumber, entityId, entityName, entit
         if (!activeCard?._id) return
         setSaving(true)
         try {
+            // Strip client-side _id from elements before sending
+            const cleanLayout = JSON.parse(JSON.stringify(editLayout))
+            if (cleanLayout.zones) {
+                cleanLayout.zones = cleanLayout.zones.map(z => ({
+                    ...z,
+                    elements: (z.elements || []).map(({ _id, ...el }) => el),
+                }))
+            }
             const res = await fetch(`/account/${accountNumber}/api/entity/${entityId}/cards/${activeCard._id}`, {
                 method: 'PUT', credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: editName, context: editContext, layout: editLayout }),
+                body: JSON.stringify({ name: editName, context: editContext, layout: cleanLayout }),
             })
             const data = await res.json()
             if (data.success) {
                 setCards(prev => prev.map(c => c._id === activeCard._id ? data.card : c))
                 setActiveCard(data.card)
                 showToast('Carte sauvegardée !')
+            } else {
+                showToast(data.error || 'Erreur sauvegarde', 'error')
             }
         } catch (err) { showToast('Erreur sauvegarde', 'error') }
         setSaving(false)

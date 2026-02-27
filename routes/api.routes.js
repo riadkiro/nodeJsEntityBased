@@ -1034,4 +1034,129 @@ router.get('/api/entities', async (req, res) => {
     }
 })
 
+
+// ═══════════════════════════════════════════════════════════════════
+// CALENDAR API ENDPOINTS
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * PATCH /account/:account_number/api/records/:recordId/date
+ * Update a specific date custom field on a record (for calendar drag & drop)
+ */
+router.patch('/api/records/:recordId/date', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, "Record")
+        const { recordId } = req.params
+        const { dateFieldId, newStart, newEnd, duration } = req.body
+
+        const record = await Record.findById(recordId)
+        if (!record) return res.status(404).json({ error: 'Record not found' })
+
+        // Update the date custom field
+        if (dateFieldId) {
+            const cfIdx = (record.customFields || []).findIndex(cf =>
+                (cf.field_id?._id || cf.field_id)?.toString() === dateFieldId
+            )
+            if (cfIdx >= 0) {
+                record.customFields[cfIdx].value = newStart
+            } else {
+                record.customFields.push({ field_id: dateFieldId, value: newStart })
+            }
+        }
+
+        // Update duration field if provided
+        if (duration !== undefined) {
+            // Find duration field (number type, name contains 'duree' or 'duration')
+            const FieldTemplate = await tenantCollection(req, "FieldTemplate")
+            const durationField = await FieldTemplate.findOne({
+                _id: { $in: record.customFields.map(cf => cf.field_id?._id || cf.field_id) },
+                type: 'number',
+                $or: [
+                    { name: { $regex: /dur/i } },
+                    { label: { $regex: /dur/i } }
+                ]
+            }).lean()
+            if (durationField) {
+                const dIdx = record.customFields.findIndex(cf =>
+                    (cf.field_id?._id || cf.field_id)?.toString() === durationField._id.toString()
+                )
+                if (dIdx >= 0) {
+                    record.customFields[dIdx].value = duration
+                }
+            }
+        }
+
+        record.markModified('customFields')
+        await record.save()
+        res.json({ success: true })
+    } catch (error) {
+        console.error('[API] Record date update error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * POST /account/:account_number/api/entity/:entityId/records/quick-add
+ * Quick-create a record from the calendar with minimal data
+ */
+router.post('/api/entity/:entityId/records/quick-add', async (req, res) => {
+    try {
+        const Entity = await tenantCollection(req, "Entity")
+        const Record = await tenantCollection(req, "Record")
+        const { entityId } = req.params
+        const { title, dateFieldId, dateValue, duration, durationFieldId, statusOptionId, statusClassificationId } = req.body
+
+        const entity = await Entity.findById(entityId)
+            .populate('classifications')
+            .populate('statusClassification')
+            .lean()
+        if (!entity) return res.status(404).json({ error: 'Entity not found' })
+
+        // Build custom fields
+        const customFields = []
+        if (dateFieldId && dateValue) {
+            customFields.push({ field_id: dateFieldId, value: dateValue })
+        }
+        if (durationFieldId && duration) {
+            customFields.push({ field_id: durationFieldId, value: parseInt(duration) || 30 })
+        }
+
+        // Build classification values
+        const classificationValues = []
+        if (statusOptionId && statusClassificationId) {
+            classificationValues.push({
+                classificationId: statusClassificationId,
+                optionId: statusOptionId,
+            })
+        }
+
+        const recordData = {
+            entityId: entity._id,
+            title: title || 'Nouveau RDV',
+            published: true,
+            customFields,
+            classificationValues,
+            createdBy: req.user?._id,
+        }
+
+        // Compute denormalized fields
+        const denormService = require('../services/record-denorm.service')
+        const denorm = await denormService.computeDenorm(recordData, entity, Record, Entity)
+        Object.assign(recordData, denorm)
+
+        const newRecord = new Record(recordData)
+        await newRecord.save()
+
+        // Return the new record with enriched data
+        const saved = await Record.findById(newRecord._id)
+            .populate({ path: 'customFields.field_id', select: 'label type name' })
+            .lean()
+
+        res.json({ success: true, record: saved })
+    } catch (error) {
+        console.error('[API] Calendar quick-add error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
 module.exports = router

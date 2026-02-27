@@ -352,6 +352,53 @@ export default function RecordsCalendar({
     const [detailPosition, setDetailPosition] = useState({ x: 0, y: 0 })
     const [toast, setToast] = useState(null)
     const [localRecords, setLocalRecords] = useState(records)
+    const [settingsOpen, setSettingsOpen] = useState(false)
+
+    // ─── Calendar settings state ──────────────────────────────────
+    const [calSettings, setCalSettings] = useState({
+        weekStartsOn: 1,       // 0 = Sunday, 1 = Monday
+        startHour: '07:00',
+        endHour: '20:00',
+        hideWeekend: false,
+        slotDuration: '00:15:00',
+        slotLabelInterval: '01:00',
+    })
+
+    // Fetch settings from server on mount
+    useEffect(() => {
+        if (!entityData?._id) return
+        const entityId = entityData._id?.$oid || entityData._id
+        fetch(`/account/${accountNumber}/api/user/view-preferences?viewId=calendar_${entityId}`, { credentials: 'include' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.preferences?.calendarSettings) {
+                    setCalSettings(prev => ({ ...prev, ...data.preferences.calendarSettings }))
+                }
+            })
+            .catch(() => { })
+    }, [entityData?._id, accountNumber])
+
+    // Save settings to server
+    const saveSettings = useCallback(async (newSettings) => {
+        setCalSettings(newSettings)
+        setSettingsOpen(false)
+        const entityId = entityData?._id?.$oid || entityData?._id
+        if (!entityId) return
+        try {
+            await fetch(`/account/${accountNumber}/api/user/view-preferences`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    viewId: `calendar_${entityId}`,
+                    preferences: { calendarSettings: newSettings }
+                })
+            })
+            setToast({ message: 'Paramètres sauvegardés', type: 'success' })
+        } catch (err) {
+            setToast({ message: 'Erreur sauvegarde paramètres', type: 'error' })
+        }
+    }, [accountNumber, entityData])
 
     // Sync records prop
     useEffect(() => { setLocalRecords(records) }, [records])
@@ -550,6 +597,9 @@ export default function RecordsCalendar({
 
         if (calendarInstance.current) calendarInstance.current.destroy()
 
+        // Build hiddenDays from settings
+        const hiddenDays = calSettings.hideWeekend ? [0, 6] : []
+
         const calendar = new FullCalendar.Calendar(calendarRef.current, {
             initialView: 'timeGridWeek',
             headerToolbar: {
@@ -570,18 +620,22 @@ export default function RecordsCalendar({
             selectMirror: true,
             dayMaxEvents: 3,
             height: 'auto',
-            // ─── Snap to 15 min ───
-            slotDuration: '00:15:00',
-            snapDuration: '00:15:00',
-            slotLabelInterval: '01:00',
+            // ─── Settings-driven options ───
+            firstDay: calSettings.weekStartsOn,
+            hiddenDays,
+            slotDuration: calSettings.slotDuration,
+            snapDuration: calSettings.slotDuration,
+            slotLabelInterval: calSettings.slotLabelInterval,
             slotLabelFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+            slotMinTime: calSettings.startHour + ':00',
+            slotMaxTime: calSettings.endHour + ':00',
             // ─── Business hours ───
             businessHours: {
-                daysOfWeek: [1, 2, 3, 4, 5],
-                startTime: '08:00',
-                endTime: '19:00',
+                daysOfWeek: calSettings.hideWeekend ? [1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5, 6],
+                startTime: calSettings.startHour,
+                endTime: calSettings.endHour,
             },
-            scrollTime: '08:00:00',
+            scrollTime: calSettings.startHour + ':00',
             nowIndicator: true,
             // ─── Events ───
             events: calendarEvents,
@@ -614,7 +668,7 @@ export default function RecordsCalendar({
                 calendarInstance.current = null
             }
         }
-    }, [ready, calendarEvents, handleEventClick, handleDateSelect, handleEventDrop, handleEventResize])
+    }, [ready, calendarEvents, handleEventClick, handleDateSelect, handleEventDrop, handleEventResize, calSettings])
 
     // Loading
     if (!ready) {
@@ -662,9 +716,56 @@ export default function RecordsCalendar({
                 .fc .fc-timegrid-slot-label { font-size: 11px !important; color: #888 !important; }
                 .fc-theme-standard td, .fc-theme-standard th { border-color: #f0f0f0 !important; }
                 .fc .fc-non-business { background: #fafbfc !important; }
+                .cal-settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.12); z-index: 999; animation: fadeIn 0.15s ease; }
+                .cal-settings-panel {
+                    position: fixed; top: 0; right: 0; bottom: 0; width: 380px; max-width: 90vw;
+                    background: #fff; z-index: 1000; box-shadow: -4px 0 32px rgba(0,0,0,0.12);
+                    animation: slideInRight 0.25s ease; display: flex; flex-direction: column;
+                }
+                .cal-settings-panel .header {
+                    display: flex; align-items: center; justify-content: space-between;
+                    padding: 20px 24px; border-bottom: 1px solid #f0f0f0;
+                }
+                .cal-settings-panel .header h3 { margin: 0; font-size: 16px; font-weight: 700; color: #1e293b; }
+                .cal-settings-panel .body { flex: 1; overflow-y: auto; padding: 24px; }
+                .cal-settings-panel .footer {
+                    padding: 16px 24px; border-top: 1px solid #f0f0f0;
+                    display: flex; gap: 10px; justify-content: flex-end;
+                }
+                .cal-field { margin-bottom: 20px; }
+                .cal-field label { display: block; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+                .cal-field select, .cal-field input[type="time"] {
+                    width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px;
+                    font-size: 14px; color: #334155; background: #fff; outline: none; transition: border 0.2s;
+                }
+                .cal-field select:focus, .cal-field input[type="time"]:focus { border-color: #4361ee; box-shadow: 0 0 0 3px rgba(67,97,238,0.1); }
+                .cal-toggle { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; }
+                .cal-toggle-label { font-size: 14px; color: #334155; font-weight: 500; }
+                .cal-toggle-desc { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+                .cal-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+                .cal-switch input { opacity: 0; width: 0; height: 0; }
+                .cal-switch .slider {
+                    position: absolute; cursor: pointer; inset: 0;
+                    background: #cbd5e1; border-radius: 24px; transition: 0.3s;
+                }
+                .cal-switch .slider:before {
+                    content: ''; position: absolute; width: 18px; height: 18px;
+                    left: 3px; bottom: 3px; background: #fff; border-radius: 50%;
+                    transition: 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+                }
+                .cal-switch input:checked + .slider { background: #4361ee; }
+                .cal-switch input:checked + .slider:before { transform: translateX(20px); }
+                .cal-btn {
+                    padding: 10px 20px; border: none; border-radius: 8px; font-size: 13px;
+                    font-weight: 600; cursor: pointer; transition: all 0.2s;
+                }
+                .cal-btn-primary { background: #4361ee; color: #fff; }
+                .cal-btn-primary:hover { background: #3651d4; }
+                .cal-btn-ghost { background: transparent; color: #64748b; }
+                .cal-btn-ghost:hover { background: #f1f5f9; }
             `}</style>
 
-            {/* Legend */}
+            {/* Legend + Settings button */}
             <div style={{
                 marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: 12,
                 alignItems: 'center', justifyContent: 'space-between',
@@ -678,13 +779,38 @@ export default function RecordsCalendar({
                         </div>
                     ))}
                 </div>
-                <div style={{ fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
-                    Cliquer pour ajouter • Glisser pour déplacer
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
+                        Cliquer pour ajouter • Glisser pour déplacer
+                    </span>
+                    <button
+                        onClick={() => setSettingsOpen(true)}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            padding: '6px 14px', border: '1px solid #e2e8f0', borderRadius: 8,
+                            background: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                            color: '#475569', transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#4361ee'; e.currentTarget.style.color = '#4361ee' }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569' }}
+                    >
+                        <iconify-icon icon="solar:settings-linear" width="15" />
+                        Config
+                    </button>
                 </div>
             </div>
 
             {/* FullCalendar */}
             <div className="calendar-wrapper" ref={calendarRef} />
+
+            {/* Calendar Settings Panel */}
+            {settingsOpen && (
+                <CalendarSettingsPanel
+                    settings={calSettings}
+                    onSave={saveSettings}
+                    onClose={() => setSettingsOpen(false)}
+                />
+            )}
 
             {/* Quick Add Modal */}
             <QuickAddModal
@@ -717,5 +843,129 @@ export default function RecordsCalendar({
                 />
             )}
         </div>
+    )
+}
+
+// ─── Calendar Settings Slide-Over Panel ──────────────────────────
+function CalendarSettingsPanel({ settings, onSave, onClose }) {
+    const [local, setLocal] = useState({ ...settings })
+
+    const hourOptions = []
+    for (let h = 0; h < 24; h++) {
+        const val = `${String(h).padStart(2, '0')}:00`
+        hourOptions.push(val)
+    }
+
+    return (
+        <>
+            <div className="cal-settings-overlay" onClick={onClose} />
+            <div className="cal-settings-panel">
+                <div className="header">
+                    <h3>
+                        <iconify-icon icon="solar:settings-bold-duotone" width="20" style={{ verticalAlign: 'middle', marginRight: 8, color: '#4361ee' }} />
+                        Paramètres du calendrier
+                    </h3>
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 6, color: '#94a3b8' }}>
+                        <iconify-icon icon="solar:close-circle-linear" width="22" />
+                    </button>
+                </div>
+
+                <div className="body">
+                    {/* Week starts on */}
+                    <div className="cal-field">
+                        <label>Premier jour de la semaine</label>
+                        <select
+                            value={local.weekStartsOn}
+                            onChange={e => setLocal({ ...local, weekStartsOn: parseInt(e.target.value) })}
+                        >
+                            <option value={1}>Lundi</option>
+                            <option value={0}>Dimanche</option>
+                            <option value={6}>Samedi</option>
+                        </select>
+                    </div>
+
+                    {/* Business hours */}
+                    <div style={{ display: 'flex', gap: 12 }}>
+                        <div className="cal-field" style={{ flex: 1 }}>
+                            <label>Heure de début</label>
+                            <select
+                                value={local.startHour}
+                                onChange={e => setLocal({ ...local, startHour: e.target.value })}
+                            >
+                                {hourOptions.map(h => (
+                                    <option key={h} value={h}>{h}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="cal-field" style={{ flex: 1 }}>
+                            <label>Heure de fin</label>
+                            <select
+                                value={local.endHour}
+                                onChange={e => setLocal({ ...local, endHour: e.target.value })}
+                            >
+                                {hourOptions.map(h => (
+                                    <option key={h} value={h}>{h}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Slot duration */}
+                    <div className="cal-field">
+                        <label>Intervalle des créneaux</label>
+                        <select
+                            value={local.slotDuration}
+                            onChange={e => setLocal({ ...local, slotDuration: e.target.value })}
+                        >
+                            <option value="00:05:00">5 minutes</option>
+                            <option value="00:10:00">10 minutes</option>
+                            <option value="00:15:00">15 minutes</option>
+                            <option value="00:30:00">30 minutes</option>
+                            <option value="01:00:00">1 heure</option>
+                        </select>
+                    </div>
+
+                    {/* Label interval */}
+                    <div className="cal-field">
+                        <label>Affichage des heures</label>
+                        <select
+                            value={local.slotLabelInterval}
+                            onChange={e => setLocal({ ...local, slotLabelInterval: e.target.value })}
+                        >
+                            <option value="00:30:00">Toutes les 30 min</option>
+                            <option value="01:00:00">Toutes les heures</option>
+                            <option value="02:00:00">Toutes les 2 heures</option>
+                        </select>
+                    </div>
+
+                    {/* Separator */}
+                    <div style={{ height: 1, background: '#f1f5f9', margin: '8px 0 20px' }} />
+
+                    {/* Hide weekends */}
+                    <div className="cal-toggle">
+                        <div>
+                            <div className="cal-toggle-label">Masquer le weekend</div>
+                            <div className="cal-toggle-desc">Afficher uniquement du lundi au vendredi</div>
+                        </div>
+                        <label className="cal-switch">
+                            <input
+                                type="checkbox"
+                                checked={local.hideWeekend}
+                                onChange={e => setLocal({ ...local, hideWeekend: e.target.checked })}
+                            />
+                            <span className="slider" />
+                        </label>
+                    </div>
+                </div>
+
+                <div className="footer">
+                    <button className="cal-btn cal-btn-ghost" onClick={onClose}>Annuler</button>
+                    <button className="cal-btn cal-btn-primary" onClick={() => onSave(local)}>
+                        <iconify-icon icon="solar:check-circle-bold" width="16" style={{ verticalAlign: 'middle', marginRight: 4 }} />
+                        Appliquer
+                    </button>
+                </div>
+            </div>
+        </>
     )
 }

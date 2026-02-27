@@ -1167,9 +1167,31 @@ router.post('/api/entity/:entityId/records/quick-add', async (req, res) => {
 router.get('/api/entity/:entityId/cards', async (req, res) => {
     try {
         const CardTemplate = await tenantCollection(req, "CardTemplate")
-        const filter = { entityId: req.params.entityId }
+        const { entityId } = req.params
+        const filter = { entityId }
         if (req.query.context) filter.context = req.query.context
-        const cards = await CardTemplate.find(filter).sort({ isDefault: -1, updatedAt: -1 }).lean()
+        let cards = await CardTemplate.find(filter).sort({ isDefault: -1, updatedAt: -1 }).lean()
+
+        // Auto-seed default cards if none exist for this entity
+        if (cards.length === 0 && !req.query.context) {
+            const presets = getCardPresets()
+            const defaultPresets = presets.filter(p => ['kanban-minimal', 'calendar-rdv'].includes(p.id))
+            const seedCards = []
+            for (const preset of defaultPresets) {
+                const card = await CardTemplate.create({
+                    name: preset.name,
+                    entityId,
+                    context: preset.context,
+                    isDefault: true,
+                    presetSlug: preset.id,
+                    layout: preset.layout,
+                    createdBy: req.user?._id,
+                })
+                seedCards.push(card.toObject())
+            }
+            cards = seedCards
+        }
+
         res.json({ success: true, cards })
     } catch (error) {
         res.status(500).json({ error: error.message })

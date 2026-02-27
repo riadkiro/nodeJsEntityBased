@@ -353,6 +353,42 @@ module.exports = {
                 }
             }
 
+            // Always inject missing relation fields into the layout (they may be absent from saved entity.layout)
+            if (!activeFormName && !entityFormLayout && entity.relations && entity.relations.length > 0) {
+                const layoutFields = !Array.isArray(resolvedLayout) ? (resolvedLayout.fields || []) : resolvedLayout;
+                const existingFieldIds = new Set(layoutFields.map(f => f.fieldId));
+                const missingRelations = entity.relations.filter(r => !existingFieldIds.has(r.key));
+                if (missingRelations.length > 0) {
+                    const relFields = missingRelations.map(rel => ({
+                        fieldId: rel.key,
+                        width: 6,
+                        id: `auto_rel_${rel.key}`,
+                        tabId: 'default'
+                    }));
+                    if (!Array.isArray(resolvedLayout) && resolvedLayout.fields) {
+                        resolvedLayout.fields = [...resolvedLayout.fields, ...relFields];
+                    } else if (Array.isArray(resolvedLayout)) {
+                        resolvedLayout = [...resolvedLayout, ...relFields];
+                    }
+                }
+            }
+
+            // Build referenceTitleTokens metadata for client-side live preview
+            const referenceTitleTokens = entity.referenceTitleTokens || [{ t: 'field', id: 'title' }];
+            // Build a fieldId → fieldName map for resolving tokens client-side
+            const fieldIdToName = {};
+            (entity.customFields || []).forEach(cf => {
+                fieldIdToName[cf._id.toString()] = cf.name || cf.label || '';
+            });
+            // Build a relationKey → { label, targetEntitySlug } map for rel: tokens
+            const relationKeyMap = {};
+            (entity.relations || []).forEach(r => {
+                relationKeyMap[r.key] = {
+                    label: r.label || '',
+                    targetEntitySlug: r.targetEntity?.slug || (r.targetEntity?._id || r.targetEntity || '').toString()
+                };
+            });
+
             res.render("record/record-add", {
                 entity,
                 fields: entity.customFields,
@@ -362,6 +398,9 @@ module.exports = {
                 entityFormLayout,
                 entityFormFieldDefs,
                 allFieldTemplates,
+                referenceTitleTokens,
+                fieldIdToName,
+                relationKeyMap,
                 account_number: req.account_number,
                 layout: "layout-app"
             });
@@ -738,6 +777,26 @@ module.exports = {
                 const autoLayout = generateDefaultLayout(entity.customFields, entity.relations);
                 if (autoLayout) {
                     resolvedLayout = autoLayout;
+                }
+            }
+
+            // Always inject missing relation fields into the layout (they may be absent from saved entity.layout)
+            if (!activeFormName && !entityFormLayout && entity.relations && entity.relations.length > 0) {
+                const layoutFields = !Array.isArray(resolvedLayout) ? (resolvedLayout.fields || []) : resolvedLayout;
+                const existingFieldIds = new Set(layoutFields.map(f => f.fieldId));
+                const missingRelations = entity.relations.filter(r => !existingFieldIds.has(r.key));
+                if (missingRelations.length > 0) {
+                    const relFields = missingRelations.map(rel => ({
+                        fieldId: rel.key,
+                        width: 6,
+                        id: `auto_rel_${rel.key}`,
+                        tabId: 'default'
+                    }));
+                    if (!Array.isArray(resolvedLayout) && resolvedLayout.fields) {
+                        resolvedLayout.fields = [...resolvedLayout.fields, ...relFields];
+                    } else if (Array.isArray(resolvedLayout)) {
+                        resolvedLayout = [...resolvedLayout, ...relFields];
+                    }
                 }
             }
 

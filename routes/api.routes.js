@@ -107,10 +107,10 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
             })
         })
 
-        // Enrich records
+        // Enrich records — first pass: collect relation target IDs
+        const relatedIdSet = new Set()
         records.forEach(record => {
-            // Use pre-computed title (denormalized at save time)
-            record.referenceTitle = record.computedTitle || record.title || 'Sans titre';
+            record.referenceTitle = record.computedTitle || record.title || 'Sans titre'
 
             // Enrich classificationValues with label/color from classification options
             if (record.classificationValues) {
@@ -126,7 +126,57 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
                     }
                 })
             }
-        });
+
+            // Collect all relation target IDs for batch resolution
+            ; (record.relations || []).forEach(rel => {
+                const val = rel.value
+                if (!val) return
+                if (Array.isArray(val)) {
+                    val.forEach(v => { if (v) relatedIdSet.add(v.toString()) })
+                } else {
+                    relatedIdSet.add(val.toString())
+                }
+            })
+        })
+
+        // Batch-load related record titles (single query for all relations)
+        const relatedIdArr = [...relatedIdSet]
+        let relatedTitleMap = {}
+        if (relatedIdArr.length > 0) {
+            const mongoose = require('mongoose')
+            const validIds = relatedIdArr.filter(id => mongoose.Types.ObjectId.isValid(id))
+            if (validIds.length > 0) {
+                const relatedRecords = await Record.find(
+                    { _id: { $in: validIds } },
+                    { title: 1, computedTitle: 1, entityId: 1 }
+                ).lean()
+                relatedRecords.forEach(r => {
+                    relatedTitleMap[r._id.toString()] = r.computedTitle || r.title || 'Sans titre'
+                })
+            }
+        }
+
+        // Second pass: build _denorm.relations for each record
+        records.forEach(record => {
+            if (!record._denorm) record._denorm = {}
+            record._denorm.relations = (record.relations || []).map(rel => {
+                const val = rel.value
+                let resolvedRecords = []
+                if (Array.isArray(val)) {
+                    resolvedRecords = val
+                        .filter(Boolean)
+                        .map(v => ({ _id: v.toString(), title: relatedTitleMap[v.toString()] || '' }))
+                        .filter(r => r.title)
+                } else if (val) {
+                    const title = relatedTitleMap[val.toString()]
+                    if (title) resolvedRecords = [{ _id: val.toString(), title }]
+                }
+                return {
+                    relationKey: rel.relationKey || rel.key,
+                    records: resolvedRecords
+                }
+            })
+        })
 
         let preferences = null
         if (req.user?._id) {

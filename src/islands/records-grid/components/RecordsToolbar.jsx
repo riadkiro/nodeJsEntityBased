@@ -40,6 +40,19 @@ const VIEW_MODES = [
             </svg>
         ),
     },
+    {
+        id: 'calendar',
+        label: 'Calendrier',
+        icon: (
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M16 2V6M8 2V6M3 10H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <circle cx="12" cy="16" r="1" fill="currentColor" />
+                <circle cx="16" cy="16" r="1" fill="currentColor" />
+                <circle cx="8" cy="16" r="1" fill="currentColor" />
+            </svg>
+        ),
+    },
 ]
 
 export default function RecordsToolbar({

@@ -47,12 +47,12 @@ const userPreferencesSchema = new mongoose.Schema({
         },
         viewMode: {
             type: String,
-            enum: ['table', 'kanban', 'notes', null],
+            enum: ['table', 'kanban', 'notes', 'calendar', null],
             default: null
         },
         enabledViews: {
             type: [String],
-            default: ['table', 'kanban', 'notes']
+            default: ['table', 'kanban', 'notes', 'calendar']
         },
         // Record-edit panel layout preferences
         columnWidths: {

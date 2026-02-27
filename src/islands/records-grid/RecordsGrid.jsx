@@ -9,6 +9,7 @@ import RecordsToolbar from './components/RecordsToolbar'
 import RecordsTable from './components/RecordsTable'
 import RecordsKanban from './components/RecordsKanban'
 import RecordsNotes from './components/RecordsNotes'
+import RecordsCalendar from './components/RecordsCalendar'
 import RecordsSidebar from './components/RecordsSidebar'
 import SavedViewsTabs from './components/SavedViewsTabs'
 
@@ -170,7 +171,7 @@ export default function RecordsGrid({
         showSidebar: true,
         sidebarWidth: 280,
         viewMode: null,
-        enabledViews: ['table', 'kanban', 'notes']
+        enabledViews: ['table', 'kanban', 'notes', 'calendar']
     })
 
     // Pagination state
@@ -841,7 +842,7 @@ export default function RecordsGrid({
             />
 
             {/* Main content panel */}
-            <div className="panel p-4 flex-1 flex flex-col overflow-hidden h-full">
+            <div className={`panel p-4 flex-1 flex flex-col h-full ${activeView === 'calendar' ? 'overflow-auto' : 'overflow-hidden'}`}>
                 {/* Toolbar */}
                 <RecordsToolbar
                     searchQuery={searchQuery}
@@ -882,7 +883,7 @@ export default function RecordsGrid({
                 />
 
                 {/* View content */}
-                <div className="flex-1 flex flex-col overflow-hidden mt-4">
+                <div className={`flex-1 flex flex-col mt-4 ${activeView === 'calendar' ? 'overflow-auto' : 'overflow-hidden'}`}>
                     {activeView === 'kanban' ? (
                         <RecordsKanban
                             records={filteredRecords}
@@ -890,6 +891,14 @@ export default function RecordsGrid({
                             accountNumber={accountNumber}
                             entitySlug={entitySlug}
                             viewId={viewId}
+                            entityData={entityData}
+                        />
+                    ) : activeView === 'calendar' ? (
+                        <RecordsCalendar
+                            records={filteredRecords}
+                            columns={columns}
+                            accountNumber={accountNumber}
+                            entitySlug={entitySlug}
                             entityData={entityData}
                         />
                     ) : activeView === 'notes' ? (

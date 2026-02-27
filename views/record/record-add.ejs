@@ -1,3 +1,4 @@
+<%- include('../components/tag-picker') %>
 <div x-data="recordForm()" class="space-y-6">
     <form action="/account/<%= account_number %>/record/<%= entity.slug %>/save" method="POST"
         enctype="multipart/form-data" id="main-record-form">
@@ -10,7 +11,7 @@
                             <%= entity.name %>
                         </span>
                         <span class="text-gray-300 dark:text-gray-600">/</span>
-                        <div class="flex items-center gap-2 group" x-data="{ editing: true, title: '' }">
+                        <div class="flex items-center gap-2 group" x-data="{ editing: true, title: '', titleAutoSet: false }" @title-preview.window="if(!title || titleAutoSet) { title = $event.detail.title; titleAutoSet = true; }">
                             <template x-if="!editing">
                                 <span
                                     class="cursor-pointer hover:text-primary transition-colors flex items-center gap-2"
@@ -34,6 +35,20 @@
                     </h2>
                 </div>
                 <div class="flex items-center gap-2">
+                    <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+                        title="Annuler">
+                        <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
+                        <span class="hidden sm:inline">Annuler</span>
+                    </a>
+                    <button type="submit" form="main-record-form"
+                        class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-primary text-white text-[11px] font-bold hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 transition-all"
+                        x-data="{ submitting: false }" @submit.window="submitting = true"
+                        :disabled="submitting"
+                        :class="submitting ? 'opacity-60 cursor-wait' : ''">
+                        <iconify-icon :icon="submitting ? 'line-md:loading-twotone-loop' : 'solar:diskette-bold'" width="14"></iconify-icon>
+                        <span x-text="submitting ? 'Envoi...' : 'Créer'">Créer</span>
+                    </button>
                     <button type="button" @click="designMode = !designMode"
                         :class="designMode ? 'text-primary bg-primary/10' : 'text-gray-400 hover:text-primary'"
                         class="p-2 rounded-lg transition-all" title="Mode Layout">
@@ -655,6 +670,32 @@
 <script type="application/json" id="initial-fields">
     <%- JSON.stringify(locals.fields || []).replace(/</g, '\\u003C') %>
 </script>
+<script type="application/json" id="entity-relations">
+    <%- JSON.stringify((entity.relations || []).map(r => ({
+        _id: r.key,
+        key: r.key,
+        label: r.label,
+        name: r.label,
+        type: 'relation',
+        cardinality: r.cardinality,
+        type_config: {
+            refEntity: r.targetEntity && r.targetEntity._id ? r.targetEntity._id.toString() : (r.targetEntity || ''),
+            refEntitySlug: r.targetEntity && r.targetEntity.slug ? r.targetEntity.slug : '',
+            refEntityName: r.targetEntity && r.targetEntity.name ? r.targetEntity.name : r.label,
+            multiple: r.cardinality === 'many-to-many' || r.cardinality === 'one-to-many'
+        },
+        ui: { placeholder: 'Rechercher ' + r.label + '...' }
+    }))).replace(/</g, '\\u003C') %>
+</script>
+<script type="application/json" id="reference-title-tokens">
+    <%- JSON.stringify(locals.referenceTitleTokens || [{ t: 'field', id: 'title' }]).replace(/</g, '\\u003C') %>
+</script>
+<script type="application/json" id="field-id-to-name">
+    <%- JSON.stringify(locals.fieldIdToName || {}).replace(/</g, '\\u003C') %>
+</script>
+<script type="application/json" id="relation-key-map">
+    <%- JSON.stringify(locals.relationKeyMap || {}).replace(/</g, '\\u003C') %>
+</script>
 
 <script>
     document.addEventListener("alpine:init", () => {
@@ -663,9 +704,13 @@
             const allTemplates = JSON.parse(document.getElementById("all-templates").textContent);
             const rawFields = JSON.parse(document.getElementById("initial-fields").textContent);
 
+            const entityRelations = JSON.parse(document.getElementById("entity-relations")?.textContent || '[]');
+
             const fieldsMap = {};
             rawFields.forEach(f => { fieldsMap[f._id] = f; });
             allTemplates.forEach(t => { if (!fieldsMap[t._id]) fieldsMap[t._id] = t; });
+            // Add entity relations to fieldsMap so renderFieldItemHTML can find them
+            entityRelations.forEach(r => { if (!fieldsMap[r.key]) fieldsMap[r.key] = r; });
 
             return {
                 designMode: false,
@@ -689,6 +734,13 @@
                 tempTabTitle: '',
                 tempTabIcon: 'tabler:apps',
 
+                // ===== Live Title Preview =====
+                _titleTokens: JSON.parse(document.getElementById('reference-title-tokens')?.textContent || '[]'),
+                _fieldIdToName: JSON.parse(document.getElementById('field-id-to-name')?.textContent || '{}'),
+                _relationKeyMap: JSON.parse(document.getElementById('relation-key-map')?.textContent || '{}'),
+                _relationLabels: {},  // relationKey -> selected label(s)
+                _customFieldValues: {},  // fieldId -> current value
+
                 init() {
                     this.rebuildCanvas();
                     window.addEventListener('mousemove', (e) => this.handleResizing(e));
@@ -700,6 +752,71 @@
                     this.$watch('activeTab', () => {
                         this.rebuildCanvas();
                     });
+
+                    // Listen for relation changes from picker components
+                    window.addEventListener('relation-changed', (e) => {
+                        const { relationKey, label } = e.detail;
+                        this._relationLabels[relationKey] = label;
+                        this._computeTitlePreview();
+                    });
+
+                    // Listen for custom field value changes (input/change events on form fields)
+                    this.$nextTick(() => {
+                        const form = document.getElementById('main-record-form');
+                        if (form) {
+                            form.addEventListener('input', (e) => {
+                                const name = e.target.name;
+                                if (!name) return;
+                                // custom[<fieldId>]
+                                const cfMatch = name.match(/^custom\[([^\]]+)\]$/);
+                                if (cfMatch) {
+                                    this._customFieldValues[cfMatch[1]] = e.target.value;
+                                    this._computeTitlePreview();
+                                }
+                            });
+                            form.addEventListener('change', (e) => {
+                                const name = e.target.name;
+                                if (!name) return;
+                                const cfMatch = name.match(/^custom\[([^\]]+)\]$/);
+                                if (cfMatch) {
+                                    this._customFieldValues[cfMatch[1]] = e.target.value;
+                                    this._computeTitlePreview();
+                                }
+                            });
+                        }
+                    });
+                },
+
+                _computeTitlePreview() {
+                    const tokens = this._titleTokens;
+                    // Skip if only default title token
+                    if (!tokens || tokens.length === 0) return;
+                    if (tokens.length === 1 && tokens[0].t === 'field' && tokens[0].id === 'title') return;
+
+                    const parts = tokens.map(tok => {
+                        if (tok.t === 'text') return tok.v || '';
+                        if (tok.t === 'field') {
+                            // Relation sub-field: rel:<relKey>.<subFieldId>
+                            if (tok.id && tok.id.startsWith('rel:')) {
+                                const dotIdx = tok.id.indexOf('.');
+                                const relKey = tok.id.substring(4, dotIdx);
+                                return this._relationLabels[relKey] || '';
+                            }
+                            // Standard title field
+                            if (tok.id === 'title') {
+                                const titleInput = document.querySelector('input[name="standard[title]"]');
+                                return titleInput?.value || '';
+                            }
+                            // Custom field
+                            return this._customFieldValues[tok.id] || '';
+                        }
+                        return '';
+                    });
+
+                    const preview = parts.join('').trim();
+                    if (preview) {
+                        window.dispatchEvent(new CustomEvent('title-preview', { detail: { title: preview } }));
+                    }
                 },
 
                 renderAllFields() {
@@ -1328,10 +1445,23 @@
 
                 this.searchQuery = '';
                 this.showResults = false;
+
+                // Dispatch relation-changed for live title preview
+                const label = this.multiple
+                    ? this.selectedItems.map(i => i.label).join(', ')
+                    : result.label;
+                window.dispatchEvent(new CustomEvent('relation-changed', {
+                    detail: { relationKey: this.fieldId, label }
+                }));
             },
 
             removeItem(id) {
                 this.selectedItems = this.selectedItems.filter(i => i.id !== id);
+                // Dispatch relation-changed for live title preview
+                const label = this.selectedItems.map(i => i.label).join(', ');
+                window.dispatchEvent(new CustomEvent('relation-changed', {
+                    detail: { relationKey: this.fieldId, label }
+                }));
             }
         }));
 
@@ -1459,10 +1589,23 @@
                 this.showModal = false;
                 const overlay = this.$refs.modalOverlay;
                 if (overlay) overlay.style.display = 'none';
+
+                // Dispatch relation-changed for live title preview
+                const label = this.multiple
+                    ? this.selectedItems.map(i => i.label).join(', ')
+                    : (this.selectedItems[0]?.label || '');
+                window.dispatchEvent(new CustomEvent('relation-changed', {
+                    detail: { relationKey: this.fieldId, label }
+                }));
             },
 
             removeItem(id) {
                 this.selectedItems = this.selectedItems.filter(i => i.id !== id);
+                // Dispatch relation-changed for live title preview
+                const label = this.selectedItems.map(i => i.label).join(', ');
+                window.dispatchEvent(new CustomEvent('relation-changed', {
+                    detail: { relationKey: this.fieldId, label }
+                }));
             }
         }));
     });

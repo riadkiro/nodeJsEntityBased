@@ -108,8 +108,8 @@ export default function RecordsTable({
                                     setDraggedColumn(null)
                                     setDragOverColumn(null)
                                 }}
-                                className={`px-2 ${col.id === 'actions' ? 'sticky right-0 z-20' : ''} ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'border-l-2 border-l-primary bg-primary/5' : ''}`}
-                                style={{ transition: 'opacity 0.15s, border-color 0.15s, background 0.15s', ...(col.id === 'actions' ? { width: '1%', whiteSpace: 'nowrap' } : {}) }}
+                                className={`px-2 ${isDragging ? 'opacity-50' : ''} ${isDragOver ? 'border-l-2 border-l-primary bg-primary/5' : ''}`}
+                                style={{ transition: 'opacity 0.15s, border-color 0.15s, background 0.15s', ...(col.id === 'actions' ? { width: '1%', whiteSpace: 'nowrap' } : {}), ...(col.id === 'title' ? { minWidth: 220 } : {}) }}
                             >
                                 <div className="flex items-center gap-1">
                                     {/* Drag handle - only this element is draggable */}
@@ -221,8 +221,8 @@ export default function RecordsTable({
                             {columns.map(col => (
                                 <td
                                     key={col.id}
-                                    className={`${config.fontSize} ${col.id === 'actions' ? 'sticky right-0 bg-white dark:bg-gray-900' : ''}`}
-                                    style={{ padding: cellPadding, ...(col.id === 'actions' ? { width: '1%', whiteSpace: 'nowrap' } : {}) }}
+                                    className={`${config.fontSize}`}
+                                    style={{ padding: cellPadding, ...(col.id === 'actions' ? { width: '1%', whiteSpace: 'nowrap' } : {}), ...(col.id === 'title' ? { minWidth: 220 } : {}) }}
                                 >
                                     {renderCellValue(record, col, accountNumber, entitySlug, config, titleDisplay, entityIcon)}
                                 </td>
@@ -274,7 +274,8 @@ function renderCellValue(record, col, accountNumber, entitySlug, config, titleDi
                     )}
                     <a
                         href={`/account/${accountNumber}/record/${entitySlug}/${record._id}/edit`}
-                        className={`${config.fontWeight} hover:text-primary transition-colors`}
+                        className={`${config.fontWeight} hover:text-primary transition-colors truncate`}
+                        title={refTitle}
                     >
                         {refTitle}
                     </a>

@@ -211,19 +211,58 @@ async function install(conn, userId, presetSlug) {
     console.log('\n🗂️  Creating entities...');
     const f = ids.fields;
     const entityDefs = [
-        { name: 'Patient', slug: 'patients', icon: 'solar:user-heart-bold-duotone', color: '#3b82f6', fields: ['nom', 'prenom', 'date_naissance', 'sexe', 'telephone', 'email', 'adresse', 'numero_secu', 'groupe_sanguin', 'allergies', 'antecedents', 'medecin_traitant', 'mutuelle'], statusClassification: null, classifications: ['patient_tags'] },
-        { name: 'Rendez-vous', slug: 'rendez-vous', icon: 'solar:calendar-mark-bold-duotone', color: '#8b5cf6', fields: ['date_rdv', 'duree_rdv', 'objet_rdv', 'notes_generales'], statusClassification: 'rdv_status', classifications: [] },
-        { name: 'Consultation', slug: 'consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', fields: ['motif', 'symptomes', 'examen_clinique', 'diagnostic', 'plan_traitement', 'poids', 'taille_cm', 'tension', 'temperature', 'frequence_cardiaque', 'notes_generales'], statusClassification: null, classifications: ['consult_type'] },
-        { name: 'Prescription', slug: 'prescriptions', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f', fields: ['posologie', 'duree_traitement', 'notes_prescription'], statusClassification: null, classifications: [] },
-        { name: 'Médicament', slug: 'medicaments', icon: 'solar:pills-3-bold-duotone', color: '#ef4444', fields: ['forme', 'dosage', 'prix_vente', 'stock_min', 'stock_actuel', 'notes_generales'], statusClassification: null, classifications: [] },
-        { name: 'Facture', slug: 'factures', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', fields: ['montant_total', 'montant_paye', 'date_echeance', 'notes_generales'], statusClassification: 'invoice_status', classifications: [] },
-        { name: 'Paiement', slug: 'paiements', icon: 'solar:wallet-bold-duotone', color: '#22c55e', fields: ['montant_total', 'mode_paiement', 'reference_paiement', 'notes_generales'], statusClassification: 'payment_method', classifications: [] },
-        { name: 'Assurance', slug: 'assurances', icon: 'solar:shield-bold-duotone', color: '#3b82f6', fields: ['compagnie', 'numero_contrat', 'taux_remboursement', 'telephone', 'email', 'notes_generales'], statusClassification: null, classifications: [] },
-        { name: 'Résultat Labo', slug: 'resultats-labo', icon: 'solar:test-tube-bold-duotone', color: '#f97316', fields: ['type_analyse', 'resultats_labo', 'valeurs_reference', 'interpretation', 'notes_generales'], statusClassification: null, classifications: ['lab_type'] },
-        { name: 'Document Médical', slug: 'documents-medicaux', icon: 'solar:file-text-bold-duotone', color: '#6366f1', fields: ['type_document', 'notes_generales'], statusClassification: null, classifications: [] },
-        { name: 'Plan de Traitement', slug: 'plans-traitement', icon: 'solar:clipboard-list-bold-duotone', color: '#0ea5e9', fields: ['objectif', 'protocole', 'duree_traitement', 'notes_generales'], statusClassification: null, classifications: [] },
-        { name: 'Personnel', slug: 'personnel', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee', fields: ['nom', 'prenom', 'specialite', 'numero_rpps', 'telephone', 'email'], statusClassification: null, classifications: ['staff_role'] },
-        { name: 'Stock', slug: 'stock', icon: 'solar:box-bold-duotone', color: '#94a3b8', fields: ['categorie_stock', 'fournisseur', 'prix_achat', 'prix_vente', 'stock_actuel', 'stock_min', 'notes_generales'], statusClassification: null, classifications: [] },
+        {
+            name: 'Patient', slug: 'patients', icon: 'solar:user-heart-bold-duotone', color: '#3b82f6', fields: ['nom', 'prenom', 'date_naissance', 'sexe', 'telephone', 'email', 'adresse', 'numero_secu', 'groupe_sanguin', 'allergies', 'antecedents', 'medecin_traitant', 'mutuelle'], statusClassification: null, classifications: ['patient_tags'],
+            referenceTitleTokens: [{ t: 'field', id: () => f.prenom }, { t: 'text', v: ' ' }, { t: 'field', id: () => f.nom }]
+        },
+        {
+            name: 'Rendez-vous', slug: 'rendez-vous', icon: 'solar:calendar-mark-bold-duotone', color: '#8b5cf6', fields: ['date_rdv', 'duree_rdv', 'objet_rdv', 'notes_generales'], statusClassification: 'rdv_status', classifications: [],
+            referenceTitleTokens: null
+        }, // set after relations
+        {
+            name: 'Consultation', slug: 'consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', fields: ['motif', 'symptomes', 'examen_clinique', 'diagnostic', 'plan_traitement', 'poids', 'taille_cm', 'tension', 'temperature', 'frequence_cardiaque', 'notes_generales'], statusClassification: null, classifications: ['consult_type'],
+            referenceTitleTokens: null
+        }, // set after relations
+        {
+            name: 'Prescription', slug: 'prescriptions', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f', fields: ['posologie', 'duree_traitement', 'notes_prescription'], statusClassification: null, classifications: [],
+            referenceTitleTokens: null
+        }, // set after relations
+        {
+            name: 'Médicament', slug: 'medicaments', icon: 'solar:pills-3-bold-duotone', color: '#ef4444', fields: ['forme', 'dosage', 'prix_vente', 'stock_min', 'stock_actuel', 'notes_generales'], statusClassification: null, classifications: [],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }]
+        },
+        {
+            name: 'Facture', slug: 'factures', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', fields: ['montant_total', 'montant_paye', 'date_echeance', 'notes_generales'], statusClassification: 'invoice_status', classifications: [],
+            referenceTitleTokens: null
+        }, // set after relations
+        {
+            name: 'Paiement', slug: 'paiements', icon: 'solar:wallet-bold-duotone', color: '#22c55e', fields: ['montant_total', 'mode_paiement', 'reference_paiement', 'notes_generales'], statusClassification: 'payment_method', classifications: [],
+            referenceTitleTokens: null
+        }, // set after relations
+        {
+            name: 'Assurance', slug: 'assurances', icon: 'solar:shield-bold-duotone', color: '#3b82f6', fields: ['compagnie', 'numero_contrat', 'taux_remboursement', 'telephone', 'email', 'notes_generales'], statusClassification: null, classifications: [],
+            referenceTitleTokens: [{ t: 'field', id: () => f.compagnie }, { t: 'text', v: ' - ' }, { t: 'field', id: () => f.numero_contrat }]
+        },
+        {
+            name: 'Résultat Labo', slug: 'resultats-labo', icon: 'solar:test-tube-bold-duotone', color: '#f97316', fields: ['type_analyse', 'resultats_labo', 'valeurs_reference', 'interpretation', 'notes_generales'], statusClassification: null, classifications: ['lab_type'],
+            referenceTitleTokens: null
+        }, // set after relations
+        {
+            name: 'Document Médical', slug: 'documents-medicaux', icon: 'solar:file-text-bold-duotone', color: '#6366f1', fields: ['type_document', 'notes_generales'], statusClassification: null, classifications: [],
+            referenceTitleTokens: null
+        }, // set after relations
+        {
+            name: 'Plan de Traitement', slug: 'plans-traitement', icon: 'solar:clipboard-list-bold-duotone', color: '#0ea5e9', fields: ['objectif', 'protocole', 'duree_traitement', 'notes_generales'], statusClassification: null, classifications: [],
+            referenceTitleTokens: null
+        }, // set after relations
+        {
+            name: 'Personnel', slug: 'personnel', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee', fields: ['nom', 'prenom', 'specialite', 'numero_rpps', 'telephone', 'email'], statusClassification: null, classifications: ['staff_role'],
+            referenceTitleTokens: [{ t: 'field', id: () => f.prenom }, { t: 'text', v: ' ' }, { t: 'field', id: () => f.nom }]
+        },
+        {
+            name: 'Stock', slug: 'stock', icon: 'solar:box-bold-duotone', color: '#94a3b8', fields: ['categorie_stock', 'fournisseur', 'prix_achat', 'prix_vente', 'stock_actuel', 'stock_min', 'notes_generales'], statusClassification: null, classifications: [],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }]
+        },
     ];
 
     ids.entities = {};
@@ -233,7 +272,17 @@ async function install(conn, userId, presetSlug) {
         const classIds = e.classifications.map(k => ids.classifications[k]).filter(Boolean);
         const statusCls = e.statusClassification ? ids.classifications[e.statusClassification] : undefined;
 
-        const doc = await upsertDoc(db.Entity, { slug: e.slug }, {
+        // Resolve referenceTitleTokens (functions → field IDs)
+        let resolvedTokens = undefined;
+        if (e.referenceTitleTokens) {
+            resolvedTokens = e.referenceTitleTokens.map(tok => ({
+                t: tok.t,
+                ...(tok.t === 'field' ? { id: typeof tok.id === 'function' ? tok.id().toString() : tok.id } : {}),
+                ...(tok.t === 'text' ? { v: tok.v } : {})
+            }));
+        }
+
+        const entityData = {
             name: e.name, slug: e.slug, description: '', icon: e.icon, color: e.color, order: i,
             enabledStandardFields: ['title', 'description', 'date'],
             customFields: customFieldIds,
@@ -241,7 +290,10 @@ async function install(conn, userId, presetSlug) {
             classifications: classIds,
             enableAttachments: true,
             relations: []
-        });
+        };
+        if (resolvedTokens) entityData.referenceTitleTokens = resolvedTokens;
+
+        const doc = await upsertDoc(db.Entity, { slug: e.slug }, entityData);
         ids.entities[e.slug] = doc._id;
     }
     console.log(`   ✅ ${Object.keys(ids.entities).length} entities`);
@@ -273,6 +325,82 @@ async function install(conn, userId, presetSlug) {
         });
     }
     console.log(`   ✅ ${relationDefs.length} relations`);
+
+    // =========== 4b. REFERENCE TITLE TOKENS (relation-based) ===========
+    console.log('\n🏷️  Setting reference title tokens (relation-based)...');
+    const rk = ids.relationKeys;
+    const relTokenDefs = [
+        // RDV - {Patient}
+        {
+            slug: 'rendez-vous', tokens: [
+                { t: 'text', v: 'RDV - ' },
+                { t: 'field', id: `rel:${rk['rendez-vous__patients']}.title` }
+            ]
+        },
+        // Consult. {Patient} - {Motif}
+        {
+            slug: 'consultations', tokens: [
+                { t: 'text', v: 'Consult. ' },
+                { t: 'field', id: `rel:${rk['consultations__patients']}.title` },
+                { t: 'text', v: ' - ' },
+                { t: 'field', id: f.motif.toString() }
+            ]
+        },
+        // Ordonnance {Patient}
+        {
+            slug: 'prescriptions', tokens: [
+                { t: 'text', v: 'Ordonnance ' },
+                { t: 'field', id: `rel:${rk['prescriptions__patients']}.title` }
+            ]
+        },
+        // FAC-{title} - {Patient}
+        {
+            slug: 'factures', tokens: [
+                { t: 'field', id: 'title' },
+                { t: 'text', v: ' - ' },
+                { t: 'field', id: `rel:${rk['factures__patients']}.title` }
+            ]
+        },
+        // PAY-{title} - {Facture}
+        {
+            slug: 'paiements', tokens: [
+                { t: 'field', id: 'title' },
+                { t: 'text', v: ' - ' },
+                { t: 'field', id: `rel:${rk['paiements__factures']}.title` }
+            ]
+        },
+        // Analyse {Patient} - {type_analyse}
+        {
+            slug: 'resultats-labo', tokens: [
+                { t: 'text', v: 'Analyse ' },
+                { t: 'field', id: `rel:${rk['resultats-labo__patients']}.title` },
+                { t: 'text', v: ' - ' },
+                { t: 'field', id: f.type_analyse.toString() }
+            ]
+        },
+        // {type_document} - {Patient}
+        {
+            slug: 'documents-medicaux', tokens: [
+                { t: 'field', id: f.type_document.toString() },
+                { t: 'text', v: ' - ' },
+                { t: 'field', id: `rel:${rk['documents-medicaux__patients']}.title` }
+            ]
+        },
+        // Plan {Patient}
+        {
+            slug: 'plans-traitement', tokens: [
+                { t: 'text', v: 'Plan ' },
+                { t: 'field', id: `rel:${rk['plans-traitement__patients']}.title` }
+            ]
+        },
+    ];
+
+    for (const rt of relTokenDefs) {
+        await db.Entity.findByIdAndUpdate(E[rt.slug], {
+            $set: { referenceTitleTokens: rt.tokens }
+        });
+    }
+    console.log(`   ✅ ${relTokenDefs.length} relation-based title tokens set`);
 
     // =========== 5. NAVIGATION (views directly in spaces, no redundant folders) ===========
     console.log('\n🧭 Creating navigation...');

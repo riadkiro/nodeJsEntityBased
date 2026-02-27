@@ -203,7 +203,7 @@ export default function RecordsSidebar({
                                     onClick={() => onFilterChange({})}>
                                     <div className="flex items-center">
                                         <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="20"></iconify-icon>
-                                        <div className="ltr:ml-3 rtl:mr-3">Toutes les {entityNamePlural || entityName}</div>
+                                        <div className="ltr:ml-3 rtl:mr-3">Toutes les {entityNamePlural || (entityName + 's')}</div>
                                     </div>
                                 </button>
                                 <button type="button"

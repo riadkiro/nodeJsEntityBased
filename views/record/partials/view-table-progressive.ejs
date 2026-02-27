@@ -29,7 +29,7 @@
              data-account-number="<%= account_number %>"
              data-entity-id="<%= entity._id %>"
              data-entity-name="<%= entity.name %>"
-             data-entity-name-plural="<%= entity.namePlural || entity.name %>"
+             data-entity-name-plural="<%= entity.namePlural || (entity.name + 's') %>"
              data-entity-slug="<%= entity.slug %>"
              data-view-id="<%= viewId %>"
              class="h-full sm:h-[calc(100vh_-_150px)] sm:min-h-0">
@@ -38,6 +38,8 @@
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
         </div>
+        <link href="/assets/css/fullcalendar.min.css" rel="stylesheet" />
+        <script src="/assets/js/fullcalendar.min.js"></script>
         <script type="module" src="/dist/recordsGrid.js"></script>
     </div>
 </div>

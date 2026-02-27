@@ -393,6 +393,11 @@
         editColorIdx: -1,
         _editPopoverPos: null, // { top, left } for fixed positioning
 
+        // Computed (plain props — getters are not reliably reactive in Alpine)
+        selectedOptions: [],
+        filteredOptions: [],
+        canCreate: false,
+
         // Colors
         tagColors: TAG_COLORS,
 
@@ -404,6 +409,14 @@
                 ...this.resolveColor(o.color)
             }));
             this.selectedIds = [...(config.selectedIds || [])].map(String);
+
+            // Initial computation
+            this._recompute();
+
+            // Re-compute whenever selectedIds or options change
+            this.$watch('selectedIds', () => this._recompute());
+            this.$watch('options', () => this._recompute());
+            this.$watch('searchQuery', () => this._recompute());
 
             // Close on outside click
             this.$watch('isOpen', (val) => {
@@ -417,6 +430,22 @@
                     this.editingOption = null;
                 }
             });
+        },
+
+        // ── Recompute all derived values ──
+        _recompute() {
+            this.selectedOptions = this.selectedIds
+                .map(id => this.options.find(o => o._id === id))
+                .filter(Boolean);
+
+            const q = this.searchQuery.toLowerCase().trim();
+            this.filteredOptions = q
+                ? this.options.filter(o => o.label.toLowerCase().includes(q))
+                : this.options.slice();
+
+            const sq = this.searchQuery.trim();
+            this.canCreate = sq.length > 0 &&
+                !this.options.some(o => o.label.toLowerCase() === sq.toLowerCase());
         },
 
         // ── Color resolution ──
@@ -437,24 +466,7 @@
             return (r * 299 + g * 587 + b * 114) / 1000 > 155;
         },
 
-        // ── Computed ──
-        get selectedOptions() {
-            return this.selectedIds
-                .map(id => this.options.find(o => o._id === id))
-                .filter(Boolean);
-        },
 
-        get filteredOptions() {
-            const q = this.searchQuery.toLowerCase().trim();
-            if (!q) return this.options;
-            return this.options.filter(o => o.label.toLowerCase().includes(q));
-        },
-
-        get canCreate() {
-            const q = this.searchQuery.trim();
-            if (!q) return false;
-            return !this.options.some(o => o.label.toLowerCase() === q.toLowerCase());
-        },
 
         // ── Toggle ──
         toggleOpen() {

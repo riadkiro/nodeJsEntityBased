@@ -34,6 +34,8 @@ router.post("/add", upload.single("image"), entityController.save);
 router.get("/settings", entityController.settingsForm);
 //Settings page (edit)
 router.get("/settings/:id", entityController.settingsForm);
+//Cards page
+router.get("/cards/:id", entityController.cardsPage);
 //Single page
 router.get("/:id", entityController.singlePage);
 //Update form

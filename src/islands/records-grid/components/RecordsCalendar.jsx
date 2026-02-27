@@ -11,6 +11,7 @@
  * - Toast notifications for actions
  */
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import CardRenderer, { DEFAULT_CALENDAR_LAYOUT } from '../../shared/CardRenderer'
 
 // ─── Status color mapping ────────────────────────────────────────
 const STATUS_COLORS = {
@@ -278,7 +279,7 @@ function QuickAddModal({ isOpen, onClose, onSave, initialDate, entityData, accou
 }
 
 // ─── Event Detail Popover ────────────────────────────────────────
-function EventDetailPopover({ event, position, onClose, onEdit, onDelete, accountNumber, entitySlug }) {
+function EventDetailPopover({ event, position, onClose, onEdit, onDelete, accountNumber, entitySlug, cardTemplate }) {
     const popoverRef = useRef(null)
 
     useEffect(() => {
@@ -297,6 +298,20 @@ function EventDetailPopover({ event, position, onClose, onEdit, onDelete, accoun
     const statusColor = status ? STATUS_COLORS[status] : null
     const recordId = event.extendedProps?.recordId || event.id
 
+    // Build a virtual record for CardRenderer
+    const virtualRecord = {
+        _id: recordId,
+        referenceTitle: event.title,
+        _start: start,
+        _end: end,
+        classificationValues: status ? [{
+            optionLabel: status,
+            optionColor: statusColor ? statusColor.bg : '#4361ee',
+        }] : [],
+        createdAt: start,
+        ...event.extendedProps,
+    }
+
     return (
         <div ref={popoverRef} style={{
             position: 'fixed',
@@ -307,93 +322,15 @@ function EventDetailPopover({ event, position, onClose, onEdit, onDelete, accoun
             boxShadow: '0 16px 64px rgba(0,0,0,0.18)',
             animation: 'slideUp 0.2s ease', overflow: 'hidden',
         }}>
-            {/* Color bar */}
-            <div style={{
-                height: 4,
-                background: statusColor ? statusColor.bg : '#4361ee',
-            }} />
-
-            {/* Content */}
-            <div style={{ padding: '16px 20px' }}>
-                <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#1a1a2e', marginBottom: 8 }}>
-                    {event.title}
-                </h4>
-
-                {/* Time */}
-                {start && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 12, color: '#666' }}>
-                        <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14, flexShrink: 0 }}>
-                            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-                            <path d="M12 7V12L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                        </svg>
-                        {formatTime(start)}
-                        {end && ` — ${formatTime(end)}`}
-                    </div>
-                )}
-
-                {/* Date */}
-                {start && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 12, color: '#666' }}>
-                        <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14, flexShrink: 0 }}>
-                            <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                            <path d="M16 2V6M8 2V6M3 10H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                        </svg>
-                        {formatDate(start)}
-                    </div>
-                )}
-
-                {/* Status badge */}
-                {status && (
-                    <div style={{ marginTop: 10 }}>
-                        <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 4,
-                            padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                            backgroundColor: statusColor ? statusColor.bg + '18' : '#f0f0f0',
-                            color: statusColor ? statusColor.bg : '#555',
-                        }}>
-                            <span style={{
-                                width: 6, height: 6, borderRadius: '50%',
-                                backgroundColor: statusColor ? statusColor.bg : '#888',
-                            }} />
-                            {status}
-                        </span>
-                    </div>
-                )}
-            </div>
-
-            {/* Actions */}
-            <div style={{
-                display: 'flex', borderTop: '1px solid #f0f0f0',
-            }}>
-                <a
-                    href={`/account/${accountNumber}/record/${entitySlug}/edit/${recordId}`}
-                    style={{
-                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                        padding: '12px', fontSize: 12, fontWeight: 600, color: '#4361ee',
-                        textDecoration: 'none', transition: 'background 0.2s', borderRight: '1px solid #f0f0f0',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9ff'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                    <svg viewBox="0 0 24 24" fill="none" style={{ width: 14, height: 14 }}>
-                        <path d="M12 20H21M3.5 20L4.586 15.414A2 2 0 0 1 5.172 14.586L16.5 3.258a2 2 0 0 1 2.828 0L20.742 4.672a2 2 0 0 1 0 2.828L9.414 18.828a2 2 0 0 1-.828.586L3.5 20Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    Ouvrir la fiche
-                </a>
-                <button
-                    onClick={onClose}
-                    style={{
-                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                        padding: '12px', fontSize: 12, fontWeight: 600, color: '#888',
-                        border: 'none', backgroundColor: 'transparent', cursor: 'pointer',
-                        transition: 'background 0.2s',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                    Fermer
-                </button>
-            </div>
+            <CardRenderer
+                record={virtualRecord}
+                cardTemplate={cardTemplate}
+                context="calendar"
+                accountNumber={accountNumber}
+                entitySlug={entitySlug}
+                callbacks={{ onClose }}
+                style={{ borderRadius: 0 }}
+            />
         </div>
     )
 }
@@ -418,6 +355,19 @@ export default function RecordsCalendar({
 
     // Sync records prop
     useEffect(() => { setLocalRecords(records) }, [records])
+
+    // Card template state — fetch default calendar card
+    const [cardTemplate, setCardTemplate] = useState(null)
+    useEffect(() => {
+        if (!entityData?._id) return
+        const entityId = entityData._id?.$oid || entityData._id
+        fetch(`/account/${accountNumber}/api/entity/${entityId}/cards/default/calendar`, { credentials: 'include' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.card) setCardTemplate(data.card)
+            })
+            .catch(() => { })
+    }, [entityData?._id, accountNumber])
 
     // Find date & duration fields
     const { dateFieldId, durationFieldId } = useMemo(() => {
@@ -754,6 +704,7 @@ export default function RecordsCalendar({
                     onClose={() => setDetailEvent(null)}
                     accountNumber={accountNumber}
                     entitySlug={entitySlug}
+                    cardTemplate={cardTemplate}
                 />
             )}
 

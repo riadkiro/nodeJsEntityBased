@@ -758,11 +758,18 @@ document.addEventListener('alpine:init', () => {
     </div>
     <div class="flex items-center gap-2">
       <template x-if="isEdit">
-        <a :href="`/account/${accountNumber}/entity/edit/${entityId}`"
-           class="btn btn-outline-primary btn-sm">
-          <iconify-icon icon="solar:widget-bold-duotone" class="mr-1"></iconify-icon>
-          Form Builder
-        </a>
+        <div class="flex items-center gap-2">
+          <a :href="`/account/${accountNumber}/entity/cards/${entityId}`"
+             class="btn btn-outline-primary btn-sm">
+            <iconify-icon icon="solar:card-2-bold-duotone" class="mr-1"></iconify-icon>
+            Cards
+          </a>
+          <a :href="`/account/${accountNumber}/entity/edit/${entityId}`"
+             class="btn btn-outline-primary btn-sm">
+            <iconify-icon icon="solar:widget-bold-duotone" class="mr-1"></iconify-icon>
+            Form Builder
+          </a>
+        </div>
       </template>
       <button @click="save()" class="btn btn-primary" :disabled="isSubmitting || !form.name">
         <span x-show="isSubmitting" class="animate-spin border-2 border-white border-l-transparent rounded-full w-4 h-4 mr-2 inline-block"></span>

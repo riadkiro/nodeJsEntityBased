@@ -609,5 +609,47 @@ module.exports = {
         account_number: req.account_number,
       });
     }
-  }
+  },
+
+  // ===== CARDS PAGE =====
+  cardsPage: async (req, res) => {
+    try {
+      const EntityModel = await tenantCollection(req, "Entity");
+      await tenantCollection(req, "FieldTemplate");
+      const entityId = req.params.id;
+
+      if (!mongoose.Types.ObjectId.isValid(entityId)) {
+        return res.status(404).render("errors/404", {
+          message: "ID non valide.",
+          layout: "layout-app",
+          account_number: req.account_number,
+        });
+      }
+
+      const entity = await EntityModel.findById(entityId).populate('customFields');
+      if (!entity) {
+        return res.status(404).render("errors/404", {
+          message: "Entité introuvable.",
+          layout: "layout-app",
+          account_number: req.account_number,
+        });
+      }
+
+      const fields = entity.customFields || [];
+
+      res.render("entity/entity-cards", {
+        entity,
+        fields,
+        account_number: req.account_number,
+        layout: "layout-app",
+      });
+    } catch (err) {
+      console.error("Cards page error:", err);
+      return res.status(500).render("errors/500", {
+        message: "Erreur serveur",
+        layout: "layout-app",
+        account_number: req.account_number,
+      });
+    }
+  },
 };

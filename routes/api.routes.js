@@ -1159,4 +1159,199 @@ router.post('/api/entity/:entityId/records/quick-add', async (req, res) => {
     }
 })
 
+// ═══════════════════════════════════════════════════════════════════════
+// 🎴 CARD TEMPLATES API
+// ═══════════════════════════════════════════════════════════════════════
+
+/** GET /api/entity/:entityId/cards — List all card templates for an entity */
+router.get('/api/entity/:entityId/cards', async (req, res) => {
+    try {
+        const CardTemplate = await tenantCollection(req, "CardTemplate")
+        const filter = { entityId: req.params.entityId }
+        if (req.query.context) filter.context = req.query.context
+        const cards = await CardTemplate.find(filter).sort({ isDefault: -1, updatedAt: -1 }).lean()
+        res.json({ success: true, cards })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/** GET /api/entity/:entityId/cards/default/:context — Default card for context */
+router.get('/api/entity/:entityId/cards/default/:context', async (req, res) => {
+    try {
+        const CardTemplate = await tenantCollection(req, "CardTemplate")
+        const { entityId, context } = req.params
+        let card = await CardTemplate.findOne({ entityId, context, isDefault: true }).lean()
+        if (!card) card = await CardTemplate.findOne({ entityId, context }).lean()
+        if (!card) card = await CardTemplate.findOne({ entityId, context: 'universal', isDefault: true }).lean()
+        res.json({ success: true, card: card || null })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/** GET /api/entity/:entityId/cards/:cardId — Get one */
+router.get('/api/entity/:entityId/cards/:cardId', async (req, res) => {
+    try {
+        const CardTemplate = await tenantCollection(req, "CardTemplate")
+        const card = await CardTemplate.findById(req.params.cardId).lean()
+        if (!card) return res.status(404).json({ error: 'Not found' })
+        res.json({ success: true, card })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/** POST /api/entity/:entityId/cards — Create */
+router.post('/api/entity/:entityId/cards', async (req, res) => {
+    try {
+        const CardTemplate = await tenantCollection(req, "CardTemplate")
+        const { entityId } = req.params
+        const { name, context, isDefault, layout } = req.body
+        if (isDefault) await CardTemplate.updateMany({ entityId, context }, { isDefault: false })
+        const card = await CardTemplate.create({
+            name, entityId, context: context || 'universal',
+            isDefault: isDefault || false,
+            layout: layout || { accentPosition: 'none', accentSource: 'none', zones: [] },
+            createdBy: req.user?._id,
+        })
+        res.json({ success: true, card })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/** PUT /api/entity/:entityId/cards/:cardId — Update */
+router.put('/api/entity/:entityId/cards/:cardId', async (req, res) => {
+    try {
+        const CardTemplate = await tenantCollection(req, "CardTemplate")
+        const { entityId, cardId } = req.params
+        const { name, context, isDefault, layout } = req.body
+        if (isDefault) {
+            const c = context || (await CardTemplate.findById(cardId))?.context || 'universal'
+            await CardTemplate.updateMany({ entityId, context: c, _id: { $ne: cardId } }, { isDefault: false })
+        }
+        const update = {}
+        if (name !== undefined) update.name = name
+        if (context !== undefined) update.context = context
+        if (isDefault !== undefined) update.isDefault = isDefault
+        if (layout !== undefined) update.layout = layout
+        const card = await CardTemplate.findByIdAndUpdate(cardId, update, { new: true }).lean()
+        if (!card) return res.status(404).json({ error: 'Not found' })
+        res.json({ success: true, card })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/** DELETE /api/entity/:entityId/cards/:cardId — Delete */
+router.delete('/api/entity/:entityId/cards/:cardId', async (req, res) => {
+    try {
+        const CardTemplate = await tenantCollection(req, "CardTemplate")
+        const result = await CardTemplate.findByIdAndDelete(req.params.cardId)
+        if (!result) return res.status(404).json({ error: 'Not found' })
+        res.json({ success: true })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/** POST /api/entity/:entityId/cards/:cardId/set-default — Set as default */
+router.post('/api/entity/:entityId/cards/:cardId/set-default', async (req, res) => {
+    try {
+        const CardTemplate = await tenantCollection(req, "CardTemplate")
+        const card = await CardTemplate.findById(req.params.cardId)
+        if (!card) return res.status(404).json({ error: 'Not found' })
+        await CardTemplate.updateMany({ entityId: card.entityId, context: card.context, _id: { $ne: card._id } }, { isDefault: false })
+        card.isDefault = true
+        await card.save()
+        res.json({ success: true, card })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/** GET /api/card-presets — Built-in card templates library */
+router.get('/api/card-presets', async (req, res) => {
+    res.json({ success: true, presets: getCardPresets() })
+})
+
+function getCardPresets() {
+    return [
+        {
+            id: 'kanban-minimal', name: 'Kanban Minimal', context: 'kanban',
+            description: 'Carte simple: titre, statut, date',
+            icon: 'solar:widget-5-bold-duotone',
+            layout: {
+                accentPosition: 'none', accentSource: 'none', borderRadius: 8, shadow: 'sm',
+                zones: [
+                    {
+                        id: 'body', direction: 'column', gap: 6, padding: '12px', elements: [
+                            { type: 'title', fontSize: 'sm', fontWeight: 'semibold', maxLines: 2, visible: true },
+                            { type: 'status', format: 'badge', fontSize: 'xs', visible: true },
+                        ]
+                    },
+                    {
+                        id: 'footer', direction: 'row', gap: 4, padding: '8px 12px', align: 'between', borderTop: true, elements: [
+                            { type: 'date', fieldId: '__createdAt__', icon: 'solar:calendar-linear', format: 'date', fontSize: 'xs', visible: true },
+                            { type: 'actions', items: ['edit', 'view'], visible: true },
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            id: 'kanban-detailed', name: 'Kanban Détaillé', context: 'kanban',
+            description: 'Carte avec description, badges, et méta-données',
+            icon: 'solar:card-bold-duotone',
+            layout: {
+                accentPosition: 'top', accentSource: 'status', borderRadius: 8, shadow: 'sm',
+                zones: [
+                    {
+                        id: 'body', direction: 'column', gap: 6, padding: '12px', elements: [
+                            { type: 'title', fontSize: 'sm', fontWeight: 'semibold', maxLines: 2, visible: true },
+                            { type: 'field', fieldId: '__description__', fontSize: 'xs', maxLines: 2, color: '#6b7280', visible: true },
+                            { type: 'status', format: 'badge', fontSize: 'xs', visible: true },
+                        ]
+                    },
+                    {
+                        id: 'footer', direction: 'row', gap: 4, padding: '8px 12px', align: 'between', borderTop: true, elements: [
+                            { type: 'date', fieldId: '__createdAt__', icon: 'solar:calendar-linear', format: 'date', fontSize: 'xs', visible: true },
+                            { type: 'actions', items: ['edit', 'view'], visible: true },
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            id: 'calendar-rdv', name: 'Calendar RDV', context: 'calendar',
+            description: 'Carte RDV avec heure, date et statut',
+            icon: 'solar:calendar-bold-duotone',
+            layout: {
+                accentPosition: 'top', accentSource: 'status', borderRadius: 12, shadow: 'lg',
+                zones: [
+                    {
+                        id: 'header', direction: 'column', gap: 4, padding: '16px 20px 8px', elements: [
+                            { type: 'title', fontSize: 'base', fontWeight: 'bold', maxLines: 1, visible: true },
+                        ]
+                    },
+                    {
+                        id: 'body', direction: 'column', gap: 6, padding: '0 20px 12px', elements: [
+                            { type: 'icon-value', fieldId: '__time__', icon: 'solar:clock-circle-linear', format: 'time-range', fontSize: 'xs', visible: true },
+                            { type: 'icon-value', fieldId: '__date__', icon: 'solar:calendar-linear', format: 'date-long', fontSize: 'xs', visible: true },
+                            { type: 'status', format: 'pill', fontSize: 'xs', visible: true },
+                        ]
+                    },
+                    {
+                        id: 'footer', direction: 'row', gap: 0, padding: '0', align: 'stretch', borderTop: true, elements: [
+                            { type: 'actions', items: ['open', 'close'], visible: true },
+                        ]
+                    }
+                ]
+            }
+        },
+    ]
+}
+
 module.exports = router
+

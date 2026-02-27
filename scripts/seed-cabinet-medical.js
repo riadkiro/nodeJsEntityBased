@@ -43,6 +43,7 @@ function registerModels(conn) {
         SmartDocTemplate: M('SmartDocTemplate', s({ name: String, description: String, icon: String, color: String, documentId: mongoose.Schema.Types.ObjectId, entityId: mongoose.Schema.Types.ObjectId, inputFields: Array, outputFormat: String, order: Number, active: Boolean, meta: Object }), 'smartdoctemplates'),
         LineSchema: M('LineSchema', s({ name: String, slug: String, description: String, appliesTo: Object, sourceEntityId: mongoose.Schema.Types.ObjectId, lineTypes: [String], columns: Array, totals: Object, defaultLineType: String, meta: Object }), 'lineschemas'),
         View: M('View', s({ name: String, slug: String, entity: mongoose.Schema.Types.ObjectId, cockpitId: mongoose.Schema.Types.ObjectId, icon: String, color: String, order: Number, viewType: String, spaces: [mongoose.Schema.Types.ObjectId], folders: [mongoose.Schema.Types.ObjectId], filters: Array, settings: Object, createdBy: mongoose.Schema.Types.ObjectId, meta: Object }), 'views'),
+        CardTemplate: M('CardTemplate', s({ name: String, entityId: mongoose.Schema.Types.ObjectId, context: String, isDefault: Boolean, presetSlug: String, layout: Object, createdBy: mongoose.Schema.Types.ObjectId, meta: Object }), 'cardtemplates'),
     };
 }
 
@@ -401,6 +402,65 @@ async function install(conn, userId, presetSlug) {
         });
     }
     console.log(`   ✅ ${relTokenDefs.length} relation-based title tokens set`);
+
+    // =========== 4b. CARD TEMPLATES (Kanban + Calendar for RDV) ===========
+    const cardTemplates = [
+        {
+            name: 'Kanban RDV', entitySlug: 'rendez-vous', context: 'kanban', isDefault: true,
+            layout: {
+                accentPosition: 'none', accentSource: 'none', borderRadius: 8, shadow: 'sm',
+                zones: [
+                    {
+                        id: 'body', direction: 'column', gap: 6, padding: '12px', elements: [
+                            { type: 'title', fontSize: 'sm', fontWeight: 'semibold', maxLines: 2, visible: true },
+                            { type: 'field', fieldId: '__description__', fontSize: 'xs', maxLines: 2, color: '#6b7280', visible: true },
+                            { type: 'status', format: 'badge', fontSize: 'xs', visible: true },
+                        ]
+                    },
+                    {
+                        id: 'footer', direction: 'row', gap: 4, padding: '8px 12px', align: 'between', borderTop: true, elements: [
+                            { type: 'date', fieldId: '__createdAt__', icon: 'solar:calendar-linear', format: 'date', fontSize: 'xs', visible: true },
+                            { type: 'actions', items: ['edit', 'view'], visible: true },
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            name: 'Calendar RDV', entitySlug: 'rendez-vous', context: 'calendar', isDefault: true,
+            layout: {
+                accentPosition: 'top', accentSource: 'status', borderRadius: 14, shadow: 'lg',
+                zones: [
+                    {
+                        id: 'header', direction: 'column', gap: 4, padding: '16px 20px 8px', elements: [
+                            { type: 'title', fontSize: 'base', fontWeight: 'bold', maxLines: 1, visible: true },
+                        ]
+                    },
+                    {
+                        id: 'body', direction: 'column', gap: 6, padding: '0 20px 12px', elements: [
+                            { type: 'icon-value', fieldId: '__time__', icon: 'solar:clock-circle-linear', format: 'time-range', fontSize: 'xs', visible: true },
+                            { type: 'icon-value', fieldId: '__date__', icon: 'solar:calendar-linear', format: 'date-long', fontSize: 'xs', visible: true },
+                            { type: 'status', format: 'pill', fontSize: 'xs', visible: true },
+                        ]
+                    },
+                    {
+                        id: 'footer', direction: 'row', gap: 0, padding: '0', align: 'stretch', borderTop: true, elements: [
+                            { type: 'actions', items: ['open', 'close'], visible: true },
+                        ]
+                    }
+                ]
+            }
+        },
+    ];
+    for (const ct of cardTemplates) {
+        const entityId = E[ct.entitySlug];
+        if (!entityId) continue;
+        await upsertDoc(db.CardTemplate, { entityId, context: ct.context, 'meta.createdByPreset': PRESET }, {
+            name: ct.name, entityId, context: ct.context, isDefault: ct.isDefault,
+            presetSlug: PRESET, layout: ct.layout, createdBy: uid,
+        });
+    }
+    console.log(`   ✅ ${cardTemplates.length} card templates created`);
 
     // =========== 5. NAVIGATION (views directly in spaces, no redundant folders) ===========
     console.log('\n🧭 Creating navigation...');

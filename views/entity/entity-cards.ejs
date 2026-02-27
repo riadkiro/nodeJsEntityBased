@@ -1,0 +1,48 @@
+<%/* Card Builder — Visual card template editor */%>
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-4 px-4 pt-4">
+  <div class="flex items-center gap-3">
+    <a href="/account/<%= account_number %>/entity/settings/<%= entity._id %>"
+       class="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border dark:border-gray-800"
+       title="Retour">
+      <iconify-icon icon="solar:arrow-left-line-duotone" width="20"></iconify-icon>
+    </a>
+    <div>
+      <h1 class="text-xl font-bold dark:text-white flex items-center gap-2">
+        <% if (entity.icon) { %>
+          <iconify-icon icon="<%= entity.icon %>" width="24" style="color: <%= entity.color || '#4361ee' %>"></iconify-icon>
+        <% } %>
+        <span><%= entity.name %></span>
+        <span class="text-gray-400 font-normal">— Cards</span>
+      </h1>
+      <p class="text-xs text-gray-400 mt-0.5">Gérer les cartes d'affichage</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="/account/<%= account_number %>/entity/settings/<%= entity._id %>"
+       class="btn btn-outline-secondary btn-sm">
+      <iconify-icon icon="solar:settings-bold-duotone" class="mr-1"></iconify-icon>
+      Paramètres
+    </a>
+    <a href="/account/<%= account_number %>/entity/edit/<%= entity._id %>"
+       class="btn btn-outline-primary btn-sm">
+      <iconify-icon icon="solar:widget-bold-duotone" class="mr-1"></iconify-icon>
+      Form Builder
+    </a>
+  </div>
+</div>
+
+<div
+    data-island="card-builder"
+    data-account-number="<%= account_number %>"
+    data-entity-id="<%= entity._id %>"
+    data-entity-name="<%= entity.name %>"
+    data-entity-slug="<%= entity.slug %>"
+    data-entity-icon="<%= entity.icon || '' %>"
+    data-entity-color="<%= entity.color || '' %>"
+    data-fields-json="<%= encodeURIComponent(JSON.stringify((fields || []).map(f => ({ _id: f._id.toString(), name: f.name, label: f.label, type: f.type })))) %>"
+    style="height: calc(100vh - 140px); overflow: hidden;"
+></div>
+
+<script type="module" src="/dist/cardBuilder.js"></script>

@@ -298,6 +298,18 @@
                                                                         </template>
                                                                         <input type="hidden" name="custom[<%= cf._id %>]" :value="serialized">
                                                                     </div>
+                                                                <% } else if (cf.inputType === 'datetime-local') { %>
+                                                                    <% var dtVal = ''; if (cfVal) { try { var _d = new Date(cfVal); if (!isNaN(_d)) dtVal = _d.getFullYear() + '-' + String(_d.getMonth()+1).padStart(2,'0') + '-' + String(_d.getDate()).padStart(2,'0') + 'T' + String(_d.getHours()).padStart(2,'0') + ':' + String(_d.getMinutes()).padStart(2,'0'); } catch(e){} } %>
+                                                                    <input name="custom[<%= cf._id %>]" type="datetime-local" class="form-input dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300"
+                                                                        value="<%= dtVal %>"
+                                                                        placeholder="<%= field.placeholder || cf.label || cf.name %>"
+                                                                        <%= field.required ? 'required' : '' %> />
+                                                                <% } else if (cf.inputType === 'date') { %>
+                                                                    <% var dateVal = ''; if (cfVal) { try { var _d2 = new Date(cfVal); if (!isNaN(_d2)) dateVal = _d2.toISOString().split('T')[0]; } catch(e){} } %>
+                                                                    <input name="custom[<%= cf._id %>]" type="date" class="form-input dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300"
+                                                                        value="<%= dateVal %>"
+                                                                        placeholder="<%= field.placeholder || cf.label || cf.name %>"
+                                                                        <%= field.required ? 'required' : '' %> />
                                                                 <% } else { %>
                                                                     <input name="custom[<%= cf._id %>]" type="<%= cf.inputType || 'text' %>" class="form-input dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300"
                                                                         value="<%= cfVal || '' %>"
@@ -1854,7 +1866,21 @@
     <input type="hidden" name="custom[${field._id}]" :value="serialized">
 </div>`;
                     }
-                    const val = this.valuesMap[field._id] || '';
+                    let val = this.valuesMap[field._id] || '';
+                    // Format date values for HTML inputs
+                    const isDateField = field.type === 'date' || field.subtype === 'date' || field.subtype === 'datetime' || (field.inputType && (field.inputType === 'date' || field.inputType === 'datetime-local'));
+                    if (isDateField && val) {
+                        try {
+                            const d = new Date(val);
+                            if (!isNaN(d)) {
+                                if (field.subtype === 'datetime' || field.inputType === 'datetime-local') {
+                                    val = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + 'T' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+                                } else {
+                                    val = d.toISOString().split('T')[0];
+                                }
+                            }
+                        } catch(e) {}
+                    }
                     const valJson = JSON.stringify(val).replace(/"/g, '&quot;');
                     const isTruthy = val === true || val === 'on' || val === 'true' || val === 1 || val === '1';
 

@@ -567,6 +567,9 @@
                             }
                         });
                     });
+
+                    // Expose for relation fields panel quick create
+                    window.relationTabsApp = this;
                 },
 
                 _initSortable() {
@@ -1641,6 +1644,145 @@
 
                 </div><!-- end panel-sortable-item attributs -->
 
+                <!-- ═══ RELATIONS Panel (Classification-style) ═══ -->
+                <template x-if="getRelationFields().length > 0">
+                <div class="panel-sortable-item" data-panel-id="relations-fields">
+                    <template x-if="designMode">
+                        <div class="panel-drag-handle">
+                            <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
+                            <span>Relations</span>
+                        </div>
+                    </template>
+                    <div class="panel !p-0 group/panel relative z-10" data-id="relations-fields">
+                        <div class="">
+                            <!-- Header -->
+                            <div class="py-3 bg-gray-50/30 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors px-4"
+                                @click="relationsFieldsOpen = !relationsFieldsOpen">
+                                <div class="flex items-center gap-2 text-primary">
+                                    <iconify-icon icon="solar:link-round-bold" width="16"></iconify-icon>
+                                    <h6 class="text-[11px] font-extrabold uppercase tracking-wider mb-0 text-gray-800 dark:text-white-light">Relations</h6>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <div class="flex items-center justify-center h-4">
+                                        <iconify-icon icon="solar:alt-arrow-down-bold"
+                                            :class="relationsFieldsOpen ? 'rotate-180' : ''"
+                                            class="text-gray-400 transition-transform duration-300 block"
+                                            width="14"></iconify-icon>
+                                    </div>
+                                </div>
+                            </div>
+                            <div x-show="relationsFieldsOpen" x-collapse>
+                                <template x-for="relField in getRelationFields()" :key="relField.item.id">
+                                    <div class="px-4 py-3 border-t border-gray-100">
+                                        <h6 class="text-[12px] font-bold text-gray-500 tracking-tight mb-2" x-text="relField.field.label"></h6>
+                                        <div x-data="relationField({ 
+                                            fieldId: relField.field._id, 
+                                            refEntity: relField.field.type_config.refEntity, 
+                                            multiple: relField.field.type_config.multiple, 
+                                            initialValue: valuesMap[relField.field._id] || (relField.field.type_config.multiple ? [] : '') 
+                                        })" class="tp-wrapper" @click.away="showResults = false">
+                                            
+                                            <!-- Trigger: inline tag pills (like Classification) -->
+                                            <div class="tp-trigger"
+                                                 :class="showResults ? 'tp-trigger--active' : ''"
+                                                 @click="$refs.searchInput.focus(); openDropdown()">
+                                                <template x-for="item in selectedItems" :key="item.id">
+                                                    <span class="tp-tag" style="background: #dbeafe; color: #2563eb;">
+                                                        <span x-text="item.label"></span>
+                                                        <button type="button" class="tp-tag-remove" @click.stop="removeItem(item.id)">
+                                                            <iconify-icon icon="tabler:x" width="10"></iconify-icon>
+                                                        </button>
+                                                    </span>
+                                                </template>
+                                                <template x-if="selectedItems.length === 0">
+                                                    <span class="tp-placeholder" x-text="'Sélectionner...'"></span>
+                                                </template>
+                                            </div>
+
+                                            <!-- Dropdown -->
+                                            <div class="tp-dropdown" x-show="showResults" x-cloak
+                                                 style="max-width: 100%;"
+                                                 x-transition:enter="transition ease-out duration-150"
+                                                 x-transition:enter-start="opacity-0 translate-y-1"
+                                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                                 x-transition:leave="transition ease-in duration-100"
+                                                 x-transition:leave-start="opacity-100"
+                                                 x-transition:leave-end="opacity-0"
+                                                 @click.stop>
+                                                <!-- Search -->
+                                                <div class="tp-search-wrap">
+                                                    <input type="text" class="tp-search-input"
+                                                           :placeholder="'Rechercher ou créer...'"
+                                                           x-model="searchQuery"
+                                                           x-ref="searchInput"
+                                                           @input.debounce.300ms="search"
+                                                           @focus="openDropdown"
+                                                           @click="openDropdown" />
+                                                </div>
+
+                                                <div class="tp-divider"></div>
+
+                                                <!-- Results list -->
+                                                <div class="tp-options">
+                                                    <template x-if="loading && page === 1">
+                                                        <div style="padding: 8px 12px; text-align: center; color: #9ca3af; font-size: 12px;">Chargement...</div>
+                                                    </template>
+
+                                                    <template x-for="result in results" :key="result.id">
+                                                        <div class="tp-option" @click="selectItem(result)">
+                                                            <div class="tp-option-icon" style="background: #dbeafe;">
+                                                                <iconify-icon x-show="selectedItems.some(i => i.id === result.id)" icon="tabler:check" width="12" style="color: #2563eb;"></iconify-icon>
+                                                            </div>
+                                                            <span class="tp-option-label" x-text="result.label"></span>
+                                                        </div>
+                                                    </template>
+
+                                                    <template x-if="!loading && results.length === 0">
+                                                        <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 12px;">Aucun résultat</div>
+                                                    </template>
+                                                </div>
+
+                                                <template x-if="hasMore">
+                                                    <button type="button" @click.stop="loadMore" :disabled="loading" 
+                                                        style="width: 100%; padding: 6px 10px; font-size: 12px; color: #4361ee; background: #f8f9ff; border: none; border-top: 1px solid #f3f4f6; cursor: pointer; text-align: center;">
+                                                        <span x-show="!loading">Charger plus...</span>
+                                                        <span x-show="loading" style="display: none;">Chargement...</span>
+                                                    </button>
+                                                </template>
+
+                                                <!-- Quick Create button -->
+                                                <div class="tp-create-option" 
+                                                     @click="showResults = false; 
+                                                        if (window.relationTabsApp) { 
+                                                            const tab = window.relationTabsApp.allTabs.find(t => t.key === fieldId); 
+                                                            if (tab) window.relationTabsApp.openQuickCreate(tab); 
+                                                        }">
+                                                    <iconify-icon icon="tabler:plus" width="14" style="color: #6b7280;"></iconify-icon>
+                                                    <span class="tp-create-label">Créer</span>
+                                                    <span class="tp-create-tag" x-text="relField.field.label"></span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Hidden inputs for persistence -->
+                                            <template x-if="multiple">
+                                                <div>
+                                                  <template x-for="item in selectedItems" :key="item.id">
+                                                      <input type="hidden" :name="'custom[' + fieldId + '][]'" :value="item.id">
+                                                  </template>
+                                                </div>
+                                            </template>
+                                            <template x-if="!multiple">
+                                                <input type="hidden" :name="'custom[' + fieldId + ']'" :value="selectedItems[0]?.id || ''">
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </template>
+
 
             </div><!-- end space-y-4 -->
             </div><!-- end record-layout-col main -->
@@ -2423,6 +2565,7 @@
                 valuesMap: valuesMap,
                 allTemplates: allTemplates,
                 openModal: false,
+                relationsFieldsOpen: true,
                 isResizing: false,
                 resizeData: null,
                 editingTabId: null,
@@ -2443,7 +2586,13 @@
                 },
 
                 renderAllFields() {
-                    const currentTabFields = this.layout.filter(item => item.tabId === this.activeTab);
+                    const currentTabFields = this.layout.filter(item => {
+                        if (item.tabId !== this.activeTab) return false;
+                        // Exclude relation fields - they have their own panel
+                        const field = this.fieldsById[item.fieldId];
+                        if (field && field.type === 'relation') return false;
+                        return true;
+                    });
                     if (currentTabFields.length === 0 && this.designMode) {
                         return `
                             <div class="w-full flex flex-col items-center justify-center py-12 gap-3 cursor-pointer group/add-box" 
@@ -2456,6 +2605,18 @@
                         `;
                     }
                     return currentTabFields.map((item, index) => this.renderFieldItemHTML(item, index)).join('');
+                },
+
+                getRelationFields() {
+                    return this.layout
+                        .filter(item => {
+                            const field = this.fieldsById[item.fieldId];
+                            return field && field.type === 'relation';
+                        })
+                        .map(item => ({
+                            item: item,
+                            field: this.fieldsById[item.fieldId]
+                        }));
                 },
 
                 rebuildCanvas() {
@@ -3055,6 +3216,7 @@
             },
 
             async search() {
+                this.showResults = true;
                 await this.fetchSuggestions(true);
             },
 
@@ -3066,9 +3228,7 @@
 
             openDropdown() {
                 this.showResults = true;
-                if (this.results.length === 0) {
-                    this.fetchSuggestions(true);
-                }
+                this.fetchSuggestions(true);
             },
 
             selectItem(result) {
@@ -3081,6 +3241,7 @@
                 }
 
                 this.searchQuery = '';
+                this.results = [];
                 this.showResults = false;
             },
 

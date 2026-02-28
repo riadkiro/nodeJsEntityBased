@@ -23,6 +23,9 @@ router.get("/:entityName/:id/edit", recordController.editForm);
 router.post("/:entityName/update/:id", upload.single("image"), recordController.update);
 router.get("/:entityName/delete/:id", recordController.delete);
 
+// Relation update (add/remove related record — used by quick-create for many-to-many)
+router.post("/:entityName/:id/update-relation", recordController.updateRelation);
+
 // Record detail page (fiche) — must be AFTER all specific routes
 router.get("/:entityName/:id", recordController.detailPage);
 

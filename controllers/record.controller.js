@@ -497,6 +497,7 @@ module.exports = {
                     published: true,
                     customFields: customFieldsArray,
                     relations: relationsArray,
+                    classificationValues: req.body.classificationValues || [],
                     createdBy: req.user?._id
                 };
 
@@ -748,6 +749,7 @@ module.exports = {
                     color: targetEnt.color || '#4361ee',
                     count,
                     direction: 'direct',
+                    cardinality: rel.cardinality || 'one-to-many',
                     entitySlug: targetEnt.slug || '',
                     entityId: (targetEnt._id || '').toString(),
                 });
@@ -763,6 +765,7 @@ module.exports = {
                     color: tgt.color || '#4361ee',
                     count,
                     direction: 'inverse',
+                    cardinality: invRel.cardinality || 'many-to-one',
                     entitySlug: tgt.slug || '',
                     entityId: (tgt._id || '').toString(),
                     sourceRelationKey: invRel.sourceRelationKey,
@@ -1614,6 +1617,69 @@ module.exports = {
                 layout: "layout-app",
                 account_number: req.account_number
             });
+        }
+    },
+
+    // ═══ Update Relation (add/remove a related record on a source record) ═══
+    updateRelation: async (req, res) => {
+        try {
+            const RecordModel = await tenantCollection(req, "Record");
+            const { id } = req.params;
+            const { relationKey, targetRecordId, action } = req.body;
+
+            if (!relationKey || !targetRecordId) {
+                return res.status(400).json({ success: false, message: 'Missing relationKey or targetRecordId' });
+            }
+
+            const record = await RecordModel.findById(id);
+            if (!record) {
+                return res.status(404).json({ success: false, message: 'Record not found' });
+            }
+
+            // Find existing relation entry
+            const existingIdx = record.relations.findIndex(r => r.relationKey === relationKey);
+
+            if (action === 'add') {
+                if (existingIdx >= 0) {
+                    // Relation entry exists — append to array or convert single to array
+                    let currentVal = record.relations[existingIdx].value;
+                    if (Array.isArray(currentVal)) {
+                        if (!currentVal.map(String).includes(String(targetRecordId))) {
+                            currentVal.push(targetRecordId);
+                        }
+                    } else if (currentVal) {
+                        // Convert single value to array
+                        if (String(currentVal) !== String(targetRecordId)) {
+                            record.relations[existingIdx].value = [currentVal, targetRecordId];
+                        }
+                    } else {
+                        record.relations[existingIdx].value = targetRecordId;
+                    }
+                } else {
+                    // No entry yet — create one
+                    record.relations.push({ relationKey, value: targetRecordId });
+                }
+            } else if (action === 'remove') {
+                if (existingIdx >= 0) {
+                    let currentVal = record.relations[existingIdx].value;
+                    if (Array.isArray(currentVal)) {
+                        record.relations[existingIdx].value = currentVal.filter(v => String(v) !== String(targetRecordId));
+                        if (record.relations[existingIdx].value.length === 0) {
+                            record.relations.splice(existingIdx, 1);
+                        }
+                    } else if (String(currentVal) === String(targetRecordId)) {
+                        record.relations.splice(existingIdx, 1);
+                    }
+                }
+            }
+
+            record.markModified('relations');
+            await record.save();
+
+            return res.json({ success: true });
+        } catch (err) {
+            console.error('Error updating relation:', err);
+            return res.status(500).json({ success: false, message: err.message });
         }
     }
 };

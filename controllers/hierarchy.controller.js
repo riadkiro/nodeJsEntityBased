@@ -586,14 +586,18 @@ module.exports = {
     getEntityFields: async (req, res) => {
         try {
             const { entityId } = req.params;
+            const quickFormOnly = req.query.quickForm === '1';
             const EntityModel = await tenantCollection(req, "Entity");
             const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
+            const ClassificationModel = await tenantCollection(req, "Classification");
 
             const entity = await EntityModel.findById(entityId).lean();
 
             if (!entity) {
                 return res.status(404).json({ success: false, message: "Entity not found" });
             }
+
+            const fieldOverrides = entity.fieldOverrides || {};
 
             // Populate customFields with FieldTemplate data
             const fields = [];
@@ -602,22 +606,75 @@ module.exports = {
                     _id: { $in: entity.customFields }
                 }).lean();
 
-                fields.push(...fieldTemplates.map(ft => ({
-                    id: ft._id.toString(),
-                    name: ft.name,
-                    label: ft.label || ft.name,
-                    type: ft.fieldType || ft.type || 'text',
-                    icon: ft.ui?.icon || ft.icon || 'tabler:text'
-                })));
+                for (const ft of fieldTemplates) {
+                    const ftId = ft._id.toString();
+                    const override = fieldOverrides[ftId] || (fieldOverrides instanceof Map ? fieldOverrides.get(ftId) : null) || {};
+                    const showOnQF = override.showOnQuickForm ?? ft.showOnQuickForm ?? false;
+
+                    if (quickFormOnly && !showOnQF) continue;
+
+                    fields.push({
+                        id: ftId,
+                        name: ft.name,
+                        label: override.label || ft.label || ft.name,
+                        type: ft.fieldType || ft.type || 'text',
+                        icon: ft.ui?.icon || ft.icon || 'tabler:text',
+                        showOnQuickForm: showOnQF
+                    });
+                }
             }
+
+            // Classifications
+            const classifications = [];
+            const allClassifIds = [
+                ...(entity.classifications || []),
+                ...(entity.statusClassification ? [entity.statusClassification] : [])
+            ].filter(Boolean);
+
+            if (allClassifIds.length > 0) {
+                const classifDocs = await ClassificationModel.find({
+                    _id: { $in: allClassifIds }
+                }).lean();
+
+                for (const c of classifDocs) {
+                    if (quickFormOnly && !c.showOnQuickForm) continue;
+
+                    classifications.push({
+                        id: c._id.toString(),
+                        name: c.name,
+                        key: c.key,
+                        allowMultiple: c.allowMultiple || false,
+                        showOnQuickForm: c.showOnQuickForm || false,
+                        isStatus: entity.statusClassification?.toString() === c._id.toString(),
+                        options: (c.options || []).map(o => ({
+                            id: o._id.toString(),
+                            label: o.label,
+                            color: o.color || '#3b82f6',
+                            icon: o.icon || 'solar:info-circle-bold'
+                        }))
+                    });
+                }
+            }
+
+            // Relations info (useful for auto-linking with cardinality)
+            const relations = (entity.relations || []).map(r => ({
+                key: r.key,
+                label: r.label,
+                targetEntity: r.targetEntity?.toString(),
+                cardinality: r.cardinality || 'one-to-many'
+            }));
 
             res.json({
                 success: true,
                 entity: {
                     id: entity._id.toString(),
                     name: entity.name,
+                    slug: entity.slug,
                     icon: entity.icon || 'solar:database-broken',
-                    fields
+                    fields,
+                    classifications,
+                    relations,
+                    referenceTitleTokens: entity.referenceTitleTokens || [{ t: 'field', id: 'title' }]
                 }
             });
         } catch (error) {

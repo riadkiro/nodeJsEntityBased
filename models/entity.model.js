@@ -111,7 +111,8 @@ const EntitySchema = new mongoose.Schema(
         visible: { type: Boolean, default: true },
         placeholder: String,        // Placeholder spécifique
         helpText: String,           // Texte d'aide contextuel
-        defaultValue: mongoose.Schema.Types.Mixed // Valeur par défaut
+        defaultValue: mongoose.Schema.Types.Mixed, // Valeur par défaut
+        showOnQuickForm: Boolean     // Afficher dans le formulaire rapide
       }, { _id: false }),
       default: new Map()
     },

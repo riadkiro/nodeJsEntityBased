@@ -145,9 +145,13 @@
                             </button>
                             <!-- Quick Add button per tab -->
                             <button type="button"
-                                    @click.stop="openQuickCreate(tab)"
-                                    class="w-5 h-5 rounded flex items-center justify-center ml-0.5 transition-all text-gray-300 dark:text-gray-600 hover:text-primary hover:bg-primary/10 shrink-0"
-                                    :title="'Créer ' + tab.label">
+                                    @click.stop="canAddOnTab(tab) && openQuickCreate(tab)"
+                                    class="w-5 h-5 rounded flex items-center justify-center ml-0.5 transition-all shrink-0"
+                                    :class="canAddOnTab(tab)
+                                        ? 'text-gray-300 dark:text-gray-600 hover:text-primary hover:bg-primary/10 cursor-pointer'
+                                        : 'text-gray-200 dark:text-gray-700 cursor-not-allowed opacity-40'"
+                                    :title="canAddOnTab(tab) ? 'Créer ' + tab.label : 'Ajout non disponible'"
+                                    :disabled="!canAddOnTab(tab)">
                                 <iconify-icon icon="tabler:plus" width="12"></iconify-icon>
                             </button>
                         </div>
@@ -235,8 +239,12 @@
                                     <span class="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold" x-text="tabRecords.length"></span>
                                 </div>
                                 <div class="flex items-center gap-1">
-                                    <button type="button" @click="openQuickCreate(activeTabMeta)"
-                                            class="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold text-primary hover:bg-primary/10 transition-all"
+                                    <button type="button" @click="canAddOnTab(activeTabMeta) && openQuickCreate(activeTabMeta)"
+                                            class="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-all"
+                                            :class="canAddOnTab(activeTabMeta)
+                                                ? 'text-primary hover:bg-primary/10 cursor-pointer'
+                                                : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'"
+                                            :disabled="!canAddOnTab(activeTabMeta)"
                                             title="Ajouter">
                                         <iconify-icon icon="tabler:plus" width="12"></iconify-icon>
                                         Ajouter
@@ -271,11 +279,16 @@
                         <div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500">
                             <iconify-icon icon="solar:box-minimalistic-bold-duotone" width="36" class="mb-3 opacity-40"></iconify-icon>
                             <span class="text-xs mb-3">Aucun enregistrement lié</span>
-                            <button type="button" @click="openQuickCreate(activeTabMeta)"
-                                    class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all">
-                                <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
-                                <span x-text="'Créer ' + (activeTabMeta?.label || '')"></span>
-                            </button>
+                            <template x-if="canAddOnTab(activeTabMeta)">
+                                <button type="button" @click="openQuickCreate(activeTabMeta)"
+                                        class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all">
+                                    <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
+                                    <span x-text="'Créer ' + (activeTabMeta?.label || '')"></span>
+                                </button>
+                            </template>
+                            <template x-if="!canAddOnTab(activeTabMeta)">
+                                <span class="text-[10px] text-gray-400">L'ajout n'est pas disponible pour cette relation</span>
+                            </template>
                         </div>
                     </template>
                 </div>
@@ -329,24 +342,36 @@
                         </template>
 
                         <!-- Form -->
-                        <template x-if="!qcLoading">
-                            <div class="space-y-4">
-                                <!-- Title field (always shown) -->
-                                <div>
-                                    <label class="flex items-center gap-1.5 mb-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                                        <iconify-icon icon="solar:text-bold-duotone" width="13" class="text-warning"></iconify-icon>
-                                        Titre
-                                        <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="text" x-model="qcTitle" x-ref="qcTitleInput"
-                                           class="form-input w-full text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300 focus:border-primary focus:ring-1 focus:ring-primary/30"
-                                           :placeholder="'Nom du ' + (qcTab?.label || 'record')" autofocus>
-                                </div>
+                            <template x-if="!qcLoading">
+                            <div class="space-y-3">
+                                <!-- Title: Manual or Auto-generated -->
+                                <template x-if="!qcAutoTitle">
+                                    <div>
+                                        <label class="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                                            <iconify-icon icon="solar:text-bold-duotone" width="13" class="text-warning"></iconify-icon>
+                                            Titre<span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" x-ref="qcTitleInput" x-model="qcTitle"
+                                               class="form-input w-full font-medium dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-200"
+                                               :placeholder="'Nom du ' + (qcTab?.label || 'record')" />
+                                    </div>
+                                </template>
+                                <template x-if="qcAutoTitle">
+                                    <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                        <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="16" class="text-warning shrink-0"></iconify-icon>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Titre auto-généré</div>
+                                            <div class="text-sm font-semibold text-gray-700 dark:text-gray-200 truncate"
+                                                 x-text="computeQcTitle() || 'Remplissez les champs...'"
+                                                 :class="!computeQcTitle() && 'text-gray-400 italic'"></div>
+                                        </div>
+                                    </div>
+                                </template>
 
-                                <!-- Dynamic custom fields from entity -->
+                                <!-- Dynamic fields -->
                                 <template x-for="field in qcFields" :key="field.id">
                                     <div>
-                                        <label class="flex items-center gap-1.5 mb-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                                        <label class="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
                                             <iconify-icon :icon="field.icon || 'solar:widget-linear'" width="13" class="text-info"></iconify-icon>
                                             <span x-text="field.label || field.name"></span>
                                         </label>
@@ -376,12 +401,43 @@
                                     </div>
                                 </template>
 
-                                <!-- Info: will be auto-linked -->
-                                <div class="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-800/30">
-                                    <iconify-icon icon="solar:link-round-bold-duotone" width="14" class="text-blue-500 shrink-0"></iconify-icon>
-                                    <span class="text-[10px] text-blue-600 dark:text-blue-400">
-                                        Sera automatiquement lié à <strong><%= entity.name %> — <%= record.title || 'cet enregistrement' %></strong>
-                                    </span>
+                                <!-- Classifications (status, tags) -->
+                                <template x-for="classif in qcClassifications" :key="classif.id">
+                                    <div>
+                                        <label class="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                                            <iconify-icon :icon="classif.isStatus ? 'solar:flag-bold-duotone' : 'solar:tag-bold-duotone'" width="13" class="text-secondary"></iconify-icon>
+                                            <span x-text="classif.name"></span>
+                                        </label>
+                                        <div class="flex flex-wrap gap-1.5">
+                                            <template x-for="opt in classif.options" :key="opt.id">
+                                                <button type="button"
+                                                        @click="toggleClassifOption(classif, opt)"
+                                                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer"
+                                                        :class="isClassifSelected(classif.id, opt.id)
+                                                            ? 'text-white shadow-sm'
+                                                            : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'"
+                                                        :style="isClassifSelected(classif.id, opt.id)
+                                                            ? 'background:' + opt.color + '; border-color:' + opt.color
+                                                            : ''">
+                                                    <span style="width:6px;height:6px;border-radius:50%;display:inline-block;"
+                                                          :style="'background:' + opt.color"></span>
+                                                    <span x-text="opt.label"></span>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Linked record field (read-only) -->
+                                <div>
+                                    <label class="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                                        <iconify-icon icon="solar:link-round-bold-duotone" width="13" class="text-blue-500"></iconify-icon>
+                                        <span><%= entity.nameSingular || entity.name %></span>
+                                    </label>
+                                    <div class="form-input w-full text-sm bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed flex items-center gap-2">
+                                        <iconify-icon icon="<%= entity.icon || 'solar:widget-bold-duotone' %>" width="14" style="color: <%= entity.color || '#4361ee' %>"></iconify-icon>
+                                        <span><%= record.computedTitle || record.title || 'cet enregistrement' %></span>
+                                    </div>
                                 </div>
                             </div>
                         </template>
@@ -401,7 +457,7 @@
                                 Annuler
                             </button>
                             <button type="button" @click="submitQuickCreate()"
-                                    :disabled="qcSaving || !qcTitle.trim()"
+                                    :disabled="qcSaving || (!qcAutoTitle && !qcTitle.trim()) || (qcAutoTitle && !computeQcTitle())"
                                     class="flex items-center gap-1.5 px-5 py-2 rounded-lg text-xs font-bold text-white bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     :class="qcSaving ? 'cursor-wait' : ''">
                                 <iconify-icon :icon="qcSaving ? 'svg-spinners:ring-resize' : 'tabler:check'" width="14"></iconify-icon>
@@ -438,7 +494,12 @@
                 qcSaving: false,
                 qcTitle: '',
                 qcFields: [],
+                qcClassifications: [],
                 qcCustom: {},
+                qcClassifValues: {},  // { classifId: optionId } or { classifId: [optionId, ...] }
+                qcEntityRelations: [], // relation definitions from target entity
+                qcTitleTokens: [],    // referenceTitleTokens from target entity
+                qcAutoTitle: false,   // true when title should be auto-generated
 
                 get visibleTabs() {
                     return this.allTabs.filter(t => t.visible !== false);
@@ -447,6 +508,30 @@
                 get activeTabMeta() {
                     if (this.activeTab === '__self__') return null;
                     return this.allTabs.find(t => t.key === this.activeTab) || null;
+                },
+
+                // Determine if "+" create is allowed on this tab
+                canAddOnTab(tab) {
+                    if (!tab) return false;
+                    const card = tab.cardinality || 'one-to-many';
+                    const count = tab._count || 0;
+
+                    if (tab.direction === 'direct') {
+                        // Direct one-to-one: only if no record linked
+                        if (card === 'one-to-one') return count === 0;
+                        // Direct one-to-many/many-to-many: always OK
+                        return true;
+                    }
+                    if (tab.direction === 'inverse') {
+                        // Inverse of one-to-many = many-to-one → the other entity stores the foreign key
+                        // Each new record of the other entity can point back to us → always OK
+                        if (card === 'many-to-one') return true;
+                        // Inverse of many-to-many → always OK
+                        if (card === 'many-to-many') return true;
+                        // Inverse of one-to-one → only if count is 0
+                        if (card === 'one-to-one') return count === 0;
+                    }
+                    return true;
                 },
 
                 async init() {
@@ -552,7 +637,10 @@
                     this.qcTab = tab;
                     this.qcTitle = '';
                     this.qcCustom = {};
+                    this.qcClassifValues = {};
                     this.qcFields = [];
+                    this.qcClassifications = [];
+                    this.qcEntityRelations = [];
                     this.qcOpen = true;
                     this.qcLoading = true;
 
@@ -563,19 +651,43 @@
                         }, 150);
                     });
 
-                    // Fetch entity fields for the form
+                    // Fetch entity fields for the form (with quickForm filter)
                     try {
-                        const res = await fetch(`/account/${accountNumber}/api/hierarchy/entity/${tab.entityId}/fields`, { credentials: 'include' });
+                        const res = await fetch(`/account/${accountNumber}/api/hierarchy/entity/${tab.entityId}/fields?quickForm=1`, { credentials: 'include' });
                         const data = await res.json();
-                        if (data.success && data.entity?.fields) {
-                            // Show only first 6 fields max (keep it simple/quick)
-                            this.qcFields = data.entity.fields.slice(0, 6).map(f => ({
+                        if (data.success && data.entity) {
+                            let fields = data.entity.fields || [];
+
+                            // If no fields marked with showOnQuickForm, fallback to first 6
+                            if (fields.length === 0) {
+                                const allRes = await fetch(`/account/${accountNumber}/api/hierarchy/entity/${tab.entityId}/fields`, { credentials: 'include' });
+                                const allData = await allRes.json();
+                                if (allData.success && allData.entity?.fields) {
+                                    fields = allData.entity.fields.slice(0, 6);
+                                }
+                            }
+
+                            this.qcFields = fields.map(f => ({
                                 id: f.id,
                                 name: f.name,
-                                label: f.name?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                                label: f.label || f.name?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
                                 type: f.type || 'text',
                                 icon: f.icon || 'solar:widget-linear'
                             }));
+
+                            // Classifications
+                            this.qcClassifications = data.entity.classifications || [];
+
+                            // Relations info for many-to-many handling
+                            this.qcEntityRelations = data.entity.relations || [];
+
+                            // Reference title tokens for auto-generating title
+                            const tokens = data.entity.referenceTitleTokens || [{ t: 'field', id: 'title' }];
+                            this.qcTitleTokens = tokens;
+                            // Auto-title is active when the entity uses tokens that are NOT just 'title'
+                            const hasNonTitleField = tokens.some(t => t.t === 'field' && t.id && t.id !== 'title');
+                            const hasTitleField = tokens.some(t => t.t === 'field' && t.id === 'title');
+                            this.qcAutoTitle = hasNonTitleField && !hasTitleField;
                         }
                     } catch (e) {
                         console.error('Error fetching entity fields:', e);
@@ -589,11 +701,64 @@
                     this.qcTab = null;
                     this.qcTitle = '';
                     this.qcFields = [];
+                    this.qcClassifications = [];
                     this.qcCustom = {};
+                    this.qcClassifValues = {};
+                    this.qcEntityRelations = [];
+                    this.qcTitleTokens = [];
+                    this.qcAutoTitle = false;
+                },
+
+                // Classification option toggle
+                toggleClassifOption(classif, opt) {
+                    if (classif.allowMultiple) {
+                        const arr = this.qcClassifValues[classif.id] || [];
+                        const idx = arr.indexOf(opt.id);
+                        if (idx >= 0) arr.splice(idx, 1);
+                        else arr.push(opt.id);
+                        this.qcClassifValues[classif.id] = [...arr];
+                    } else {
+                        // Single select: toggle on/off
+                        this.qcClassifValues[classif.id] = this.qcClassifValues[classif.id] === opt.id ? null : opt.id;
+                    }
+                },
+
+                isClassifSelected(classifId, optId) {
+                    const val = this.qcClassifValues[classifId];
+                    if (Array.isArray(val)) return val.includes(optId);
+                    return val === optId;
+                },
+
+                // Compute title from referenceTitleTokens using current field values
+                computeQcTitle() {
+                    if (!this.qcTitleTokens || this.qcTitleTokens.length === 0) return '';
+                    const parts = this.qcTitleTokens.map(token => {
+                        if (token.t === 'text') return token.v || '';
+                        if (token.t === 'field') {
+                            // Standard fields
+                            if (token.id === 'title') return this.qcTitle || '';
+                            if (token.id === 'date') {
+                                return new Date().toISOString().split('T')[0];
+                            }
+                            // Custom fields — match by field_id
+                            const val = this.qcCustom[token.id];
+                            if (val) return val;
+                            // Check if it's a date field and format nicely
+                            const field = this.qcFields.find(f => f.id === token.id);
+                            if (field && (field.type === 'date' || field.type === 'datetime-local') && val) {
+                                return val.substring(0, 10);
+                            }
+                            return '';
+                        }
+                        return '';
+                    });
+                    return parts.join('').trim();
                 },
 
                 async submitQuickCreate() {
-                    if (!this.qcTitle.trim() || this.qcSaving) return;
+                    // Compute title: auto-generated or manual
+                    const finalTitle = this.qcAutoTitle ? this.computeQcTitle() : this.qcTitle.trim();
+                    if (!finalTitle || this.qcSaving) return;
 
                     this.qcSaving = true;
                     const tab = this.qcTab;
@@ -603,15 +768,47 @@
                         const customFields = { ...this.qcCustom };
 
                         // Auto-link: set the relation field pointing back to this record
+                        // For inverse relations: the target entity has a relation with sourceRelationKey pointing to our entity
                         if (tab.direction === 'inverse' && tab.sourceRelationKey) {
-                            // For inverse: the source entity has a relation with key = sourceRelationKey targeting this entity
                             customFields[tab.sourceRelationKey] = recordId;
                         }
 
+                        // For direct relations: find the matching relation on the target entity that points back
+                        // Also handles many-to-many: we need to update the current record's relation too
+                        let directRelationKey = null;
+                        if (tab.direction === 'direct') {
+                            directRelationKey = tab.key;
+                            // Also check if the target entity has a reverse relation to auto-link
+                            const reverseRel = this.qcEntityRelations.find(r => r.targetEntity === entityId);
+                            if (reverseRel) {
+                                customFields[reverseRel.key] = recordId;
+                            }
+                        }
+
+                        // Build classification values
+                        const classificationValues = [];
+                        for (const classif of this.qcClassifications) {
+                            const val = this.qcClassifValues[classif.id];
+                            if (!val) continue;
+                            const optIds = Array.isArray(val) ? val : [val];
+                            for (const optId of optIds) {
+                                const opt = classif.options.find(o => o.id === optId);
+                                if (opt) {
+                                    classificationValues.push({
+                                        classificationId: classif.id,
+                                        optionId: optId,
+                                        label: opt.label,
+                                        color: opt.color
+                                    });
+                                }
+                            }
+                        }
+
                         const payload = {
-                            title: this.qcTitle.trim(),
+                            title: finalTitle,
                             entityId: tab.entityId,
-                            customFields
+                            customFields,
+                            classificationValues
                         };
 
                         const res = await fetch(`/account/${accountNumber}/record/${tab.entitySlug}/save`, {
@@ -623,6 +820,25 @@
 
                         const data = await res.json();
                         if (data.success && data._id) {
+                            // For direct relations (especially many-to-many):
+                            // Update the CURRENT record's relation array to include the new record
+                            if (directRelationKey) {
+                                try {
+                                    await fetch(`/account/${accountNumber}/record/${entitySlug}/${recordId}/update-relation`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        credentials: 'include',
+                                        body: JSON.stringify({
+                                            relationKey: directRelationKey,
+                                            targetRecordId: data._id,
+                                            action: 'add'
+                                        })
+                                    });
+                                } catch (e) {
+                                    console.warn('Could not update source relation:', e);
+                                }
+                            }
+
                             // Success! Close modal and refresh the tab
                             this.closeQuickCreate();
 

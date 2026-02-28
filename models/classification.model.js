@@ -22,6 +22,7 @@ const ClassificationSchema = new mongoose.Schema(
         entities: [{ type: mongoose.Schema.Types.ObjectId, ref: "Entity" }],
         options: [ClassificationOptionSchema],
         defaultOptionId: { type: mongoose.Schema.Types.ObjectId, default: null },
+        showOnQuickForm: { type: Boolean, default: false },
         createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
     },
     { timestamps: true }

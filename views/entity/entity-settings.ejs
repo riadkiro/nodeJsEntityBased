@@ -125,7 +125,7 @@
     }))
   } : null,
   templateData: locals.templateData || null,
-  allClassifications: (locals.allClassifications || []).map(c => ({ _id: c._id.toString(), name: c.name })),
+  allClassifications: (locals.allClassifications || []).map(c => ({ _id: c._id.toString(), name: c.name, _showOnQuickForm: c.showOnQuickForm || false })),
   allEntities: (locals.allEntities || []).map(e => ({ _id: e._id.toString(), name: e.name, slug: e.slug, icon: e.icon || '', color: e.color || '' }))
 }).replace(/</g, '\\u003C') %>
 </script>
@@ -414,6 +414,19 @@ document.addEventListener('alpine:init', () => {
               }
             } catch(e) { console.error(e); }
           }
+
+          // Enrich with showOnQuickForm from entity fields API
+          try {
+            const qfRes = await fetch(`/account/${this.accountNumber}/api/hierarchy/entity/${entity._id}/fields`, { credentials: 'include' });
+            const qfData = await qfRes.json();
+            if (qfData.success && qfData.entity?.fields) {
+              const qfMap = {};
+              qfData.entity.fields.forEach(f => { qfMap[f.id] = f.showOnQuickForm || false; });
+              this.selectedFields.forEach(f => {
+                f.showOnQuickForm = qfMap[String(f._id)] || false;
+              });
+            }
+          } catch(e) { console.error('Error loading quickForm flags:', e); }
         } catch(e) { console.error(e); }
       },
 
@@ -586,6 +599,8 @@ document.addEventListener('alpine:init', () => {
           enabledStandardFields,
           enableAttachments: this.form.enableAttachments,
           customFields: this.selectedFields.map(f => f._id || f),
+          quickFormFieldIds: this.selectedFields.filter(f => f.showOnQuickForm).map(f => f._id || f),
+          quickFormClassificationIds: this.allClassifications.filter(c => c._showOnQuickForm).map(c => c._id),
           referenceTitleTokens: this.form.referenceTitleTokens,
           statusClassification: this.form.statusClassificationId || null,
           classifications: this.form.classifications,
@@ -884,9 +899,16 @@ document.addEventListener('alpine:init', () => {
               </div>
               <div class="flex flex-wrap gap-1.5">
                 <template x-for="(field, idx) in selectedFields" :key="field._id">
-                  <div class="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-xs border shadow-sm">
+                  <div class="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-xs border shadow-sm"
+                       :class="field.showOnQuickForm ? 'border-warning/50 bg-warning/5' : ''">
                     <iconify-icon :icon="field.icon || 'solar:widget-bold'" width="14" class="text-primary"></iconify-icon>
                     <span x-text="field.label || field.name"></span>
+                    <button type="button" @click="field.showOnQuickForm = !field.showOnQuickForm"
+                            class="transition-colors ml-0.5"
+                            :class="field.showOnQuickForm ? 'text-warning' : 'text-gray-300 hover:text-warning/60'"
+                            :title="field.showOnQuickForm ? 'Visible dans Quick Form' : 'Masqué du Quick Form'">
+                      <iconify-icon icon="solar:bolt-bold" width="13"></iconify-icon>
+                    </button>
                     <button type="button" @click="selectedFields.splice(idx, 1)" class="text-gray-400 hover:text-red-500 ml-0.5">
                       <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
                     </button>
@@ -1073,15 +1095,29 @@ document.addEventListener('alpine:init', () => {
             </label>
             <div class="flex flex-wrap gap-1.5" x-show="allClassifications.length > 0">
               <template x-for="cls in allClassifications" :key="cls._id">
-                <button type="button" @click="toggleClassification(cls._id)"
-                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors"
+                <div class="inline-flex items-center gap-1">
+                  <button type="button" @click="toggleClassification(cls._id)"
+                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-l-full text-xs font-medium border transition-colors"
                         :class="isClassificationSelected(cls._id) ? 'bg-info/10 border-info/30 text-info' : cls._id === form.statusClassificationId ? 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-800 text-gray-300 cursor-not-allowed' : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400 hover:border-info/50'"
                         :disabled="cls._id === form.statusClassificationId">
-                  <iconify-icon icon="solar:tag-bold-duotone" width="12"></iconify-icon>
-                  <span x-text="cls.name"></span>
-                </button>
+                    <iconify-icon icon="solar:tag-bold-duotone" width="12"></iconify-icon>
+                    <span x-text="cls.name"></span>
+                  </button>
+                  <button type="button"
+                          x-show="isClassificationSelected(cls._id) || cls._id === form.statusClassificationId"
+                          @click="cls._showOnQuickForm = !cls._showOnQuickForm"
+                          class="px-1.5 py-1 text-xs border rounded-r-full transition-colors -ml-px"
+                          :class="cls._showOnQuickForm ? 'bg-warning/10 border-warning/30 text-warning' : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-300 hover:text-warning/60'"
+                          :title="cls._showOnQuickForm ? 'Visible dans Quick Form' : 'Masqué du Quick Form'">
+                    <iconify-icon icon="solar:bolt-bold" width="12"></iconify-icon>
+                  </button>
+                </div>
               </template>
             </div>
+            <p class="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
+              <iconify-icon icon="solar:bolt-bold" width="10" class="text-warning"></iconify-icon>
+              = Visible dans le formulaire de création rapide (Quick Form)
+            </p>
           </div>
         </div>
       </div>

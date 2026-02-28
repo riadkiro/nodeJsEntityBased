@@ -87,6 +87,7 @@ const FieldTemplateSchema = new mongoose.Schema({
   // 🔗 Lien logique
   entities: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Entity' }],
   isCustom: { type: Boolean, default: true },
+  showOnQuickForm: { type: Boolean, default: false },
 
   // 🏷️ System fields
   isSystem: { type: Boolean, default: false },

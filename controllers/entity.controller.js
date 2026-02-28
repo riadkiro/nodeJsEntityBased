@@ -396,6 +396,12 @@ module.exports = {
       const entityId = req.params.id;
       const entityData = req.body;
 
+      // Extract quickFormFieldIds before saving entity (not a schema field)
+      const quickFormFieldIds = entityData.quickFormFieldIds || null;
+      delete entityData.quickFormFieldIds;
+      const quickFormClassificationIds = entityData.quickFormClassificationIds || null;
+      delete entityData.quickFormClassificationIds;
+
       console.log("🔄 API Update Entity:", entityId, entityData);
 
       // Check slug uniqueness if slug is being updated
@@ -413,6 +419,44 @@ module.exports = {
 
       if (!updated) {
         return res.status(404).json({ error: "Entity not found" });
+      }
+
+      // Sync showOnQuickForm on FieldTemplates
+      if (quickFormFieldIds !== null && updated.customFields?.length > 0) {
+        const FieldTemplate = await tenantCollection(req, "FieldTemplate");
+        const allFieldIds = updated.customFields.map(id => id.toString());
+        const qfSet = new Set(quickFormFieldIds.map(String));
+
+        // Batch update: set showOnQuickForm = true for selected, false for others
+        const enableIds = allFieldIds.filter(id => qfSet.has(id));
+        const disableIds = allFieldIds.filter(id => !qfSet.has(id));
+
+        if (enableIds.length > 0) {
+          await FieldTemplate.updateMany({ _id: { $in: enableIds } }, { showOnQuickForm: true });
+        }
+        if (disableIds.length > 0) {
+          await FieldTemplate.updateMany({ _id: { $in: disableIds } }, { showOnQuickForm: false });
+        }
+      }
+
+      // Sync showOnQuickForm on Classifications
+      if (quickFormClassificationIds !== null) {
+        const Classification = await tenantCollection(req, "Classification");
+        const allClassifIds = [
+          ...(updated.classifications || []).map(id => id.toString()),
+          ...(updated.statusClassification ? [updated.statusClassification.toString()] : [])
+        ].filter(Boolean);
+        const qfClassifSet = new Set(quickFormClassificationIds.map(String));
+
+        const enableClassifIds = allClassifIds.filter(id => qfClassifSet.has(id));
+        const disableClassifIds = allClassifIds.filter(id => !qfClassifSet.has(id));
+
+        if (enableClassifIds.length > 0) {
+          await Classification.updateMany({ _id: { $in: enableClassifIds } }, { showOnQuickForm: true });
+        }
+        if (disableClassifIds.length > 0) {
+          await Classification.updateMany({ _id: { $in: disableClassifIds } }, { showOnQuickForm: false });
+        }
       }
 
       console.log("✅ Entity updated via API:", updated);

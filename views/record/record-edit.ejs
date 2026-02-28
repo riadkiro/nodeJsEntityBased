@@ -1617,7 +1617,7 @@
                             <div class="flex flex-wrap -mx-2" x-show="activeTab === tabs[0]?.id">
                                 <% if (entity.enabledStandardFields &&
                                     entity.enabledStandardFields.includes('description')) { %>
-                                    <div class="w-full px-2 mb-4">
+                                    <div class="w-full px-2 mb-4 field-item">
                                         <label for="description" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
                                         <textarea name="standard[description]" class="form-textarea text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" rows="4"
                                             placeholder="Entrez la description"><%= record.description %></textarea>

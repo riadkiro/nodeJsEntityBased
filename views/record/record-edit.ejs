@@ -1617,9 +1617,9 @@
                             <div class="flex flex-wrap -mx-2" x-show="activeTab === tabs[0]?.id">
                                 <% if (entity.enabledStandardFields &&
                                     entity.enabledStandardFields.includes('description')) { %>
-                                    <div class="w-full px-2 mb-4 field-item">
-                                        <label for="description" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
-                                        <textarea name="standard[description]" class="form-textarea text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" rows="4"
+                                    <div class="w-full px-2 mb-4">
+                                        <label for="description" class="font-semibold">Description</label>
+                                        <textarea name="standard[description]" class="form-textarea dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" rows="4"
                                             placeholder="Entrez la description"><%= record.description %></textarea>
                                     </div>
                                     <% } %>
@@ -1722,10 +1722,10 @@
 <style>
     /* ═══ Ghost Fields: border-on-hover, full styling on focus ═══ */
     [data-panel-id="attributs"] .form-input,
-    [data-panel-id="attributs"] .form-textarea,
+    [data-panel-id="attributs"] .form-textarea:not([name="standard[description]"]),
     [data-panel-id="attributs"] .form-select,
     [data-panel-id="attributs"] input.form-input,
-    [data-panel-id="attributs"] textarea.form-textarea,
+    [data-panel-id="attributs"] textarea.form-textarea:not([name="standard[description]"]),
     [data-panel-id="attributs"] select.form-select {
         background: transparent !important;
         border-color: transparent !important;
@@ -3291,6 +3291,12 @@
         min-height: 100px !important;
         margin: 0 !important;
         resize: vertical !important;
+    }
+
+    textarea[name="standard[description]"] {
+        background-color: #f9fafb !important;
+        border: 1px solid #f3f4f6 !important;
+        border-radius: 8px !important;
     }
 
     .dark textarea,

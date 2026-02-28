@@ -7,6 +7,49 @@ const WorkflowTriggers = require("../src/integrations/services/WorkflowTriggers"
 const denormService = require("../services/record-denorm.service");
 
 /**
+ * Get inverse relations for an entity.
+ * Finds all OTHER entities that have a relation targeting this entity,
+ * and returns them as virtual relation objects with direction='inverse'.
+ * This enables bidirectional display: if Consultation→Patient, then Patient sees "Consultations".
+ */
+async function getInverseRelations(EntityModel, entityId) {
+    // Find all entities that have a relation targeting this entity
+    const sourceEntities = await EntityModel.find({
+        'relations.targetEntity': entityId,
+        '_id': { $ne: entityId } // Exclude self-references (already shown as direct)
+    }).select('_id name slug icon color relations').lean();
+
+    const inverseRelations = [];
+    for (const srcEntity of sourceEntities) {
+        for (const rel of (srcEntity.relations || [])) {
+            if (rel.targetEntity && rel.targetEntity.toString() === entityId.toString()) {
+                // Check: don't create an inverse if the source entity already has an explicit
+                // relation back (to avoid duplicates if both sides are manually configured)
+                inverseRelations.push({
+                    key: `inv_${rel.key}`,        // Prefixed key to distinguish from direct
+                    sourceRelationKey: rel.key,     // Original relation key on source entity
+                    targetEntity: {                 // The "target" for inverse = the SOURCE entity
+                        _id: srcEntity._id,
+                        name: srcEntity.name,
+                        slug: srcEntity.slug,
+                        icon: srcEntity.icon,
+                        color: srcEntity.color
+                    },
+                    label: rel.inverseLabel || srcEntity.namePlural || srcEntity.name + 's',
+                    cardinality: rel.cardinality === 'one-to-many' ? 'many-to-one' :
+                        rel.cardinality === 'many-to-many' ? 'many-to-many' : 'one-to-one',
+                    direction: 'inverse',           // Flag: this is an inverse relation
+                    sourceEntityId: srcEntity._id,  // The entity that owns the actual relation
+                    inputMode: 'readonly',          // Inverse relations are read-only (data is managed on the source side)
+                });
+            }
+        }
+    }
+    return inverseRelations;
+}
+
+
+/**
  * Auto-generate a default form layout from entity.customFields
  * when no EntityForm or published formLayout exists.
  * Uses smart width assignments based on field type for aesthetic rendering.
@@ -639,6 +682,94 @@ module.exports = {
                 }
             }
 
+            // ═══ Inverse Relations: find other entities that target this entity ═══
+            const inverseRelations = await getInverseRelations(EntityModel, entity._id);
+            if (inverseRelations.length > 0) {
+                // For each inverse relation, find records from the SOURCE entity that reference this record
+                for (const invRel of inverseRelations) {
+                    const sourceRecords = await RecordModel.find({
+                        entityId: invRel.sourceEntityId,
+                        'relations': {
+                            $elemMatch: {
+                                relationKey: invRel.sourceRelationKey,
+                                value: record._id
+                            }
+                        }
+                    })
+                        .populate({ path: 'customFields.field_id', select: 'label name type inputType ui' })
+                        .lean();
+
+                    // Also check for value stored as array containing the record ID
+                    const sourceRecordsArray = await RecordModel.find({
+                        entityId: invRel.sourceEntityId,
+                        'relations': {
+                            $elemMatch: {
+                                relationKey: invRel.sourceRelationKey,
+                                value: { $in: [record._id, record._id.toString()] }
+                            }
+                        }
+                    })
+                        .populate({ path: 'customFields.field_id', select: 'label name type inputType ui' })
+                        .lean();
+
+                    // Merge and deduplicate
+                    const allRecords = [...sourceRecords];
+                    const existingIds = new Set(allRecords.map(r => r._id.toString()));
+                    for (const r of sourceRecordsArray) {
+                        if (!existingIds.has(r._id.toString())) {
+                            allRecords.push(r);
+                        }
+                    }
+
+                    if (allRecords.length > 0) {
+                        relatedRecordsData[invRel.key] = allRecords;
+                    }
+                }
+
+                // Keep inverse relations as a SEPARATE variable (don't inject into Mongoose entity.relations)
+                // entity.relations stays untouched for direct relation form fields
+            }
+
+            // ═══ Build Relation Tabs Metadata (lightweight, for tab bar) ═══
+            const relationTabsMeta = [];
+            // Direct relations
+            for (const rel of (entity.relations || [])) {
+                const targetEnt = rel.targetEntity || {};
+                const relValue = recordValues[rel.key];
+                let count = 0;
+                if (relValue) {
+                    const targetIds = Array.isArray(relValue) ? relValue : [relValue];
+                    count = targetIds.filter(id => mongoose.Types.ObjectId.isValid(id)).length;
+                }
+                relationTabsMeta.push({
+                    key: rel.key,
+                    label: rel.label || targetEnt.name || 'Relation',
+                    icon: targetEnt.icon || 'solar:link-round-bold-duotone',
+                    color: targetEnt.color || '#4361ee',
+                    count,
+                    direction: 'direct',
+                    entitySlug: targetEnt.slug || '',
+                    entityId: (targetEnt._id || '').toString(),
+                });
+            }
+            // Inverse relations
+            for (const invRel of inverseRelations) {
+                const tgt = invRel.targetEntity || {};
+                const count = (relatedRecordsData[invRel.key] || []).length;
+                relationTabsMeta.push({
+                    key: invRel.key,
+                    label: invRel.label || tgt.name || 'Relation',
+                    icon: tgt.icon || 'solar:link-round-bold-duotone',
+                    color: tgt.color || '#4361ee',
+                    count,
+                    direction: 'inverse',
+                    entitySlug: tgt.slug || '',
+                    entityId: (tgt._id || '').toString(),
+                    sourceRelationKey: invRel.sourceRelationKey,
+                    sourceEntityId: (invRel.sourceEntityId || '').toString(),
+                });
+            }
+
             // Try to load from EntityForm (multi-form architecture)
             let resolvedLayout = entity.layout || [];
             let activeFormName = null;
@@ -773,18 +904,21 @@ module.exports = {
             }
 
             // Auto-generate default layout from entity.customFields when no form layout exists
+            // Filter out inverse relations — they are read-only and shown in sidebar only
+            const directRelations = (entity.relations || []).filter(r => r.direction !== 'inverse');
             if (!activeFormName && (!resolvedLayout || (Array.isArray(resolvedLayout) && resolvedLayout.length === 0) || (!Array.isArray(resolvedLayout) && (!resolvedLayout.fields || resolvedLayout.fields.length === 0)))) {
-                const autoLayout = generateDefaultLayout(entity.customFields, entity.relations);
+                const autoLayout = generateDefaultLayout(entity.customFields, directRelations);
                 if (autoLayout) {
                     resolvedLayout = autoLayout;
                 }
             }
 
             // Always inject missing relation fields into the layout (they may be absent from saved entity.layout)
-            if (!activeFormName && !entityFormLayout && entity.relations && entity.relations.length > 0) {
+            // Only inject DIRECT relations (not inverse) — inverse are sidebar-only
+            if (!activeFormName && !entityFormLayout && directRelations.length > 0) {
                 const layoutFields = !Array.isArray(resolvedLayout) ? (resolvedLayout.fields || []) : resolvedLayout;
                 const existingFieldIds = new Set(layoutFields.map(f => f.fieldId));
-                const missingRelations = entity.relations.filter(r => !existingFieldIds.has(r.key));
+                const missingRelations = directRelations.filter(r => !existingFieldIds.has(r.key));
                 if (missingRelations.length > 0) {
                     const relFields = missingRelations.map(rel => ({
                         fieldId: rel.key,
@@ -812,6 +946,8 @@ module.exports = {
                 activeFormId,
                 recordValues,
                 relatedRecordsData,
+                inverseRelations: inverseRelations || [],
+                relationTabsMeta: relationTabsMeta || [],
                 allFieldTemplates,
                 account_number: req.account_number,
                 layout: "layout-app"

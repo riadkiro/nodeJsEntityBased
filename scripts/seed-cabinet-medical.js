@@ -53,6 +53,50 @@ function registerModels(conn) {
 async function install(conn, userId, presetSlug) {
     const db = registerModels(conn);
     const ids = {}; // store created IDs
+    const uid = userId ? new mongoose.Types.ObjectId(userId) : null;
+
+    // =========== 0. CLEANUP ORPHANED DATA ===========
+    console.log('\n🧹 Cleaning up orphaned data...');
+    // Find all entity IDs that actually exist
+    const existingEntities = await db.Entity.find({}).select('_id').lean();
+    const existingEntityIds = new Set(existingEntities.map(e => e._id.toString()));
+
+    // Find and delete views referencing non-existent entities
+    const allViews = await db.View.find({ entity: { $exists: true, $ne: null } }).lean();
+    const orphanedViewIds = allViews
+        .filter(v => v.entity && !existingEntityIds.has(v.entity.toString()))
+        .map(v => v._id);
+
+    if (orphanedViewIds.length > 0) {
+        await db.View.deleteMany({ _id: { $in: orphanedViewIds } });
+        console.log(`   🗑️  Removed ${orphanedViewIds.length} orphaned views`);
+    }
+
+    // Clean up orphaned spaces (spaces with no remaining views or folders)
+    const remainingViews = await db.View.find({}).select('spaces folders').lean();
+    const usedSpaceIds = new Set();
+    remainingViews.forEach(v => {
+        (v.spaces || []).forEach(s => usedSpaceIds.add(s.toString()));
+    });
+    const remainingFolders = await db.Folder.find({}).select('spaces').lean();
+    remainingFolders.forEach(f => {
+        (f.spaces || []).forEach(s => usedSpaceIds.add(s.toString()));
+    });
+    const allSpaces = await db.Space.find({}).lean();
+    const orphanedSpaces = allSpaces.filter(s => !usedSpaceIds.has(s._id.toString()));
+    if (orphanedSpaces.length > 0) {
+        await db.Space.deleteMany({ _id: { $in: orphanedSpaces.map(s => s._id) } });
+        console.log(`   🗑️  Removed ${orphanedSpaces.length} orphaned spaces`);
+    }
+
+    // Also clean up orphaned records (records whose entity was deleted)
+    const orphanedRecords = await db.Record.countDocuments({ entityId: { $nin: [...existingEntityIds].map(id => new mongoose.Types.ObjectId(id)) } });
+    if (orphanedRecords > 0) {
+        await db.Record.deleteMany({ entityId: { $nin: [...existingEntityIds].map(id => new mongoose.Types.ObjectId(id)) } });
+        console.log(`   🗑️  Removed ${orphanedRecords} orphaned records`);
+    }
+
+    console.log('   ✅ Cleanup complete');
 
     // =========== 1. FIELD TEMPLATES ===========
     console.log('\n📋 Creating field templates...');
@@ -213,55 +257,55 @@ async function install(conn, userId, presetSlug) {
     const f = ids.fields;
     const entityDefs = [
         {
-            name: 'Patient', slug: 'patients', icon: 'solar:user-heart-bold-duotone', color: '#3b82f6', fields: ['nom', 'prenom', 'date_naissance', 'sexe', 'telephone', 'email', 'adresse', 'numero_secu', 'groupe_sanguin', 'allergies', 'antecedents', 'medecin_traitant', 'mutuelle'], statusClassification: null, classifications: ['patient_tags'],
+            name: 'Patient', nameSingular: 'Patient', namePlural: 'Patients', slug: 'patients', icon: 'solar:user-heart-bold-duotone', color: '#3b82f6', fields: ['nom', 'prenom', 'date_naissance', 'sexe', 'telephone', 'email', 'adresse', 'numero_secu', 'groupe_sanguin', 'allergies', 'antecedents', 'medecin_traitant', 'mutuelle'], statusClassification: null, classifications: ['patient_tags'],
             referenceTitleTokens: [{ t: 'field', id: () => f.prenom }, { t: 'text', v: ' ' }, { t: 'field', id: () => f.nom }]
         },
         {
-            name: 'Rendez-vous', slug: 'rendez-vous', icon: 'solar:calendar-mark-bold-duotone', color: '#8b5cf6', fields: ['date_rdv', 'duree_rdv', 'objet_rdv', 'notes_generales'], statusClassification: 'rdv_status', classifications: [],
+            name: 'Rendez-vous', nameSingular: 'Rendez-vous', namePlural: 'Rendez-vous', slug: 'rendez-vous', icon: 'solar:calendar-mark-bold-duotone', color: '#8b5cf6', fields: ['date_rdv', 'duree_rdv', 'objet_rdv', 'notes_generales'], statusClassification: 'rdv_status', classifications: [],
             referenceTitleTokens: null
         }, // set after relations
         {
-            name: 'Consultation', slug: 'consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', fields: ['motif', 'symptomes', 'examen_clinique', 'diagnostic', 'plan_traitement', 'poids', 'taille_cm', 'tension', 'temperature', 'frequence_cardiaque', 'notes_generales'], statusClassification: null, classifications: ['consult_type'],
+            name: 'Consultation', nameSingular: 'Consultation', namePlural: 'Consultations', slug: 'consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', fields: ['motif', 'symptomes', 'examen_clinique', 'diagnostic', 'plan_traitement', 'poids', 'taille_cm', 'tension', 'temperature', 'frequence_cardiaque', 'notes_generales'], statusClassification: null, classifications: ['consult_type'],
             referenceTitleTokens: null
         }, // set after relations
         {
-            name: 'Prescription', slug: 'prescriptions', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f', fields: ['posologie', 'duree_traitement', 'notes_prescription'], statusClassification: null, classifications: [],
+            name: 'Prescription', nameSingular: 'Prescription', namePlural: 'Prescriptions', slug: 'prescriptions', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f', fields: ['posologie', 'duree_traitement', 'notes_prescription'], statusClassification: null, classifications: [],
             referenceTitleTokens: null
         }, // set after relations
         {
-            name: 'Médicament', slug: 'medicaments', icon: 'solar:pills-3-bold-duotone', color: '#ef4444', fields: ['forme', 'dosage', 'prix_vente', 'stock_min', 'stock_actuel', 'notes_generales'], statusClassification: null, classifications: [],
+            name: 'Médicament', nameSingular: 'Médicament', namePlural: 'Médicaments', slug: 'medicaments', icon: 'solar:pills-3-bold-duotone', color: '#ef4444', fields: ['forme', 'dosage', 'prix_vente', 'stock_min', 'stock_actuel', 'notes_generales'], statusClassification: null, classifications: [],
             referenceTitleTokens: [{ t: 'field', id: 'title' }]
         },
         {
-            name: 'Facture', slug: 'factures', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', fields: ['montant_total', 'montant_paye', 'date_echeance', 'notes_generales'], statusClassification: 'invoice_status', classifications: [],
+            name: 'Facture', nameSingular: 'Facture', namePlural: 'Factures', slug: 'factures', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', fields: ['montant_total', 'montant_paye', 'date_echeance', 'notes_generales'], statusClassification: 'invoice_status', classifications: [],
             referenceTitleTokens: null
         }, // set after relations
         {
-            name: 'Paiement', slug: 'paiements', icon: 'solar:wallet-bold-duotone', color: '#22c55e', fields: ['montant_total', 'mode_paiement', 'reference_paiement', 'notes_generales'], statusClassification: 'payment_method', classifications: [],
+            name: 'Paiement', nameSingular: 'Paiement', namePlural: 'Paiements', slug: 'paiements', icon: 'solar:wallet-bold-duotone', color: '#22c55e', fields: ['montant_total', 'mode_paiement', 'reference_paiement', 'notes_generales'], statusClassification: 'payment_method', classifications: [],
             referenceTitleTokens: null
         }, // set after relations
         {
-            name: 'Assurance', slug: 'assurances', icon: 'solar:shield-bold-duotone', color: '#3b82f6', fields: ['compagnie', 'numero_contrat', 'taux_remboursement', 'telephone', 'email', 'notes_generales'], statusClassification: null, classifications: [],
+            name: 'Assurance', nameSingular: 'Assurance', namePlural: 'Assurances', slug: 'assurances', icon: 'solar:shield-bold-duotone', color: '#3b82f6', fields: ['compagnie', 'numero_contrat', 'taux_remboursement', 'telephone', 'email', 'notes_generales'], statusClassification: null, classifications: [],
             referenceTitleTokens: [{ t: 'field', id: () => f.compagnie }, { t: 'text', v: ' - ' }, { t: 'field', id: () => f.numero_contrat }]
         },
         {
-            name: 'Résultat Labo', slug: 'resultats-labo', icon: 'solar:test-tube-bold-duotone', color: '#f97316', fields: ['type_analyse', 'resultats_labo', 'valeurs_reference', 'interpretation', 'notes_generales'], statusClassification: null, classifications: ['lab_type'],
+            name: 'Résultat Labo', nameSingular: 'Résultat Labo', namePlural: 'Résultats Labo', slug: 'resultats-labo', icon: 'solar:test-tube-bold-duotone', color: '#f97316', fields: ['type_analyse', 'resultats_labo', 'valeurs_reference', 'interpretation', 'notes_generales'], statusClassification: null, classifications: ['lab_type'],
             referenceTitleTokens: null
         }, // set after relations
         {
-            name: 'Document Médical', slug: 'documents-medicaux', icon: 'solar:file-text-bold-duotone', color: '#6366f1', fields: ['type_document', 'notes_generales'], statusClassification: null, classifications: [],
+            name: 'Document Médical', nameSingular: 'Document Médical', namePlural: 'Documents Médicaux', slug: 'documents-medicaux', icon: 'solar:file-text-bold-duotone', color: '#6366f1', fields: ['type_document', 'notes_generales'], statusClassification: null, classifications: [],
             referenceTitleTokens: null
         }, // set after relations
         {
-            name: 'Plan de Traitement', slug: 'plans-traitement', icon: 'solar:clipboard-list-bold-duotone', color: '#0ea5e9', fields: ['objectif', 'protocole', 'duree_traitement', 'notes_generales'], statusClassification: null, classifications: [],
+            name: 'Plan de Traitement', nameSingular: 'Plan de Traitement', namePlural: 'Plans de Traitement', slug: 'plans-traitement', icon: 'solar:clipboard-list-bold-duotone', color: '#0ea5e9', fields: ['objectif', 'protocole', 'duree_traitement', 'notes_generales'], statusClassification: null, classifications: [],
             referenceTitleTokens: null
         }, // set after relations
         {
-            name: 'Personnel', slug: 'personnel', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee', fields: ['nom', 'prenom', 'specialite', 'numero_rpps', 'telephone', 'email'], statusClassification: null, classifications: ['staff_role'],
+            name: 'Personnel', nameSingular: 'Membre du Personnel', namePlural: 'Personnel', slug: 'personnel', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee', fields: ['nom', 'prenom', 'specialite', 'numero_rpps', 'telephone', 'email'], statusClassification: null, classifications: ['staff_role'],
             referenceTitleTokens: [{ t: 'field', id: () => f.prenom }, { t: 'text', v: ' ' }, { t: 'field', id: () => f.nom }]
         },
         {
-            name: 'Stock', slug: 'stock', icon: 'solar:box-bold-duotone', color: '#94a3b8', fields: ['categorie_stock', 'fournisseur', 'prix_achat', 'prix_vente', 'stock_actuel', 'stock_min', 'notes_generales'], statusClassification: null, classifications: [],
+            name: 'Stock', nameSingular: 'Article Stock', namePlural: 'Stock', slug: 'stock', icon: 'solar:box-bold-duotone', color: '#94a3b8', fields: ['categorie_stock', 'fournisseur', 'prix_achat', 'prix_vente', 'stock_actuel', 'stock_min', 'notes_generales'], statusClassification: null, classifications: [],
             referenceTitleTokens: [{ t: 'field', id: 'title' }]
         },
     ];
@@ -284,7 +328,8 @@ async function install(conn, userId, presetSlug) {
         }
 
         const entityData = {
-            name: e.name, slug: e.slug, description: '', icon: e.icon, color: e.color, order: i,
+            name: e.name, nameSingular: e.nameSingular, namePlural: e.namePlural,
+            slug: e.slug, description: '', icon: e.icon, color: e.color, order: i,
             enabledStandardFields: ['title', 'description', 'date'],
             customFields: customFieldIds,
             statusClassification: statusCls,

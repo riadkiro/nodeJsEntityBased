@@ -38,6 +38,37 @@ module.exports = {
       });
     });
   },
+
+  bulkDelete: async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ success: false, error: "No IDs provided" });
+      }
+
+      const Entity = await tenantCollection(req, "Entity");
+      const Record = await tenantCollection(req, "Record");
+      const View = await tenantCollection(req, "View");
+
+      // Delete associated records
+      await Record.deleteMany({ entityId: { $in: ids } });
+
+      // Delete associated views
+      await View.deleteMany({ entity: { $in: ids } });
+
+      // Delete entities
+      const result = await Entity.deleteMany({ _id: { $in: ids } });
+
+      res.json({
+        success: true,
+        message: `${result.deletedCount} collection(s) supprimée(s)`,
+        deletedCount: result.deletedCount
+      });
+    } catch (err) {
+      console.error("[Entity] bulkDelete Error:", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
   editForm: async (req, res) => {
     try {
       // 1. Validate ID to prevent CastError
@@ -592,12 +623,39 @@ module.exports = {
       }
       const allEntities = await Entity.find({}, '_id name slug icon color');
 
+      // Compute incoming (inverse) relations for the settings page
+      let incomingRelations = [];
+      if (mode === 'edit' && entity) {
+        const entityIdStr = entity._id.toString();
+        for (const ent of allEntities) {
+          // Need to load full entity with relations for this check
+          const fullEnt = await Entity.findById(ent._id).lean();
+          if (!fullEnt || !fullEnt.relations) continue;
+          for (const rel of fullEnt.relations) {
+            if (rel.targetEntity && rel.targetEntity.toString() === entityIdStr) {
+              incomingRelations.push({
+                sourceEntityId: ent._id.toString(),
+                sourceEntityName: ent.name,
+                sourceEntitySlug: ent.slug,
+                sourceEntityIcon: ent.icon || 'solar:widget-bold-duotone',
+                sourceEntityColor: ent.color || '#4361ee',
+                label: rel.label,
+                inverseLabel: rel.inverseLabel || rel.label,
+                cardinality: rel.cardinality || 'one-to-many',
+                key: rel.key
+              });
+            }
+          }
+        }
+      }
+
       res.render("entity/entity-settings", {
         mode,
         entity,
         templateData,
         allClassifications,
         allEntities,
+        incomingRelations,
         account_number: req.account_number,
         layout: "layout-app",
       });

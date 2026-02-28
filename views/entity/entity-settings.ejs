@@ -105,6 +105,8 @@
   entity: locals.entity ? {
     _id: entity._id,
     name: entity.name || '',
+    nameSingular: entity.nameSingular || '',
+    namePlural: entity.namePlural || '',
     slug: entity.slug || '',
     description: entity.description || '',
     icon: entity.icon || '',
@@ -173,6 +175,8 @@ document.addEventListener('alpine:init', () => {
       // Form data
       form: {
         name: isEdit ? entity.name : hasTpl ? tplData.name : '',
+        nameSingular: isEdit ? (entity.nameSingular || '') : '',
+        namePlural: isEdit ? (entity.namePlural || '') : '',
         slug: isEdit ? entity.slug : '',
         description: isEdit ? entity.description : hasTpl ? tplData.description : '',
         icon: isEdit ? entity.icon : hasTpl ? tplData.icon : '',
@@ -214,6 +218,7 @@ document.addEventListener('alpine:init', () => {
       // Relations
       allEntities: raw.allEntities || [],
       relations: isEdit ? (entity.relations || []).map(r => ({ ...r, _targetFields: [] })) : [],
+      incomingRelations: <%- JSON.stringify(incomingRelations || []) %>,
       entityFieldsCache: {},
 
       // Classifications
@@ -571,6 +576,8 @@ document.addEventListener('alpine:init', () => {
         const enabledStandardFields = Object.entries(this.form.standardFields).filter(([k,v])=>v).map(([k])=>k);
         const payload = {
           name: this.form.name,
+          nameSingular: this.form.nameSingular || '',
+          namePlural: this.form.namePlural || '',
           slug: this.form.slug,
           description: this.form.description,
           icon: this.form.icon,
@@ -804,6 +811,18 @@ document.addEventListener('alpine:init', () => {
               <p class="text-xs text-gray-400 mt-1">Identifiant unique (auto si vide)</p>
             </div>
           </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label class="mb-1.5 block text-sm font-semibold dark:text-gray-300">Nom singulier</label>
+              <input type="text" x-model="form.nameSingular" placeholder="Ex: Patient, Consultation..." class="form-input w-full">
+              <p class="text-xs text-gray-400 mt-1">Nom affiché pour 1 enregistrement</p>
+            </div>
+            <div>
+              <label class="mb-1.5 block text-sm font-semibold dark:text-gray-300">Nom pluriel</label>
+              <input type="text" x-model="form.namePlural" placeholder="Ex: Patients, Documents Médicaux..." class="form-input w-full">
+              <p class="text-xs text-gray-400 mt-1">Nom affiché pour la liste</p>
+            </div>
+          </div>
           <div class="mt-4">
             <label class="mb-1.5 block text-sm font-semibold dark:text-gray-300">Description</label>
             <textarea x-model="form.description" rows="3" placeholder="Description de la collection..." class="form-input w-full resize-none text-sm"></textarea>
@@ -851,7 +870,7 @@ document.addEventListener('alpine:init', () => {
                     :class="step2Tab === 'relations' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'">
               <iconify-icon icon="solar:link-round-bold-duotone" width="16" class="mr-1"></iconify-icon>
               Relations
-              <span x-show="relations.length > 0" class="ml-1 px-1.5 py-0.5 text-xs bg-primary/20 text-primary rounded-full" x-text="relations.length"></span>
+              <span x-show="relations.length + incomingRelations.length > 0" class="ml-1 px-1.5 py-0.5 text-xs bg-primary/20 text-primary rounded-full" x-text="relations.length + incomingRelations.length"></span>
             </button>
           </div>
 
@@ -978,6 +997,49 @@ document.addEventListener('alpine:init', () => {
               <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
               <span>Ajouter une relation</span>
             </button>
+
+            <!-- ═══ Incoming (Inverse) Relations ═══ -->
+            <template x-if="incomingRelations.length > 0">
+              <div class="mt-6">
+                <div class="flex items-center gap-2 mb-3">
+                  <iconify-icon icon="solar:double-alt-arrow-left-bold-duotone" width="18" class="text-amber-500"></iconify-icon>
+                  <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Relations entrantes</span>
+                  <span class="px-1.5 py-0.5 text-xs bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-full font-bold" x-text="incomingRelations.length"></span>
+                </div>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mb-3">
+                  Ces relations sont définies sur d'autres entités et pointent vers cette entité. Elles apparaissent automatiquement dans la sidebar des records.
+                </p>
+                <div class="space-y-2">
+                  <template x-for="inc in incomingRelations" :key="inc.key">
+                    <div class="border dark:border-gray-700/50 rounded-lg p-3 bg-amber-500/5 dark:bg-amber-500/5">
+                      <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                             :style="'background:' + inc.sourceEntityColor + '15'">
+                          <iconify-icon :icon="inc.sourceEntityIcon" width="14" :style="'color:' + inc.sourceEntityColor"></iconify-icon>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="inc.sourceEntityName"></div>
+                          <div class="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
+                            <span>Relation :</span>
+                            <span class="font-medium text-gray-500 dark:text-gray-400" x-text="inc.label"></span>
+                            <iconify-icon icon="solar:arrow-right-linear" width="10"></iconify-icon>
+                            <span class="font-medium text-amber-600 dark:text-amber-400" x-text="inc.inverseLabel"></span>
+                            <span class="ml-1 px-1 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider"
+                                  :class="inc.cardinality === 'one-to-one' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : inc.cardinality === 'many-to-many' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'"
+                                  x-text="inc.cardinality === 'one-to-one' ? '1:1' : inc.cardinality === 'many-to-many' ? 'N:N' : '1:N'"></span>
+                          </div>
+                        </div>
+                        <a :href="'/account/' + raw.accountNumber + '/entity/settings/' + inc.sourceEntityId"
+                           class="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-primary hover:bg-primary/5 transition-all"
+                           title="Voir l'entité source">
+                          <iconify-icon icon="solar:arrow-right-up-linear" width="14"></iconify-icon>
+                        </a>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
           </div>
         </div>
       </div>

@@ -6,6 +6,8 @@ const EntitySchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    nameSingular: String,   // ex: "un Patient", "une Consultation"
+    namePlural: String,     // ex: "Patients", "Documents Médicaux"
     slug: {
       type: String,
       required: true,

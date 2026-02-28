@@ -849,7 +849,7 @@
                             </div><!-- end panel-sortable-item smartdoc -->
 
                         <% } else if (sectionId==='relations') { %>
-                            <!-- 👤 Relations / Patient (Sidebar Panel) -->
+                            <!-- 👤 Direct Relations (Sidebar Panel) -->
                             <% (entity.relations || []).forEach(function(rel) { %>
                                 <% const relRecords = locals.relatedRecordsData && locals.relatedRecordsData[rel.key]; %>
                                 <% if (relRecords && relRecords.length > 0) { %>
@@ -923,6 +923,67 @@
                                         </div>
                                         </div><!-- end panel-sortable-item relation -->
                                     <% }) %>
+                                <% } %>
+                            <% }) %>
+
+                            <!-- 🔄 Inverse Relations: records from OTHER entities that reference this record -->
+                            <% (locals.inverseRelations || []).forEach(function(invRel) { %>
+                                <% const invRecords = locals.relatedRecordsData && locals.relatedRecordsData[invRel.key]; %>
+                                <% if (invRecords && invRecords.length > 0) { %>
+                                    <% const invIcon = (invRel.targetEntity && invRel.targetEntity.icon) || 'solar:widget-bold-duotone'; %>
+                                    <% const invColor = (invRel.targetEntity && invRel.targetEntity.color) || '#4361ee'; %>
+                                    <% const invEntitySlug = (invRel.targetEntity && invRel.targetEntity.slug) || ''; %>
+                                    <div class="panel-sortable-item" data-panel-id="inv-relation-<%= invRel.key %>">
+                                        <template x-if="designMode">
+                                            <div class="panel-drag-handle">
+                                                <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
+                                                <span><%= invRel.label %></span>
+                                            </div>
+                                        </template>
+                                    <div class="panel !p-0 overflow-hidden" x-data="{ open: true }">
+                                        <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-700/30 cursor-pointer" @click="open = !open">
+                                            <div class="flex items-center gap-2 flex-1">
+                                                <div class="w-6 h-6 rounded-lg flex items-center justify-center flex-none" style="background: <%= invColor %>15;">
+                                                    <iconify-icon icon="<%= invIcon %>" width="12" style="color: <%= invColor %>"></iconify-icon>
+                                                </div>
+                                                <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500"><%= invRel.label %></span>
+                                                <span class="text-[9px] bg-primary/10 text-primary min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1"><%= invRecords.length %></span>
+                                            </div>
+                                            <div class="flex items-center gap-1 flex-none">
+                                                <iconify-icon :icon="open ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'" width="12" class="text-gray-400"></iconify-icon>
+                                            </div>
+                                        </div>
+                                        <div x-show="open" x-collapse>
+                                            <div class="px-1.5 pb-1.5">
+                                                <% invRecords.forEach(function(invRec) { %>
+                                                    <div class="group/inv flex items-center gap-2 px-2 py-[5px] rounded-md transition-all hover:bg-gray-50 dark:hover:bg-gray-800/40">
+                                                        <div class="w-[22px] h-[22px] rounded flex items-center justify-center shrink-0"
+                                                            style="background: <%= invColor %>18; color: <%= invColor %>">
+                                                            <iconify-icon icon="<%= invIcon %>" width="11"></iconify-icon>
+                                                        </div>
+                                                        <% if (invEntitySlug) { %>
+                                                            <a href="/account/<%= account_number %>/record/<%= invEntitySlug %>/edit/<%= invRec._id %>"
+                                                                class="flex-1 min-w-0 text-[11px] font-medium text-gray-600 dark:text-gray-300 truncate hover:text-primary transition-colors">
+                                                                <%= invRec.title || invRec.computedTitle || 'Sans titre' %>
+                                                            </a>
+                                                        <% } else { %>
+                                                            <span class="flex-1 min-w-0 text-[11px] font-medium text-gray-600 dark:text-gray-300 truncate">
+                                                                <%= invRec.title || invRec.computedTitle || 'Sans titre' %>
+                                                            </span>
+                                                        <% } %>
+                                                        <% if (invEntitySlug) { %>
+                                                            <a href="/account/<%= account_number %>/record/<%= invEntitySlug %>/edit/<%= invRec._id %>"
+                                                                class="shrink-0 w-[20px] h-[20px] flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-primary/5 transition-all"
+                                                                title="Ouvrir" target="_blank">
+                                                                <iconify-icon icon="solar:arrow-right-up-linear" width="11"></iconify-icon>
+                                                            </a>
+                                                        <% } %>
+                                                    </div>
+                                                <% }); %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    </div><!-- end panel-sortable-item inverse relation -->
                                 <% } %>
                             <% }) %>
                         <% } else if (sectionId==='lines') { %>

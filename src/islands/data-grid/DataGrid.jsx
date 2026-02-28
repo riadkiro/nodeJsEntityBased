@@ -309,14 +309,15 @@ export default function DataGrid({
         if (selectedIds.size === 0) return
         setBulkDeleting(true)
         try {
-            const deleteUrl = dataUrl.replace('/api/datagrid/', '/api/').replace(/\/[^/]+$/, '')
-            const promises = [...selectedIds].map(id =>
-                fetch(`/account/${accountNumber}/entity/${id}`, {
-                    method: 'DELETE',
-                    credentials: 'include'
-                })
-            )
-            await Promise.all(promises)
+            // Determine the bulk delete URL based on the dataUrl
+            // e.g., /account/XXX/api/datagrid/entities -> /account/XXX/entity/api/bulk-delete
+            const res = await fetch(`/account/${accountNumber}/entity/api/bulk-delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ ids: [...selectedIds] })
+            })
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
             setSelectedIds(new Set())
             fetchData()
         } catch (err) {
@@ -324,7 +325,7 @@ export default function DataGrid({
         } finally {
             setBulkDeleting(false)
         }
-    }, [selectedIds, accountNumber, fetchData, dataUrl])
+    }, [selectedIds, accountNumber, fetchData])
 
     const handleColumnReorder = useCallback((fromColumnId, toColumnId) => {
         setColumns(prevColumns => {

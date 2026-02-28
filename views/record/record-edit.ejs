@@ -93,6 +93,637 @@
             </div>
         </div>
 
+        <!-- ═══════════════ RELATION TABS BAR ═══════════════ -->
+        <% if (locals.relationTabsMeta && locals.relationTabsMeta.length > 0) { %>
+        <div x-data="relationTabs()" class="mb-4">
+            <!-- Tab Bar -->
+            <div class="flex items-center bg-white dark:bg-[#1b2e4b] rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+                <!-- Scrollable Tabs Container -->
+                <div class="flex-1 flex items-center gap-0.5 overflow-x-auto hide-scrollbar px-1.5 py-1.5" id="relation-tabs-scroll">
+                    <!-- Self Tab (entity itself) — always first -->
+                    <button type="button"
+                            @click="selectTab('__self__')"
+                            class="relation-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 shrink-0 select-none"
+                            :class="activeTab === '__self__'
+                                ? 'bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20'
+                                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-300'">
+                        <span class="w-5 h-5 rounded flex items-center justify-center shrink-0"
+                              :style="activeTab === '__self__' ? 'background:<%= entity.color || '#4361ee' %>15; color:<%= entity.color || '#4361ee' %>' : ''">
+                            <iconify-icon icon="<%= entity.icon || 'solar:widget-bold-duotone' %>" width="13"
+                                :style="activeTab === '__self__' ? 'color:<%= entity.color || '#4361ee' %>' : ''"
+                                :class="activeTab !== '__self__' ? 'text-gray-400 dark:text-gray-500' : ''"></iconify-icon>
+                        </span>
+                        <span><%= entity.name %></span>
+                    </button>
+
+                    <!-- Separator between self and relations -->
+                    <div class="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1 shrink-0"></div>
+
+                    <!-- Relation Tabs -->
+                    <template x-for="tab in visibleTabs" :key="tab.key">
+                        <div class="flex items-center shrink-0">
+                            <button type="button"
+                                    @click="selectTab(tab.key)"
+                                    class="relation-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-200 select-none"
+                                    :class="activeTab === tab.key
+                                        ? 'bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20'
+                                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-700 dark:hover:text-gray-300'">
+                                <span class="w-5 h-5 rounded flex items-center justify-center shrink-0"
+                                      :style="activeTab === tab.key ? 'background:' + tab.color + '15; color:' + tab.color : ''">
+                                    <iconify-icon :icon="tab.icon" width="13"
+                                        :style="activeTab === tab.key ? 'color:' + tab.color : ''"
+                                        :class="activeTab !== tab.key ? 'text-gray-400 dark:text-gray-500' : ''"></iconify-icon>
+                                </span>
+                                <span x-text="tab.label"></span>
+                                <span x-show="tab._count > 0"
+                                      class="ml-0.5 px-1.5 py-0 text-[10px] font-bold rounded-full min-w-[18px] text-center leading-[18px]"
+                                      :class="activeTab === tab.key
+                                          ? 'bg-primary/20 text-primary'
+                                          : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'"
+                                      x-text="tab._count"></span>
+                                <span x-show="tab.direction === 'inverse'" class="text-[8px] text-amber-500 font-bold uppercase tracking-wider opacity-60">↩</span>
+                            </button>
+                            <!-- Quick Add button per tab -->
+                            <button type="button"
+                                    @click.stop="openQuickCreate(tab)"
+                                    class="w-5 h-5 rounded flex items-center justify-center ml-0.5 transition-all text-gray-300 dark:text-gray-600 hover:text-primary hover:bg-primary/10 shrink-0"
+                                    :title="'Créer ' + tab.label">
+                                <iconify-icon icon="tabler:plus" width="12"></iconify-icon>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Config Button -->
+                <div class="flex items-center gap-1 pr-2 pl-1 border-l dark:border-gray-700/50">
+                    <button type="button" @click="showConfig = !showConfig"
+                            class="flex items-center justify-center w-7 h-7 rounded-lg transition-all"
+                            :class="showConfig ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'"
+                            title="Configurer les onglets">
+                        <iconify-icon icon="solar:settings-bold-duotone" width="15"></iconify-icon>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Config Panel (dropdown) -->
+            <div x-show="showConfig" x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 -translate-y-2"
+                 @click.outside="showConfig = false"
+                 class="mt-2 bg-white dark:bg-[#1b2e4b] rounded-xl border border-gray-100 dark:border-gray-800 shadow-lg p-3 relative z-40"
+                 x-cloak>
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <iconify-icon icon="solar:tuning-2-bold-duotone" width="14" class="text-primary"></iconify-icon>
+                        Configurer les onglets
+                    </h4>
+                    <button type="button" @click="resetConfig()" class="text-[10px] text-gray-400 hover:text-primary transition-colors">
+                        Réinitialiser
+                    </button>
+                </div>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500 mb-3">
+                    Glissez pour réordonner. Activez ou désactivez les relations à afficher.
+                </p>
+                <div id="relation-tabs-sortable" class="space-y-1.5">
+                    <template x-for="tab in allTabs" :key="'cfg-' + tab.key">
+                        <div class="flex items-center gap-2 px-2.5 py-2 rounded-lg border dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30 cursor-grab active:cursor-grabbing transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                             :data-key="tab.key">
+                            <iconify-icon icon="tabler:grip-vertical" width="14" class="text-gray-300 dark:text-gray-600 shrink-0 drag-handle"></iconify-icon>
+                            <div class="w-5 h-5 rounded flex items-center justify-center shrink-0"
+                                 :style="'background:' + tab.color + '15'">
+                                <iconify-icon :icon="tab.icon" width="12" :style="'color:' + tab.color"></iconify-icon>
+                            </div>
+                            <span class="text-xs font-medium text-gray-700 dark:text-gray-300 flex-1 truncate" x-text="tab.label"></span>
+                            <span x-show="tab.direction === 'inverse'" class="text-[8px] text-amber-500/60 font-bold uppercase tracking-wider">Inverse</span>
+                            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                <input type="checkbox" class="sr-only peer" :checked="tab.visible !== false"
+                                       @change="toggleTabVisibility(tab.key, $event.target.checked)">
+                                <div class="w-7 h-4 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Tab Content Area (only shown for relation tabs, not for __self__) -->
+            <div x-show="activeTab && activeTab !== '__self__'" x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0"
+                 class="mt-3" x-cloak>
+                <div class="bg-white dark:bg-[#1b2e4b] rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+
+                    <!-- Loading State -->
+                    <template x-if="tabLoading">
+                        <div class="flex items-center justify-center py-8">
+                            <iconify-icon icon="svg-spinners:ring-resize" width="24" class="text-primary"></iconify-icon>
+                            <span class="ml-2 text-xs text-gray-400">Chargement...</span>
+                        </div>
+                    </template>
+
+                    <!-- Records List -->
+                    <template x-if="!tabLoading && tabRecords.length > 0">
+                        <div>
+                            <!-- Header -->
+                            <div class="flex items-center justify-between px-4 py-2 border-b dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded flex items-center justify-center"
+                                          :style="'background:' + activeTabMeta?.color + '15'">
+                                        <iconify-icon :icon="activeTabMeta?.icon || 'solar:widget-bold-duotone'" width="12"
+                                                      :style="'color:' + (activeTabMeta?.color || '#4361ee')"></iconify-icon>
+                                    </span>
+                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300" x-text="activeTabMeta?.label"></span>
+                                    <span class="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold" x-text="tabRecords.length"></span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button type="button" @click="openQuickCreate(activeTabMeta)"
+                                            class="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold text-primary hover:bg-primary/10 transition-all"
+                                            title="Ajouter">
+                                        <iconify-icon icon="tabler:plus" width="12"></iconify-icon>
+                                        Ajouter
+                                    </button>
+                                    <button type="button" @click="activeTab = '__self__'" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                                        <iconify-icon icon="solar:close-circle-linear" width="16"></iconify-icon>
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Records -->
+                            <div class="divide-y dark:divide-gray-800">
+                                <template x-for="rec in tabRecords" :key="rec._id">
+                                    <a :href="'/account/<%= account_number %>/record/' + rec.entitySlug + '/' + rec._id + '/edit'"
+                                       class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
+                                        <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                                             :style="'background:' + rec.color + '15'">
+                                            <iconify-icon :icon="rec.icon" width="14" :style="'color:' + rec.color"></iconify-icon>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-sm font-medium text-gray-700 dark:text-gray-200 truncate group-hover:text-primary transition-colors" x-text="rec.title"></div>
+                                            <div class="text-[10px] text-gray-400 dark:text-gray-500" x-text="rec.updatedAt ? 'Modifié le ' + new Date(rec.updatedAt).toLocaleDateString('fr-FR') : ''"></div>
+                                        </div>
+                                        <iconify-icon icon="solar:arrow-right-linear" width="14" class="text-gray-300 dark:text-gray-600 group-hover:text-primary transition-colors shrink-0"></iconify-icon>
+                                    </a>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Empty State -->
+                    <template x-if="!tabLoading && tabRecords.length === 0 && activeTab && activeTab !== '__self__'">
+                        <div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500">
+                            <iconify-icon icon="solar:box-minimalistic-bold-duotone" width="36" class="mb-3 opacity-40"></iconify-icon>
+                            <span class="text-xs mb-3">Aucun enregistrement lié</span>
+                            <button type="button" @click="openQuickCreate(activeTabMeta)"
+                                    class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all">
+                                <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
+                                <span x-text="'Créer ' + (activeTabMeta?.label || '')"></span>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- ═══════════════ QUICK CREATE MODAL ═══════════════ -->
+            <div x-show="qcOpen" x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 z-[999] flex items-center justify-center"
+                 style="display: none; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);"
+                 @click.self="closeQuickCreate()" @keydown.escape.window="closeQuickCreate()">
+                <div x-show="qcOpen"
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="opacity-0 scale-95 translate-y-4" x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-200"
+                     x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+                     class="bg-white dark:bg-[#0e1726] rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden border border-gray-100 dark:border-gray-800"
+                     @click.stop>
+
+                    <!-- Modal Header -->
+                    <div class="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800"
+                         :style="'background: linear-gradient(135deg, ' + (qcTab?.color || '#4361ee') + '08, ' + (qcTab?.color || '#4361ee') + '03)'">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center"
+                                 :style="'background:' + (qcTab?.color || '#4361ee') + '15'">
+                                <iconify-icon :icon="qcTab?.icon || 'solar:widget-bold-duotone'" width="18"
+                                              :style="'color:' + (qcTab?.color || '#4361ee')"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200" x-text="'Nouveau ' + (qcTab?.label || '')"></h3>
+                                <p class="text-[10px] text-gray-400 dark:text-gray-500">
+                                    Création rapide · lié à <strong><%= record.title || 'cet enregistrement' %></strong>
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button" @click="closeQuickCreate()"
+                                class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
+                            <iconify-icon icon="tabler:x" width="18"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="px-6 py-5 space-y-4">
+                        <!-- Loading entity fields -->
+                        <template x-if="qcLoading">
+                            <div class="flex items-center justify-center py-6">
+                                <iconify-icon icon="svg-spinners:ring-resize" width="24" class="text-primary"></iconify-icon>
+                            </div>
+                        </template>
+
+                        <!-- Form -->
+                        <template x-if="!qcLoading">
+                            <div class="space-y-4">
+                                <!-- Title field (always shown) -->
+                                <div>
+                                    <label class="flex items-center gap-1.5 mb-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                                        <iconify-icon icon="solar:text-bold-duotone" width="13" class="text-warning"></iconify-icon>
+                                        Titre
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" x-model="qcTitle" x-ref="qcTitleInput"
+                                           class="form-input w-full text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300 focus:border-primary focus:ring-1 focus:ring-primary/30"
+                                           :placeholder="'Nom du ' + (qcTab?.label || 'record')" autofocus>
+                                </div>
+
+                                <!-- Dynamic custom fields from entity -->
+                                <template x-for="field in qcFields" :key="field.id">
+                                    <div>
+                                        <label class="flex items-center gap-1.5 mb-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                                            <iconify-icon :icon="field.icon || 'solar:widget-linear'" width="13" class="text-info"></iconify-icon>
+                                            <span x-text="field.label || field.name"></span>
+                                        </label>
+                                        <template x-if="field.type === 'date'">
+                                            <input type="date" x-model="qcCustom[field.id]"
+                                                   class="form-input w-full text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300">
+                                        </template>
+                                        <template x-if="field.type === 'datetime-local'">
+                                            <input type="datetime-local" x-model="qcCustom[field.id]"
+                                                   class="form-input w-full text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300">
+                                        </template>
+                                        <template x-if="field.type === 'number'">
+                                            <input type="number" x-model="qcCustom[field.id]"
+                                                   class="form-input w-full text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300"
+                                                   :placeholder="field.label || field.name">
+                                        </template>
+                                        <template x-if="field.type === 'textarea' || field.type === 'richtext'">
+                                            <textarea x-model="qcCustom[field.id]" rows="2"
+                                                      class="form-textarea w-full text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300"
+                                                      :placeholder="field.label || field.name"></textarea>
+                                        </template>
+                                        <template x-if="field.type !== 'date' && field.type !== 'datetime-local' && field.type !== 'number' && field.type !== 'textarea' && field.type !== 'richtext'">
+                                            <input type="text" x-model="qcCustom[field.id]"
+                                                   class="form-input w-full text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300"
+                                                   :placeholder="field.label || field.name">
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <!-- Info: will be auto-linked -->
+                                <div class="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-800/30">
+                                    <iconify-icon icon="solar:link-round-bold-duotone" width="14" class="text-blue-500 shrink-0"></iconify-icon>
+                                    <span class="text-[10px] text-blue-600 dark:text-blue-400">
+                                        Sera automatiquement lié à <strong><%= entity.name %> — <%= record.title || 'cet enregistrement' %></strong>
+                                    </span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="flex items-center justify-between px-6 py-4 border-t dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20">
+                        <a :href="'/account/<%= account_number %>/record/' + (qcTab?.entitySlug || '') + '/add'"
+                           target="_blank"
+                           class="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-primary transition-colors">
+                            <iconify-icon icon="solar:arrow-right-up-linear" width="13"></iconify-icon>
+                            Ouvrir la page complète
+                        </a>
+                        <div class="flex items-center gap-2">
+                            <button type="button" @click="closeQuickCreate()"
+                                    class="px-4 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all">
+                                Annuler
+                            </button>
+                            <button type="button" @click="submitQuickCreate()"
+                                    :disabled="qcSaving || !qcTitle.trim()"
+                                    class="flex items-center gap-1.5 px-5 py-2 rounded-lg text-xs font-bold text-white bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    :class="qcSaving ? 'cursor-wait' : ''">
+                                <iconify-icon :icon="qcSaving ? 'svg-spinners:ring-resize' : 'tabler:check'" width="14"></iconify-icon>
+                                <span x-text="qcSaving ? 'Création...' : 'Créer'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        function relationTabs() {
+            const accountNumber = '<%= account_number %>';
+            const recordId = '<%= record._id %>';
+            const entityId = '<%= entity._id %>';
+            const entitySlug = '<%= entity.slug %>';
+            const viewId = 'record-edit-' + entityId;
+            const initialMeta = <%- JSON.stringify(locals.relationTabsMeta || []) %>;
+
+            return {
+                allTabs: [],
+                activeTab: '__self__',  // Self tab is active by default
+                tabLoading: false,
+                tabRecords: [],
+                tabCache: {},
+                showConfig: false,
+                _sortableInstance: null,
+
+                // Quick Create Modal state
+                qcOpen: false,
+                qcTab: null,
+                qcLoading: false,
+                qcSaving: false,
+                qcTitle: '',
+                qcFields: [],
+                qcCustom: {},
+
+                get visibleTabs() {
+                    return this.allTabs.filter(t => t.visible !== false);
+                },
+
+                get activeTabMeta() {
+                    if (this.activeTab === '__self__') return null;
+                    return this.allTabs.find(t => t.key === this.activeTab) || null;
+                },
+
+                async init() {
+                    // Load saved preferences
+                    let savedTabPrefs = null;
+                    try {
+                        const res = await fetch(`/account/${accountNumber}/api/user/view-preferences/${viewId}`, { credentials: 'include' });
+                        const data = await res.json();
+                        savedTabPrefs = data?.preferences?.relationTabs || null;
+                    } catch (e) { /* ignore */ }
+
+                    if (savedTabPrefs && Array.isArray(savedTabPrefs)) {
+                        const metaMap = {};
+                        initialMeta.forEach(m => { metaMap[m.key] = { ...m, _count: m.count || 0, visible: true }; });
+                        const merged = [];
+                        savedTabPrefs.forEach(sp => {
+                            if (metaMap[sp.key]) {
+                                merged.push({ ...metaMap[sp.key], visible: sp.visible !== false });
+                                delete metaMap[sp.key];
+                            }
+                        });
+                        Object.values(metaMap).forEach(m => merged.push(m));
+                        this.allTabs = merged;
+                    } else {
+                        this.allTabs = initialMeta.map(m => ({ ...m, _count: m.count || 0, visible: true }));
+                    }
+
+                    // Init SortableJS for config panel
+                    this.$nextTick(() => {
+                        this.$watch('showConfig', (val) => {
+                            if (val) {
+                                this.$nextTick(() => this._initSortable());
+                            }
+                        });
+                    });
+                },
+
+                _initSortable() {
+                    const el = document.getElementById('relation-tabs-sortable');
+                    if (!el || this._sortableInstance) return;
+                    if (typeof Sortable === 'undefined') return;
+
+                    this._sortableInstance = Sortable.create(el, {
+                        handle: '.drag-handle',
+                        animation: 200,
+                        ghostClass: 'opacity-30',
+                        onEnd: (evt) => {
+                            const newOrder = Array.from(el.children)
+                                .map(child => child.getAttribute('data-key'))
+                                .filter(Boolean);
+                            const tabMap = {};
+                            this.allTabs.forEach(t => { tabMap[t.key] = t; });
+                            this.allTabs = newOrder.map(key => tabMap[key]).filter(Boolean);
+                            this._savePrefs();
+                        }
+                    });
+                },
+
+                async selectTab(key) {
+                    if (key === '__self__') {
+                        this.activeTab = '__self__';
+                        this.tabRecords = [];
+                        return;
+                    }
+
+                    if (this.activeTab === key) {
+                        // Toggle: clicking same tab goes back to self
+                        this.activeTab = '__self__';
+                        this.tabRecords = [];
+                        return;
+                    }
+
+                    this.activeTab = key;
+
+                    // Check cache
+                    if (this.tabCache[key]) {
+                        this.tabRecords = this.tabCache[key];
+                        return;
+                    }
+
+                    // Fetch from API
+                    this.tabLoading = true;
+                    this.tabRecords = [];
+                    try {
+                        const res = await fetch(`/account/${accountNumber}/api/record/${recordId}/relation-records/${key}`, { credentials: 'include' });
+                        const data = await res.json();
+                        this.tabRecords = data.records || [];
+                        this.tabCache[key] = this.tabRecords;
+
+                        // Update count
+                        const tab = this.allTabs.find(t => t.key === key);
+                        if (tab) tab._count = this.tabRecords.length;
+                    } catch (e) {
+                        console.error('Error fetching relation records:', e);
+                    } finally {
+                        this.tabLoading = false;
+                    }
+                },
+
+                // ═══ Quick Create Modal ═══
+                async openQuickCreate(tab) {
+                    if (!tab) return;
+                    this.qcTab = tab;
+                    this.qcTitle = '';
+                    this.qcCustom = {};
+                    this.qcFields = [];
+                    this.qcOpen = true;
+                    this.qcLoading = true;
+
+                    // Focus title input after transition
+                    this.$nextTick(() => {
+                        setTimeout(() => {
+                            if (this.$refs.qcTitleInput) this.$refs.qcTitleInput.focus();
+                        }, 150);
+                    });
+
+                    // Fetch entity fields for the form
+                    try {
+                        const res = await fetch(`/account/${accountNumber}/api/hierarchy/entity/${tab.entityId}/fields`, { credentials: 'include' });
+                        const data = await res.json();
+                        if (data.success && data.entity?.fields) {
+                            // Show only first 6 fields max (keep it simple/quick)
+                            this.qcFields = data.entity.fields.slice(0, 6).map(f => ({
+                                id: f.id,
+                                name: f.name,
+                                label: f.name?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                                type: f.type || 'text',
+                                icon: f.icon || 'solar:widget-linear'
+                            }));
+                        }
+                    } catch (e) {
+                        console.error('Error fetching entity fields:', e);
+                    } finally {
+                        this.qcLoading = false;
+                    }
+                },
+
+                closeQuickCreate() {
+                    this.qcOpen = false;
+                    this.qcTab = null;
+                    this.qcTitle = '';
+                    this.qcFields = [];
+                    this.qcCustom = {};
+                },
+
+                async submitQuickCreate() {
+                    if (!this.qcTitle.trim() || this.qcSaving) return;
+
+                    this.qcSaving = true;
+                    const tab = this.qcTab;
+
+                    try {
+                        // Build custom fields payload (including relation back to this record)
+                        const customFields = { ...this.qcCustom };
+
+                        // Auto-link: set the relation field pointing back to this record
+                        if (tab.direction === 'inverse' && tab.sourceRelationKey) {
+                            // For inverse: the source entity has a relation with key = sourceRelationKey targeting this entity
+                            customFields[tab.sourceRelationKey] = recordId;
+                        }
+
+                        const payload = {
+                            title: this.qcTitle.trim(),
+                            entityId: tab.entityId,
+                            customFields
+                        };
+
+                        const res = await fetch(`/account/${accountNumber}/record/${tab.entitySlug}/save`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify(payload)
+                        });
+
+                        const data = await res.json();
+                        if (data.success && data._id) {
+                            // Success! Close modal and refresh the tab
+                            this.closeQuickCreate();
+
+                            // Clear cache for this tab so it refetches
+                            delete this.tabCache[tab.key];
+
+                            // If this tab is currently active, refresh it
+                            if (this.activeTab === tab.key) {
+                                await this.selectTab('__self__'); // Reset first
+                                await this.selectTab(tab.key);   // Re-fetch
+                            } else {
+                                // Switch to the tab to see the new record
+                                await this.selectTab(tab.key);
+                            }
+
+                            // Show success feedback
+                            this._showToast('Enregistrement créé avec succès !', 'success');
+                        } else {
+                            this._showToast('Erreur lors de la création', 'error');
+                        }
+                    } catch (e) {
+                        console.error('Error creating record:', e);
+                        this._showToast('Erreur de connexion', 'error');
+                    } finally {
+                        this.qcSaving = false;
+                    }
+                },
+
+                _showToast(message, type) {
+                    // Simple toast notification
+                    const toast = document.createElement('div');
+                    toast.className = `fixed bottom-6 right-6 z-[9999] flex items-center gap-2 px-4 py-3 rounded-xl shadow-2xl text-sm font-medium transition-all duration-500 ${
+                        type === 'success'
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-red-500 text-white'
+                    }`;
+                    toast.innerHTML = `
+                        <iconify-icon icon="${type === 'success' ? 'tabler:check' : 'tabler:x'}" width="16"></iconify-icon>
+                        <span>${message}</span>
+                    `;
+                    toast.style.transform = 'translateY(20px)';
+                    toast.style.opacity = '0';
+                    document.body.appendChild(toast);
+                    requestAnimationFrame(() => {
+                        toast.style.transform = 'translateY(0)';
+                        toast.style.opacity = '1';
+                    });
+                    setTimeout(() => {
+                        toast.style.transform = 'translateY(20px)';
+                        toast.style.opacity = '0';
+                        setTimeout(() => toast.remove(), 500);
+                    }, 3000);
+                },
+
+                toggleTabVisibility(key, visible) {
+                    const tab = this.allTabs.find(t => t.key === key);
+                    if (tab) {
+                        tab.visible = visible;
+                        if (!visible && this.activeTab === key) {
+                            this.activeTab = '__self__';
+                            this.tabRecords = [];
+                        }
+                    }
+                    this._savePrefs();
+                },
+
+                resetConfig() {
+                    this.allTabs = initialMeta.map(m => ({ ...m, _count: m.count || 0, visible: true }));
+                    this._savePrefs();
+                    if (this._sortableInstance) {
+                        this._sortableInstance.destroy();
+                        this._sortableInstance = null;
+                    }
+                    this.$nextTick(() => this._initSortable());
+                },
+
+                async _savePrefs() {
+                    const prefs = this.allTabs.map(t => ({ key: t.key, visible: t.visible !== false }));
+                    try {
+                        await fetch(`/account/${accountNumber}/api/user/view-preferences`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                viewId,
+                                preferences: { relationTabs: prefs }
+                            })
+                        });
+                    } catch (e) {
+                        console.error('Error saving relation tabs prefs:', e);
+                    }
+                }
+            };
+        }
+        </script>
+        <style>
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        </style>
+        <% } %>
+
         <div class="record-layout-container" x-data="panelLayout()" id="panels-container"
             :style="'grid-template-columns: repeat(12, 1fr)'">
             

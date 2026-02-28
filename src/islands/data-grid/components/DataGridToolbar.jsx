@@ -32,6 +32,7 @@ export default function DataGridToolbar({
     const [sortPopover, setSortPopover] = useState(false)
     const [columnsPopover, setColumnsPopover] = useState(false)
     const [columnSearch, setColumnSearch] = useState('')
+    const [confirmDelete, setConfirmDelete] = useState(false)
 
     const displayBtnRef = useRef(null)
     const sortBtnRef = useRef(null)
@@ -51,6 +52,11 @@ export default function DataGridToolbar({
         document.addEventListener('keydown', handleEsc)
         return () => document.removeEventListener('keydown', handleEsc)
     }, [])
+
+    // Reset confirm state when selection changes
+    useEffect(() => {
+        setConfirmDelete(false)
+    }, [selectedCount])
 
     const useOutsideClick = (popoverState, panelRef, btnRef, setPopover) => {
         useEffect(() => {
@@ -131,39 +137,69 @@ export default function DataGridToolbar({
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                if (window.confirm(`Êtes-vous sûr de vouloir supprimer ${selectedCount} élément(s) ? Cette action est irréversible.`)) {
-                                    onBulkDelete?.()
-                                }
-                            }}
-                            disabled={bulkDeleting}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-danger rounded-lg hover:bg-danger/80 transition-all disabled:opacity-50"
-                        >
-                            {bulkDeleting ? (
-                                <div className="animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"></div>
-                            ) : (
-                                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                                    <path d="M20.5 6H3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                                    <path d="M18.8334 8.5L18.3735 15.3991C18.1965 18.054 18.108 19.3815 17.2434 20.1907C16.3789 21 15.0476 21 12.3849 21H11.6151C8.95243 21 7.62108 21 6.75656 20.1907C5.89203 19.3815 5.80354 18.054 5.62654 15.3991L5.16663 8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                                    <path d="M9.5 11L10 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                                    <path d="M14.5 11L14 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                                    <path d="M6.5 6C6.55588 6 6.58382 6 6.60915 5.99936C7.43259 5.97849 8.15902 5.45491 8.43922 4.68032C8.44784 4.65649 8.45667 4.62999 8.47434 4.57697L8.57143 4.28571C8.65431 4.03708 8.69575 3.91276 8.75071 3.8072C8.97001 3.38607 9.37574 3.09364 9.84461 3.01877C9.96213 3 10.0932 3 10.3553 3H13.6447C13.9068 3 14.0379 3 14.1554 3.01877C14.6243 3.09364 15.03 3.38607 15.2493 3.8072C15.3043 3.91276 15.3457 4.03708 15.4286 4.28571L15.5257 4.57697C15.5433 4.62992 15.5522 4.65651 15.5608 4.68032C15.841 5.45491 16.5674 5.97849 17.3909 5.99936C17.4162 6 17.4441 6 17.5 6" stroke="currentColor" strokeWidth="1.5" />
-                                </svg>
-                            )}
-                            Supprimer
-                        </button>
-                        <button
-                            type="button"
-                            onClick={onClearSelection}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
-                        >
-                            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                            </svg>
-                            Désélectionner
-                        </button>
+                        {confirmDelete ? (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setConfirmDelete(false)
+                                        onBulkDelete?.()
+                                    }}
+                                    disabled={bulkDeleting}
+                                    className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white bg-danger rounded-lg hover:bg-danger/80 transition-all disabled:opacity-50"
+                                    style={{ animation: 'popoverSlide 0.15s ease-out' }}
+                                >
+                                    {bulkDeleting ? (
+                                        <div className="animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"></div>
+                                    ) : (
+                                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                                            <path d="M20.5 6H3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                            <path d="M18.8334 8.5L18.3735 15.3991C18.1965 18.054 18.108 19.3815 17.2434 20.1907C16.3789 21 15.0476 21 12.3849 21H11.6151C8.95243 21 7.62108 21 6.75656 20.1907C5.89203 19.3815 5.80354 18.054 5.62654 15.3991L5.16663 8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                        </svg>
+                                    )}
+                                    Oui, supprimer {selectedCount} élément{selectedCount > 1 ? 's' : ''}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmDelete(false)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                                >
+                                    Annuler
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmDelete(true)}
+                                    disabled={bulkDeleting}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-danger rounded-lg hover:bg-danger/80 transition-all disabled:opacity-50"
+                                >
+                                    {bulkDeleting ? (
+                                        <div className="animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"></div>
+                                    ) : (
+                                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                                            <path d="M20.5 6H3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                            <path d="M18.8334 8.5L18.3735 15.3991C18.1965 18.054 18.108 19.3815 17.2434 20.1907C16.3789 21 15.0476 21 12.3849 21H11.6151C8.95243 21 7.62108 21 6.75656 20.1907C5.89203 19.3815 5.80354 18.054 5.62654 15.3991L5.16663 8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                            <path d="M9.5 11L10 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                            <path d="M14.5 11L14 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                            <path d="M6.5 6C6.55588 6 6.58382 6 6.60915 5.99936C7.43259 5.97849 8.15902 5.45491 8.43922 4.68032C8.44784 4.65649 8.45667 4.62999 8.47434 4.57697L8.57143 4.28571C8.65431 4.03708 8.69575 3.91276 8.75071 3.8072C8.97001 3.38607 9.37574 3.09364 9.84461 3.01877C9.96213 3 10.0932 3 10.3553 3H13.6447C13.9068 3 14.0379 3 14.1554 3.01877C14.6243 3.09364 15.03 3.38607 15.2493 3.8072C15.3043 3.91276 15.3457 4.03708 15.4286 4.28571L15.5257 4.57697C15.5433 4.62992 15.5522 4.65651 15.5608 4.68032C15.841 5.45491 16.5674 5.97849 17.3909 5.99936C17.4162 6 17.4441 6 17.5 6" stroke="currentColor" strokeWidth="1.5" />
+                                        </svg>
+                                    )}
+                                    Supprimer
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setConfirmDelete(false); onClearSelection?.() }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                                >
+                                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                    </svg>
+                                    Désélectionner
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

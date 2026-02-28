@@ -1,4 +1,4 @@
-<div :class="{'dark text-white-dark' : $store.app.semidark}">
+<div>
   <nav x-data="{ sidebar }"
     class="sidebar fixed top-0 bottom-0 z-50 h-full min-h-screen transition-all duration-300"
     style="width:248px;display:flex;flex-direction:row;overflow:hidden;box-shadow:5px 0 25px 0 rgba(94,92,154,0.1);">
@@ -295,6 +295,7 @@
         }
       }"
       :data-theme="railTheme"
+      :class="{'dark' : $store.app.semidark}"
       :style="'width:48px;flex:none;' + (railTheme === 'aurora' && !document.documentElement.classList.contains('dark') ? 'background:linear-gradient(180deg, #eef2ff 0%, #e0e7ff 30%, #ede9fe 70%, #faf5ff 100%);' : 'background:var(--rail-bg);')"
       class="mini-rail h-full flex flex-col items-center justify-between pt-2 pb-4"
       @contextmenu.prevent>

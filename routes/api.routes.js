@@ -278,6 +278,103 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
 })
 
 /**
+ * GET /account/:account_number/api/record/:recordId/relation-records/:relationKey
+ * Lazy-load related records for a specific relation tab
+ * Supports both direct relations (value stored on record) and inverse relations (inv_ prefix)
+ */
+router.get('/api/record/:recordId/relation-records/:relationKey', async (req, res) => {
+    try {
+        const mongoose = require('mongoose')
+        const Entity = await tenantCollection(req, "Entity")
+        const Record = await tenantCollection(req, "Record")
+        const { recordId, relationKey } = req.params
+
+        if (!mongoose.Types.ObjectId.isValid(recordId)) {
+            return res.status(400).json({ error: 'Invalid record ID' })
+        }
+
+        const record = await Record.findById(recordId).lean()
+        if (!record) return res.status(404).json({ error: 'Record not found' })
+
+        const entity = await Entity.findById(record.entityId)
+            .populate({ path: 'relations.targetEntity', select: 'name slug icon color' })
+            .lean()
+        if (!entity) return res.status(404).json({ error: 'Entity not found' })
+
+        let records = []
+
+        if (relationKey.startsWith('inv_')) {
+            // ═══ Inverse relation ═══
+            const sourceRelKey = relationKey.replace('inv_', '')
+            // Find the source entity that owns this relation
+            const sourceEntities = await Entity.find({
+                'relations.key': sourceRelKey,
+                'relations.targetEntity': entity._id
+            }).select('_id name slug icon color').lean()
+
+            if (sourceEntities.length > 0) {
+                for (const srcEnt of sourceEntities) {
+                    // Find records in the source entity that reference this record
+                    const sourceRecords = await Record.find({
+                        entityId: srcEnt._id,
+                        $or: [
+                            { 'relations': { $elemMatch: { relationKey: sourceRelKey, value: record._id } } },
+                            { 'relations': { $elemMatch: { relationKey: sourceRelKey, value: record._id.toString() } } },
+                            { 'relations': { $elemMatch: { relationKey: sourceRelKey, value: { $in: [record._id, record._id.toString()] } } } }
+                        ]
+                    })
+                        .select('_id title referenceTitle icon image createdAt updatedAt entityId')
+                        .limit(100)
+                        .lean()
+
+                    records.push(...sourceRecords.map(r => ({
+                        _id: r._id,
+                        title: r.title || r.referenceTitle || 'Sans titre',
+                        icon: srcEnt.icon || 'solar:widget-bold-duotone',
+                        color: srcEnt.color || '#4361ee',
+                        entitySlug: srcEnt.slug,
+                        createdAt: r.createdAt,
+                        updatedAt: r.updatedAt,
+                    })))
+                }
+            }
+        } else {
+            // ═══ Direct relation ═══
+            const rel = (entity.relations || []).find(r => r.key === relationKey)
+            if (!rel) return res.status(404).json({ error: 'Relation not found' })
+
+            const rv = (record.relations || []).find(r => r.relationKey === relationKey)
+            if (rv && rv.value) {
+                const targetIds = Array.isArray(rv.value) ? rv.value : [rv.value]
+                const validIds = targetIds.filter(id => mongoose.Types.ObjectId.isValid(id))
+                if (validIds.length > 0) {
+                    const targetEntity = rel.targetEntity || {}
+                    const relRecords = await Record.find({ _id: { $in: validIds } })
+                        .select('_id title referenceTitle icon image createdAt updatedAt entityId')
+                        .limit(100)
+                        .lean()
+
+                    records = relRecords.map(r => ({
+                        _id: r._id,
+                        title: r.title || r.referenceTitle || 'Sans titre',
+                        icon: targetEntity.icon || 'solar:widget-bold-duotone',
+                        color: targetEntity.color || '#4361ee',
+                        entitySlug: targetEntity.slug || '',
+                        createdAt: r.createdAt,
+                        updatedAt: r.updatedAt,
+                    }))
+                }
+            }
+        }
+
+        res.json({ records, total: records.length })
+    } catch (error) {
+        console.error('[API] Relation records fetch error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
  * GET /account/:account_number/api/datagrid/entities
  * Fetch entities for DataGrid island
  */
@@ -618,7 +715,9 @@ router.post('/api/user/view-preferences', async (req, res) => {
             // Record-edit panel layout
             'columnWidths', 'extraColumns', 'panelLayout', 'sidebarWidth',
             // Kanban
-            'kanban'
+            'kanban',
+            // Relation tabs (record edit)
+            'relationTabs'
         ]
 
         prefKeys.forEach(key => {

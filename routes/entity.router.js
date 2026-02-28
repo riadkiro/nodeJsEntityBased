@@ -44,6 +44,8 @@ router.get("/edit/:id", entityController.editForm);
 router.post("/edit/:id", upload.single("image"), entityController.update);
 //Update custom fields
 router.post("/updatecf/:id", entityController.updateCustomFields);
+//Delete bulk
+router.post("/api/bulk-delete", entityController.bulkDelete);
 //Delete
 router.delete("/:id", entityController.delete);
 

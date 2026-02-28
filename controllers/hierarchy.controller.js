@@ -605,8 +605,9 @@ module.exports = {
                 fields.push(...fieldTemplates.map(ft => ({
                     id: ft._id.toString(),
                     name: ft.name,
-                    type: ft.fieldType || 'text',
-                    icon: ft.icon || 'tabler:text'
+                    label: ft.label || ft.name,
+                    type: ft.fieldType || ft.type || 'text',
+                    icon: ft.ui?.icon || ft.icon || 'tabler:text'
                 })));
             }
 

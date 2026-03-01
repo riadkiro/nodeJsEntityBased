@@ -8,3 +8,7 @@
 
 ![alt text](image-40.png) quand j'ouvre un doc lié a une entité la idebar ne doit pas se mettre en mode settings, garder l'affichage precedant.
 
+Mission 2 : 
+
+![alt text](image-41.png) un patient peut avoir plusieurs RDV, mais quand je sui dans patient, que je clique sur RDV, je ne peux peux pas ajouter plusieurs elle est grisé, normlamenet je peux, c One to many
+

@@ -142,6 +142,7 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
     const [isGlobalSelection, setIsGlobalSelection] = useState(false)
     const [pasteMode, setPasteMode] = useState('match') // keep, match, plain
     const [isSettingsOpen, setIsSettingsOpen] = useState(false) // Settings popup state
+    const [showTemplatePanel, setShowTemplatePanel] = useState(false) // Right sidebar template config
     const [zoomLevel, setZoomLevel] = useState(1) // Zoom level for document canvas (0.25 to 3)
     const [availableEntities, setAvailableEntities] = useState([])
 
@@ -202,6 +203,13 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
             })
             .catch(e => console.warn('[DocumentEditor] Could not load entities:', e))
     }, [accountNumber])
+
+    // Listen for template panel toggle from header button
+    useEffect(() => {
+        const handler = () => setShowTemplatePanel(prev => !prev)
+        window.addEventListener('toggle-template-panel', handler)
+        return () => window.removeEventListener('toggle-template-panel', handler)
+    }, [])
 
     // ========== AUTOSAVE ==========
     const triggerSave = useCallback(() => {
@@ -2119,7 +2127,109 @@ export default function DocumentEditorIsland({ accountNumber, initialDocument, i
                     accountNumber={accountNumber}
                 />
 
-                {/* AI Chat Sidebar */}
+                {/* Template Configuration Sidebar - replaces old AI sidebar position */}
+                {showTemplatePanel && (
+                    <div className="w-80 bg-white dark:bg-gray-900 border-l dark:border-gray-800 flex flex-col h-full overflow-auto">
+                        {/* Header */}
+                        <div className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-transparent border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="18" className="text-amber-500"></iconify-icon>
+                                <div>
+                                    <h3 className="text-sm font-bold text-gray-800 dark:text-white">Configuration Template</h3>
+                                    <p className="text-[10px] text-gray-400 mt-0.5">Transformer ce document en modèle réutilisable</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowTemplatePanel(false)}
+                                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                <iconify-icon icon="tabler:x" width="16"></iconify-icon>
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-4 space-y-4">
+                            {/* Toggle - Clear ON/OFF state */}
+                            <div className="flex items-center justify-between py-1">
+                                <div>
+                                    <span className="text-xs font-bold text-gray-700 dark:text-gray-200">Modèle de document</span>
+                                    <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">Activer le mode template</p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setDoc(prev => ({ ...prev, isTemplate: !prev.isTemplate }))
+                                        triggerSave()
+                                    }}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-200 ${doc.isTemplate
+                                        ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30'
+                                        : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500'
+                                        }`}
+                                >
+                                    <iconify-icon icon={doc.isTemplate ? 'tabler:check' : 'tabler:x'} width="13"></iconify-icon>
+                                    {doc.isTemplate ? 'Activé' : 'Désactivé'}
+                                </button>
+                            </div>
+
+                            {/* Entity Multi-Select */}
+                            {doc.isTemplate && (
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Lier à une ou plusieurs collections</label>
+                                    <div className="max-h-60 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+                                        {(availableEntities || []).length === 0 ? (
+                                            <p className="text-[10px] text-gray-400 py-3 text-center italic">Aucune collection disponible</p>
+                                        ) : (
+                                            (availableEntities || []).map(entity => {
+                                                const entityIds = doc.entityIds || (doc.entityId ? [doc.entityId] : [])
+                                                const isLinked = entityIds.includes(entity.id)
+                                                return (
+                                                    <label
+                                                        key={entity.id}
+                                                        className={`flex items-center gap-2.5 px-3 py-2.5 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-700/50 last:border-b-0 ${isLinked ? 'bg-amber-50/50 dark:bg-amber-900/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700/30'
+                                                            }`}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isLinked}
+                                                            onChange={() => {
+                                                                setDoc(prev => {
+                                                                    const currentIds = prev.entityIds || (prev.entityId ? [prev.entityId] : [])
+                                                                    const newIds = isLinked
+                                                                        ? currentIds.filter(id => id !== entity.id)
+                                                                        : [...currentIds, entity.id]
+                                                                    return { ...prev, entityIds: newIds, entityId: newIds[0] || null }
+                                                                })
+                                                                triggerSave()
+                                                            }}
+                                                            className="w-3.5 h-3.5 rounded border-gray-300 text-amber-500 focus:ring-amber-200 dark:border-gray-600 dark:bg-gray-700"
+                                                        />
+                                                        <iconify-icon icon={entity.icon || 'solar:database-bold'} width="14" className={isLinked ? 'text-amber-500' : 'text-gray-400'}></iconify-icon>
+                                                        <span className={`text-xs ${isLinked ? 'font-semibold text-gray-700 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>{entity.name}</span>
+                                                        {isLinked && <iconify-icon icon="tabler:check" width="12" className="text-amber-500 ml-auto"></iconify-icon>}
+                                                    </label>
+                                                )
+                                            })
+                                        )}
+                                    </div>
+                                    <p className="text-[9px] text-gray-400 italic leading-relaxed">Ce template sera utilisable dans les SmartDoc de ces collections.</p>
+                                </div>
+                            )}
+
+                            {/* Info hint */}
+                            {doc.isTemplate && (
+                                <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2.5 dark:bg-amber-900/10 dark:border-amber-800/30">
+                                    <div className="flex items-start gap-2">
+                                        <iconify-icon icon="solar:lightbulb-bolt-bold-duotone" width="14" className="text-amber-500 mt-0.5 shrink-0"></iconify-icon>
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                                            Utilisez des <strong className="text-amber-600">tokens</strong> comme <code className="bg-amber-100 dark:bg-amber-900/30 px-1 rounded text-[9px] font-mono">{'{{recordTitle}}'}</code> pour insérer des données dynamiques.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* AI Chat Sidebar - now floating, not in layout flow */}
                 <AIChatSidebar
                     accountNumber={accountNumber}
                     getDocumentSnapshot={getDocumentSnapshot}

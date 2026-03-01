@@ -165,17 +165,6 @@ export default function EditorHeader({
 }) {
     const [textColor, setTextColor] = useState('#000000')
     const [highlightColor, setHighlightColor] = useState('transparent')
-    const [showTemplateModal, setShowTemplateModal] = useState(false)
-    const templateRef = useRef(null)
-
-    // Close template modal on outside click
-    useEffect(() => {
-        const handleClick = (e) => {
-            if (templateRef.current && !templateRef.current.contains(e.target)) setShowTemplateModal(false)
-        }
-        if (showTemplateModal) document.addEventListener('mousedown', handleClick)
-        return () => document.removeEventListener('mousedown', handleClick)
-    }, [showTemplateModal])
 
     const handleNameChange = (e) => {
         setDoc(prev => ({ ...prev, name: e.target.value }))
@@ -265,6 +254,12 @@ export default function EditorHeader({
         return ''
     }
 
+    // Get linked entity names for tags
+    const linkedEntities = (availableEntities || []).filter(e => {
+        const ids = doc.entityIds || (doc.entityId ? [doc.entityId] : [])
+        return ids.includes(e.id)
+    })
+
     return (
         <header className="bg-white dark:bg-gray-900 border-b dark:border-gray-800 flex flex-col">
             {/* Top Row: Title and Actions */}
@@ -277,14 +272,30 @@ export default function EditorHeader({
                     <iconify-icon icon="tabler:arrow-left" width="20"></iconify-icon>
                 </a>
 
-                {/* Document Name */}
-                <input
-                    type="text"
-                    value={doc.name}
-                    onChange={handleNameChange}
-                    className="text-lg font-semibold bg-transparent border-none outline-none text-gray-900 dark:text-white flex-1 min-w-0"
-                    placeholder="Document sans titre"
-                />
+                {/* Document Name + Entity Tags */}
+                <div className="flex-1 min-w-0">
+                    <input
+                        type="text"
+                        value={doc.name}
+                        onChange={handleNameChange}
+                        className="text-lg font-semibold bg-transparent border-none outline-none text-gray-900 dark:text-white w-full"
+                        placeholder="Document sans titre"
+                    />
+                    {/* Entity Tags - shown when this template is linked to entities */}
+                    {doc.isTemplate && linkedEntities.length > 0 && (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            {linkedEntities.map(entity => (
+                                <span
+                                    key={entity.id}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700/50"
+                                >
+                                    <iconify-icon icon={entity.icon || 'solar:database-bold'} width="11"></iconify-icon>
+                                    {entity.name}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
                 {/* Save Status */}
                 <div className="flex items-center gap-2 text-xs text-gray-400 mr-3">
@@ -296,113 +307,17 @@ export default function EditorHeader({
                     )}
                 </div>
 
-                {/* Template Button */}
-                <div className="relative" ref={templateRef}>
-                    <button
-                        onClick={() => setShowTemplateModal(!showTemplateModal)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${doc.isTemplate
-                            ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700'
-                            : 'text-gray-500 border-gray-200 hover:border-amber-300 hover:text-amber-500 dark:border-gray-700 dark:hover:border-amber-600'
-                            }`}
-                    >
-                        <iconify-icon icon={doc.isTemplate ? 'solar:magic-stick-3-bold-duotone' : 'solar:magic-stick-3-line-duotone'} width="16"></iconify-icon>
-                        <span>{doc.isTemplate ? 'Template ✓' : 'Template'}</span>
-                    </button>
-
-                    {/* Template Dropdown */}
-                    {showTemplateModal && (
-                        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-[#0e1726] rounded-xl shadow-2xl border border-gray-200/80 dark:border-white/10 z-50 overflow-hidden">
-                            {/* Header */}
-                            <div className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-transparent border-b border-gray-100 dark:border-white/5">
-                                <div className="flex items-center gap-2">
-                                    <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="18" className="text-amber-500"></iconify-icon>
-                                    <h3 className="text-sm font-bold text-gray-800 dark:text-white">Configuration Template</h3>
-                                </div>
-                                <p className="text-[10px] text-gray-400 mt-0.5">Transformer ce document en modèle réutilisable</p>
-                            </div>
-
-                            {/* Body */}
-                            <div className="p-4 space-y-4">
-                                {/* Toggle - Clear ON/OFF state */}
-                                <div className="flex items-center justify-between py-1">
-                                    <div>
-                                        <span className="text-xs font-bold text-gray-700 dark:text-gray-200">Modèle de document</span>
-                                        <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">Activer le mode template</p>
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            setDoc(prev => ({ ...prev, isTemplate: !prev.isTemplate }))
-                                            triggerSave()
-                                        }}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-200 ${doc.isTemplate
-                                            ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30'
-                                            : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500'
-                                            }`}
-                                    >
-                                        <iconify-icon icon={doc.isTemplate ? 'tabler:check' : 'tabler:x'} width="13"></iconify-icon>
-                                        {doc.isTemplate ? 'Activé' : 'Désactivé'}
-                                    </button>
-                                </div>
-
-                                {/* Entity Multi-Select */}
-                                {doc.isTemplate && (
-                                    <div className="space-y-2">
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Lier à une ou plusieurs collections</label>
-                                        <div className="max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
-                                            {(availableEntities || []).length === 0 ? (
-                                                <p className="text-[10px] text-gray-400 py-3 text-center italic">Aucune collection disponible</p>
-                                            ) : (
-                                                (availableEntities || []).map(entity => {
-                                                    const entityIds = doc.entityIds || (doc.entityId ? [doc.entityId] : [])
-                                                    const isLinked = entityIds.includes(entity.id)
-                                                    return (
-                                                        <label
-                                                            key={entity.id}
-                                                            className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-700/50 last:border-b-0 ${isLinked ? 'bg-amber-50/50 dark:bg-amber-900/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700/30'
-                                                                }`}
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={isLinked}
-                                                                onChange={() => {
-                                                                    setDoc(prev => {
-                                                                        const currentIds = prev.entityIds || (prev.entityId ? [prev.entityId] : [])
-                                                                        const newIds = isLinked
-                                                                            ? currentIds.filter(id => id !== entity.id)
-                                                                            : [...currentIds, entity.id]
-                                                                        return { ...prev, entityIds: newIds, entityId: newIds[0] || null }
-                                                                    })
-                                                                    triggerSave()
-                                                                }}
-                                                                className="w-3.5 h-3.5 rounded border-gray-300 text-amber-500 focus:ring-amber-200 dark:border-gray-600 dark:bg-gray-700"
-                                                            />
-                                                            <iconify-icon icon={entity.icon || 'solar:database-bold'} width="14" className={isLinked ? 'text-amber-500' : 'text-gray-400'}></iconify-icon>
-                                                            <span className={`text-xs ${isLinked ? 'font-semibold text-gray-700 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>{entity.name}</span>
-                                                            {isLinked && <iconify-icon icon="tabler:check" width="12" className="text-amber-500 ml-auto"></iconify-icon>}
-                                                        </label>
-                                                    )
-                                                })
-                                            )}
-                                        </div>
-                                        <p className="text-[9px] text-gray-400 italic leading-relaxed">Ce template sera utilisable dans les SmartDoc de ces collections.</p>
-                                    </div>
-                                )}
-
-                                {/* Info hint */}
-                                {doc.isTemplate && (
-                                    <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2.5 dark:bg-amber-900/10 dark:border-amber-800/30">
-                                        <div className="flex items-start gap-2">
-                                            <iconify-icon icon="solar:lightbulb-bolt-bold-duotone" width="14" className="text-amber-500 mt-0.5 shrink-0"></iconify-icon>
-                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                                                Utilisez des <strong className="text-amber-600">tokens</strong> comme <code className="bg-amber-100 dark:bg-amber-900/30 px-1 rounded text-[9px] font-mono">{'{{recordTitle}}'}</code> pour insérer des données dynamiques.
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
+                {/* Template Toggle Button - config shows in right sidebar */}
+                <button
+                    onClick={() => window.dispatchEvent(new CustomEvent('toggle-template-panel'))}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${doc.isTemplate
+                        ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700'
+                        : 'text-gray-500 border-gray-200 hover:border-amber-300 hover:text-amber-500 dark:border-gray-700 dark:hover:border-amber-600'
+                        }`}
+                >
+                    <iconify-icon icon={doc.isTemplate ? 'solar:magic-stick-3-bold-duotone' : 'solar:magic-stick-3-line-duotone'} width="16"></iconify-icon>
+                    <span>{doc.isTemplate ? 'Template ✓' : 'Template'}</span>
+                </button>
 
                 {/* PDF Button */}
                 <button

@@ -1226,413 +1226,445 @@ Résumé final (HTML):`
     // Count pending actions
     const pendingCount = Object.values(actionStatus).filter(s => s === 'pending').length
 
+    // ========== FLOATING PANEL STATE ==========
+    const [isOpen, setIsOpen] = useState(false)
+
     // ========== RENDER ==========
     return (
-        <div className="ai-chat-sidebar w-80 bg-white dark:bg-gray-900 border-l dark:border-gray-800 flex flex-col h-full">
-            {/* Header */}
-            <div className="p-4 border-b dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${mode === 'agent'
-                            ? 'bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/20'
-                            : 'bg-gradient-to-br from-primary to-primary/60 shadow-primary/20'
-                            }`}>
-                            <iconify-icon
-                                icon={mode === 'agent' ? "tabler:robot" : "tabler:sparkles"}
-                                width="22"
-                                className="text-white"
-                            ></iconify-icon>
-                        </div>
-                        <div>
-                            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
-                                {mode === 'agent' ? 'Agent' : 'Assistant'}
-                            </h3>
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">IA</h2>
-                        </div>
-                    </div>
-                    {/* Clear Chat */}
-                    {messages.length > 0 && (
-                        <button
-                            onClick={clearChat}
-                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-colors"
-                            title="Nouvelle conversation"
-                        >
-                            <iconify-icon icon="tabler:refresh" width="18"></iconify-icon>
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {/* Error Banner */}
-            {error && (
-                <div className="mx-4 mt-4 p-3 bg-danger/10 border border-danger/20 rounded-lg">
-                    <div className="flex items-start gap-2">
-                        <iconify-icon icon="tabler:alert-circle" width="18" className="text-danger shrink-0 mt-0.5"></iconify-icon>
-                        <p className="text-xs text-danger">{error}</p>
-                    </div>
-                </div>
+        <>
+            {/* Floating Toggle Button - shown when panel is closed */}
+            {!isOpen && (
+                <button
+                    onClick={() => setIsOpen(true)}
+                    className="fixed z-50 flex items-center justify-center w-11 h-11 rounded-xl shadow-lg transition-all hover:scale-110 active:scale-95 bg-gradient-to-br from-amber-500 to-orange-500 text-white hover:shadow-amber-500/30"
+                    style={{ bottom: '140px', right: '24px' }}
+                    title="Assistant IA"
+                >
+                    <iconify-icon icon="tabler:robot" width="22"></iconify-icon>
+                </button>
             )}
 
-            {/* Scope Selector - Only in Agent mode */}
-            {mode === 'agent' && (
-                <div className="px-4 py-2 border-b dark:border-gray-800">
-                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
-                        <button
-                            onClick={() => handleScopeChange('selection')}
-                            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${scope === 'selection'
-                                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                } ${!hasSelection && !lockedSelection && scope !== 'selection' ? 'opacity-50' : ''}`}
-                            title="Analyser uniquement la sélection"
-                        >
-                            <iconify-icon icon="tabler:text-wrap" width="12"></iconify-icon>
-                            <span>Sélection</span>
-                            {(hasSelection || lockedSelection) && scope === 'selection' && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                            )}
-                        </button>
-                        <button
-                            onClick={() => handleScopeChange('page')}
-                            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${scope === 'page'
-                                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                }`}
-                            title="Analyser la page en cours"
-                        >
-                            <iconify-icon icon="tabler:file-text" width="12"></iconify-icon>
-                            <span>Page</span>
-                        </button>
-                        <button
-                            onClick={() => handleScopeChange('document')}
-                            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${scope === 'document'
-                                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                }`}
-                            title="Analyser tout le document"
-                        >
-                            <iconify-icon icon="tabler:files" width="12"></iconify-icon>
-                            <span>Tout</span>
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Chat Messages Area */}
-            <div className="flex-1 overflow-auto p-4" style={{ scrollbarColor: '#64748b transparent', scrollbarWidth: 'thin' }}>
-                {messages.length === 0 ? (
-                    // Empty State
-                    <div className="h-full flex flex-col items-center justify-center text-center px-4">
-                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${mode === 'agent'
-                            ? 'bg-gradient-to-br from-amber-500/10 to-orange-500/5'
-                            : 'bg-gradient-to-br from-primary/10 to-primary/5'
-                            }`}>
-                            <iconify-icon
-                                icon={mode === 'agent' ? "tabler:robot" : "tabler:message-chatbot"}
-                                width="32"
-                                className={mode === 'agent' ? "text-amber-500" : "text-primary"}
-                            ></iconify-icon>
-                        </div>
-                        <h3 className="text-sm font-bold text-gray-600 dark:text-gray-300 mb-2">
-                            {mode === 'agent'
-                                ? 'Mode Agent activé'
-                                : 'Comment puis-je vous aider ?'}
-                        </h3>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
-                            {mode === 'agent'
-                                ? 'L\'agent analysera le document et proposera TOUTES les corrections en une fois.'
-                                : 'Posez une question ou demandez-moi de vous aider à rédiger.'}
-                        </p>
-
-                        {/* Quick Actions */}
-                        <div className="mt-6 space-y-2 w-full">
-                            {mode === 'agent' && (
-                                <button
-                                    onClick={() => handleQuickAction('analyze')}
-                                    className="w-full px-4 py-2.5 text-xs text-left text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors flex items-center gap-3 group font-medium"
-                                >
-                                    <iconify-icon icon="tabler:scan" width="16"></iconify-icon>
-                                    Analyser et corriger
-                                </button>
-                            )}
-                            <button
-                                onClick={() => handleQuickAction('correct')}
-                                className="w-full px-4 py-2.5 text-xs text-left text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-3 group"
-                            >
-                                <iconify-icon icon="tabler:language" width="16" className="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
-                                Corriger l'orthographe
-                            </button>
-                            <button
-                                onClick={() => handleQuickAction('improve')}
-                                className="w-full px-4 py-2.5 text-xs text-left text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-3 group"
-                            >
-                                <iconify-icon icon="tabler:wand" width="16" className="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
-                                Améliorer le style
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    // Messages List
-                    <div className="space-y-3">
-                        {messages.map((msg, index) => (
-                            <div
-                                key={index}
-                                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                            >
-                                <div
-                                    className={`max-w-[85%] px-4 py-2.5 text-sm leading-relaxed ${msg.role === 'user'
-                                        ? 'dark:bg-gray-800 bg-gray-100 dark:text-white rounded-xl'
-                                        : msg.role === 'system'
-                                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 text-xs rounded-lg'
-                                            : 'bg-[#1e3a5f] text-gray-300 rounded-2xl rounded-bl-sm'
-                                        }`}
-                                >
-                                    <div className="whitespace-pre-wrap">{msg.content}</div>
+            {/* Floating Panel - overlay, does not take layout space */}
+            {isOpen && (
+                <div
+                    className="ai-chat-sidebar fixed z-50 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl shadow-2xl flex flex-col"
+                    style={{ bottom: '80px', right: '24px', width: '380px', height: 'calc(100vh - 160px)', maxHeight: '680px' }}
+                >
+                    {/* Header */}
+                    <div className="p-4 border-b dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${mode === 'agent'
+                                    ? 'bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/20'
+                                    : 'bg-gradient-to-br from-primary to-primary/60 shadow-primary/20'
+                                    }`}>
+                                    <iconify-icon
+                                        icon={mode === 'agent' ? "tabler:robot" : "tabler:sparkles"}
+                                        width="22"
+                                        className="text-white"
+                                    ></iconify-icon>
+                                </div>
+                                <div>
+                                    <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                                        {mode === 'agent' ? 'Agent' : 'Assistant'}
+                                    </h3>
+                                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">IA</h2>
                                 </div>
                             </div>
-                        ))}
+                            {/* Close / Clear Chat */}
+                            <div className="flex items-center gap-1">
+                                {messages.length > 0 && (
+                                    <button
+                                        onClick={clearChat}
+                                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-colors"
+                                        title="Nouvelle conversation"
+                                    >
+                                        <iconify-icon icon="tabler:refresh" width="18"></iconify-icon>
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setIsOpen(false)}
+                                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-colors"
+                                    title="Fermer"
+                                >
+                                    <iconify-icon icon="tabler:x" width="18"></iconify-icon>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
-                        {/* Multi-Actions Cards */}
-                        {pendingActions.length > 0 && (
-                            <div className="space-y-2">
-                                {/* Header with Apply All / Ignore All */}
-                                {pendingCount > 1 && (
-                                    <div className="flex items-center justify-between p-2 bg-amber-500/5 rounded-lg border dark:border-gray-800 border-gray-800">
-                                        <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                                            {pendingCount} correction(s) en attente
-                                        </span>
-                                        <div className="flex gap-1">
-                                            <button
-                                                onClick={handleApplyAll}
-                                                disabled={isApplying}
-                                                className="px-2 py-1 text-[10px] bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50 font-medium"
-                                            >
-                                                Tout appliquer
-                                            </button>
-                                            <button
-                                                onClick={handleIgnoreAll}
-                                                className="px-2 py-1 text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-300"
-                                            >
-                                                Tout ignorer
-                                            </button>
+                    {/* Error Banner */}
+                    {error && (
+                        <div className="mx-4 mt-4 p-3 bg-danger/10 border border-danger/20 rounded-lg">
+                            <div className="flex items-start gap-2">
+                                <iconify-icon icon="tabler:alert-circle" width="18" className="text-danger shrink-0 mt-0.5"></iconify-icon>
+                                <p className="text-xs text-danger">{error}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Scope Selector - Only in Agent mode */}
+                    {mode === 'agent' && (
+                        <div className="px-4 py-2 border-b dark:border-gray-800">
+                            <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+                                <button
+                                    onClick={() => handleScopeChange('selection')}
+                                    className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${scope === 'selection'
+                                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                        } ${!hasSelection && !lockedSelection && scope !== 'selection' ? 'opacity-50' : ''}`}
+                                    title="Analyser uniquement la sélection"
+                                >
+                                    <iconify-icon icon="tabler:text-wrap" width="12"></iconify-icon>
+                                    <span>Sélection</span>
+                                    {(hasSelection || lockedSelection) && scope === 'selection' && (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => handleScopeChange('page')}
+                                    className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${scope === 'page'
+                                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                        }`}
+                                    title="Analyser la page en cours"
+                                >
+                                    <iconify-icon icon="tabler:file-text" width="12"></iconify-icon>
+                                    <span>Page</span>
+                                </button>
+                                <button
+                                    onClick={() => handleScopeChange('document')}
+                                    className={`flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${scope === 'document'
+                                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                        }`}
+                                    title="Analyser tout le document"
+                                >
+                                    <iconify-icon icon="tabler:files" width="12"></iconify-icon>
+                                    <span>Tout</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Chat Messages Area */}
+                    <div className="flex-1 overflow-auto p-4" style={{ scrollbarColor: '#64748b transparent', scrollbarWidth: 'thin' }}>
+                        {messages.length === 0 ? (
+                            // Empty State
+                            <div className="h-full flex flex-col items-center justify-center text-center px-4">
+                                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${mode === 'agent'
+                                    ? 'bg-gradient-to-br from-amber-500/10 to-orange-500/5'
+                                    : 'bg-gradient-to-br from-primary/10 to-primary/5'
+                                    }`}>
+                                    <iconify-icon
+                                        icon={mode === 'agent' ? "tabler:robot" : "tabler:message-chatbot"}
+                                        width="32"
+                                        className={mode === 'agent' ? "text-amber-500" : "text-primary"}
+                                    ></iconify-icon>
+                                </div>
+                                <h3 className="text-sm font-bold text-gray-600 dark:text-gray-300 mb-2">
+                                    {mode === 'agent'
+                                        ? 'Mode Agent activé'
+                                        : 'Comment puis-je vous aider ?'}
+                                </h3>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
+                                    {mode === 'agent'
+                                        ? 'L\'agent analysera le document et proposera TOUTES les corrections en une fois.'
+                                        : 'Posez une question ou demandez-moi de vous aider à rédiger.'}
+                                </p>
+
+                                {/* Quick Actions */}
+                                <div className="mt-6 space-y-2 w-full">
+                                    {mode === 'agent' && (
+                                        <button
+                                            onClick={() => handleQuickAction('analyze')}
+                                            className="w-full px-4 py-2.5 text-xs text-left text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors flex items-center gap-3 group font-medium"
+                                        >
+                                            <iconify-icon icon="tabler:scan" width="16"></iconify-icon>
+                                            Analyser et corriger
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => handleQuickAction('correct')}
+                                        className="w-full px-4 py-2.5 text-xs text-left text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-3 group"
+                                    >
+                                        <iconify-icon icon="tabler:language" width="16" className="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
+                                        Corriger l'orthographe
+                                    </button>
+                                    <button
+                                        onClick={() => handleQuickAction('improve')}
+                                        className="w-full px-4 py-2.5 text-xs text-left text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-3 group"
+                                    >
+                                        <iconify-icon icon="tabler:wand" width="16" className="text-gray-400 group-hover:text-primary transition-colors"></iconify-icon>
+                                        Améliorer le style
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            // Messages List
+                            <div className="space-y-3">
+                                {messages.map((msg, index) => (
+                                    <div
+                                        key={index}
+                                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                    >
+                                        <div
+                                            className={`max-w-[85%] px-4 py-2.5 text-sm leading-relaxed ${msg.role === 'user'
+                                                ? 'dark:bg-gray-800 bg-gray-100 dark:text-white rounded-xl'
+                                                : msg.role === 'system'
+                                                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 text-xs rounded-lg'
+                                                    : 'bg-[#1e3a5f] text-gray-300 rounded-2xl rounded-bl-sm'
+                                                }`}
+                                        >
+                                            <div className="whitespace-pre-wrap">{msg.content}</div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Multi-Actions Cards */}
+                                {pendingActions.length > 0 && (
+                                    <div className="space-y-2">
+                                        {/* Header with Apply All / Ignore All */}
+                                        {pendingCount > 1 && (
+                                            <div className="flex items-center justify-between p-2 bg-amber-500/5 rounded-lg border dark:border-gray-800 border-gray-800">
+                                                <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                                                    {pendingCount} correction(s) en attente
+                                                </span>
+                                                <div className="flex gap-1">
+                                                    <button
+                                                        onClick={handleApplyAll}
+                                                        disabled={isApplying}
+                                                        className="px-2 py-1 text-[10px] bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50 font-medium"
+                                                    >
+                                                        Tout appliquer
+                                                    </button>
+                                                    <button
+                                                        onClick={handleIgnoreAll}
+                                                        className="px-2 py-1 text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-300"
+                                                    >
+                                                        Tout ignorer
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Individual Action Cards */}
+                                        {pendingActions.map((action) => {
+                                            const status = actionStatus[action.id]
+                                            const isPending = status === 'pending'
+                                            const isApplied = status === 'applied'
+                                            const isFailed = status === 'failed'
+                                            const isIgnored = status === 'ignored'
+
+                                            return (
+                                                <div
+                                                    key={action.id}
+                                                    data-action-card-id={action.id}
+                                                    className={`p-2 rounded-lg border transition-all cursor-pointer ${isApplied ? 'bg-success/10 border-success/20 opacity-60' :
+                                                        isFailed ? 'bg-danger/10 border-danger/20' :
+                                                            isIgnored ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-800 opacity-50' :
+                                                                hoveredActionId === action.id
+                                                                    ? 'bg-amber-500/15 border-amber-500/40'
+                                                                    : 'bg-amber-500/5 dark:border-gray-800 border-gray-800'
+                                                        }`}
+                                                    onMouseEnter={() => {
+                                                        setHoveredActionId(action.id)
+                                                        scrollToHighlight(action.id)
+                                                    }}
+                                                    onMouseLeave={() => setHoveredActionId(null)}
+                                                >
+                                                    {/* Header: description + confidence */}
+                                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                                        <p className="text-[11px] font-medium text-gray-700 dark:text-gray-300 truncate">
+                                                            {action.description}
+                                                        </p>
+                                                        {action.confidence && (
+                                                            <span className={`text-[9px] px-1 py-0.5 rounded flex-shrink-0 ${action.confidence >= 0.9 ? 'bg-success/20 text-success' :
+                                                                action.confidence >= 0.7 ? 'bg-amber-500/20 text-amber-600' :
+                                                                    'bg-gray-200 text-gray-500'
+                                                                }`}>
+                                                                {Math.round(action.confidence * 100)}%
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Show old -> new preview INLINE for replace_text */}
+                                                    {action.target?.matchText && action.patch?.replacement && (
+                                                        <div className="text-[10px] mb-1.5 flex items-center gap-1.5 font-mono flex-wrap">
+                                                            <span className="text-danger line-through">{action.target.matchText}</span>
+                                                            <span className="text-gray-400">→</span>
+                                                            <span className="text-success">{action.patch.replacement}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Preview for replace_ref (translations/reformulations) - show on hover */}
+                                                    {action.type === 'replace_ref' && action.patch?.replacement && isPending && hoveredActionId === action.id && (
+                                                        <div className="mt-2 p-2 bg-success/10 rounded-lg border border-success/20">
+                                                            <div className="text-[9px] text-success font-medium mb-1 flex items-center gap-1">
+                                                                <iconify-icon icon="tabler:arrow-right" width="10"></iconify-icon>
+                                                                Nouveau contenu
+                                                            </div>
+                                                            <div
+                                                                className="text-[10px] text-gray-600 dark:text-gray-300 leading-relaxed"
+                                                                style={{
+                                                                    display: '-webkit-box',
+                                                                    WebkitLineClamp: 2,
+                                                                    WebkitBoxOrient: 'vertical',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis'
+                                                                }}
+                                                                dangerouslySetInnerHTML={{ __html: action.patch.replacement }}
+                                                            />
+                                                        </div>
+                                                    )}
+
+                                                    {/* Status badges */}
+                                                    {isApplied && (
+                                                        <div className="text-xs text-success flex items-center gap-1">
+                                                            <iconify-icon icon="tabler:check" width="14"></iconify-icon>
+                                                            Appliqué
+                                                        </div>
+                                                    )}
+                                                    {isFailed && (
+                                                        <div className="text-xs text-danger flex items-center gap-1">
+                                                            <iconify-icon icon="tabler:x" width="14"></iconify-icon>
+                                                            Échec - texte non trouvé
+                                                        </div>
+                                                    )}
+                                                    {isIgnored && (
+                                                        <div className="text-xs text-gray-400 flex items-center gap-1">
+                                                            <iconify-icon icon="tabler:minus" width="14"></iconify-icon>
+                                                            Ignoré
+                                                        </div>
+                                                    )}
+
+                                                    {/* Action buttons */}
+                                                    {isPending && (
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => handleApplyAction(action)}
+                                                                disabled={isApplying}
+                                                                className="flex-1 py-1.5 text-xs bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors flex items-center justify-center gap-1 font-medium disabled:opacity-50"
+                                                            >
+                                                                <iconify-icon icon="tabler:check" width="14"></iconify-icon>
+                                                                Appliquer
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleIgnoreAction(action)}
+                                                                className="flex-1 py-1.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-1"
+                                                            >
+                                                                <iconify-icon icon="tabler:x" width="14"></iconify-icon>
+                                                                Ignorer
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+
+                                {/* Loading / Analyzing indicators */}
+                                {(isLoading || isAnalyzing || batchProgress) && (
+                                    <div className="flex justify-start">
+                                        <div className={`max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-sm ${mode === 'agent' ? 'bg-amber-500/10' : 'bg-[#1e3a5f]'
+                                            }`}>
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <iconify-icon
+                                                        icon="tabler:loader-2"
+                                                        width="16"
+                                                        className={`animate-spin ${mode === 'agent' ? 'text-amber-500' : 'text-primary'}`}
+                                                    ></iconify-icon>
+                                                    <span className={`text-sm ${mode === 'agent' ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}`}>
+                                                        {batchProgress
+                                                            ? batchProgress.phase
+                                                                ? `${batchProgress.phase} - Pages ${batchProgress.startPage}-${batchProgress.endPage} sur ${batchProgress.totalPages}...`
+                                                                : `Pages ${batchProgress.startPage}-${batchProgress.endPage} sur ${batchProgress.totalPages}...`
+                                                            : isAnalyzing
+                                                                ? 'Analyse du document...'
+                                                                : 'Réflexion...'}
+                                                    </span>
+                                                </div>
+                                                {batchProgress && (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-amber-500 rounded-full transition-all duration-300"
+                                                                style={{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }}
+                                                            ></div>
+                                                        </div>
+                                                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                                            {batchProgress.current}/{batchProgress.total}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Individual Action Cards */}
-                                {pendingActions.map((action) => {
-                                    const status = actionStatus[action.id]
-                                    const isPending = status === 'pending'
-                                    const isApplied = status === 'applied'
-                                    const isFailed = status === 'failed'
-                                    const isIgnored = status === 'ignored'
-
-                                    return (
-                                        <div
-                                            key={action.id}
-                                            data-action-card-id={action.id}
-                                            className={`p-2 rounded-lg border transition-all cursor-pointer ${isApplied ? 'bg-success/10 border-success/20 opacity-60' :
-                                                isFailed ? 'bg-danger/10 border-danger/20' :
-                                                    isIgnored ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-800 opacity-50' :
-                                                        hoveredActionId === action.id
-                                                            ? 'bg-amber-500/15 border-amber-500/40'
-                                                            : 'bg-amber-500/5 dark:border-gray-800 border-gray-800'
-                                                }`}
-                                            onMouseEnter={() => {
-                                                setHoveredActionId(action.id)
-                                                scrollToHighlight(action.id)
-                                            }}
-                                            onMouseLeave={() => setHoveredActionId(null)}
-                                        >
-                                            {/* Header: description + confidence */}
-                                            <div className="flex items-center justify-between gap-2 mb-1">
-                                                <p className="text-[11px] font-medium text-gray-700 dark:text-gray-300 truncate">
-                                                    {action.description}
-                                                </p>
-                                                {action.confidence && (
-                                                    <span className={`text-[9px] px-1 py-0.5 rounded flex-shrink-0 ${action.confidence >= 0.9 ? 'bg-success/20 text-success' :
-                                                        action.confidence >= 0.7 ? 'bg-amber-500/20 text-amber-600' :
-                                                            'bg-gray-200 text-gray-500'
-                                                        }`}>
-                                                        {Math.round(action.confidence * 100)}%
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {/* Show old -> new preview INLINE for replace_text */}
-                                            {action.target?.matchText && action.patch?.replacement && (
-                                                <div className="text-[10px] mb-1.5 flex items-center gap-1.5 font-mono flex-wrap">
-                                                    <span className="text-danger line-through">{action.target.matchText}</span>
-                                                    <span className="text-gray-400">→</span>
-                                                    <span className="text-success">{action.patch.replacement}</span>
-                                                </div>
-                                            )}
-
-                                            {/* Preview for replace_ref (translations/reformulations) - show on hover */}
-                                            {action.type === 'replace_ref' && action.patch?.replacement && isPending && hoveredActionId === action.id && (
-                                                <div className="mt-2 p-2 bg-success/10 rounded-lg border border-success/20">
-                                                    <div className="text-[9px] text-success font-medium mb-1 flex items-center gap-1">
-                                                        <iconify-icon icon="tabler:arrow-right" width="10"></iconify-icon>
-                                                        Nouveau contenu
-                                                    </div>
-                                                    <div
-                                                        className="text-[10px] text-gray-600 dark:text-gray-300 leading-relaxed"
-                                                        style={{
-                                                            display: '-webkit-box',
-                                                            WebkitLineClamp: 2,
-                                                            WebkitBoxOrient: 'vertical',
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis'
-                                                        }}
-                                                        dangerouslySetInnerHTML={{ __html: action.patch.replacement }}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {/* Status badges */}
-                                            {isApplied && (
-                                                <div className="text-xs text-success flex items-center gap-1">
-                                                    <iconify-icon icon="tabler:check" width="14"></iconify-icon>
-                                                    Appliqué
-                                                </div>
-                                            )}
-                                            {isFailed && (
-                                                <div className="text-xs text-danger flex items-center gap-1">
-                                                    <iconify-icon icon="tabler:x" width="14"></iconify-icon>
-                                                    Échec - texte non trouvé
-                                                </div>
-                                            )}
-                                            {isIgnored && (
-                                                <div className="text-xs text-gray-400 flex items-center gap-1">
-                                                    <iconify-icon icon="tabler:minus" width="14"></iconify-icon>
-                                                    Ignoré
-                                                </div>
-                                            )}
-
-                                            {/* Action buttons */}
-                                            {isPending && (
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => handleApplyAction(action)}
-                                                        disabled={isApplying}
-                                                        className="flex-1 py-1.5 text-xs bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors flex items-center justify-center gap-1 font-medium disabled:opacity-50"
-                                                    >
-                                                        <iconify-icon icon="tabler:check" width="14"></iconify-icon>
-                                                        Appliquer
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleIgnoreAction(action)}
-                                                        className="flex-1 py-1.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-1"
-                                                    >
-                                                        <iconify-icon icon="tabler:x" width="14"></iconify-icon>
-                                                        Ignorer
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )
-                                })}
+                                <div ref={messagesEndRef} />
                             </div>
                         )}
-
-                        {/* Loading / Analyzing indicators */}
-                        {(isLoading || isAnalyzing || batchProgress) && (
-                            <div className="flex justify-start">
-                                <div className={`max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-sm ${mode === 'agent' ? 'bg-amber-500/10' : 'bg-[#1e3a5f]'
-                                    }`}>
-                                    <div className="flex flex-col gap-2">
-                                        <div className="flex items-center gap-2">
-                                            <iconify-icon
-                                                icon="tabler:loader-2"
-                                                width="16"
-                                                className={`animate-spin ${mode === 'agent' ? 'text-amber-500' : 'text-primary'}`}
-                                            ></iconify-icon>
-                                            <span className={`text-sm ${mode === 'agent' ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}`}>
-                                                {batchProgress
-                                                    ? batchProgress.phase
-                                                        ? `${batchProgress.phase} - Pages ${batchProgress.startPage}-${batchProgress.endPage} sur ${batchProgress.totalPages}...`
-                                                        : `Pages ${batchProgress.startPage}-${batchProgress.endPage} sur ${batchProgress.totalPages}...`
-                                                    : isAnalyzing
-                                                        ? 'Analyse du document...'
-                                                        : 'Réflexion...'}
-                                            </span>
-                                        </div>
-                                        {batchProgress && (
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-amber-500 rounded-full transition-all duration-300"
-                                                        style={{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }}
-                                                    ></div>
-                                                </div>
-                                                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-                                                    {batchProgress.current}/{batchProgress.total}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        <div ref={messagesEndRef} />
                     </div>
-                )}
-            </div>
 
-            {/* Input Area */}
-            <div className="p-4 border-t dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30">
-                <form onSubmit={handleSubmit} className="relative">
-                    <textarea
-                        ref={inputRef}
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        onFocus={handleInputFocus}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault()
-                                handleSubmit(e)
-                            }
-                        }}
-                        placeholder={mode === 'agent' ? "Demandez une analyse..." : "Posez une question..."}
-                        className="w-full px-4 py-3 pr-12 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl resize-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 focus:outline-none transition-all text-gray-900 dark:text-gray-300"
-                        rows="2"
-                        disabled={isLoading}
-                    />
-                    <button
-                        type="submit"
-                        disabled={!message.trim() || isLoading}
-                        className="absolute right-3 bottom-3 w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-all hover:scale-105 active:scale-95"
-                    >
-                        {isLoading ? (
-                            <iconify-icon icon="tabler:loader-2" width="16" className="animate-spin"></iconify-icon>
-                        ) : (
-                            <iconify-icon icon="tabler:send" width="16"></iconify-icon>
-                        )}
-                    </button>
-                </form>
+                    {/* Input Area */}
+                    <div className="p-4 border-t dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30">
+                        <form onSubmit={handleSubmit} className="relative">
+                            <textarea
+                                ref={inputRef}
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                                onFocus={handleInputFocus}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault()
+                                        handleSubmit(e)
+                                    }
+                                }}
+                                placeholder={mode === 'agent' ? "Demandez une analyse..." : "Posez une question..."}
+                                className="w-full px-4 py-3 pr-12 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl resize-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 focus:outline-none transition-all text-gray-900 dark:text-gray-300"
+                                rows="2"
+                                disabled={isLoading}
+                            />
+                            <button
+                                type="submit"
+                                disabled={!message.trim() || isLoading}
+                                className="absolute right-3 bottom-3 w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-all hover:scale-105 active:scale-95"
+                            >
+                                {isLoading ? (
+                                    <iconify-icon icon="tabler:loader-2" width="16" className="animate-spin"></iconify-icon>
+                                ) : (
+                                    <iconify-icon icon="tabler:send" width="16"></iconify-icon>
+                                )}
+                            </button>
+                        </form>
 
-                {/* Model & Mode Selectors */}
-                <div className="mt-3 flex items-center justify-between gap-2">
-                    <select
-                        value={model}
-                        onChange={(e) => setModel(e.target.value)}
-                        className="text-[11px] px-2 py-1 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-md text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary/30 cursor-pointer"
-                        title="Modèle IA"
-                    >
-                        {MODELS.map(m => (
-                            <option key={m.id} value={m.id}>{m.name}</option>
-                        ))}
-                    </select>
-                    <select
-                        value={mode}
-                        onChange={(e) => setMode(e.target.value)}
-                        className="text-[11px] px-2 py-1 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-md text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary/30 cursor-pointer"
-                    >
-                        <option value="assistant">💬 Assistant</option>
-                        <option value="agent">🤖 Agent</option>
-                    </select>
+                        {/* Model & Mode Selectors */}
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                            <select
+                                value={model}
+                                onChange={(e) => setModel(e.target.value)}
+                                className="text-[11px] px-2 py-1 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-md text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary/30 cursor-pointer"
+                                title="Modèle IA"
+                            >
+                                {MODELS.map(m => (
+                                    <option key={m.id} value={m.id}>{m.name}</option>
+                                ))}
+                            </select>
+                            <select
+                                value={mode}
+                                onChange={(e) => setMode(e.target.value)}
+                                className="text-[11px] px-2 py-1 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-md text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary/30 cursor-pointer"
+                            >
+                                <option value="assistant">💬 Assistant</option>
+                                <option value="agent">🤖 Agent</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
+            )}
+        </>
     )
 }

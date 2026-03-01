@@ -526,6 +526,8 @@
                         // Inverse of one-to-many = many-to-one → the other entity stores the foreign key
                         // Each new record of the other entity can point back to us → always OK
                         if (card === 'many-to-one') return true;
+                        // Inverse of many-to-one = one-to-many → multiple records can reference us → always OK
+                        if (card === 'one-to-many') return true;
                         // Inverse of many-to-many → always OK
                         if (card === 'many-to-many') return true;
                         // Inverse of one-to-one → only if count is 0

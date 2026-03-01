@@ -37,7 +37,8 @@ async function getInverseRelations(EntityModel, entityId) {
                     },
                     label: rel.inverseLabel || srcEntity.namePlural || srcEntity.name + 's',
                     cardinality: rel.cardinality === 'one-to-many' ? 'many-to-one' :
-                        rel.cardinality === 'many-to-many' ? 'many-to-many' : 'one-to-one',
+                        rel.cardinality === 'many-to-one' ? 'one-to-many' :
+                            rel.cardinality === 'many-to-many' ? 'many-to-many' : 'one-to-one',
                     direction: 'inverse',           // Flag: this is an inverse relation
                     sourceEntityId: srcEntity._id,  // The entity that owns the actual relation
                     inputMode: 'readonly',          // Inverse relations are read-only (data is managed on the source side)

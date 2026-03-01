@@ -958,7 +958,15 @@
                     <iconify-icon icon="solar:alt-arrow-right-bold" width="10" style="margin-left: -3px;"></iconify-icon>
                 </div>
 
-                <div class="space-y-4">
+                <div class="space-y-4" :style="designMode ? 'min-height: 80px' : ''">
+                <!-- Empty state for main column (shown in design mode when all panels dragged out) -->
+                <template x-if="designMode">
+                    <div class="record-layout-empty-zone" id="main-empty-indicator"
+                        style="display: none; min-height: 80px; border: 2px dashed #e2e8f0; border-radius: 8px; padding: 24px 12px; text-align: center; color: #94a3b8; font-size: 12px;">
+                        <iconify-icon icon="solar:widget-add-bold-duotone" width="24" style="opacity: 0.5;"></iconify-icon>
+                        <div style="margin-top: 4px;">Glissez un panel ici</div>
+                    </div>
+                </template>
                 <div class="panel-sortable-item" data-panel-id="attributs">
                     <template x-if="designMode">
                         <div class="panel-drag-handle">
@@ -1801,7 +1809,7 @@
                     <iconify-icon icon="solar:alt-arrow-right-bold" width="10" style="margin-left: -3px;"></iconify-icon>
                 </div>
 
-                <div class="space-y-3" id="sidebar-main-sortable">
+                <div class="space-y-3" id="sidebar-main-sortable" :style="designMode ? 'min-height: 80px' : ''">
                 <div class="panel-sortable-item" data-panel-id="sidebar-content">
                     <template x-if="designMode">
                         <div class="panel-drag-handle">
@@ -1811,6 +1819,14 @@
                     </template>
                     <%- include('partials/record-sidebar') %>
                 </div>
+                <!-- Empty state for sidebar column (shown in design mode when all panels dragged out) -->
+                <template x-if="designMode">
+                    <div class="record-layout-empty-zone" id="sidebar-empty-indicator"
+                        style="display: none; min-height: 80px; border: 2px dashed #e2e8f0; border-radius: 8px; padding: 24px 12px; text-align: center; color: #94a3b8; font-size: 12px;">
+                        <iconify-icon icon="solar:widget-add-bold-duotone" width="24" style="opacity: 0.5;"></iconify-icon>
+                        <div style="margin-top: 4px;">Glissez un panel ici</div>
+                    </div>
+                </template>
                 </div>
             </div>
             <% } %>
@@ -2102,7 +2118,10 @@
                     this.loadColumnLayout();
                     this.$watch('designMode', (val) => {
                         if (val) {
-                            this.$nextTick(() => this.initPanelSortables());
+                            this.$nextTick(() => {
+                                this.initPanelSortables();
+                                this._updateEmptyZoneIndicators();
+                            });
                         } else {
                             this.destroyPanelSortables();
                         }
@@ -2304,6 +2323,26 @@
                     }
                 },
 
+                // Update empty zone placeholders visibility
+                _updateEmptyZoneIndicators() {
+                    // Main column
+                    const mainZone = document.getElementById('panels-main-zone');
+                    const mainInner = mainZone?.querySelector('.space-y-4') || mainZone;
+                    const mainIndicator = document.getElementById('main-empty-indicator');
+                    if (mainInner && mainIndicator) {
+                        const hasPanels = mainInner.querySelectorAll(':scope > .panel-sortable-item').length > 0;
+                        mainIndicator.style.display = hasPanels ? 'none' : 'block';
+                    }
+
+                    // Sidebar column
+                    const sidebarZone = document.getElementById('sidebar-main-sortable');
+                    const sidebarIndicator = document.getElementById('sidebar-empty-indicator');
+                    if (sidebarZone && sidebarIndicator) {
+                        const hasPanels = sidebarZone.querySelectorAll(':scope > .panel-sortable-item').length > 0;
+                        sidebarIndicator.style.display = hasPanels ? 'none' : 'block';
+                    }
+                },
+
                 // ═══ DRAG & DROP (Sortable) ═══
                 extraSortables: [],
 
@@ -2319,7 +2358,10 @@
                         dragClass: 'panel-sortable-drag',
                         fallbackOnBody: true,
                         swapThreshold: 0.65,
-                        onEnd: () => this.savePanelLayout()
+                        onEnd: () => {
+                            this.savePanelLayout();
+                            this._updateEmptyZoneIndicators();
+                        }
                     };
                 },
 

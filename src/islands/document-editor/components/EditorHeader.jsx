@@ -416,7 +416,7 @@ export default function EditorHeader({
             </div>
 
             {/* Toolbar Row */}
-            <div className="flex items-center px-3 py-1 gap-0.5 flex-wrap">
+            <div className="flex items-center px-3 py-1 gap-0.5 flex-nowrap overflow-x-auto">
                 {/* Undo / Redo */}
                 <button
                     onMouseDown={(e) => { e.preventDefault(); document.execCommand('undo') }}
@@ -440,7 +440,8 @@ export default function EditorHeader({
                 <select
                     value={detectCurrentHeading()}
                     onChange={(e) => handleHeadingChange(e.target.value)}
-                    className="form-select text-[11px] py-0.5 px-1.5 border-gray-200 dark:border-gray-800 dark:bg-gray-800 rounded w-20"
+                    className="form-select text-[11px] py-0.5 px-1.5 border-gray-200 dark:border-gray-800 dark:bg-gray-800 rounded"
+                    style={{ width: '80px', minWidth: '80px', flex: 'none' }}
                 >
                     {HEADING_OPTIONS.map(opt => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -454,7 +455,8 @@ export default function EditorHeader({
                 <select
                     value={currentFont}
                     onChange={(e) => handleFormat('fontName', e.target.value)}
-                    className="form-select text-[11px] py-0.5 px-1.5 border-gray-200 dark:border-gray-800 dark:bg-gray-800 rounded w-28"
+                    className="form-select text-[11px] py-0.5 px-1.5 border-gray-200 dark:border-gray-800 dark:bg-gray-800 rounded"
+                    style={{ width: '112px', minWidth: '112px', flex: 'none' }}
                 >
                     {FONT_FAMILIES.map(font => (
                         <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>

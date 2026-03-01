@@ -362,6 +362,7 @@ export default function RecordsCalendar({
         hideWeekend: false,
         slotDuration: '00:15:00',
         slotLabelInterval: '01:00',
+        compactMode: false,
     })
 
     // Fetch settings from server on mount
@@ -643,13 +644,22 @@ export default function RecordsCalendar({
             select: handleDateSelect,
             eventDrop: handleEventDrop,
             eventResize: handleEventResize,
+            // ─── Custom event content: Title first, time below ───
+            eventContent: (arg) => {
+                const start = arg.event.start
+                const end = arg.event.end
+                const startStr = start ? `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}` : ''
+                const endStr = end ? `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}` : ''
+                return {
+                    html: `<div style="line-height:1.2;padding:2px 4px;overflow:hidden;"><div style="font-weight:700;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0;">${arg.event.title}</div><div style="font-size:10px;opacity:0.85;margin:0;font-weight:500;">De ${startStr} à ${endStr}</div></div>`
+                }
+            },
             // ─── Visual ───
             eventDidMount: (info) => {
                 info.el.style.cursor = 'pointer'
                 info.el.style.borderRadius = '6px'
                 info.el.style.border = 'none'
-                info.el.style.fontSize = '12px'
-                info.el.style.fontWeight = '600'
+                info.el.style.overflow = 'hidden'
                 // Tooltip
                 const status = info.event.extendedProps?.status
                 info.el.title = info.event.title + (status ? ` — ${status}` : '')
@@ -701,7 +711,7 @@ export default function RecordsCalendar({
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                 @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-                .fc .fc-timegrid-slot { height: 40px !important; }
+                .fc .fc-timegrid-slot { height: ${calSettings.compactMode ? '20px' : '40px'} !important; }
                 .fc .fc-event { transition: box-shadow 0.2s, transform 0.15s !important; }
                 .fc .fc-event:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important; transform: scale(1.02) !important; z-index: 10 !important; }
                 .fc .fc-timegrid-now-indicator-line { border-color: #e7515a !important; border-width: 2px !important; }
@@ -940,6 +950,22 @@ function CalendarSettingsPanel({ settings, onSave, onClose }) {
 
                     {/* Separator */}
                     <div style={{ height: 1, background: '#f1f5f9', margin: '8px 0 20px' }} />
+
+                    {/* Compact mode */}
+                    <div className="cal-toggle">
+                        <div>
+                            <div className="cal-toggle-label">Mode compact</div>
+                            <div className="cal-toggle-desc">Réduit l'espacement des créneaux pour une vue d'ensemble</div>
+                        </div>
+                        <label className="cal-switch">
+                            <input
+                                type="checkbox"
+                                checked={local.compactMode}
+                                onChange={e => setLocal({ ...local, compactMode: e.target.checked })}
+                            />
+                            <span className="slider" />
+                        </label>
+                    </div>
 
                     {/* Hide weekends */}
                     <div className="cal-toggle">

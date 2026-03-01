@@ -2111,7 +2111,7 @@
                     window.addEventListener('mouseup', () => this.endResize());
                 },
 
-                // ═══ RESIZE LOGIC (rewritten from page-builder — exact same pattern) ═══
+                // ═══ RESIZE LOGIC (12-unit grid) ═══
                 startResize(colIndex, event) {
                     const container = document.getElementById('panels-container');
                     if (!container) return;
@@ -2127,24 +2127,17 @@
                     this.resizeColIndex = colIndex;
                     document.body.style.cursor = 'col-resize';
                     document.body.style.userSelect = 'none';
-
-                    console.log('[RESIZE] startResize colIndex=', colIndex,
-                        'startWidths=', JSON.stringify(resizeState.startWidths),
-                        'startColCount=', resizeState.startColCount,
-                        'isLastColumn=', colIndex === allCols.length - 1);
                 },
 
                 doResize(event) {
                     if (!resizeState) return;
                     const { colIndex, startX, startWidths, startColCount } = resizeState;
 
-                    // Get the grid container width
                     const gridContainer = document.getElementById('panels-container');
                     if (!gridContainer) return;
                     const gridWidth = gridContainer.offsetWidth;
                     const colUnitWidth = gridWidth / 12;
 
-                    // Calculate delta in grid units
                     const deltaX = event.clientX - startX;
                     const deltaUnits = Math.round(deltaX / colUnitWidth);
                     if (deltaUnits === 0) return;
@@ -2153,97 +2146,91 @@
                     const isLastColumn = colIndex === allCols.length - 1;
                     const leftWidth = startWidths[colIndex];
 
-                    console.log('[RESIZE] doResize deltaUnits=', deltaUnits,
-                        'colIndex=', colIndex,
-                        'isLastColumn=', isLastColumn,
-                        'leftWidth=', leftWidth,
-                        'allCols.length=', allCols.length,
-                        'startColCount=', startColCount);
+                    // Min width: main=2, sidebar=2, extras=1
+                    const getMinWidth = (idx) => {
+                        if (idx < this.columns.length) return 2; // main & sidebar
+                        return 1; // extras
+                    };
 
                     if (isLastColumn) {
-                        // ═══ LAST COLUMN: shrinking creates new column ═══
-                        // (exact page-builder logic)
+                        // ═══ LAST COLUMN: shrinking creates new empty column ═══
                         let newLeftWidth = leftWidth + deltaUnits;
-                        if (newLeftWidth < 1) newLeftWidth = 1;
+                        const minW = getMinWidth(colIndex);
+                        if (newLeftWidth < minW) newLeftWidth = minW;
 
-                        // Calculate remaining space (total must always = 12)
-                        const totalUsed = allCols.reduce((sum, col, idx) =>
-                            sum + (idx === colIndex ? newLeftWidth : col.width), 0);
-                        const remaining = 12 - totalUsed;
-
-                        console.log('[RESIZE] LAST COL: newLeftWidth=', newLeftWidth,
-                            'totalUsed=', totalUsed, 'remaining=', remaining);
+                        // Sum of all OTHER columns (not the one being resized)
+                        const othersSum = allCols.reduce((sum, col, idx) =>
+                            idx === colIndex ? sum : sum + col.width, 0);
+                        const remaining = 12 - othersSum - newLeftWidth;
 
                         if (remaining > 0) {
-                            // Create or update extra column to fill remaining space
+                            // Space freed → create or update trailing extra column
                             if (allCols.length === startColCount) {
-                                // Add new empty column
-                                console.log('[RESIZE] Creating new extra column, width=', remaining);
                                 const newCol = {
                                     id: 'extra_' + Date.now(),
                                     width: remaining,
                                     panels: []
                                 };
                                 this.extraColumns.push(newCol);
-                                resizeState.startWidths.push(0); // Track the new column (like page builder)
+                                resizeState.startWidths.push(0);
                                 resizeState.startColCount = allCols.length + 1;
                                 this.$nextTick(() => this.initExtraColSortable(this.extraColumns.length - 1));
                             } else {
-                                // Update existing trailing extra column
                                 const lastExtra = this.extraColumns[this.extraColumns.length - 1];
-                                if (lastExtra) {
-                                    console.log('[RESIZE] Updating existing extra column, width=', remaining);
-                                    lastExtra.width = remaining;
-                                }
+                                if (lastExtra) lastExtra.width = remaining;
                             }
                             this.setColWidth(colIndex, newLeftWidth);
-                        } else if (remaining <= 0) {
-                            // Remove extra column if no space (dragging back right)
+                        } else if (remaining === 0) {
+                            // Perfect fit → remove trailing extra if it was just created
                             if (allCols.length > startColCount && this.extraColumns.length > 0) {
-                                console.log('[RESIZE] Removing extra column');
                                 this.extraColumns.pop();
-                                resizeState.startWidths.pop(); // Keep in sync
+                                resizeState.startWidths.pop();
                                 resizeState.startColCount = allCols.length - 1;
                             }
-                            this.setColWidth(colIndex, leftWidth); // Reset to original
+                            this.setColWidth(colIndex, newLeftWidth);
+                        } else {
+                            // remaining < 0 → dragging beyond original, cap to fill all space
+                            if (allCols.length > startColCount && this.extraColumns.length > 0) {
+                                this.extraColumns.pop();
+                                resizeState.startWidths.pop();
+                                resizeState.startColCount = allCols.length - 1;
+                            }
+                            // Fill: this column gets ALL remaining space
+                            this.setColWidth(colIndex, 12 - othersSum);
                         }
                     } else {
                         // ═══ NORMAL RESIZE between two adjacent columns ═══
                         const rightWidth = startWidths[colIndex + 1];
+                        const totalPair = leftWidth + rightWidth;
 
                         let newLeftWidth = leftWidth + deltaUnits;
                         let newRightWidth = rightWidth - deltaUnits;
 
-                        // Check if the right column is an extra column
-                        const isRightColumnExtra = (colIndex + 1 >= this.columns.length);
+                        const isRightExtra = (colIndex + 1 >= this.columns.length);
+                        const minLeft = getMinWidth(colIndex);
+                        const minRight = isRightExtra ? 0 : getMinWidth(colIndex + 1);
 
-                        // If right column is an extra and would shrink to 0 → remove it
-                        if (newRightWidth <= 0 && isRightColumnExtra) {
-                            console.log('[RESIZE] NORMAL: Removing extra column (right col squeezed to 0)');
+                        // If right is extra and squeezed to 0 → remove it
+                        if (newRightWidth <= 0 && isRightExtra) {
                             const extraIdx = colIndex + 1 - this.columns.length;
                             const removedWidth = this.extraColumns[extraIdx]?.width || 0;
                             this.extraColumns.splice(extraIdx, 1);
                             resizeState.startWidths.splice(colIndex + 1, 1);
                             resizeState.startColCount = this.getAllColumns().length;
-                            // Give the freed space to the left column
                             this.setColWidth(colIndex, leftWidth + removedWidth);
                             return;
                         }
 
-                        // Enforce min width of 1 for each column
-                        if (newLeftWidth < 1) {
-                            newLeftWidth = 1;
-                            newRightWidth = leftWidth + rightWidth - 1;
+                        // Clamp to min widths
+                        if (newLeftWidth < minLeft) {
+                            newLeftWidth = minLeft;
+                            newRightWidth = totalPair - minLeft;
                         }
-                        if (newRightWidth < 1) {
-                            newRightWidth = 1;
-                            newLeftWidth = leftWidth + rightWidth - 1;
+                        if (newRightWidth < minRight) {
+                            newRightWidth = minRight;
+                            newLeftWidth = totalPair - minRight;
                         }
 
-                        console.log('[RESIZE] NORMAL: newLeftWidth=', newLeftWidth,
-                            'newRightWidth=', newRightWidth);
-
-                        // Apply new widths
                         this.setColWidth(colIndex, newLeftWidth);
                         this.setColWidth(colIndex + 1, newRightWidth);
                     }
@@ -2251,15 +2238,14 @@
 
                 endResize() {
                     if (!resizeState) return;
-                    const allCols = this.getAllColumns();
-                    console.log('[RESIZE] endResize — final widths:',
-                        JSON.stringify(allCols.map(c => ({ id: c.id, w: c.width }))),
-                        'total=', allCols.reduce((s, c) => s + c.width, 0));
                     resizeState = null;
                     this.resizeActive = false;
                     this.resizeColIndex = -1;
                     document.body.style.cursor = '';
                     document.body.style.userSelect = '';
+
+                    // Safety: force total = 12
+                    this._enforceTotal12();
                     this.saveColumnLayout();
                 },
 
@@ -2282,16 +2268,40 @@
 
                 // Remove an extra (empty) column
                 removeExtraColumn(idx) {
-                    const removed = this.extraColumns.splice(idx, 1);
-                    if (removed.length > 0) {
-                        // Give the freed space back to the previous column
+                    const freedWidth = this.extraColumns[idx]?.width || 0;
+                    this.extraColumns.splice(idx, 1);
+                    if (freedWidth > 0) {
+                        // Give the freed space back to the last remaining column
                         const allCols = this.getAllColumns();
                         if (allCols.length > 0) {
-                            const lastCol = allCols[allCols.length - 1];
-                            lastCol.width += removed[0].width;
+                            allCols[allCols.length - 1].width += freedWidth;
                         }
                     }
+                    this._enforceTotal12();
                     this.saveColumnLayout();
+                },
+
+                // Safety net: force all column widths to sum to exactly 12
+                _enforceTotal12() {
+                    const allCols = this.getAllColumns();
+                    const total = allCols.reduce((s, c) => s + c.width, 0);
+                    if (total === 12 || allCols.length === 0) return;
+                    const diff = 12 - total;
+                    // Adjust the last column
+                    const lastCol = allCols[allCols.length - 1];
+                    lastCol.width += diff;
+                    // If the adjustment makes it too small, redistribute
+                    if (lastCol.width < 1) {
+                        const deficit = 1 - lastCol.width;
+                        lastCol.width = 1;
+                        // Take from the first column that can afford it
+                        for (let i = allCols.length - 2; i >= 0; i--) {
+                            if (allCols[i].width > 2) {
+                                allCols[i].width -= deficit;
+                                break;
+                            }
+                        }
+                    }
                 },
 
                 // ═══ DRAG & DROP (Sortable) ═══
@@ -2397,21 +2407,7 @@
                                 this.extraColumns = data.preferences.extraColumns;
                             }
                             // Validate total = 12 (fix corrupted saved data)
-                            const allTotal = this.columns.reduce((s, c) => s + c.width, 0) + this.extraColumns.reduce((s, c) => s + c.width, 0);
-                            if (allTotal !== 12 && allTotal > 0) {
-                                const deficit = 12 - allTotal;
-                                if (deficit > 0) {
-                                    this.columns[this.columns.length - 1].width += deficit;
-                                } else {
-                                    let excess = -deficit;
-                                    while (excess > 0 && this.extraColumns.length > 0) {
-                                        const last = this.extraColumns[this.extraColumns.length - 1];
-                                        if (last.width <= excess) { excess -= last.width; this.extraColumns.pop(); }
-                                        else { last.width -= excess; excess = 0; }
-                                    }
-                                    if (excess > 0) this.columns[this.columns.length - 1].width = Math.max(2, this.columns[this.columns.length - 1].width - excess);
-                                }
-                            }
+                            this._enforceTotal12();
                             // Load panel layout (panel order + column assignments)
                             if (data?.preferences?.panelLayout) {
                                 this.$nextTick(() => this.applyPanelLayout(data.preferences.panelLayout));

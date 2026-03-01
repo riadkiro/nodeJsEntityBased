@@ -2,13 +2,13 @@
 
 <div class="pt-5" x-data="lineSchemaListApp()">
     <div class="mb-6 flex items-center justify-between">
-        <h2 class="text-xl font-bold dark:text-white-light">Configuration des Schémas de Lignes</h2>
+        <h2 class="text-xl font-bold dark:text-white-light">Configuration des Tableaux Dynamiques</h2>
         <a href="/account/<%= account_number %>/line-schemas/new" class="btn btn-primary">
             <svg class="h-5 w-5 ltr:mr-2 rtl:ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            Créer Schéma
+            Créer un Tableau
         </a>
     </div>
 
@@ -105,10 +105,10 @@
                         <line x1="9" y1="14" x2="15" y2="14"></line>
                     </svg>
                 </div>
-                <h4 class="mb-2 text-lg font-semibold dark:text-white-light">Aucun schéma</h4>
-                <p class="mb-4 text-sm text-white-dark">Créez votre premier schéma de lignes pour commencer.</p>
+                <h4 class="mb-2 text-lg font-semibold dark:text-white-light">Aucun tableau dynamique</h4>
+                <p class="mb-4 text-sm text-white-dark">Créez votre premier tableau dynamique pour commencer.</p>
                 <a href="/account/<%= account_number %>/line-schemas/new" class="btn btn-primary">
-                    Créer un Schéma
+                    Créer un Tableau
                 </a>
             </div>
         <% } %>

@@ -32,7 +32,7 @@
                 </svg>
                 Retour
             </a>
-            <h2 class="text-xl font-bold dark:text-white-light" x-text="schema._id ? 'Modifier Schéma' : 'Nouveau Schéma'"></h2>
+            <h2 class="text-xl font-bold dark:text-white-light" x-text="schema._id ? 'Modifier Tableau Dynamique' : 'Nouveau Tableau Dynamique'"></h2>
         </div>
         <div class="flex gap-2">
             <button @click="saveSchema()" class="btn btn-primary" :disabled="saving">
@@ -700,7 +700,7 @@ function lineSchemaBuilder() {
                     } else {
                         // Show success feedback
                         this.schema._id = result.data._id;
-                        alert('Schéma enregistré avec succès');
+                        alert('Tableau enregistré avec succès');
                     }
                 } else {
                     alert('Erreur: ' + (result.error || 'Unknown'));

@@ -519,6 +519,8 @@
                     if (tab.direction === 'direct') {
                         // Direct one-to-one: only if no record linked
                         if (card === 'one-to-one') return count === 0;
+                        // Direct many-to-one: this record points to ONE target (e.g. Consultation → 1 Patient)
+                        if (card === 'many-to-one') return count === 0;
                         // Direct one-to-many/many-to-many: always OK
                         return true;
                     }

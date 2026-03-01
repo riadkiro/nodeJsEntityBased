@@ -755,7 +755,17 @@
                     <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400" x-text="schema.name"></span>
                     <span x-show="getSchemaLines(schema._id).length > 0" class="text-[9px] bg-success/10 text-success min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1" x-text="getSchemaLines(schema._id).length"></span>
                 </div>
-                <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="isSchemaOpen(schema._id) ? '' : '-rotate-90'" class="transition-transform text-gray-300"></iconify-icon>
+                <div class="flex items-center gap-1">
+                    <!-- Template picker button (shown when templates available) -->
+                    <button x-show="getTemplatesForSchema(schema._id).length > 0"
+                            @click.stop="activeSchemaId = schema._id; templatePicker[schema._id] = !templatePicker[schema._id]"
+                            class="dg-analytics-tab" :class="{ 'active': templatePicker[schema._id] }"
+                            style="padding: 2px 6px; font-size: 10px;" title="Modèles">
+                        <iconify-icon icon="solar:clipboard-list-bold-duotone" width="12"></iconify-icon>
+                        <span x-text="getTemplatesForSchema(schema._id).length" class="text-[9px]"></span>
+                    </button>
+                    <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="isSchemaOpen(schema._id) ? '' : '-rotate-90'" class="transition-transform text-gray-300"></iconify-icon>
+                </div>
             </div>
 
             <!-- Schema Body -->
@@ -780,6 +790,49 @@
                             <span x-text="av.label"></span>
                         </button>
                     </template>
+                </div>
+
+                <!-- ═══ Template Picker Dropdown ═══ -->
+                <div x-show="templatePicker[schema._id]" x-collapse class="dg-template-picker" style="border-bottom: 1px solid #e5e7eb;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span class="text-xs font-bold text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
+                            <iconify-icon icon="solar:clipboard-list-bold-duotone" width="14" class="text-primary"></iconify-icon>
+                            Modèles disponibles
+                        </span>
+                        <button class="lp-row-btn edit" @click="templatePicker[schema._id] = false">
+                            <iconify-icon icon="tabler:x" width="14"></iconify-icon>
+                        </button>
+                    </div>
+                    <div class="dg-template-grid">
+                        <template x-for="tpl in getTemplatesForSchema(schema._id)" :key="tpl._id">
+                            <div class="dg-template-card" @click="applyTemplate(tpl); templatePicker[schema._id] = false">
+                                <div class="dg-template-card-icon" x-text="tpl.icon ? '' : '📋'">
+                                    <iconify-icon x-show="tpl.icon" :icon="tpl.icon" width="22" :style="'color:' + (tpl.color || '#4361ee')"></iconify-icon>
+                                </div>
+                                <div class="dg-template-card-name" x-text="tpl.name"></div>
+                                <div class="dg-template-card-desc" x-text="tpl.description"></div>
+                                <div class="dg-template-card-count">
+                                    <iconify-icon icon="tabler:rows" width="10"></iconify-icon>
+                                    <span x-text="(tpl.presetRows || []).length + ' lignes'"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- ═══ Empty state with template suggestions ═══ -->
+                <div x-show="getSchemaLines(schema._id).length === 0 && !templatePicker[schema._id] && getTemplatesForSchema(schema._id).length > 0 && (!analyticsView[schema._id] || analyticsView[schema._id] === 'data')"
+                     class="px-4 py-6 text-center">
+                    <iconify-icon icon="solar:clipboard-list-bold-duotone" width="28" class="text-gray-300 dark:text-gray-600 mb-2"></iconify-icon>
+                    <p class="text-xs text-gray-400 mb-3">Aucune donnée. Commencez avec un modèle :</p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;">
+                        <template x-for="tpl in getTemplatesForSchema(schema._id).slice(0, 3)" :key="tpl._id">
+                            <button class="dg-analytics-tab" style="padding: 4px 10px;" @click="applyTemplate(tpl)">
+                                <iconify-icon x-show="tpl.icon" :icon="tpl.icon" width="13" :style="'color:' + (tpl.color || '#4361ee')"></iconify-icon>
+                                <span x-text="tpl.name" style="font-size: 11px;"></span>
+                            </button>
+                        </template>
+                    </div>
                 </div>
 
                 <!-- ═══ Analytics: Stat Cards View ═══ -->
@@ -1794,6 +1847,7 @@ document.addEventListener('alpine:init', () => {
         formAddOpen: {},     // { schemaId: boolean } — whether form add panel is open
         formAddValues: {},   // { 'schemaId_colKey': value } — form add field values
         gridTemplates: [],   // Available templates for this entity's schemas
+        templatePicker: {},  // { schemaId: boolean } — template picker open state
 
         get activeSchema() {
             return this.schemas.find(s => s._id === this.activeSchemaId) || null;
@@ -1877,11 +1931,17 @@ document.addEventListener('alpine:init', () => {
                     this.openSchemas[s._id] = true;
                     this.lineTypeMap[s._id] = s.defaultLineType || s.lineTypes?.[0] || 'product';
                     this.savingSchemas[s._id] = false;
+                    // DataGrid V2 state
+                    this.analyticsView[s._id] = 'data';
+                    this.formAddOpen[s._id] = false;
+                    this.templatePicker[s._id] = false;
                 }
 
                 if (this.schemas.length > 0) {
                     this.activeSchemaId = this.schemas[0]._id;
                     await this.loadLines();
+                    // Load templates for template picker
+                    this.loadTemplates();
                 }
             } catch (e) {
                 console.error('[LinesPanel] Load schemas error:', e);
@@ -2839,7 +2899,12 @@ document.addEventListener('alpine:init', () => {
 
         // Get templates for a specific schema
         getTemplatesForSchema(schemaId) {
-            return this.gridTemplates.filter(t => t.schemaId?.toString() === schemaId?.toString());
+            const sid = schemaId?.toString();
+            return this.gridTemplates.filter(t => {
+                // Handle populated object or raw ObjectId
+                const tSchemaId = (t.schemaId?._id || t.schemaId)?.toString();
+                return tSchemaId === sid;
+            });
         },
 
         // Apply a template to the current record
@@ -2852,7 +2917,7 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json();
                 if (data.success && data.lines) {
                     // Reload lines for this schema
-                    const schemaId = template.schemaId?.toString();
+                    const schemaId = (template.schemaId?._id || template.schemaId)?.toString();
                     if (schemaId) {
                         this.activeSchemaId = schemaId;
                         await this.loadLines();

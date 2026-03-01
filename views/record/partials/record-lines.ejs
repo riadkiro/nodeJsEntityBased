@@ -528,6 +528,193 @@
         background: #0e1726;
         border-color: #334155;
     }
+
+    /* ═══════════════════════════════════════════════════════════
+       DataGrid Mode: FORM (timeseries cards)
+       ═══════════════════════════════════════════════════════════ */
+    .dg-form-entries {
+        display: flex; flex-direction: column; gap: 8px;
+        padding: 10px 12px;
+    }
+    .dg-form-entry {
+        border: 1px solid #e5e7eb; border-radius: 10px;
+        background: #fff; padding: 10px 14px;
+        transition: all 0.15s; position: relative;
+    }
+    .dark .dg-form-entry { background: #0e1726; border-color: #253b5c; }
+    .dg-form-entry:hover { border-color: #d1d5db; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .dark .dg-form-entry:hover { border-color: #3b4a5e; }
+    .dg-form-entry-date {
+        font-size: 11px; font-weight: 700; color: #4361ee;
+        display: flex; align-items: center; gap: 6px;
+        margin-bottom: 8px;
+    }
+    .dg-form-entry-grid {
+        display: grid; gap: 6px 12px;
+    }
+    .dg-form-entry-field {
+        display: flex; flex-direction: column; gap: 2px;
+    }
+    .dg-form-entry-field label {
+        font-size: 10px; font-weight: 600; color: #6b7280;
+        text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .dark .dg-form-entry-field label { color: #888ea8; }
+    .dg-form-entry-field .dg-value {
+        font-size: 13px; font-weight: 500; color: #1f2937;
+        display: flex; align-items: center; gap: 4px;
+    }
+    .dark .dg-form-entry-field .dg-value { color: #e0e6ed; }
+    .dg-form-entry-actions {
+        position: absolute; top: 8px; right: 8px;
+        display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s;
+    }
+    .dg-form-entry:hover .dg-form-entry-actions { opacity: 1; }
+
+    /* Normal range indicators */
+    .dg-indicator { font-size: 11px; font-weight: 700; }
+    .dg-indicator.normal { color: #22c55e; }
+    .dg-indicator.high { color: #ef4444; }
+    .dg-indicator.low { color: #f59e0b; }
+
+    /* Form add panel (inline form for new entry) */
+    .dg-form-add {
+        border: 2px dashed #e5e7eb; border-radius: 12px;
+        padding: 14px; margin: 8px 12px 12px;
+        background: #fafbfc; transition: all 0.15s;
+    }
+    .dark .dg-form-add { background: #1b2e4b; border-color: #253b5c; }
+    .dg-form-add-grid {
+        display: grid; gap: 10px 14px;
+    }
+    .dg-form-add .lp-input { height: 34px; font-size: 13px; }
+
+    /* ═══════════════════════════════════════════════════════════
+       DataGrid Mode: TABLE (inline spreadsheet)
+       ═══════════════════════════════════════════════════════════ */
+    .dg-table-cell-edit {
+        position: relative;
+    }
+    .dg-table-cell-edit .lp-input {
+        border-color: transparent !important; background: transparent !important;
+        padding: 5px 6px;
+    }
+    .dg-table-cell-edit .lp-input:focus {
+        border-color: #4361ee !important;
+        background: #fff !important;
+        box-shadow: 0 0 0 2px rgba(67,97,238,0.12);
+    }
+    .dark .dg-table-cell-edit .lp-input:focus {
+        background: #0e1726 !important;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       DataGrid: Analytics Bar & Views
+       ═══════════════════════════════════════════════════════════ */
+    .dg-analytics-bar {
+        display: flex; align-items: center; gap: 4px;
+        padding: 4px 8px; background: #f8f9fa;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .dark .dg-analytics-bar { background: #1b2e4b; border-color: #253b5c; }
+    .dg-analytics-tab {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 4px 10px; border-radius: 6px;
+        font-size: 11px; font-weight: 500; color: #6b7280;
+        cursor: pointer; border: none; background: transparent;
+        transition: all 0.15s;
+    }
+    .dark .dg-analytics-tab { color: #888ea8; }
+    .dg-analytics-tab:hover { background: rgba(67,97,238,0.06); color: #4361ee; }
+    .dg-analytics-tab.active { background: rgba(67,97,238,0.1); color: #4361ee; font-weight: 600; }
+
+    /* Stat cards */
+    .dg-stat-cards {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 8px; padding: 12px;
+    }
+    .dg-stat-card {
+        border: 1px solid #e5e7eb; border-radius: 10px;
+        padding: 12px; background: #fff;
+        display: flex; flex-direction: column; gap: 4px;
+    }
+    .dark .dg-stat-card { background: #0e1726; border-color: #253b5c; }
+    .dg-stat-card-label {
+        font-size: 10px; font-weight: 600; color: #9ca3af;
+        text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .dg-stat-card-value {
+        font-size: 20px; font-weight: 700; color: #1f2937;
+        display: flex; align-items: baseline; gap: 4px;
+    }
+    .dark .dg-stat-card-value { color: #e0e6ed; }
+    .dg-stat-card-unit {
+        font-size: 11px; font-weight: 500; color: #9ca3af;
+    }
+    .dg-stat-card-delta {
+        font-size: 11px; font-weight: 600;
+        display: flex; align-items: center; gap: 2px;
+    }
+    .dg-stat-card-delta.positive { color: #22c55e; }
+    .dg-stat-card-delta.negative { color: #ef4444; }
+
+    /* Template picker */
+    .dg-template-picker {
+        padding: 16px; text-align: center;
+    }
+    .dg-template-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 8px; margin-top: 12px; text-align: left;
+    }
+    .dg-template-card {
+        border: 1.5px solid #e5e7eb; border-radius: 10px;
+        padding: 12px; cursor: pointer; transition: all 0.2s;
+        display: flex; flex-direction: column; gap: 4px;
+    }
+    .dark .dg-template-card { border-color: #253b5c; }
+    .dg-template-card:hover {
+        border-color: #4361ee; transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(67,97,238,0.12);
+    }
+    .dg-template-card-icon {
+        font-size: 22px; margin-bottom: 2px;
+    }
+    .dg-template-card-name {
+        font-size: 13px; font-weight: 600; color: #1f2937;
+    }
+    .dark .dg-template-card-name { color: #e0e6ed; }
+    .dg-template-card-desc {
+        font-size: 11px; color: #9ca3af;
+    }
+    .dg-template-card-count {
+        font-size: 10px; color: #4361ee; font-weight: 600;
+    }
+
+    /* Timeline view */
+    .dg-timeline {
+        padding: 12px; position: relative;
+    }
+    .dg-timeline::before {
+        content: '';
+        position: absolute; left: 24px; top: 12px; bottom: 12px;
+        width: 2px; background: #e5e7eb;
+    }
+    .dark .dg-timeline::before { background: #253b5c; }
+    .dg-timeline-item {
+        display: flex; gap: 12px; margin-bottom: 12px;
+        position: relative;
+    }
+    .dg-timeline-dot {
+        width: 12px; height: 12px; border-radius: 50%;
+        background: #4361ee; border: 2px solid #fff;
+        flex-shrink: 0; margin-top: 4px; z-index: 1;
+    }
+    .dark .dg-timeline-dot { border-color: #0e1726; }
+    .dg-timeline-content {
+        flex: 1; border: 1px solid #e5e7eb; border-radius: 10px;
+        padding: 10px 14px; background: #fff;
+    }
+    .dark .dg-timeline-content { background: #0e1726; border-color: #253b5c; }
 </style>
 
 <div data-id="lines"
@@ -564,7 +751,7 @@
             <div class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
                 @click="toggleSchemaOpen(schema._id)">
                 <div class="flex items-center gap-1.5">
-                    <iconify-icon icon="solar:document-text-bold-duotone" width="14" class="text-success"></iconify-icon>
+                    <iconify-icon :icon="getSchemaInputMode(schema) === 'form' ? 'solar:heart-pulse-bold-duotone' : getSchemaInputMode(schema) === 'table' ? 'solar:notebook-bold-duotone' : 'solar:document-text-bold-duotone'" width="14" class="text-success"></iconify-icon>
                     <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400" x-text="schema.name"></span>
                     <span x-show="getSchemaLines(schema._id).length > 0" class="text-[9px] bg-success/10 text-success min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1" x-text="getSchemaLines(schema._id).length"></span>
                 </div>
@@ -576,8 +763,78 @@
                  @click="activeSchemaId = schema._id"
                  @focusin="activeSchemaId = schema._id">
 
-                <!-- Line Type selector (if schema has multiple line types) -->
-                <div x-show="schema.lineTypes && schema.lineTypes.length > 1"
+                <!-- ═══ Analytics Toggle Bar (for schemas with analytics) ═══ -->
+                <div x-show="schema.analyticsConfig && schema.analyticsConfig.enabled"
+                     class="dg-analytics-bar">
+                    <button class="dg-analytics-tab"
+                            :class="{ 'active': !analyticsView[schema._id] || analyticsView[schema._id] === 'data' }"
+                            @click.stop="setAnalyticsView(schema._id, 'data')">
+                        <iconify-icon icon="solar:document-text-bold" width="13"></iconify-icon>
+                        Données
+                    </button>
+                    <template x-for="av in (schema.analyticsConfig?.views || [])" :key="av.id">
+                        <button class="dg-analytics-tab"
+                                :class="{ 'active': analyticsView[schema._id] === av.id }"
+                                @click.stop="setAnalyticsView(schema._id, av.id)">
+                            <iconify-icon :icon="av.icon || 'solar:chart-bold'" width="13"></iconify-icon>
+                            <span x-text="av.label"></span>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- ═══ Analytics: Stat Cards View ═══ -->
+                <template x-if="analyticsView[schema._id] && analyticsView[schema._id] !== 'data'">
+                    <div>
+                        <!-- Find the active analytics view config -->
+                        <template x-if="getAnalyticsViewConfig(schema, analyticsView[schema._id])?.type === 'stat'">
+                            <div class="dg-stat-cards">
+                                <template x-for="card in (getAnalyticsViewConfig(schema, analyticsView[schema._id])?.config?.cards || [])" :key="card.column">
+                                    <div class="dg-stat-card">
+                                        <div class="dg-stat-card-label" x-text="card.label"></div>
+                                        <div class="dg-stat-card-value">
+                                            <span x-text="computeStat(schema._id, card.column, card.aggregation)"></span>
+                                            <span class="dg-stat-card-unit" x-text="card.unit || ''"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Timeline analytics view -->
+                        <template x-if="getAnalyticsViewConfig(schema, analyticsView[schema._id])?.type === 'timeline'">
+                            <div class="dg-timeline">
+                                <template x-for="(line, idx) in getSchemaLines(schema._id)" :key="line._tempId || line._id || idx">
+                                    <div class="dg-timeline-item">
+                                        <div class="dg-timeline-dot"></div>
+                                        <div class="dg-timeline-content">
+                                            <div class="dg-form-entry-date">
+                                                <iconify-icon icon="solar:calendar-bold" width="12"></iconify-icon>
+                                                <span x-text="formatEntryDate(line, schema)"></span>
+                                            </div>
+                                            <div class="dg-form-entry-grid" style="grid-template-columns: repeat(3, 1fr);">
+                                                <template x-for="col in getVisibleColumnsForSchema(schema).filter(c => c.type !== 'date')" :key="col.key">
+                                                    <div class="dg-form-entry-field">
+                                                        <label x-text="col.label"></label>
+                                                        <div class="dg-value">
+                                                            <span x-text="formatCellValue(line.values[col.key], col)"></span>
+                                                            <span x-html="getNormalRangeIndicator(line.values[col.key], col)"></span>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- ═══ DATA VIEW (shown when analytics is on 'data' or no analytics) ═══ -->
+                <div x-show="!analyticsView[schema._id] || analyticsView[schema._id] === 'data'">
+
+                <!-- Line Type selector (if schema has multiple line types) — catalog/table only -->
+                <div x-show="(getSchemaInputMode(schema) === 'catalog') && schema.lineTypes && schema.lineTypes.length > 1"
                     class="px-3 py-1.5 flex items-center gap-2 border-b border-gray-100 dark:border-gray-800">
                     <span class="text-[10px] font-semibold text-gray-400 uppercase">Type:</span>
                     <select class="lp-input !w-auto !text-[11px] !py-1 !px-2 !border-gray-200 dark:!border-gray-700"
@@ -589,8 +846,8 @@
                     </select>
                 </div>
 
-                <!-- Table -->
-                <div class="overflow-x-auto">
+                <!-- Table (catalog & table modes only, hidden for form mode) -->
+                <div class="overflow-x-auto" x-show="getSchemaInputMode(schema) !== 'form'">
                     <table class="lines-panel-table">
                         <thead>
                             <tr>
@@ -844,19 +1101,126 @@
                     </table>
                 </div>
 
-                <!-- Add row -->
-                <div class="lp-add-row-area" style="display: flex; gap: 0;">
-                    <div style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;"
+                <!-- Add row — catalog & table modes -->
+                <div x-show="getSchemaInputMode(schema) === 'catalog' || getSchemaInputMode(schema) === 'table'"
+                     class="lp-add-row-area" style="display: flex; gap: 0;">
+                    <div x-show="getSchemaInputMode(schema) === 'catalog'"
+                         style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;"
                          @click.stop="activateAndOpenModal(schema._id)">
                         <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
                         <span>Ajouter des lignes</span>
                     </div>
-                    <div style="border-left: 1px solid #e5e7eb; padding: 0 10px; display: flex; align-items: center;"
+                    <div style="border-left: 1px solid #e5e7eb; padding: 0 10px; display: flex; align-items: center; flex: 1; justify-content: center; gap: 6px;"
+                         :style="getSchemaInputMode(schema) === 'table' ? 'border-left:none' : ''"
                          class="dark:!border-gray-700"
                          @click.stop="addLineToSchema(schema._id)" title="Ajouter une ligne vide">
                         <iconify-icon icon="tabler:row-insert-bottom" width="14"></iconify-icon>
+                        <span x-show="getSchemaInputMode(schema) === 'table'">Ajouter une ligne</span>
                     </div>
                 </div>
+
+                <!-- ═══ FORM MODE: Card entries + inline add form ═══ -->
+                <template x-if="getSchemaInputMode(schema) === 'form'">
+                    <div>
+                        <!-- Existing entries as cards (chronological) -->
+                        <div class="dg-form-entries" x-show="getSchemaLines(schema._id).length > 0">
+                            <template x-for="(line, lineIdx) in getSchemaLines(schema._id)" :key="line._tempId || line._id || lineIdx">
+                                <div class="dg-form-entry">
+                                    <!-- Date header -->
+                                    <div class="dg-form-entry-date">
+                                        <iconify-icon icon="solar:calendar-bold" width="12"></iconify-icon>
+                                        <span x-text="formatEntryDate(line, schema)"></span>
+                                    </div>
+                                    <!-- Fields grid -->
+                                    <div class="dg-form-entry-grid"
+                                         :style="'grid-template-columns: repeat(' + getFormColumns(schema) + ', 1fr)'">
+                                        <template x-for="col in getVisibleColumnsForSchema(schema).filter(c => c.type !== 'date')" :key="col.key">
+                                            <div class="dg-form-entry-field">
+                                                <label x-text="col.label"></label>
+                                                <div class="dg-value">
+                                                    <span x-text="formatCellValue(line.values[col.key], col)"></span>
+                                                    <span x-html="getNormalRangeIndicator(line.values[col.key], col)"></span>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <!-- Actions (edit/delete) -->
+                                    <div class="dg-form-entry-actions">
+                                        <button type="button" class="lp-row-btn edit" @click="activeSchemaId = schema._id; openEditLine(lineIdx)" title="Modifier">
+                                            <iconify-icon icon="tabler:pencil" width="14"></iconify-icon>
+                                        </button>
+                                        <button type="button" class="lp-row-btn delete" @click="activeSchemaId = schema._id; removeLine(lineIdx)" title="Supprimer">
+                                            <iconify-icon icon="tabler:trash" width="14"></iconify-icon>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Inline add form -->
+                        <div x-show="formAddOpen[schema._id]" class="dg-form-add">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-bold text-gray-600 dark:text-gray-300 flex items-center gap-1">
+                                    <iconify-icon icon="solar:add-circle-bold" width="14" class="text-primary"></iconify-icon>
+                                    Nouvelle mesure
+                                </span>
+                                <button type="button" class="lp-row-btn edit" @click="formAddOpen[schema._id] = false">
+                                    <iconify-icon icon="tabler:x" width="14"></iconify-icon>
+                                </button>
+                            </div>
+                            <div class="dg-form-add-grid"
+                                 :style="'grid-template-columns: repeat(' + getFormColumns(schema) + ', 1fr)'">
+                                <template x-for="col in getVisibleColumnsForSchema(schema)" :key="col.key">
+                                    <div class="dg-form-entry-field">
+                                        <label x-text="col.label"></label>
+                                        <!-- Date -->
+                                        <template x-if="col.type === 'date'">
+                                            <input type="date" class="lp-input"
+                                                   x-model="formAddValues[schema._id + '_' + col.key]" />
+                                        </template>
+                                        <!-- Number -->
+                                        <template x-if="col.type === 'number' || col.type === 'money'">
+                                            <input type="number" class="lp-input"
+                                                   x-model="formAddValues[schema._id + '_' + col.key]"
+                                                   step="any" :placeholder="col.config?.unit || ''" />
+                                        </template>
+                                        <!-- Text/Textarea -->
+                                        <template x-if="col.type === 'text' || col.type === 'textarea'">
+                                            <input type="text" class="lp-input"
+                                                   x-model="formAddValues[schema._id + '_' + col.key]"
+                                                   :placeholder="col.label" />
+                                        </template>
+                                        <!-- Select -->
+                                        <template x-if="col.type === 'select'">
+                                            <select class="lp-input"
+                                                    x-model="formAddValues[schema._id + '_' + col.key]">
+                                                <option value="">—</option>
+                                                <template x-for="opt in (col.config?.options || [])" :key="opt.value">
+                                                    <option :value="opt.value" x-text="opt.label"></option>
+                                                </template>
+                                            </select>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                            <div class="flex justify-end gap-2 mt-3">
+                                <button class="lp-btn-cancel" style="padding: 6px 14px; font-size: 12px;"
+                                        @click="formAddOpen[schema._id] = false">Annuler</button>
+                                <button class="lp-btn-add" style="padding: 6px 16px; font-size: 12px;"
+                                        @click="submitFormEntry(schema)">  
+                                    <iconify-icon icon="tabler:check" width="13"></iconify-icon>
+                                    Enregistrer
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Add button -->
+                        <div class="lp-add-row-area" @click.stop="openFormAdd(schema)">
+                            <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
+                            <span>Nouvelle mesure</span>
+                        </div>
+                    </div>
+                </template>
 
                 <!-- Totals -->
                 <div x-show="schema.totals && (schema.totals.subtotalKey || schema.totals.totalFormula)"
@@ -880,6 +1244,8 @@
                         </div>
                     </template>
                 </div>
+
+                </div><!-- end data view wrapper -->
 
                 <!-- Save indicator -->
                 <div x-show="savingSchemas[schema._id]" class="px-3 py-1 text-center">
@@ -1422,6 +1788,12 @@ document.addEventListener('alpine:init', () => {
 
         _saveTimers: {},  // per-schema save timers
         editModal: { open: false, lineIdx: -1 },
+
+        // ═══ DataGrid V2: New mode state ═══
+        analyticsView: {},   // { schemaId: 'data' | '<viewId>' } — which analytics view is active
+        formAddOpen: {},     // { schemaId: boolean } — whether form add panel is open
+        formAddValues: {},   // { 'schemaId_colKey': value } — form add field values
+        gridTemplates: [],   // Available templates for this entity's schemas
 
         get activeSchema() {
             return this.schemas.find(s => s._id === this.activeSchemaId) || null;
@@ -2294,6 +2666,200 @@ document.addEventListener('alpine:init', () => {
                 console.error('[LinesPanel] Save error for schema', schemaId, e);
             } finally {
                 this.savingSchemas[schemaId] = false;
+            }
+        },
+
+        // ═══ DataGrid V2: New Mode Methods ═══════════════════
+
+        // Get schema input mode (defaults to 'catalog' for backward compat)
+        getSchemaInputMode(schema) {
+            return schema?.inputMode || 'catalog';
+        },
+
+        // Analytics view management
+        setAnalyticsView(schemaId, viewId) {
+            this.analyticsView[schemaId] = viewId;
+        },
+
+        getAnalyticsViewConfig(schema, viewId) {
+            if (!schema?.analyticsConfig?.views) return null;
+            return schema.analyticsConfig.views.find(v => v.id === viewId) || null;
+        },
+
+        // Compute statistics for analytics
+        computeStat(schemaId, column, aggregation) {
+            const lines = this.linesMap[schemaId] || [];
+            const values = lines
+                .map(l => parseFloat(l.values?.[column]))
+                .filter(v => !isNaN(v));
+
+            if (values.length === 0) return '—';
+
+            switch (aggregation) {
+                case 'last': return values[0]; // Assuming sorted desc
+                case 'first': return values[values.length - 1];
+                case 'avg': return (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
+                case 'min': return Math.min(...values);
+                case 'max': return Math.max(...values);
+                case 'sum': return values.reduce((a, b) => a + b, 0).toFixed(1);
+                case 'count': return values.length;
+                case 'delta': {
+                    if (values.length < 2) return '—';
+                    const delta = values[0] - values[values.length - 1];
+                    return (delta >= 0 ? '+' : '') + delta.toFixed(1);
+                }
+                default: return values[0];
+            }
+        },
+
+        // Format date for form entries
+        formatEntryDate(line, schema) {
+            const dateCol = schema?.timeseriesConfig?.dateColumn || 'date';
+            const dateVal = line.values?.[dateCol];
+            if (!dateVal) return 'Sans date';
+            try {
+                const d = new Date(dateVal);
+                return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+            } catch {
+                return dateVal;
+            }
+        },
+
+        // Format cell value for display
+        formatCellValue(value, col) {
+            if (value === undefined || value === null || value === '') return '—';
+            if (col.type === 'number' || col.type === 'money') {
+                const num = parseFloat(value);
+                if (isNaN(num)) return value;
+                const unit = col.config?.unit || '';
+                return num + (unit ? ' ' + unit : '');
+            }
+            if (col.type === 'duration' && typeof value === 'object') {
+                return (value.value || 0) + ' ' + this.durationLabel(value.unit || 'day');
+            }
+            if (col.type === 'dosage' && typeof value === 'object') {
+                return (value.value || 0) + ' ' + (value.unit || 'mg');
+            }
+            return value;
+        },
+
+        // Normal range indicator (✅ ⬆️ ⬇️)
+        getNormalRangeIndicator(value, col) {
+            if (!col.config?.normalRange || value === undefined || value === null || value === '') return '';
+            const num = parseFloat(value);
+            if (isNaN(num)) return '';
+            const { min, max } = col.config.normalRange;
+            if (min !== undefined && num < min) return '<span class="dg-indicator low">⬇️</span>';
+            if (max !== undefined && num > max) return '<span class="dg-indicator high">⬆️</span>';
+            return '<span class="dg-indicator normal">✅</span>';
+        },
+
+        // Get number of form columns based on schema config
+        getFormColumns(schema) {
+            // Use template formLayout or count non-date visible columns (max 4)
+            const visibleCols = (schema.columns || []).filter(c => c.visible !== false && c.type !== 'date');
+            return Math.min(visibleCols.length, 4);
+        },
+
+        // Open form add panel with auto-date
+        openFormAdd(schema) {
+            this.formAddOpen[schema._id] = true;
+            // Auto-fill date if timeseries
+            if (schema.dataMode === 'timeseries' || schema.inputMode === 'form') {
+                const dateCol = schema.timeseriesConfig?.dateColumn || 'date';
+                const hasDCol = (schema.columns || []).some(c => c.key === dateCol && c.type === 'date');
+                if (hasDCol) {
+                    this.formAddValues[schema._id + '_' + dateCol] = new Date().toISOString().split('T')[0];
+                }
+            }
+        },
+
+        // Submit form entry (create a new line from form values)
+        async submitFormEntry(schema) {
+            const values = {};
+            for (const col of (schema.columns || []).filter(c => c.visible !== false)) {
+                const key = schema._id + '_' + col.key;
+                let val = this.formAddValues[key];
+                if ((col.type === 'number' || col.type === 'money') && val) {
+                    val = parseFloat(val) || 0;
+                }
+                values[col.key] = val || '';
+            }
+
+            // Add the line
+            this.activeSchemaId = schema._id;
+            const newLine = {
+                _tempId: 'temp_' + Date.now(),
+                lineType: schema.defaultLineType || 'default',
+                values,
+                computed: {},
+                order: (this.linesMap[schema._id] || []).length
+            };
+
+            // For timeseries, insert in sorted order (desc = newest first)
+            if (schema.dataMode === 'timeseries') {
+                const dateCol = schema.timeseriesConfig?.dateColumn || 'date';
+                const sortDir = schema.timeseriesConfig?.sortDirection || 'desc';
+                const lines = [...(this.linesMap[schema._id] || []), newLine];
+                lines.sort((a, b) => {
+                    const da = new Date(a.values[dateCol] || 0).getTime();
+                    const db = new Date(b.values[dateCol] || 0).getTime();
+                    return sortDir === 'desc' ? db - da : da - db;
+                });
+                this.linesMap[schema._id] = lines;
+            } else {
+                if (!this.linesMap[schema._id]) this.linesMap[schema._id] = [];
+                this.linesMap[schema._id].push(newLine);
+            }
+
+            // Clear form
+            for (const col of (schema.columns || []).filter(c => c.visible !== false)) {
+                this.formAddValues[schema._id + '_' + col.key] = '';
+            }
+            this.formAddOpen[schema._id] = false;
+
+            // Save (activeSchemaId was already set above)
+            this.debouncedSave();
+        },
+
+        // Load templates for schemas
+        async loadTemplates() {
+            try {
+                const schemaIds = this.schemas.map(s => s._id).join(',');
+                if (!schemaIds) return;
+                const res = await fetch(`/account/${this.accountNumber}/api/grid-templates?schemaId=${schemaIds}`, {
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                this.gridTemplates = data.templates || [];
+            } catch (e) {
+                console.error('[DataGrid] Load templates error:', e);
+            }
+        },
+
+        // Get templates for a specific schema
+        getTemplatesForSchema(schemaId) {
+            return this.gridTemplates.filter(t => t.schemaId?.toString() === schemaId?.toString());
+        },
+
+        // Apply a template to the current record
+        async applyTemplate(template) {
+            try {
+                const res = await fetch(
+                    `/account/${this.accountNumber}/api/grid-templates/${template._id}/apply/${this.recordId}`,
+                    { method: 'POST', credentials: 'include' }
+                );
+                const data = await res.json();
+                if (data.success && data.lines) {
+                    // Reload lines for this schema
+                    const schemaId = template.schemaId?.toString();
+                    if (schemaId) {
+                        this.activeSchemaId = schemaId;
+                        await this.loadLines();
+                    }
+                }
+            } catch (e) {
+                console.error('[DataGrid] Apply template error:', e);
             }
         },
 

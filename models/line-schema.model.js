@@ -40,6 +40,7 @@ const ColumnSchema = new mongoose.Schema({
           dosage:    { units: ["mg","ml","g","cp","gouttes"] }
           formula:   { expression: "qty * unitPrice * (1 - discount/100)", dependencies: ["qty","unitPrice","discount"] }
           money:     { currency: "EUR", decimals: 2 }
+          number:    { unit: "mUI/L", normalRange: { min: 0.4, max: 4.0 }, decimals: 2 }
         */
     }
 }, { _id: true });
@@ -52,6 +53,51 @@ const LineSchemaSchema = new mongoose.Schema({
     slug: { type: String, required: true },         // "invoice_v1"
     description: String,
 
+    // ══ Input & Data Mode ══
+    inputMode: {
+        type: String,
+        enum: ['catalog', 'form', 'table', 'document'],
+        default: 'catalog'
+        // catalog  = bulk select from source entity (current behavior)
+        // form     = simple form per entry (pediatric tracking, pregnancy)
+        // table    = inline spreadsheet editing (lab results)
+        // document = embedded block in document editor (printable invoice)
+    },
+    dataMode: {
+        type: String,
+        enum: ['items', 'timeseries'],
+        default: 'items'
+        // items      = each line is a different item (invoice, prescription)
+        // timeseries = each line is a point in time (medical tracking)
+    },
+
+    // ══ Timeseries Config (when dataMode = 'timeseries') ══
+    timeseriesConfig: {
+        dateColumn: String,           // Key of the date column
+        autoDate: { type: Boolean, default: true },  // Auto-fill date on new entry
+        sortDirection: { type: String, enum: ['asc', 'desc'], default: 'desc' },
+        displayAs: { type: String, enum: ['cards', 'table', 'timeline'], default: 'cards' }
+    },
+
+    // ══ Analytics / Visualizations ══
+    analyticsConfig: {
+        enabled: { type: Boolean, default: false },
+        views: [{
+            id: String,
+            type: { type: String, enum: ['timeline', 'line', 'bar', 'area', 'stat', 'heatmap', 'gauge'] },
+            label: String,
+            icon: String,
+            config: mongoose.Schema.Types.Mixed
+            // line/bar/area: { xAxis, yAxes: [{column, color, label, axis}], normalRange, showTrend }
+            // stat:          { cards: [{column, aggregation, label, unit, icon}] }
+            // timeline:      { dateColumn, groupBy }
+            // heatmap:       { dateColumn, valueColumn, colorScale }
+            // gauge:         { column, min, max, normalRange, unit }
+        }],
+        defaultView: String
+    },
+
+    // ══ Context ══
     // Context: which entities or document type use this schema
     appliesTo: {
         entityIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Entity' }],

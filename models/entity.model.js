@@ -121,6 +121,13 @@ const EntitySchema = new mongoose.Schema(
       type: Boolean,
       default: true
     },
+    // 📊 DataGrid schemas attached to this entity
+    gridSchemas: [{
+      schemaId: { type: mongoose.Schema.Types.ObjectId, ref: 'LineSchema' },
+      position: { type: String, enum: ['main', 'sidebar', 'tab', 'panel'], default: 'main' },
+      order: { type: Number, default: 0 },
+      label: String   // Override of schema name for this entity
+    }],
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

@@ -938,6 +938,56 @@ module.exports = {
                 }
             }
 
+            // ═══ DataGrid: Load grid schemas + templates for this entity ═══
+            let gridSchemas = [];
+            let gridTemplates = [];
+            let gridLines = {};
+            try {
+                // Populate gridSchemas from entity
+                if (entity.gridSchemas && entity.gridSchemas.length > 0) {
+                    const LineSchema = await tenantCollection(req, "LineSchema");
+                    const GridSchemaTemplate = await tenantCollection(req, "GridSchemaTemplate");
+                    const DocumentLine = await tenantCollection(req, "DocumentLine");
+
+                    const schemaIds = entity.gridSchemas
+                        .map(gs => gs.schemaId)
+                        .filter(id => id);
+
+                    if (schemaIds.length > 0) {
+                        const schemas = await LineSchema.find({ _id: { $in: schemaIds } }).lean();
+                        const schemaMap = {};
+                        schemas.forEach(s => { schemaMap[s._id.toString()] = s; });
+
+                        gridSchemas = entity.gridSchemas.map(gs => ({
+                            ...gs.toObject ? gs.toObject() : gs,
+                            schema: schemaMap[gs.schemaId?.toString()] || null
+                        })).filter(gs => gs.schema);
+
+                        // Load templates for these schemas
+                        gridTemplates = await GridSchemaTemplate.find({
+                            schemaId: { $in: schemaIds }
+                        }).lean();
+
+                        // Load existing lines for this record
+                        if (record._id) {
+                            const lines = await DocumentLine.find({
+                                documentId: record._id,
+                                schemaId: { $in: schemaIds }
+                            }).sort({ order: 1 }).lean();
+
+                            // Group by schemaId
+                            lines.forEach(line => {
+                                const sid = line.schemaId?.toString();
+                                if (!gridLines[sid]) gridLines[sid] = [];
+                                gridLines[sid].push(line);
+                            });
+                        }
+                    }
+                }
+            } catch (gridErr) {
+                console.error('[DataGrid] Error loading grid data:', gridErr);
+            }
+
             res.render("record/record-edit", {
                 entity,
                 record,
@@ -953,6 +1003,9 @@ module.exports = {
                 inverseRelations: inverseRelations || [],
                 relationTabsMeta: relationTabsMeta || [],
                 allFieldTemplates,
+                gridSchemas,
+                gridTemplates,
+                gridLines,
                 account_number: req.account_number,
                 layout: "layout-app"
             });

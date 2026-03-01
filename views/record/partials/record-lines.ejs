@@ -1903,10 +1903,32 @@ document.addEventListener('alpine:init', () => {
             this.openAddModal();
         },
 
-        // Add an empty line to a specific schema
+        // Add an empty line directly to a schema (for table mode)
         addLineToSchema(schemaId) {
             this.activeSchemaId = schemaId;
-            this.addLine();
+            const schema = this.schemas.find(s => s._id === schemaId);
+            if (!schema) { this.addLine(); return; }
+
+            const values = {};
+            for (const col of (schema.columns || []).filter(c => c.visible !== false)) {
+                if (col.type === 'date' && (schema.dataMode === 'timeseries' || schema.inputMode === 'form')) {
+                    values[col.key] = new Date().toISOString().split('T')[0];
+                } else {
+                    values[col.key] = '';
+                }
+            }
+
+            const newLine = {
+                _tempId: 'temp_' + Date.now(),
+                lineType: schema.defaultLineType || 'default',
+                values,
+                computed: {},
+                order: (this.linesMap[schemaId] || []).length
+            };
+
+            if (!this.linesMap[schemaId]) this.linesMap[schemaId] = [];
+            this.linesMap[schemaId].push(newLine);
+            this.debouncedSave();
         },
 
         async init() {
@@ -2392,6 +2414,7 @@ document.addEventListener('alpine:init', () => {
             this.recomputeTotals();
             this.debouncedSave();
         },
+
 
         // ── Formula evaluation ────────────────────────────
         recomputeLine(line) {

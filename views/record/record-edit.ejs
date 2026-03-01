@@ -1799,7 +1799,8 @@
             <% if (_showRightSidebar) { %>
             <!-- ═══ Sidebar Content (Column 1) ═══ -->
             <div class="record-layout-col relative"
-                :style="'grid-column: span ' + columns[1].width"
+                x-show="columns.length > 1"
+                :style="columns[1] ? 'grid-column: span ' + columns[1].width : ''"
                 id="panels-sidebar-zone">
 
                 <!-- Resize Handle on right edge (creates new column when resized) -->
@@ -1825,6 +1826,11 @@
                         style="display: none; min-height: 80px; border: 2px dashed #e2e8f0; border-radius: 8px; padding: 24px 12px; text-align: center; color: #94a3b8; font-size: 12px;">
                         <iconify-icon icon="solar:widget-add-bold-duotone" width="24" style="opacity: 0.5;"></iconify-icon>
                         <div style="margin-top: 4px;">Glissez un panel ici</div>
+                        <button @click.stop="removeSidebarColumn()" 
+                            class="mt-2 w-7 h-7 rounded-full bg-danger/10 hover:bg-danger/20 flex items-center justify-center transition-all mx-auto"
+                            title="Supprimer cette colonne">
+                            <iconify-icon icon="solar:trash-bin-trash-bold" width="14" class="text-danger"></iconify-icon>
+                        </button>
                     </div>
                 </template>
                 </div>
@@ -1841,7 +1847,7 @@
 
                     <!-- Resize Handle -->
                     <div class="record-layout-resize-handle"
-                        @mousedown.prevent="startResize(2 + idx, $event)">
+                        @mousedown.prevent="startResize(columns.length + idx, $event)">
                         <iconify-icon icon="solar:alt-arrow-left-bold" width="10"></iconify-icon>
                         <iconify-icon icon="solar:alt-arrow-right-bold" width="10" style="margin-left: -3px;"></iconify-icon>
                     </div>
@@ -2296,6 +2302,17 @@
                             allCols[allCols.length - 1].width += freedWidth;
                         }
                     }
+                    this._enforceTotal12();
+                    this.saveColumnLayout();
+                },
+
+                // Remove the sidebar column (column 1) — give its space to the main column
+                removeSidebarColumn() {
+                    if (this.columns.length < 2) return;
+                    const freedWidth = this.columns[1].width;
+                    this.columns.splice(1, 1);
+                    // Give all freed space to the main (left) column
+                    this.columns[0].width += freedWidth;
                     this._enforceTotal12();
                     this.saveColumnLayout();
                 },

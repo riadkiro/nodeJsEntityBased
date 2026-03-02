@@ -56,7 +56,7 @@
         <!-- Left: Schema settings + columns (2/3) -->
         <div class="lg:col-span-2 space-y-6">
             <!-- Info panel -->
-            <div class="panel">
+            <div class="panel" style="overflow: visible;">
                 <h5 class="mb-4 text-lg font-semibold dark:text-white-light">Informations</h5>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
@@ -98,11 +98,11 @@
                         <!-- Selected entities as tags -->
                         <div class="flex flex-wrap gap-1.5 mb-2" x-show="(schema.appliesTo.entityIds || []).length > 0">
                             <template x-for="entId in schema.appliesTo.entityIds" :key="entId">
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 border border-primary/20 text-primary transition-all">
-                                    <iconify-icon :icon="getEntityIcon(entId)" width="12"></iconify-icon>
+                                <span class="inline-flex items-center gap-1 px-2 py-0 rounded-md text-xs font-medium bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 transition-all hover:border-primary/40">
+                                    <iconify-icon :icon="getEntityIcon(entId)" width="11" class="text-primary/70"></iconify-icon>
                                     <span x-text="getEntityName(entId)"></span>
-                                    <button type="button" @click="toggleEntityId(entId)" class="ml-0.5 hover:text-danger transition-colors">
-                                        <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
+                                    <button type="button" @click="toggleEntityId(entId)" class="ml-0.5 text-gray-400 hover:text-danger transition-colors">
+                                        <iconify-icon icon="solar:close-circle-bold" width="12"></iconify-icon>
                                     </button>
                                 </span>
                             </template>
@@ -134,7 +134,7 @@
                                  x-transition:leave="transition ease-in duration-100"
                                  x-transition:leave-start="opacity-100 translate-y-0"
                                  x-transition:leave-end="opacity-0 translate-y-1"
-                                 class="absolute z-20 mt-1 w-full bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                 class="absolute z-50 mt-1 w-full bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                                 <template x-for="ent in filteredEntities" :key="ent._id">
                                     <button type="button"
                                             @click="toggleEntityId(ent._id); entitySearch = ''"
@@ -518,9 +518,15 @@ function lineSchemaBuilder() {
             appliesTo: {
                 ...existingSchema.appliesTo || {},
                 // Migrate old single entityId → entityIds array
-                entityIds: (existingSchema.appliesTo?.entityIds && existingSchema.appliesTo.entityIds.length > 0)
-                    ? existingSchema.appliesTo.entityIds.map(id => String(id))
-                    : (existingSchema.appliesTo?.entityId ? [String(existingSchema.appliesTo.entityId)] : []),
+                // Handle ObjectId formats: string "abc", {$oid: "abc"}, or Mongoose ObjectId
+                entityIds: (() => {
+                    const normalize = (id) => (typeof id === 'object' && id !== null && id.$oid) ? id.$oid : String(id);
+                    if (existingSchema.appliesTo?.entityIds && existingSchema.appliesTo.entityIds.length > 0)
+                        return existingSchema.appliesTo.entityIds.map(normalize);
+                    if (existingSchema.appliesTo?.entityId)
+                        return [normalize(existingSchema.appliesTo.entityId)];
+                    return [];
+                })(),
                 documentType: existingSchema.appliesTo?.documentType || ''
             },
             sourceEntityId: existingSchema.sourceEntityId ? String(existingSchema.sourceEntityId) : '',
@@ -567,12 +573,14 @@ function lineSchemaBuilder() {
         },
 
         getEntityName(id) {
-            const ent = this.allEntities.find(e => e._id === id);
-            return ent ? ent.name : id;
+            const sid = String(id);
+            const ent = this.allEntities.find(e => String(e._id) === sid);
+            return ent ? ent.name : sid;
         },
 
         getEntityIcon(id) {
-            const ent = this.allEntities.find(e => e._id === id);
+            const sid = String(id);
+            const ent = this.allEntities.find(e => String(e._id) === sid);
             return ent && ent.icon ? ent.icon : 'solar:box-bold-duotone';
         },
 

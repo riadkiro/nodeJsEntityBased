@@ -122,7 +122,8 @@
     relations: (entity.relations || []).map(r => ({
       ...JSON.parse(JSON.stringify(r)),
       targetEntity: r.targetEntity ? (r.targetEntity._id || r.targetEntity).toString() : ''
-    }))
+    })),
+    headerConfig: entity.headerConfig || {}
   } : null,
   templateData: locals.templateData || null,
   allClassifications: (locals.allClassifications || []).map(c => ({ _id: c._id.toString(), name: c.name, _showOnQuickForm: c.showOnQuickForm || false })),
@@ -169,6 +170,7 @@ document.addEventListener('alpine:init', () => {
         classifications: hasTpl,
         relations: false,
         reference: false,
+        headerBuilder: false,
         advanced: false
       },
 
@@ -187,7 +189,8 @@ document.addEventListener('alpine:init', () => {
         referenceTitleTokens: isEdit ? entity.referenceTitleTokens : hasTpl ? (tplData.referenceTitleTokens || [{ t: 'field', id: 'title' }]) : [{ t: 'field', id: 'title' }],
         standardFields: buildStdFields(),
         statusClassificationId: isEdit ? entity.statusClassification : '',
-        classifications: isEdit ? entity.classifications : []
+        classifications: isEdit ? entity.classifications : [],
+        headerConfig: isEdit ? (entity.headerConfig || {}) : {}
       },
 
       // Fields
@@ -604,7 +607,8 @@ document.addEventListener('alpine:init', () => {
           referenceTitleTokens: this.form.referenceTitleTokens,
           statusClassification: this.form.statusClassificationId || null,
           classifications: this.form.classifications,
-          relations: this.relations.filter(r => r.targetEntity).map(({ _targetFields, ...r }) => r)
+          relations: this.relations.filter(r => r.targetEntity).map(({ _targetFields, ...r }) => r),
+          headerConfig: this.form.headerConfig || {}
         };
 
         try {
@@ -1153,6 +1157,7 @@ document.addEventListener('alpine:init', () => {
           <label class="text-xs text-gray-500 block">Format du titre de référence</label>
         </div>
       </div>
+
     </div>
 
     <!-- RIGHT COLUMN: Sidebar -->

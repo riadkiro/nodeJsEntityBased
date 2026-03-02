@@ -1008,6 +1008,25 @@ module.exports = {
                 console.warn('[ComputedFields] Calculation error:', computeErr.message);
             }
 
+            // ═══ Header Config: Resolve related record for hero bar ═══
+            let headerRelatedRecord = null;
+            try {
+                const hc = entity.headerConfig || {};
+                const sr = hc.subtitleRelation;
+                if (sr && sr.relationKey) {
+                    // Find the related record value
+                    const relVal = recordValues[sr.relationKey];
+                    const relId = Array.isArray(relVal) ? relVal[0] : relVal;
+                    if (relId && mongoose.Types.ObjectId.isValid(relId)) {
+                        headerRelatedRecord = await RecordModel.findById(relId)
+                            .populate({ path: 'customFields.field_id', select: 'label name type inputType ui' })
+                            .lean();
+                    }
+                }
+            } catch (headerErr) {
+                console.warn('[HeaderConfig] Error resolving related record:', headerErr.message);
+            }
+
             res.render("record/record-edit", {
                 entity,
                 record,
@@ -1027,6 +1046,7 @@ module.exports = {
                 gridTemplates,
                 gridLines,
                 computedFieldValues,
+                headerRelatedRecord,
                 account_number: req.account_number,
                 layout: "layout-app"
             });

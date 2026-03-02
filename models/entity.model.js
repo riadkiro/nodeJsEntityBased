@@ -116,6 +116,31 @@ const EntitySchema = new mongoose.Schema(
       }, { _id: false }),
       default: new Map()
     },
+    // 🎯 Record Header Configuration (hero identity bar)
+    headerConfig: {
+      type: new mongoose.Schema({
+        // Which fields to show as meta badges in the header
+        metaFields: [{
+          fieldId: String,          // fieldTemplate _id or standard field name
+          type: { type: String, enum: ['field', 'relation', 'computed'], default: 'field' },
+          display: { type: String, enum: ['badge', 'text', 'icon'], default: 'text' }
+        }],
+        // Which relation to use for the header subtitle (show related record info)
+        subtitleRelation: {
+          relationKey: String,      // relation key to pull data from
+          displayFields: [String]   // which fields of the related record to show
+        },
+        // Avatar source
+        avatarSource: {
+          type: { type: String, enum: ['record-image', 'relation-image', 'entity-icon', 'field'], default: 'entity-icon' },
+          relationKey: String,      // if type === 'relation-image'
+          fieldId: String           // if type === 'field'
+        },
+        // Show duration timer
+        showDuration: { type: Boolean, default: false }
+      }, { _id: false }),
+      default: {}
+    },
     // 📎 Attachements
     enableAttachments: {
       type: Boolean,

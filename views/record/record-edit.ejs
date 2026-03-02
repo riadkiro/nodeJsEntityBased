@@ -3,63 +3,124 @@
     <form action="/account/<%= account_number %>/record/<%= entity.slug %>/update/<%= record._id %>" method="POST"
         enctype="multipart/form-data" id="main-record-form">
 
-        <!-- ═══════════════ HORIZONTAL TOOLBAR (Mission 1) ═══════════════ -->
-        <div class="flex items-center justify-between px-5 py-2.5 bg-white dark:bg-[#1b2e4b] rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm mb-4"
-            x-data="{ showDeleteConfirm: false }">
-            <!-- Left: Back + Entity/Title breadcrumb -->
-            <div class="flex items-center gap-3 min-w-0">
-                <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
-                    class="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-all"
-                    title="Retour à la liste">
-                    <iconify-icon icon="solar:arrow-left-linear" width="18"></iconify-icon>
-                </a>
-                <div class="h-5 w-px bg-gray-200 dark:bg-gray-700"></div>
-                <div class="flex items-center gap-2 min-w-0">
-                    <span class="text-sm text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap"><%= entity.name %></span>
-                    <iconify-icon icon="solar:alt-arrow-right-linear" width="14" class="text-gray-300 dark:text-gray-600 flex-none"></iconify-icon>
-                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 truncate max-w-[300px]"><%= record.title || 'Sans titre' %></span>
+        <!-- ═══════════════ BREADCRUMB BAR ═══════════════ -->
+        <div class="flex items-center gap-3 px-5 py-2 mb-0">
+            <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
+                class="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-all"
+                title="Retour à la liste">
+                <iconify-icon icon="solar:arrow-left-linear" width="16"></iconify-icon>
+            </a>
+            <div class="flex items-center gap-1.5 min-w-0 text-sm text-gray-400 dark:text-gray-500">
+                <span class="font-medium whitespace-nowrap"><%= entity.nameSingular || entity.name %></span>
+                <iconify-icon icon="solar:alt-arrow-right-linear" width="12" class="text-gray-300 dark:text-gray-600 flex-none"></iconify-icon>
+                <span class="font-semibold text-gray-700 dark:text-gray-200 truncate max-w-[400px]"><%= record.title || 'Sans titre' %></span>
+            </div>
+        </div>
+
+        <!-- ═══════════════ HERO IDENTITY BAR (Mission 1) ═══════════════ -->
+        <%
+            // ── Resolve classifications for header display ──
+            const _statusCls = entity.statusClassification;
+            let _statusLabel = '', _statusColor = '#94a3b8';
+            const _clsTags = [];
+
+            if (record.classificationValues && record.classificationValues.length > 0) {
+                record.classificationValues.forEach(cv => {
+                    // Check status classification
+                    if (_statusCls && _statusCls._id && cv.classificationId &&
+                        cv.classificationId.toString() === _statusCls._id.toString()) {
+                        const opt = _statusCls.options.find(o => o._id?.toString() === cv.optionId?.toString());
+                        if (opt) { _statusLabel = opt.label; _statusColor = opt.color || '#94a3b8'; }
+                    }
+                    // Check other classifications
+                    (entity.classifications || []).forEach(cls => {
+                        if (cls._id && cv.classificationId &&
+                            cv.classificationId.toString() === cls._id.toString() &&
+                            (!_statusCls || !_statusCls._id || cls._id.toString() !== _statusCls._id.toString())) {
+                            const opt = cls.options.find(o => o._id?.toString() === cv.optionId?.toString());
+                            if (opt) _clsTags.push({ label: opt.label, color: opt.color || '#4361ee' });
+                        }
+                    });
+                });
+            }
+
+            // ── Duration since creation ──
+            const _createdAt = record.createdAt ? new Date(record.createdAt) : null;
+            const _now = new Date();
+            let _durationStr = '';
+            if (_createdAt) {
+                const diffMs = _now - _createdAt;
+                const diffMin = Math.floor(diffMs / 60000);
+                if (diffMin < 60) _durationStr = diffMin + ' min';
+                else if (diffMin < 1440) _durationStr = Math.floor(diffMin / 60) + 'h ' + (diffMin % 60) + 'min';
+                else _durationStr = Math.floor(diffMin / 1440) + 'j';
+            }
+
+            // ── Record avatar ──
+            const _recordImage = record.image || '';
+        %>
+        <div class="flex items-center justify-between px-5 py-3 bg-white dark:bg-[#1b2e4b] rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm mb-4"
+            x-data="{ showMoreMenu: false, showDeleteConfirm: false }">
+            <!-- Left: Avatar + Identity -->
+            <div class="flex items-center gap-3.5 min-w-0">
+                <!-- Avatar -->
+                <% if (_recordImage) { %>
+                <img src="<%= _recordImage %>" alt="" class="w-11 h-11 rounded-full object-cover ring-2 ring-white dark:ring-gray-800 shadow-sm">
+                <% } else { %>
+                <div class="w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold shadow-sm"
+                     style="background: <%= entity.color || '#4361ee' %>15; color: <%= entity.color || '#4361ee' %>">
+                    <iconify-icon icon="<%= entity.icon || 'solar:user-bold-duotone' %>" width="22"></iconify-icon>
+                </div>
+                <% } %>
+
+                <!-- Name + Meta line -->
+                <div class="min-w-0">
+                    <h1 class="text-base font-bold text-gray-800 dark:text-white truncate max-w-[350px] leading-tight">
+                        <%= record.title || 'Sans titre' %>
+                    </h1>
+                    <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <% if (_statusLabel) { %>
+                        <span class="inline-flex items-center gap-1 text-xs font-semibold" style="color: <%= _statusColor %>">
+                            <span class="w-2 h-2 rounded-full" style="background: <%= _statusColor %>"></span>
+                            <%= _statusLabel %>
+                        </span>
+                        <% } %>
+                        <% _clsTags.forEach(tag => { %>
+                        <span class="inline-flex items-center gap-1 text-xs font-semibold" style="color: <%= tag.color %>">
+                            <span class="w-1.5 h-1.5 rounded-full" style="background: <%= tag.color %>"></span>
+                            <%= tag.label %>
+                        </span>
+                        <% }); %>
+                        <% if (_durationStr) { %>
+                        <span class="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                            <iconify-icon icon="solar:clock-circle-linear" width="12"></iconify-icon>
+                            <%= _durationStr %>
+                        </span>
+                        <% } %>
+                    </div>
                 </div>
             </div>
 
-            <!-- Center: Last modified -->
-            <div class="hidden md:flex items-center gap-1.5 text-[10px] text-gray-400 dark:text-gray-500">
-                <iconify-icon icon="solar:clock-circle-linear" width="12"></iconify-icon>
-                <span>Modifié le <strong class="text-gray-500 dark:text-gray-400"><%= record.updatedAt ? new Date(record.updatedAt).toLocaleDateString('fr-FR') : '-' %></strong></span>
-            </div>
-
-            <!-- Right: Actions cluster -->
+            <!-- Right: Quick action buttons + More menu -->
             <div class="flex items-center gap-2">
-                <!-- Public toggle -->
-                <label class="flex items-center gap-1.5 cursor-pointer px-2.5 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all" title="Publier">
-                    <input type="hidden" name="standard[published]" value="">
-                    <input type="checkbox" name="standard[published]"
-                        class="form-checkbox rounded text-success border-gray-300 dark:border-gray-600 focus:ring-0 !w-3.5 !h-3.5"
-                        <%= record.published ? 'checked' : '' %>>
-                    <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Public</span>
-                </label>
+                <!-- Hidden standard fields for form submission -->
+                <input type="hidden" name="standard[published]" value="<%= record.published ? 'on' : '' %>">
 
-                <div class="h-5 w-px bg-gray-200 dark:bg-gray-700"></div>
+                <!-- Quick Action Buttons (from document templates if available) -->
+                <% if (locals.documentTemplates && documentTemplates.length > 0) { %>
+                    <% documentTemplates.slice(0, 3).forEach(tpl => { %>
+                    <a href="/account/<%= account_number %>/document/generate/<%= tpl._id %>?recordId=<%= record._id %>"
+                       class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:border-gray-300 transition-all"
+                       title="<%= tpl.name %>">
+                        <iconify-icon icon="<%= tpl.icon || 'solar:document-bold-duotone' %>" width="14" style="color: <%= tpl.color || '#4361ee' %>"></iconify-icon>
+                        <span><%= tpl.name %></span>
+                    </a>
+                    <% }); %>
+                <% } %>
 
-                <!-- Layout mode -->
-                <button type="button" @click="designMode = !designMode"
-                    :class="designMode ? 'text-primary bg-primary/10' : 'text-gray-400 hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-700/50'"
-                    class="flex items-center justify-center w-8 h-8 rounded-lg transition-all" title="Mode Layout">
-                    <iconify-icon icon="tabler:layout-dashboard" width="16"></iconify-icon>
-                </button>
-
-                <div class="h-5 w-px bg-gray-200 dark:bg-gray-700"></div>
-
-                <!-- Cancel -->
-                <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
-                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
-                    title="Annuler">
-                    <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
-                    <span class="hidden sm:inline">Annuler</span>
-                </a>
-
-                <!-- Save -->
+                <!-- Save Button (always visible) -->
                 <button type="submit" form="main-record-form"
-                    class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-primary text-white text-[11px] font-bold hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 transition-all"
+                    class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 transition-all"
                     x-data="{ submitting: false }" @submit.window="submitting = true"
                     :disabled="submitting"
                     :class="submitting ? 'opacity-60 cursor-wait' : ''">
@@ -67,27 +128,60 @@
                     <span x-text="submitting ? 'Envoi...' : 'Enregistrer'">Enregistrer</span>
                 </button>
 
-                <!-- Delete -->
+                <!-- 3-dot More Menu -->
                 <div class="relative">
-                    <button type="button" @click="showDeleteConfirm = !showDeleteConfirm"
-                        class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-danger hover:bg-danger/5 transition-all"
-                        title="Supprimer">
-                        <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="15"></iconify-icon>
+                    <button type="button" @click="showMoreMenu = !showMoreMenu"
+                        class="flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all">
+                        <iconify-icon icon="solar:menu-dots-bold" width="18"></iconify-icon>
                     </button>
-                    <!-- Delete confirm dropdown -->
-                    <div x-show="showDeleteConfirm" x-transition @click.outside="showDeleteConfirm = false"
-                        class="absolute right-0 top-full mt-2 bg-white dark:bg-[#1b2e4b] rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 p-4 w-[220px] z-50">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-3">Supprimer définitivement cet enregistrement ?</p>
-                        <div class="flex items-center gap-2">
-                            <button type="button" @click="showDeleteConfirm = false"
-                                class="flex-1 px-3 py-1.5 text-[10px] font-semibold text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 transition-all">
-                                Non
-                            </button>
-                            <a href="/account/<%= account_number %>/record/<%= entity.slug %>/delete/<%= record._id %>"
-                                class="flex-1 px-3 py-1.5 text-[10px] font-bold text-white bg-danger rounded-lg hover:bg-danger/90 text-center transition-all">
-                                Supprimer
-                            </a>
+                    <!-- More menu dropdown -->
+                    <div x-show="showMoreMenu" x-transition @click.outside="showMoreMenu = false"
+                        class="absolute right-0 top-full mt-2 bg-white dark:bg-[#1b2e4b] rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-1.5 w-[200px] z-50">
+                        <!-- Save -->
+                        <button type="submit" form="main-record-form"
+                            class="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                            x-data="{ submitting: false }" @submit.window="submitting = true">
+                            <iconify-icon icon="solar:diskette-bold" width="15" class="text-primary"></iconify-icon>
+                            <span x-text="submitting ? 'Envoi...' : 'Enregistrer'">Enregistrer</span>
+                        </button>
+                        <!-- Layout mode -->
+                        <button type="button" @click="designMode = !designMode; showMoreMenu = false"
+                            class="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <iconify-icon icon="tabler:layout-dashboard" width="15" class="text-gray-400"></iconify-icon>
+                            <span>Mode mise en page</span>
+                        </button>
+                        <div class="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
+                        <!-- Delete -->
+                        <button type="button" @click="showDeleteConfirm = true; showMoreMenu = false"
+                            class="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
+                            <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="15"></iconify-icon>
+                            <span>Supprimer</span>
+                        </button>
+                </div>
+            </div>
+
+            <!-- Delete confirmation overlay -->
+            <div x-show="showDeleteConfirm" x-transition
+                 class="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100] flex items-center justify-center" @click.self="showDeleteConfirm = false">
+                <div class="bg-white dark:bg-[#1b2e4b] rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 p-6 w-[320px]">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
+                            <iconify-icon icon="solar:trash-bin-minimalistic-bold" width="20" class="text-red-500"></iconify-icon>
                         </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-gray-800 dark:text-white">Supprimer cet enregistrement ?</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Cette action est irréversible.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="showDeleteConfirm = false"
+                            class="flex-1 px-4 py-2 text-xs font-semibold text-gray-500 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 transition-all">
+                            Annuler
+                        </button>
+                        <a href="/account/<%= account_number %>/record/<%= entity.slug %>/delete/<%= record._id %>"
+                            class="flex-1 px-4 py-2 text-xs font-bold text-white bg-red-500 rounded-lg hover:bg-red-600 text-center transition-all">
+                            Supprimer
+                        </a>
                     </div>
                 </div>
             </div>

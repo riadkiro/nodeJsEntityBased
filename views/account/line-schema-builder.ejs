@@ -93,18 +93,66 @@
                     </div>
                     <div>
                         <label class="mb-2 block text-sm font-semibold text-white-dark">Afficher sur</label>
-                        <p class="text-xs text-white-dark mb-2">Entités où ce schéma sera disponible. Si aucune sélectionnée, il sera disponible partout.</p>
-                        <div class="flex flex-wrap gap-2">
-                            <% (entities || []).forEach(function(ent) { %>
-                                <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all cursor-pointer text-sm"
-                                    :class="(schema.appliesTo.entityIds || []).includes('<%= ent._id %>') ? 'border-primary bg-primary/10 text-primary font-semibold' : 'border-gray-200 dark:border-gray-700 hover:border-primary/50'"
-                                >
-                                    <input type="checkbox" class="form-checkbox !rounded" value="<%= ent._id %>"
-                                        :checked="(schema.appliesTo.entityIds || []).includes('<%= ent._id %>')"
-                                        @change="toggleEntityId('<%= ent._id %>')" />
-                                    <span><%= ent.name %></span>
-                                </label>
-                            <% }) %>
+                        <p class="text-xs text-white-dark mb-2">Entités où ce tableau sera disponible. Si aucune sélectionnée, il sera disponible partout.</p>
+
+                        <!-- Selected entities as tags -->
+                        <div class="flex flex-wrap gap-1.5 mb-2" x-show="(schema.appliesTo.entityIds || []).length > 0">
+                            <template x-for="entId in schema.appliesTo.entityIds" :key="entId">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 border border-primary/20 text-primary transition-all">
+                                    <iconify-icon :icon="getEntityIcon(entId)" width="12"></iconify-icon>
+                                    <span x-text="getEntityName(entId)"></span>
+                                    <button type="button" @click="toggleEntityId(entId)" class="ml-0.5 hover:text-danger transition-colors">
+                                        <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
+                                    </button>
+                                </span>
+                            </template>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mb-2" x-show="(schema.appliesTo.entityIds || []).length === 0">
+                            <iconify-icon icon="solar:global-bold-duotone" width="12" class="mr-0.5"></iconify-icon>
+                            Disponible sur toutes les entités
+                        </p>
+
+                        <!-- Searchable dropdown -->
+                        <div class="relative" x-data="{ open: false }">
+                            <div class="flex items-center gap-2">
+                                <div class="relative flex-1">
+                                    <iconify-icon icon="solar:magnifer-linear" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="14"></iconify-icon>
+                                    <input type="text" x-model="entitySearch"
+                                           @focus="open = true"
+                                           @click="open = true"
+                                           class="form-input text-sm pl-8 pr-3 py-2"
+                                           placeholder="Rechercher une entité..." />
+                                </div>
+                            </div>
+
+                            <!-- Dropdown list -->
+                            <div x-show="open" x-cloak
+                                 @click.outside="open = false"
+                                 x-transition:enter="transition ease-out duration-150"
+                                 x-transition:enter-start="opacity-0 translate-y-1"
+                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                 x-transition:leave="transition ease-in duration-100"
+                                 x-transition:leave-start="opacity-100 translate-y-0"
+                                 x-transition:leave-end="opacity-0 translate-y-1"
+                                 class="absolute z-20 mt-1 w-full bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                <template x-for="ent in filteredEntities" :key="ent._id">
+                                    <button type="button"
+                                            @click="toggleEntityId(ent._id); entitySearch = ''"
+                                            class="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors"
+                                            :class="(schema.appliesTo.entityIds || []).includes(ent._id)
+                                                ? 'bg-primary/5 text-primary font-semibold'
+                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'">
+                                        <iconify-icon :icon="ent.icon || 'solar:box-bold-duotone'" width="14"
+                                                      :style="ent.color ? 'color:' + ent.color : ''"></iconify-icon>
+                                        <span x-text="ent.name"></span>
+                                        <iconify-icon x-show="(schema.appliesTo.entityIds || []).includes(ent._id)"
+                                                      icon="solar:check-circle-bold" width="14" class="ml-auto text-primary"></iconify-icon>
+                                    </button>
+                                </template>
+                                <div x-show="filteredEntities.length === 0" class="px-3 py-3 text-xs text-gray-400 text-center">
+                                    Aucune entité trouvée
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -456,11 +504,13 @@
 </div>
 
 <!-- SortableJS loaded via layout with touch support -->
+<script id="all-entities-data" type="application/json"><%- JSON.stringify((entities || []).map(e => ({ _id: e._id.toString(), name: e.name, icon: e.icon || '', color: e.color || '' }))) %></script>
 
 <script>
 function lineSchemaBuilder() {
     const existingSchema = <%- schema ? JSON.stringify(schema) : 'null' %>;
     const accountNumber = '<%= account_number %>';
+    const allEntitiesData = JSON.parse(document.getElementById('all-entities-data').textContent);
 
     return {
         schema: existingSchema ? {
@@ -501,11 +551,29 @@ function lineSchemaBuilder() {
         newLineType: '',
         newDefaultKey: '',
         newDefaultVal: '',
+        entitySearch: '',
+        allEntities: allEntitiesData,
 
         widthMap: { XS: 60, S: 90, M: 140, L: 200, XL: 280 },
 
         get visibleColumns() {
             return this.schema.columns.filter(c => c.visible !== false);
+        },
+
+        get filteredEntities() {
+            const q = (this.entitySearch || '').toLowerCase().trim();
+            if (!q) return this.allEntities;
+            return this.allEntities.filter(e => e.name.toLowerCase().includes(q));
+        },
+
+        getEntityName(id) {
+            const ent = this.allEntities.find(e => e._id === id);
+            return ent ? ent.name : id;
+        },
+
+        getEntityIcon(id) {
+            const ent = this.allEntities.find(e => e._id === id);
+            return ent && ent.icon ? ent.icon : 'solar:box-bold-duotone';
         },
 
         init() {

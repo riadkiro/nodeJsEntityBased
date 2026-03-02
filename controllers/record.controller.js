@@ -823,7 +823,11 @@ module.exports = {
                             options: typeConfig.options || cf.options || [],
                             multiple: typeConfig.multiple || false,
                             type_config: typeConfig,
-                            ui: cf.ui || {}
+                            ui: cf.ui || {},
+                            category: cf.category || 'text',
+                            formula: cf.formula || null,
+                            color: cf.color || cf.ui?.couleur || '',
+                            render: cf.render || {}
                         };
                     });
 
@@ -988,6 +992,22 @@ module.exports = {
                 console.error('[DataGrid] Error loading grid data:', gridErr);
             }
 
+            // ═══ Computed Fields: Calculate dynamic values ═══
+            let computedFieldValues = {};
+            try {
+                const { computeAllFields } = require('../services/computed-field-engine');
+                const computedFields = (entity.customFields || []).filter(f => f.category === 'computed' && f.formula);
+                if (computedFields.length > 0) {
+                    const recordForCompute = {
+                        ...record.toObject ? record.toObject() : record,
+                        custom: recordValues
+                    };
+                    computedFieldValues = computeAllFields(computedFields, recordForCompute, entity.customFields);
+                }
+            } catch (computeErr) {
+                console.warn('[ComputedFields] Calculation error:', computeErr.message);
+            }
+
             res.render("record/record-edit", {
                 entity,
                 record,
@@ -1006,6 +1026,7 @@ module.exports = {
                 gridSchemas,
                 gridTemplates,
                 gridLines,
+                computedFieldValues,
                 account_number: req.account_number,
                 layout: "layout-app"
             });

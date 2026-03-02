@@ -1064,6 +1064,22 @@
                                                                     .replace(/\{\{\s*placeholder\s*\}\}/g, field.placeholder || cf.label || cf.name)
                                                                     .replace(/\{\{\s*required\s*\}\}/g, field.required ? 'required' : '') %>
                                                             </div>
+                                                        <% } else if (cf && cf.category === 'computed') { %>
+                                                            <%
+                                                              var cvKey = cf._id || field.fieldId;
+                                                              var cvData = (typeof computedFieldValues !== 'undefined' && computedFieldValues) ? computedFieldValues[cvKey] : null;
+                                                              var cvDisplay = (cf.render && cf.render.display && cf.render.display.table) || (cf.formula && cf.formula.fromFunction === 'rating' ? 'stars' : cf.formula && cf.formula.fromFunction === 'age' ? 'badge' : cf.formula && (cf.formula.fromFunction === 'tva' || cf.formula.fromFunction === 'total_ttc') ? 'currency' : cf.formula && cf.formula.fromFunction === 'duration' ? 'duration' : 'text');
+                                                            %>
+                                                            <div class="mb-3">
+                                                                <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                                                    <iconify-icon icon="<%= (cf.ui && cf.ui.icon) || 'solar:calculator-bold-duotone' %>" width="14" style="color: <%= cf.color || '#f59e0b' %>;"></iconify-icon>
+                                                                    <%= field.label || cf.label || cf.name %>
+                                                                    <span class="text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 dark:text-gray-500 px-1.5 py-0.5 rounded-full ml-1">calculé</span>
+                                                                </label>
+                                                                <div class="mt-1 px-3 py-2 bg-gray-50 dark:bg-[#121e32] rounded-lg border border-gray-100 dark:border-gray-800">
+                                                                    <%- include('../components/computed-field-renderer', { computedValue: cvData, displayType: cvDisplay, field: cf }) %>
+                                                                </div>
+                                                            </div>
                                                         <% } else if (cf) { %>
                                                             <div class="mb-3">
                                                                 <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -2591,6 +2607,9 @@
             };
         });
 
+        // Inject computedFieldValues for legacy layout rendering
+        window.__computedFieldValues__ = JSON.parse('<%- JSON.stringify(typeof computedFieldValues !== "undefined" ? computedFieldValues : {}).replace(/</g, "\\u003C") %>');
+
         Alpine.data("recordForm", () => {
             const initialLayout = JSON.parse('<%- JSON.stringify(locals.formLayout || []) %>');
             const allTemplates = JSON.parse(document.getElementById("all-templates").textContent);
@@ -2766,7 +2785,41 @@
                     let template = field.htmlTemplate || '';
                     
                     // Auto-generate input HTML when no htmlTemplate exists
-                    if (!template && field.type !== 'relation' && field.type !== 'recurrence') {
+                    if (!template && field.category === 'computed') {
+                        // Computed field: read-only display
+                        const cfv = window.__computedFieldValues__ || {};
+                        const cv = cfv[field._id] || null;
+                        const icon = field.ui?.icon || 'solar:calculator-bold-duotone';
+                        const color = field.ui?.couleur || field.color || '#f59e0b';
+                        const fFunc = field.formula?.fromFunction || '';
+                        const labelHtml = `<label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            <iconify-icon icon="${icon}" width="14" style="color:${color}"></iconify-icon>
+                            ${field.label || field.name}
+                            <span class="text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 dark:text-gray-500 px-1.5 py-0.5 rounded-full ml-1">calculé</span>
+                        </label>`;
+                        
+                        let valueHtml = '<span class="text-gray-300 dark:text-gray-600 text-xs italic">—</span>';
+                        if (cv) {
+                            if (fFunc === 'rating') {
+                                const starVal = Number(cv.value) || 0;
+                                const starMax = Number(cv.max) || 5;
+                                let stars = '';
+                                for (let i = 0; i < Math.floor(starVal); i++) stars += '<iconify-icon icon="solar:star-bold" width="16" style="color:#f59e0b"></iconify-icon>';
+                                if ((starVal - Math.floor(starVal)) >= 0.5) stars += '<iconify-icon icon="solar:star-bold-duotone" width="16" style="color:#f59e0b"></iconify-icon>';
+                                for (let i = 0; i < starMax - Math.ceil(starVal); i++) stars += '<iconify-icon icon="solar:star-line-duotone" width="16" style="color:#e2e8f0"></iconify-icon>';
+                                valueHtml = `<div class="flex items-center gap-1">${stars} <span class="text-xs text-gray-400 ml-1">${cv.formatted || ''}</span></div>`;
+                            } else if (fFunc === 'age') {
+                                valueHtml = `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;background:linear-gradient(135deg,${color}15,${color}08);color:${color};">${cv.formatted || cv.value}</span>`;
+                            } else if (fFunc === 'tva' || fFunc === 'total_ttc') {
+                                valueHtml = `<span style="font-weight:600;font-size:14px;color:#334155;">${cv.formatted || cv.value}</span>`;
+                            } else if (fFunc === 'duration') {
+                                valueHtml = `<span style="display:inline-flex;align-items:center;gap:4px;font-size:13px;color:#64748b;"><iconify-icon icon="solar:clock-circle-bold-duotone" width="14" style="color:${color}"></iconify-icon>${cv.formatted || cv.value}</span>`;
+                            } else {
+                                valueHtml = `<span class="text-sm text-gray-700 dark:text-gray-300">${cv.formatted || cv.value || ''}</span>`;
+                            }
+                        }
+                        template = `${labelHtml}<div class="mt-1 px-3 py-2 bg-gray-50 dark:bg-[#121e32] rounded-lg border border-gray-100 dark:border-gray-800">${valueHtml}</div>`;
+                    } else if (!template && field.type !== 'relation' && field.type !== 'recurrence') {
                         const type = field.type || 'string';
                         const subtype = field.subtype || '';
                         const placeholder = field.ui?.placeholder || field.label || '';

@@ -98,10 +98,11 @@ const FieldTemplateSchema = new mongoose.Schema({
   },
 
   // 🎨 Render configuration
+  color: { type: String }, // accent color for computed/displayed fields
   render: {
     input: { type: String }, // 'text', 'number', 'date', 'select', 'relation', etc.
     display: {
-      table: { type: String }, // 'text', 'badge', 'avatar', 'link', 'currency'
+      table: { type: String }, // 'text', 'badge', 'avatar', 'link', 'currency', 'stars', 'progress'
       card: { type: String }
     }
   }

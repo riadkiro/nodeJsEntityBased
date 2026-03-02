@@ -169,6 +169,27 @@ async function install(conn, userId, presetSlug) {
         { name: 'categorie_stock', label: 'Catégorie', type: 'select', type_config: { options: [{ label: 'Médicament', value: 'medication' }, { label: 'Consommable', value: 'consumable' }, { label: 'Matériel', value: 'equipment' }] }, ui: { icon: 'solar:tag-bold-duotone', width: 'half' } },
         { name: 'fournisseur', label: 'Fournisseur', type: 'string', ui: { icon: 'solar:buildings-bold-duotone', width: 'half' } },
         { name: 'prix_achat', label: "Prix d'achat", type: 'number', ui: { icon: 'solar:tag-price-bold-duotone', width: 'half' } },
+        // ── Computed / Dynamic fields ──
+        {
+            name: 'age_patient', label: 'Âge', type: 'number', category: 'computed', ui: { icon: 'solar:calendar-bold-duotone', width: 'half' }, color: '#3b82f6',
+            formula: { fromFunction: 'age', sourceFields: { birthDate: '__date_naissance__' }, dependsOn: ['date_naissance'] },
+            render: { display: { table: 'badge', card: 'badge' } }
+        },
+        {
+            name: 'imc', label: 'IMC', type: 'number', category: 'computed', ui: { icon: 'solar:heart-pulse-bold-duotone', width: 'half' }, color: '#00ab55',
+            formula: { fromFunction: 'expression', expression: '%poids% / ((%taille_cm% / 100) * (%taille_cm% / 100))', sourceFields: {}, dependsOn: ['poids', 'taille_cm'] },
+            render: { display: { table: 'badge', card: 'badge' } }
+        },
+        {
+            name: 'reste_a_payer', label: 'Reste à payer', type: 'number', category: 'computed', ui: { icon: 'solar:wallet-bold-duotone', width: 'half' }, color: '#ef4444',
+            formula: { fromFunction: 'expression', expression: '%montant_total% - %montant_paye%', sourceFields: {}, dependsOn: ['montant_total', 'montant_paye'] },
+            render: { display: { table: 'currency', card: 'currency' } }
+        },
+        {
+            name: 'marge_stock', label: 'Marge', type: 'number', category: 'computed', ui: { icon: 'solar:chart-bold-duotone', width: 'half' }, color: '#22c55e',
+            formula: { fromFunction: 'expression', expression: '%prix_vente% - %prix_achat%', sourceFields: {}, dependsOn: ['prix_vente', 'prix_achat'] },
+            render: { display: { table: 'currency', card: 'currency' } }
+        },
     ];
 
     ids.fields = {};
@@ -179,6 +200,16 @@ async function install(conn, userId, presetSlug) {
         ids.fields[f.name] = doc._id;
     }
     console.log(`   ✅ ${Object.keys(ids.fields).length} field templates`);
+
+    // ── Resolve computed field formula references (replace placeholders with actual field IDs) ──
+    const computedFormulaUpdates = [
+        { fieldName: 'age_patient', update: { 'formula.sourceFields.birthDate': ids.fields.date_naissance.toString() } },
+    ];
+    for (const cfu of computedFormulaUpdates) {
+        if (ids.fields[cfu.fieldName]) {
+            await db.FieldTemplate.findByIdAndUpdate(ids.fields[cfu.fieldName], { $set: cfu.update });
+        }
+    }
 
     // =========== 2. CLASSIFICATIONS ===========
     console.log('\n🏷️  Creating classifications...');
@@ -257,7 +288,7 @@ async function install(conn, userId, presetSlug) {
     const f = ids.fields;
     const entityDefs = [
         {
-            name: 'Patient', nameSingular: 'Patient', namePlural: 'Patients', slug: 'patients', icon: 'solar:user-heart-bold-duotone', color: '#3b82f6', fields: ['nom', 'prenom', 'date_naissance', 'sexe', 'telephone', 'email', 'adresse', 'numero_secu', 'groupe_sanguin', 'allergies', 'antecedents', 'medecin_traitant', 'mutuelle'], statusClassification: null, classifications: ['patient_tags'],
+            name: 'Patient', nameSingular: 'Patient', namePlural: 'Patients', slug: 'patients', icon: 'solar:user-heart-bold-duotone', color: '#3b82f6', fields: ['nom', 'prenom', 'date_naissance', 'sexe', 'telephone', 'email', 'adresse', 'numero_secu', 'groupe_sanguin', 'allergies', 'antecedents', 'medecin_traitant', 'mutuelle', 'age_patient'], statusClassification: null, classifications: ['patient_tags'],
             referenceTitleTokens: [{ t: 'field', id: () => f.prenom }, { t: 'text', v: ' ' }, { t: 'field', id: () => f.nom }]
         },
         {
@@ -265,7 +296,7 @@ async function install(conn, userId, presetSlug) {
             referenceTitleTokens: null
         }, // set after relations
         {
-            name: 'Consultation', nameSingular: 'Consultation', namePlural: 'Consultations', slug: 'consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', fields: ['motif', 'symptomes', 'examen_clinique', 'diagnostic', 'plan_traitement', 'poids', 'taille_cm', 'tension', 'temperature', 'frequence_cardiaque', 'notes_generales'], statusClassification: null, classifications: ['consult_type'],
+            name: 'Consultation', nameSingular: 'Consultation', namePlural: 'Consultations', slug: 'consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', fields: ['motif', 'symptomes', 'examen_clinique', 'diagnostic', 'plan_traitement', 'poids', 'taille_cm', 'tension', 'temperature', 'frequence_cardiaque', 'notes_generales', 'imc'], statusClassification: null, classifications: ['consult_type'],
             referenceTitleTokens: null
         }, // set after relations
         {
@@ -277,7 +308,7 @@ async function install(conn, userId, presetSlug) {
             referenceTitleTokens: [{ t: 'field', id: 'title' }]
         },
         {
-            name: 'Facture', nameSingular: 'Facture', namePlural: 'Factures', slug: 'factures', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', fields: ['montant_total', 'montant_paye', 'date_echeance', 'notes_generales'], statusClassification: 'invoice_status', classifications: [],
+            name: 'Facture', nameSingular: 'Facture', namePlural: 'Factures', slug: 'factures', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', fields: ['montant_total', 'montant_paye', 'date_echeance', 'notes_generales', 'reste_a_payer'], statusClassification: 'invoice_status', classifications: [],
             referenceTitleTokens: null
         }, // set after relations
         {
@@ -305,7 +336,7 @@ async function install(conn, userId, presetSlug) {
             referenceTitleTokens: [{ t: 'field', id: () => f.prenom }, { t: 'text', v: ' ' }, { t: 'field', id: () => f.nom }]
         },
         {
-            name: 'Stock', nameSingular: 'Article Stock', namePlural: 'Stock', slug: 'stock', icon: 'solar:box-bold-duotone', color: '#94a3b8', fields: ['categorie_stock', 'fournisseur', 'prix_achat', 'prix_vente', 'stock_actuel', 'stock_min', 'notes_generales'], statusClassification: null, classifications: [],
+            name: 'Stock', nameSingular: 'Article Stock', namePlural: 'Stock', slug: 'stock', icon: 'solar:box-bold-duotone', color: '#94a3b8', fields: ['categorie_stock', 'fournisseur', 'prix_achat', 'prix_vente', 'stock_actuel', 'stock_min', 'notes_generales', 'marge_stock'], statusClassification: null, classifications: [],
             referenceTitleTokens: [{ t: 'field', id: 'title' }]
         },
     ];

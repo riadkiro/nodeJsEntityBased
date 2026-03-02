@@ -3,10 +3,20 @@
     || '' ; const nameAttr=`custom[${fieldId}]`; %>
 
     <div>
-        <label for="custom_<%= fieldId %>">
+        <label for="custom_<%= fieldId %>" style="display:inline-flex; align-items:center; gap:5px;">
+            <% if (field.icon) { %>
+            <iconify-icon icon="<%= field.icon %>" width="14" style="color: <%= field.color || '#64748b' %>; flex-shrink:0;"></iconify-icon>
+            <% } %>
             <%= fieldLabel %>
         </label>
-        <% if (fieldType==='string' || fieldType==='text' ) { %>
+        <% if (field.category === 'computed') { %>
+            <%
+              const cv = (typeof computedFieldValues !== 'undefined' && computedFieldValues)
+                ? computedFieldValues[fieldId.toString()] : null;
+              const displayType = field.render?.display?.table || field.render?.display?.card || (field.formula?.fromFunction === 'rating' ? 'stars' : field.formula?.fromFunction === 'age' ? 'badge' : field.formula?.fromFunction === 'tva' || field.formula?.fromFunction === 'total_ttc' ? 'currency' : field.formula?.fromFunction === 'duration' ? 'duration' : 'text');
+            %>
+            <%- include('computed-field-renderer', { computedValue: cv, displayType: displayType, field: field }) %>
+        <% } else if (fieldType==='string' || fieldType==='text' ) { %>
             <input name="<%= nameAttr %>" type="text" value="<%= value || '' %>" class="form-input"
                 placeholder="<%= placeholder %>" />
             <% } else if (fieldType==='number' ) { %>

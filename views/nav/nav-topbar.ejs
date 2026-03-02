@@ -123,15 +123,27 @@
       background: rgba(255,255,255,0.08);
       color: #cbd5e1;
     }
-    .topbar-breadcrumb .breadcrumb-entity {
-      font-size: 13px;
-      font-weight: 500;
-      color: #94a3b8;
-      white-space: nowrap;
-      transition: color 0.2s;
+    .topbar-breadcrumb .breadcrumb-entity-link {
+      text-decoration: none;
+      flex-shrink: 0;
     }
-    .topbar-breadcrumb .breadcrumb-entity:hover {
-      color: #4361ee;
+    .topbar-breadcrumb .breadcrumb-entity-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px 3px 7px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .topbar-breadcrumb .breadcrumb-entity-badge:hover {
+      filter: brightness(0.95);
+      transform: translateY(-0.5px);
+    }
+    .topbar-breadcrumb .breadcrumb-entity-badge iconify-icon {
+      flex-shrink: 0;
     }
     .topbar-breadcrumb .breadcrumb-sep {
       color: #cbd5e1;
@@ -165,7 +177,14 @@
           <path d="M15 19L8 12L15 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </a>
-      <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list" class="breadcrumb-entity"><%= entity.name %></a>
+      <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
+         class="breadcrumb-entity-link" title="<%= entity.name %>">
+        <span class="breadcrumb-entity-badge"
+              style="background: linear-gradient(135deg, <%= entity.color || '#4361ee' %>18, <%= entity.color || '#4361ee' %>08); color: <%= entity.color || '#4361ee' %>;">
+          <iconify-icon icon="<%= entity.icon || 'solar:widget-bold-duotone' %>" width="14"></iconify-icon>
+          <span><%= entity.name %></span>
+        </span>
+      </a>
       <span class="breadcrumb-sep">›</span>
       <span class="breadcrumb-title"><%= record.computedTitle || record.title || 'Sans titre' %></span>
     </div>

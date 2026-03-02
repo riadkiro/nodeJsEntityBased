@@ -188,12 +188,31 @@ router.get('/api/entity/:entityId/views/:viewId/records', async (req, res) => {
 
         }
 
+        // ═══ Compute computed field values for each record ═══
+        const computedFieldDefs = (entity.customFields || []).filter(f => f.category === 'computed' && f.formula)
+        if (computedFieldDefs.length > 0) {
+            const { computeAllFields } = require('../services/computed-field-engine')
+            records.forEach(record => {
+                // Build custom values map (fieldId → value)
+                const customMap = {}
+                    ; (record.customFields || []).forEach(cf => {
+                        const fid = cf.field_id?._id?.toString() || cf.field_id?.toString() || ''
+                        if (fid) customMap[fid] = cf.value
+                    })
+                const recordForCompute = { ...record, custom: customMap }
+                record._computedFields = computeAllFields(computedFieldDefs, recordForCompute, entity.customFields)
+            })
+        }
+
         // Build columns from entity fields
         const customFieldColumns = (entity.customFields || []).map(f => ({
             id: f._id.toString(),
             name: f.label || f.name || 'Champ',
             type: f.fieldType || 'text',
-            sortable: true
+            sortable: f.category !== 'computed',
+            computed: f.category === 'computed' || undefined,
+            computedDisplay: f.category === 'computed' ? (f.render?.display?.table || 'text') : undefined,
+            computedColor: f.category === 'computed' ? (f.color || '#4361ee') : undefined,
         }))
 
         // Relation columns

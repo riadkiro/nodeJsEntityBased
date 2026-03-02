@@ -393,6 +393,61 @@ function renderCellValue(record, col, accountNumber, entitySlug, config, titleDi
                 return ''
             }
 
+            // ═══ Computed field: render from _computedFields ═══
+            if (col.computed && record._computedFields) {
+                const cv = record._computedFields[col.id]
+                if (!cv || cv.value === null || cv.value === undefined) return '—'
+
+                const display = col.computedDisplay || 'text'
+                const color = col.computedColor || '#4361ee'
+
+                if (display === 'badge') {
+                    return (
+                        <span
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap"
+                            style={{ background: `${color}15`, color, border: `1px solid ${color}30` }}
+                        >
+                            {cv.formatted || cv.value}
+                        </span>
+                    )
+                }
+                if (display === 'currency') {
+                    return <span style={{ fontWeight: 600, color: '#334155' }}>{cv.formatted || `${Number(cv.value).toFixed(2)} €`}</span>
+                }
+                if (display === 'stars') {
+                    const starVal = Number(cv.value) || 0
+                    const starMax = Number(cv.max) || 5
+                    return (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                            {Array.from({ length: Math.floor(starVal) }).map((_, i) => (
+                                <iconify-icon key={`f${i}`} icon="solar:star-bold" width="14" style={{ color: '#f59e0b' }} />
+                            ))}
+                            {(starVal - Math.floor(starVal)) >= 0.5 && (
+                                <iconify-icon icon="solar:star-bold-duotone" width="14" style={{ color: '#f59e0b' }} />
+                            )}
+                            {Array.from({ length: starMax - Math.ceil(starVal) }).map((_, i) => (
+                                <iconify-icon key={`e${i}`} icon="solar:star-line-duotone" width="14" style={{ color: '#e2e8f0' }} />
+                            ))}
+                            <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 4 }}>{cv.formatted}</span>
+                        </span>
+                    )
+                }
+                if (display === 'progress') {
+                    const pct = Math.min(Math.max(Number(cv.percentage || cv.value) || 0, 0), 100)
+                    const barColor = pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444'
+                    return (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 80 }}>
+                            <div style={{ flex: 1, height: 5, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+                                <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: 3 }}></div>
+                            </div>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: barColor }}>{pct}%</span>
+                        </div>
+                    )
+                }
+                // Default: text
+                return cv.formatted || cv.value || ''
+            }
+
             // Custom field value
             if (record.customFields) {
                 const field = record.customFields.find(cf => {

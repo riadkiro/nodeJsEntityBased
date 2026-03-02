@@ -155,9 +155,8 @@
     }
   </style>
 
-  <!-- ═══ LEFT ZONE: Breadcrumb (record context) OR App Icons (default) ═══ -->
+  <!-- ═══ LEFT ZONE: Breadcrumb (record context only) ═══ -->
   <% if (typeof entity !== 'undefined' && entity && typeof record !== 'undefined' && record) { %>
-  <!-- Breadcrumb mode: Back + Entity > Record Title -->
   <div class="hidden ltr:mr-2 rtl:ml-2 sm:block">
     <div class="topbar-breadcrumb">
       <a href="/account/<%= account_number %>/record/<%= entity.slug %>/list"
@@ -171,36 +170,33 @@
       <span class="breadcrumb-title"><%= record.computedTitle || record.title || 'Sans titre' %></span>
     </div>
   </div>
-  <% } else { %>
-  <!-- Default mode: App Icons on the left -->
-  <div class="hidden ltr:mr-2 rtl:ml-2 sm:block">
-    <% const currentPath = typeof path !== 'undefined' ? path : ''; %>
-    <%- include('topbar-app-icons', { account_number, currentPath }) %>
-  </div>
   <% } %>
+
+  <!-- ═══ RIGHT ZONE: Search + App Icons + Utilities (ALWAYS right) ═══ -->
   <div
     x-data="header"
-    class="flex items-center space-x-1.5 ltr:ml-auto rtl:mr-auto rtl:space-x-reverse dark:text-[#d0d2d6] sm:flex-1 ltr:sm:ml-0 sm:rtl:mr-0 lg:space-x-2"
+    class="flex items-center space-x-1.5 ltr:ml-auto rtl:space-x-reverse dark:text-[#d0d2d6] lg:space-x-2"
   >
     <div
-      class="sm:ltr:mr-auto sm:rtl:ml-auto"
+      class="relative"
       x-data="{ search: false }"
       @click.outside="search = false"
     >
       <form
-        class="absolute inset-x-0 top-1/2 z-10 mx-4 hidden -translate-y-1/2 sm:relative sm:top-0 sm:mx-0 sm:block sm:translate-y-0"
+        class="absolute inset-x-0 top-1/2 z-10 mx-4 hidden -translate-y-1/2 sm:relative sm:inset-auto sm:top-0 sm:mx-0 sm:block sm:translate-y-0"
         :class="{'!block' : search}"
         @submit.prevent="search = false"
       >
         <div class="relative">
           <input
             type="text"
-            class="peer form-input bg-gray-100 placeholder:tracking-widest ltr:pl-9 ltr:pr-9 rtl:pr-9 rtl:pl-9 sm:bg-transparent ltr:sm:pr-4 rtl:sm:pl-4"
+            class="peer form-input placeholder:tracking-widest ltr:pr-9 rtl:pl-9 ltr:sm:pr-4 rtl:sm:pl-4 sm:min-w-[180px] rounded-full"
+            style="background:#f9fafb; padding-left:29px !important;"
             placeholder="Search..."
           />
           <button
             type="button"
-            class="absolute inset-0 h-9 w-9 appearance-none peer-focus:text-primary ltr:right-auto rtl:left-auto"
+            class="absolute left-0 top-0 h-9 w-9 appearance-none peer-focus:text-primary flex items-center justify-center"
           >
             <svg
               class="mx-auto"
@@ -286,13 +282,11 @@
         </svg>
       </button>
     </div>
-    <% if (typeof entity !== 'undefined' && entity && typeof record !== 'undefined' && record) { %>
-    <!-- App Icons moved to the right when breadcrumb is active -->
+    <!-- App Icons — ALWAYS on the right -->
     <div class="hidden sm:block">
       <% const currentPath = typeof path !== 'undefined' ? path : ''; %>
       <%- include('topbar-app-icons', { account_number, currentPath }) %>
     </div>
-    <% } %>
     <div>
       <a
         href="javascript:;"

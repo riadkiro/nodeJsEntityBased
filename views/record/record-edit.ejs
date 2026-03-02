@@ -159,7 +159,7 @@
                         </button>
                 </div>
             </div>
-
+            </div>
             <!-- Delete confirmation overlay -->
             <div x-show="showDeleteConfirm" x-transition
                  class="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100] flex items-center justify-center" @click.self="showDeleteConfirm = false">
@@ -2918,7 +2918,10 @@
                         const subtype = field.subtype || '';
                         const placeholder = field.ui?.placeholder || field.label || '';
                         const fieldName = `custom[${field._id}]`;
-                        const labelHtml = `<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">${field.label || field.name}</label>`;
+                        const fieldIcon = field.ui?.icon || '';
+                        const labelHtml = fieldIcon
+                            ? `<label class="flex items-center gap-1.5 mb-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300"><iconify-icon icon="${fieldIcon}" width="14" class="text-gray-400"></iconify-icon>${field.label || field.name}</label>`
+                            : `<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">${field.label || field.name}</label>`;
                         
                         if (type === 'textarea' || type === 'richtext' || subtype === 'textarea' || subtype === 'richtext') {
                             const fieldRows = field.ui?.rows || 3;
@@ -3101,7 +3104,12 @@
                     const isTruthy = val === true || val === 'on' || val === 'true' || val === 1 || val === '1';
 
                     let html = template.replace(/{{\s*([\w\.]+)\s*}}/g, (_, key) => {
-                        if (key === 'label') return `<label>${field.label}</label>`;
+                        if (key === 'label') {
+                            const _icon = field.ui?.icon || '';
+                            return _icon
+                                ? `<label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300"><iconify-icon icon="${_icon}" width="14" class="text-gray-400"></iconify-icon>${field.label}</label>`
+                                : `<label>${field.label}</label>`;
+                        }
                         if (key === 'name') return `custom[${field._id}]`;
                         if (key === 'value') return val;
                         if (key === 'value_json') return valJson;

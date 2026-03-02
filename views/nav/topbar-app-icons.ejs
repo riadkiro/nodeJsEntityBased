@@ -1,0 +1,129 @@
+<ul class="flex items-center space-x-1 rtl:space-x-reverse">
+  <!-- Home — Blue -->
+  <li>
+    <a href="/account/<%= account_number %>/dashboard"
+       data-active="<%= currentPath.includes('/dashboard') %>"
+       class="topbar-icon-btn flex items-center rounded-full p-2"
+       style="--icon-color:#3b82f6; --icon-bg:rgba(59,130,246,0.08); --icon-bg-hover:rgba(59,130,246,0.15);">
+      <svg class="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 12.2039C2 9.91549 2 8.77128 2.5192 7.82274C3.0384 6.87421 3.98695 6.28551 5.88403 5.10813L7.88403 3.86687C9.88939 2.62229 10.8921 2 12 2C13.1079 2 14.1106 2.62229 16.116 3.86687L18.116 5.10812C20.0131 6.28551 20.9616 6.87421 21.4808 7.82274C22 8.77128 22 9.91549 22 12.2039V13.725C22 17.6258 22 19.5763 20.8284 20.7881C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.7881C2 19.5763 2 17.6258 2 13.725V12.2039Z" stroke="currentColor" stroke-width="1.5"/>
+        <path opacity="0.5" d="M12 15V18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="label-text text-xs font-medium">Home</span>
+    </a>
+  </li>
+  <!-- Documents — Amber -->
+  <li>
+    <a href="/account/<%= account_number %>/documents"
+       data-active="<%= currentPath.includes('/documents') %>"
+       class="topbar-icon-btn flex items-center rounded-full p-2"
+       style="--icon-color:#f59e0b; --icon-bg:rgba(245,158,11,0.08); --icon-bg-hover:rgba(245,158,11,0.15);">
+      <svg class="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H13C16.7712 2 18.6569 2 19.8284 3.17157C21 4.34315 21 6.22876 21 10V14C21 17.7712 21 19.6569 19.8284 20.8284C18.6569 22 16.7712 22 13 22H11C7.22876 22 5.34315 22 4.17157 20.8284C3 19.6569 3 17.7712 3 14V10Z" stroke="currentColor" stroke-width="1.5"/>
+        <path opacity="0.5" d="M8 12H16M8 8H16M8 16H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="label-text text-xs font-medium">Docs</span>
+    </a>
+  </li>
+  <!-- Media — Pink -->
+  <li>
+    <a href="/account/<%= account_number %>/media"
+       data-active="<%= currentPath.includes('/media') %>"
+       class="topbar-icon-btn flex items-center rounded-full p-2"
+       style="--icon-color:#ec4899; --icon-bg:rgba(236,72,153,0.08); --icon-bg-hover:rgba(236,72,153,0.15);">
+      <svg class="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" stroke-width="1.5"/>
+        <circle opacity="0.5" cx="16" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/>
+        <path opacity="0.5" d="M2 12.5L3.75159 10.9675C4.66286 10.1702 6.03628 10.2159 6.89249 11.0721L11.1822 15.3618C11.8694 16.0491 12.9512 16.1428 13.7464 15.5839L14.0446 15.3744C15.1888 14.5702 16.7369 14.6634 17.7765 15.599L21 18.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="label-text text-xs font-medium">Médias</span>
+    </a>
+  </li>
+  <!-- Calendrier — Teal -->
+  <li>
+    <a href="/account/<%= account_number %>/calendar"
+       data-active="<%= currentPath.includes('/calendar') %>"
+       class="topbar-icon-btn flex items-center rounded-full p-2"
+       style="--icon-color:#14b8a6; --icon-bg:rgba(20,184,166,0.08); --icon-bg-hover:rgba(20,184,166,0.15);">
+      <svg class="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V12Z" stroke="currentColor" stroke-width="1.5"/>
+        <path opacity="0.5" d="M7 4V2.5M17 4V2.5M2 9H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M18 17C18 17.5523 17.5523 18 17 18C16.4477 18 16 17.5523 16 17C16 16.4477 16.4477 16 17 16C17.5523 16 18 16.4477 18 17Z" fill="currentColor"/>
+        <path d="M18 13C18 13.5523 17.5523 14 17 14C16.4477 14 16 13.5523 16 13C16 12.4477 16.4477 12 17 12C17.5523 12 18 12.4477 18 13Z" fill="currentColor"/>
+        <path d="M13 17C13 17.5523 12.5523 18 12 18C11.4477 18 11 17.5523 11 17C11 16.4477 11.4477 16 12 16C12.5523 16 13 16.4477 13 17Z" fill="currentColor"/>
+        <path d="M13 13C13 13.5523 12.5523 14 12 14C11.4477 14 11 13.5523 11 13C11 12.4477 11.4477 12 12 12C12.5523 12 13 12.4477 13 13Z" fill="currentColor"/>
+        <path d="M8 17C8 17.5523 7.55228 18 7 18C6.44772 18 6 17.5523 6 17C6 16.4477 6.44772 16 7 16C7.55228 16 8 16.4477 8 17Z" fill="currentColor"/>
+        <path d="M8 13C8 13.5523 7.55228 14 7 14C6.44772 14 6 13.5523 6 13C6 12.4477 6.44772 12 7 12C7.55228 12 8 12.4477 8 13Z" fill="currentColor"/>
+      </svg>
+      <span class="label-text text-xs font-medium">Agenda</span>
+    </a>
+  </li>
+  <!-- Notes — Purple -->
+  <li>
+    <a href="/account/<%= account_number %>/notes"
+       data-active="<%= currentPath.includes('/notes') %>"
+       class="topbar-icon-btn flex items-center rounded-full p-2"
+       style="--icon-color:#8b5cf6; --icon-bg:rgba(139,92,246,0.08); --icon-bg-hover:rgba(139,92,246,0.15);">
+      <svg class="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path opacity="0.5" d="M22 10.5V12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2H13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M17.3009 2.80624L16.652 3.45506L10.6872 9.41993C10.2832 9.82394 10.0812 10.0259 9.90743 10.2487C9.70249 10.5114 9.52679 10.7957 9.38344 11.0965C9.26191 11.3515 9.17157 11.6225 8.99089 12.1646L8.41242 13.9L8.03811 15.0229C7.9492 15.2897 8.01862 15.5837 8.21744 15.7826C8.41626 15.9814 8.71035 16.0508 8.97709 15.9619L10.1 15.5876L11.8354 15.0091C12.3775 14.8284 12.6485 14.7381 12.9035 14.6166C13.2043 14.4732 13.4886 14.2975 13.7513 14.0926C13.9741 13.9188 14.1761 13.7168 14.5801 13.3128L20.5449 7.34795L21.1938 6.69914C22.2687 5.62415 22.2687 3.88124 21.1938 2.80624C20.1188 1.73125 18.3759 1.73125 17.3009 2.80624Z" stroke="currentColor" stroke-width="1.5"/>
+        <path opacity="0.5" d="M16.6522 3.45508C16.6522 3.45508 16.7333 4.83381 17.9499 6.05034C19.1664 7.26687 20.5451 7.34797 20.5451 7.34797M10.1002 15.5876L8.4126 13.9" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      <span class="label-text text-xs font-medium">Notes</span>
+    </a>
+  </li>
+  <!-- Tâches — Emerald -->
+  <li>
+    <a href="/account/<%= account_number %>/tasks"
+       data-active="<%= currentPath.includes('/tasks') %>"
+       class="topbar-icon-btn flex items-center rounded-full p-2"
+       style="--icon-color:#10b981; --icon-bg:rgba(16,185,129,0.08); --icon-bg-hover:rgba(16,185,129,0.15);">
+      <svg class="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12Z" stroke="currentColor" stroke-width="1.5"/>
+        <path opacity="0.5" d="M8.5 12.5L10.5 14.5L15.5 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="label-text text-xs font-medium">Tâches</span>
+    </a>
+  </li>
+  <!-- Équipe — Indigo -->
+  <li>
+    <a href="/account/<%= account_number %>/team"
+       data-active="<%= currentPath.includes('/team') %>"
+       class="topbar-icon-btn flex items-center rounded-full p-2"
+       style="--icon-color:#6366f1; --icon-bg:rgba(99,102,241,0.08); --icon-bg-hover:rgba(99,102,241,0.15);">
+      <svg class="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="9" cy="6" r="4" stroke="currentColor" stroke-width="1.5"/>
+        <path opacity="0.5" d="M15 9C16.6569 9 18 7.65685 18 6C18 4.34315 16.6569 3 15 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <ellipse cx="9" cy="17" rx="7" ry="4" stroke="currentColor" stroke-width="1.5"/>
+        <path opacity="0.5" d="M18 14C19.7542 14.3847 21 15.3589 21 16.5C21 17.5293 19.9863 18.4229 18.5 18.8704" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="label-text text-xs font-medium">Équipe</span>
+    </a>
+  </li>
+  <!-- Mailbox — Sky -->
+  <li>
+    <a href="/account/<%= account_number %>/mailbox/inbox"
+       data-active="<%= currentPath.includes('/mailbox') %>"
+       class="topbar-icon-btn flex items-center rounded-full p-2"
+       style="--icon-color:#0ea5e9; --icon-bg:rgba(14,165,233,0.08); --icon-bg-hover:rgba(14,165,233,0.15);">
+      <svg class="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 12C2 8.22876 2 6.34315 3.17157 5.17157C4.34315 4 6.22876 4 10 4H14C17.7712 4 19.6569 4 20.8284 5.17157C22 6.34315 22 8.22876 22 12C22 15.7712 22 17.6569 20.8284 18.8284C19.6569 20 17.7712 20 14 20H10C6.22876 20 4.34315 20 3.17157 18.8284C2 17.6569 2 15.7712 2 12Z" stroke="currentColor" stroke-width="1.5"/>
+        <path opacity="0.5" d="M6 8L8.1589 9.79908C9.99553 11.3296 10.9139 12.0949 12 12.0949C13.0861 12.0949 14.0045 11.3296 15.8411 9.79908L18 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="label-text text-xs font-medium">Mail</span>
+    </a>
+  </li>
+  <!-- Discussions — Orange -->
+  <li>
+    <a href="/account/<%= account_number %>/chat"
+       data-active="<%= currentPath.includes('/chat') %>"
+       class="topbar-icon-btn flex items-center rounded-full p-2"
+       style="--icon-color:#f97316; --icon-bg:rgba(249,115,22,0.08); --icon-bg-hover:rgba(249,115,22,0.15);">
+      <svg class="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.77762 11.9424C2.8296 10.2893 2.37185 8.93948 2.09584 7.57121C1.68762 5.54758 2.62181 3.57081 4.16938 2.30947C4.82345 1.77638 5.57323 1.95852 5.96 2.6524L6.83318 4.21891C7.52529 5.46057 7.87134 6.08139 7.8027 6.73959C7.73407 7.39779 7.26737 7.93386 6.33397 9.00601L3.77762 11.9424ZM3.77762 11.9424C5.69651 15.2883 8.70784 18.3013 12.0576 20.2224M12.0576 20.2224C13.7107 21.1704 15.0605 21.6282 16.4288 21.9042C18.4524 22.3124 20.4292 21.3782 21.6905 19.8306C22.2236 19.1766 22.0415 18.4268 21.3476 18.04L19.7811 17.1668C18.5394 16.4747 17.9186 16.1287 17.2604 16.1973C16.6022 16.2659 16.0661 16.7326 14.994 17.666L12.0576 20.2224Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path opacity="0.5" d="M14 6.5L15.5 8L19 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="label-text text-xs font-medium">Chat</span>
+    </a>
+  </li>
+</ul>

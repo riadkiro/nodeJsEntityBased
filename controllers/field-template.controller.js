@@ -387,7 +387,7 @@ module.exports = {
             fields: []
           };
         }
-        grouped[cat].fields.push({
+        const fieldObj = {
           _id: field._id,
           name: field.name,
           label: field.label,
@@ -397,7 +397,14 @@ module.exports = {
           icon: field.ui?.icon || 'solar:widget-bold-duotone',
           category: field.category,
           isSystem: field.isSystem || false
-        });
+        };
+        // Include computed field metadata
+        if (field.category === 'computed') {
+          fieldObj.formula = field.formula || null;
+          fieldObj.render = field.render || null;
+          fieldObj.color = field.color || '#4361ee';
+        }
+        grouped[cat].fields.push(fieldObj);
       }
 
       // Order categories - popular first, then business categories, then technical
@@ -527,11 +534,11 @@ module.exports = {
   createApi: async (req, res) => {
     try {
       const FieldTemplateModel = await tenantCollection(req, "FieldTemplate");
-      const { name, label, type, subtype, description, icon, category, required, typeConfig, ui } = req.body;
+      const { name, label, type, subtype, description, icon, category, required, typeConfig, ui, formula, render, color } = req.body;
 
       if (!name || !label) return res.status(400).json({ error: 'name and label are required' });
 
-      const newField = new FieldTemplateModel({
+      const fieldData = {
         name,
         label,
         description: description || '',
@@ -548,22 +555,32 @@ module.exports = {
           icon: icon || ui?.icon || 'solar:widget-bold-duotone',
           order: ui?.order || 0
         }
-      });
+      };
+      // Computed field properties
+      if (category === 'computed' && formula) {
+        fieldData.formula = formula;
+        if (render) fieldData.render = render;
+        if (color) fieldData.color = color;
+      }
+      const newField = new FieldTemplateModel(fieldData);
 
       await newField.save();
-      res.json({
-        success: true,
-        field: {
-          _id: newField._id,
-          name: newField.name,
-          label: newField.label,
-          type: newField.type,
-          subtype: newField.subtype,
-          icon: newField.ui?.icon || 'solar:widget-bold-duotone',
-          category: newField.category,
-          isSystem: false
-        }
-      });
+      const responseField = {
+        _id: newField._id,
+        name: newField.name,
+        label: newField.label,
+        type: newField.type,
+        subtype: newField.subtype,
+        icon: newField.ui?.icon || 'solar:widget-bold-duotone',
+        category: newField.category,
+        isSystem: false
+      };
+      if (newField.category === 'computed') {
+        responseField.formula = newField.formula;
+        responseField.render = newField.render;
+        responseField.color = newField.color;
+      }
+      res.json({ success: true, field: responseField });
     } catch (err) {
       console.error('[FieldTemplateAPI] Create error:', err);
       res.status(500).json({ error: err.message });

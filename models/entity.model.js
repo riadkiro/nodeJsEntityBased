@@ -119,24 +119,42 @@ const EntitySchema = new mongoose.Schema(
     // 🎯 Record Header Configuration (hero identity bar)
     headerConfig: {
       type: new mongoose.Schema({
-        // Which fields to show as meta badges in the header
+        // Icon/Avatar
+        showIcon: { type: Boolean, default: true },
+        avatarSource: {
+          type: { type: String, enum: ['record-image', 'relation-image', 'entity-icon', 'field'], default: 'entity-icon' },
+          relationKey: String,
+          fieldId: String
+        },
+        // Title
+        showTitle: { type: Boolean, default: true },
+        titleSource: {
+          type: { type: String, enum: ['entity', 'relation'], default: 'entity' },
+          relationKey: String
+        },
+        // Classifications
+        showClassifications: { type: Boolean, default: true },
+        shownClassifications: [String],
+        // Attachments quick icon
+        showAttachments: { type: Boolean, default: true },
+        // Indirect relation icons to show (keys). Empty = none shown
+        shownRelations: [String],
+        // Fields to display in hero bar (icon + truncated value)
+        heroFields: [{
+          fieldId: String,
+          entitySource: { type: String, default: 'self' }, // 'self' or relation key
+          maxChars: { type: Number, default: 20 }
+        }],
+        // Legacy
         metaFields: [{
-          fieldId: String,          // fieldTemplate _id or standard field name
+          fieldId: String,
           type: { type: String, enum: ['field', 'relation', 'computed'], default: 'field' },
           display: { type: String, enum: ['badge', 'text', 'icon'], default: 'text' }
         }],
-        // Which relation to use for the header subtitle (show related record info)
         subtitleRelation: {
-          relationKey: String,      // relation key to pull data from
-          displayFields: [String]   // which fields of the related record to show
+          relationKey: String,
+          displayFields: [String]
         },
-        // Avatar source
-        avatarSource: {
-          type: { type: String, enum: ['record-image', 'relation-image', 'entity-icon', 'field'], default: 'entity-icon' },
-          relationKey: String,      // if type === 'relation-image'
-          fieldId: String           // if type === 'field'
-        },
-        // Show duration timer
         showDuration: { type: Boolean, default: false }
       }, { _id: false }),
       default: {}

@@ -11,6 +11,7 @@
             const _statusCls = entity.statusClassification;
             let _statusLabel = '', _statusColor = '#94a3b8';
             const _clsTags = [];
+            const _shownCls = _hc.shownClassifications || [];
 
             if (record.classificationValues && record.classificationValues.length > 0) {
                 record.classificationValues.forEach(cv => {
@@ -23,14 +24,16 @@
                         if (cls._id && cv.classificationId &&
                             cv.classificationId.toString() === cls._id.toString() &&
                             (!_statusCls || !_statusCls._id || cls._id.toString() !== _statusCls._id.toString())) {
-                            const opt = cls.options.find(o => o._id?.toString() === cv.optionId?.toString());
-                            if (opt) _clsTags.push({ label: opt.label, color: opt.color || '#4361ee' });
+                            if (_shownCls.length === 0 || _shownCls.includes(cls._id.toString())) {
+                                const opt = cls.options.find(o => o._id?.toString() === cv.optionId?.toString());
+                                if (opt) _clsTags.push({ label: opt.label, color: opt.color || '#4361ee' });
+                            }
                         }
                     });
                 });
             }
 
-            // ── Duration since creation (only if headerConfig.showDuration) ──
+            // ── Duration since creation ──
             let _durationStr = '';
             if (_hc.showDuration) {
                 const _createdAt = record.createdAt ? new Date(record.createdAt) : null;
@@ -44,32 +47,50 @@
                 }
             }
 
-            // ── Avatar resolution (headerConfig.avatarSource) ──
+            // ── Avatar resolution ──
+            const _showIcon = _hc.showIcon !== false;
             const _avSrc = _hc.avatarSource || {};
             let _avatarImage = '';
-            if (_avSrc.type === 'record-image') {
-                _avatarImage = record.image || '';
-            } else if (_avSrc.type === 'relation-image' && locals.headerRelatedRecord) {
-                _avatarImage = locals.headerRelatedRecord.image || '';
-            } else if (_avSrc.type === 'field') {
-                // Look for a field value that contains an image URL
-                const avField = (record.customFields || []).find(cf => {
-                    const fid = (cf.field_id?._id || cf.field_id || '').toString();
-                    return fid === _avSrc.fieldId;
-                });
-                _avatarImage = avField?.value || '';
+            if (_showIcon) {
+                if (_avSrc.type === 'record-image') {
+                    _avatarImage = record.image || '';
+                } else if (_avSrc.type === 'relation-image' && locals.headerRelatedRecord) {
+                    _avatarImage = locals.headerRelatedRecord.image || '';
+                } else if (_avSrc.type === 'field') {
+                    const avField = (record.customFields || []).find(cf => {
+                        const fid = (cf.field_id?._id || cf.field_id || '').toString();
+                        return fid === _avSrc.fieldId;
+                    });
+                    _avatarImage = avField?.value || '';
+                }
             }
-            // Default: entity icon (no _avatarImage set)
+            // Icon/color for avatar fallback (use related entity if relation-image)
+            const _hrm = locals.headerRelatedMeta || {};
+            let _avatarIcon = entity.icon || 'solar:user-bold-duotone';
+            let _avatarColor = entity.color || '#4361ee';
+            if (_avSrc.type === 'relation-image' && _hrm.relatedEntityIcon) {
+                _avatarIcon = _hrm.relatedEntityIcon;
+                _avatarColor = _hrm.relatedEntityColor || '#4361ee';
+            }
 
-            // ── Subtitle from related record ──
+            // ── Title resolution (new: titleSource) ──
+            const _showTitle = _hc.showTitle !== false;
+            const _titleSrc = _hc.titleSource || {};
+            let _heroTitle = record.title || 'Sans titre';
+            if (_titleSrc.type === 'relation' && _titleSrc.relationKey && locals.headerRelatedRecord) {
+                _heroTitle = locals.headerRelatedRecord.title || _heroTitle;
+            } else if (_titleSrc.type !== 'entity' && locals.headerRelatedRecord && locals.headerRelatedRecord.title &&
+                       _hc.subtitleRelation && _hc.subtitleRelation.relationKey) {
+                _heroTitle = locals.headerRelatedRecord.title;
+            }
+
+            // ── Subtitle from related record (legacy) ──
             const _sr = _hc.subtitleRelation || {};
             let _subtitleParts = [];
             if (locals.headerRelatedRecord && _sr.displayFields && _sr.displayFields.length > 0) {
                 const hRec = locals.headerRelatedRecord;
                 _sr.displayFields.forEach(dfId => {
-                    // Check standard fields
                     if (dfId === 'title') { if (hRec.title) _subtitleParts.push(hRec.title); return; }
-                    // Check custom fields
                     const cv = (hRec.customFields || []).find(cf => {
                         const fid = (cf.field_id?._id || cf.field_id || '').toString();
                         return fid === dfId;
@@ -78,7 +99,30 @@
                 });
             }
 
-            // ── Meta fields from headerConfig ──
+            // ── Hero fields (icon + truncated value, supports entitySource) ──
+            const _heroFieldConfigs = _hc.heroFields || [];
+            const _heroFieldValues = [];
+            _heroFieldConfigs.forEach(hf => {
+                const src = hf.entitySource || 'self';
+                const sourceRec = src === 'self' ? record : (locals.headerRelatedRecord || null);
+                if (!sourceRec) return;
+                const cf = (sourceRec.customFields || []).find(c => {
+                    const fid = (c.field_id?._id || c.field_id || '').toString();
+                    return fid === hf.fieldId;
+                });
+                if (cf && cf.value) {
+                    const fieldDef = cf.field_id || {};
+                    let val = typeof cf.value === 'string' ? cf.value : JSON.stringify(cf.value);
+                    const maxChars = hf.maxChars || 20;
+                    if (val.length > maxChars) val = val.substring(0, maxChars) + '…';
+                    _heroFieldValues.push({
+                        icon: (fieldDef.ui && fieldDef.ui.icon) || 'solar:document-text-linear',
+                        value: val
+                    });
+                }
+            });
+
+            // ── Meta fields (legacy) ──
             const _metaFields = (_hc.metaFields || []);
             const _metaBadges = [];
             _metaFields.forEach(mf => {
@@ -99,20 +143,24 @@
             <!-- Left: Avatar + Identity -->
             <div class="flex items-center gap-3.5 min-w-0">
                 <!-- Avatar -->
+                <% if (_showIcon) { %>
                 <% if (_avatarImage) { %>
                 <img src="<%= _avatarImage %>" alt="" class="w-11 h-11 rounded-full object-cover ring-2 ring-white dark:ring-gray-800 shadow-sm">
                 <% } else { %>
                 <div class="w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold shadow-sm"
-                     style="background: <%= entity.color || '#4361ee' %>15; color: <%= entity.color || '#4361ee' %>">
-                    <iconify-icon icon="<%= entity.icon || 'solar:user-bold-duotone' %>" width="22"></iconify-icon>
+                     style="background: <%= _avatarColor %>15; color: <%= _avatarColor %>">
+                    <iconify-icon icon="<%= _avatarIcon %>" width="22"></iconify-icon>
                 </div>
+                <% } %>
                 <% } %>
 
                 <!-- Name + Meta line -->
                 <div class="min-w-0">
+                    <% if (_showTitle) { %>
                     <h1 class="text-base font-bold text-gray-800 dark:text-white truncate max-w-[350px] leading-tight">
-                        <%= record.title || 'Sans titre' %>
+                        <%= _heroTitle %>
                     </h1>
+                    <% } %>
                     <div class="flex items-center gap-2 mt-0.5 flex-wrap">
                         <% if (_subtitleParts.length > 0) { %>
                         <span class="text-xs text-gray-500 dark:text-gray-400 font-medium flex items-center gap-1">
@@ -121,6 +169,7 @@
                         </span>
                         <span class="w-px h-3 bg-gray-200 dark:bg-gray-700"></span>
                         <% } %>
+                        <% if (_hc.showClassifications !== false) { %>
                         <% if (_statusLabel) { %>
                         <span class="inline-flex items-center gap-1 text-xs font-semibold" style="color: <%= _statusColor %>">
                             <span class="w-2 h-2 rounded-full" style="background: <%= _statusColor %>"></span>
@@ -131,6 +180,13 @@
                         <span class="inline-flex items-center gap-1 text-xs font-semibold" style="color: <%= tag.color %>">
                             <span class="w-1.5 h-1.5 rounded-full" style="background: <%= tag.color %>"></span>
                             <%= tag.label %>
+                        </span>
+                        <% }); %>
+                        <% } %>
+                        <% _heroFieldValues.forEach(hfv => { %>
+                        <span class="hb-field-chip">
+                            <iconify-icon icon="<%= hfv.icon %>" width="12"></iconify-icon>
+                            <%= hfv.value %>
                         </span>
                         <% }); %>
                         <% _metaBadges.forEach(mb => { %>
@@ -147,6 +203,87 @@
                     </div>
                 </div>
             </div>
+
+            <% if (locals.headerRelatedMeta && locals.headerRelatedRecord) { %>
+            <!-- Center: Quick access icons (relations via patient + attachments) -->
+            <div class="hb-quick-icons" x-data="{ openDropdown: null }">
+                <% const _hrm = locals.headerRelatedMeta; %>
+
+                <!-- Attachments icon + count -->
+                <% if (_hrm.attachmentCount > 0 && _hc.showAttachments !== false) { %>
+                <div class="hb-icon-item" @click.outside="openDropdown = openDropdown === 'attach' ? null : openDropdown">
+                    <div class="hb-icon-btn" @click="openDropdown = openDropdown === 'attach' ? null : 'attach'"
+                         title="Pièces jointes (<%= _hrm.attachmentCount %>)">
+                        <iconify-icon icon="solar:paperclip-bold-duotone" width="16" style="color:#f59e0b"></iconify-icon>
+                        <span class="hb-badge" style="background:#f59e0b"><%= _hrm.attachmentCount %></span>
+                    </div>
+                    <!-- Attachments dropdown -->
+                    <div class="hb-dropdown" x-show="openDropdown === 'attach'" x-transition x-cloak>
+                        <div class="hb-dropdown-header">
+                            <iconify-icon icon="solar:paperclip-bold-duotone" width="14" style="color:#f59e0b"></iconify-icon>
+                            <span>Pièces jointes · <%= locals.headerRelatedRecord.title %></span>
+                        </div>
+                        <div class="hb-dropdown-list">
+                            <% (locals.headerRelatedRecord.attachments || []).forEach(att => { %>
+                            <a href="/account/<%= account_number %>/uploads/<%= att.filename %>" target="_blank" class="hb-dropdown-item">
+                                <iconify-icon icon="<%= att.category === 'pdf' ? 'solar:file-text-bold-duotone' : att.category === 'image' ? 'solar:gallery-bold-duotone' : att.category === 'word' ? 'solar:document-text-bold-duotone' : 'solar:file-bold-duotone' %>" width="16"
+                                    style="color:<%= att.category === 'pdf' ? '#ef4444' : att.category === 'image' ? '#3b82f6' : att.category === 'word' ? '#2563eb' : '#6b7280' %>"></iconify-icon>
+                                <span class="hb-dropdown-item-text"><%= att.originalName %></span>
+                                <span class="hb-dropdown-item-meta"><%= att.category %></span>
+                            </a>
+                            <% }); %>
+                        </div>
+                    </div>
+                </div>
+                <% } %>
+
+                <% if (_hrm.indirectRelations && _hrm.indirectRelations.length > 0) { %>
+                <span class="hb-separator"></span>
+                <% } %>
+
+                <!-- Indirect relation icons (filtered by shownRelations) -->
+                <% const _shownRels = _hc.shownRelations || []; %>
+                <% (_hrm.indirectRelations || []).filter(iRel => _shownRels.includes(iRel.key)).forEach(iRel => { %>
+                <div class="hb-icon-item" @click.outside="openDropdown = openDropdown === '<%= iRel.key %>' ? null : openDropdown">
+                    <div class="hb-icon-btn" @click="openDropdown = openDropdown === '<%= iRel.key %>' ? null : '<%= iRel.key %>'"
+                         title="<%= iRel.label %> (<%= iRel.count %>)">
+                        <iconify-icon icon="<%= iRel.icon %>" width="16" style="color:<%= iRel.color %>"></iconify-icon>
+                        <% if (iRel.count > 0) { %>
+                        <span class="hb-badge" style="background:<%= iRel.color %>"><%= iRel.count %></span>
+                        <% } %>
+                    </div>
+                    <!-- Relation dropdown -->
+                    <div class="hb-dropdown" x-show="openDropdown === '<%= iRel.key %>'" x-transition x-cloak>
+                        <div class="hb-dropdown-header">
+                            <iconify-icon icon="<%= iRel.icon %>" width="14" style="color:<%= iRel.color %>"></iconify-icon>
+                            <span><%= iRel.label %></span>
+                            <span class="hb-dropdown-count"><%= iRel.count %></span>
+                        </div>
+                        <% if (iRel.records && iRel.records.length > 0) { %>
+                        <div class="hb-dropdown-list">
+                            <% iRel.records.forEach(rec => { %>
+                            <a href="/account/<%= account_number %>/record/<%= iRel.slug %>/<%= rec._id %>/edit" class="hb-dropdown-item">
+                                <iconify-icon icon="<%= iRel.icon %>" width="14" style="color:<%= iRel.color %>"></iconify-icon>
+                                <span class="hb-dropdown-item-text"><%= rec.title || 'Sans titre' %></span>
+                            </a>
+                            <% }); %>
+                        </div>
+                        <% } else { %>
+                        <div class="hb-dropdown-empty">
+                            <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#9ca3af"></iconify-icon>
+                            <span><%= iRel.count %> enregistrement<%= iRel.count > 1 ? 's' : '' %></span>
+                        </div>
+                        <% } %>
+                        <% if (iRel.slug) { %>
+                        <a href="/account/<%= account_number %>/record/<%= iRel.slug %>" class="hb-dropdown-footer">
+                            Voir tout →
+                        </a>
+                        <% } %>
+                    </div>
+                </div>
+                <% }); %>
+            </div>
+            <% } %>
 
             <!-- Right: Quick action buttons + More menu -->
             <div class="flex items-center gap-2">
@@ -198,7 +335,7 @@
                             <span>Mode mise en page</span>
                         </button>
                         <!-- Header Config -->
-                        <button type="button" @click="showHeaderConfig = true; showMoreMenu = false"
+                        <button type="button" @click="$dispatch('open-header-config'); showMoreMenu = false"
                             class="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                             <iconify-icon icon="solar:widget-6-bold-duotone" width="15" class="text-purple-400"></iconify-icon>
                             <span>Configurer l'en-tête</span>
@@ -239,128 +376,6 @@
                 </div>
             </div>
 
-        <!-- ═══════════════ HEADER CONFIG PANEL ═══════════════ -->
-        <div x-show="showHeaderConfig" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-             class="fixed inset-0 bg-black/30 backdrop-blur-sm z-[110] flex items-start justify-center pt-[10vh]" @click.self="showHeaderConfig = false" x-cloak>
-            <div class="bg-white dark:bg-[#1b2e4b] rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 w-[440px] max-h-[70vh] overflow-y-auto"
-                 x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95 translate-y-2" x-transition:enter-end="opacity-100 scale-100 translate-y-0">
-                <!-- Panel Header -->
-                <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800 sticky top-0 bg-white dark:bg-[#1b2e4b] z-10 rounded-t-2xl">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center">
-                            <iconify-icon icon="solar:widget-6-bold-duotone" width="18" class="text-purple-500"></iconify-icon>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-bold text-gray-800 dark:text-white">Configurer l'en-tête</h3>
-                            <p class="text-[10px] text-gray-400">Personnalisez l'affichage du header de fiche</p>
-                        </div>
-                    </div>
-                    <button type="button" @click="showHeaderConfig = false" class="w-7 h-7 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
-                        <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
-                    </button>
-                </div>
-
-                <!-- Panel Body -->
-                <div class="px-5 py-4 space-y-5">
-
-                    <!-- Avatar Source -->
-                    <div>
-                        <label class="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                            <iconify-icon icon="solar:user-circle-bold-duotone" width="14" class="text-gray-400"></iconify-icon>
-                            Source de l'avatar
-                        </label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button type="button" @click="hcLocal.avatarSource = { type: 'entity-icon' }"
-                                    class="flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 text-xs font-medium transition-all"
-                                    :class="(!hcLocal.avatarSource || hcLocal.avatarSource.type === 'entity-icon') ? 'border-purple-400 bg-purple-50 dark:bg-purple-500/10 text-purple-600' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'">
-                                <iconify-icon icon="solar:star-bold-duotone" width="20"></iconify-icon>
-                                Icône entité
-                            </button>
-                            <button type="button" @click="hcLocal.avatarSource = { type: 'record-image' }"
-                                    class="flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 text-xs font-medium transition-all"
-                                    :class="hcLocal.avatarSource?.type === 'record-image' ? 'border-purple-400 bg-purple-50 dark:bg-purple-500/10 text-purple-600' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'">
-                                <iconify-icon icon="solar:gallery-bold-duotone" width="20"></iconify-icon>
-                                Image fiche
-                            </button>
-                            <button type="button" @click="hcLocal.avatarSource = { type: 'relation-image', relationKey: '' }"
-                                    class="flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 text-xs font-medium transition-all"
-                                    :class="hcLocal.avatarSource?.type === 'relation-image' ? 'border-purple-400 bg-purple-50 dark:bg-purple-500/10 text-purple-600' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'">
-                                <iconify-icon icon="solar:link-round-bold-duotone" width="20"></iconify-icon>
-                                Fiche liée
-                            </button>
-                        </div>
-                        <template x-if="hcLocal.avatarSource?.type === 'relation-image'">
-                            <select x-model="hcLocal.avatarSource.relationKey" class="form-input w-full text-xs mt-2">
-                                <option value="">— Choisir une relation —</option>
-                                <template x-for="rel in entityRelations" :key="'av-' + rel.key">
-                                    <option :value="rel.key" x-text="rel.label"></option>
-                                </template>
-                            </select>
-                        </template>
-                    </div>
-
-                    <!-- Subtitle Relation -->
-                    <div class="border-t border-gray-100 dark:border-gray-800 pt-4">
-                        <label class="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                            <iconify-icon icon="solar:link-round-bold-duotone" width="14" class="text-blue-400"></iconify-icon>
-                            Sous-titre (fiche liée)
-                        </label>
-                        <p class="text-[11px] text-gray-400 mb-2">Afficher les infos d'une fiche liée sous le titre (ex: nom du patient).</p>
-                        <select @change="hcLocal.subtitleRelation = { relationKey: $event.target.value, displayFields: $event.target.value ? ['title'] : [] }"
-                                :value="hcLocal.subtitleRelation?.relationKey || ''"
-                                class="form-input w-full text-xs">
-                            <option value="">Aucune (titre de la fiche seul)</option>
-                            <template x-for="rel in entityRelations" :key="'sub-' + rel.key">
-                                <option :value="rel.key" x-text="rel.label"></option>
-                            </template>
-                        </select>
-                        <template x-if="hcLocal.subtitleRelation?.relationKey">
-                            <div class="mt-2 p-2.5 bg-green-50 dark:bg-green-500/5 rounded-lg border border-green-100 dark:border-green-800/30">
-                                <div class="flex items-center gap-1.5 text-[11px] text-green-600 dark:text-green-400 font-medium">
-                                    <iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon>
-                                    <span>Le titre de la fiche liée sera affiché sous le nom.</span>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-
-                    <!-- Duration Toggle -->
-                    <div class="flex items-center justify-between py-3 border-t border-gray-100 dark:border-gray-800">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
-                                <iconify-icon icon="solar:clock-circle-bold-duotone" width="15" class="text-amber-500"></iconify-icon>
-                            </div>
-                            <div>
-                                <span class="text-xs font-semibold text-gray-700 dark:text-gray-200">Durée depuis création</span>
-                                <p class="text-[10px] text-gray-400">Ex: 4h 26min</p>
-                            </div>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer"
-                                   :checked="hcLocal.showDuration || false"
-                                   @change="hcLocal.showDuration = $event.target.checked">
-                            <div class="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Panel Footer -->
-                <div class="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20 rounded-b-2xl">
-                    <button type="button" @click="showHeaderConfig = false"
-                            class="px-4 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all">
-                        Annuler
-                    </button>
-                    <button type="button" @click="saveHeaderConfig()"
-                            :disabled="hcSaving"
-                            class="flex items-center gap-1.5 px-5 py-2 rounded-lg text-xs font-bold text-white bg-purple-500 hover:bg-purple-600 shadow-md hover:shadow-lg hover:shadow-purple-500/20 transition-all disabled:opacity-50"
-                            :class="hcSaving ? 'cursor-wait' : ''">
-                        <iconify-icon :icon="hcSaving ? 'svg-spinners:ring-resize' : 'solar:check-circle-bold'" width="14"></iconify-icon>
-                        <span x-text="hcSaving ? 'Enregistrement...' : 'Enregistrer'"></span>
-                    </button>
-                </div>
-            </div>
-        </div>
         </div>
 
         <!-- ═══════════════ RELATION TABS BAR ═══════════════ -->
@@ -2386,14 +2401,712 @@
     }))).replace(/</g, '\\u003C') %>
 </script>
 
+<!-- ═══════════════ HEADER CONFIG PANEL (teleported to body) ═══════════════ -->
+<div x-data="headerConfigPanel()" @open-header-config.window="showHeaderConfig = true"
+     x-effect="document.body.style.overflow = showHeaderConfig ? 'hidden' : ''">
+    <template x-teleport="body">
+    <div x-show="showHeaderConfig" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+         style="position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)" class="flex items-center justify-center" @click.self="showHeaderConfig = false" x-cloak>
+        <div style="max-height:80vh" class="bg-white dark:bg-[#1b2e4b] rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 w-[380px] flex flex-col"
+             x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95 translate-y-2" x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+             x-data="{ hcAcc: { icon: false, title: false, cls: false, attach: false, rels: false, fields: true, dur: false } }">
+            <!-- Panel Header (fixed) -->
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1b2e4b] rounded-t-2xl flex-shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center">
+                        <iconify-icon icon="solar:widget-6-bold-duotone" width="18" class="text-purple-500"></iconify-icon>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-800 dark:text-white">Configurer l'en-tête</h3>
+                        <p class="text-[10px] text-gray-400">Personnalisez l'affichage du header de fiche</p>
+                    </div>
+                </div>
+                <button type="button" @click="showHeaderConfig = false" class="w-7 h-7 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+                    <iconify-icon icon="solar:close-circle-bold" width="18"></iconify-icon>
+                </button>
+            </div>
+
+            <!-- Panel Body (scrollable) -->
+            <div class="hc-body" style="overflow-y:auto;flex:1;min-height:0;overscroll-behavior:contain">
+
+                <!-- ① ICÔNE / AVATAR -->
+                <div class="hc-section">
+                    <div class="hc-section-header" @click="hcAcc.icon = !hcAcc.icon" style="cursor:pointer">
+                        <div class="hc-section-left">
+                            <div class="hc-section-icon" style="background:#ede9fe"><iconify-icon icon="solar:user-circle-bold-duotone" width="14" style="color:#8b5cf6"></iconify-icon></div>
+                            <span class="hc-section-title">Icône</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="hc-toggle-track" @click.stop="hcLocal.showIcon = !(hcLocal.showIcon !== false)"
+                                 :style="(hcLocal.showIcon !== false) ? 'background:#8b5cf6' : 'background:#d1d5db'">
+                                <span class="hc-toggle-handle" :style="(hcLocal.showIcon !== false) ? 'left:18px' : 'left:2px'"></span>
+                            </div>
+                            <iconify-icon icon="solar:alt-arrow-down-linear" width="14" class="text-gray-400 transition-transform duration-200" :style="hcAcc.icon ? 'transform:rotate(180deg)' : ''"></iconify-icon>
+                        </div>
+                    </div>
+                    <div x-show="hcAcc.icon && hcLocal.showIcon !== false" x-collapse>
+                        <div class="hc-section-content">
+                            <select class="hc-select" @change="
+                                const val = $event.target.value;
+                                if (val === 'entity-icon') hcLocal.avatarSource = { type: 'entity-icon' };
+                                else if (val === 'record-image') hcLocal.avatarSource = { type: 'record-image' };
+                                else hcLocal.avatarSource = { type: 'relation-image', relationKey: val };
+                            " :value="hcLocal.avatarSource?.type === 'relation-image' ? (hcLocal.avatarSource.relationKey || '') : (hcLocal.avatarSource?.type || 'entity-icon')">
+                                <option value="entity-icon">Icône de l'entité (<%= entity.name %>)</option>
+                                <option value="record-image">Image de la fiche</option>
+                                <% (entity.relations || []).forEach(r => { %>
+                                <option value="<%= r.key %>"><%= r.label || (r.targetEntity && r.targetEntity.name) || 'Relation' %></option>
+                                <% }); %>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ② TITRE PRINCIPAL -->
+                <div class="hc-section">
+                    <div class="hc-section-header" @click="hcAcc.title = !hcAcc.title" style="cursor:pointer">
+                        <div class="hc-section-left">
+                            <div class="hc-section-icon" style="background:#dbeafe"><iconify-icon icon="solar:text-bold-duotone" width="14" style="color:#3b82f6"></iconify-icon></div>
+                            <span class="hc-section-title">Titre</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="hc-toggle-track" @click.stop="hcLocal.showTitle = !(hcLocal.showTitle !== false)"
+                                 :style="(hcLocal.showTitle !== false) ? 'background:#8b5cf6' : 'background:#d1d5db'">
+                                <span class="hc-toggle-handle" :style="(hcLocal.showTitle !== false) ? 'left:18px' : 'left:2px'"></span>
+                            </div>
+                            <iconify-icon icon="solar:alt-arrow-down-linear" width="14" class="text-gray-400 transition-transform duration-200" :style="hcAcc.title ? 'transform:rotate(180deg)' : ''"></iconify-icon>
+                        </div>
+                    </div>
+                    <div x-show="hcAcc.title && hcLocal.showTitle !== false" x-collapse>
+                        <div class="hc-section-content">
+                            <select class="hc-select" @change="
+                                const val = $event.target.value;
+                                if (val === 'entity') { hcLocal.titleSource = { type: 'entity' }; hcLocal.subtitleRelation = null; }
+                                else { hcLocal.titleSource = { type: 'relation', relationKey: val }; hcLocal.subtitleRelation = { relationKey: val, displayFields: ['title'] }; }
+                            " :value="hcLocal.titleSource?.type === 'relation' ? (hcLocal.titleSource.relationKey || '') : 'entity'">
+                                <option value="entity">Titre de la fiche (<%= entity.name %>)</option>
+                                <% (entity.relations || []).forEach(r => { %>
+                                <option value="<%= r.key %>"><%= r.label || (r.targetEntity && r.targetEntity.name) || 'Relation' %></option>
+                                <% }); %>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ③ CLASSIFICATIONS -->
+                <% if (entity.classifications && entity.classifications.length > 0) { %>
+                <div class="hc-section">
+                    <div class="hc-section-header" @click="hcAcc.cls = !hcAcc.cls" style="cursor:pointer">
+                        <div class="hc-section-left">
+                            <div class="hc-section-icon" style="background:#fef3c7"><iconify-icon icon="solar:tag-bold-duotone" width="14" style="color:#f59e0b"></iconify-icon></div>
+                            <span class="hc-section-title">Classifications</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="hc-toggle-track" @click.stop="hcLocal.showClassifications = !(hcLocal.showClassifications !== false)"
+                                 :style="(hcLocal.showClassifications !== false) ? 'background:#8b5cf6' : 'background:#d1d5db'">
+                                <span class="hc-toggle-handle" :style="(hcLocal.showClassifications !== false) ? 'left:18px' : 'left:2px'"></span>
+                            </div>
+                            <iconify-icon icon="solar:alt-arrow-down-linear" width="14" class="text-gray-400 transition-transform duration-200" :style="hcAcc.cls ? 'transform:rotate(180deg)' : ''"></iconify-icon>
+                        </div>
+                    </div>
+                    <div x-show="hcAcc.cls && hcLocal.showClassifications !== false" x-collapse>
+                        <div class="hc-section-content">
+                            <% (entity.classifications || []).forEach(cls => { %>
+                            <div class="hc-switch-row" @click="
+                                if (!hcLocal.shownClassifications) hcLocal.shownClassifications = [];
+                                const idx = hcLocal.shownClassifications.indexOf('<%= cls._id %>');
+                                if (idx > -1) hcLocal.shownClassifications.splice(idx, 1);
+                                else hcLocal.shownClassifications.push('<%= cls._id %>');
+                            ">
+                                <span class="hc-cls-dot" style="background:<%= (cls.options && cls.options[0] && cls.options[0].color) || '#4361ee' %>"></span>
+                                <span class="hc-switch-label"><%= cls.name || cls.label || 'Classification' %></span>
+                                <div class="hc-toggle-mini" :style="(!hcLocal.shownClassifications || hcLocal.shownClassifications.length === 0 || hcLocal.shownClassifications.includes('<%= cls._id %>')) ? 'background:#8b5cf6' : 'background:#d1d5db'">
+                                    <span class="hc-toggle-mini-handle" :style="(!hcLocal.shownClassifications || hcLocal.shownClassifications.length === 0 || hcLocal.shownClassifications.includes('<%= cls._id %>')) ? 'left:14px' : 'left:2px'"></span>
+                                </div>
+                            </div>
+                            <% }); %>
+                        </div>
+                    </div>
+                </div>
+                <% } %>
+
+                <!-- ③b PIÈCES JOINTES -->
+                <div class="hc-section">
+                    <div class="hc-section-header">
+                        <div class="hc-section-left">
+                            <div class="hc-section-icon" style="background:#fef3c7"><iconify-icon icon="solar:paperclip-bold-duotone" width="14" style="color:#f59e0b"></iconify-icon></div>
+                            <span class="hc-section-title">Pièces jointes</span>
+                        </div>
+                        <div class="hc-toggle-track" @click="hcLocal.showAttachments = !(hcLocal.showAttachments !== false)"
+                             :style="(hcLocal.showAttachments !== false) ? 'background:#8b5cf6' : 'background:#d1d5db'">
+                            <span class="hc-toggle-handle" :style="(hcLocal.showAttachments !== false) ? 'left:18px' : 'left:2px'"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ③c RELATIONS INDIRECTES -->
+                <% if (locals.headerRelatedMeta && locals.headerRelatedMeta.indirectRelations && locals.headerRelatedMeta.indirectRelations.length > 0) { %>
+                <div class="hc-section">
+                    <div class="hc-section-header" @click="hcAcc.rels = !hcAcc.rels" style="cursor:pointer">
+                        <div class="hc-section-left">
+                            <div class="hc-section-icon" style="background:#e0e7ff"><iconify-icon icon="solar:link-round-bold-duotone" width="14" style="color:#6366f1"></iconify-icon></div>
+                            <span class="hc-section-title">Relations</span>
+                        </div>
+                        <iconify-icon icon="solar:alt-arrow-down-linear" width="14" class="text-gray-400 transition-transform duration-200" :style="hcAcc.rels ? 'transform:rotate(180deg)' : ''"></iconify-icon>
+                    </div>
+                    <div x-show="hcAcc.rels" x-collapse>
+                        <div class="hc-section-content">
+                            <% (locals.headerRelatedMeta.indirectRelations || []).forEach(iRel => { %>
+                            <div class="hc-switch-row" @click="
+                                if (!hcLocal.shownRelations) hcLocal.shownRelations = [];
+                                const idx = hcLocal.shownRelations.indexOf('<%= iRel.key %>');
+                                if (idx > -1) hcLocal.shownRelations.splice(idx, 1);
+                                else hcLocal.shownRelations.push('<%= iRel.key %>');
+                            ">
+                                <iconify-icon icon="<%= iRel.icon %>" width="14" style="color:<%= iRel.color %>"></iconify-icon>
+                                <span class="hc-switch-label"><%= iRel.label %></span>
+                                <span class="hc-switch-count"><%= iRel.count %></span>
+                                <div class="hc-toggle-mini" :style="(hcLocal.shownRelations || []).includes('<%= iRel.key %>') ? 'background:#8b5cf6' : 'background:#d1d5db'">
+                                    <span class="hc-toggle-mini-handle" :style="(hcLocal.shownRelations || []).includes('<%= iRel.key %>') ? 'left:14px' : 'left:2px'"></span>
+                                </div>
+                            </div>
+                            <% }); %>
+                        </div>
+                    </div>
+                </div>
+                <% } %>
+
+                <!-- ④ CHAMPS (groupés par entité, accordéon par groupe) -->
+                <div class="hc-section" x-data="{ fieldAccSelf: false, fieldAccRel: false }">
+                    <div class="hc-section-header" @click="hcAcc.fields = !hcAcc.fields" style="cursor:pointer">
+                        <div class="hc-section-left">
+                            <div class="hc-section-icon" style="background:#e0e7ff"><iconify-icon icon="solar:documents-bold-duotone" width="14" style="color:#6366f1"></iconify-icon></div>
+                            <span class="hc-section-title">Champs</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="hc-section-hint" x-text="(hcLocal.heroFields || []).length + '/4'"></span>
+                            <iconify-icon icon="solar:alt-arrow-down-linear" width="14" class="text-gray-400 transition-transform duration-200" :style="hcAcc.fields ? 'transform:rotate(180deg)' : ''"></iconify-icon>
+                        </div>
+                    </div>
+                    <div x-show="hcAcc.fields" x-collapse>
+                        <div class="hc-section-content">
+                            <!-- Current entity fields (accordion) -->
+                            <div class="hc-field-group-label" @click="fieldAccSelf = !fieldAccSelf" style="cursor:pointer">
+                                <iconify-icon icon="<%= entity.icon || 'solar:star-bold-duotone' %>" width="12" style="color:<%= entity.color || '#4361ee' %>"></iconify-icon>
+                                <span style="flex:1"><%= entity.name %></span>
+                                <iconify-icon icon="solar:alt-arrow-down-linear" width="11" class="text-gray-400 transition-transform duration-200" :style="fieldAccSelf ? 'transform:rotate(180deg)' : ''"></iconify-icon>
+                            </div>
+                            <div x-show="fieldAccSelf" x-collapse>
+                                <% (entity.customFields || []).slice(0, 10).forEach(f => { %>
+                                <div class="hc-switch-row" @click="
+                                    if (!hcLocal.heroFields) hcLocal.heroFields = [];
+                                    const idx = hcLocal.heroFields.findIndex(h => h.fieldId === '<%= f._id %>' && (h.entitySource || 'self') === 'self');
+                                    if (idx > -1) { hcLocal.heroFields.splice(idx, 1); }
+                                    else if (hcLocal.heroFields.length < 4) { hcLocal.heroFields.push({ fieldId: '<%= f._id %>', entitySource: 'self', maxChars: 20 }); }
+                                ">
+                                    <iconify-icon icon="<%= (f.ui && f.ui.icon) || 'solar:document-text-linear' %>" width="13" style="color:#9ca3af"></iconify-icon>
+                                    <span class="hc-switch-label"><%= f.label || f.name %></span>
+                                    <div class="hc-toggle-mini" :style="(hcLocal.heroFields || []).some(h => h.fieldId === '<%= f._id %>' && (h.entitySource || 'self') === 'self') ? 'background:#8b5cf6' : 'background:#d1d5db'">
+                                        <span class="hc-toggle-mini-handle" :style="(hcLocal.heroFields || []).some(h => h.fieldId === '<%= f._id %>' && (h.entitySource || 'self') === 'self') ? 'left:14px' : 'left:2px'"></span>
+                                    </div>
+                                </div>
+                                <% }); %>
+                            </div>
+
+                            <!-- Related entity fields (accordion) -->
+                            <% if (locals.headerRelatedMeta && locals.headerRelatedMeta.relatedFields && locals.headerRelatedMeta.relatedFields.length > 0) { %>
+                            <% const _relKey = (_hc.titleSource && _hc.titleSource.relationKey) || (_hc.subtitleRelation && _hc.subtitleRelation.relationKey) || ''; %>
+                            <div class="hc-field-group-label" @click="fieldAccRel = !fieldAccRel" style="cursor:pointer;margin-top:8px">
+                                <iconify-icon icon="<%= locals.headerRelatedMeta.relatedEntityIcon || 'solar:user-bold-duotone' %>" width="12" style="color:<%= locals.headerRelatedMeta.relatedEntityColor || '#4361ee' %>"></iconify-icon>
+                                <span style="flex:1"><%= locals.headerRelatedMeta.relatedEntityName || 'Relation' %></span>
+                                <iconify-icon icon="solar:alt-arrow-down-linear" width="11" class="text-gray-400 transition-transform duration-200" :style="fieldAccRel ? 'transform:rotate(180deg)' : ''"></iconify-icon>
+                            </div>
+                            <div x-show="fieldAccRel" x-collapse>
+                                <% locals.headerRelatedMeta.relatedFields.forEach(rf => { %>
+                                <div class="hc-switch-row" @click="
+                                    if (!hcLocal.heroFields) hcLocal.heroFields = [];
+                                    const idx = hcLocal.heroFields.findIndex(h => h.fieldId === '<%= rf._id %>' && h.entitySource === '<%= _relKey %>');
+                                    if (idx > -1) { hcLocal.heroFields.splice(idx, 1); }
+                                    else if (hcLocal.heroFields.length < 4) { hcLocal.heroFields.push({ fieldId: '<%= rf._id %>', entitySource: '<%= _relKey %>', maxChars: 20 }); }
+                                ">
+                                    <iconify-icon icon="<%= rf.icon %>" width="13" style="color:#9ca3af"></iconify-icon>
+                                    <span class="hc-switch-label"><%= rf.label %></span>
+                                    <div class="hc-toggle-mini" :style="(hcLocal.heroFields || []).some(h => h.fieldId === '<%= rf._id %>' && h.entitySource === '<%= _relKey %>') ? 'background:#8b5cf6' : 'background:#d1d5db'">
+                                        <span class="hc-toggle-mini-handle" :style="(hcLocal.heroFields || []).some(h => h.fieldId === '<%= rf._id %>' && h.entitySource === '<%= _relKey %>') ? 'left:14px' : 'left:2px'"></span>
+                                    </div>
+                                </div>
+                                <% }); %>
+                            </div>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ⑤ DURÉE -->
+                <div class="hc-section" style="border-bottom:none">
+                    <div class="hc-section-header">
+                        <div class="hc-section-left">
+                            <div class="hc-section-icon" style="background:#fef3c7"><iconify-icon icon="solar:clock-circle-bold-duotone" width="14" style="color:#f59e0b"></iconify-icon></div>
+                            <div>
+                                <span class="hc-section-title">Durée</span>
+                                <span class="hc-section-subtitle">Ex: 4h 26min</span>
+                            </div>
+                        </div>
+                        <div class="hc-toggle-track" @click="hcLocal.showDuration = !hcLocal.showDuration"
+                             :style="hcLocal.showDuration ? 'background:#8b5cf6' : 'background:#d1d5db'">
+                            <span class="hc-toggle-handle" :style="hcLocal.showDuration ? 'left:18px' : 'left:2px'"></span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Panel Footer (fixed) -->
+            <div class="hc-panel-footer flex-shrink-0">
+                <button type="button" @click="showHeaderConfig = false" id="hc-btn-cancel"
+                        onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">
+                    Annuler
+                </button>
+                <button type="button" @click="saveHeaderConfig()" id="hc-btn-save"
+                        :disabled="hcSaving"
+                        :style="hcSaving ? 'opacity:0.6;cursor:wait' : ''">
+                    <iconify-icon :icon="hcSaving ? 'svg-spinners:ring-resize' : 'solar:check-circle-bold'" width="14"></iconify-icon>
+                    <span x-text="hcSaving ? 'Enregistrement...' : 'Enregistrer'"></span>
+                </button>
+            </div>
+
+            <style>
+                /* ═══ Config Modal ═══ */
+                .hc-toggle-track {
+                    position: relative;
+                    display: inline-block;
+                    width: 36px;
+                    height: 20px;
+                    min-width: 36px;
+                    border-radius: 10px;
+                    cursor: pointer;
+                    transition: background 0.2s;
+                    flex-shrink: 0;
+                }
+                .hc-toggle-handle {
+                    position: absolute;
+                    top: 2px;
+                    display: block;
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    background: white;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+                    transition: left 0.2s;
+                }
+                .hc-body { padding: 0; }
+                .hc-section {
+                    border-bottom: 1px solid #f3f4f6;
+                }
+                .dark .hc-section { border-bottom-color: #374151; }
+                .hc-section-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 12px 20px;
+                    cursor: default;
+                }
+                .hc-section-left {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+                .hc-section-icon {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+                .hc-section-title {
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #374151;
+                }
+                .dark .hc-section-title { color: #e5e7eb; }
+                .hc-section-subtitle {
+                    display: block;
+                    font-size: 10px;
+                    color: #9ca3af;
+                    font-weight: 400;
+                }
+                .hc-section-hint {
+                    font-size: 10px;
+                    font-weight: 600;
+                    color: #9ca3af;
+                    padding: 2px 8px;
+                    background: #f3f4f6;
+                    border-radius: 10px;
+                }
+                .dark .hc-section-hint { background: #374151; }
+                .hc-section-content {
+                    padding: 0 20px 14px;
+                }
+                .hc-select {
+                    width: 100%;
+                    padding: 8px 12px;
+                    font-size: 12px;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 8px;
+                    color: #374151;
+                    background: white;
+                    outline: none;
+                    cursor: pointer;
+                    transition: border-color 0.15s;
+                }
+                .hc-select:focus { border-color: #a78bfa; }
+                .dark .hc-select { background: #1e3a5f; color: #e5e7eb; border-color: #374151; }
+
+                /* Classification items */
+                .hc-cls-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 6px 0;
+                    cursor: pointer;
+                    user-select: none;
+                }
+                .hc-cls-dot {
+                    width: 10px;
+                    height: 10px;
+                    border-radius: 50%;
+                    flex-shrink: 0;
+                }
+                .hc-cls-label {
+                    flex: 1;
+                    font-size: 12px;
+                    font-weight: 500;
+                    color: #374151;
+                }
+                .dark .hc-cls-label { color: #e5e7eb; }
+                .hc-cls-check {
+                    flex-shrink: 0;
+                    transition: opacity 0.15s;
+                }
+
+                /* Field pills */
+                .hc-fields-list {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                }
+                .hc-field-pill {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    padding: 5px 10px;
+                    border-radius: 8px;
+                    font-size: 11px;
+                    font-weight: 500;
+                    color: #6b7280;
+                    border: 1px solid #e5e7eb;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                    user-select: none;
+                }
+                .hc-field-pill:hover { border-color: #a78bfa; }
+                .dark .hc-field-pill { color: #9ca3af; border-color: #374151; }
+
+                /* Hero bar field chips (display) */
+                .hb-field-chip {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    font-size: 11px;
+                    color: #6b7280;
+                    font-weight: 500;
+                }
+                .dark .hb-field-chip { color: #9ca3af; }
+
+                /* Switch rows (sober listing) */
+                .hc-switch-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 5px 0;
+                    cursor: pointer;
+                    user-select: none;
+                }
+                .hc-switch-row:hover { opacity: 0.8; }
+                .hc-switch-label {
+                    flex: 1;
+                    font-size: 12px;
+                    font-weight: 500;
+                    color: #374151;
+                    min-width: 0;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+                .dark .hc-switch-label { color: #d1d5db; }
+                .hc-switch-count {
+                    font-size: 10px;
+                    font-weight: 600;
+                    color: #9ca3af;
+                    padding: 1px 6px;
+                    background: #f3f4f6;
+                    border-radius: 8px;
+                }
+                .dark .hc-switch-count { background: #374151; }
+
+                /* Mini toggle (for switch rows) */
+                .hc-toggle-mini {
+                    position: relative;
+                    display: inline-block;
+                    width: 28px;
+                    height: 16px;
+                    min-width: 28px;
+                    border-radius: 8px;
+                    transition: background 0.2s;
+                    flex-shrink: 0;
+                }
+                .hc-toggle-mini-handle {
+                    position: absolute;
+                    top: 2px;
+                    display: block;
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 50%;
+                    background: white;
+                    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+                    transition: left 0.15s;
+                }
+
+                /* Field group label */
+                .hc-field-group-label {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 10px;
+                    font-weight: 700;
+                    color: #9ca3af;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    padding: 4px 0 2px;
+                    margin-bottom: 2px;
+                }
+
+                .hc-panel-footer {
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-end;
+                    gap: 8px;
+                    padding: 12px 20px;
+                    border-top: 1px solid #f3f4f6;
+                    background: #f9fafb;
+                    border-radius: 0 0 16px 16px;
+                }
+                #hc-btn-cancel {
+                    padding: 8px 16px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #6b7280;
+                    background: transparent;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 8px;
+                    cursor: pointer;
+                }
+                #hc-btn-save {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 8px 20px;
+                    border-radius: 8px;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #fff;
+                    background: #8b5cf6;
+                    border: none;
+                    cursor: pointer;
+                    box-shadow: 0 2px 8px rgba(139,92,246,0.3);
+                }
+                #hc-btn-save:hover:not(:disabled) {
+                    background: #7c3aed;
+                }
+                #hc-btn-save:disabled {
+                    opacity: 0.6;
+                    cursor: wait;
+                }
+
+                /* ═══ Hero Bar Quick Icons ═══ */
+                .hb-quick-icons {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    margin-left: auto;
+                    margin-right: 12px;
+                    flex-shrink: 0;
+                }
+                .hb-separator {
+                    width: 1px;
+                    height: 20px;
+                    background: #e5e7eb;
+                    margin: 0 4px;
+                    flex-shrink: 0;
+                }
+                .dark .hb-separator { background: #374151; }
+                .hb-icon-item {
+                    position: relative;
+                }
+                .hb-icon-btn {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+                    background: transparent;
+                }
+                .hb-icon-btn:hover {
+                    background: #f3f4f6;
+                }
+                .dark .hb-icon-btn:hover { background: rgba(55,65,81,0.5); }
+                .hb-badge {
+                    position: absolute;
+                    top: 2px;
+                    right: 2px;
+                    min-width: 14px;
+                    height: 14px;
+                    border-radius: 7px;
+                    font-size: 9px;
+                    font-weight: 700;
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    line-height: 1;
+                    padding: 0 3px;
+                    box-shadow: 0 0 0 2px white;
+                }
+                .dark .hb-badge { box-shadow: 0 0 0 2px #1b2e4b; }
+                .hb-dropdown {
+                    position: absolute;
+                    top: calc(100% + 8px);
+                    right: -10px;
+                    width: 260px;
+                    background: white;
+                    border-radius: 12px;
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05);
+                    z-index: 60;
+                    overflow: hidden;
+                }
+                .dark .hb-dropdown {
+                    background: #1b2e4b;
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05);
+                }
+                .hb-dropdown-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 10px 14px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #374151;
+                    border-bottom: 1px solid #f3f4f6;
+                    text-transform: uppercase;
+                    letter-spacing: 0.3px;
+                }
+                .dark .hb-dropdown-header {
+                    color: #e5e7eb;
+                    border-bottom-color: #374151;
+                }
+                .hb-dropdown-count {
+                    margin-left: auto;
+                    background: #f3f4f6;
+                    padding: 1px 6px;
+                    border-radius: 10px;
+                    font-size: 10px;
+                    font-weight: 600;
+                    color: #6b7280;
+                }
+                .dark .hb-dropdown-count { background: #374151; color: #9ca3af; }
+                .hb-dropdown-list {
+                    max-height: 200px;
+                    overflow-y: auto;
+                    padding: 4px;
+                }
+                .hb-dropdown-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 7px 10px;
+                    border-radius: 8px;
+                    font-size: 12px;
+                    color: #374151;
+                    text-decoration: none;
+                    transition: background 0.1s;
+                    cursor: pointer;
+                }
+                .hb-dropdown-item:hover {
+                    background: #f3f4f6;
+                }
+                .dark .hb-dropdown-item { color: #e5e7eb; }
+                .dark .hb-dropdown-item:hover { background: rgba(55,65,81,0.5); }
+                .hb-dropdown-item-text {
+                    flex: 1;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    font-weight: 500;
+                }
+                .hb-dropdown-item-meta {
+                    font-size: 10px;
+                    color: #9ca3af;
+                    text-transform: uppercase;
+                    font-weight: 600;
+                    flex-shrink: 0;
+                }
+                .hb-dropdown-empty {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                    padding: 16px;
+                    font-size: 11px;
+                    color: #9ca3af;
+                }
+                .hb-dropdown-footer {
+                    display: block;
+                    text-align: center;
+                    padding: 8px;
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: #8b5cf6;
+                    text-decoration: none;
+                    border-top: 1px solid #f3f4f6;
+                    transition: background 0.1s;
+                }
+                .hb-dropdown-footer:hover { background: #f9fafb; }
+                .dark .hb-dropdown-footer { border-top-color: #374151; color: #a78bfa; }
+                .dark .hb-dropdown-footer:hover { background: rgba(55,65,81,0.3); }
+            </style>
+        </div>
+    </div>
+    </template>
+</div>
 
 <script>
     document.addEventListener("alpine:init", () => {
 
-        // ═══ HEADER BAR (Hero identity bar config) ═══
+        // ═══ HEADER BAR (Hero identity bar menu) ═══
         Alpine.data("headerBar", () => ({
             showMoreMenu: false,
-            showDeleteConfirm: false,
+            showDeleteConfirm: false
+        }));
+
+        // ═══ HEADER CONFIG PANEL (standalone modal) ═══
+        Alpine.data("headerConfigPanel", () => ({
             showHeaderConfig: false,
             hcSaving: false,
             hcLocal: <%- JSON.stringify((entity.headerConfig && typeof entity.headerConfig.toObject === 'function') ? entity.headerConfig.toObject() : (entity.headerConfig || {})).replace(/</g, '\\u003C') %>,
@@ -2410,7 +3123,6 @@
                     });
                     if (res.ok) {
                         this.showHeaderConfig = false;
-                        // Reload page to reflect changes
                         window.location.reload();
                     } else {
                         const err = await res.json().catch(() => null);

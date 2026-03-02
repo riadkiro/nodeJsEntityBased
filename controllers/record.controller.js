@@ -1010,17 +1010,142 @@ module.exports = {
 
             // ═══ Header Config: Resolve related record for hero bar ═══
             let headerRelatedRecord = null;
+            let headerRelatedMeta = null; // { attachmentCount, indirectRelations: [...] }
             try {
                 const hc = entity.headerConfig || {};
-                const sr = hc.subtitleRelation;
-                if (sr && sr.relationKey) {
-                    // Find the related record value
-                    const relVal = recordValues[sr.relationKey];
+                // Determine which relation key to use (titleSource, subtitle, OR avatar source)
+                let headerRelationKey = null;
+                if (hc.titleSource && hc.titleSource.type === 'relation' && hc.titleSource.relationKey) {
+                    headerRelationKey = hc.titleSource.relationKey;
+                } else if (hc.subtitleRelation && hc.subtitleRelation.relationKey) {
+                    headerRelationKey = hc.subtitleRelation.relationKey;
+                } else if (hc.avatarSource && hc.avatarSource.type === 'relation-image' && hc.avatarSource.relationKey) {
+                    headerRelationKey = hc.avatarSource.relationKey;
+                }
+
+                if (headerRelationKey) {
+                    // Find the related record value from record.relations
+                    const relVal = recordValues[headerRelationKey];
                     const relId = Array.isArray(relVal) ? relVal[0] : relVal;
                     if (relId && mongoose.Types.ObjectId.isValid(relId)) {
                         headerRelatedRecord = await RecordModel.findById(relId)
                             .populate({ path: 'customFields.field_id', select: 'label name type inputType ui' })
                             .lean();
+
+                        if (headerRelatedRecord) {
+                            // Build meta: attachments count + indirect relations
+                            const attachmentCount = (headerRelatedRecord.attachments || []).length;
+                            const indirectRelations = [];
+
+                            // Load the entity of the related record to find its own relations
+                            const relatedEntity = await EntityModel.findById(headerRelatedRecord.entityId)
+                                .populate({ path: 'relations.targetEntity', select: 'name slug icon color' })
+                                .populate({ path: 'customFields', select: 'label name ui' })
+                                .select('name slug icon color customFields relations')
+                                .lean();
+
+                            if (relatedEntity && relatedEntity.relations) {
+                                // Build values map for the related record
+                                const relRecValues = {};
+                                (headerRelatedRecord.relations || []).forEach(rv => {
+                                    if (rv.relationKey) relRecValues[rv.relationKey] = rv.value;
+                                });
+
+                                for (const rel of relatedEntity.relations) {
+                                    const tgt = rel.targetEntity || {};
+                                    // Skip relation back to current entity (avoid circular)
+                                    if (tgt._id && tgt._id.toString() === entity._id.toString()) continue;
+
+                                    const rv = relRecValues[rel.key];
+                                    let count = 0;
+                                    let records = [];
+                                    if (rv) {
+                                        const ids = Array.isArray(rv) ? rv : [rv];
+                                        const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+                                        count = validIds.length;
+                                        if (count > 0) {
+                                            records = await RecordModel.find({ _id: { $in: validIds } })
+                                                .select('title image _id entityId')
+                                                .lean();
+                                        }
+                                    }
+
+                                    // Also check inverse relations (records FROM other entities that point to this patient)
+                                    const inverseCount = await RecordModel.countDocuments({
+                                        entityId: tgt._id,
+                                        $or: [
+                                            { 'relations': { $elemMatch: { value: headerRelatedRecord._id } } },
+                                            { 'relations': { $elemMatch: { value: headerRelatedRecord._id.toString() } } },
+                                            { 'relations': { $elemMatch: { value: { $in: [headerRelatedRecord._id, headerRelatedRecord._id.toString()] } } } }
+                                        ]
+                                    });
+
+                                    const totalCount = count + inverseCount;
+                                    if (totalCount > 0) {
+                                        indirectRelations.push({
+                                            key: rel.key,
+                                            label: rel.label || tgt.name || 'Relation',
+                                            icon: tgt.icon || 'solar:link-round-bold-duotone',
+                                            color: tgt.color || '#4361ee',
+                                            slug: tgt.slug || '',
+                                            entityId: (tgt._id || '').toString(),
+                                            count: totalCount,
+                                            records: records.slice(0, 5) // Only first 5 for preview
+                                        });
+                                    }
+                                }
+                            }
+
+                            // Also find entities that have inverse relations to the patient's entity
+                            if (relatedEntity) {
+                                const invRels = await getInverseRelations(EntityModel, relatedEntity._id);
+                                for (const invRel of invRels) {
+                                    const tgt = invRel.targetEntity || {};
+                                    // Skip current entity
+                                    if (tgt._id && tgt._id.toString() === entity._id.toString()) continue;
+
+                                    const invCount = await RecordModel.countDocuments({
+                                        entityId: invRel.sourceEntityId,
+                                        'relations': {
+                                            $elemMatch: {
+                                                relationKey: invRel.sourceRelationKey,
+                                                value: { $in: [headerRelatedRecord._id, headerRelatedRecord._id.toString()] }
+                                            }
+                                        }
+                                    });
+
+                                    // Only add if not already in the list
+                                    const exists = indirectRelations.find(r => r.entityId === (invRel.sourceEntityId || '').toString());
+                                    if (!exists && invCount > 0) {
+                                        indirectRelations.push({
+                                            key: invRel.key,
+                                            label: invRel.label || tgt.name || 'Relation',
+                                            icon: tgt.icon || 'solar:link-round-bold-duotone',
+                                            color: tgt.color || '#4361ee',
+                                            slug: tgt.slug || '',
+                                            entityId: (invRel.sourceEntityId || '').toString(),
+                                            count: invCount,
+                                            records: []
+                                        });
+                                    }
+                                }
+                            }
+
+                            headerRelatedMeta = {
+                                attachmentCount,
+                                indirectRelations: indirectRelations.filter(r => r.count > 0),
+                                relatedEntityIcon: relatedEntity ? (relatedEntity.icon || 'solar:user-bold-duotone') : '',
+                                relatedEntityColor: relatedEntity ? (relatedEntity.color || '#4361ee') : '',
+                                relatedEntityName: relatedEntity ? (relatedEntity.name || '') : '',
+                                relatedFields: relatedEntity && relatedEntity.customFields
+                                    ? relatedEntity.customFields.map(f => ({
+                                        _id: (f._id || '').toString(),
+                                        label: f.label || f.name || '',
+                                        icon: (f.ui && f.ui.icon) || 'solar:document-text-linear'
+                                    })).slice(0, 12)
+                                    : []
+                            };
+                        }
                     }
                 }
             } catch (headerErr) {
@@ -1047,6 +1172,7 @@ module.exports = {
                 gridLines,
                 computedFieldValues,
                 headerRelatedRecord,
+                headerRelatedMeta,
                 account_number: req.account_number,
                 layout: "layout-app"
             });

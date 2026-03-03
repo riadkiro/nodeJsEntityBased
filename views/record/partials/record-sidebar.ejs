@@ -894,13 +894,13 @@
                                                 <div class="grid grid-cols-1 gap-y-2">
                                                     <% if (relRec.slug) { %>
                                                         <div>
-                                                            <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-0.5">Identifiant</div>
+                                                            <div class="flex items-center" style="gap:6px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99);margin-bottom:2px">Identifiant</div>
                                                             <div class="text-xs text-gray-700 dark:text-gray-300"><%= relRec.slug %></div>
                                                         </div>
                                                     <% } %>
                                                     <% if (relRec.date) { %>
                                                         <div>
-                                                            <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-0.5">Date</div>
+                                                            <div class="flex items-center" style="gap:6px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99);margin-bottom:2px">Date</div>
                                                             <div class="text-xs text-gray-700 dark:text-gray-300"><%= new Date(relRec.date).toLocaleDateString('fr-FR') %></div>
                                                         </div>
                                                     <% } %>
@@ -943,11 +943,11 @@
                                                             %>
                                                             <% if (cfShowAge && cfAge) { %>
                                                                 <!-- Age display (like image-47: "Âge  45 ans") -->
-                                                                <div class="flex items-center gap-2 py-1">
+                                                                <div class="flex items-center" style="gap:6px;padding:4px 0">
                                                                     <% if (cfIcon) { %>
-                                                                        <iconify-icon icon="<%= cfIcon %>" width="14" class="text-gray-400 flex-none"></iconify-icon>
+                                                                        <iconify-icon icon="<%= cfIcon %>" width="14" class="flex-none" style="color:rgb(156,163,175)"></iconify-icon>
                                                                     <% } %>
-                                                                    <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Âge</span>
+                                                                    <span style="font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99)">Âge</span>
                                                                     <span class="text-sm font-semibold text-gray-700 dark:text-gray-200"><%= cfAge %> ans</span>
                                                                 </div>
                                                             <% } else if (cfIsAllergy) { %>
@@ -963,9 +963,9 @@
                                                             <% } else if (cfIsAntecedent) { %>
                                                                 <!-- Antecedents with colored icons -->
                                                                 <div class="py-1.5">
-                                                                    <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                                                                    <div class="flex items-center" style="gap:6px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99);margin-bottom:4px">
                                                                         <% if (cfIcon) { %>
-                                                                            <iconify-icon icon="<%= cfIcon %>" width="14" class="text-gray-400 flex-none"></iconify-icon>
+                                                                            <iconify-icon icon="<%= cfIcon %>" width="14" class="flex-none" style="color:rgb(156,163,175)"></iconify-icon>
                                                                         <% } %>
                                                                         Antécédents
                                                                     </div>
@@ -981,9 +981,9 @@
                                                             <% } else { %>
                                                                 <!-- Standard field with icon -->
                                                                 <div>
-                                                                    <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-0.5">
+                                                                    <div class="flex items-center" style="gap:6px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99);margin-bottom:2px">
                                                                         <% if (cfIcon) { %>
-                                                                            <iconify-icon icon="<%= cfIcon %>" width="14" class="text-gray-400 flex-none"></iconify-icon>
+                                                                            <iconify-icon icon="<%= cfIcon %>" width="14" class="flex-none" style="color:rgb(156,163,175)"></iconify-icon>
                                                                         <% } %>
                                                                         <%= cf.field_id.label %>
                                                                     </div>

@@ -1138,7 +1138,7 @@ module.exports = {
                                 relatedEntityColor: relatedEntity ? (relatedEntity.color || '#4361ee') : '',
                                 relatedEntityName: relatedEntity ? (relatedEntity.name || '') : '',
                                 relatedFields: relatedEntity && relatedEntity.customFields
-                                    ? relatedEntity.customFields.map(f => ({
+                                    ? relatedEntity.customFields.filter(f => f != null).map(f => ({
                                         _id: (f._id || '').toString(),
                                         label: f.label || f.name || '',
                                         icon: (f.ui && f.ui.icon) || 'solar:document-text-linear'

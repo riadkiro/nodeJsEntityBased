@@ -1,13 +1,13 @@
-<%- include('../components/tag-picker') %>
+﻿<%- include('../components/tag-picker') %>
 <div x-data="recordForm()" class="space-y-4">
     <form action="/account/<%= account_number %>/record/<%= entity.slug %>/update/<%= record._id %>" method="POST"
         enctype="multipart/form-data" id="main-record-form">
 
-        <!-- ═══════════════ HERO IDENTITY BAR (Mission 1) ═══════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HERO IDENTITY BAR (Mission 1) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <%
             const _hc = entity.headerConfig || {};
 
-            // ── Resolve classifications for header display ──
+            // â”€â”€ Resolve classifications for header display â”€â”€
             const _statusCls = entity.statusClassification;
             let _statusLabel = '', _statusColor = '#94a3b8';
             const _clsTags = [];
@@ -33,7 +33,7 @@
                 });
             }
 
-            // ── Duration since creation ──
+            // â”€â”€ Duration since creation â”€â”€
             let _durationStr = '';
             if (_hc.showDuration) {
                 const _createdAt = record.createdAt ? new Date(record.createdAt) : null;
@@ -47,7 +47,7 @@
                 }
             }
 
-            // ── Avatar resolution ──
+            // â”€â”€ Avatar resolution â”€â”€
             const _showIcon = _hc.showIcon !== false;
             const _avSrc = _hc.avatarSource || {};
             let _avatarImage = '';
@@ -73,7 +73,7 @@
                 _avatarColor = _hrm.relatedEntityColor || '#4361ee';
             }
 
-            // ── Title resolution (new: titleSource) ──
+            // â”€â”€ Title resolution (new: titleSource) â”€â”€
             const _showTitle = _hc.showTitle !== false;
             const _titleSrc = _hc.titleSource || {};
             let _heroTitle = record.title || 'Sans titre';
@@ -84,7 +84,7 @@
                 _heroTitle = locals.headerRelatedRecord.title;
             }
 
-            // ── Subtitle from related record (legacy) ──
+            // â”€â”€ Subtitle from related record (legacy) â”€â”€
             const _sr = _hc.subtitleRelation || {};
             let _subtitleParts = [];
             if (locals.headerRelatedRecord && _sr.displayFields && _sr.displayFields.length > 0) {
@@ -99,7 +99,7 @@
                 });
             }
 
-            // ── Hero fields (icon + truncated value, supports entitySource) ──
+            // â”€â”€ Hero fields (icon + truncated value, supports entitySource) â”€â”€
             const _heroFieldConfigs = _hc.heroFields || [];
             const _heroFieldValues = [];
             _heroFieldConfigs.forEach(hf => {
@@ -114,7 +114,7 @@
                     const fieldDef = cf.field_id || {};
                     let val = typeof cf.value === 'string' ? cf.value : JSON.stringify(cf.value);
                     const maxChars = hf.maxChars || 20;
-                    if (val.length > maxChars) val = val.substring(0, maxChars) + '…';
+                    if (val.length > maxChars) val = val.substring(0, maxChars) + 'â€¦';
                     _heroFieldValues.push({
                         icon: (fieldDef.ui && fieldDef.ui.icon) || 'solar:document-text-linear',
                         value: val
@@ -122,7 +122,7 @@
                 }
             });
 
-            // ── Meta fields (legacy) ──
+            // â”€â”€ Meta fields (legacy) â”€â”€
             const _metaFields = (_hc.metaFields || []);
             const _metaBadges = [];
             _metaFields.forEach(mf => {
@@ -205,19 +205,80 @@
             </div>
 
             <% if (locals.headerRelatedMeta && locals.headerRelatedRecord) { %>
-            <!-- Center: Quick access icons (relations via patient + attachments) -->
-            <div class="hb-quick-icons" x-data="{ openDropdown: null }">
-                <% const _hrm = locals.headerRelatedMeta; %>
+            <!-- Unified quick access icons: attachments | separator | relations | separator | save -->
+            <%
+                const _hrm = locals.headerRelatedMeta;
+                const _shownRels = _hc.shownRelations || [];
+                const _shownRels2 = _shownRels;
+                const _hasAttachments = _hrm.attachmentCount > 0 && _hc.showAttachments !== false;
 
-                <!-- Attachments icon + count -->
-                <% if (_hrm.attachmentCount > 0 && _hc.showAttachments !== false) { %>
+                // Collect all relations: indirect (via patient) + direct + inverse
+                // Deduplicate by target entity slug to avoid same entity showing twice
+                const _allRelIcons = [];
+                const _seenSlugs = new Set();
+
+                // 1) Indirect relations via patient (priority)
+                (_hrm.indirectRelations || []).filter(ir => _shownRels.includes(ir.key)).forEach(ir => {
+                    const slug = ir.slug || ir.key;
+                    if (!_seenSlugs.has(slug)) {
+                        _seenSlugs.add(slug);
+                        _allRelIcons.push({
+                            key: ir.key, label: ir.label, icon: ir.icon, color: ir.color,
+                            count: ir.count, slug: ir.slug,
+                            records: ir.records || [], type: 'indirect'
+                        });
+                    }
+                });
+
+                // 2) Direct relations
+                (entity.relations || []).filter(r => _shownRels.includes(r.key)).forEach(dRel => {
+                    const _dTgt = dRel.targetEntity || {};
+                    const slug = _dTgt.slug || dRel.key;
+                    if (!_seenSlugs.has(slug)) {
+                        _seenSlugs.add(slug);
+                        const _dTab = (locals.relationTabsMeta || []).find(t => t.key === dRel.key);
+                        _allRelIcons.push({
+                            key: dRel.key, label: dRel.label || _dTgt.name || 'Relation',
+                            icon: _dTgt.icon || 'solar:link-round-bold-duotone',
+                            color: _dTgt.color || '#4361ee',
+                            count: _dTab ? _dTab.count : 0, slug: _dTgt.slug || '',
+                            records: (locals.relatedRecordsData || {})[dRel.key] || [],
+                            type: 'direct'
+                        });
+                    }
+                });
+
+                // 3) Inverse relations
+                (locals.inverseRelations || []).filter(invR => _shownRels.includes(invR.key)).forEach(invR => {
+                    const _iTgt = invR.targetEntity || {};
+                    const slug = _iTgt.slug || invR.key;
+                    if (!_seenSlugs.has(slug)) {
+                        _seenSlugs.add(slug);
+                        const _iTab = (locals.relationTabsMeta || []).find(t => t.key === invR.key);
+                        _allRelIcons.push({
+                            key: invR.key, label: invR.label || _iTgt.name || 'Relation',
+                            icon: _iTgt.icon || 'solar:link-round-bold-duotone',
+                            color: _iTgt.color || '#4361ee',
+                            count: _iTab ? _iTab.count : 0, slug: _iTgt.slug || '',
+                            records: (locals.relatedRecordsData || {})[invR.key] || [],
+                            type: 'inverse'
+                        });
+                    }
+                });
+
+                const _hasAnyRel = _allRelIcons.length > 0;
+            %>
+            <% if (_hasAttachments || _hasAnyRel) { %>
+            <div class="hb-quick-icons" x-data="{ openDropdown: null }">
+                <!-- Attachments icon -->
+                <% if (_hasAttachments) { %>
                 <div class="hb-icon-item" @click.outside="openDropdown = openDropdown === 'attach' ? null : openDropdown">
                     <div class="hb-icon-btn" @click="openDropdown = openDropdown === 'attach' ? null : 'attach'"
                          title="Pièces jointes (<%= _hrm.attachmentCount %>)">
-                        <iconify-icon icon="solar:paperclip-bold-duotone" width="16" style="color:#f59e0b"></iconify-icon>
+                        <iconify-icon icon="solar:paperclip-bold-duotone" width="15" style="color:#f59e0b;flex-shrink:0"></iconify-icon>
+                        <span class="hb-expand-label" style="color:#f59e0b">Documents</span>
                         <span class="hb-badge" style="background:#f59e0b"><%= _hrm.attachmentCount %></span>
                     </div>
-                    <!-- Attachments dropdown -->
                     <div class="hb-dropdown" x-show="openDropdown === 'attach'" x-transition x-cloak>
                         <div class="hb-dropdown-header">
                             <iconify-icon icon="solar:paperclip-bold-duotone" width="14" style="color:#f59e0b"></iconify-icon>
@@ -237,33 +298,33 @@
                 </div>
                 <% } %>
 
-                <% if (_hrm.indirectRelations && _hrm.indirectRelations.length > 0) { %>
+                <!-- Separator between attachments and relations -->
+                <% if (_hasAttachments && _hasAnyRel) { %>
                 <span class="hb-separator"></span>
                 <% } %>
 
-                <!-- Indirect relation icons (filtered by shownRelations) -->
-                <% const _shownRels = _hc.shownRelations || []; %>
-                <% (_hrm.indirectRelations || []).filter(iRel => _shownRels.includes(iRel.key)).forEach(iRel => { %>
-                <div class="hb-icon-item" @click.outside="openDropdown = openDropdown === '<%= iRel.key %>' ? null : openDropdown">
-                    <div class="hb-icon-btn" @click="openDropdown = openDropdown === '<%= iRel.key %>' ? null : '<%= iRel.key %>'"
-                         title="<%= iRel.label %> (<%= iRel.count %>)">
-                        <iconify-icon icon="<%= iRel.icon %>" width="16" style="color:<%= iRel.color %>"></iconify-icon>
-                        <% if (iRel.count > 0) { %>
-                        <span class="hb-badge" style="background:<%= iRel.color %>"><%= iRel.count %></span>
+                <!-- All relation icons (deduplicated) -->
+                <% _allRelIcons.forEach(rel => { %>
+                <div class="hb-icon-item" @click.outside="openDropdown = openDropdown === '<%= rel.key %>' ? null : openDropdown">
+                    <div class="hb-icon-btn" @click="openDropdown = openDropdown === '<%= rel.key %>' ? null : '<%= rel.key %>'"
+                         title="<%= rel.label %> (<%= rel.count %>)">
+                        <iconify-icon icon="<%= rel.icon %>" width="15" style="color:<%= rel.color %>;flex-shrink:0"></iconify-icon>
+                        <span class="hb-expand-label" style="color:<%= rel.color %>"><%= rel.label %></span>
+                        <% if (rel.count > 0) { %>
+                        <span class="hb-badge" style="background:<%= rel.color %>"><%= rel.count %></span>
                         <% } %>
                     </div>
-                    <!-- Relation dropdown -->
-                    <div class="hb-dropdown" x-show="openDropdown === '<%= iRel.key %>'" x-transition x-cloak>
+                    <div class="hb-dropdown" x-show="openDropdown === '<%= rel.key %>'" x-transition x-cloak>
                         <div class="hb-dropdown-header">
-                            <iconify-icon icon="<%= iRel.icon %>" width="14" style="color:<%= iRel.color %>"></iconify-icon>
-                            <span><%= iRel.label %></span>
-                            <span class="hb-dropdown-count"><%= iRel.count %></span>
+                            <iconify-icon icon="<%= rel.icon %>" width="14" style="color:<%= rel.color %>"></iconify-icon>
+                            <span><%= rel.label %></span>
+                            <span class="hb-dropdown-count"><%= rel.count %></span>
                         </div>
-                        <% if (iRel.records && iRel.records.length > 0) { %>
+                        <% if (rel.records.length > 0) { %>
                         <div class="hb-dropdown-list">
-                            <% iRel.records.forEach(rec => { %>
-                            <a href="/account/<%= account_number %>/record/<%= iRel.slug %>/<%= rec._id %>/edit" class="hb-dropdown-item">
-                                <iconify-icon icon="<%= iRel.icon %>" width="14" style="color:<%= iRel.color %>"></iconify-icon>
+                            <% rel.records.slice(0, 5).forEach(rec => { %>
+                            <a href="/account/<%= account_number %>/record/<%= rel.slug %>/<%= rec._id %>/edit" class="hb-dropdown-item">
+                                <iconify-icon icon="<%= rel.icon %>" width="14" style="color:<%= rel.color %>"></iconify-icon>
                                 <span class="hb-dropdown-item-text"><%= rec.title || 'Sans titre' %></span>
                             </a>
                             <% }); %>
@@ -271,11 +332,11 @@
                         <% } else { %>
                         <div class="hb-dropdown-empty">
                             <iconify-icon icon="solar:magnifer-linear" width="16" style="color:#9ca3af"></iconify-icon>
-                            <span><%= iRel.count %> enregistrement<%= iRel.count > 1 ? 's' : '' %></span>
+                            <span>Aucun enregistrement</span>
                         </div>
                         <% } %>
-                        <% if (iRel.slug) { %>
-                        <a href="/account/<%= account_number %>/record/<%= iRel.slug %>" class="hb-dropdown-footer">
+                        <% if (rel.slug) { %>
+                        <a href="/account/<%= account_number %>/record/<%= rel.slug %>" class="hb-dropdown-footer">
                             Voir tout →
                         </a>
                         <% } %>
@@ -284,9 +345,15 @@
                 <% }); %>
             </div>
             <% } %>
+            <% } %>
+
+
 
             <!-- Right: Quick action buttons + More menu -->
             <div class="flex items-center gap-2">
+                <!-- Separator before save group -->
+                <span class="hb-separator"></span>
+
                 <!-- Hidden standard fields for form submission -->
                 <input type="hidden" name="standard[published]" value="<%= record.published ? 'on' : '' %>">
 
@@ -338,7 +405,7 @@
                         <button type="button" @click="$dispatch('open-header-config'); showMoreMenu = false"
                             class="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                             <iconify-icon icon="solar:widget-6-bold-duotone" width="15" class="text-purple-400"></iconify-icon>
-                            <span>Configurer l'en-tête</span>
+                            <span>Configurer l'en-tÃªte</span>
                         </button>
                         <div class="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
                         <!-- Delete -->
@@ -360,7 +427,7 @@
                         </div>
                         <div>
                             <h3 class="text-sm font-bold text-gray-800 dark:text-white">Supprimer cet enregistrement ?</h3>
-                            <p class="text-xs text-gray-400 mt-0.5">Cette action est irréversible.</p>
+                            <p class="text-xs text-gray-400 mt-0.5">Cette action est irrÃ©versible.</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -378,14 +445,14 @@
 
         </div>
 
-        <!-- ═══════════════ RELATION TABS BAR ═══════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• RELATION TABS BAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <% if (locals.relationTabsMeta && locals.relationTabsMeta.length > 0) { %>
-        <div x-data="relationTabs()" class="mb-4">
+        <div x-data="relationTabs()" class="mb-4" style="display:none">
             <!-- Tab Bar -->
             <div class="flex items-center bg-white dark:bg-[#1b2e4b] rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
                 <!-- Scrollable Tabs Container -->
                 <div class="flex-1 flex items-center gap-0.5 overflow-x-auto hide-scrollbar px-1.5 py-1.5" id="relation-tabs-scroll">
-                    <!-- Self Tab (entity itself) — always first -->
+                    <!-- Self Tab (entity itself) â€” always first -->
                     <button type="button"
                             @click="selectTab('__self__')"
                             class="relation-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 shrink-0 select-none"
@@ -426,7 +493,7 @@
                                           ? 'bg-primary/20 text-primary'
                                           : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'"
                                       x-text="tab._count"></span>
-                                <span x-show="tab.direction === 'inverse'" class="text-[8px] text-amber-500 font-bold uppercase tracking-wider opacity-60">↩</span>
+                                <span x-show="tab.direction === 'inverse'" class="text-[8px] text-amber-500 font-bold uppercase tracking-wider opacity-60">â†©</span>
                             </button>
                             <!-- Quick Add button per tab -->
                             <button type="button"
@@ -435,7 +502,7 @@
                                     :class="canAddOnTab(tab)
                                         ? 'text-gray-300 dark:text-gray-600 hover:text-primary hover:bg-primary/10 cursor-pointer'
                                         : 'text-gray-200 dark:text-gray-700 cursor-not-allowed opacity-40'"
-                                    :title="canAddOnTab(tab) ? 'Créer ' + tab.label : 'Ajout non disponible'"
+                                    :title="canAddOnTab(tab) ? 'CrÃ©er ' + tab.label : 'Ajout non disponible'"
                                     :disabled="!canAddOnTab(tab)">
                                 <iconify-icon icon="tabler:plus" width="12"></iconify-icon>
                             </button>
@@ -468,11 +535,11 @@
                         Configurer les onglets
                     </h4>
                     <button type="button" @click="resetConfig()" class="text-[10px] text-gray-400 hover:text-primary transition-colors">
-                        Réinitialiser
+                        RÃ©initialiser
                     </button>
                 </div>
                 <p class="text-[10px] text-gray-400 dark:text-gray-500 mb-3">
-                    Glissez pour réordonner. Activez ou désactivez les relations à afficher.
+                    Glissez pour rÃ©ordonner. Activez ou dÃ©sactivez les relations Ã  afficher.
                 </p>
                 <div id="relation-tabs-sortable" class="space-y-1.5">
                     <template x-for="tab in allTabs" :key="'cfg-' + tab.key">
@@ -550,7 +617,7 @@
                                         </div>
                                         <div class="flex-1 min-w-0">
                                             <div class="text-sm font-medium text-gray-700 dark:text-gray-200 truncate group-hover:text-primary transition-colors" x-text="rec.title"></div>
-                                            <div class="text-[10px] text-gray-400 dark:text-gray-500" x-text="rec.updatedAt ? 'Modifié le ' + new Date(rec.updatedAt).toLocaleDateString('fr-FR') : ''"></div>
+                                            <div class="text-[10px] text-gray-400 dark:text-gray-500" x-text="rec.updatedAt ? 'ModifiÃ© le ' + new Date(rec.updatedAt).toLocaleDateString('fr-FR') : ''"></div>
                                         </div>
                                         <iconify-icon icon="solar:arrow-right-linear" width="14" class="text-gray-300 dark:text-gray-600 group-hover:text-primary transition-colors shrink-0"></iconify-icon>
                                     </a>
@@ -563,12 +630,12 @@
                     <template x-if="!tabLoading && tabRecords.length === 0 && activeTab && activeTab !== '__self__'">
                         <div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500">
                             <iconify-icon icon="solar:box-minimalistic-bold-duotone" width="36" class="mb-3 opacity-40"></iconify-icon>
-                            <span class="text-xs mb-3">Aucun enregistrement lié</span>
+                            <span class="text-xs mb-3">Aucun enregistrement liÃ©</span>
                             <template x-if="canAddOnTab(activeTabMeta)">
                                 <button type="button" @click="openQuickCreate(activeTabMeta)"
                                         class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all">
                                     <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
-                                    <span x-text="'Créer ' + (activeTabMeta?.label || '')"></span>
+                                    <span x-text="'CrÃ©er ' + (activeTabMeta?.label || '')"></span>
                                 </button>
                             </template>
                             <template x-if="!canAddOnTab(activeTabMeta)">
@@ -579,7 +646,7 @@
                 </div>
             </div>
 
-            <!-- ═══════════════ QUICK CREATE MODAL ═══════════════ -->
+            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• QUICK CREATE MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
             <div x-show="qcOpen" x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
                  x-transition:leave="transition ease-in duration-200"
@@ -607,7 +674,7 @@
                             <div>
                                 <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200" x-text="'Nouveau ' + (qcTab?.label || '')"></h3>
                                 <p class="text-[10px] text-gray-400 dark:text-gray-500">
-                                    Création rapide · lié à <strong><%= record.title || 'cet enregistrement' %></strong>
+                                    CrÃ©ation rapide · liÃ© Ã  <strong><%= record.title || 'cet enregistrement' %></strong>
                                 </p>
                             </div>
                         </div>
@@ -645,7 +712,7 @@
                                     <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                                         <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="16" class="text-warning shrink-0"></iconify-icon>
                                         <div class="flex-1 min-w-0">
-                                            <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Titre auto-généré</div>
+                                            <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Titre auto-gÃ©nÃ©rÃ©</div>
                                             <div class="text-sm font-semibold text-gray-700 dark:text-gray-200 truncate"
                                                  x-text="computeQcTitle() || 'Remplissez les champs...'"
                                                  :class="!computeQcTitle() && 'text-gray-400 italic'"></div>
@@ -734,7 +801,7 @@
                            target="_blank"
                            class="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-primary transition-colors">
                             <iconify-icon icon="solar:arrow-right-up-linear" width="13"></iconify-icon>
-                            Ouvrir la page complète
+                            Ouvrir la page complÃ¨te
                         </a>
                         <div class="flex items-center gap-2">
                             <button type="button" @click="closeQuickCreate()"
@@ -746,7 +813,7 @@
                                     class="flex items-center gap-1.5 px-5 py-2 rounded-lg text-xs font-bold text-white bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     :class="qcSaving ? 'cursor-wait' : ''">
                                 <iconify-icon :icon="qcSaving ? 'svg-spinners:ring-resize' : 'tabler:check'" width="14"></iconify-icon>
-                                <span x-text="qcSaving ? 'Création...' : 'Créer'"></span>
+                                <span x-text="qcSaving ? 'CrÃ©ation...' : 'CrÃ©er'"></span>
                             </button>
                         </div>
                     </div>
@@ -923,7 +990,7 @@
                     }
                 },
 
-                // ═══ Quick Create Modal ═══
+                // â•â•â• Quick Create Modal â•â•â•
                 async openQuickCreate(tab) {
                     if (!tab) return;
                     this.qcTab = tab;
@@ -1032,7 +1099,7 @@
                             if (token.id === 'date') {
                                 return new Date().toISOString().split('T')[0];
                             }
-                            // Custom fields — match by field_id
+                            // Custom fields â€” match by field_id
                             const val = this.qcCustom[token.id];
                             if (val) return val;
                             // Check if it's a date field and format nicely
@@ -1147,9 +1214,9 @@
                             }
 
                             // Show success feedback
-                            this._showToast('Enregistrement créé avec succès !', 'success');
+                            this._showToast('Enregistrement crÃ©Ã© avec succÃ¨s !', 'success');
                         } else {
-                            this._showToast('Erreur lors de la création', 'error');
+                            this._showToast('Erreur lors de la crÃ©ation', 'error');
                         }
                     } catch (e) {
                         console.error('Error creating record:', e);
@@ -1235,7 +1302,7 @@
         <div class="record-layout-container" x-data="panelLayout()" id="panels-container"
             :style="'grid-template-columns: repeat(12, 1fr)'">
             
-            <!-- ═══ Main Form Content (Column 0) ═══ -->
+            <!-- â•â•â• Main Form Content (Column 0) â•â•â• -->
             <div class="record-layout-col relative" 
                 :style="'grid-column: span ' + columns[0].width"
                 id="panels-main-zone">
@@ -1359,7 +1426,7 @@
                                                                 <label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
                                                                     <iconify-icon icon="<%= (cf.ui && cf.ui.icon) || 'solar:calculator-bold-duotone' %>" width="14" style="color: <%= cf.color || '#f59e0b' %>;"></iconify-icon>
                                                                     <%= field.label || cf.label || cf.name %>
-                                                                    <span class="text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 dark:text-gray-500 px-1.5 py-0.5 rounded-full ml-1">calculé</span>
+                                                                    <span class="text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 dark:text-gray-500 px-1.5 py-0.5 rounded-full ml-1">calculÃ©</span>
                                                                 </label>
                                                                 <div class="mt-1 px-3 py-2 bg-gray-50 dark:bg-[#121e32] rounded-lg border border-gray-100 dark:border-gray-800">
                                                                     <%- include('../components/computed-field-renderer', { computedValue: cvData, displayType: cvDisplay, field: cf }) %>
@@ -1514,7 +1581,7 @@
                                                                         <span class="flex items-center gap-2 min-w-0" :class="!multiple && selectedItems.length > 0 ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'">
                                                                             <iconify-icon icon="solar:magnifer-bold-duotone" width="16" class="shrink-0" x-show="multiple || selectedItems.length === 0"></iconify-icon>
                                                                             <iconify-icon :icon="refEntityIcon" width="16" :style="'color:' + refEntityColor" class="shrink-0" x-show="!multiple && selectedItems.length > 0" x-cloak></iconify-icon>
-                                                                            <span class="truncate" x-text="!multiple && selectedItems.length > 0 ? selectedItems[0].label : (multiple && selectedItems.length > 0 ? selectedItems.length + ' sélectionné(s)' : 'Rechercher <%= mpName %>...')"></span>
+                                                                            <span class="truncate" x-text="!multiple && selectedItems.length > 0 ? selectedItems[0].label : (multiple && selectedItems.length > 0 ? selectedItems.length + ' sÃ©lectionnÃ©(s)' : 'Rechercher <%= mpName %>...')"></span>
                                                                         </span>
                                                                         <span class="flex items-center gap-1 shrink-0">
                                                                             <span role="button" x-show="!multiple && selectedItems.length > 0" x-cloak @click.stop="removeItem(selectedItems[0]?.id)" class="w-5 h-5 rounded-full flex items-center justify-center text-gray-400 hover:text-danger hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer">
@@ -1558,8 +1625,8 @@
                                                                                 <div class="flex items-center justify-between px-5 py-3 border-b dark:border-gray-800">
                                                                                     <div class="flex items-center gap-2">
                                                                                         <iconify-icon :icon="refEntityIcon" width="18" :style="'color:' + refEntityColor"></iconify-icon>
-                                                                                        <h3 class="font-semibold text-sm dark:text-gray-200" x-text="'Sélectionner ' + refEntityName"></h3>
-                                                                                        <span class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-0.5 rounded-full" x-text="modalTotal + ' résultats'"></span>
+                                                                                        <h3 class="font-semibold text-sm dark:text-gray-200" x-text="'SÃ©lectionner ' + refEntityName"></h3>
+                                                                                        <span class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-0.5 rounded-full" x-text="modalTotal + ' rÃ©sultats'"></span>
                                                                                     </div>
                                                                                     <button type="button" @click="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                                                                                         <iconify-icon icon="tabler:x" width="20"></iconify-icon>
@@ -1583,7 +1650,7 @@
                                                                                             <template x-if="modalResults.length === 0 && !modalLoading">
                                                                                                 <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
                                                                                                     <iconify-icon icon="solar:box-minimalistic-bold-duotone" width="40" class="mb-2"></iconify-icon>
-                                                                                                    <span class="text-sm">Aucun résultat trouvé</span>
+                                                                                                    <span class="text-sm">Aucun rÃ©sultat trouvÃ©</span>
                                                                                                 </div>
                                                                                             </template>
                                                                                             <div class="divide-y dark:divide-gray-800">
@@ -1623,7 +1690,7 @@
                                                                                     </template>
                                                                                 </div>
                                                                                 <div x-show="multiple" class="flex items-center justify-between px-5 py-3 border-t bg-gray-50 dark:bg-[#1b2e4b] dark:border-gray-800 rounded-b-xl">
-                                                                                    <span class="text-xs text-gray-500 dark:text-gray-400" x-text="tempSelected.length + ' sélectionné(s)'"></span>
+                                                                                    <span class="text-xs text-gray-500 dark:text-gray-400" x-text="tempSelected.length + ' sÃ©lectionnÃ©(s)'"></span>
                                                                                     <div class="flex gap-2">
                                                                                         <button type="button" @click="closeModal()" class="btn btn-outline-secondary btn-sm text-xs">Annuler</button>
                                                                                         <button type="button" @click="confirmSelection()" class="btn btn-primary btn-sm text-xs">
@@ -1671,7 +1738,7 @@
                                                                                 </div>
                                                                             </template>
                                                                             <template x-if="!loading && results.length === 0">
-                                                                                <div class="px-4 py-2 text-sm text-secondary">Aucun résultat</div>
+                                                                                <div class="px-4 py-2 text-sm text-secondary">Aucun rÃ©sultat</div>
                                                                             </template>
                                                                             <template x-if="hasMore">
                                                                                 <button type="button" @click.stop="loadMore" class="w-full px-4 py-2 text-sm text-primary hover:bg-primary/5 text-center disabled:opacity-50" :disabled="loading">
@@ -1742,7 +1809,7 @@
                                                                          :class="isOpen ? 'tp-trigger--active' : ''"
                                                                          @click="toggleOpen()">
                                                                         <template x-if="selectedOptions.length === 0">
-                                                                            <span class="tp-placeholder">Sélectionner...</span>
+                                                                            <span class="tp-placeholder">SÃ©lectionner...</span>
                                                                         </template>
                                                                         <template x-for="opt in selectedOptions" :key="opt._id">
                                                                             <span class="tp-tag"
@@ -1768,7 +1835,7 @@
                                                                         <!-- Search -->
                                                                         <div class="tp-search-wrap">
                                                                             <input type="text" class="tp-search-input"
-                                                                                   placeholder="Rechercher ou créer..."
+                                                                                   placeholder="Rechercher ou crÃ©er..."
                                                                                    x-model="searchQuery"
                                                                                    x-ref="searchInput"
                                                                                    @keydown.enter.prevent="canCreate ? createOption() : null" />
@@ -1798,7 +1865,7 @@
 
                                                                             <template x-if="filteredOptions.length === 0 && !canCreate">
                                                                                 <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 12px;">
-                                                                                    Aucune option trouvée
+                                                                                    Aucune option trouvÃ©e
                                                                                 </div>
                                                                             </template>
 
@@ -1832,7 +1899,7 @@
                                                                         <template x-if="canCreate">
                                                                             <div class="tp-create-option" @click="createOption()">
                                                                                 <iconify-icon icon="tabler:plus" width="14" style="color: #6b7280;"></iconify-icon>
-                                                                                <span class="tp-create-label">Créer</span>
+                                                                                <span class="tp-create-label">CrÃ©er</span>
                                                                                 <span class="tp-create-tag" x-text="searchQuery"></span>
                                                                             </div>
                                                                         </template>
@@ -1917,7 +1984,7 @@
                                     <button x-show="designMode" @click="openModal = true" type="button"
                                         class="text-[11px] font-bold text-primary hover:bg-primary/5 px-4 py-1.5 rounded-lg transition-all flex items-center gap-2 border border-primary/20">
                                         <iconify-icon icon="tabler:circle-plus" width="16"></iconify-icon>
-                                        <span>AJOUTER UN ATTRIBUT</span>
+                                        <span>AJOUTER UN CHAMP</span>
                                     </button>
 
                                     <button type="button" @click="designMode = !designMode"
@@ -1957,7 +2024,7 @@
 
                 </div><!-- end panel-sortable-item attributs -->
 
-                <!-- ═══ RELATIONS Panel (Classification-style) ═══ -->
+                <!-- â•â•â• RELATIONS Panel (Classification-style) â•â•â• -->
                 <template x-if="getRelationFields().length > 0">
                 <div class="panel-sortable-item" data-panel-id="relations-fields">
                     <template x-if="designMode">
@@ -2008,7 +2075,7 @@
                                                     </span>
                                                 </template>
                                                 <template x-if="selectedItems.length === 0">
-                                                    <span class="tp-placeholder" x-text="'Sélectionner...'"></span>
+                                                    <span class="tp-placeholder" x-text="'SÃ©lectionner...'"></span>
                                                 </template>
                                             </div>
 
@@ -2025,7 +2092,7 @@
                                                 <!-- Search -->
                                                 <div class="tp-search-wrap">
                                                     <input type="text" class="tp-search-input"
-                                                           :placeholder="'Rechercher ou créer...'"
+                                                           :placeholder="'Rechercher ou crÃ©er...'"
                                                            x-model="searchQuery"
                                                            x-ref="searchInput"
                                                            @input.debounce.300ms="search"
@@ -2051,7 +2118,7 @@
                                                     </template>
 
                                                     <template x-if="!loading && results.length === 0">
-                                                        <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 12px;">Aucun résultat</div>
+                                                        <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 12px;">Aucun rÃ©sultat</div>
                                                     </template>
                                                 </div>
 
@@ -2071,7 +2138,7 @@
                                                             if (tab) window.relationTabsApp.openQuickCreate(tab); 
                                                         }">
                                                     <iconify-icon icon="tabler:plus" width="14" style="color: #6b7280;"></iconify-icon>
-                                                    <span class="tp-create-label">Créer</span>
+                                                    <span class="tp-create-label">CrÃ©er</span>
                                                     <span class="tp-create-tag" x-text="relField.field.label"></span>
                                                 </div>
                                             </div>
@@ -2102,7 +2169,7 @@
 
             <% const _showRightSidebar = !(locals.entityFormLayout && locals.entityFormLayout.settings && locals.entityFormLayout.settings.showRightSidebar === false); %>
             <% if (_showRightSidebar) { %>
-            <!-- ═══ Sidebar Content (Column 1) ═══ -->
+            <!-- â•â•â• Sidebar Content (Column 1) â•â•â• -->
             <div class="record-layout-col relative"
                 x-show="columns.length > 1"
                 :style="columns[1] ? 'grid-column: span ' + columns[1].width : ''"
@@ -2142,7 +2209,7 @@
             </div>
             <% } %>
 
-            <!-- ═══ Dynamic Extra Columns (created by resizing last column) ═══ -->
+            <!-- â•â•â• Dynamic Extra Columns (created by resizing last column) â•â•â• -->
             <template x-for="(col, idx) in extraColumns" :key="col.id">
                 <div class="record-layout-col relative"
                     :class="{ 'record-layout-col--empty': !col.panels || col.panels.length === 0 }"
@@ -2187,9 +2254,9 @@
     </template>
 </div>
 
-<!-- ═══ PANEL LAYOUT STYLES ═══ -->
+<!-- â•â•â• PANEL LAYOUT STYLES â•â•â• -->
 <style>
-    /* ═══ Ghost Fields: border-on-hover, full styling on focus ═══ */
+    /* â•â•â• Ghost Fields: border-on-hover, full styling on focus â•â•â• */
     [data-panel-id="attributs"] .form-input,
     [data-panel-id="attributs"] .form-textarea:not([name="standard[description]"]),
     [data-panel-id="attributs"] .form-select,
@@ -2251,7 +2318,7 @@
 </style>
 
 <style>
-    /* ═══ Record Layout Grid (12-unit, page-builder style) ═══ */
+    /* â•â•â• Record Layout Grid (12-unit, page-builder style) â•â•â• */
     .record-layout-container {
         display: grid;
         gap: 24px;
@@ -2284,7 +2351,7 @@
         min-height: 120px;
     }
 
-    /* ═══ Resize Handle (positioned on right edge of each column) ═══ */
+    /* â•â•â• Resize Handle (positioned on right edge of each column) â•â•â• */
     .record-layout-resize-handle {
         position: absolute;
         right: 0;
@@ -2319,7 +2386,7 @@
     }
 
 
-    /* ═══ Panel Drag Handle ═══ */
+    /* â•â•â• Panel Drag Handle â•â•â• */
     .panel-drag-handle {
         display: flex;
         align-items: center;
@@ -2401,7 +2468,7 @@
     }))).replace(/</g, '\\u003C') %>
 </script>
 
-<!-- ═══════════════ HEADER CONFIG PANEL (teleported to body) ═══════════════ -->
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HEADER CONFIG PANEL (teleported to body) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div x-data="headerConfigPanel()" @open-header-config.window="showHeaderConfig = true"
      x-effect="document.body.style.overflow = showHeaderConfig ? 'hidden' : ''">
     <template x-teleport="body">
@@ -2418,7 +2485,7 @@
                         <iconify-icon icon="solar:widget-6-bold-duotone" width="18" class="text-purple-500"></iconify-icon>
                     </div>
                     <div>
-                        <h3 class="text-sm font-bold text-gray-800 dark:text-white">Configurer l'en-tête</h3>
+                        <h3 class="text-sm font-bold text-gray-800 dark:text-white">Configurer l'en-tÃªte</h3>
                         <p class="text-[10px] text-gray-400">Personnalisez l'affichage du header de fiche</p>
                     </div>
                 </div>
@@ -2430,12 +2497,12 @@
             <!-- Panel Body (scrollable) -->
             <div class="hc-body" style="overflow-y:auto;flex:1;min-height:0;overscroll-behavior:contain">
 
-                <!-- ① ICÔNE / AVATAR -->
+                <!-- â‘  ICÃ”NE / AVATAR -->
                 <div class="hc-section">
                     <div class="hc-section-header" @click="hcAcc.icon = !hcAcc.icon" style="cursor:pointer">
                         <div class="hc-section-left">
                             <div class="hc-section-icon" style="background:#ede9fe"><iconify-icon icon="solar:user-circle-bold-duotone" width="14" style="color:#8b5cf6"></iconify-icon></div>
-                            <span class="hc-section-title">Icône</span>
+                            <span class="hc-section-title">IcÃ´ne</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <div class="hc-toggle-track" @click.stop="hcLocal.showIcon = !(hcLocal.showIcon !== false)"
@@ -2453,7 +2520,7 @@
                                 else if (val === 'record-image') hcLocal.avatarSource = { type: 'record-image' };
                                 else hcLocal.avatarSource = { type: 'relation-image', relationKey: val };
                             " :value="hcLocal.avatarSource?.type === 'relation-image' ? (hcLocal.avatarSource.relationKey || '') : (hcLocal.avatarSource?.type || 'entity-icon')">
-                                <option value="entity-icon">Icône de l'entité (<%= entity.name %>)</option>
+                                <option value="entity-icon">IcÃ´ne de l'entitÃ© (<%= entity.name %>)</option>
                                 <option value="record-image">Image de la fiche</option>
                                 <% (entity.relations || []).forEach(r => { %>
                                 <option value="<%= r.key %>"><%= r.label || (r.targetEntity && r.targetEntity.name) || 'Relation' %></option>
@@ -2463,7 +2530,7 @@
                     </div>
                 </div>
 
-                <!-- ② TITRE PRINCIPAL -->
+                <!-- â‘¡ TITRE PRINCIPAL -->
                 <div class="hc-section">
                     <div class="hc-section-header" @click="hcAcc.title = !hcAcc.title" style="cursor:pointer">
                         <div class="hc-section-left">
@@ -2494,7 +2561,7 @@
                     </div>
                 </div>
 
-                <!-- ③ CLASSIFICATIONS -->
+                <!-- â‘¢ CLASSIFICATIONS -->
                 <% if (entity.classifications && entity.classifications.length > 0) { %>
                 <div class="hc-section">
                     <div class="hc-section-header" @click="hcAcc.cls = !hcAcc.cls" style="cursor:pointer">
@@ -2531,7 +2598,7 @@
                 </div>
                 <% } %>
 
-                <!-- ③b PIÈCES JOINTES -->
+                <!-- â‘¢b PIÃˆCES JOINTES -->
                 <div class="hc-section">
                     <div class="hc-section-header">
                         <div class="hc-section-left">
@@ -2545,9 +2612,20 @@
                     </div>
                 </div>
 
-                <!-- ③c RELATIONS INDIRECTES -->
-                <% if (locals.headerRelatedMeta && locals.headerRelatedMeta.indirectRelations && locals.headerRelatedMeta.indirectRelations.length > 0) { %>
-                <div class="hc-section">
+                <!-- â‘¢c RELATIONS (indirectes + inversÃ©es) -->
+                <% 
+                    const _hasIndirectRels = locals.headerRelatedMeta && locals.headerRelatedMeta.indirectRelations && locals.headerRelatedMeta.indirectRelations.length > 0;
+                    const _invRelsForModal = (locals.relationTabsMeta || []).filter(r => r.direction === 'inverse');
+                    const _hasInverseRels = _invRelsForModal.length > 0;
+                    const _directRelsForModal = (entity.relations || []).map(r => {
+                        const tgt = r.targetEntity || {};
+                        const tab = (locals.relationTabsMeta || []).find(t => t.key === r.key);
+                        return { key: r.key, label: r.label || tgt.name || 'Relation', icon: tgt.icon || 'solar:link-round-bold-duotone', color: tgt.color || '#4361ee', count: tab ? tab.count : 0 };
+                    });
+                    const _hasDirectRels = _directRelsForModal.length > 0;
+                %>
+                <% if (_hasIndirectRels || _hasInverseRels || _hasDirectRels) { %>
+                <div class="hc-section" x-data="{ relAccDirect: false, relAccIndirect: false, relAccInverse: false }">
                     <div class="hc-section-header" @click="hcAcc.rels = !hcAcc.rels" style="cursor:pointer">
                         <div class="hc-section-left">
                             <div class="hc-section-icon" style="background:#e0e7ff"><iconify-icon icon="solar:link-round-bold-duotone" width="14" style="color:#6366f1"></iconify-icon></div>
@@ -2557,27 +2635,91 @@
                     </div>
                     <div x-show="hcAcc.rels" x-collapse>
                         <div class="hc-section-content">
-                            <% (locals.headerRelatedMeta.indirectRelations || []).forEach(iRel => { %>
-                            <div class="hc-switch-row" @click="
-                                if (!hcLocal.shownRelations) hcLocal.shownRelations = [];
-                                const idx = hcLocal.shownRelations.indexOf('<%= iRel.key %>');
-                                if (idx > -1) hcLocal.shownRelations.splice(idx, 1);
-                                else hcLocal.shownRelations.push('<%= iRel.key %>');
-                            ">
-                                <iconify-icon icon="<%= iRel.icon %>" width="14" style="color:<%= iRel.color %>"></iconify-icon>
-                                <span class="hc-switch-label"><%= iRel.label %></span>
-                                <span class="hc-switch-count"><%= iRel.count %></span>
-                                <div class="hc-toggle-mini" :style="(hcLocal.shownRelations || []).includes('<%= iRel.key %>') ? 'background:#8b5cf6' : 'background:#d1d5db'">
-                                    <span class="hc-toggle-mini-handle" :style="(hcLocal.shownRelations || []).includes('<%= iRel.key %>') ? 'left:14px' : 'left:2px'"></span>
-                                </div>
+
+                            <% if (_hasDirectRels) { %>
+                            <!-- Direct relations (current entity) -->
+                            <div class="hc-field-group-label" @click="relAccDirect = !relAccDirect" style="cursor:pointer">
+                                <iconify-icon icon="<%= entity.icon || 'solar:star-bold-duotone' %>" width="12" style="color:<%= entity.color || '#4361ee' %>"></iconify-icon>
+                                <span style="flex:1"><%= entity.name %></span>
+                                <iconify-icon icon="solar:alt-arrow-down-linear" width="11" class="text-gray-400 transition-transform duration-200" :style="relAccDirect ? 'transform:rotate(180deg)' : ''"></iconify-icon>
                             </div>
-                            <% }); %>
+                            <div x-show="relAccDirect" x-collapse>
+                                <% _directRelsForModal.forEach(dRel => { %>
+                                <div class="hc-switch-row" @click="
+                                    if (!hcLocal.shownRelations) hcLocal.shownRelations = [];
+                                    const idx = hcLocal.shownRelations.indexOf('<%= dRel.key %>');
+                                    if (idx > -1) hcLocal.shownRelations.splice(idx, 1);
+                                    else hcLocal.shownRelations.push('<%= dRel.key %>');
+                                ">
+                                    <iconify-icon icon="<%= dRel.icon %>" width="14" style="color:<%= dRel.color %>"></iconify-icon>
+                                    <span class="hc-switch-label"><%= dRel.label %></span>
+                                    <span class="hc-switch-count"><%= dRel.count %></span>
+                                    <div class="hc-toggle-mini" :style="(hcLocal.shownRelations || []).includes('<%= dRel.key %>') ? 'background:#8b5cf6' : 'background:#d1d5db'">
+                                        <span class="hc-toggle-mini-handle" :style="(hcLocal.shownRelations || []).includes('<%= dRel.key %>') ? 'left:14px' : 'left:2px'"></span>
+                                    </div>
+                                </div>
+                                <% }); %>
+                            </div>
+                            <% } %>
+
+                            <% if (_hasInverseRels) { %>
+                            <!-- Inverse relations (entities pointing to current entity) -->
+                            <div class="hc-field-group-label" @click="relAccInverse = !relAccInverse" style="cursor:pointer;margin-top:8px">
+                                <iconify-icon icon="solar:rewind-back-bold-duotone" width="12" style="color:#f59e0b"></iconify-icon>
+                                <span style="flex:1">Relations inversÃ©es</span>
+                                <iconify-icon icon="solar:alt-arrow-down-linear" width="11" class="text-gray-400 transition-transform duration-200" :style="relAccInverse ? 'transform:rotate(180deg)' : ''"></iconify-icon>
+                            </div>
+                            <div x-show="relAccInverse" x-collapse>
+                                <% _invRelsForModal.forEach(invR => { %>
+                                <div class="hc-switch-row" @click="
+                                    if (!hcLocal.shownRelations) hcLocal.shownRelations = [];
+                                    const idx = hcLocal.shownRelations.indexOf('<%= invR.key %>');
+                                    if (idx > -1) hcLocal.shownRelations.splice(idx, 1);
+                                    else hcLocal.shownRelations.push('<%= invR.key %>');
+                                ">
+                                    <iconify-icon icon="<%= invR.icon %>" width="14" style="color:<%= invR.color %>"></iconify-icon>
+                                    <span class="hc-switch-label"><%= invR.label %></span>
+                                    <span class="hc-switch-count"><%= invR.count %></span>
+                                    <div class="hc-toggle-mini" :style="(hcLocal.shownRelations || []).includes('<%= invR.key %>') ? 'background:#8b5cf6' : 'background:#d1d5db'">
+                                        <span class="hc-toggle-mini-handle" :style="(hcLocal.shownRelations || []).includes('<%= invR.key %>') ? 'left:14px' : 'left:2px'"></span>
+                                    </div>
+                                </div>
+                                <% }); %>
+                            </div>
+                            <% } %>
+
+                            <% if (_hasIndirectRels) { %>
+                            <!-- Indirect relations (via related entity e.g. Patient) -->
+                            <div class="hc-field-group-label" @click="relAccIndirect = !relAccIndirect" style="cursor:pointer;margin-top:8px">
+                                <iconify-icon icon="<%= (locals.headerRelatedMeta && locals.headerRelatedMeta.relatedEntityIcon) || 'solar:user-bold-duotone' %>" width="12" style="color:<%= (locals.headerRelatedMeta && locals.headerRelatedMeta.relatedEntityColor) || '#4361ee' %>"></iconify-icon>
+                                <span style="flex:1">Via <%= (locals.headerRelatedMeta && locals.headerRelatedMeta.relatedEntityName) || 'Relation' %></span>
+                                <iconify-icon icon="solar:alt-arrow-down-linear" width="11" class="text-gray-400 transition-transform duration-200" :style="relAccIndirect ? 'transform:rotate(180deg)' : ''"></iconify-icon>
+                            </div>
+                            <div x-show="relAccIndirect" x-collapse>
+                                <% (locals.headerRelatedMeta.indirectRelations || []).forEach(iRel => { %>
+                                <div class="hc-switch-row" @click="
+                                    if (!hcLocal.shownRelations) hcLocal.shownRelations = [];
+                                    const idx = hcLocal.shownRelations.indexOf('<%= iRel.key %>');
+                                    if (idx > -1) hcLocal.shownRelations.splice(idx, 1);
+                                    else hcLocal.shownRelations.push('<%= iRel.key %>');
+                                ">
+                                    <iconify-icon icon="<%= iRel.icon %>" width="14" style="color:<%= iRel.color %>"></iconify-icon>
+                                    <span class="hc-switch-label"><%= iRel.label %></span>
+                                    <span class="hc-switch-count"><%= iRel.count %></span>
+                                    <div class="hc-toggle-mini" :style="(hcLocal.shownRelations || []).includes('<%= iRel.key %>') ? 'background:#8b5cf6' : 'background:#d1d5db'">
+                                        <span class="hc-toggle-mini-handle" :style="(hcLocal.shownRelations || []).includes('<%= iRel.key %>') ? 'left:14px' : 'left:2px'"></span>
+                                    </div>
+                                </div>
+                                <% }); %>
+                            </div>
+                            <% } %>
+
                         </div>
                     </div>
                 </div>
                 <% } %>
 
-                <!-- ④ CHAMPS (groupés par entité, accordéon par groupe) -->
+                <!-- â‘£ CHAMPS (groupÃ©s par entitÃ©, accordÃ©on par groupe) -->
                 <div class="hc-section" x-data="{ fieldAccSelf: false, fieldAccRel: false }">
                     <div class="hc-section-header" @click="hcAcc.fields = !hcAcc.fields" style="cursor:pointer">
                         <div class="hc-section-left">
@@ -2598,7 +2740,7 @@
                                 <iconify-icon icon="solar:alt-arrow-down-linear" width="11" class="text-gray-400 transition-transform duration-200" :style="fieldAccSelf ? 'transform:rotate(180deg)' : ''"></iconify-icon>
                             </div>
                             <div x-show="fieldAccSelf" x-collapse>
-                                <% (entity.customFields || []).slice(0, 10).forEach(f => { %>
+                                <% (entity.customFields || []).filter(f => f != null).slice(0, 10).forEach(f => { %>
                                 <div class="hc-switch-row" @click="
                                     if (!hcLocal.heroFields) hcLocal.heroFields = [];
                                     const idx = hcLocal.heroFields.findIndex(h => h.fieldId === '<%= f._id %>' && (h.entitySource || 'self') === 'self');
@@ -2643,13 +2785,13 @@
                     </div>
                 </div>
 
-                <!-- ⑤ DURÉE -->
+                <!-- â‘¤ DURÃ‰E -->
                 <div class="hc-section" style="border-bottom:none">
                     <div class="hc-section-header">
                         <div class="hc-section-left">
                             <div class="hc-section-icon" style="background:#fef3c7"><iconify-icon icon="solar:clock-circle-bold-duotone" width="14" style="color:#f59e0b"></iconify-icon></div>
                             <div>
-                                <span class="hc-section-title">Durée</span>
+                                <span class="hc-section-title">DurÃ©e</span>
                                 <span class="hc-section-subtitle">Ex: 4h 26min</span>
                             </div>
                         </div>
@@ -2677,7 +2819,7 @@
             </div>
 
             <style>
-                /* ═══ Config Modal ═══ */
+                /* â•â•â• Config Modal â•â•â• */
                 .hc-toggle-track {
                     position: relative;
                     display: inline-block;
@@ -2936,7 +3078,7 @@
                     cursor: wait;
                 }
 
-                /* ═══ Hero Bar Quick Icons ═══ */
+                /* â•â•â• Hero Bar Quick Icons â•â•â• */
                 .hb-quick-icons {
                     display: flex;
                     align-items: center;
@@ -2958,27 +3100,52 @@
                 }
                 .hb-icon-btn {
                     position: relative;
-                    display: flex;
+                    display: inline-flex;
                     align-items: center;
-                    justify-content: center;
-                    width: 32px;
-                    height: 32px;
-                    border-radius: 8px;
+                    gap: 0;
+                    height: 30px;
+                    padding: 0 6px;
+                    border-radius: 9999px;
                     cursor: pointer;
-                    transition: all 0.15s ease;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                     background: transparent;
+                    border: 1px solid transparent;
+                    overflow: hidden;
+                    white-space: nowrap;
+                }
+                .dark .hb-icon-btn {
+                    background: transparent;
+                    border-color: transparent;
                 }
                 .hb-icon-btn:hover {
+                    gap: 5px;
+                    padding: 0 12px;
                     background: #f3f4f6;
+                    border-color: #e5e7eb;
+                    transform: translateY(-1px);
+                    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
                 }
-                .dark .hb-icon-btn:hover { background: rgba(55,65,81,0.5); }
+                .dark .hb-icon-btn:hover {
+                    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+                }
+                .hb-icon-btn .hb-expand-label {
+                    max-width: 0;
+                    opacity: 0;
+                    overflow: hidden;
+                    font-size: 11px;
+                    font-weight: 600;
+                    transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+                }
+                .hb-icon-btn:hover .hb-expand-label {
+                    max-width: 120px;
+                    opacity: 1;
+                }
                 .hb-badge {
-                    position: absolute;
-                    top: 2px;
-                    right: 2px;
-                    min-width: 14px;
-                    height: 14px;
-                    border-radius: 7px;
+                    position: relative;
+                    top: auto; right: auto;
+                    min-width: 16px;
+                    height: 16px;
+                    border-radius: 8px;
                     font-size: 9px;
                     font-weight: 700;
                     color: white;
@@ -2986,10 +3153,23 @@
                     align-items: center;
                     justify-content: center;
                     line-height: 1;
-                    padding: 0 3px;
-                    box-shadow: 0 0 0 2px white;
+                    padding: 0 4px;
+                    margin-left: 2px;
                 }
-                .dark .hb-badge { box-shadow: 0 0 0 2px #1b2e4b; }
+                .hb-badge-dot {
+                    display: none;
+                }
+                .hb-icon-btn:not(:hover) .hb-badge {
+                    position: absolute;
+                    top: -2px;
+                    right: -2px;
+                    min-width: 14px;
+                    height: 14px;
+                    border-radius: 7px;
+                    padding: 0 3px;
+                    box-shadow: 0 0 0 1.5px white;
+                }
+                .dark .hb-icon-btn:not(:hover) .hb-badge { box-shadow: 0 0 0 1.5px #1b2e4b; }
                 .hb-dropdown {
                     position: absolute;
                     top: calc(100% + 8px);
@@ -3099,13 +3279,13 @@
 <script>
     document.addEventListener("alpine:init", () => {
 
-        // ═══ HEADER BAR (Hero identity bar menu) ═══
+        // â•â•â• HEADER BAR (Hero identity bar menu) â•â•â•
         Alpine.data("headerBar", () => ({
             showMoreMenu: false,
             showDeleteConfirm: false
         }));
 
-        // ═══ HEADER CONFIG PANEL (standalone modal) ═══
+        // â•â•â• HEADER CONFIG PANEL (standalone modal) â•â•â•
         Alpine.data("headerConfigPanel", () => ({
             showHeaderConfig: false,
             hcSaving: false,
@@ -3136,7 +3316,7 @@
             }
         }));
 
-        // ═══ PANEL LAYOUT (12-Unit Grid Resize + Drag & Drop Panels) ═══
+        // â•â•â• PANEL LAYOUT (12-Unit Grid Resize + Drag & Drop Panels) â•â•â•
         Alpine.data("panelLayout", () => {
             const entityId = '<%= locals.entity ? locals.entity._id : "" %>';
             const accountNumber = '<%= account_number %>';
@@ -3172,7 +3352,7 @@
                     window.addEventListener('mouseup', () => this.endResize());
                 },
 
-                // ═══ RESIZE LOGIC (12-unit grid) ═══
+                // â•â•â• RESIZE LOGIC (12-unit grid) â•â•â•
                 startResize(colIndex, event) {
                     const container = document.getElementById('panels-container');
                     if (!container) return;
@@ -3214,7 +3394,7 @@
                     };
 
                     if (isLastColumn) {
-                        // ═══ LAST COLUMN: shrinking creates new empty column ═══
+                        // â•â•â• LAST COLUMN: shrinking creates new empty column â•â•â•
                         let newLeftWidth = leftWidth + deltaUnits;
                         const minW = getMinWidth(colIndex);
                         if (newLeftWidth < minW) newLeftWidth = minW;
@@ -3260,7 +3440,7 @@
                             this.setColWidth(colIndex, 12 - othersSum);
                         }
                     } else {
-                        // ═══ NORMAL RESIZE between two adjacent columns ═══
+                        // â•â•â• NORMAL RESIZE between two adjacent columns â•â•â•
                         const rightWidth = startWidths[colIndex + 1];
                         const totalPair = leftWidth + rightWidth;
 
@@ -3342,7 +3522,7 @@
                     this.saveColumnLayout();
                 },
 
-                // Remove the sidebar column (column 1) — give its space to the main column
+                // Remove the sidebar column (column 1) â€” give its space to the main column
                 removeSidebarColumn() {
                     if (this.columns.length < 2) return;
                     const freedWidth = this.columns[1].width;
@@ -3396,7 +3576,7 @@
                     }
                 },
 
-                // ═══ DRAG & DROP (Sortable) ═══
+                // â•â•â• DRAG & DROP (Sortable) â•â•â•
                 extraSortables: [],
 
                 getSortableOpts() {
@@ -3477,7 +3657,7 @@
                     return labels[panelId] || panelId;
                 },
 
-                // ═══ PERSISTENCE ═══
+                // â•â•â• PERSISTENCE â•â•â•
                 async loadColumnLayout() {
                     try {
                         const resp = await fetch(`/account/${accountNumber}/api/user/view-preferences/record_panels_${entityId}`, { credentials: 'include' });
@@ -3658,7 +3838,9 @@
                 fieldsById: fieldsMap,
                 valuesMap: valuesMap,
                 allTemplates: allTemplates,
+                entityFieldIds: rawFields.map(f => f._id),
                 openModal: false,
+                fieldSearchQuery: '',
                 relationsFieldsOpen: true,
                 isResizing: false,
                 resizeData: null,
@@ -3694,7 +3876,7 @@
                                 <div class="w-12 h-12 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 group-hover/add-box:border-primary group-hover/add-box:text-primary transition-all">
                                     <iconify-icon icon="tabler:plus" width="28"></iconify-icon>
                                 </div>
-                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest group-hover/add-box:text-primary transition-colors">Ajouter un attribut</span>
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest group-hover/add-box:text-primary transition-colors">Ajouter un champ</span>
                             </div>
                         `;
                     }
@@ -3811,10 +3993,10 @@
                         const labelHtml = `<label class="flex items-center gap-1.5 mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
                             <iconify-icon icon="${icon}" width="14" style="color:${color}"></iconify-icon>
                             ${field.label || field.name}
-                            <span class="text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 dark:text-gray-500 px-1.5 py-0.5 rounded-full ml-1">calculé</span>
+                            <span class="text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 dark:text-gray-500 px-1.5 py-0.5 rounded-full ml-1">calculÃ©</span>
                         </label>`;
                         
-                        let valueHtml = '<span class="text-gray-300 dark:text-gray-600 text-xs italic">—</span>';
+                        let valueHtml = '<span class="text-gray-300 dark:text-gray-600 text-xs italic">â€”</span>';
                         if (cv) {
                             if (fFunc === 'rating') {
                                 const starVal = Number(cv.value) || 0;
@@ -4077,7 +4259,64 @@
                 addTemplateToSlot(template) {
                     const uniqueId = `f_${Date.now()}`;
                     this.layout.push({ fieldId: template._id, width: 12, id: uniqueId, tabId: this.activeTab });
-                    this.openModal = false;
+                    this.rebuildCanvas();
+                    this.saveLayout();
+                },
+
+                filteredTemplates() {
+                    const q = (this.fieldSearchQuery || '').toLowerCase().trim();
+                    if (!q) return this.allTemplates;
+                    return this.allTemplates.filter(t => {
+                        const label = (t.label || t.name || '').toLowerCase();
+                        const type = (t.type || '').toLowerCase();
+                        return label.includes(q) || type.includes(q);
+                    });
+                },
+
+                // Entity-configured fields (first in modal)
+                getEntityFields() {
+                    var q = (this.fieldSearchQuery || '').toLowerCase().trim();
+                    var eIds = this.entityFieldIds;
+                    return this.allTemplates.filter(function(t) {
+                        if (eIds.indexOf(t._id) === -1) return false;
+                        if (!q) return true;
+                        var label = (t.label || t.name || '').toLowerCase();
+                        var type = (t.type || '').toLowerCase();
+                        return label.indexOf(q) > -1 || type.indexOf(q) > -1;
+                    });
+                },
+
+                // Other available fields (flat list, sorted by type)
+                getOtherFields() {
+                    var q = (this.fieldSearchQuery || '').toLowerCase().trim();
+                    var eIds = this.entityFieldIds;
+                    var others = this.allTemplates.filter(function(t) {
+                        if (eIds.indexOf(t._id) > -1) return false;
+                        if (!q) return true;
+                        var label = (t.label || t.name || '').toLowerCase();
+                        var type = (t.type || '').toLowerCase();
+                        return label.indexOf(q) > -1 || type.indexOf(q) > -1;
+                    });
+                    // Sort by type for visual grouping
+                    others.sort(function(a, b) {
+                        return (a.type || '').localeCompare(b.type || '');
+                    });
+                    return others;
+                },
+                isFieldInLayout(fieldId) {
+                    return this.layout.some(item => item.fieldId === fieldId);
+                },
+
+                toggleFieldInLayout(template) {
+                    const existing = this.layout.find(item => item.fieldId === template._id);
+                    if (existing) {
+                        // Remove from layout
+                        this.layout = this.layout.filter(i => i.fieldId !== template._id);
+                    } else {
+                        // Add to layout
+                        const uniqueId = `f_${Date.now()}`;
+                        this.layout.push({ fieldId: template._id, width: 12, id: uniqueId, tabId: this.activeTab });
+                    }
                     this.rebuildCanvas();
                     this.saveLayout();
                 },
@@ -4672,7 +4911,7 @@
                 target: document.getElementById('main-record-form')
             });
             toast.fire({
-                title: 'Enregistrement effectué',
+                title: 'Enregistrement effectuÃ©',
                 icon: 'success',
                 padding: '10px 20px'
             });

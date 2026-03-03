@@ -1,16 +1,19 @@
 
+Prémission: ✅ TOUTES TERMINÉES
+
+- ✅ image-48 : Vue compacte des champs + bouton "Ajouter un champ" → modal management terminé
+- ✅ image-49 : Padding input 29px !important → terminé
+- ✅ image-50 : Pas de RDV en double + groupement `pièces jointes | relations activées | Enregistrer` → terminé
+- ✅ image-51/52 : Icons sans style rond, hover expandable pill → terminé
+
 
 Mission 1 : 
 
 
 CCheck l'image image-42.png pour comprendre le but.
-![alt text](image-42.png) retravail moi le seed de cabinet médicale pour avoir une page comme image-42.png voila le concept :
+![alt text](image-42.png) retravail moi le seed de cabinet médicale pour avoir une page comme image-42.png voila le concept 
 
-![alt text](image-43.png)
-Pour la topbarre de toute l'app, on va deplacerles icons des apps vers la droite en gardant le style coloré et expandable.
-![alt text](image-44.png) cette partie on va la mettre a la place des icons apps, donc en haut a gauche .
 
-On aura ensuite une barre de ce genre : ![alt text](image-45.png) , configurable, je peux choisir quoi mettre dans la barre, la config aura la possibilité de choisir l'entité a affiché dans la barre, l'icon/avatar/ ou rien, titre de ref comme titre ou autre champ, classification simplifié, doc de l'entité choisi ou lien vers d'autres relation genre si je suis dans consultation et que je choisi d'afficher la barre patient, j'aurais les elements de consultation et le element de patient, genre je peux afficher rdv dans labbare aors que rdv est lié a patient et pas a consultation, on aura un autosave, pas de last modified, pas de public etc juste trois bouttons qui affiche les options comme supprimer, etc 
 
 Tout les champs auront des icons , donc afficher les icons a coté du champ.
 

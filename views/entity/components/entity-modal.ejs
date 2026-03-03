@@ -1,17 +1,116 @@
-<!-- Modal -->
-<div x-show="openModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-  style="display: none">
-  <div class="bg-white rounded shadow p-6 w-[90%] max-w-5xl" @click.outside="openModal = false">
-    <h3 class="text-lg font-bold mb-4">Ajouter un champ existant</h3>
+<!-- Field Manager Modal -->
+<div x-show="openModal" x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center"
+     style="background: rgba(0,0,0,0.35); backdrop-filter: blur(4px);"
+     @click.self="openModal = false">
 
-    <!-- Liste des templates disponibles (3 par ligne) -->
-    <div class="grid grid-cols-3 gap-4">
-      <template x-for="template in allTemplates" :key="template._id">
-        <div class="p-4 border rounded shadow hover:bg-gray-100 cursor-pointer" @click="addTemplateToSlot(template)">
-          <div class="font-semibold text-gray-800" x-text="template.label"></div>
-          <div class="text-sm text-gray-500 mt-1" x-text="template.type"></div>
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-gray-100"
+         style="max-height: 80vh; display: flex; flex-direction: column;"
+         @click.stop>
+
+        <!-- Header -->
+        <div style="padding: 12px 20px; border-bottom: 1px solid #f3f4f6; background: linear-gradient(135deg, rgba(67,97,238,0.05), transparent); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(67,97,238,0.1);">
+                    <iconify-icon icon="solar:widget-add-bold-duotone" width="14" style="color:#4361ee"></iconify-icon>
+                </div>
+                <div>
+                    <div style="font-size:13px; font-weight:700; color:#1f2937; margin:0;">Gérer les champs</div>
+                    <div style="font-size:10px; color:#9ca3af; margin:0;">Afficher, masquer ou ajouter des champs</div>
+                </div>
+            </div>
+            <button type="button" @click="openModal = false"
+                    style="width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#9ca3af;border:none;background:transparent;cursor:pointer;">
+                <iconify-icon icon="tabler:x" width="15"></iconify-icon>
+            </button>
         </div>
-      </template>
+
+        <!-- Search -->
+        <div style="padding: 8px 16px; border-bottom: 1px solid #f3f4f6; flex-shrink: 0;">
+            <div style="position: relative;">
+                <iconify-icon icon="solar:magnifer-linear" width="13" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;"></iconify-icon>
+                <input type="text"
+                       x-model="fieldSearchQuery"
+                       placeholder="Rechercher un champ..."
+                       style="width:100%;padding:6px 12px 6px 29px !important;font-size:12px;border-radius:8px;border:1px solid #e5e7eb;background:#f9fafb;outline:none;">
+            </div>
+        </div>
+
+        <!-- Fields List -->
+        <div style="overflow-y: auto; flex: 1; padding: 2px 0;">
+
+            <!-- ═══ Section 1: Entity Fields ═══ -->
+            <div style="padding: 6px 16px 2px; display: flex; align-items: center; gap: 6px;">
+                <iconify-icon icon="solar:star-bold-duotone" width="11" style="color:#f59e0b"></iconify-icon>
+                <span style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#b0b5bd;">Champs de l'entité</span>
+                <span style="font-size:9px; color:#d1d5db; font-weight:500;" x-text="getEntityFields().length"></span>
+            </div>
+            <template x-for="tmpl in getEntityFields()" :key="tmpl._id">
+                <div style="display:flex;align-items:center;gap:8px;padding:5px 16px;margin:0 4px;border-radius:6px;cursor:pointer;transition:background 0.15s;"
+                     @click="toggleFieldInLayout(tmpl)"
+                     @mouseenter="$el.style.background='#f9fafb'" @mouseleave="$el.style.background='transparent'">
+                    <!-- Icon -->
+                    <div :style="'width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:' + (layout.some(function(i){return i.fieldId===tmpl._id}) ? 'rgba(67,97,238,0.1)' : '#f3f4f6')">
+                        <iconify-icon :icon="(tmpl.ui && tmpl.ui.icon) ? tmpl.ui.icon : 'solar:document-text-linear'" width="12"
+                                      :style="'color:' + (layout.some(function(i){return i.fieldId===tmpl._id}) ? '#4361ee' : '#9ca3af')"></iconify-icon>
+                    </div>
+                    <!-- Label -->
+                    <div :style="'flex:1;min-width:0;font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:' + (layout.some(function(i){return i.fieldId===tmpl._id}) ? '#1f2937' : '#6b7280')"
+                         x-text="tmpl.label || tmpl.name"></div>
+                    <!-- Type badge -->
+                    <span style="font-size:9px;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#9ca3af;white-space:nowrap;flex-shrink:0;" x-text="tmpl.type"></span>
+                    <!-- Toggle -->
+                    <div style="flex-shrink:0;margin-left:4px;">
+                        <div :style="'width:30px;height:16px;border-radius:8px;position:relative;transition:background 0.2s;background:' + (layout.some(function(i){return i.fieldId===tmpl._id}) ? '#4361ee' : '#d1d5db')">
+                            <span :style="'position:absolute;top:2px;width:12px;height:12px;border-radius:6px;background:white;box-shadow:0 1px 2px rgba(0,0,0,0.1);transition:left 0.2s;left:' + (layout.some(function(i){return i.fieldId===tmpl._id}) ? '16px' : '2px')"></span>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ═══ Section 2: Other available fields ═══ -->
+            <div style="margin: 4px 16px; border-top: 1px solid #f3f4f6;"></div>
+            <div style="padding: 6px 16px 2px; display: flex; align-items: center; gap: 6px;">
+                <iconify-icon icon="solar:add-circle-bold-duotone" width="11" style="color:#4361ee"></iconify-icon>
+                <span style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#b0b5bd;">Autres champs disponibles</span>
+                <span style="font-size:9px; color:#d1d5db; font-weight:500;" x-text="getOtherFields().length"></span>
+            </div>
+
+            <template x-for="tmpl in getOtherFields()" :key="tmpl._id">
+                <div style="display:flex;align-items:center;gap:8px;padding:5px 16px;margin:0 4px;border-radius:6px;cursor:pointer;transition:background 0.15s;"
+                     @click="toggleFieldInLayout(tmpl)"
+                     @mouseenter="$el.style.background='#f9fafb'" @mouseleave="$el.style.background='transparent'">
+                    <!-- Icon -->
+                    <div :style="'width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:' + (layout.some(function(i){return i.fieldId===tmpl._id}) ? 'rgba(67,97,238,0.1)' : '#f9fafb')">
+                        <iconify-icon :icon="(tmpl.ui && tmpl.ui.icon) ? tmpl.ui.icon : 'solar:document-text-linear'" width="12"
+                                      :style="'color:' + (layout.some(function(i){return i.fieldId===tmpl._id}) ? '#4361ee' : '#c4c9d4')"></iconify-icon>
+                    </div>
+                    <!-- Label -->
+                    <div :style="'flex:1;min-width:0;font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:' + (layout.some(function(i){return i.fieldId===tmpl._id}) ? '#1f2937' : '#9ca3af')"
+                         x-text="tmpl.label || tmpl.name"></div>
+                    <!-- Type badge -->
+                    <span style="font-size:9px;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#b0b5bd;white-space:nowrap;flex-shrink:0;" x-text="tmpl.type"></span>
+                    <!-- Toggle -->
+                    <div style="flex-shrink:0;margin-left:4px;">
+                        <div :style="'width:30px;height:16px;border-radius:8px;position:relative;transition:background 0.2s;background:' + (layout.some(function(i){return i.fieldId===tmpl._id}) ? '#4361ee' : '#e5e7eb')">
+                            <span :style="'position:absolute;top:2px;width:12px;height:12px;border-radius:6px;background:white;box-shadow:0 1px 2px rgba(0,0,0,0.1);transition:left 0.2s;left:' + (layout.some(function(i){return i.fieldId===tmpl._id}) ? '16px' : '2px')"></span>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Footer -->
+        <div style="padding: 10px 20px; border-top: 1px solid #f3f4f6; background: rgba(249,250,251,0.5); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;">
+            <a href="/account/<%= account_number %>/entity/<%= entity._id %>/settings"
+               style="display:flex;align-items:center;gap:6px;font-size:11px;color:#9ca3af;text-decoration:none;">
+                <iconify-icon icon="solar:settings-bold-duotone" width="13"></iconify-icon>
+                Paramètres de l'entité
+            </a>
+            <button type="button" @click="openModal = false"
+                    style="padding:5px 14px;border-radius:8px;font-size:12px;font-weight:600;color:white;background:#4361ee;border:none;cursor:pointer;">
+                Fermer
+            </button>
+        </div>
     </div>
-  </div>
 </div>

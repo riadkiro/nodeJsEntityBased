@@ -637,28 +637,32 @@ async function createDemoRecords(db, ids, userId) {
     // -- Patients (15) --
     const patients = [];
     const patientData = [
-        { t: 'Ahmed Khelifi', nom: 'Khelifi', prenom: 'Ahmed', dn: '1985-03-15', sexe: 'M', tel: '0612345678', email: 'ahmed.khelifi@mail.com', secu: '185037512345678' },
-        { t: 'Sophie Martin', nom: 'Martin', prenom: 'Sophie', dn: '1990-07-22', sexe: 'F', tel: '0623456789', email: 'sophie.martin@mail.com', secu: '290077512345678' },
-        { t: 'Jean-Pierre Dubois', nom: 'Dubois', prenom: 'Jean-Pierre', dn: '1972-11-08', sexe: 'M', tel: '0634567890', email: 'jp.dubois@mail.com', secu: '172117512345678' },
-        { t: 'Fatima Benali', nom: 'Benali', prenom: 'Fatima', dn: '1988-01-30', sexe: 'F', tel: '0645678901', email: 'fatima.benali@mail.com', secu: '288017512345678' },
-        { t: 'Marie Leroy', nom: 'Leroy', prenom: 'Marie', dn: '1965-05-12', sexe: 'F', tel: '0656789012', email: 'marie.leroy@mail.com', secu: '265057512345678' },
-        { t: 'Mohamed Azzouzi', nom: 'Azzouzi', prenom: 'Mohamed', dn: '1995-09-18', sexe: 'M', tel: '0667890123', email: 'mohamed.a@mail.com', secu: '195097512345678' },
-        { t: 'Claire Dupont', nom: 'Dupont', prenom: 'Claire', dn: '1982-12-05', sexe: 'F', tel: '0678901234', email: 'claire.dupont@mail.com', secu: '282127512345678' },
-        { t: 'Youssef El Amrani', nom: 'El Amrani', prenom: 'Youssef', dn: '1978-04-25', sexe: 'M', tel: '0689012345', email: 'youssef.ea@mail.com', secu: '178047512345678' },
-        { t: 'Isabelle Roux', nom: 'Roux', prenom: 'Isabelle', dn: '1993-08-14', sexe: 'F', tel: '0690123456', email: 'isabelle.roux@mail.com', secu: '293087512345678' },
-        { t: 'Pierre Moreau', nom: 'Moreau', prenom: 'Pierre', dn: '1960-02-28', sexe: 'M', tel: '0601234567', email: 'pierre.moreau@mail.com', secu: '160027512345678' },
-        { t: 'Nadia Bouzid', nom: 'Bouzid', prenom: 'Nadia', dn: '1997-06-10', sexe: 'F', tel: '0612345670', email: 'nadia.bouzid@mail.com', secu: '297067512345678' },
-        { t: 'François Bernard', nom: 'Bernard', prenom: 'François', dn: '1975-10-20', sexe: 'M', tel: '0623456780', email: 'f.bernard@mail.com', secu: '175107512345678' },
-        { t: 'Amina Saidi', nom: 'Saidi', prenom: 'Amina', dn: '1989-03-08', sexe: 'F', tel: '0634567801', email: 'amina.saidi@mail.com', secu: '289037512345678' },
-        { t: 'Luc Petit', nom: 'Petit', prenom: 'Luc', dn: '1970-07-15', sexe: 'M', tel: '0645678012', email: 'luc.petit@mail.com', secu: '170077512345678' },
-        { t: 'Leila Hamdi', nom: 'Hamdi', prenom: 'Leila', dn: '2000-01-05', sexe: 'F', tel: '0656780123', email: 'leila.h@mail.com', secu: '200017512345678' },
+        { t: 'Ahmed Khelifi', nom: 'Khelifi', prenom: 'Ahmed', dn: '1985-03-15', sexe: 'M', tel: '0612345678', email: 'ahmed.khelifi@mail.com', secu: '185037512345678', gs: 'A+', allergies: 'Pénicilline', antecedents: 'Asthme depuis l\'enfance', med: 'Dr. Boukirou', mut: 'MGEN' },
+        { t: 'Sophie Martin', nom: 'Martin', prenom: 'Sophie', dn: '1990-07-22', sexe: 'F', tel: '0623456789', email: 'sophie.martin@mail.com', secu: '290077512345678', gs: 'O+', allergies: '', antecedents: 'RAS', med: 'Dr. Boukirou', mut: 'Harmonie Mutuelle' },
+        { t: 'Jean-Pierre Dubois', nom: 'Dubois', prenom: 'Jean-Pierre', dn: '1972-11-08', sexe: 'M', tel: '0634567890', email: 'jp.dubois@mail.com', secu: '172117512345678', gs: 'B+', allergies: 'Aspirine, Sulfamides', antecedents: 'HTA traitée depuis 2015\nDiabète type 2 (Metformine)', med: 'Dr. Boukirou', mut: 'AXA Santé' },
+        { t: 'Fatima Benali', nom: 'Benali', prenom: 'Fatima', dn: '1988-01-30', sexe: 'F', tel: '0645678901', email: 'fatima.benali@mail.com', secu: '288017512345678', gs: 'A-', allergies: 'Arachide', antecedents: 'Migraine chronique', med: 'Dr. Cohen', mut: 'MAAF Santé' },
+        { t: 'Marie Leroy', nom: 'Leroy', prenom: 'Marie', dn: '1965-05-12', sexe: 'F', tel: '0656789012', email: 'marie.leroy@mail.com', secu: '265057512345678', gs: 'AB+', allergies: 'Iode, Latex', antecedents: 'Infarctus du myocarde (2019)\nHTA\nHypercholestérolémie', med: 'Dr. Boukirou', mut: 'Groupama' },
+        { t: 'Mohamed Azzouzi', nom: 'Azzouzi', prenom: 'Mohamed', dn: '1995-09-18', sexe: 'M', tel: '0667890123', email: 'mohamed.a@mail.com', secu: '195097512345678', gs: 'O-', allergies: '', antecedents: 'RAS', med: 'Dr. Cohen', mut: 'MGEN' },
+        { t: 'Claire Dupont', nom: 'Dupont', prenom: 'Claire', dn: '1982-12-05', sexe: 'F', tel: '0678901234', email: 'claire.dupont@mail.com', secu: '282127512345678', gs: 'A+', allergies: 'Pénicilline, Codéine', antecedents: 'Hypothyroïdie (Levothyrox)\nAnxiété généralisée', med: 'Dr. Boukirou', mut: 'Swiss Life' },
+        { t: 'Youssef El Amrani', nom: 'El Amrani', prenom: 'Youssef', dn: '1978-04-25', sexe: 'M', tel: '0689012345', email: 'youssef.ea@mail.com', secu: '178047512345678', gs: 'B-', allergies: '', antecedents: 'Lombalgie chronique\nHernie discale L4-L5', med: 'Dr. Boukirou', mut: 'AXA Santé' },
+        { t: 'Isabelle Roux', nom: 'Roux', prenom: 'Isabelle', dn: '1993-08-14', sexe: 'F', tel: '0690123456', email: 'isabelle.roux@mail.com', secu: '293087512345678', gs: 'O+', allergies: '', antecedents: 'RAS', med: 'Dr. Cohen', mut: 'Harmonie Mutuelle' },
+        { t: 'Pierre Moreau', nom: 'Moreau', prenom: 'Pierre', dn: '1960-02-28', sexe: 'M', tel: '0601234567', email: 'pierre.moreau@mail.com', secu: '160027512345678', gs: 'AB-', allergies: 'AINS', antecedents: 'BPCO\nInsuffisance cardiaque stade II\nProthèse genou droit (2020)', med: 'Dr. Boukirou', mut: 'Groupama' },
+        { t: 'Nadia Bouzid', nom: 'Bouzid', prenom: 'Nadia', dn: '1997-06-10', sexe: 'F', tel: '0612345670', email: 'nadia.bouzid@mail.com', secu: '297067512345678', gs: 'A+', allergies: 'Arachide, Pollen', antecedents: 'Eczéma atopique\nRhinite allergique saisonnière', med: 'Dr. Boukirou', mut: 'MGEN' },
+        { t: 'François Bernard', nom: 'Bernard', prenom: 'François', dn: '1975-10-20', sexe: 'M', tel: '0623456780', email: 'f.bernard@mail.com', secu: '175107512345678', gs: 'O+', allergies: '', antecedents: 'Appendicectomie (2005)\nTabagisme sevré (2018)', med: 'Dr. Boukirou', mut: 'MAAF Santé' },
+        { t: 'Amina Saidi', nom: 'Saidi', prenom: 'Amina', dn: '1989-03-08', sexe: 'F', tel: '0634567801', email: 'amina.saidi@mail.com', secu: '289037512345678', gs: 'B+', allergies: 'Sulfamides', antecedents: 'Anémie ferriprive', med: 'Dr. Cohen', mut: 'Swiss Life' },
+        { t: 'Luc Petit', nom: 'Petit', prenom: 'Luc', dn: '1970-07-15', sexe: 'M', tel: '0645678012', email: 'luc.petit@mail.com', secu: '170077512345678', gs: 'A+', allergies: '', antecedents: 'Goutte\nHyperuricémie', med: 'Dr. Boukirou', mut: 'AXA Santé' },
+        { t: 'Leila Hamdi', nom: 'Hamdi', prenom: 'Leila', dn: '2000-01-05', sexe: 'F', tel: '0656780123', email: 'leila.h@mail.com', secu: '200017512345678', gs: 'O+', allergies: '', antecedents: 'RAS', med: 'Dr. Cohen', mut: 'MGEN' },
     ];
 
     for (const p of patientData) {
-        const doc = await rec('patients', p.t, {
+        const customs = {
             nom: p.nom, prenom: p.prenom, date_naissance: new Date(p.dn), sexe: p.sexe,
-            telephone: p.tel, email: p.email, numero_secu: p.secu
-        });
+            telephone: p.tel, email: p.email, numero_secu: p.secu,
+            groupe_sanguin: p.gs, medecin_traitant: p.med, mutuelle: p.mut,
+        };
+        if (p.allergies) customs.allergies = p.allergies;
+        if (p.antecedents && p.antecedents !== 'RAS') customs.antecedents = p.antecedents;
+        const doc = await rec('patients', p.t, customs);
         patients.push(doc);
     }
 
@@ -725,18 +729,32 @@ async function createDemoRecords(db, ids, userId) {
 
     // -- Consultations (12) --
     const consults = [];
-    const diagData = ['SAOS sous PPC', 'Rhinopharyngite', 'Lombalgie aiguë', 'HTA essentielle', 'Diabète type 2 équilibré', 'Bronchite aiguë', 'Entorse cheville', 'Migraine', 'Gastrite', 'Infection urinaire', 'Eczéma', 'Angine streptococcique'];
+    const consultData = [
+        { diag: 'SAOS sous PPC', motif: 'Douleur thoracique', symptomes: 'Douleur rétrosternale constrictive, irradiant vers le bras gauche. Dyspnée d\'effort. Fatigue inhabituelle.', examen: 'Auscultation : souffle systolique léger. ECG : rythme sinusal. TA : 14/9. SpO2 : 97%.', poids: 82, taille: 175 },
+        { diag: 'Rhinopharyngite', motif: 'Toux persistante', symptomes: 'Toux sèche depuis 5 jours, rhinorrhée claire, pharyngite. Légère fébricule.', examen: 'Gorge rouge. Tympans normaux. Pas d\'adénopathie. Auscultation pulmonaire: claire.', poids: 58, taille: 165 },
+        { diag: 'Lombalgie aiguë', motif: 'Mal de dos', symptomes: 'Lombalgie aiguë après effort de soulèvement. Raideur matinale. Douleur irradiant vers la fesse droite.', examen: 'Contracture paravertébrale lombaire. Lasègue négatif bilatéral. ROT normaux. Mobilité limitée en flexion.', poids: 88, taille: 178 },
+        { diag: 'HTA essentielle', motif: 'Contrôle tension', symptomes: 'Céphalées occipitales intermittentes. Vertiges positionnels. Acouphènes légers.', examen: 'TA bras droit : 16/10, bras gauche : 15/9. Fond d\'œil : stade I. Auscultation cardiaque : régulier, pas de souffle.', poids: 72, taille: 162 },
+        { diag: 'Diabète type 2 équilibré', motif: 'Suivi diabète', symptomes: 'Suivi trimestriel. Pas de plainte particulière. Glycémies à jeun entre 1.10 et 1.30 g/L.', examen: 'Examen des pieds : sensibilité conservée, pas de lésion. IMC : 28.4. Tour de taille : 96 cm. HbA1c : 6.8%.', poids: 85, taille: 173 },
+        { diag: 'Bronchite aiguë', motif: 'Fièvre', symptomes: 'Fièvre à 38.5°C depuis 3 jours. Toux grasse productive avec crachats jaunâtres. Courbatures.', examen: 'Auscultation : râles bronchiques bilatéraux. Pas de foyer de condensation. FR : 18/min.', poids: 65, taille: 170 },
+        { diag: 'Entorse cheville', motif: 'Chute', symptomes: 'Chute lors d\'une activité sportive. Douleur et gonflement de la cheville gauche. Impotence fonctionnelle.', examen: 'Œdème péri-malléolaire externe. Ecchymose en œuf de pigeon. Tiroir antérieur négatif. Pas de douleur malléolaire postérieure.', poids: 70, taille: 168 },
+        { diag: 'Migraine', motif: 'Céphalées', symptomes: 'Céphalées pulsatiles hémi-crâniennes droites. Photophobie, phonophobie. Nausées sans vomissements. Aura visuelle.', examen: 'Examen neurologique normal. Nuque souple. Paires crâniennes intactes. Pas de déficit moteur ni sensitif.', poids: 55, taille: 160 },
+        { diag: 'Gastrite', motif: 'Brûlures estomac', symptomes: 'Épigastralgies postprandiales. Pyrosis nocturne. Régurgitations acides. Ballonnements.', examen: 'Abdomen souple, sensibilité épigastrique sans défense. Pas d\'hépatosplénomégalie. Transit conservé.', poids: 78, taille: 182 },
+        { diag: 'Infection urinaire', motif: 'Brûlures miction', symptomes: 'Dysurie avec brûlures mictionnelles. Pollakiurie. Urines troubles et malodorantes. Pas de fièvre.', examen: 'Abdomen souple. Pas de douleur lombaire. BU : leucocytes +++, nitrites +.', poids: 62, taille: 158 },
+        { diag: 'Eczéma', motif: 'Démangeaisons', symptomes: 'Prurit intense au niveau des plis des coudes et creux poplités. Plaques érythémateuses suintantes. Troubles du sommeil.', examen: 'Plaques érythémato-squameuses bien délimitées aux plis. Lésions de grattage. Xérose cutanée diffuse. Pas de surinfection.', poids: 57, taille: 163 },
+        { diag: 'Angine streptococcique', motif: 'Mal de gorge', symptomes: 'Odynophagie intense depuis 48h. Fièvre à 39°C. Adénopathies cervicales sensibles. Pas de toux.', examen: 'Amygdales hypertrophiées, exsudat blanchâtre. Adénopathies sous-angulo-maxillaires. TDR streptococcique : positif.', poids: 68, taille: 172 },
+    ];
     for (let i = 0; i < 12; i++) {
         const p = patients[i % patients.length];
         const consultTypeOpts = cls['consult_type_opts'];
         const typeIdx = i % 4;
-        const doc = await rec('consultations', `Consult. ${p.title} - ${diagData[i]}`, {
-            motif: ['Douleur thoracique', 'Toux persistante', 'Mal de dos', 'Contrôle tension', 'Suivi diabète', 'Fièvre', 'Chute', 'Céphalées', 'Brûlures estomac', 'Brûlures miction', 'Démangeaisons', 'Mal de gorge'][i],
-            diagnostic: diagData[i],
-            symptomes: 'Patient se plaint de symptômes depuis quelques jours.',
-            examen_clinique: 'Examen clinique normal, pas de signe de gravité.',
-            poids: 60 + Math.floor(Math.random() * 30),
-            taille_cm: 160 + Math.floor(Math.random() * 25),
+        const cd = consultData[i];
+        const doc = await rec('consultations', `Consult. ${p.title} - ${cd.diag}`, {
+            motif: cd.motif,
+            diagnostic: cd.diag,
+            symptomes: cd.symptomes,
+            examen_clinique: cd.examen,
+            poids: cd.poids,
+            taille_cm: cd.taille,
             tension: `${12 + Math.floor(Math.random() * 4)}/${7 + Math.floor(Math.random() * 3)}`,
             temperature: (36.5 + Math.random() * 1.5).toFixed(1),
         }, {

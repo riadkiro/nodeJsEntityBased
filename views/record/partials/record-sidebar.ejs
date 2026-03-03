@@ -894,28 +894,104 @@
                                                 <div class="grid grid-cols-1 gap-y-2">
                                                     <% if (relRec.slug) { %>
                                                         <div>
-                                                            <div class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5">Identifiant</div>
+                                                            <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-0.5">Identifiant</div>
                                                             <div class="text-xs text-gray-700 dark:text-gray-300"><%= relRec.slug %></div>
                                                         </div>
                                                     <% } %>
                                                     <% if (relRec.date) { %>
                                                         <div>
-                                                            <div class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5">Date</div>
+                                                            <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-0.5">Date</div>
                                                             <div class="text-xs text-gray-700 dark:text-gray-300"><%= new Date(relRec.date).toLocaleDateString('fr-FR') %></div>
                                                         </div>
                                                     <% } %>
                                                     <% (relRec.customFields || []).forEach(function(cf) { %>
                                                         <% if (cf.value && cf.field_id && cf.field_id.label) { %>
-                                                            <div>
-                                                                <div class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5"><%= cf.field_id.label %></div>
-                                                                <div class="text-xs text-gray-700 dark:text-gray-300 line-clamp-2">
-                                                                    <% if (typeof cf.value === 'object' && cf.value !== null) { %>
-                                                                        <%= JSON.stringify(cf.value) %>
-                                                                    <% } else { %>
-                                                                        <%= String(cf.value).substring(0, 80) %><%= String(cf.value).length > 80 ? '...' : '' %>
+                                                            <%
+                                                                const cfIcon = (cf.field_id.ui && cf.field_id.ui.icon) || '';
+                                                                const cfType = cf.field_id.type || 'string';
+                                                                const cfName = cf.field_id.name || '';
+                                                                const cfFormula = cf.field_id.formula || null;
+                                                                let cfDisplayValue = '';
+                                                                let cfIsDate = (cfType === 'date' || cfName.includes('date'));
+                                                                let cfIsAllergy = (cfName === 'allergies');
+                                                                let cfIsAntecedent = (cfName === 'antecedents');
+                                                                let cfShowAge = (cfName === 'date_naissance');
+                                                                let cfAge = '';
+
+                                                                // Format value
+                                                                if (cfIsDate || cfShowAge) {
+                                                                    try {
+                                                                        const rawVal = typeof cf.value === 'string' ? cf.value.replace(/^"|"$/g, '') : cf.value;
+                                                                        const d = new Date(rawVal);
+                                                                        if (!isNaN(d.getTime())) {
+                                                                            cfDisplayValue = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                                                                            if (cfShowAge) {
+                                                                                const today = new Date();
+                                                                                cfAge = Math.floor((today - d) / 31557600000);
+                                                                            }
+                                                                        } else {
+                                                                            cfDisplayValue = String(cf.value);
+                                                                        }
+                                                                    } catch(e) {
+                                                                        cfDisplayValue = String(cf.value);
+                                                                    }
+                                                                } else if (typeof cf.value === 'object' && cf.value !== null) {
+                                                                    cfDisplayValue = JSON.stringify(cf.value);
+                                                                } else {
+                                                                    cfDisplayValue = String(cf.value).substring(0, 120);
+                                                                }
+                                                            %>
+                                                            <% if (cfShowAge && cfAge) { %>
+                                                                <!-- Age display (like image-47: "Âge  45 ans") -->
+                                                                <div class="flex items-center gap-2 py-1">
+                                                                    <% if (cfIcon) { %>
+                                                                        <iconify-icon icon="<%= cfIcon %>" width="14" class="text-gray-400 flex-none"></iconify-icon>
                                                                     <% } %>
+                                                                    <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Âge</span>
+                                                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-200"><%= cfAge %> ans</span>
                                                                 </div>
-                                                            </div>
+                                                            <% } else if (cfIsAllergy) { %>
+                                                                <!-- Allergy badge (red warning like image-47) -->
+                                                                <div class="py-1.5">
+                                                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-900/10">
+                                                                        <iconify-icon icon="solar:danger-triangle-bold" width="13" style="color:#ef4444"></iconify-icon>
+                                                                        <span class="text-[11px] font-semibold" style="color:#ef4444">Allergies</span>
+                                                                        <span class="text-[10px] font-medium text-red-400 dark:text-red-300">△</span>
+                                                                    </div>
+                                                                    <div class="mt-1 text-[11px] text-gray-600 dark:text-gray-300 pl-1"><%= cfDisplayValue %></div>
+                                                                </div>
+                                                            <% } else if (cfIsAntecedent) { %>
+                                                                <!-- Antecedents with colored icons -->
+                                                                <div class="py-1.5">
+                                                                    <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                                                                        <% if (cfIcon) { %>
+                                                                            <iconify-icon icon="<%= cfIcon %>" width="14" class="text-gray-400 flex-none"></iconify-icon>
+                                                                        <% } %>
+                                                                        Antécédents
+                                                                    </div>
+                                                                    <div class="space-y-0.5 pl-1">
+                                                                        <% String(cf.value).split('\n').filter(function(l) { return l.trim(); }).forEach(function(line) { %>
+                                                                            <div class="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300">
+                                                                                <iconify-icon icon="solar:heart-pulse-bold-duotone" width="12" style="color:#e7515a"></iconify-icon>
+                                                                                <span><%= line.trim() %></span>
+                                                                            </div>
+                                                                        <% }); %>
+                                                                    </div>
+                                                                </div>
+                                                            <% } else { %>
+                                                                <!-- Standard field with icon -->
+                                                                <div>
+                                                                    <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-0.5">
+                                                                        <% if (cfIcon) { %>
+                                                                            <iconify-icon icon="<%= cfIcon %>" width="14" class="text-gray-400 flex-none"></iconify-icon>
+                                                                        <% } %>
+                                                                        <%= cf.field_id.label %>
+                                                                    </div>
+                                                                    <div class="text-xs text-gray-700 dark:text-gray-300 line-clamp-2">
+                                                                        <%= cfDisplayValue %><%= String(cf.value).length > 120 ? '...' : '' %>
+                                                                    </div>
+                                                                </div>
+                                                            <% } %>
                                                         <% } %>
                                                     <% }) %>
                                                 </div>

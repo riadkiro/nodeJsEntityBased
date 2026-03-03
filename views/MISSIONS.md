@@ -9,22 +9,49 @@ Prémission: ✅ TOUTES TERMINÉES
 
 Mission 1 : 
 
+### Objectif principal
+Reproduire l'interface de image-42.png : page Consultation avec header, zone focus, tableaux dynamiques, sidebar patient/documents
 
-CCheck l'image image-42.png pour comprendre le but.
-![alt text](image-42.png) retravail moi le seed de cabinet médicale pour avoir une page comme image-42.png voila le concept 
+### Sous-tâches
 
+#### Phase 1 : Seed Data Intelligent ✅
+- ✅ Enrichir patients : allergies, antécédents, groupe sanguin, médecin traitant, mutuelle
+- ✅ Enrichir consultations : symptômes réalistes et détaillés, poids/taille fixes, examens cliniques
+- [ ] Explorer le LineSchema Traitement pour seed de données traitement
 
+#### Phase 2 : Champs de Consultation avec icônes ✅ (déjà actif)
+- ✅ Icônes affichées à côté de chaque label via field.ui.icon
 
-Tout les champs auront des icons , donc afficher les icons a coté du champ.
+#### Phase 3 : Fiche Patient Sidebar
+- [ ] Afficher l'âge calculé au lieu de la date de naissance ISO brute
+- [ ] Badge "Allergies ⚠" en rouge avec alert visuelle
+- [ ] Section "Antécédents" avec icônes par condition
+- [ ] Dernière consultation / Dernier bilan (données relatives)
+- [ ] Bouton "+ voir dossier patient"
+- [ ] Icônes à côté de chaque label dans la fiche patient sidebar
 
+#### Phase 4 : Documents Section
+- [ ] Grille 2x2 : Ordonnance, Compte rendu, Certificat, Lettre spécialiste
+- [ ] Actions rapides header (Ordonnance, Examen, Certificat)
+
+#### Phase 5 : Tableaux Dynamiques
+- [ ] Tabs multi-tableaux quand l'entité en a plusieurs
+- [ ] Barre actions rapides en bas (Ajouter traitement, Ctrl+O Ordonnance, Ctrl+E Examen)
+
+#### Phase 6 : Symptômes en mode tag/chip
+- [ ] Entité Symptômes avec records (Fatigue, Toux, Douleur thoracique...)
+- [ ] Champ relation Symptômes sur Consultation en mode multi-select tag (comme classification)
+
+### Références
+![alt text](image-42.png) 
 ![alt text](image-46.png)
-en bas du header a gauche on aura la zone focus, qui affchichera les champs de consultation, avec leurs icon, pour les simptomes on aura un enetité symptomes, avec plein de symptomes, pour les champs de consultation on aura un champ relation, qui permettra de selectionner les symptome depuis des records de symptomes, memestyle visuel que classification, donc un champ select, avec autocomplete et possibilité de creer/modifier/supprimer ajouter des couleur enfin reutiliser le meme code pour classification
-
-Juste apres de bloque focus consultation on aura un bloc tableaux dynamiques, qui affichera les tableaux dynamique lié a l'entité, si plusieurs on aura une sorte de tabs pour switcher entre les tableaux dynamiques...
-
 ![alt text](image-47.png)
-la sidebarre droite par defaut affchera la fiche patient, la fiche patient doit etre plus pertinente regarde image 47, les champs du seed doievent etre plus intteligent, et avoir des icons, voir des couleurs, genre pour date de naissance je pourrais avoir un calcul de l'age et choisir si je dois afficher l'age ou la date de naissance... la fcihe patient de la sidebarre est crée depuis entité patient-cards, 
 
-En bas de la fiche patient j'aurais la section documents qui affichera les docs de la consultation mais je pourrai aussi ajouter les doc du patient via config...
-
-Donc au final on aura un pattern reutilisable, avec header custimizable, focus, tableaux dynamiques, sidebarre droite avec des fiches et des documents... priviligié les icons au lieux de labels tant qu'on peux... Champ avec render custom et calculé ... je veux un resultat pixelperfect image-42.png 
+### Notes
+- Tout les champs auront des icons, afficher les icons a coté du champ
+- Zone focus = bloc principal consultation (motif, symptômes, diagnostic)
+- Sidebar droite = fiche patient + documents
+- Pattern réutilisable : header customizable, focus, tableaux dynamiques, sidebar
+- Privilégier icons au lieu de labels quand possible
+- Champs avec render custom et calculé
+- Résultat pixel-perfect image-42.png

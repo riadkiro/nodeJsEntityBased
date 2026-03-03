@@ -275,7 +275,9 @@
                 <div class="hb-icon-item" @click.outside="openDropdown = openDropdown === 'attach' ? null : openDropdown">
                     <div class="hb-icon-btn" @click="openDropdown = openDropdown === 'attach' ? null : 'attach'"
                          title="Pièces jointes (<%= _hrm.attachmentCount %>)">
-                        <iconify-icon icon="solar:paperclip-bold-duotone" width="15" style="color:#f59e0b;flex-shrink:0"></iconify-icon>
+                        <div class="hb-icon-circle" style="background:#f59e0b18">
+                            <iconify-icon icon="solar:paperclip-bold-duotone" width="15" style="color:#f59e0b;flex-shrink:0"></iconify-icon>
+                        </div>
                         <span class="hb-expand-label" style="color:#f59e0b">Documents</span>
                         <span class="hb-badge" style="background:#f59e0b"><%= _hrm.attachmentCount %></span>
                     </div>
@@ -308,7 +310,9 @@
                 <div class="hb-icon-item" @click.outside="openDropdown = openDropdown === '<%= rel.key %>' ? null : openDropdown">
                     <div class="hb-icon-btn" @click="openDropdown = openDropdown === '<%= rel.key %>' ? null : '<%= rel.key %>'"
                          title="<%= rel.label %> (<%= rel.count %>)">
-                        <iconify-icon icon="<%= rel.icon %>" width="15" style="color:<%= rel.color %>;flex-shrink:0"></iconify-icon>
+                        <div class="hb-icon-circle" style="background:<%= rel.color %>18">
+                            <iconify-icon icon="<%= rel.icon %>" width="15" style="color:<%= rel.color %>;flex-shrink:0"></iconify-icon>
+                        </div>
                         <span class="hb-expand-label" style="color:<%= rel.color %>"><%= rel.label %></span>
                         <% if (rel.count > 0) { %>
                         <span class="hb-badge" style="background:<%= rel.color %>"><%= rel.count %></span>
@@ -405,7 +409,7 @@
                         <button type="button" @click="$dispatch('open-header-config'); showMoreMenu = false"
                             class="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                             <iconify-icon icon="solar:widget-6-bold-duotone" width="15" class="text-purple-400"></iconify-icon>
-                            <span>Configurer l'en-tÃªte</span>
+                            <span>Configurer l'en-tête</span>
                         </button>
                         <div class="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
                         <!-- Delete -->
@@ -427,7 +431,7 @@
                         </div>
                         <div>
                             <h3 class="text-sm font-bold text-gray-800 dark:text-white">Supprimer cet enregistrement ?</h3>
-                            <p class="text-xs text-gray-400 mt-0.5">Cette action est irrÃ©versible.</p>
+                            <p class="text-xs text-gray-400 mt-0.5">Cette action est irréversible.</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -502,7 +506,7 @@
                                     :class="canAddOnTab(tab)
                                         ? 'text-gray-300 dark:text-gray-600 hover:text-primary hover:bg-primary/10 cursor-pointer'
                                         : 'text-gray-200 dark:text-gray-700 cursor-not-allowed opacity-40'"
-                                    :title="canAddOnTab(tab) ? 'CrÃ©er ' + tab.label : 'Ajout non disponible'"
+                                    :title="canAddOnTab(tab) ? 'Créer ' + tab.label : 'Ajout non disponible'"
                                     :disabled="!canAddOnTab(tab)">
                                 <iconify-icon icon="tabler:plus" width="12"></iconify-icon>
                             </button>
@@ -535,11 +539,11 @@
                         Configurer les onglets
                     </h4>
                     <button type="button" @click="resetConfig()" class="text-[10px] text-gray-400 hover:text-primary transition-colors">
-                        RÃ©initialiser
+                        Réinitialiser
                     </button>
                 </div>
                 <p class="text-[10px] text-gray-400 dark:text-gray-500 mb-3">
-                    Glissez pour rÃ©ordonner. Activez ou dÃ©sactivez les relations Ã  afficher.
+                    Glissez pour réordonner. Activez ou désactivez les relations à afficher.
                 </p>
                 <div id="relation-tabs-sortable" class="space-y-1.5">
                     <template x-for="tab in allTabs" :key="'cfg-' + tab.key">
@@ -617,7 +621,7 @@
                                         </div>
                                         <div class="flex-1 min-w-0">
                                             <div class="text-sm font-medium text-gray-700 dark:text-gray-200 truncate group-hover:text-primary transition-colors" x-text="rec.title"></div>
-                                            <div class="text-[10px] text-gray-400 dark:text-gray-500" x-text="rec.updatedAt ? 'ModifiÃ© le ' + new Date(rec.updatedAt).toLocaleDateString('fr-FR') : ''"></div>
+                                            <div class="text-[10px] text-gray-400 dark:text-gray-500" x-text="rec.updatedAt ? 'Modifié le ' + new Date(rec.updatedAt).toLocaleDateString('fr-FR') : ''"></div>
                                         </div>
                                         <iconify-icon icon="solar:arrow-right-linear" width="14" class="text-gray-300 dark:text-gray-600 group-hover:text-primary transition-colors shrink-0"></iconify-icon>
                                     </a>
@@ -630,12 +634,12 @@
                     <template x-if="!tabLoading && tabRecords.length === 0 && activeTab && activeTab !== '__self__'">
                         <div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500">
                             <iconify-icon icon="solar:box-minimalistic-bold-duotone" width="36" class="mb-3 opacity-40"></iconify-icon>
-                            <span class="text-xs mb-3">Aucun enregistrement liÃ©</span>
+                            <span class="text-xs mb-3">Aucun enregistrement lié</span>
                             <template x-if="canAddOnTab(activeTabMeta)">
                                 <button type="button" @click="openQuickCreate(activeTabMeta)"
                                         class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all">
                                     <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
-                                    <span x-text="'CrÃ©er ' + (activeTabMeta?.label || '')"></span>
+                                    <span x-text="'Créer ' + (activeTabMeta?.label || '')"></span>
                                 </button>
                             </template>
                             <template x-if="!canAddOnTab(activeTabMeta)">
@@ -674,7 +678,7 @@
                             <div>
                                 <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200" x-text="'Nouveau ' + (qcTab?.label || '')"></h3>
                                 <p class="text-[10px] text-gray-400 dark:text-gray-500">
-                                    CrÃ©ation rapide · liÃ© Ã  <strong><%= record.title || 'cet enregistrement' %></strong>
+                                    Création rapide · lié à <strong><%= record.title || 'cet enregistrement' %></strong>
                                 </p>
                             </div>
                         </div>
@@ -712,7 +716,7 @@
                                     <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                                         <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="16" class="text-warning shrink-0"></iconify-icon>
                                         <div class="flex-1 min-w-0">
-                                            <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Titre auto-gÃ©nÃ©rÃ©</div>
+                                            <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Titre auto-généré</div>
                                             <div class="text-sm font-semibold text-gray-700 dark:text-gray-200 truncate"
                                                  x-text="computeQcTitle() || 'Remplissez les champs...'"
                                                  :class="!computeQcTitle() && 'text-gray-400 italic'"></div>
@@ -801,7 +805,7 @@
                            target="_blank"
                            class="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-primary transition-colors">
                             <iconify-icon icon="solar:arrow-right-up-linear" width="13"></iconify-icon>
-                            Ouvrir la page complÃ¨te
+                            Ouvrir la page complète
                         </a>
                         <div class="flex items-center gap-2">
                             <button type="button" @click="closeQuickCreate()"
@@ -813,7 +817,7 @@
                                     class="flex items-center gap-1.5 px-5 py-2 rounded-lg text-xs font-bold text-white bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     :class="qcSaving ? 'cursor-wait' : ''">
                                 <iconify-icon :icon="qcSaving ? 'svg-spinners:ring-resize' : 'tabler:check'" width="14"></iconify-icon>
-                                <span x-text="qcSaving ? 'CrÃ©ation...' : 'CrÃ©er'"></span>
+                                <span x-text="qcSaving ? 'Création...' : 'Créer'"></span>
                             </button>
                         </div>
                     </div>
@@ -1214,9 +1218,9 @@
                             }
 
                             // Show success feedback
-                            this._showToast('Enregistrement crÃ©Ã© avec succÃ¨s !', 'success');
+                            this._showToast('Enregistrement créé avec succès !', 'success');
                         } else {
-                            this._showToast('Erreur lors de la crÃ©ation', 'error');
+                            this._showToast('Erreur lors de la création', 'error');
                         }
                     } catch (e) {
                         console.error('Error creating record:', e);
@@ -1426,7 +1430,7 @@
                                                                 <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="display:flex;align-items:center;gap:4px">
                                                                     <iconify-icon icon="<%= (cf.ui && cf.ui.icon) || 'solar:calculator-bold-duotone' %>" width="14" style="color: <%= cf.color || '#f59e0b' %>;"></iconify-icon>
                                                                     <%= field.label || cf.label || cf.name %>
-                                                                    <span class="text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 dark:text-gray-500 px-1.5 py-0.5 rounded-full ml-1">calculÃ©</span>
+                                                                    <span class="text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 dark:text-gray-500 px-1.5 py-0.5 rounded-full ml-1">calculé</span>
                                                                 </label>
                                                                 <div class="mt-1 px-3 py-2 bg-gray-50 dark:bg-[#121e32] rounded-lg border border-gray-100 dark:border-gray-800">
                                                                     <%- include('../components/computed-field-renderer', { computedValue: cvData, displayType: cvDisplay, field: cf }) %>
@@ -1581,7 +1585,7 @@
                                                                         <span class="flex items-center gap-2 min-w-0" :class="!multiple && selectedItems.length > 0 ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'">
                                                                             <iconify-icon icon="solar:magnifer-bold-duotone" width="16" class="shrink-0" x-show="multiple || selectedItems.length === 0"></iconify-icon>
                                                                             <iconify-icon :icon="refEntityIcon" width="16" :style="'color:' + refEntityColor" class="shrink-0" x-show="!multiple && selectedItems.length > 0" x-cloak></iconify-icon>
-                                                                            <span class="truncate" x-text="!multiple && selectedItems.length > 0 ? selectedItems[0].label : (multiple && selectedItems.length > 0 ? selectedItems.length + ' sÃ©lectionnÃ©(s)' : 'Rechercher <%= mpName %>...')"></span>
+                                                                            <span class="truncate" x-text="!multiple && selectedItems.length > 0 ? selectedItems[0].label : (multiple && selectedItems.length > 0 ? selectedItems.length + ' sélectionné(s)' : 'Rechercher <%= mpName %>...')"></span>
                                                                         </span>
                                                                         <span class="flex items-center gap-1 shrink-0">
                                                                             <span role="button" x-show="!multiple && selectedItems.length > 0" x-cloak @click.stop="removeItem(selectedItems[0]?.id)" class="w-5 h-5 rounded-full flex items-center justify-center text-gray-400 hover:text-danger hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer">
@@ -1625,8 +1629,8 @@
                                                                                 <div class="flex items-center justify-between px-5 py-3 border-b dark:border-gray-800">
                                                                                     <div class="flex items-center gap-2">
                                                                                         <iconify-icon :icon="refEntityIcon" width="18" :style="'color:' + refEntityColor"></iconify-icon>
-                                                                                        <h3 class="font-semibold text-sm dark:text-gray-200" x-text="'SÃ©lectionner ' + refEntityName"></h3>
-                                                                                        <span class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-0.5 rounded-full" x-text="modalTotal + ' rÃ©sultats'"></span>
+                                                                                        <h3 class="font-semibold text-sm dark:text-gray-200" x-text="'Sélectionner ' + refEntityName"></h3>
+                                                                                        <span class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 px-2 py-0.5 rounded-full" x-text="modalTotal + ' résultats'"></span>
                                                                                     </div>
                                                                                     <button type="button" @click="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                                                                                         <iconify-icon icon="tabler:x" width="20"></iconify-icon>
@@ -1650,7 +1654,7 @@
                                                                                             <template x-if="modalResults.length === 0 && !modalLoading">
                                                                                                 <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
                                                                                                     <iconify-icon icon="solar:box-minimalistic-bold-duotone" width="40" class="mb-2"></iconify-icon>
-                                                                                                    <span class="text-sm">Aucun rÃ©sultat trouvÃ©</span>
+                                                                                                    <span class="text-sm">Aucun résultat trouvé</span>
                                                                                                 </div>
                                                                                             </template>
                                                                                             <div class="divide-y dark:divide-gray-800">
@@ -1690,7 +1694,7 @@
                                                                                     </template>
                                                                                 </div>
                                                                                 <div x-show="multiple" class="flex items-center justify-between px-5 py-3 border-t bg-gray-50 dark:bg-[#1b2e4b] dark:border-gray-800 rounded-b-xl">
-                                                                                    <span class="text-xs text-gray-500 dark:text-gray-400" x-text="tempSelected.length + ' sÃ©lectionnÃ©(s)'"></span>
+                                                                                    <span class="text-xs text-gray-500 dark:text-gray-400" x-text="tempSelected.length + ' sélectionné(s)'"></span>
                                                                                     <div class="flex gap-2">
                                                                                         <button type="button" @click="closeModal()" class="btn btn-outline-secondary btn-sm text-xs">Annuler</button>
                                                                                         <button type="button" @click="confirmSelection()" class="btn btn-primary btn-sm text-xs">
@@ -1738,7 +1742,7 @@
                                                                                 </div>
                                                                             </template>
                                                                             <template x-if="!loading && results.length === 0">
-                                                                                <div class="px-4 py-2 text-sm text-secondary">Aucun rÃ©sultat</div>
+                                                                                <div class="px-4 py-2 text-sm text-secondary">Aucun résultat</div>
                                                                             </template>
                                                                             <template x-if="hasMore">
                                                                                 <button type="button" @click.stop="loadMore" class="w-full px-4 py-2 text-sm text-primary hover:bg-primary/5 text-center disabled:opacity-50" :disabled="loading">
@@ -1809,7 +1813,7 @@
                                                                          :class="isOpen ? 'tp-trigger--active' : ''"
                                                                          @click="toggleOpen()">
                                                                         <template x-if="selectedOptions.length === 0">
-                                                                            <span class="tp-placeholder">SÃ©lectionner...</span>
+                                                                            <span class="tp-placeholder">Sélectionner...</span>
                                                                         </template>
                                                                         <template x-for="opt in selectedOptions" :key="opt._id">
                                                                             <span class="tp-tag"
@@ -1835,7 +1839,7 @@
                                                                         <!-- Search -->
                                                                         <div class="tp-search-wrap">
                                                                             <input type="text" class="tp-search-input"
-                                                                                   placeholder="Rechercher ou crÃ©er..."
+                                                                                   placeholder="Rechercher ou créer..."
                                                                                    x-model="searchQuery"
                                                                                    x-ref="searchInput"
                                                                                    @keydown.enter.prevent="canCreate ? createOption() : null" />
@@ -1865,7 +1869,7 @@
 
                                                                             <template x-if="filteredOptions.length === 0 && !canCreate">
                                                                                 <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 12px;">
-                                                                                    Aucune option trouvÃ©e
+                                                                                    Aucune option trouvée
                                                                                 </div>
                                                                             </template>
 
@@ -1899,7 +1903,7 @@
                                                                         <template x-if="canCreate">
                                                                             <div class="tp-create-option" @click="createOption()">
                                                                                 <iconify-icon icon="tabler:plus" width="14" style="color: #6b7280;"></iconify-icon>
-                                                                                <span class="tp-create-label">CrÃ©er</span>
+                                                                                <span class="tp-create-label">Créer</span>
                                                                                 <span class="tp-create-tag" x-text="searchQuery"></span>
                                                                             </div>
                                                                         </template>
@@ -2075,7 +2079,7 @@
                                                     </span>
                                                 </template>
                                                 <template x-if="selectedItems.length === 0">
-                                                    <span class="tp-placeholder" x-text="'SÃ©lectionner...'"></span>
+                                                    <span class="tp-placeholder" x-text="'Sélectionner...'"></span>
                                                 </template>
                                             </div>
 
@@ -2092,7 +2096,7 @@
                                                 <!-- Search -->
                                                 <div class="tp-search-wrap">
                                                     <input type="text" class="tp-search-input"
-                                                           :placeholder="'Rechercher ou crÃ©er...'"
+                                                           :placeholder="'Rechercher ou créer...'"
                                                            x-model="searchQuery"
                                                            x-ref="searchInput"
                                                            @input.debounce.300ms="search"
@@ -2118,7 +2122,7 @@
                                                     </template>
 
                                                     <template x-if="!loading && results.length === 0">
-                                                        <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 12px;">Aucun rÃ©sultat</div>
+                                                        <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 12px;">Aucun résultat</div>
                                                     </template>
                                                 </div>
 
@@ -2138,7 +2142,7 @@
                                                             if (tab) window.relationTabsApp.openQuickCreate(tab); 
                                                         }">
                                                     <iconify-icon icon="tabler:plus" width="14" style="color: #6b7280;"></iconify-icon>
-                                                    <span class="tp-create-label">CrÃ©er</span>
+                                                    <span class="tp-create-label">Créer</span>
                                                     <span class="tp-create-tag" x-text="relField.field.label"></span>
                                                 </div>
                                             </div>
@@ -2485,7 +2489,7 @@
                         <iconify-icon icon="solar:widget-6-bold-duotone" width="18" class="text-purple-500"></iconify-icon>
                     </div>
                     <div>
-                        <h3 class="text-sm font-bold text-gray-800 dark:text-white">Configurer l'en-tÃªte</h3>
+                        <h3 class="text-sm font-bold text-gray-800 dark:text-white">Configurer l'en-tête</h3>
                         <p class="text-[10px] text-gray-400">Personnalisez l'affichage du header de fiche</p>
                     </div>
                 </div>
@@ -2502,7 +2506,7 @@
                     <div class="hc-section-header" @click="hcAcc.icon = !hcAcc.icon" style="cursor:pointer">
                         <div class="hc-section-left">
                             <div class="hc-section-icon" style="background:#ede9fe"><iconify-icon icon="solar:user-circle-bold-duotone" width="14" style="color:#8b5cf6"></iconify-icon></div>
-                            <span class="hc-section-title">IcÃ´ne</span>
+                            <span class="hc-section-title">Icône</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <div class="hc-toggle-track" @click.stop="hcLocal.showIcon = !(hcLocal.showIcon !== false)"
@@ -2520,7 +2524,7 @@
                                 else if (val === 'record-image') hcLocal.avatarSource = { type: 'record-image' };
                                 else hcLocal.avatarSource = { type: 'relation-image', relationKey: val };
                             " :value="hcLocal.avatarSource?.type === 'relation-image' ? (hcLocal.avatarSource.relationKey || '') : (hcLocal.avatarSource?.type || 'entity-icon')">
-                                <option value="entity-icon">IcÃ´ne de l'entitÃ© (<%= entity.name %>)</option>
+                                <option value="entity-icon">Icône de l'entité (<%= entity.name %>)</option>
                                 <option value="record-image">Image de la fiche</option>
                                 <% (entity.relations || []).forEach(r => { %>
                                 <option value="<%= r.key %>"><%= r.label || (r.targetEntity && r.targetEntity.name) || 'Relation' %></option>
@@ -2612,7 +2616,7 @@
                     </div>
                 </div>
 
-                <!-- â‘¢c RELATIONS (indirectes + inversÃ©es) -->
+                <!-- â‘¢c RELATIONS (indirectes + inversées) -->
                 <% 
                     const _hasIndirectRels = locals.headerRelatedMeta && locals.headerRelatedMeta.indirectRelations && locals.headerRelatedMeta.indirectRelations.length > 0;
                     const _invRelsForModal = (locals.relationTabsMeta || []).filter(r => r.direction === 'inverse');
@@ -2666,7 +2670,7 @@
                             <!-- Inverse relations (entities pointing to current entity) -->
                             <div class="hc-field-group-label" @click="relAccInverse = !relAccInverse" style="cursor:pointer;margin-top:8px">
                                 <iconify-icon icon="solar:rewind-back-bold-duotone" width="12" style="color:#f59e0b"></iconify-icon>
-                                <span style="flex:1">Relations inversÃ©es</span>
+                                <span style="flex:1">Relations inversées</span>
                                 <iconify-icon icon="solar:alt-arrow-down-linear" width="11" class="text-gray-400 transition-transform duration-200" :style="relAccInverse ? 'transform:rotate(180deg)' : ''"></iconify-icon>
                             </div>
                             <div x-show="relAccInverse" x-collapse>
@@ -2719,7 +2723,7 @@
                 </div>
                 <% } %>
 
-                <!-- â‘£ CHAMPS (groupÃ©s par entitÃ©, accordÃ©on par groupe) -->
+                <!-- â‘£ CHAMPS (groupés par entité, accordéon par groupe) -->
                 <div class="hc-section" x-data="{ fieldAccSelf: false, fieldAccRel: false }">
                     <div class="hc-section-header" @click="hcAcc.fields = !hcAcc.fields" style="cursor:pointer">
                         <div class="hc-section-left">
@@ -2791,7 +2795,7 @@
                         <div class="hc-section-left">
                             <div class="hc-section-icon" style="background:#fef3c7"><iconify-icon icon="solar:clock-circle-bold-duotone" width="14" style="color:#f59e0b"></iconify-icon></div>
                             <div>
-                                <span class="hc-section-title">DurÃ©e</span>
+                                <span class="hc-section-title">Durée</span>
                                 <span class="hc-section-subtitle">Ex: 4h 26min</span>
                             </div>
                         </div>
@@ -3103,8 +3107,8 @@
                     display: inline-flex;
                     align-items: center;
                     gap: 0;
-                    height: 30px;
-                    padding: 0 6px;
+                    height: 34px;
+                    padding: 0 2px;
                     border-radius: 9999px;
                     cursor: pointer;
                     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -3113,13 +3117,26 @@
                     overflow: visible;
                     white-space: nowrap;
                 }
+                .hb-icon-circle {
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                    transition: border-radius 0.3s ease;
+                }
+                .hb-icon-btn:hover .hb-icon-circle {
+                    border-radius: 10px 0 0 10px;
+                }
                 .dark .hb-icon-btn {
                     background: transparent;
                     border-color: transparent;
                 }
                 .hb-icon-btn:hover {
-                    gap: 5px;
-                    padding: 0 12px;
+                    gap: 6px;
+                    padding: 0 12px 0 0;
                     background: #f3f4f6;
                     border-color: #e5e7eb;
                     transform: translateY(-1px);
@@ -3993,7 +4010,7 @@
                         const labelHtml = `<label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="display:flex;align-items:center;gap:4px">
                             <iconify-icon icon="${icon}" width="14" style="color:${color};flex-shrink:0"></iconify-icon>
                             ${field.label || field.name}
-                            <span class="text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 dark:text-gray-500 px-1.5 py-0.5 rounded-full ml-1">calculÃ©</span>
+                            <span class="text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 dark:text-gray-500 px-1.5 py-0.5 rounded-full ml-1">calculé</span>
                         </label>`;
                         
                         let valueHtml = '<span class="text-gray-300 dark:text-gray-600 text-xs italic">â€”</span>';
@@ -4910,7 +4927,7 @@
                 target: document.getElementById('main-record-form')
             });
             toast.fire({
-                title: 'Enregistrement effectuÃ©',
+                title: 'Enregistrement effectué',
                 icon: 'success',
                 padding: '10px 20px'
             });

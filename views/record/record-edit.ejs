@@ -2536,10 +2536,9 @@
                     <div x-show="hcAcc.icon && hcLocal.showIcon !== false" x-collapse>
                         <div class="hc-section-content">
                             <select class="hc-select" @change="
-                                const val = $event.target.value;
-                                if (val === 'entity-icon') hcLocal.avatarSource = { type: 'entity-icon' };
-                                else if (val === 'record-image') hcLocal.avatarSource = { type: 'record-image' };
-                                else hcLocal.avatarSource = { type: 'relation-image', relationKey: val };
+                                if ($event.target.value === 'entity-icon') hcLocal.avatarSource = { type: 'entity-icon' };
+                                else if ($event.target.value === 'record-image') hcLocal.avatarSource = { type: 'record-image' };
+                                else hcLocal.avatarSource = { type: 'relation-image', relationKey: $event.target.value };
                             " :value="hcLocal.avatarSource?.type === 'relation-image' ? (hcLocal.avatarSource.relationKey || '') : (hcLocal.avatarSource?.type || 'entity-icon')">
                                 <option value="entity-icon">Icône de l'entité (<%= entity.name %>)</option>
                                 <option value="record-image">Image de la fiche</option>
@@ -2569,9 +2568,8 @@
                     <div x-show="hcAcc.title && hcLocal.showTitle !== false" x-collapse>
                         <div class="hc-section-content">
                             <select class="hc-select" @change="
-                                const val = $event.target.value;
-                                if (val === 'entity') { hcLocal.titleSource = { type: 'entity' }; hcLocal.subtitleRelation = null; }
-                                else { hcLocal.titleSource = { type: 'relation', relationKey: val }; hcLocal.subtitleRelation = { relationKey: val, displayFields: ['title'] }; }
+                                if ($event.target.value === 'entity') { hcLocal.titleSource = { type: 'entity' }; hcLocal.subtitleRelation = null; }
+                                else { hcLocal.titleSource = { type: 'relation', relationKey: $event.target.value }; hcLocal.subtitleRelation = { relationKey: $event.target.value, displayFields: ['title'] }; }
                             " :value="hcLocal.titleSource?.type === 'relation' ? (hcLocal.titleSource.relationKey || '') : 'entity'">
                                 <option value="entity">Titre de la fiche (<%= entity.name %>)</option>
                                 <% (entity.relations || []).forEach(r => { %>
@@ -2603,9 +2601,7 @@
                             <% (entity.classifications || []).forEach(cls => { %>
                             <div class="hc-switch-row" @click="
                                 if (!hcLocal.shownClassifications) hcLocal.shownClassifications = [];
-                                const idx = hcLocal.shownClassifications.indexOf('<%= cls._id %>');
-                                if (idx > -1) hcLocal.shownClassifications.splice(idx, 1);
-                                else hcLocal.shownClassifications.push('<%= cls._id %>');
+                                hcLocal.shownClassifications.includes('<%= cls._id %>') ? hcLocal.shownClassifications.splice(hcLocal.shownClassifications.indexOf('<%= cls._id %>'), 1) : hcLocal.shownClassifications.push('<%= cls._id %>');
                             ">
                                 <span class="hc-cls-dot" style="background:<%= (cls.options && cls.options[0] && cls.options[0].color) || '#4361ee' %>"></span>
                                 <span class="hc-switch-label"><%= cls.name || cls.label || 'Classification' %></span>
@@ -2668,9 +2664,7 @@
                                 <% _directRelsForModal.forEach(dRel => { %>
                                 <div class="hc-switch-row" @click="
                                     if (!hcLocal.shownRelations) hcLocal.shownRelations = [];
-                                    const idx = hcLocal.shownRelations.indexOf('<%= dRel.key %>');
-                                    if (idx > -1) hcLocal.shownRelations.splice(idx, 1);
-                                    else hcLocal.shownRelations.push('<%= dRel.key %>');
+                                    hcLocal.shownRelations.includes('<%= dRel.key %>') ? hcLocal.shownRelations.splice(hcLocal.shownRelations.indexOf('<%= dRel.key %>'), 1) : hcLocal.shownRelations.push('<%= dRel.key %>');
                                 ">
                                     <iconify-icon icon="<%= dRel.icon %>" width="14" style="color:<%= dRel.color %>"></iconify-icon>
                                     <span class="hc-switch-label"><%= dRel.label %></span>
@@ -2694,9 +2688,7 @@
                                 <% _invRelsForModal.forEach(invR => { %>
                                 <div class="hc-switch-row" @click="
                                     if (!hcLocal.shownRelations) hcLocal.shownRelations = [];
-                                    const idx = hcLocal.shownRelations.indexOf('<%= invR.key %>');
-                                    if (idx > -1) hcLocal.shownRelations.splice(idx, 1);
-                                    else hcLocal.shownRelations.push('<%= invR.key %>');
+                                    hcLocal.shownRelations.includes('<%= invR.key %>') ? hcLocal.shownRelations.splice(hcLocal.shownRelations.indexOf('<%= invR.key %>'), 1) : hcLocal.shownRelations.push('<%= invR.key %>');
                                 ">
                                     <iconify-icon icon="<%= invR.icon %>" width="14" style="color:<%= invR.color %>"></iconify-icon>
                                     <span class="hc-switch-label"><%= invR.label %></span>
@@ -2720,9 +2712,7 @@
                                 <% (locals.headerRelatedMeta.indirectRelations || []).forEach(iRel => { %>
                                 <div class="hc-switch-row" @click="
                                     if (!hcLocal.shownRelations) hcLocal.shownRelations = [];
-                                    const idx = hcLocal.shownRelations.indexOf('<%= iRel.key %>');
-                                    if (idx > -1) hcLocal.shownRelations.splice(idx, 1);
-                                    else hcLocal.shownRelations.push('<%= iRel.key %>');
+                                    hcLocal.shownRelations.includes('<%= iRel.key %>') ? hcLocal.shownRelations.splice(hcLocal.shownRelations.indexOf('<%= iRel.key %>'), 1) : hcLocal.shownRelations.push('<%= iRel.key %>');
                                 ">
                                     <iconify-icon icon="<%= iRel.icon %>" width="14" style="color:<%= iRel.color %>"></iconify-icon>
                                     <span class="hc-switch-label"><%= iRel.label %></span>
@@ -2764,9 +2754,7 @@
                                 <% (entity.customFields || []).filter(f => f != null).slice(0, 10).forEach(f => { %>
                                 <div class="hc-switch-row" @click="
                                     if (!hcLocal.heroFields) hcLocal.heroFields = [];
-                                    const idx = hcLocal.heroFields.findIndex(h => h.fieldId === '<%= f._id %>' && (h.entitySource || 'self') === 'self');
-                                    if (idx > -1) { hcLocal.heroFields.splice(idx, 1); }
-                                    else if (hcLocal.heroFields.length < 4) { hcLocal.heroFields.push({ fieldId: '<%= f._id %>', entitySource: 'self', maxChars: 20 }); }
+                                    hcLocal.heroFields.some(h => h.fieldId === '<%= f._id %>' && (h.entitySource || 'self') === 'self') ? hcLocal.heroFields.splice(hcLocal.heroFields.findIndex(h => h.fieldId === '<%= f._id %>' && (h.entitySource || 'self') === 'self'), 1) : (hcLocal.heroFields.length < 4 && hcLocal.heroFields.push({ fieldId: '<%= f._id %>', entitySource: 'self', maxChars: 20 }));
                                 ">
                                     <iconify-icon icon="<%= (f.ui && f.ui.icon) || 'solar:document-text-linear' %>" width="13" style="color:#9ca3af"></iconify-icon>
                                     <span class="hc-switch-label"><%= f.label || f.name %></span>
@@ -2789,9 +2777,7 @@
                                 <% locals.headerRelatedMeta.relatedFields.forEach(rf => { %>
                                 <div class="hc-switch-row" @click="
                                     if (!hcLocal.heroFields) hcLocal.heroFields = [];
-                                    const idx = hcLocal.heroFields.findIndex(h => h.fieldId === '<%= rf._id %>' && h.entitySource === '<%= _relKey %>');
-                                    if (idx > -1) { hcLocal.heroFields.splice(idx, 1); }
-                                    else if (hcLocal.heroFields.length < 4) { hcLocal.heroFields.push({ fieldId: '<%= rf._id %>', entitySource: '<%= _relKey %>', maxChars: 20 }); }
+                                    hcLocal.heroFields.some(h => h.fieldId === '<%= rf._id %>' && h.entitySource === '<%= _relKey %>') ? hcLocal.heroFields.splice(hcLocal.heroFields.findIndex(h => h.fieldId === '<%= rf._id %>' && h.entitySource === '<%= _relKey %>'), 1) : (hcLocal.heroFields.length < 4 && hcLocal.heroFields.push({ fieldId: '<%= rf._id %>', entitySource: '<%= _relKey %>', maxChars: 20 }));
                                 ">
                                     <iconify-icon icon="<%= rf.icon %>" width="13" style="color:#9ca3af"></iconify-icon>
                                     <span class="hc-switch-label"><%= rf.label %></span>

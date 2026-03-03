@@ -1347,7 +1347,7 @@
                                                         <% if (def) { %>
                                                             <% if (field.fieldId === 'title') { %>
                                                                 <div class="mb-3">
-                                                                    <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="gap:4px">
+                                                                    <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="display:flex;align-items:center;gap:4px">
                                                                         <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
                                                                         <%= field.label || def.label %>
                                                                         <% if (field.required) { %><span class="text-danger">*</span><% } %>
@@ -1359,7 +1359,7 @@
                                                                 </div>
                                                             <% } else if (def.inputType === 'textarea') { %>
                                                                 <div class="mb-3">
-                                                                    <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="gap:4px">
+                                                                    <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="display:flex;align-items:center;gap:4px">
                                                                         <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
                                                                         <%= field.label || def.label %>
                                                                         <% if (field.required) { %><span class="text-danger">*</span><% } %>
@@ -1370,7 +1370,7 @@
                                                                 </div>
                                                             <% } else if (def.inputType === 'file') { %>
                                                                 <div class="mb-3">
-                                                                    <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="gap:4px">
+                                                                    <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="display:flex;align-items:center;gap:4px">
                                                                         <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
                                                                         <%= field.label || def.label %>
                                                                     </label>
@@ -1381,7 +1381,7 @@
                                                                 </div>
                                                             <% } else if (def.inputType === 'date') { %>
                                                                 <div class="mb-3">
-                                                                    <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="gap:4px">
+                                                                    <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="display:flex;align-items:center;gap:4px">
                                                                         <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
                                                                         <%= field.label || def.label %>
                                                                         <% if (field.required) { %><span class="text-danger">*</span><% } %>
@@ -1392,7 +1392,7 @@
                                                                 </div>
                                                             <% } else { %>
                                                                 <div class="mb-3">
-                                                                    <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="gap:4px">
+                                                                    <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="display:flex;align-items:center;gap:4px">
                                                                         <iconify-icon icon="<%= def.icon %>" width="14" class="text-warning"></iconify-icon>
                                                                         <%= field.label || def.label %>
                                                                         <% if (field.required) { %><span class="text-danger">*</span><% } %>
@@ -1423,7 +1423,7 @@
                                                               var cvDisplay = (cf.render && cf.render.display && cf.render.display.table) || (cf.formula && cf.formula.fromFunction === 'rating' ? 'stars' : cf.formula && cf.formula.fromFunction === 'age' ? 'badge' : cf.formula && (cf.formula.fromFunction === 'tva' || cf.formula.fromFunction === 'total_ttc') ? 'currency' : cf.formula && cf.formula.fromFunction === 'duration' ? 'duration' : 'text');
                                                             %>
                                                             <div class="mb-3">
-                                                                <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="gap:4px">
+                                                                <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="display:flex;align-items:center;gap:4px">
                                                                     <iconify-icon icon="<%= (cf.ui && cf.ui.icon) || 'solar:calculator-bold-duotone' %>" width="14" style="color: <%= cf.color || '#f59e0b' %>;"></iconify-icon>
                                                                     <%= field.label || cf.label || cf.name %>
                                                                     <span class="text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 dark:text-gray-500 px-1.5 py-0.5 rounded-full ml-1">calculÃ©</span>
@@ -1434,7 +1434,7 @@
                                                             </div>
                                                         <% } else if (cf) { %>
                                                             <div class="mb-3">
-                                                                <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="gap:4px">
+                                                                <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="display:flex;align-items:center;gap:4px">
                                                                     <iconify-icon icon="<%= (cf.ui && cf.ui.icon) || 'solar:widget-bold-duotone' %>" width="14" class="text-info"></iconify-icon>
                                                                     <%= field.label || cf.label || cf.name %>
                                                                     <% if (field.required) { %><span class="text-danger">*</span><% } %>
@@ -1569,7 +1569,7 @@
                                                                     multiple: <%= (rel.cardinality === 'one-to-many' || rel.cardinality === 'many-to-many') ? 'true' : 'false' %>,
                                                                     initialValue: <%- JSON.stringify(relVal || null).replace(/"/g, '&quot;') %>
                                                                 })" data-display-fields='<%- JSON.stringify(rel.displayFields || []) %>' class="relative">
-                                                                    <label class="flex items-center mb-1 dark:text-gray-300" style="gap:4px">
+                                                                    <label class="flex items-center mb-1 dark:text-gray-300" style="display:flex;align-items:center;gap:4px">
                                                                         <iconify-icon icon="<%= mpIcon %>" width="14"
                                                                             style="color: <%= mpColor %>"></iconify-icon>
                                                                         <%= field.label || rel.label || 'Relation' %>
@@ -1713,7 +1713,7 @@
                                                                     multiple: <%= (rel.cardinality === 'one-to-many' || rel.cardinality === 'many-to-many') ? 'true' : 'false' %>,
                                                                     initialValue: <%- JSON.stringify(relVal || null).replace(/"/g, '&quot;') %>
                                                                 })" class="relative">
-                                                                    <label class="flex items-center mb-1 dark:text-gray-300" style="gap:4px">
+                                                                    <label class="flex items-center mb-1 dark:text-gray-300" style="display:flex;align-items:center;gap:4px">
                                                                         <iconify-icon icon="<%= (rel.targetEntity && rel.targetEntity.icon) || 'solar:link-round-bold-duotone' %>" width="14"
                                                                             style="color: <%= (rel.targetEntity && rel.targetEntity.color) || '#4361ee' %>"></iconify-icon>
                                                                         <%= field.label || rel.label || 'Relation' %>
@@ -1788,7 +1788,7 @@
                                                                 }
                                                             %>
                                                             <div class="mb-3">
-                                                                <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="gap:4px">
+                                                                <label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="display:flex;align-items:center;gap:4px">
                                                                     <iconify-icon icon="solar:tag-bold-duotone" width="14" class="text-success"></iconify-icon>
                                                                     <%= field.label || cls.name %>
                                                                 </label>
@@ -3990,7 +3990,7 @@
                         const icon = field.ui?.icon || 'solar:calculator-bold-duotone';
                         const color = field.ui?.couleur || field.color || '#f59e0b';
                         const fFunc = field.formula?.fromFunction || '';
-                        const labelHtml = `<label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="gap:4px">
+                        const labelHtml = `<label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="display:flex;align-items:center;gap:4px">
                             <iconify-icon icon="${icon}" width="14" style="color:${color};flex-shrink:0"></iconify-icon>
                             ${field.label || field.name}
                             <span class="text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 dark:text-gray-500 px-1.5 py-0.5 rounded-full ml-1">calculÃ©</span>
@@ -4024,7 +4024,7 @@
                         const fieldName = `custom[${field._id}]`;
                         const fieldIcon = field.ui?.icon || '';
                         const labelHtml = fieldIcon
-                            ? `<label class="flex items-center mb-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300" style="gap:4px"><iconify-icon icon="${fieldIcon}" width="14" class="text-gray-400" style="flex-shrink:0"></iconify-icon>${field.label || field.name}</label>`
+                            ? `<label class="flex items-center mb-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300" style="display:flex;align-items:center;gap:4px"><iconify-icon icon="${fieldIcon}" width="14" class="text-gray-400" style="flex-shrink:0"></iconify-icon>${field.label || field.name}</label>`
                             : `<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">${field.label || field.name}</label>`;
                         
                         if (type === 'textarea' || type === 'richtext' || subtype === 'textarea' || subtype === 'richtext') {
@@ -4211,7 +4211,7 @@
                         if (key === 'label') {
                             const _icon = field.ui?.icon || '';
                             return _icon
-                                ? `<label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="gap:4px"><iconify-icon icon="${_icon}" width="14" class="text-gray-400" style="flex-shrink:0"></iconify-icon>${field.label}</label>`
+                                ? `<label class="flex items-center mb-1 text-sm font-semibold text-gray-700 dark:text-gray-300" style="display:flex;align-items:center;gap:4px"><iconify-icon icon="${_icon}" width="14" class="text-gray-400" style="flex-shrink:0"></iconify-icon>${field.label}</label>`
                                 : `<label>${field.label}</label>`;
                         }
                         if (key === 'name') return `custom[${field._id}]`;
@@ -4767,7 +4767,6 @@
     /* Exact Entity Builder Design System */
     .field-item label,
     .builder-preview label {
-        display: block !important;
         font-size: 10px !important;
         font-weight: 800 !important;
         color: #4b5563 !important;

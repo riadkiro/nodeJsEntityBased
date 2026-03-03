@@ -292,8 +292,8 @@
                 <% if (_hasAttachments) { %>
                 <div class="hb-icon-item" @click.outside="openDropdown = openDropdown === 'attach' ? null : openDropdown">
                     <div class="hb-icon-btn" @click="openDropdown = openDropdown === 'attach' ? null : 'attach'"
-                         title="Pièces jointes (<%= _attachmentCount %>)" style="--hb-bg:#f59e0b12;--hb-border:#f59e0b25">
-                        <div class="hb-icon-circle" style="background:#f59e0b18">
+                         title="Pièces jointes (<%= _attachmentCount %>)" style="--hb-c:#f59e0b">
+                        <div class="hb-icon-circle" style="background:linear-gradient(135deg, #f59e0b18, #f59e0b08)">
                             <iconify-icon icon="solar:paperclip-bold-duotone" width="15" style="color:#f59e0b;flex-shrink:0"></iconify-icon>
                         </div>
                         <span class="hb-expand-label" style="color:#f59e0b">Documents</span>
@@ -327,8 +327,8 @@
                 <% _allRelIcons.forEach(rel => { %>
                 <div class="hb-icon-item" @click.outside="openDropdown = openDropdown === '<%= rel.key %>' ? null : openDropdown">
                     <div class="hb-icon-btn" @click="openDropdown = openDropdown === '<%= rel.key %>' ? null : '<%= rel.key %>'"
-                         title="<%= rel.label %> (<%= rel.count %>)" style="--hb-bg:<%= rel.color %>12;--hb-border:<%= rel.color %>25">
-                        <div class="hb-icon-circle" style="background:<%= rel.color %>18">
+                         title="<%= rel.label %> (<%= rel.count %>)" style="--hb-c:<%= rel.color %>">
+                        <div class="hb-icon-circle" style="background:linear-gradient(135deg, <%= rel.color %>18, <%= rel.color %>08)">
                             <iconify-icon icon="<%= rel.icon %>" width="15" style="color:<%= rel.color %>;flex-shrink:0"></iconify-icon>
                         </div>
                         <span class="hb-expand-label" style="color:<%= rel.color %>"><%= rel.label %></span>
@@ -3126,7 +3126,7 @@
                     gap: 0;
                     height: 34px;
                     padding: 0 2px;
-                    border-radius: 9999px;
+                    border-radius: 8px;
                     cursor: pointer;
                     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                     background: transparent;
@@ -3137,7 +3137,7 @@
                 .hb-icon-circle {
                     width: 30px;
                     height: 30px;
-                    border-radius: 10px;
+                    border-radius: 8px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -3145,7 +3145,7 @@
                     transition: border-radius 0.3s ease;
                 }
                 .hb-icon-btn:hover .hb-icon-circle {
-                    border-radius: 10px 0 0 10px;
+                    border-radius: 8px 0 0 8px;
                 }
                 .dark .hb-icon-btn {
                     background: transparent;
@@ -3153,14 +3153,15 @@
                 }
                 .hb-icon-btn:hover {
                     gap: 6px;
-                    padding: 0 12px 0 0;
-                    background: var(--hb-bg, #f3f4f6);
-                    border-color: var(--hb-border, #e5e7eb);
+                    padding: 0 10px 0 0;
+                    background: linear-gradient(135deg, color-mix(in srgb, var(--hb-c, #6b7280) 10%, transparent), color-mix(in srgb, var(--hb-c, #6b7280) 4%, transparent));
+                    border-color: color-mix(in srgb, var(--hb-c, #6b7280) 15%, transparent);
+                    border-radius: 8px;
                     transform: translateY(-1px);
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
                 }
                 .dark .hb-icon-btn:hover {
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
                 }
                 .hb-icon-btn .hb-expand-label {
                     max-width: 0;

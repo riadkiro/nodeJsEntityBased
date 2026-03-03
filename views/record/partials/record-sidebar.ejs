@@ -894,14 +894,18 @@
                                                 <div class="grid grid-cols-1 gap-y-2">
                                                     <% if (relRec.slug) { %>
                                                         <div>
-                                                            <div class="flex items-center" style="gap:6px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99);margin-bottom:2px">Identifiant</div>
-                                                            <div class="text-xs text-gray-700 dark:text-gray-300"><%= relRec.slug %></div>
+                                                            <div class="flex items-center" style="gap:3px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99)">
+                                                                <span>Identifiant</span>
+                                                                <span class="text-xs font-normal" style="letter-spacing:normal;text-transform:none;color:rgb(55,65,81);margin-left:4px"><%= relRec.slug %></span>
+                                                            </div>
                                                         </div>
                                                     <% } %>
                                                     <% if (relRec.date) { %>
                                                         <div>
-                                                            <div class="flex items-center" style="gap:6px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99);margin-bottom:2px">Date</div>
-                                                            <div class="text-xs text-gray-700 dark:text-gray-300"><%= new Date(relRec.date).toLocaleDateString('fr-FR') %></div>
+                                                            <div class="flex items-center" style="gap:3px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99)">
+                                                                <span>Date</span>
+                                                                <span class="text-xs font-normal" style="letter-spacing:normal;text-transform:none;color:rgb(55,65,81);margin-left:4px"><%= new Date(relRec.date).toLocaleDateString('fr-FR') %></span>
+                                                            </div>
                                                         </div>
                                                     <% } %>
                                                     <% (relRec.customFields || []).forEach(function(cf) { %>
@@ -943,12 +947,12 @@
                                                             %>
                                                             <% if (cfShowAge && cfAge) { %>
                                                                 <!-- Age display (like image-47: "Âge  45 ans") -->
-                                                                <div class="flex items-center" style="gap:6px;padding:4px 0">
+                                                                <div class="flex items-center" style="gap:3px;padding:4px 0">
                                                                     <% if (cfIcon) { %>
                                                                         <iconify-icon icon="<%= cfIcon %>" width="14" class="flex-none" style="color:rgb(156,163,175)"></iconify-icon>
                                                                     <% } %>
                                                                     <span style="font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99)">Âge</span>
-                                                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-200"><%= cfAge %> ans</span>
+                                                                    <span class="font-semibold text-gray-700 dark:text-gray-200" style="font-size:12px;margin-left:4px;text-transform:none;letter-spacing:normal"><%= cfAge %> ans</span>
                                                                 </div>
                                                             <% } else if (cfIsAllergy) { %>
                                                                 <!-- Allergy badge (red warning like image-47) -->
@@ -963,7 +967,7 @@
                                                             <% } else if (cfIsAntecedent) { %>
                                                                 <!-- Antecedents with colored icons -->
                                                                 <div class="py-1.5">
-                                                                    <div class="flex items-center" style="gap:6px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99);margin-bottom:4px">
+                                                                    <div class="flex items-center" style="gap:3px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99);margin-bottom:4px">
                                                                         <% if (cfIcon) { %>
                                                                             <iconify-icon icon="<%= cfIcon %>" width="14" class="flex-none" style="color:rgb(156,163,175)"></iconify-icon>
                                                                         <% } %>
@@ -981,14 +985,12 @@
                                                             <% } else { %>
                                                                 <!-- Standard field with icon -->
                                                                 <div>
-                                                                    <div class="flex items-center" style="gap:6px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99);margin-bottom:2px">
+                                                                    <div class="flex items-center" style="gap:3px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99)">
                                                                         <% if (cfIcon) { %>
                                                                             <iconify-icon icon="<%= cfIcon %>" width="14" class="flex-none" style="color:rgb(156,163,175)"></iconify-icon>
                                                                         <% } %>
-                                                                        <%= cf.field_id.label %>
-                                                                    </div>
-                                                                    <div class="text-xs text-gray-700 dark:text-gray-300 line-clamp-2">
-                                                                        <%= cfDisplayValue %><%= String(cf.value).length > 120 ? '...' : '' %>
+                                                                        <span><%= cf.field_id.label %></span>
+                                                                        <span class="text-xs font-normal" style="letter-spacing:normal;text-transform:none;color:rgb(55,65,81);margin-left:4px"><%= cfDisplayValue %><%= String(cf.value).length > 120 ? '...' : '' %></span>
                                                                     </div>
                                                                 </div>
                                                             <% } %>

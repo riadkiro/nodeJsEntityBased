@@ -274,7 +274,7 @@
                 <% if (_hasAttachments) { %>
                 <div class="hb-icon-item" @click.outside="openDropdown = openDropdown === 'attach' ? null : openDropdown">
                     <div class="hb-icon-btn" @click="openDropdown = openDropdown === 'attach' ? null : 'attach'"
-                         title="Pièces jointes (<%= _hrm.attachmentCount %>)">
+                         title="Pièces jointes (<%= _hrm.attachmentCount %>)" style="--hb-bg:#f59e0b12;--hb-border:#f59e0b25">
                         <div class="hb-icon-circle" style="background:#f59e0b18">
                             <iconify-icon icon="solar:paperclip-bold-duotone" width="15" style="color:#f59e0b;flex-shrink:0"></iconify-icon>
                         </div>
@@ -309,7 +309,7 @@
                 <% _allRelIcons.forEach(rel => { %>
                 <div class="hb-icon-item" @click.outside="openDropdown = openDropdown === '<%= rel.key %>' ? null : openDropdown">
                     <div class="hb-icon-btn" @click="openDropdown = openDropdown === '<%= rel.key %>' ? null : '<%= rel.key %>'"
-                         title="<%= rel.label %> (<%= rel.count %>)">
+                         title="<%= rel.label %> (<%= rel.count %>)" style="--hb-bg:<%= rel.color %>12;--hb-border:<%= rel.color %>25">
                         <div class="hb-icon-circle" style="background:<%= rel.color %>18">
                             <iconify-icon icon="<%= rel.icon %>" width="15" style="color:<%= rel.color %>;flex-shrink:0"></iconify-icon>
                         </div>
@@ -3137,13 +3137,13 @@
                 .hb-icon-btn:hover {
                     gap: 6px;
                     padding: 0 12px 0 0;
-                    background: #f3f4f6;
-                    border-color: #e5e7eb;
+                    background: var(--hb-bg, #f3f4f6);
+                    border-color: var(--hb-border, #e5e7eb);
                     transform: translateY(-1px);
-                    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
                 }
                 .dark .hb-icon-btn:hover {
-                    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
                 }
                 .hb-icon-btn .hb-expand-label {
                     max-width: 0;

@@ -204,34 +204,51 @@
                 </div>
             </div>
 
-            <% if (locals.headerRelatedMeta && locals.headerRelatedRecord) { %>
-            <!-- Unified quick access icons: attachments | separator | relations | separator | save -->
             <%
-                const _hrm = locals.headerRelatedMeta;
+                // ── Quick access icons: works with OR without headerRelatedMeta ──
+                // _hrm already declared above (line 68)
                 const _shownRels = _hc.shownRelations || [];
                 const _shownRels2 = _shownRels;
-                const _hasAttachments = _hrm.attachmentCount > 0 && _hc.showAttachments !== false;
+
+                // Attachments: from related record (if main relation) or from own record
+                let _hasAttachments = false;
+                let _attachmentCount = 0;
+                let _attachmentList = [];
+                let _attachmentTitle = '';
+
+                if (locals.headerRelatedMeta && locals.headerRelatedRecord) {
+                    _hasAttachments = (_hrm.attachmentCount > 0) && _hc.showAttachments !== false;
+                    _attachmentCount = _hrm.attachmentCount || 0;
+                    _attachmentList = locals.headerRelatedRecord.attachments || [];
+                    _attachmentTitle = locals.headerRelatedRecord.title || '';
+                } else if (_hc.showAttachments !== false) {
+                    _attachmentList = record.attachments || [];
+                    _attachmentCount = _attachmentList.length;
+                    _hasAttachments = _attachmentCount > 0;
+                    _attachmentTitle = record.title || '';
+                }
 
                 // Collect all relations: indirect (via patient) + direct + inverse
-                // Deduplicate by target entity slug to avoid same entity showing twice
                 const _allRelIcons = [];
                 const _seenSlugs = new Set();
 
-                // 1) Indirect relations via patient (priority)
-                (_hrm.indirectRelations || []).filter(ir => _shownRels.includes(ir.key)).forEach(ir => {
-                    const slug = ir.slug || ir.key;
-                    if (!_seenSlugs.has(slug)) {
-                        _seenSlugs.add(slug);
-                        _allRelIcons.push({
-                            key: ir.key, label: ir.label, icon: ir.icon, color: ir.color,
-                            count: ir.count, slug: ir.slug,
-                            records: ir.records || [], type: 'indirect'
-                        });
-                    }
-                });
+                // 1) Indirect relations via related record (only when headerRelatedMeta exists)
+                if (locals.headerRelatedMeta) {
+                    (_hrm.indirectRelations || []).filter(ir => _shownRels.includes(ir.key)).forEach(ir => {
+                        const slug = ir.slug || ir.key;
+                        if (!_seenSlugs.has(slug)) {
+                            _seenSlugs.add(slug);
+                            _allRelIcons.push({
+                                key: ir.key, label: ir.label, icon: ir.icon, color: ir.color,
+                                count: ir.count, slug: ir.slug,
+                                records: ir.records || [], type: 'indirect'
+                            });
+                        }
+                    });
+                }
 
                 // 2) Direct relations
-                (entity.relations || []).filter(r => _shownRels.includes(r.key)).forEach(dRel => {
+                (entity.relations || []).filter(r => _shownRels.length === 0 || _shownRels.includes(r.key)).forEach(dRel => {
                     const _dTgt = dRel.targetEntity || {};
                     const slug = _dTgt.slug || dRel.key;
                     if (!_seenSlugs.has(slug)) {
@@ -249,7 +266,7 @@
                 });
 
                 // 3) Inverse relations
-                (locals.inverseRelations || []).filter(invR => _shownRels.includes(invR.key)).forEach(invR => {
+                (locals.inverseRelations || []).filter(invR => _shownRels.length === 0 || _shownRels.includes(invR.key)).forEach(invR => {
                     const _iTgt = invR.targetEntity || {};
                     const slug = _iTgt.slug || invR.key;
                     if (!_seenSlugs.has(slug)) {
@@ -268,26 +285,27 @@
 
                 const _hasAnyRel = _allRelIcons.length > 0;
             %>
+
             <% if (_hasAttachments || _hasAnyRel) { %>
             <div class="hb-quick-icons" x-data="{ openDropdown: null }">
                 <!-- Attachments icon -->
                 <% if (_hasAttachments) { %>
                 <div class="hb-icon-item" @click.outside="openDropdown = openDropdown === 'attach' ? null : openDropdown">
                     <div class="hb-icon-btn" @click="openDropdown = openDropdown === 'attach' ? null : 'attach'"
-                         title="Pièces jointes (<%= _hrm.attachmentCount %>)" style="--hb-bg:#f59e0b12;--hb-border:#f59e0b25">
+                         title="Pièces jointes (<%= _attachmentCount %>)" style="--hb-bg:#f59e0b12;--hb-border:#f59e0b25">
                         <div class="hb-icon-circle" style="background:#f59e0b18">
                             <iconify-icon icon="solar:paperclip-bold-duotone" width="15" style="color:#f59e0b;flex-shrink:0"></iconify-icon>
                         </div>
                         <span class="hb-expand-label" style="color:#f59e0b">Documents</span>
-                        <span class="hb-badge" style="background:#f59e0b"><%= _hrm.attachmentCount %></span>
+                        <span class="hb-badge" style="background:#f59e0b"><%= _attachmentCount %></span>
                     </div>
                     <div class="hb-dropdown" x-show="openDropdown === 'attach'" x-transition x-cloak>
                         <div class="hb-dropdown-header">
                             <iconify-icon icon="solar:paperclip-bold-duotone" width="14" style="color:#f59e0b"></iconify-icon>
-                            <span>Pièces jointes · <%= locals.headerRelatedRecord.title %></span>
+                            <span>Pièces jointes · <%= _attachmentTitle %></span>
                         </div>
                         <div class="hb-dropdown-list">
-                            <% (locals.headerRelatedRecord.attachments || []).forEach(att => { %>
+                            <% _attachmentList.forEach(att => { %>
                             <a href="/account/<%= account_number %>/uploads/<%= att.filename %>" target="_blank" class="hb-dropdown-item">
                                 <iconify-icon icon="<%= att.category === 'pdf' ? 'solar:file-text-bold-duotone' : att.category === 'image' ? 'solar:gallery-bold-duotone' : att.category === 'word' ? 'solar:document-text-bold-duotone' : 'solar:file-bold-duotone' %>" width="16"
                                     style="color:<%= att.category === 'pdf' ? '#ef4444' : att.category === 'image' ? '#3b82f6' : att.category === 'word' ? '#2563eb' : '#6b7280' %>"></iconify-icon>
@@ -348,7 +366,6 @@
                 </div>
                 <% }); %>
             </div>
-            <% } %>
             <% } %>
 
 

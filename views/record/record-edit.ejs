@@ -114,7 +114,7 @@
                     const fieldDef = cf.field_id || {};
                     let val = typeof cf.value === 'string' ? cf.value : JSON.stringify(cf.value);
                     const maxChars = hf.maxChars || 20;
-                    if (val.length > maxChars) val = val.substring(0, maxChars) + 'â€¦';
+                    if (val.length > maxChars) val = val.substring(0, maxChars) + '...';
                     _heroFieldValues.push({
                         icon: (fieldDef.ui && fieldDef.ui.icon) || 'solar:document-text-linear',
                         value: val
@@ -141,7 +141,7 @@
         <div class="flex items-center justify-between px-5 py-3 bg-white dark:bg-[#1b2e4b] rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm mb-4"
             x-data="headerBar()">
             <!-- Left: Avatar + Identity -->
-            <div class="flex items-center gap-3.5 min-w-0">
+            <div class="flex items-center gap-4 min-w-0">
                 <!-- Avatar -->
                 <% if (_showIcon) { %>
                 <% if (_avatarImage) { %>

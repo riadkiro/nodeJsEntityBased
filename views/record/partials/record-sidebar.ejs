@@ -1587,13 +1587,13 @@
                                     <button type="button"
                                         @click="editWidget('<%= sw._id %>', '<%= sw.type %>', '<%= (sw.label || '').replace(/'/g, "\\'") %>', '<%= sw.icon %>', '<%= sw.color %>', JSON.parse(decodeURIComponent('<%= encodeURIComponent(JSON.stringify(sw.config || {})) %>')))"
                                         class="w-5 h-5 rounded-md flex items-center justify-center text-gray-300 hover:text-primary hover:bg-primary/5 transition-all">
-                                        <iconify-icon icon="solar:pen-2-bold-duotone" width="11"></iconify-icon>
+                                        <iconify-icon icon="solar:pen-new-round-line-duotone" width="13"></iconify-icon>
                                     </button>
                                     <!-- Delete button -->
                                     <button type="button"
                                         @click="if(confirm('Supprimer ce widget ?')) deleteWidget('<%= sw._id %>')"
                                         class="w-5 h-5 rounded-md flex items-center justify-center text-gray-300 hover:text-danger hover:bg-danger/5 transition-all">
-                                        <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="11"></iconify-icon>
+                                        <iconify-icon icon="solar:trash-bin-2-line-duotone" width="13"></iconify-icon>
                                     </button>
                                     <button type="button" @click="swOpen = !swOpen"
                                         class="w-5 h-5 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all">

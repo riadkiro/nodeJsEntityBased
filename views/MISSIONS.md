@@ -17,22 +17,10 @@ Reproduire l'interface de image-42.png : page Consultation avec header, zone foc
 #### Phase 1 : Seed Data Intelligent ✅
 - ✅ Enrichir patients : allergies, antécédents, groupe sanguin, médecin traitant, mutuelle
 - ✅ Enrichir consultations : symptômes réalistes et détaillés, poids/taille fixes, examens cliniques
-- [ ] Explorer le LineSchema Traitement pour seed de données traitement
+- ✅ Explorer le LineSchema Traitement pour seed de données traitement (prescription_v1 + invoice_v1 intégrés au seed)
 
 #### Phase 2 : Champs de Consultation avec icônes ✅ (déjà actif)
 - ✅ Icônes affichées à côté de chaque label via field.ui.icon
-
-#### Phase 3 : Fiche Patient Sidebar
-- [ ] Afficher l'âge calculé au lieu de la date de naissance ISO brute
-- [ ] Badge "Allergies ⚠" en rouge avec alert visuelle
-- [ ] Section "Antécédents" avec icônes par condition
-- [ ] Dernière consultation / Dernier bilan (données relatives)
-- [ ] Bouton "+ voir dossier patient"
-- [ ] Icônes à côté de chaque label dans la fiche patient sidebar
-
-#### Phase 4 : Documents Section
-- [ ] Grille 2x2 : Ordonnance, Compte rendu, Certificat, Lettre spécialiste
-- [ ] Actions rapides header (Ordonnance, Examen, Certificat)
 
 #### Phase 5 : Tableaux Dynamiques
 - [ ] Tabs multi-tableaux quand l'entité en a plusieurs

@@ -1197,10 +1197,11 @@ module.exports = {
                             }).lean();
                         }
 
-                        // Load the related entity fields for rendering
+                        // Load the related entity fields + relations for rendering
                         const relEntity = await EntityModel.findById(targetEntityId)
                             .populate('customFields')
-                            .select('name slug icon color customFields statusClassification classifications')
+                            .populate({ path: 'relations.targetEntity', select: 'name slug icon color' })
+                            .select('name slug icon color customFields statusClassification classifications relations')
                             .lean();
 
                         // Build entity data for CardRenderer
@@ -1212,6 +1213,45 @@ module.exports = {
                             icon: f.ui?.icon || '',
                             formula: f.formula || null
                         }));
+
+                        // Build entity relations for relations component
+                        // Include BOTH direct relations AND inverse relations
+                        const directEntityRelations = (relEntity?.relations || []).map(r => ({
+                            key: r.key || '',
+                            label: r.label || (r.targetEntity && r.targetEntity.name) || '',
+                            name: (r.targetEntity && r.targetEntity.name) || r.label || '',
+                            slug: (r.targetEntity && r.targetEntity.slug) || '',
+                            icon: (r.targetEntity && r.targetEntity.icon) || 'solar:link-bold-duotone',
+                            color: (r.targetEntity && r.targetEntity.color) || '#4361ee',
+                            targetName: (r.targetEntity && r.targetEntity.name) || '',
+                            targetIcon: (r.targetEntity && r.targetEntity.icon) || '',
+                            targetColor: (r.targetEntity && r.targetEntity.color) || '#4361ee',
+                            cardinality: r.cardinality || 'one-to-many',
+                            isInverse: false
+                        }));
+
+                        // Also get inverse relations (entities that point TO this entity)
+                        let inverseEntityRelations = [];
+                        try {
+                            const invRels = await getInverseRelations(EntityModel, targetEntityId);
+                            inverseEntityRelations = invRels.map(r => ({
+                                key: r.key || '',
+                                label: r.label || (r.targetEntity && r.targetEntity.name) || '',
+                                name: (r.targetEntity && r.targetEntity.name) || r.label || '',
+                                slug: (r.targetEntity && r.targetEntity.slug) || '',
+                                icon: (r.targetEntity && r.targetEntity.icon) || 'solar:link-bold-duotone',
+                                color: (r.targetEntity && r.targetEntity.color) || '#4361ee',
+                                targetName: (r.targetEntity && r.targetEntity.name) || '',
+                                targetIcon: (r.targetEntity && r.targetEntity.icon) || '',
+                                targetColor: (r.targetEntity && r.targetEntity.color) || '#4361ee',
+                                cardinality: r.cardinality || 'one-to-many',
+                                isInverse: true
+                            }));
+                        } catch (invErr) {
+                            console.warn('[RelatedCardWidgets] Inverse relations error:', invErr.message);
+                        }
+
+                        const entityRelations = [...directEntityRelations, ...inverseEntityRelations];
 
                         // Auto-create a sidebar card template in database if none exists
                         if (!cardTemplate && entityFields.length > 0) {
@@ -1265,6 +1305,7 @@ module.exports = {
                                 entityIcon: tgt.icon || 'solar:user-bold-duotone',
                                 entityColor: tgt.color || '#4361ee',
                                 entityFields,
+                                entityRelations,
                                 cardTemplate: cardTemplate || null,
                                 record: {
                                     _id: (relRec._id || '').toString(),

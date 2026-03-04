@@ -45,7 +45,7 @@ function Section({ label, children }) {
 }
 
 // ─── Element Property Editor ─────────────────────────────────────────
-export function ElementProperties({ element, entityFields, onChange, onRemove }) {
+export function ElementProperties({ element, entityFields, entityRelations, onChange, onRemove }) {
     const u = (k, v) => onChange({ ...element, [k]: v })
     // When fieldId changes, auto-resolve icon and label from entityFields
     const handleFieldChange = (newFieldId) => {
@@ -178,6 +178,147 @@ export function ElementProperties({ element, entityFields, onChange, onRemove })
                             </label>
                         ))}
                     </div>
+                </Section>
+            )}
+
+            {/* HTML content */}
+            {element.type === 'html' && (
+                <Section label="Contenu HTML">
+                    <textarea
+                        value={element.htmlContent || ''}
+                        onChange={e => u('htmlContent', e.target.value)}
+                        rows={5}
+                        style={{ ...I, fontFamily: 'monospace', fontSize: 11, resize: 'vertical' }}
+                        placeholder="<p>Votre HTML ici</p>"
+                    />
+                </Section>
+            )}
+
+            {/* Link properties */}
+            {element.type === 'link' && (
+                <>
+                    <Section label="Label">
+                        <input value={element.label || ''} onChange={e => u('label', e.target.value)} style={I} placeholder="Texte du lien" />
+                    </Section>
+                    <Section label="URL">
+                        <input value={element.url || ''} onChange={e => u('url', e.target.value)} style={I} placeholder="https://..." />
+                    </Section>
+                    <Section label="Icône">
+                        <input value={element.icon || ''} onChange={e => u('icon', e.target.value)} style={I} placeholder="solar:link-linear" />
+                    </Section>
+                    <Section label="Cible">
+                        <select value={element.linkTarget || '_self'} onChange={e => u('linkTarget', e.target.value)} style={I}>
+                            <option value="_self">Même fenêtre</option>
+                            <option value="_blank">Nouvel onglet</option>
+                        </select>
+                    </Section>
+                </>
+            )}
+
+            {/* Relations config */}
+            {element.type === 'relations' && (
+                <>
+                    <Section label="Affichage">
+                        <select value={element.displayMode || 'icon-title'} onChange={e => u('displayMode', e.target.value)} style={I}>
+                            <option value="icon-title">Icône + Titre</option>
+                            <option value="icon-only">Icône seule</option>
+                        </select>
+                    </Section>
+                    <Section label="Relations à afficher">
+                        {(entityRelations || []).length === 0 ? (
+                            <div style={{ fontSize: 11, color: '#aaa', fontStyle: 'italic', padding: '8px 0' }}>
+                                Aucune relation configurée pour cette entité
+                            </div>
+                        ) : (() => {
+                            const directRels = (entityRelations || []).filter(r => !r.isInverse)
+                            const inverseRels = (entityRelations || []).filter(r => r.isInverse)
+                            const renderRelItem = (rel) => {
+                                const enabled = (element.enabledRelations || []).includes(rel.key)
+                                return (
+                                    <label key={rel.key} style={{
+                                        display: 'flex', alignItems: 'center', gap: 8,
+                                        fontSize: 12, cursor: 'pointer', padding: '6px 8px',
+                                        borderRadius: 6, border: `1px solid ${enabled ? '#4361ee40' : '#e0e4ea'}`,
+                                        backgroundColor: enabled ? '#f0f4ff' : '#fff',
+                                        transition: 'all 0.15s',
+                                    }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={enabled}
+                                            onChange={e => {
+                                                const keys = [...(element.enabledRelations || [])]
+                                                if (e.target.checked) {
+                                                    keys.push(rel.key)
+                                                } else {
+                                                    const idx = keys.indexOf(rel.key)
+                                                    if (idx > -1) keys.splice(idx, 1)
+                                                }
+                                                u('enabledRelations', keys)
+                                            }}
+                                            style={{ width: 14, height: 14, accentColor: '#4361ee', flexShrink: 0 }}
+                                        />
+                                        <div style={{
+                                            width: 22, height: 22, borderRadius: 5, flexShrink: 0,
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            backgroundColor: (rel.targetColor || '#4361ee') + '15',
+                                        }}>
+                                            <iconify-icon icon={rel.targetIcon || 'solar:document-bold-duotone'} width="12" style={{ color: rel.targetColor || '#4361ee' }} />
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontWeight: 600, fontSize: 12, color: '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                {rel.label || rel.targetName || rel.key}
+                                                {rel.isInverse && (
+                                                    <span style={{ fontSize: 9, color: '#9ca3af', fontWeight: 400 }}>← inverse</span>
+                                                )}
+                                            </div>
+                                            <div style={{ fontSize: 10, color: '#9ca3af' }}>
+                                                {rel.cardinality === 'one-to-one' ? '1:1' : rel.cardinality === 'many-to-many' ? 'N:N' : '1:N'}
+                                                {rel.targetName && rel.targetName !== rel.label ? ` · ${rel.targetName}` : ''}
+                                            </div>
+                                        </div>
+                                    </label>
+                                )
+                            }
+                            return (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    {directRels.length > 0 && (
+                                        <>
+                                            <div style={{ fontSize: 9, fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                <iconify-icon icon="solar:arrow-right-linear" width="10" />
+                                                Directes ({directRels.length})
+                                            </div>
+                                            {directRels.map(renderRelItem)}
+                                        </>
+                                    )}
+                                    {inverseRels.length > 0 && (
+                                        <>
+                                            <div style={{ fontSize: 9, fontWeight: 700, color: '#805dca', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: directRels.length > 0 ? 8 : 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                <iconify-icon icon="solar:arrow-left-linear" width="10" />
+                                                Inverses ({inverseRels.length})
+                                            </div>
+                                            {inverseRels.map(renderRelItem)}
+                                        </>
+                                    )}
+                                </div>
+                            )
+                        })()}
+                    </Section>
+                </>
+            )}
+
+            {/* Attachments / Documents source selector */}
+            {['attachments', 'documents'].includes(element.type) && (
+                <Section label="Source">
+                    <select value={element.source || 'self'} onChange={e => u('source', e.target.value)} style={I}>
+                        <option value="self">Entité en cours</option>
+                        <option value="relation">Depuis une relation</option>
+                    </select>
+                    {element.source === 'relation' && (
+                        <div style={{ marginTop: 6 }}>
+                            <label style={L}>Clé de relation</label>
+                            <input value={element.relationKey || ''} onChange={e => u('relationKey', e.target.value)} style={I} placeholder="ex: consultation" />
+                        </div>
+                    )}
                 </Section>
             )}
         </div>

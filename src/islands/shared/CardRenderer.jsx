@@ -324,6 +324,105 @@ function renderElement(el, record, entityData, accountNumber, entitySlug, callba
             )
         }
 
+        case 'html':
+            return el.htmlContent ? (
+                <div key={key} dangerouslySetInnerHTML={{ __html: el.htmlContent }} style={{ fontSize: baseFontSize }} />
+            ) : null
+
+        case 'link':
+            return (
+                <a key={key} href={el.url || '#'} target={el.linkTarget || '_self'}
+                    style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        fontSize: baseFontSize, fontWeight: '500', color: el.color || '#4361ee',
+                        textDecoration: 'none',
+                    }}
+                    onClick={e => e.stopPropagation()}
+                    onPointerDown={e => e.stopPropagation()}
+                >
+                    {el.icon && <iconify-icon icon={el.icon} width="14" />}
+                    <span style={{ textDecoration: 'underline' }}>{el.label || 'Lien'}</span>
+                </a>
+            )
+
+        case 'relations': {
+            // In real rendering, show actual entity relations as links
+            // Filter by enabledRelations if configured in the card element
+            let relations = entityData?.relations || []
+            if (el.enabledRelations && el.enabledRelations.length > 0) {
+                relations = relations.filter(r => el.enabledRelations.includes(r.key))
+            }
+            if (relations.length === 0) return null
+            return (
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    {relations.map((rel, i) => (
+                        <a key={i}
+                            href={`/account/${accountNumber}/record/${rel.slug || rel.key}?from=${record._id}`}
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px',
+                                borderRadius: 6, fontSize: '11px', fontWeight: 600,
+                                backgroundColor: (rel.color || '#4361ee') + '12', color: rel.color || '#4361ee',
+                                textDecoration: 'none',
+                            }}
+                            onClick={e => e.stopPropagation()}
+                            onPointerDown={e => e.stopPropagation()}
+                        >
+                            <iconify-icon icon={rel.icon || 'solar:link-bold-duotone'} width="13" />
+                            {el.displayMode !== 'icon-only' && (rel.label || rel.name || 'Relation')}
+                        </a>
+                    ))}
+                </div>
+            )
+        }
+
+        case 'attachments': {
+            const attachments = record.attachments || []
+            if (attachments.length === 0) return null
+            return (
+                <div key={key} style={{ fontSize: baseFontSize }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '10px', fontWeight: 800, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>
+                        <iconify-icon icon="solar:paperclip-bold-duotone" width="12" style={{ color: '#e2a03f' }} />
+                        Pièces jointes
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {attachments.slice(0, 5).map((att, i) => (
+                            <a key={i} href={att.url || '#'} target="_blank" rel="noopener noreferrer"
+                                style={{ fontSize: '11px', color: '#4361ee', display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <iconify-icon icon="solar:file-text-linear" width="12" />
+                                {att.name || att.filename || 'Fichier'}
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            )
+        }
+
+        case 'documents': {
+            const documents = record.documents || entityData?.documentTemplates || []
+            if (documents.length === 0) return null
+            return (
+                <div key={key} style={{ fontSize: baseFontSize }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '10px', fontWeight: 800, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>
+                        <iconify-icon icon="solar:file-text-bold-duotone" width="12" style={{ color: '#00ab55' }} />
+                        Documents modèles
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {documents.slice(0, 5).map((doc, i) => (
+                            <a key={i} href={doc.url || '#'} target="_blank" rel="noopener noreferrer"
+                                style={{ fontSize: '11px', color: '#00ab55', display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <iconify-icon icon="solar:document-text-linear" width="12" />
+                                {doc.name || doc.title || 'Document'}
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            )
+        }
+
         default:
             return null
     }

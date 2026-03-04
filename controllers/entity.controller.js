@@ -728,7 +728,9 @@ module.exports = {
         });
       }
 
-      const entity = await EntityModel.findById(entityId).populate('customFields');
+      const entity = await EntityModel.findById(entityId)
+        .populate('customFields')
+        .populate('relations.targetEntity', 'name icon color slug');
       if (!entity) {
         return res.status(404).render("errors/404", {
           message: "Entité introuvable.",
@@ -739,9 +741,34 @@ module.exports = {
 
       const fields = entity.customFields || [];
 
+      // Find inverse relations: entities whose relations target the current entity
+      const inverseEntities = await EntityModel.find(
+        { 'relations.targetEntity': entityId },
+        'name icon color slug relations'
+      ).lean();
+      const entityIdStr = entityId.toString();
+      const inverseRelations = [];
+      for (const ent of inverseEntities) {
+        for (const rel of (ent.relations || [])) {
+          if (rel.targetEntity && rel.targetEntity.toString() === entityIdStr) {
+            inverseRelations.push({
+              key: `inv_${rel.key}`,
+              label: rel.inverseLabel || rel.label || ent.name,
+              targetName: ent.name,
+              targetIcon: ent.icon || '',
+              targetColor: ent.color || '',
+              cardinality: rel.cardinality || 'one-to-many',
+              isInverse: true,
+              sourceKey: rel.key,
+            });
+          }
+        }
+      }
+
       res.render("entity/entity-cards", {
         entity,
         fields,
+        inverseRelations,
         account_number: req.account_number,
         layout: "layout-app",
       });

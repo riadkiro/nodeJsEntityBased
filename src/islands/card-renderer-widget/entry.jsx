@@ -17,11 +17,13 @@ function mountIslands() {
             const cardTemplate = JSON.parse(decodeURIComponent(container.dataset.cardTemplate || '{}'))
             const record = JSON.parse(decodeURIComponent(container.dataset.record || '{}'))
             const entityFields = JSON.parse(decodeURIComponent(container.dataset.entityFields || '[]'))
+            const entityRelations = JSON.parse(decodeURIComponent(container.dataset.entityRelations || '[]'))
 
             // Build entityData for CardRenderer
             const entityData = {
                 fields: entityFields,
                 customFields: entityFields,
+                relations: entityRelations,
             }
 
             createRoot(container).render(

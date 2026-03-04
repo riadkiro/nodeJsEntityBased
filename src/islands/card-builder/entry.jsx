@@ -19,6 +19,7 @@ function mountIslands() {
             entityIcon: container.dataset.entityIcon || '',
             entityColor: container.dataset.entityColor || '',
             fieldsJson: decodeURIComponent(container.dataset.fieldsJson || '[]'),
+            relationsJson: decodeURIComponent(container.dataset.relationsJson || '[]'),
         }
 
         console.log('[CardBuilder Island] Mounting:', props)

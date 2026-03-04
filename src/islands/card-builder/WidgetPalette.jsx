@@ -14,6 +14,12 @@ const ELEMENT_TYPES = [
     { type: 'spacer', label: 'Espace', icon: 'solar:maximize-bold-duotone', desc: 'Espace flexible', color: '#888' },
     { type: 'text', label: 'Texte', icon: 'solar:text-italic-bold-duotone', desc: 'Texte libre', color: '#0dcaf0' },
     { type: 'badge', label: 'Badge', icon: 'solar:bookmark-bold-duotone', desc: 'Badge coloré', color: '#e7515a' },
+    { type: 'zone', label: 'Zone', icon: 'solar:layers-bold-duotone', desc: 'Groupe d\'éléments', color: '#4361ee' },
+    { type: 'html', label: 'HTML', icon: 'solar:code-bold-duotone', desc: 'Contenu HTML', color: '#ff6b6b' },
+    { type: 'link', label: 'Lien', icon: 'solar:link-round-bold-duotone', desc: 'Lien personnalisé', color: '#2196f3' },
+    { type: 'relations', label: 'Relations', icon: 'solar:share-circle-bold-duotone', desc: 'Liens vers relations', color: '#805dca' },
+    { type: 'attachments', label: 'Pièces jointes', icon: 'solar:paperclip-bold-duotone', desc: 'Fichiers attachés', color: '#e2a03f' },
+    { type: 'documents', label: 'Documents', icon: 'solar:file-text-bold-duotone', desc: 'Modèles de docs', color: '#00ab55' },
 ]
 
 export { ELEMENT_TYPES }

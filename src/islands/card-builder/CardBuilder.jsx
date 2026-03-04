@@ -39,6 +39,11 @@ function createDefaultElement(type) {
         case 'separator': case 'spacer': return base
         case 'text': return { ...base, label: 'Texte personnalisé' }
         case 'badge': return { ...base, fieldId: '__description__', color: '#4361ee' }
+        case 'html': return { ...base, htmlContent: '<p style="color:#888;font-size:12px">Contenu HTML</p>' }
+        case 'link': return { ...base, label: 'Lien', url: '#', icon: 'solar:link-linear', linkTarget: '_self' }
+        case 'relations': return { ...base, displayMode: 'icon-title', enabledRelations: [] }
+        case 'attachments': return { ...base, source: 'self', relationKey: '' }
+        case 'documents': return { ...base, source: 'self', relationKey: '' }
         default: return base
     }
 }
@@ -86,8 +91,9 @@ function CardListItem({ card, isActive, onClick, onSetDefault, onDelete }) {
 // ═════════════════════════════════════════════════════════════════════
 // ─── Main Component ──────────────────────────────────────────────────
 // ═════════════════════════════════════════════════════════════════════
-export default function CardBuilder({ accountNumber, entityId, entityName, entitySlug, entityIcon, entityColor, fieldsJson }) {
+export default function CardBuilder({ accountNumber, entityId, entityName, entitySlug, entityIcon, entityColor, fieldsJson, relationsJson }) {
     const entityFields = useMemo(() => { try { return JSON.parse(fieldsJson) } catch { return [] } }, [fieldsJson])
+    const entityRelations = useMemo(() => { try { return JSON.parse(relationsJson) } catch { return [] } }, [relationsJson])
 
     // Card list state
     const [cards, setCards] = useState([])
@@ -214,6 +220,12 @@ export default function CardBuilder({ accountNumber, entityId, entityName, entit
 
     // ─── Add element from palette drop ────────────────────────────────
     const handleAddElement = useCallback((zoneId, elIndex, type) => {
+        // If user drops a "zone" from palette, create a new zone instead of an element
+        if (type === 'zone') {
+            const z = createDefaultZone()
+            setEditLayout(prev => ({ ...prev, zones: [...(prev.zones || []), z] }))
+            return
+        }
         const newEl = createDefaultElement(type)
         // Auto-resolve first entity field for 'field' type
         if (type === 'field' && entityFields.length > 0) {
@@ -234,6 +246,17 @@ export default function CardBuilder({ accountNumber, entityId, entityName, entit
         })
         setSelectedElementId(newEl._id); setSelectedElement(newEl); setSelectedZoneId(zoneId); setSelectedZone(null)
     }, [entityFields])
+
+    // ─── Reorder zones via drag & drop ────────────────────────────────
+    const handleZoneReorder = useCallback((fromIndex, toIndex) => {
+        if (fromIndex === toIndex) return
+        setEditLayout(prev => {
+            const zones = [...(prev.zones || [])]
+            const [moved] = zones.splice(fromIndex, 1)
+            zones.splice(toIndex, 0, moved)
+            return { ...prev, zones }
+        })
+    }, [])
 
     // ─── Update element from property panel ───────────────────────────
     const handleUpdateElement = useCallback((updated) => {
@@ -388,7 +411,9 @@ export default function CardBuilder({ accountNumber, entityId, entityName, entit
                             onSelectElement={handleSelectElement} onSelectZone={handleSelectZone}
                             onClearSelection={handleClearSelection} onMoveElement={handleMoveElement}
                             onAddElement={handleAddElement} onUpdateLayout={updateLayoutField}
+                            onZoneReorder={handleZoneReorder}
                             editContext={editContext} entityFields={entityFields}
+                            entityRelations={entityRelations}
                             entityName={entityName} entityIcon={entityIcon} entityColor={entityColor}
                         />
                     </div>
@@ -403,6 +428,7 @@ export default function CardBuilder({ accountNumber, entityId, entityName, entit
                         {selectedElement && (
                             <ElementProperties
                                 element={selectedElement} entityFields={entityFields}
+                                entityRelations={entityRelations}
                                 onChange={handleUpdateElement} onRemove={handleRemoveElement}
                             />
                         )}

@@ -16,13 +16,19 @@ const CardElementSchema = new mongoose.Schema({
             'field',        // Custom field value
             'status',       // Status classification badge
             'date',         // Date display (formatted)
-            'relation',     // Related record link
+            'relation',     // Related record link (legacy singular)
+            'relations',    // Dynamic relation badge links
             'icon-value',   // Icon + value pair
             'badge',        // Colored badge
             'text',         // Static text
             'separator',    // Visual separator line
             'actions',      // Action buttons (edit, view, delete)
             'spacer',       // Flexible spacer
+            'html',         // Raw HTML content
+            'link',         // Custom navigation link
+            'attachments',  // File attachment list
+            'documents',    // Document templates list
+            'zone',         // Nested zone container
         ]
     },
     fieldId: String,         // FieldTemplate._id or special: '__description__', '__createdAt__', '__updatedAt__'
@@ -48,6 +54,21 @@ const CardElementSchema = new mongoose.Schema({
     color: String,           // CSS color or 'auto' (inherits from status/context)
     visible: { type: Boolean, default: true },
     items: [String],         // For 'actions' type: ['edit', 'view', 'delete', 'open', 'close']
+
+    // HTML element properties
+    htmlContent: String,     // Raw HTML content for 'html' type
+
+    // Link element properties
+    url: String,             // Navigation target URL for 'link' type
+    linkTarget: { type: String, enum: ['_self', '_blank'], default: '_self' },
+
+    // Relations element properties
+    displayMode: { type: String, enum: ['icon-title', 'icon-only'], default: 'icon-title' },
+    enabledRelations: [String],  // Array of relation keys to show
+
+    // Attachments / Documents source properties
+    source: { type: String, enum: ['self', 'relation'], default: 'self' },
+    relationKey: String,     // Relation key when source is 'relation'
 }, { _id: false });
 
 const CardZoneSchema = new mongoose.Schema({

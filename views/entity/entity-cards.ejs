@@ -42,6 +42,10 @@
     data-entity-icon="<%= entity.icon || '' %>"
     data-entity-color="<%= entity.color || '' %>"
     data-fields-json="<%= encodeURIComponent(JSON.stringify((fields || []).map(f => ({ _id: f._id.toString(), name: f.name, label: f.label, type: f.type, icon: (f.ui && f.ui.icon) || f.icon || '' })))) %>"
+    data-relations-json="<%= encodeURIComponent(JSON.stringify(
+      (entity.relations || []).map(r => ({ key: r.key, label: r.label || (r.targetEntity && r.targetEntity.name) || r.key, targetName: r.targetEntity && r.targetEntity.name, targetIcon: r.targetEntity && r.targetEntity.icon, targetColor: r.targetEntity && r.targetEntity.color, cardinality: r.cardinality, isInverse: false }))
+      .concat((inverseRelations || []).map(r => ({ key: r.key, label: r.label, targetName: r.targetName, targetIcon: r.targetIcon, targetColor: r.targetColor, cardinality: r.cardinality, isInverse: true, sourceKey: r.sourceKey })))
+    )) %>"
     style="height: calc(100vh - 140px); overflow: hidden;"
 ></div>
 

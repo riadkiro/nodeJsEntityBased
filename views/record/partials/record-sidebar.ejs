@@ -851,6 +851,9 @@
                         <% } else if (sectionId==='relations') { %>
                             <!-- 👤 Direct Relations (Sidebar Panel) -->
                             <% (entity.relations || []).forEach(function(rel) { %>
+                                <% // Skip relation if a card widget is available for it %>
+                                <% const hasCardWidget = (locals.relatedCardWidgets || []).some(function(w) { return w.relationKey === rel.key && w.cardTemplate; }); %>
+                                <% if (hasCardWidget) return; %>
                                 <% const relRecords = locals.relatedRecordsData && locals.relatedRecordsData[rel.key]; %>
                                 <% if (relRecords && relRecords.length > 0) { %>
                                     <% relRecords.forEach(function(relRec) { %>
@@ -1077,6 +1080,60 @@
                             </div><!-- end panel-sortable-item lines -->
                         <% } %>
                     <% }); %>
+
+        <!-- 🃏 Related Entity Card Widgets (React CardRenderer) -->
+        <% if (locals.relatedCardWidgets && locals.relatedCardWidgets.length > 0) { %>
+            <% locals.relatedCardWidgets.forEach(function(widget, widgetIdx) { %>
+                <% if (widget.cardTemplate) { %>
+                    <div class="panel-sortable-item" data-panel-id="card-widget-<%= widget.relationKey %>-<%= widgetIdx %>">
+                        <template x-if="designMode">
+                            <div class="panel-drag-handle">
+                                <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
+                                <span><%= widget.entityName %> Card</span>
+                            </div>
+                        </template>
+                        <div class="panel !p-0 overflow-hidden" x-data="{ open: true }">
+                            <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-700/30">
+                                <div class="flex items-center gap-2 cursor-pointer flex-1" @click="open = !open">
+                                    <div class="w-6 h-6 rounded-lg flex items-center justify-center flex-none" style="background: <%= widget.entityColor %>15;">
+                                        <iconify-icon icon="<%= widget.entityIcon %>" width="12" style="color: <%= widget.entityColor %>"></iconify-icon>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500"><%= widget.entityName %></span>
+                                        <div class="text-[12px] font-semibold text-gray-700 dark:text-gray-200 -mt-0.5 truncate"><%= widget.record.title || 'Sans titre' %></div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1 flex-none">
+                                    <% if (widget.entitySlug) { %>
+                                        <a href="/account/<%= account_number %>/record/<%= widget.entitySlug %>/edit/<%= widget.record._id %>"
+                                            class="flex items-center justify-center w-5 h-5 rounded-md text-gray-400 hover:text-primary hover:bg-primary/5 transition-all"
+                                            title="Ouvrir" target="_blank">
+                                            <iconify-icon icon="solar:arrow-right-up-linear" width="12"></iconify-icon>
+                                        </a>
+                                    <% } %>
+                                    <button type="button" @click="open = !open"
+                                        class="flex items-center justify-center w-5 h-5 rounded-md text-gray-400 hover:text-gray-600 transition-all">
+                                        <iconify-icon :icon="open ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'" width="12"></iconify-icon>
+                                    </button>
+                                </div>
+                            </div>
+                            <div x-show="open" x-collapse>
+                                <div
+                                    data-island="card-renderer-widget"
+                                    data-account-number="<%= account_number %>"
+                                    data-entity-slug="<%= widget.entitySlug %>"
+                                    data-card-template="<%= encodeURIComponent(JSON.stringify(widget.cardTemplate)) %>"
+                                    data-record="<%= encodeURIComponent(JSON.stringify(widget.record)) %>"
+                                    data-entity-fields="<%= encodeURIComponent(JSON.stringify(widget.entityFields || [])) %>"
+                                    style="padding: 8px;"
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+                <% } %>
+            <% }); %>
+        <% } %>
+
     </div>
 
     <style>
@@ -1878,3 +1935,7 @@
             }));
         });
     </script>
+
+    <% if (locals.relatedCardWidgets && locals.relatedCardWidgets.some(function(w) { return w.cardTemplate; })) { %>
+        <script type="module" src="/dist/cardRendererWidget.js"></script>
+    <% } %>

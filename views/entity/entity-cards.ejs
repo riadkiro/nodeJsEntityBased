@@ -41,7 +41,7 @@
     data-entity-slug="<%= entity.slug %>"
     data-entity-icon="<%= entity.icon || '' %>"
     data-entity-color="<%= entity.color || '' %>"
-    data-fields-json="<%= encodeURIComponent(JSON.stringify((fields || []).map(f => ({ _id: f._id.toString(), name: f.name, label: f.label, type: f.type })))) %>"
+    data-fields-json="<%= encodeURIComponent(JSON.stringify((fields || []).map(f => ({ _id: f._id.toString(), name: f.name, label: f.label, type: f.type, icon: (f.ui && f.ui.icon) || f.icon || '' })))) %>"
     style="height: calc(100vh - 140px); overflow: hidden;"
 ></div>
 

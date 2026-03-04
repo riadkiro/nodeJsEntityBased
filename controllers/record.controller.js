@@ -1152,6 +1152,144 @@ module.exports = {
                 console.warn('[HeaderConfig] Error resolving related record:', headerErr.message);
             }
 
+            // ═══ Related Card Widgets: Load card templates for sidebar ═══
+            let relatedCardWidgets = [];
+            try {
+                const CardTemplate = await tenantCollection(req, "CardTemplate");
+                if (CardTemplate) {
+                    // Find all relations with actual records (direct + inverse)
+                    const allRelations = [
+                        ...(entity.relations || []).map(r => ({ ...r.toObject ? r.toObject() : r, direction: 'direct' })),
+                        ...(inverseRelations || []).map(r => ({ ...r, direction: 'inverse' }))
+                    ];
+
+                    for (const rel of allRelations) {
+                        const relRecs = (relatedRecordsData || {})[rel.key] || [];
+                        if (relRecs.length === 0) continue;
+
+                        const tgt = rel.targetEntity || {};
+                        const targetEntityId = tgt._id ? tgt._id.toString() : null;
+                        if (!targetEntityId) continue;
+
+                        // Load card template: prefer sidebar > universal
+                        let cardTemplate = await CardTemplate.findOne({
+                            entityId: targetEntityId,
+                            context: 'sidebar',
+                            isDefault: true
+                        }).lean();
+                        if (!cardTemplate) {
+                            cardTemplate = await CardTemplate.findOne({
+                                entityId: targetEntityId,
+                                context: 'sidebar'
+                            }).lean();
+                        }
+                        if (!cardTemplate) {
+                            cardTemplate = await CardTemplate.findOne({
+                                entityId: targetEntityId,
+                                context: 'universal',
+                                isDefault: true
+                            }).lean();
+                        }
+                        if (!cardTemplate) {
+                            cardTemplate = await CardTemplate.findOne({
+                                entityId: targetEntityId,
+                                context: 'universal'
+                            }).lean();
+                        }
+
+                        // Load the related entity fields for rendering
+                        const relEntity = await EntityModel.findById(targetEntityId)
+                            .populate('customFields')
+                            .select('name slug icon color customFields statusClassification classifications')
+                            .lean();
+
+                        // Build entity data for CardRenderer
+                        const entityFields = (relEntity?.customFields || []).filter(f => f != null).map(f => ({
+                            _id: (f._id || '').toString(),
+                            name: f.name || '',
+                            label: f.label || f.name || '',
+                            type: f.type || 'string',
+                            icon: f.ui?.icon || '',
+                            formula: f.formula || null
+                        }));
+
+                        // Auto-create a sidebar card template in database if none exists
+                        if (!cardTemplate && entityFields.length > 0) {
+                            try {
+                                const fieldElements = entityFields.slice(0, 12).map(f => ({
+                                    type: 'field',
+                                    fieldId: f._id,
+                                    label: f.label,
+                                    icon: f.icon || '',
+                                    format: f.type === 'date' ? 'date' : 'text',
+                                    fontSize: 'sm',
+                                    fontWeight: 'normal',
+                                    visible: true
+                                }));
+                                const newCard = await CardTemplate.create({
+                                    name: 'Fiche ' + (tgt.name || 'Relation'),
+                                    entityId: targetEntityId,
+                                    context: 'sidebar',
+                                    isDefault: true,
+                                    layout: {
+                                        accentPosition: 'none',
+                                        accentSource: 'none',
+                                        borderRadius: 0,
+                                        shadow: 'none',
+                                        zones: [{
+                                            id: 'body',
+                                            direction: 'column',
+                                            gap: 4,
+                                            padding: '8px 12px',
+                                            align: 'stretch',
+                                            elements: fieldElements
+                                        }]
+                                    },
+                                    createdBy: req.user?._id
+                                });
+                                cardTemplate = newCard.toObject();
+                                console.log(`[RelatedCardWidgets] Auto-created sidebar card for entity ${tgt.name} (${targetEntityId})`);
+                            } catch (seedErr) {
+                                console.warn('[RelatedCardWidgets] Auto-seed error:', seedErr.message);
+                            }
+                        }
+
+                        for (const relRec of relRecs) {
+                            relatedCardWidgets.push({
+                                relationKey: rel.key,
+                                relationLabel: rel.label || tgt.name || 'Relation',
+                                direction: rel.direction,
+                                entityId: targetEntityId,
+                                entityName: tgt.name || '',
+                                entitySlug: tgt.slug || '',
+                                entityIcon: tgt.icon || 'solar:user-bold-duotone',
+                                entityColor: tgt.color || '#4361ee',
+                                entityFields,
+                                cardTemplate: cardTemplate || null,
+                                record: {
+                                    _id: (relRec._id || '').toString(),
+                                    title: relRec.title || '',
+                                    slug: relRec.slug || '',
+                                    date: relRec.date || '',
+                                    description: relRec.description || '',
+                                    image: relRec.image || '',
+                                    customFields: (relRec.customFields || []).map(cf => ({
+                                        field_id: cf.field_id?._id ? cf.field_id._id.toString() : (cf.field_id || '').toString(),
+                                        value: cf.value
+                                    })),
+                                    classificationValues: relRec.classificationValues || [],
+                                    relations: relRec.relations || [],
+                                    statusLabel: relRec.statusLabel || '',
+                                    statusColor: relRec.statusColor || ''
+                                }
+                            });
+                        }
+                    }
+                }
+            } catch (cardWidgetErr) {
+                console.warn('[RelatedCardWidgets] Error:', cardWidgetErr.message);
+            }
+
             res.render("record/record-edit", {
                 entity,
                 record,
@@ -1173,6 +1311,7 @@ module.exports = {
                 computedFieldValues,
                 headerRelatedRecord,
                 headerRelatedMeta,
+                relatedCardWidgets,
                 account_number: req.account_number,
                 layout: "layout-app"
             });

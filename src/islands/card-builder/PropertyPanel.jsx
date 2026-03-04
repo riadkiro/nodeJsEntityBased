@@ -47,6 +47,19 @@ function Section({ label, children }) {
 // ─── Element Property Editor ─────────────────────────────────────────
 export function ElementProperties({ element, entityFields, onChange, onRemove }) {
     const u = (k, v) => onChange({ ...element, [k]: v })
+    // When fieldId changes, auto-resolve icon and label from entityFields
+    const handleFieldChange = (newFieldId) => {
+        const fieldDef = (entityFields || []).find(f => String(f._id) === String(newFieldId))
+        const updates = { ...element, fieldId: newFieldId }
+        if (fieldDef) {
+            updates.icon = fieldDef.icon || ''
+            updates.label = fieldDef.label || fieldDef.name || ''
+        } else {
+            // Built-in field selected — clear icon, keep default label from FIELD_OPTIONS
+            updates.icon = ''
+        }
+        onChange(updates)
+    }
     const meta = ELEMENT_TYPES.find(e => e.type === element.type)
 
     return (
@@ -77,7 +90,7 @@ export function ElementProperties({ element, entityFields, onChange, onRemove })
             {/* Field selector */}
             {['field', 'date', 'icon-value', 'badge'].includes(element.type) && (
                 <Section label="Champ">
-                    <select value={element.fieldId || ''} onChange={e => u('fieldId', e.target.value)} style={I}>
+                    <select value={element.fieldId || ''} onChange={e => handleFieldChange(e.target.value)} style={I}>
                         {FIELD_OPTIONS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                         {entityFields.map(f => <option key={f._id} value={f._id}>{f.label || f.name}</option>)}
                     </select>

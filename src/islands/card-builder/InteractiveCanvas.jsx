@@ -1,7 +1,18 @@
 /**
  * InteractiveCanvas — WYSIWYG card preview with click-to-select and drag-to-reorder
  */
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+
+// Helper: React doesn't properly update Web Component attributes on re-render.
+// This component imperatively sets the 'icon' attribute via ref.
+function Icon({ icon, width = '14', style }) {
+    const ref = useRef(null)
+    useEffect(() => {
+        if (ref.current) ref.current.setAttribute('icon', icon || '')
+    }, [icon])
+    if (!icon) return null
+    return React.createElement('iconify-icon', { ref, icon, width, style })
+}
 
 // ─── Helpers (copied from CardRenderer for inline rendering) ─────────
 function hexToRgba(hex, alpha = 0.1) {
@@ -55,10 +66,18 @@ function formatValue(val, format, record) {
 function InteractiveElement({
     el, record, isSelected, onSelect, zoneId, elIndex,
     onDragStartEl, onDragOverEl, onDropEl, dropIndicator,
+    entityFields, onDropNewElement,
 }) {
     if (!el || el.visible === false) return null
     const fs = FONT_SIZES[el.fontSize] || FONT_SIZES.sm
     const fw = FONT_WEIGHTS[el.fontWeight] || FONT_WEIGHTS.normal
+
+    // Resolve field definition from entityFields for any field-bound element
+    // 1st: try matching by fieldId, 2nd: fallback to matching by label/name
+    const fieldDef = el.fieldId
+        ? (entityFields || []).find(f => String(f._id) === String(el.fieldId))
+        || (el.label ? (entityFields || []).find(f => (f.label || f.name || '').toLowerCase() === el.label.toLowerCase()) : null)
+        : null
 
     // Render content by type
     let content = null
@@ -71,10 +90,17 @@ function InteractiveElement({
             break
         case 'field': {
             const v = getFieldValue(record, el.fieldId)
+            const fieldLabel = el.label || (fieldDef && (fieldDef.label || fieldDef.name)) || ''
+            const fieldIcon = el.icon || (fieldDef && fieldDef.icon) || ''
             content = <div style={{
                 fontSize: fs, fontWeight: fw, color: el.color || '#6b7280',
-                ...(el.maxLines > 0 ? { overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: el.maxLines, WebkitBoxOrient: 'vertical' } : {})
-            }}>{el.prefix}{v ? formatValue(v, el.format, record) : 'Valeur du champ'}{el.suffix && <span style={{ marginLeft: 2, opacity: 0.7 }}>{el.suffix}</span>}</div>
+                display: 'flex', alignItems: 'center', gap: 6,
+                ...(el.maxLines > 0 ? { overflow: 'hidden', WebkitLineClamp: el.maxLines, WebkitBoxOrient: 'vertical' } : {})
+            }}>
+                {fieldIcon && <Icon icon={fieldIcon} width="14" style={{ flexShrink: 0, opacity: 0.7 }} />}
+                {fieldLabel && <span style={{ fontWeight: 600, color: '#374151', fontSize: fs, textTransform: 'uppercase', letterSpacing: '0.02em' }}>{fieldLabel}</span>}
+                {el.prefix}<span style={{ color: '#6b7280' }}>{v ? formatValue(v, el.format, record) : '—'}</span>{el.suffix && <span style={{ marginLeft: 2, opacity: 0.7 }}>{el.suffix}</span>}
+            </div>
             break
         }
         case 'status': {
@@ -98,10 +124,13 @@ function InteractiveElement({
         }
         case 'date': case 'icon-value': {
             const v = getFieldValue(record, el.fieldId) || record._start || record.createdAt
+            const diIcon = el.icon || (fieldDef && fieldDef.icon) || ''
+            const diLabel = el.label || (fieldDef && (fieldDef.label || fieldDef.name)) || ''
             content = (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: fs, color: el.color || '#6b7280' }}>
-                    {el.icon && <iconify-icon icon={el.icon} width="14" style={{ flexShrink: 0, opacity: 0.7 }} />}
-                    <span>{v ? formatValue(v, el.format, record) : 'Valeur'}</span>
+                    {diIcon && <Icon icon={diIcon} width="14" style={{ flexShrink: 0, opacity: 0.7 }} />}
+                    {diLabel && <span style={{ fontWeight: 600, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.02em' }}>{diLabel}</span>}
+                    <span>{v ? formatValue(v, el.format, record) : '—'}</span>
                 </div>
             )
             break
@@ -145,7 +174,15 @@ function InteractiveElement({
             draggable
             onDragStart={e => { e.stopPropagation(); onDragStartEl(zoneId, elIndex, el) }}
             onDragOver={e => { e.preventDefault(); e.stopPropagation(); onDragOverEl(zoneId, elIndex) }}
-            onDrop={e => { e.preventDefault(); e.stopPropagation(); onDropEl(zoneId, elIndex) }}
+            onDrop={e => {
+                e.preventDefault(); e.stopPropagation()
+                const newType = e.dataTransfer.getData('application/card-element')
+                if (newType) {
+                    onDropNewElement(zoneId, elIndex, newType)
+                } else {
+                    onDropEl(zoneId, elIndex)
+                }
+            }}
             onClick={e => { e.stopPropagation(); onSelect(el, zoneId) }}
             style={{
                 position: 'relative', cursor: 'pointer', borderRadius: 4,
@@ -167,7 +204,7 @@ function InteractiveElement({
 
 // ─── Interactive Zone ────────────────────────────────────────────────
 function InteractiveZone({ zone, zoneIndex, record, selectedId, selectedZoneId, onSelectElement, onSelectZone,
-    onDragStartEl, onDragOverEl, onDropEl, dragOverTarget, onDropNewElement }) {
+    onDragStartEl, onDragOverEl, onDropEl, dragOverTarget, onDropNewElement, entityFields }) {
     const isZoneSelected = selectedZoneId === zone.id && !selectedId
 
     return (
@@ -225,6 +262,8 @@ function InteractiveZone({ zone, zoneIndex, record, selectedId, selectedZoneId, 
                         onDragOverEl={onDragOverEl}
                         onDropEl={onDropEl}
                         dropIndicator={isDropTarget ? 'before' : (dragOverTarget?.zoneId === zone.id && dragOverTarget?.elIndex === elIdx + 1 && elIdx === zone.elements.length - 1 ? 'after' : null)}
+                        entityFields={entityFields}
+                        onDropNewElement={onDropNewElement}
                     />
                 )
             })}
@@ -237,7 +276,8 @@ export default function InteractiveCanvas({
     layout, record, selectedElementId, selectedZoneId,
     onSelectElement, onSelectZone, onClearSelection,
     onMoveElement, onAddElement, onUpdateLayout,
-    editContext,
+    editContext, entityFields,
+    entityName, entityIcon, entityColor,
 }) {
     const [dragSource, setDragSource] = useState(null) // { zoneId, elIndex, el }
     const [dragOverTarget, setDragOverTarget] = useState(null) // { zoneId, elIndex }
@@ -293,7 +333,7 @@ export default function InteractiveCanvas({
             {/* The card */}
             <div
                 style={{
-                    width: editContext === 'calendar' ? 320 : 280,
+                    width: editContext === 'calendar' ? 320 : editContext === 'sidebar' ? 300 : 280,
                     backgroundColor: '#fff', borderRadius, boxShadow: shadow,
                     overflow: 'hidden', position: 'relative',
                     transition: 'width 0.3s',
@@ -301,6 +341,40 @@ export default function InteractiveCanvas({
                 }}
                 onClick={e => e.stopPropagation()}
             >
+                {/* Sidebar header - mimics the real sidebar panel */}
+                {editContext === 'sidebar' && (
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '8px 12px', borderBottom: '1px solid #f0f0f0',
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                            <div style={{
+                                width: 24, height: 24, borderRadius: 6, display: 'flex',
+                                alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                                backgroundColor: (entityColor || '#4361ee') + '15',
+                            }}>
+                                <iconify-icon icon={entityIcon || 'solar:document-bold-duotone'} width="12" style={{ color: entityColor || '#4361ee' }} />
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9ca3af' }}>
+                                    {entityName || 'Entité'}
+                                </div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginTop: -1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {record.referenceTitle || record.title || 'Nom du record'}
+                                </div>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                            <div style={{ width: 20, height: 20, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                                <iconify-icon icon="solar:arrow-right-up-linear" width="12" />
+                            </div>
+                            <div style={{ width: 20, height: 20, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                                <iconify-icon icon="solar:alt-arrow-up-linear" width="12" />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Accent bars */}
                 {accentColor && layout.accentPosition === 'top' && (
                     <div style={{ height: 4, backgroundColor: accentColor }} />
@@ -319,6 +393,7 @@ export default function InteractiveCanvas({
                             onDragStartEl={handleDragStartEl} onDragOverEl={handleDragOverEl}
                             onDropEl={handleDropEl} dragOverTarget={dragOverTarget}
                             onDropNewElement={handleDropNewElement}
+                            entityFields={entityFields}
                         />
                     ))}
                 </div>

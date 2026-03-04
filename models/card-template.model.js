@@ -86,7 +86,7 @@ const CardTemplateSchema = new mongoose.Schema(
         context: {
             type: String,
             required: true,
-            enum: ['kanban', 'calendar', 'list', 'universal'],
+            enum: ['kanban', 'calendar', 'list', 'universal', 'sidebar'],
             default: 'universal',
         },
         isDefault: {

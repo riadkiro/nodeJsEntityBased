@@ -149,17 +149,41 @@ function renderElement(el, record, entityData, accountNumber, entitySlug, callba
             const val = getFieldValue(record, el.fieldId, entityData)
             if (!val && val !== 0) return null
             const formatted = formatValue(val, el.format, record)
+            // Resolve label: explicit label > entity field label > none
+            let fieldLabel = el.label || ''
+            if (!fieldLabel && entityData?.fields && el.fieldId) {
+                const fieldDef = entityData.fields.find(f => String(f._id) === String(el.fieldId))
+                if (fieldDef) fieldLabel = fieldDef.label || fieldDef.name || ''
+            }
+            // Resolve icon from entity field definition
+            let fieldIcon = el.icon || ''
+            if (!fieldIcon && entityData?.fields && el.fieldId) {
+                const fieldDef = entityData.fields.find(f => String(f._id) === String(el.fieldId))
+                if (fieldDef) fieldIcon = fieldDef.icon || ''
+            }
             return (
                 <div key={key} style={{
+                    display: 'flex', alignItems: 'flex-start', gap: '4px',
                     fontSize: baseFontSize, fontWeight: baseFontWeight,
                     color: el.color || '#6b7280',
                     ...(el.maxLines > 0 ? {
-                        overflow: 'hidden', display: '-webkit-box',
-                        WebkitLineClamp: el.maxLines, WebkitBoxOrient: 'vertical'
+                        overflow: 'hidden', WebkitLineClamp: el.maxLines, WebkitBoxOrient: 'vertical'
                     } : {})
                 }}>
+                    {fieldIcon && <iconify-icon icon={fieldIcon} width="13" style={{ color: '#9ca3af', flexShrink: 0, marginTop: '2px' }} />}
+                    {fieldLabel && (
+                        <span style={{
+                            fontSize: '10px', fontWeight: '800', letterSpacing: '0.5px',
+                            textTransform: 'uppercase', color: 'rgb(75,85,99)',
+                            whiteSpace: 'nowrap', flexShrink: 0,
+                        }}>
+                            {fieldLabel}
+                        </span>
+                    )}
                     {el.prefix && <span>{el.prefix}</span>}
-                    {formatted}
+                    <span style={{ fontSize: '12px', fontWeight: '400', letterSpacing: 'normal', textTransform: 'none', color: 'rgb(55,65,81)' }}>
+                        {formatted}
+                    </span>
                     {el.suffix && <span style={{ marginLeft: 2, opacity: 0.7 }}>{el.suffix}</span>}
                 </div>
             )
@@ -306,10 +330,13 @@ function renderElement(el, record, entityData, accountNumber, entitySlug, callba
 }
 
 // ─── Zone Renderer ───────────────────────────────────────────────────
-function renderZone(zone, record, entityData, accountNumber, entitySlug, callbacks) {
+function renderZone(zone, record, entityData, accountNumber, entitySlug, callbacks, context) {
     if (!zone || !zone.elements?.length) return null
     const elements = zone.elements.filter(el => el.visible !== false)
     if (elements.length === 0) return null
+
+    // In sidebar context ('universal'), strip zone padding since the parent panel already has padding
+    const zonePadding = context === 'universal' ? '0' : (zone.padding || '12px')
 
     return (
         <div
@@ -318,7 +345,7 @@ function renderZone(zone, record, entityData, accountNumber, entitySlug, callbac
                 display: 'flex',
                 flexDirection: zone.direction === 'row' ? 'row' : 'column',
                 gap: `${zone.gap || 4}px`,
-                padding: zone.padding || '12px',
+                padding: zonePadding,
                 alignItems: zone.direction === 'row' ? (
                     zone.align === 'between' ? 'center' :
                         zone.align === 'center' ? 'center' :
@@ -454,7 +481,7 @@ export default function CardRenderer({
             {/* Zones */}
             <div style={{ paddingLeft: layout.accentPosition === 'left' ? 4 : 0 }}>
                 {(layout.zones || []).map(zone =>
-                    renderZone(zone, record, entityData, accountNumber, entitySlug, callbacks)
+                    renderZone(zone, record, entityData, accountNumber, entitySlug, callbacks, context)
                 )}
             </div>
         </div>

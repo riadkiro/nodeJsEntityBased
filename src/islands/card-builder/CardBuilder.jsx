@@ -12,6 +12,7 @@ import { ElementProperties, ZoneProperties } from './PropertyPanel'
 const CONTEXTS = [
     { value: 'kanban', label: 'Kanban', icon: 'solar:widget-2-bold-duotone' },
     { value: 'calendar', label: 'Calendrier', icon: 'solar:calendar-bold-duotone' },
+    { value: 'sidebar', label: 'Sidebar (Fiche)', icon: 'solar:card-bold-duotone' },
     { value: 'universal', label: 'Universel', icon: 'solar:layers-bold-duotone' },
 ]
 
@@ -214,6 +215,13 @@ export default function CardBuilder({ accountNumber, entityId, entityName, entit
     // ─── Add element from palette drop ────────────────────────────────
     const handleAddElement = useCallback((zoneId, elIndex, type) => {
         const newEl = createDefaultElement(type)
+        // Auto-resolve first entity field for 'field' type
+        if (type === 'field' && entityFields.length > 0) {
+            const firstField = entityFields[0]
+            newEl.fieldId = firstField._id
+            newEl.label = firstField.label || firstField.name || ''
+            newEl.icon = firstField.icon || ''
+        }
         setEditLayout(prev => {
             const zones = JSON.parse(JSON.stringify(prev.zones || []))
             if (zoneId === '__new_zone__') {
@@ -225,7 +233,7 @@ export default function CardBuilder({ accountNumber, entityId, entityName, entit
             return { ...prev, zones }
         })
         setSelectedElementId(newEl._id); setSelectedElement(newEl); setSelectedZoneId(zoneId); setSelectedZone(null)
-    }, [])
+    }, [entityFields])
 
     // ─── Update element from property panel ───────────────────────────
     const handleUpdateElement = useCallback((updated) => {
@@ -380,7 +388,8 @@ export default function CardBuilder({ accountNumber, entityId, entityName, entit
                             onSelectElement={handleSelectElement} onSelectZone={handleSelectZone}
                             onClearSelection={handleClearSelection} onMoveElement={handleMoveElement}
                             onAddElement={handleAddElement} onUpdateLayout={updateLayoutField}
-                            editContext={editContext}
+                            editContext={editContext} entityFields={entityFields}
+                            entityName={entityName} entityIcon={entityIcon} entityColor={entityColor}
                         />
                     </div>
 

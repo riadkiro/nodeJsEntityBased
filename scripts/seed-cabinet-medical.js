@@ -289,7 +289,19 @@ async function install(conn, userId, presetSlug) {
     const entityDefs = [
         {
             name: 'Patient', nameSingular: 'Patient', namePlural: 'Patients', slug: 'patients', icon: 'solar:user-heart-bold-duotone', color: '#3b82f6', fields: ['nom', 'prenom', 'date_naissance', 'sexe', 'telephone', 'email', 'adresse', 'numero_secu', 'groupe_sanguin', 'allergies', 'antecedents', 'medecin_traitant', 'mutuelle', 'age_patient'], statusClassification: null, classifications: ['patient_tags'],
-            referenceTitleTokens: [{ t: 'field', id: () => f.prenom }, { t: 'text', v: ' ' }, { t: 'field', id: () => f.nom }]
+            referenceTitleTokens: [{ t: 'field', id: () => f.prenom }, { t: 'text', v: ' ' }, { t: 'field', id: () => f.nom }],
+            sidebarWidgets: [
+                { type: 'note', label: 'Notes patient', icon: 'solar:notes-bold-duotone', color: '#3b82f6', order: 0, visible: true, config: { content: '' } },
+                {
+                    type: 'tasks', label: 'Suivi', icon: 'solar:checklist-bold-duotone', color: '#22c55e', order: 1, visible: true, config: {
+                        tasks: [
+                            { label: 'Vérifier vaccinations', done: false },
+                            { label: 'Contrôle tension', done: false },
+                            { label: 'Bilan sanguin annuel', done: false }
+                        ]
+                    }
+                }
+            ]
         },
         {
             name: 'Rendez-vous', nameSingular: 'Rendez-vous', namePlural: 'Rendez-vous', slug: 'rendez-vous', icon: 'solar:calendar-mark-bold-duotone', color: '#8b5cf6', fields: ['date_rdv', 'duree_rdv', 'objet_rdv', 'notes_generales'], statusClassification: 'rdv_status', classifications: [],
@@ -297,11 +309,17 @@ async function install(conn, userId, presetSlug) {
         }, // set after relations
         {
             name: 'Consultation', nameSingular: 'Consultation', namePlural: 'Consultations', slug: 'consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', fields: ['motif', 'symptomes', 'examen_clinique', 'diagnostic', 'plan_traitement', 'poids', 'taille_cm', 'tension', 'temperature', 'frequence_cardiaque', 'notes_generales', 'imc'], statusClassification: null, classifications: ['consult_type'],
-            referenceTitleTokens: null
+            referenceTitleTokens: null,
+            sidebarWidgets: [
+                { type: 'note', label: 'Observations', icon: 'solar:clipboard-text-bold-duotone', color: '#00ab55', order: 0, visible: true, config: { content: '' } }
+            ]
         }, // set after relations
         {
             name: 'Prescription', nameSingular: 'Prescription', namePlural: 'Prescriptions', slug: 'prescriptions', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f', fields: ['posologie', 'duree_traitement', 'notes_prescription'], statusClassification: null, classifications: [],
-            referenceTitleTokens: null
+            referenceTitleTokens: null,
+            sidebarWidgets: [
+                { type: 'note', label: 'Note pharmacien', icon: 'solar:notes-bold-duotone', color: '#e2a03f', order: 0, visible: true, config: { content: '' } }
+            ]
         }, // set after relations
         {
             name: 'Médicament', nameSingular: 'Médicament', namePlural: 'Médicaments', slug: 'medicaments', icon: 'solar:pills-3-bold-duotone', color: '#ef4444', fields: ['forme', 'dosage', 'prix_vente', 'stock_min', 'stock_actuel', 'notes_generales'], statusClassification: null, classifications: [],
@@ -309,7 +327,20 @@ async function install(conn, userId, presetSlug) {
         },
         {
             name: 'Facture', nameSingular: 'Facture', namePlural: 'Factures', slug: 'factures', icon: 'solar:bill-list-bold-duotone', color: '#e2a03f', fields: ['montant_total', 'montant_paye', 'date_echeance', 'notes_generales', 'reste_a_payer'], statusClassification: 'invoice_status', classifications: [],
-            referenceTitleTokens: null
+            referenceTitleTokens: null,
+            sidebarWidgets: [
+                {
+                    type: 'tasks', label: 'Suivi paiement', icon: 'solar:checklist-bold-duotone', color: '#e2a03f', order: 0, visible: true, config: {
+                        tasks: [
+                            { label: 'Facture envoyée', done: false },
+                            { label: 'Relance effectuée', done: false },
+                            { label: 'Paiement reçu', done: false },
+                            { label: 'Comptabilisée', done: false }
+                        ]
+                    }
+                },
+                { type: 'note', label: 'Remarques', icon: 'solar:notes-bold-duotone', color: '#94a3b8', order: 1, visible: true, config: { content: '' } }
+            ]
         }, // set after relations
         {
             name: 'Paiement', nameSingular: 'Paiement', namePlural: 'Paiements', slug: 'paiements', icon: 'solar:wallet-bold-duotone', color: '#22c55e', fields: ['montant_total', 'mode_paiement', 'reference_paiement', 'notes_generales'], statusClassification: 'payment_method', classifications: [],
@@ -333,11 +364,33 @@ async function install(conn, userId, presetSlug) {
         }, // set after relations
         {
             name: 'Personnel', nameSingular: 'Membre du Personnel', namePlural: 'Personnel', slug: 'personnel', icon: 'solar:users-group-rounded-bold-duotone', color: '#4361ee', fields: ['nom', 'prenom', 'specialite', 'numero_rpps', 'telephone', 'email'], statusClassification: null, classifications: ['staff_role'],
-            referenceTitleTokens: [{ t: 'field', id: () => f.prenom }, { t: 'text', v: ' ' }, { t: 'field', id: () => f.nom }]
+            referenceTitleTokens: [{ t: 'field', id: () => f.prenom }, { t: 'text', v: ' ' }, { t: 'field', id: () => f.nom }],
+            sidebarWidgets: [
+                {
+                    type: 'links-group', label: 'Outils', icon: 'solar:link-round-bold-duotone', color: '#4361ee', order: 0, visible: true, config: {
+                        links: [
+                            { label: 'Annuaire RPPS', url: 'https://annuaire.sante.fr', icon: 'solar:magnifer-bold-duotone', target: '_blank' },
+                            { label: 'Ameli Pro', url: 'https://espacepro.ameli.fr', icon: 'solar:shield-check-bold-duotone', target: '_blank' }
+                        ]
+                    }
+                },
+                { type: 'note', label: 'Notes RH', icon: 'solar:notes-bold-duotone', color: '#64748b', order: 1, visible: true, config: { content: '' } }
+            ]
         },
         {
             name: 'Stock', nameSingular: 'Article Stock', namePlural: 'Stock', slug: 'stock', icon: 'solar:box-bold-duotone', color: '#94a3b8', fields: ['categorie_stock', 'fournisseur', 'prix_achat', 'prix_vente', 'stock_actuel', 'stock_min', 'notes_generales', 'marge_stock'], statusClassification: null, classifications: [],
-            referenceTitleTokens: [{ t: 'field', id: 'title' }]
+            referenceTitleTokens: [{ t: 'field', id: 'title' }],
+            sidebarWidgets: [
+                {
+                    type: 'tasks', label: 'Réappro', icon: 'solar:checklist-bold-duotone', color: '#f97316', order: 0, visible: true, config: {
+                        tasks: [
+                            { label: 'Vérifier stock minimum', done: false },
+                            { label: 'Passer commande fournisseur', done: false },
+                            { label: 'Réception marchandise', done: false }
+                        ]
+                    }
+                }
+            ]
         },
     ];
 
@@ -369,6 +422,7 @@ async function install(conn, userId, presetSlug) {
             relations: []
         };
         if (resolvedTokens) entityData.referenceTitleTokens = resolvedTokens;
+        if (e.sidebarWidgets) entityData.sidebarWidgets = e.sidebarWidgets;
 
         const doc = await upsertDoc(db.Entity, { slug: e.slug }, entityData);
         ids.entities[e.slug] = doc._id;

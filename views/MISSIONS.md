@@ -26,9 +26,9 @@ Reproduire l'interface de image-42.png : page Consultation avec header, zone foc
 - [ ] Tabs multi-tableaux quand l'entité en a plusieurs
 - [ ] Barre actions rapides en bas (Ajouter traitement, Ctrl+O Ordonnance, Ctrl+E Examen)
 
-#### Phase 6 : Symptômes en mode tag/chip
-- [ ] Entité Symptômes avec records (Fatigue, Toux, Douleur thoracique...)
-- [ ] Champ relation Symptômes sur Consultation en mode multi-select tag (comme classification)
+#### Phase 6 : Symptômes en mode tag/chip ✅
+- ✅ Entité Symptômes avec 20 records (Fatigue, Toux, Céphalées, Douleur thoracique...)
+- ✅ Relation Consultation → Symptômes en mode many-to-many (multi-select tag)
 
 ### Références
 ![alt text](image-42.png) 

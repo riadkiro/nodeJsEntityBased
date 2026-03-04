@@ -392,6 +392,10 @@ async function install(conn, userId, presetSlug) {
                 }
             ]
         },
+        {
+            name: 'Symptôme', nameSingular: 'Symptôme', namePlural: 'Symptômes', slug: 'symptomes', icon: 'solar:heart-pulse-bold-duotone', color: '#ec4899', fields: [], statusClassification: null, classifications: [],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }]
+        },
     ];
 
     ids.entities = {};
@@ -446,6 +450,7 @@ async function install(conn, userId, presetSlug) {
         { src: 'resultats-labo', target: 'patients', label: 'Patient', inverse: 'Résultats labo', card: 'one-to-many' },
         { src: 'documents-medicaux', target: 'patients', label: 'Patient', inverse: 'Documents', card: 'one-to-many' },
         { src: 'plans-traitement', target: 'patients', label: 'Patient', inverse: 'Plans de traitement', card: 'one-to-many' },
+        { src: 'consultations', target: 'symptomes', label: 'Symptômes', inverse: 'Consultations', card: 'many-to-many' },
     ];
 
     for (const r of relationDefs) {
@@ -606,6 +611,7 @@ async function install(conn, userId, presetSlug) {
                 { entitySlug: 'consultations', name: 'Consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55' },
                 { entitySlug: 'prescriptions', name: 'Ordonnances', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f' },
                 { entitySlug: 'resultats-labo', name: 'Examens', icon: 'solar:test-tube-bold-duotone', color: '#f97316' },
+                { entitySlug: 'symptomes', name: 'Symptômes', icon: 'solar:heart-pulse-bold-duotone', color: '#ec4899' },
             ]
         },
         {
@@ -873,6 +879,39 @@ async function createDemoRecords(db, ids, userId) {
         await rec('personnel', s.t, { nom: s.nom, prenom: s.prenom, specialite: s.spec, numero_rpps: s.rpps });
     }
 
+    // -- Symptômes (20) --
+    const symptoms = [];
+    const symptomNames = [
+        'Fatigue', 'Toux', 'Céphalées', 'Douleur thoracique', 'Dyspnée',
+        'Fièvre', 'Nausées', 'Vomissements', 'Douleur abdominale', 'Vertiges',
+        'Lombalgie', 'Raideur', 'Œdème', 'Prurit', 'Rhinorrhée',
+        'Pharyngite', 'Myalgies', 'Courbatures', 'Brûlures mictionnelles', 'Pollakiurie'
+    ];
+    for (const name of symptomNames) {
+        const doc = await rec('symptomes', name, {});
+        symptoms.push(doc);
+    }
+
+    // Symptom index lookup by name
+    const symIdx = {};
+    symptoms.forEach((s, i) => { symIdx[symptomNames[i]] = s; });
+
+    // Map each consultation to relevant symptoms
+    const consultSymptoms = [
+        /* 0 SAOS */['Douleur thoracique', 'Dyspnée', 'Fatigue'],
+        /* 1 Rhinoph */['Toux', 'Rhinorrhée', 'Pharyngite', 'Fièvre'],
+        /* 2 Lombalgie */['Lombalgie', 'Raideur'],
+        /* 3 HTA */['Céphalées', 'Vertiges'],
+        /* 4 Diabète */['Fatigue'],
+        /* 5 Bronchite */['Fièvre', 'Toux', 'Courbatures'],
+        /* 6 Entorse */['Œdème'],
+        /* 7 Migraine */['Céphalées', 'Nausées'],
+        /* 8 Gastrite */['Douleur abdominale', 'Nausées'],
+        /* 9 Inf. urin */['Brûlures mictionnelles', 'Pollakiurie'],
+        /* 10 Eczéma */['Prurit'],
+        /* 11 Angine */['Pharyngite', 'Fièvre'],
+    ];
+
     // -- Appointments (12) --
     const appts = [];
     for (let i = 0; i < 12; i++) {
@@ -920,7 +959,10 @@ async function createDemoRecords(db, ids, userId) {
             tension: `${12 + Math.floor(Math.random() * 4)}/${7 + Math.floor(Math.random() * 3)}`,
             temperature: (36.5 + Math.random() * 1.5).toFixed(1),
         }, {
-            relations: [{ relationKey: rk['consultations__patients'], value: p._id }],
+            relations: [
+                { relationKey: rk['consultations__patients'], value: p._id },
+                ...(consultSymptoms[i] || []).map(sName => ({ relationKey: rk['consultations__symptomes'], value: symIdx[sName]?._id })).filter(r => r.value)
+            ],
             classificationValues: consultTypeOpts ? [{ classificationId: cls.consult_type, optionId: consultTypeOpts[typeIdx]?._id, label: consultTypeOpts[typeIdx]?.label, color: consultTypeOpts[typeIdx]?.color }] : []
         });
         consults.push(doc);

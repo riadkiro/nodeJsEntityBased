@@ -1,8 +1,429 @@
     <div class="space-y-3 sticky top-20" x-data="recordSidebar" id="sidebar-inner-sortable">
+
+        <!-- ═══ Panel Manager Header ═══ -->
+        <div class="flex items-center justify-between" style="padding: 0 2px;">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Sidebar</span>
+            <div class="flex items-center gap-1">
+                <!-- Add Widget Button -->
+                <button type="button" @click="widgetCatalogOpen = true"
+                    class="w-7 h-7 rounded-lg flex items-center justify-center transition-all text-gray-400 hover:text-primary hover:bg-primary/10"
+                    title="Ajouter un widget">
+                    <iconify-icon icon="solar:add-circle-bold-duotone" width="15"></iconify-icon>
+                </button>
+                <!-- Settings Button -->
+                <div class="relative" x-data="{ pmOpen: false }" @click.away="pmOpen = false">
+                    <button type="button" @click="pmOpen = !pmOpen"
+                        class="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+                        :class="pmOpen ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'"
+                        title="Gérer les panels">
+                        <iconify-icon icon="solar:settings-bold-duotone" width="15"></iconify-icon>
+                    </button>
+                    <!-- Panel Manager Dropdown -->
+                    <div x-show="pmOpen" x-cloak
+                        x-transition:enter="transition ease-out duration-150"
+                        x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
+                        x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                        x-transition:leave="transition ease-in duration-100"
+                        x-transition:leave-start="opacity-100"
+                        x-transition:leave-end="opacity-0"
+                        style="position: absolute; right: 0; top: 100%; margin-top: 4px; z-index: 50; width: 280px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid #f3f4f6; overflow: hidden;"
+                        class="dark:!bg-[#1b2e4b] dark:!border-gray-700">
+                        
+                        <!-- Dropdown Header -->
+                        <div style="padding: 10px 14px 8px; border-bottom: 1px solid #f3f4f6;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <iconify-icon icon="solar:widget-6-bold-duotone" width="14" style="color: #4361ee;"></iconify-icon>
+                                <span style="font-size: 11px; font-weight: 700; color: #374151;">Panels visibles</span>
+                            </div>
+                        </div>
+
+                        <!-- Panel Toggles -->
+                        <div style="padding: 6px; max-height: 320px; overflow-y: auto;">
+                            <% 
+                            const panelDefinitions = [
+                                { id: 'classifications', label: 'Classifications', icon: 'solar:tag-bold-duotone', color: '#f59e0b' },
+                                { id: 'attachments', label: 'Pièces Jointes', icon: 'solar:paperclip-bold-duotone', color: '#6366f1' },
+                                { id: 'smartdoc', label: 'Documents Modèles', icon: 'solar:document-text-bold-duotone', color: '#06b6d4' },
+                                { id: 'lines', label: 'Tableau Dynamique', icon: 'solar:list-check-bold-duotone', color: '#10b981' },
+                            ];
+                            // Add relation panels  
+                            (entity.relations || []).forEach(function(r) {
+                                panelDefinitions.push({
+                                    id: 'rel_' + r.key,
+                                    label: r.label || (r.targetEntity && r.targetEntity.name) || 'Relation',
+                                    icon: (r.targetEntity && r.targetEntity.icon) || 'solar:link-bold-duotone',
+                                    color: (r.targetEntity && r.targetEntity.color) || '#4361ee'
+                                });
+                            });
+                            // Add inverse relation panels
+                            (locals.inverseRelations || []).forEach(function(invRel) {
+                                panelDefinitions.push({
+                                    id: 'inv_' + invRel.key,
+                                    label: invRel.label || 'Inverse',
+                                    icon: (invRel.targetEntity && invRel.targetEntity.icon) || 'solar:link-bold-duotone',
+                                    color: (invRel.targetEntity && invRel.targetEntity.color) || '#4361ee'
+                                });
+                            });
+                            // Add card widget panels
+                            (locals.relatedCardWidgets || []).forEach(function(widget, idx) {
+                                if (widget.cardTemplate) {
+                                    panelDefinitions.push({
+                                        id: 'card_' + widget.relationKey + '_' + idx,
+                                        label: (widget.entityName || 'Card') + ' — Fiche',
+                                        icon: widget.entityIcon || 'solar:card-bold-duotone',
+                                        color: widget.entityColor || '#4361ee'
+                                    });
+                                }
+                            });
+                            // Add custom sidebar widgets
+                            (entity.sidebarWidgets || []).forEach(function(sw) {
+                                panelDefinitions.push({
+                                    id: 'sw_' + sw._id,
+                                    label: sw.label,
+                                    icon: sw.icon || 'solar:widget-bold-duotone',
+                                    color: sw.color || '#4361ee'
+                                });
+                            });
+                            %>
+                            <% panelDefinitions.forEach(function(pd) { %>
+                                <div style="display: flex; align-items: center; padding: 7px 10px; border-radius: 8px; cursor: pointer; transition: background 0.15s;"
+                                    @click="togglePanel('<%= pd.id %>')"
+                                    onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='transparent'">
+                                    <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; overflow: hidden;">
+                                        <div style="width: 20px; height: 20px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: <%= pd.color %>15;">
+                                            <iconify-icon icon="<%= pd.icon %>" width="12" style="color: <%= pd.color %>"></iconify-icon>
+                                        </div>
+                                        <span style="font-size: 11px; font-weight: 600; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><%= pd.label %></span>
+                                    </div>
+                                    <!-- Toggle Switch -->
+                                    <div style="flex-shrink: 0; margin-left: 8px;">
+                                        <div :style="'display:block; width:32px; height:16px; border-radius:999px; position:relative; transition:background-color 0.2s; background-color:' + (isPanelVisible('<%= pd.id %>') ? '#4361ee' : '#d1d5db')">
+                                            <div :style="'position:absolute; top:2px; width:12px; height:12px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.25); transition:transform 0.2s; transform:translateX(' + (isPanelVisible('<%= pd.id %>') ? '18px' : '2px') + ')'"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% }); %>
+                        </div>
+
+                        <!-- Dropdown Footer -->
+                        <div style="padding: 8px 14px; border-top: 1px solid #f3f4f6;" class="dark:border-gray-700">
+                            <button type="button" @click="showAllPanels(); pmOpen = false"
+                                class="text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors">
+                                Tout afficher
+                            </button>
+                            <span class="text-[10px] text-gray-300 mx-1.5">|</span>
+                            <button type="button" @click="hideAllPanels(); pmOpen = false"
+                                class="text-[10px] font-semibold text-gray-400 hover:text-gray-600 transition-colors">
+                                Tout masquer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ Widget Catalog Modal ═══ -->
+        <template x-teleport="body">
+            <div x-show="widgetCatalogOpen" x-cloak
+                style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;"
+                @keydown.escape.window="widgetCatalogOpen = false; resetWidgetForm()">
+                <!-- Backdrop — blur only, no dark tint -->
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgba(255,255,255,0.08);" 
+                    @click="widgetCatalogOpen = false; resetWidgetForm()"
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0"
+                    x-transition:enter-end="opacity-100"></div>
+                <!-- Modal centering wrapper -->
+                <div style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: none;">
+                    <div style="position: relative; width: 100%; max-width: 540px; margin: 0 20px; border-radius: 20px; overflow: hidden; background: white; box-shadow: 0 0 0 1px rgba(0,0,0,0.04), 0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06); pointer-events: auto;"
+                        class="dark:!bg-[#0e1726]"
+                        x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+                        x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 scale-100"
+                        x-transition:leave-end="opacity-0 scale-95"
+                        @click.stop>
+                    
+                    <!-- Modal Header — gradient accent -->
+                    <div style="position: relative; padding: 20px 24px; overflow: hidden;">
+                        <!-- Subtle gradient background -->
+                        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #4361ee08 0%, #06b6d408 50%, #10b98108 100%); pointer-events: none;"></div>
+                        <div style="position: absolute; bottom: 0; left: 24px; right: 24px; height: 1px; background: linear-gradient(90deg, transparent, #e5e7eb, transparent);"></div>
+                        <div style="position: relative; display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 14px;">
+                                <div style="width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #4361ee 0%, #6366f1 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(67,97,238,0.3);">
+                                    <iconify-icon icon="solar:widget-add-bold-duotone" width="20" style="color: white;"></iconify-icon>
+                                </div>
+                                <div>
+                                    <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1f2937; letter-spacing: -0.01em;" x-text="widgetFormStep === 'catalog' ? 'Ajouter un widget' : 'Configurer le widget'"></h3>
+                                    <p style="margin: 2px 0 0; font-size: 11px; color: #9ca3af; font-weight: 500;" x-text="widgetFormStep === 'catalog' ? 'Choisissez un type de widget à ajouter' : widgetTypeLabels[newWidget.type]"></p>
+                                </div>
+                            </div>
+                            <button type="button" @click="widgetCatalogOpen = false; resetWidgetForm()"
+                                style="width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #9ca3af; border: none; background: transparent; cursor: pointer; transition: all 0.15s;"
+                                onmouseover="this.style.background='#f3f4f6'; this.style.color='#6b7280'" onmouseout="this.style.background='transparent'; this.style.color='#9ca3af'">
+                                <iconify-icon icon="solar:close-circle-bold" width="20"></iconify-icon>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 1: Widget Catalog -->
+                    <div x-show="widgetFormStep === 'catalog'" style="padding: 20px 24px 24px;">
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                            <!-- HTML Widget -->
+                            <button type="button" @click="selectWidgetType('html')"
+                                style="text-align: center; padding: 18px 12px 16px; border-radius: 14px; border: 1.5px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s ease;"
+                                onmouseover="this.style.borderColor='#4361ee40'; this.style.background='#4361ee06'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(67,97,238,0.1)'"
+                                onmouseout="this.style.borderColor='#f3f4f6'; this.style.background='white'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #f97316 0%, #fb923c 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; box-shadow: 0 3px 10px rgba(249,115,22,0.25);">
+                                    <iconify-icon icon="solar:code-bold-duotone" width="20" style="color: white;"></iconify-icon>
+                                </div>
+                                <div style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 2px;">HTML</div>
+                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Contenu personnalisé</div>
+                            </button>
+                            <!-- Link Widget -->
+                            <button type="button" @click="selectWidgetType('link')"
+                                style="text-align: center; padding: 18px 12px 16px; border-radius: 14px; border: 1.5px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s ease;"
+                                onmouseover="this.style.borderColor='#4361ee40'; this.style.background='#4361ee06'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(67,97,238,0.1)'"
+                                onmouseout="this.style.borderColor='#f3f4f6'; this.style.background='white'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; box-shadow: 0 3px 10px rgba(59,130,246,0.25);">
+                                    <iconify-icon icon="solar:link-round-bold-duotone" width="20" style="color: white;"></iconify-icon>
+                                </div>
+                                <div style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 2px;">Lien</div>
+                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">URL externe</div>
+                            </button>
+                            <!-- Note Widget -->
+                            <button type="button" @click="selectWidgetType('note')"
+                                style="text-align: center; padding: 18px 12px 16px; border-radius: 14px; border: 1.5px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s ease;"
+                                onmouseover="this.style.borderColor='#4361ee40'; this.style.background='#4361ee06'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(67,97,238,0.1)'"
+                                onmouseout="this.style.borderColor='#f3f4f6'; this.style.background='white'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; box-shadow: 0 3px 10px rgba(245,158,11,0.25);">
+                                    <iconify-icon icon="solar:notes-bold-duotone" width="20" style="color: white;"></iconify-icon>
+                                </div>
+                                <div style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 2px;">Note</div>
+                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Memo / instruction</div>
+                            </button>
+                            <!-- iFrame Widget -->
+                            <button type="button" @click="selectWidgetType('iframe')"
+                                style="text-align: center; padding: 18px 12px 16px; border-radius: 14px; border: 1.5px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s ease;"
+                                onmouseover="this.style.borderColor='#4361ee40'; this.style.background='#4361ee06'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(67,97,238,0.1)'"
+                                onmouseout="this.style.borderColor='#f3f4f6'; this.style.background='white'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; box-shadow: 0 3px 10px rgba(6,182,212,0.25);">
+                                    <iconify-icon icon="solar:monitor-bold-duotone" width="20" style="color: white;"></iconify-icon>
+                                </div>
+                                <div style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 2px;">iFrame</div>
+                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Page web intégrée</div>
+                            </button>
+                            <!-- Image Widget -->
+                            <button type="button" @click="selectWidgetType('image')"
+                                style="text-align: center; padding: 18px 12px 16px; border-radius: 14px; border: 1.5px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s ease;"
+                                onmouseover="this.style.borderColor='#4361ee40'; this.style.background='#4361ee06'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(67,97,238,0.1)'"
+                                onmouseout="this.style.borderColor='#f3f4f6'; this.style.background='white'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #10b981 0%, #34d399 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; box-shadow: 0 3px 10px rgba(16,185,129,0.25);">
+                                    <iconify-icon icon="solar:gallery-bold-duotone" width="20" style="color: white;"></iconify-icon>
+                                </div>
+                                <div style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 2px;">Image</div>
+                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Photo / logo</div>
+                            </button>
+                            <!-- Links Group -->
+                            <button type="button" @click="selectWidgetType('links-group')"
+                                style="text-align: center; padding: 18px 12px 16px; border-radius: 14px; border: 1.5px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s ease;"
+                                onmouseover="this.style.borderColor='#4361ee40'; this.style.background='#4361ee06'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(67,97,238,0.1)'"
+                                onmouseout="this.style.borderColor='#f3f4f6'; this.style.background='white'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; box-shadow: 0 3px 10px rgba(139,92,246,0.25);">
+                                    <iconify-icon icon="solar:bookmark-bold-duotone" width="20" style="color: white;"></iconify-icon>
+                                </div>
+                                <div style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 2px;">Liens Rapides</div>
+                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Groupe de liens</div>
+                            </button>
+                            <!-- Tasks Widget -->
+                            <button type="button" @click="selectWidgetType('tasks')"
+                                style="text-align: center; padding: 18px 12px 16px; border-radius: 14px; border: 1.5px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s ease;"
+                                onmouseover="this.style.borderColor='#4361ee40'; this.style.background='#4361ee06'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(67,97,238,0.1)'"
+                                onmouseout="this.style.borderColor='#f3f4f6'; this.style.background='white'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; box-shadow: 0 3px 10px rgba(236,72,153,0.25);">
+                                    <iconify-icon icon="solar:checklist-bold-duotone" width="20" style="color: white;"></iconify-icon>
+                                </div>
+                                <div style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 2px;">Tasks</div>
+                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Checklist</div>
+                            </button>
+                        </div>
+                        <!-- Separator — full width below grid -->
+                        <div style="margin-top: 12px;">
+                            <button type="button" @click="selectWidgetType('separator')"
+                                style="width: 100%; text-align: left; padding: 14px 16px; border-radius: 14px; border: 1.5px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 12px;"
+                                onmouseover="this.style.borderColor='#4361ee40'; this.style.background='#4361ee06'" 
+                                onmouseout="this.style.borderColor='#f3f4f6'; this.style.background='white'">
+                                <div style="width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #9ca3af 0%, #d1d5db 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(156,163,175,0.3);">
+                                    <iconify-icon icon="solar:minus-circle-bold-duotone" width="18" style="color: white;"></iconify-icon>
+                                </div>
+                                <div>
+                                    <div style="font-size: 12px; font-weight: 700; color: #374151;">Séparateur</div>
+                                    <div style="font-size: 10px; color: #9ca3af; margin-top: 1px;">Ligne de séparation visuelle</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Widget Configuration Form -->
+                    <div x-show="widgetFormStep === 'form'" class="p-5 space-y-4">
+                        <!-- Label -->
+                        <div>
+                            <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1.5 block">Nom du widget</label>
+                            <input type="text" x-model="newWidget.label" class="form-input text-xs !h-9 w-full" placeholder="Mon widget...">
+                        </div>
+
+                        <!-- HTML Type -->
+                        <template x-if="newWidget.type === 'html'">
+                            <div>
+                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1.5 block">Contenu HTML</label>
+                                <textarea x-model="newWidget.config.content" class="form-input text-xs w-full" rows="5" placeholder="<p>Votre contenu HTML...</p>"></textarea>
+                            </div>
+                        </template>
+
+                        <!-- Link Type -->
+                        <template x-if="newWidget.type === 'link'">
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1.5 block">URL</label>
+                                    <input type="url" x-model="newWidget.config.url" class="form-input text-xs !h-9 w-full" placeholder="https://...">
+                                </div>
+                                <div>
+                                    <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1.5 block">Description</label>
+                                    <input type="text" x-model="newWidget.config.description" class="form-input text-xs !h-9 w-full" placeholder="Description du lien...">
+                                </div>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" x-model="newWidget.config.newTab" class="form-checkbox rounded text-primary">
+                                    <span class="text-[11px] text-gray-600 dark:text-gray-300">Ouvrir dans un nouvel onglet</span>
+                                </label>
+                            </div>
+                        </template>
+
+                        <!-- Note Type -->
+                        <template x-if="newWidget.type === 'note'">
+                            <div>
+                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1.5 block">Contenu de la note</label>
+                                <textarea x-model="newWidget.config.content" class="form-input text-xs w-full" rows="4" placeholder="Votre note..."></textarea>
+                            </div>
+                        </template>
+
+                        <!-- iFrame Type -->
+                        <template x-if="newWidget.type === 'iframe'">
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1.5 block">URL de la page</label>
+                                    <input type="url" x-model="newWidget.config.url" class="form-input text-xs !h-9 w-full" placeholder="https://...">
+                                </div>
+                                <div>
+                                    <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1.5 block">Hauteur (px)</label>
+                                    <input type="number" x-model.number="newWidget.config.height" class="form-input text-xs !h-9 w-full" placeholder="200">
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Image Type -->
+                        <template x-if="newWidget.type === 'image'">
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1.5 block">URL de l'image</label>
+                                    <input type="url" x-model="newWidget.config.url" class="form-input text-xs !h-9 w-full" placeholder="https://... ou /uploads/...">
+                                </div>
+                                <div>
+                                    <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1.5 block">Texte alternatif</label>
+                                    <input type="text" x-model="newWidget.config.alt" class="form-input text-xs !h-9 w-full" placeholder="Description de l'image">
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Links Group Type -->
+                        <template x-if="newWidget.type === 'links-group'">
+                            <div class="space-y-3">
+                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 block">Liens</label>
+                                <template x-for="(lnk, idx) in newWidget.config.links" :key="idx">
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" x-model="lnk.label" class="form-input text-xs !h-8 flex-1" placeholder="Label">
+                                        <input type="url" x-model="lnk.url" class="form-input text-xs !h-8 flex-1" placeholder="URL">
+                                        <button type="button" @click="newWidget.config.links.splice(idx, 1)"
+                                            class="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-danger hover:bg-danger/10 flex-none">
+                                            <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
+                                        </button>
+                                    </div>
+                                </template>
+                                <button type="button" @click="newWidget.config.links.push({ label: '', url: '', icon: '', target: '_blank' })"
+                                    class="text-[11px] font-semibold text-primary hover:text-primary/80 flex items-center gap-1">
+                                    <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
+                                    Ajouter un lien
+                                </button>
+                            </div>
+                        </template>
+
+                        <!-- Tasks Type -->
+                        <template x-if="newWidget.type === 'tasks'">
+                            <div class="space-y-3">
+                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 block">Tâches initiales</label>
+                                <template x-for="(task, idx) in newWidget.config.tasks" :key="idx">
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" x-model="task.label" class="form-input text-xs !h-8 flex-1" placeholder="Nom de la tâche...">
+                                        <button type="button" @click="newWidget.config.tasks.splice(idx, 1)"
+                                            class="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-danger hover:bg-danger/10 flex-none">
+                                            <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
+                                        </button>
+                                    </div>
+                                </template>
+                                <button type="button" @click="newWidget.config.tasks.push({ label: '', done: false })"
+                                    class="text-[11px] font-semibold text-primary hover:text-primary/80 flex items-center gap-1">
+                                    <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
+                                    Ajouter une tâche
+                                </button>
+                            </div>
+                        </template>
+
+                        <!-- Color Picker — refined -->
+                        <div x-show="newWidget.type !== 'separator'" style="display: flex; align-items: center; gap: 12px; padding-top: 4px;">
+                            <label style="font-size: 11px; font-weight: 600; color: #6b7280;">Couleur</label>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <template x-for="c in ['#4361ee','#f59e0b','#10b981','#6366f1','#ec4899','#06b6d4','#ef4444','#8b5cf6']">
+                                    <button type="button" @click="newWidget.color = c"
+                                        style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; transition: all 0.15s; cursor: pointer;"
+                                        :style="'background:' + c + '; border-color:' + (newWidget.color === c ? '#1f2937' : 'transparent') + '; transform: scale(' + (newWidget.color === c ? '1.15' : '1') + '); box-shadow:' + (newWidget.color === c ? '0 2px 8px ' + c + '50' : 'none')">
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer — sleek -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-top: 1px solid #f3f4f6; background: #fafafa;">
+                        <button type="button" 
+                            x-show="widgetFormStep === 'form'"
+                            @click="widgetFormStep = 'catalog'"
+                            style="font-size: 12px; font-weight: 600; color: #6b7280; background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 8px; transition: all 0.15s;"
+                            onmouseover="this.style.background='#f3f4f6'; this.style.color='#374151'" onmouseout="this.style.background='none'; this.style.color='#6b7280'">
+                            <iconify-icon icon="solar:arrow-left-linear" width="15"></iconify-icon>
+                            Retour
+                        </button>
+                        <span x-show="widgetFormStep === 'catalog'"></span>
+                        <button type="button" 
+                            x-show="widgetFormStep === 'form'"
+                            @click="createWidget()"
+                            :disabled="!newWidget.label || widgetSaving"
+                            style="font-size: 12px; font-weight: 700; color: white; background: linear-gradient(135deg, #4361ee 0%, #6366f1 100%); border: none; cursor: pointer; padding: 8px 20px; border-radius: 10px; display: flex; align-items: center; gap: 6px; transition: all 0.2s; box-shadow: 0 3px 10px rgba(67,97,238,0.3);"
+                            onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 5px 16px rgba(67,97,238,0.4)'" 
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 10px rgba(67,97,238,0.3)'">
+                            <iconify-icon :icon="widgetSaving ? 'line-md:loading-twotone-loop' : 'solar:check-read-bold'" width="15"></iconify-icon>
+                            <span x-text="widgetSaving ? 'Création...' : 'Créer le widget'"></span>
+                        </button>
+                    </div>
+                    </div>
+                </div><!-- end centering wrapper -->
+            </div>
+        </template>
+
         <% ['classifications', 'attachments', 'smartdoc', 'lines', 'relations'].forEach(function(sectionId) { %>
             <% if (sectionId==='classifications' ) { %>
                         <!-- Dynamic Classifications (Shared Data) -->
-                        <div class="panel-sortable-item" data-panel-id="classifications">
+                        <div class="panel-sortable-item" data-panel-id="classifications" x-show="isPanelVisible('classifications')" x-collapse.duration.200ms>
                             <template x-if="designMode">
                                 <div class="panel-drag-handle">
                                     <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
@@ -387,7 +808,7 @@
                         <% } else if (sectionId==='attachments' && locals.entity && entity.enableAttachments) { %>
                             <!-- 📎 Attachments (Standalone Panel) -->
                             <% const sidebarSectionAttachments=locals.user?.preferences?.sidebar_section_attachments!==false; %>
-                            <div class="panel-sortable-item" data-panel-id="attachments">
+                            <div class="panel-sortable-item" data-panel-id="attachments" x-show="isPanelVisible('attachments')" x-collapse.duration.200ms>
                                 <template x-if="designMode">
                                     <div class="panel-drag-handle">
                                         <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
@@ -541,7 +962,7 @@
                             </div><!-- end panel-sortable-item attachments -->
                         <% } else if (sectionId==='smartdoc' && locals.entity && entity.enableAttachments) { %>
                             <!-- ✨ Documents modèles (Standalone Panel) -->
-                            <div class="panel-sortable-item" data-panel-id="smartdoc">
+                            <div class="panel-sortable-item" data-panel-id="smartdoc" x-show="isPanelVisible('smartdoc')" x-collapse.duration.200ms>
                                 <template x-if="designMode">
                                     <div class="panel-drag-handle">
                                         <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
@@ -861,7 +1282,7 @@
                                         <% const relColor = (rel.targetEntity && rel.targetEntity.color) || '#4361ee'; %>
                                         <% const relEntityName = (rel.targetEntity && rel.targetEntity.name) || rel.label || 'Relation'; %>
                                         <% const relEntitySlug = (rel.targetEntity && rel.targetEntity.slug) || ''; %>
-                                        <div class="panel-sortable-item" data-panel-id="relation-<%= rel.key %>">
+                                        <div class="panel-sortable-item" data-panel-id="relation-<%= rel.key %>" x-show="isPanelVisible('rel_<%= rel.key %>')" x-collapse.duration.200ms>
                                             <template x-if="designMode">
                                                 <div class="panel-drag-handle">
                                                     <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
@@ -1014,7 +1435,7 @@
                                     <% const invIcon = (invRel.targetEntity && invRel.targetEntity.icon) || 'solar:widget-bold-duotone'; %>
                                     <% const invColor = (invRel.targetEntity && invRel.targetEntity.color) || '#4361ee'; %>
                                     <% const invEntitySlug = (invRel.targetEntity && invRel.targetEntity.slug) || ''; %>
-                                    <div class="panel-sortable-item" data-panel-id="inv-relation-<%= invRel.key %>">
+                                    <div class="panel-sortable-item" data-panel-id="inv-relation-<%= invRel.key %>" x-show="isPanelVisible('inv_<%= invRel.key %>')" x-collapse.duration.200ms>
                                         <template x-if="designMode">
                                             <div class="panel-drag-handle">
                                                 <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
@@ -1069,7 +1490,7 @@
                             <% }) %>
                         <% } else if (sectionId==='lines') { %>
                             <!-- 📊 Tableau Dynamique Panel -->
-                            <div class="panel-sortable-item" data-panel-id="lines">
+                            <div class="panel-sortable-item" data-panel-id="lines" x-show="isPanelVisible('lines')" x-collapse.duration.200ms>
                                 <template x-if="designMode">
                                     <div class="panel-drag-handle">
                                         <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
@@ -1085,7 +1506,7 @@
         <% if (locals.relatedCardWidgets && locals.relatedCardWidgets.length > 0) { %>
             <% locals.relatedCardWidgets.forEach(function(widget, widgetIdx) { %>
                 <% if (widget.cardTemplate) { %>
-                    <div class="panel-sortable-item" data-panel-id="card-widget-<%= widget.relationKey %>-<%= widgetIdx %>">
+                    <div class="panel-sortable-item" data-panel-id="card-widget-<%= widget.relationKey %>-<%= widgetIdx %>" x-show="isPanelVisible('card_<%= widget.relationKey %>_<%= widgetIdx %>')" x-collapse.duration.200ms>
                         <template x-if="designMode">
                             <div class="panel-drag-handle">
                                 <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
@@ -1135,6 +1556,141 @@
             <% }); %>
         <% } %>
 
+        <!-- 🧩 Custom Sidebar Widgets -->
+        <% if (entity.sidebarWidgets && entity.sidebarWidgets.length > 0) { %>
+            <% entity.sidebarWidgets.sort(function(a,b){ return (a.order||0) - (b.order||0) }).forEach(function(sw) { %>
+                <div class="panel-sortable-item" data-panel-id="sw-<%= sw._id %>" x-show="isPanelVisible('sw_<%= sw._id %>')" x-collapse.duration.200ms>
+                    <template x-if="designMode">
+                        <div class="panel-drag-handle">
+                            <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
+                            <span><%= sw.label %></span>
+                        </div>
+                    </template>
+
+                    <% if (sw.type === 'separator') { %>
+                        <!-- Separator Widget -->
+                        <div class="py-2 px-1">
+                            <div class="border-t border-gray-200 dark:border-gray-700"></div>
+                        </div>
+                    <% } else { %>
+                        <div class="panel !p-0 overflow-hidden group/widget" x-data="{ swOpen: true }">
+                            <!-- Widget Header -->
+                            <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-700/30">
+                                <div class="flex items-center gap-2 cursor-pointer flex-1" @click="swOpen = !swOpen">
+                                    <div class="w-6 h-6 rounded-lg flex items-center justify-center flex-none" style="background: <%= sw.color || '#4361ee' %>15;">
+                                        <iconify-icon icon="<%= sw.icon || 'solar:widget-bold-duotone' %>" width="12" style="color: <%= sw.color || '#4361ee' %>"></iconify-icon>
+                                    </div>
+                                    <span class="text-[11px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide"><%= sw.label %></span>
+                                </div>
+                                <div class="flex items-center gap-0.5 flex-none">
+                                    <!-- Edit button -->
+                                    <button type="button"
+                                        @click="editWidget('<%= sw._id %>', '<%= sw.type %>', '<%= (sw.label || '').replace(/'/g, "\\'") %>', '<%= sw.icon %>', '<%= sw.color %>', JSON.parse(decodeURIComponent('<%= encodeURIComponent(JSON.stringify(sw.config || {})) %>')))"
+                                        class="w-5 h-5 rounded-md flex items-center justify-center text-gray-300 hover:text-primary hover:bg-primary/5 opacity-0 group-hover/widget:opacity-100 transition-all">
+                                        <iconify-icon icon="solar:pen-2-bold-duotone" width="10"></iconify-icon>
+                                    </button>
+                                    <!-- Delete button -->
+                                    <button type="button"
+                                        @click="if(confirm('Supprimer ce widget ?')) deleteWidget('<%= sw._id %>')"
+                                        class="w-5 h-5 rounded-md flex items-center justify-center text-gray-300 hover:text-danger hover:bg-danger/5 opacity-0 group-hover/widget:opacity-100 transition-all">
+                                        <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="10"></iconify-icon>
+                                    </button>
+                                    <button type="button" @click="swOpen = !swOpen"
+                                        class="w-5 h-5 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all">
+                                        <iconify-icon :icon="swOpen ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'" width="12"></iconify-icon>
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Widget Content -->
+                            <div x-show="swOpen" x-collapse>
+                                <div class="p-3">
+                                    <% if (sw.type === 'html') { %>
+                                        <div class="prose prose-sm max-w-none dark:prose-invert text-[12px]"><%- (sw.config && sw.config.content) || '' %></div>
+                                    <% } else if (sw.type === 'note') { %>
+                                        <div class="flex gap-2.5">
+                                            <div class="w-1 rounded-full flex-none" style="background: <%= sw.color || '#4361ee' %>30;"></div>
+                                            <p class="text-[12px] text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed m-0"><%= (sw.config && sw.config.content) || '' %></p>
+                                        </div>
+                                    <% } else if (sw.type === 'link') { %>
+                                        <a href="<%= (sw.config && sw.config.url) || '#' %>" target="<%= (sw.config && sw.config.newTab) ? '_blank' : '_self' %>" rel="noopener"
+                                            class="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/40 hover:bg-primary/5 transition-all group/link no-underline">
+                                            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-none" style="background: <%= sw.color || '#4361ee' %>15;">
+                                                <iconify-icon icon="solar:link-round-bold-duotone" width="16" style="color: <%= sw.color || '#4361ee' %>"></iconify-icon>
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="text-[12px] font-semibold text-gray-700 dark:text-gray-200 truncate"><%= (sw.config && sw.config.url) || '' %></div>
+                                                <% if (sw.config && sw.config.description) { %>
+                                                    <div class="text-[10px] text-gray-400 truncate mt-0.5"><%= sw.config.description %></div>
+                                                <% } %>
+                                            </div>
+                                            <iconify-icon icon="solar:arrow-right-up-linear" width="14" class="text-gray-300 group-hover/link:text-primary transition-colors flex-none"></iconify-icon>
+                                        </a>
+                                    <% } else if (sw.type === 'iframe') { %>
+                                        <iframe src="<%= (sw.config && sw.config.url) || '' %>" 
+                                            style="width: 100%; height: <%= (sw.config && sw.config.height) || 200 %>px; border: none; border-radius: 8px;"
+                                            loading="lazy" sandbox="allow-scripts allow-same-origin"></iframe>
+                                    <% } else if (sw.type === 'image') { %>
+                                        <img src="<%= (sw.config && sw.config.url) || '' %>" alt="<%= (sw.config && sw.config.alt) || sw.label %>"
+                                            class="w-full rounded-lg object-contain" style="max-height: 300px;">
+                                    <% } else if (sw.type === 'links-group') { %>
+                                        <div class="space-y-1">
+                                            <% ((sw.config && sw.config.links) || []).forEach(function(lnk) { %>
+                                                <a href="<%= lnk.url || '#' %>" target="<%= lnk.target || '_blank' %>" rel="noopener"
+                                                    class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors no-underline group/lnk">
+                                                    <iconify-icon icon="<%= lnk.icon || 'solar:link-round-bold-duotone' %>" width="14" style="color: <%= sw.color || '#4361ee' %>"></iconify-icon>
+                                                    <span class="text-[12px] font-medium text-gray-600 dark:text-gray-300 truncate"><%= lnk.label || lnk.url %></span>
+                                                    <iconify-icon icon="solar:arrow-right-up-linear" width="12" class="text-gray-300 group-hover/lnk:text-primary transition-colors ml-auto flex-none"></iconify-icon>
+                                                </a>
+                                            <% }) %>
+                                        </div>
+                                    <% } else if (sw.type === 'tasks') { %>
+                                        <div class="space-y-1" x-data="{ tasks: JSON.parse(decodeURIComponent('<%= encodeURIComponent(JSON.stringify((sw.config && sw.config.tasks) || [])) %>')) }">
+                                            <template x-for="(task, tidx) in tasks" :key="tidx">
+                                                <label style="display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 8px; cursor: pointer; transition: background 0.15s;"
+                                                    onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='transparent'">
+                                                    <div @click.prevent="task.done = !task.done; $nextTick(() => { toggleTaskItem('<%= sw._id %>', tidx, task.done) })"
+                                                        :style="'width:18px; height:18px; border-radius:5px; border:2px solid ' + (task.done ? '<%= sw.color || '#4361ee' %>' : '#d1d5db') + '; background:' + (task.done ? '<%= sw.color || '#4361ee' %>' : 'transparent') + '; display:flex; align-items:center; justify-content:center; transition:all 0.2s; flex-shrink:0; cursor:pointer;'">
+                                                        <iconify-icon x-show="task.done" icon="solar:check-read-bold" width="12" style="color: white;"></iconify-icon>
+                                                    </div>
+                                                    <span :style="'font-size:12px; transition:all 0.2s; ' + (task.done ? 'text-decoration:line-through; color:#9ca3af' : 'color:#4b5563')" x-text="task.label"></span>
+                                                </label>
+                                            </template>
+                                            <!-- Add task inline -->
+                                            <div style="padding: 4px 8px;">
+                                                <div style="display: flex; align-items: center; gap: 6px;">
+                                                    <input type="text" x-ref="newTaskInput_<%= sw._id %>" 
+                                                        placeholder="Nouvelle tâche..."
+                                                        @keydown.enter.prevent="if($el.value.trim()) { tasks.push({label: $el.value.trim(), done: false}); addTaskItem('<%= sw._id %>', $el.value.trim()); $el.value = ''; }"
+                                                        style="flex:1; font-size:11px; border:none; outline:none; background:transparent; color:#6b7280; padding:4px 0;">
+                                                    <button type="button" 
+                                                        @click="const inp = $refs['newTaskInput_<%= sw._id %>']; if(inp && inp.value.trim()) { tasks.push({label: inp.value.trim(), done: false}); addTaskItem('<%= sw._id %>', inp.value.trim()); inp.value = ''; }"
+                                                        style="width:20px; height:20px; border-radius:6px; border:none; background:transparent; color:#9ca3af; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.15s;"
+                                                        onmouseover="this.style.color='<%= sw.color || '#4361ee' %>'; this.style.background='<%= sw.color || '#4361ee' %>10'" 
+                                                        onmouseout="this.style.color='#9ca3af'; this.style.background='transparent'">
+                                                        <iconify-icon icon="solar:add-circle-bold" width="14"></iconify-icon>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <!-- Progress bar -->
+                                            <div x-show="tasks.length > 0" style="padding: 6px 8px 2px;">
+                                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                                    <span style="font-size: 10px; color: #9ca3af; font-weight: 600;" x-text="tasks.filter(t => t.done).length + '/' + tasks.length + ' terminées'"></span>
+                                                    <span style="font-size: 10px; font-weight: 700;" :style="'color: <%= sw.color || '#4361ee' %>'" x-text="tasks.length > 0 ? Math.round(tasks.filter(t => t.done).length / tasks.length * 100) + '%' : '0%'"></span>
+                                                </div>
+                                                <div style="width: 100%; height: 4px; border-radius: 999px; background: #f3f4f6; overflow: hidden;">
+                                                    <div style="height: 100%; border-radius: 999px; transition: width 0.4s ease; background: <%= sw.color || '#4361ee' %>;" :style="'width:' + (tasks.length > 0 ? (tasks.filter(t => t.done).length / tasks.length * 100) : 0) + '%'"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
+            <% }) %>
+        <% } %>
+
     </div>
 
     <style>
@@ -1179,12 +1735,81 @@
         document.addEventListener("alpine:init", () => {
             Alpine.data("recordSidebar", () => ({
                 classificationsOpen: true,
+                // Panel visibility preferences (all visible by default)
+                panelVisibility: JSON.parse('<%= JSON.stringify((locals.user && locals.user.preferences && locals.user.preferences.sidebar_panels) || {}) %>'),
+
                 init() {
                     // Drag & drop is handled by panelLayout.initPanelSortables() in record-edit.ejs
                     window.addEventListener('save-pref', (e) => {
                         this.savePreference(e.detail.key, e.detail.value);
                     });
+                    // Load panel visibility preferences from server
+                    this.loadPanelVisibility();
                 },
+
+                async loadPanelVisibility() {
+                    try {
+                        const res = await fetch(`/account/<%= account_number %>/api/user/view-preferences/entity_<%= entity._id %>_sidebar`, {
+                            credentials: 'include'
+                        });
+                        const data = await res.json();
+                        if (data.success && data.preferences?.sidebar_panels) {
+                            this.panelVisibility = data.preferences.sidebar_panels;
+                        }
+                    } catch (e) { /* ignore — use defaults */ }
+                },
+
+                // Panel management methods
+                isPanelVisible(panelId) {
+                    // Default: all panels are visible (undefined = visible)
+                    return this.panelVisibility[panelId] !== false;
+                },
+
+                togglePanel(panelId) {
+                    const current = this.isPanelVisible(panelId);
+                    this.panelVisibility[panelId] = !current;
+                    this.savePanelVisibility();
+                },
+
+                showAllPanels() {
+                    // Set all known panels to visible
+                    Object.keys(this.panelVisibility).forEach(k => {
+                        this.panelVisibility[k] = true;
+                    });
+                    this.savePanelVisibility();
+                },
+
+                hideAllPanels() {
+                    // Get all panel IDs from the DOM
+                    const panels = document.querySelectorAll('#sidebar-inner-sortable [data-panel-id]');
+                    panels.forEach(p => {
+                        const id = p.dataset.panelId;
+                        if (id) {
+                            // Convert data-panel-id format to panel manager format
+                            let key = id;
+                            if (id.startsWith('relation-')) key = 'rel_' + id.replace('relation-', '');
+                            else if (id.startsWith('inv-relation-')) key = 'inv_' + id.replace('inv-relation-', '');
+                            else if (id.startsWith('card-widget-')) key = 'card_' + id.replace('card-widget-', '').replace(/-/g, '_');
+                            this.panelVisibility[key] = false;
+                        }
+                    });
+                    this.savePanelVisibility();
+                },
+
+                async savePanelVisibility() {
+                    try {
+                        await fetch(`/account/<%= account_number %>/api/user/view-preferences`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                viewId: 'entity_<%= entity._id %>_sidebar',
+                                preferences: { sidebar_panels: JSON.parse(JSON.stringify(this.panelVisibility)) }
+                            })
+                        });
+                    } catch (e) { console.error('Failed to save panel visibility', e); }
+                },
+
                 async savePreference(key, value) {
                     try {
                         await fetch('/user/preferences', {
@@ -1193,6 +1818,163 @@
                             body: JSON.stringify({ key, value })
                         });
                     } catch (e) { console.error('Failed to save preference', e); }
+                },
+
+                // ═══ Widget Catalog & CRUD ═══
+                widgetCatalogOpen: false,
+                widgetFormStep: 'catalog',  // 'catalog' | 'form'
+                widgetSaving: false,
+                editingWidgetId: null,
+                newWidget: {
+                    type: '',
+                    label: '',
+                    icon: 'solar:widget-bold-duotone',
+                    color: '#4361ee',
+                    config: {}
+                },
+                widgetTypeLabels: {
+                    'html': 'HTML — Contenu personnalisé',
+                    'link': 'Lien — URL externe',
+                    'note': 'Note — Memo / instruction',
+                    'iframe': 'iFrame — Page web intégrée',
+                    'image': 'Image — Visuel / logo',
+                    'links-group': 'Liens Rapides — Groupe de liens',
+                    'separator': 'Séparateur — Ligne visuelle',
+                    'tasks': 'Tasks — Checklist de tâches'
+                },
+
+                selectWidgetType(type) {
+                    const defaults = {
+                        'html': { label: 'HTML', icon: 'solar:code-bold-duotone', color: '#f97316', config: { content: '' } },
+                        'link': { label: 'Lien', icon: 'solar:link-round-bold-duotone', color: '#3b82f6', config: { url: '', description: '', newTab: true } },
+                        'note': { label: 'Note', icon: 'solar:notes-bold-duotone', color: '#f59e0b', config: { content: '' } },
+                        'iframe': { label: 'iFrame', icon: 'solar:monitor-bold-duotone', color: '#06b6d4', config: { url: '', height: 200 } },
+                        'image': { label: 'Image', icon: 'solar:gallery-bold-duotone', color: '#10b981', config: { url: '', alt: '' } },
+                        'links-group': { label: 'Liens Rapides', icon: 'solar:bookmark-bold-duotone', color: '#8b5cf6', config: { links: [{ label: '', url: '', icon: '', target: '_blank' }] } },
+                        'separator': { label: 'Séparateur', icon: 'solar:minus-circle-bold-duotone', color: '#9ca3af', config: {} },
+                        'tasks': { label: 'Tasks', icon: 'solar:checklist-bold-duotone', color: '#ec4899', config: { tasks: [{ label: '', done: false }] } }
+                    };
+                    const d = defaults[type] || {};
+                    this.newWidget = {
+                        type,
+                        label: d.label || '',
+                        icon: d.icon || 'solar:widget-bold-duotone',
+                        color: d.color || '#4361ee',
+                        config: JSON.parse(JSON.stringify(d.config || {}))
+                    };
+                    // Separator is instant — no form needed
+                    if (type === 'separator') {
+                        this.createWidget();
+                    } else {
+                        this.widgetFormStep = 'form';
+                    }
+                },
+
+                async createWidget() {
+                    this.widgetSaving = true;
+                    try {
+                        const entityId = '<%= entity._id %>';
+                        const url = this.editingWidgetId
+                            ? `/account/<%= account_number %>/api/entity/${entityId}/sidebar-widgets/${this.editingWidgetId}`
+                            : `/account/<%= account_number %>/api/entity/${entityId}/sidebar-widgets`;
+                        const method = this.editingWidgetId ? 'PUT' : 'POST';
+
+                        const res = await fetch(url, {
+                            method,
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify(this.newWidget)
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.widgetCatalogOpen = false;
+                            this.resetWidgetForm();
+                            // Reload page to show the new widget
+                            window.location.reload();
+                        } else {
+                            alert(data.error || 'Erreur lors de la sauvegarde');
+                        }
+                    } catch (e) {
+                        console.error('Widget create error:', e);
+                        alert('Erreur lors de la création du widget');
+                    } finally {
+                        this.widgetSaving = false;
+                    }
+                },
+
+                editWidget(widgetId, type, label, icon, color, config) {
+                    this.editingWidgetId = widgetId;
+                    this.newWidget = { type, label, icon, color, config: JSON.parse(JSON.stringify(config)) };
+                    this.widgetFormStep = 'form';
+                    this.widgetCatalogOpen = true;
+                },
+
+                async deleteWidget(widgetId) {
+                    try {
+                        const entityId = '<%= entity._id %>';
+                        const res = await fetch(`/account/<%= account_number %>/api/entity/${entityId}/sidebar-widgets/${widgetId}`, {
+                            method: 'DELETE',
+                            credentials: 'include'
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            window.location.reload();
+                        }
+                    } catch (e) {
+                        console.error('Widget delete error:', e);
+                    }
+                },
+
+                resetWidgetForm() {
+                    this.widgetFormStep = 'catalog';
+                    this.editingWidgetId = null;
+                    this.newWidget = { type: '', label: '', icon: 'solar:widget-bold-duotone', color: '#4361ee', config: {} };
+                },
+
+                // Tasks widget — toggle a task item's done state & persist
+                async toggleTaskItem(widgetId, taskIndex, done) {
+                    try {
+                        const entityId = '<%= entity._id %>';
+                        // First GET current widget config from DOM-local Alpine data
+                        // We need to read the full tasks array from the x-data scope
+                        const widgetEl = document.querySelector(`[data-panel-id="sw-${widgetId}"]`);
+                        if (!widgetEl) return;
+                        const tasksScope = widgetEl.querySelector('[x-data*="tasks"]');
+                        if (!tasksScope && !tasksScope.__x) return;
+                        const alpineData = Alpine.$data(tasksScope);
+                        if (!alpineData || !alpineData.tasks) return;
+                        
+                        await fetch(`/account/<%= account_number %>/api/entity/${entityId}/sidebar-widgets/${widgetId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ config: { tasks: alpineData.tasks } })
+                        });
+                    } catch (e) {
+                        console.error('Task toggle error:', e);
+                    }
+                },
+
+                // Tasks widget — add a new task item & persist
+                async addTaskItem(widgetId, label) {
+                    try {
+                        const entityId = '<%= entity._id %>';
+                        const widgetEl = document.querySelector(`[data-panel-id="sw-${widgetId}"]`);
+                        if (!widgetEl) return;
+                        const tasksScope = widgetEl.querySelector('[x-data*="tasks"]');
+                        if (!tasksScope) return;
+                        const alpineData = Alpine.$data(tasksScope);
+                        if (!alpineData || !alpineData.tasks) return;
+                        
+                        await fetch(`/account/<%= account_number %>/api/entity/${entityId}/sidebar-widgets/${widgetId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ config: { tasks: alpineData.tasks } })
+                        });
+                    } catch (e) {
+                        console.error('Task add error:', e);
+                    }
                 }
             }));
 

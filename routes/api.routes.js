@@ -736,7 +736,9 @@ router.post('/api/user/view-preferences', async (req, res) => {
             // Kanban
             'kanban',
             // Relation tabs (record edit)
-            'relationTabs'
+            'relationTabs',
+            // Sidebar panel visibility
+            'sidebar_panels'
         ]
 
         prefKeys.forEach(key => {
@@ -1492,6 +1494,106 @@ function getCardPresets() {
         },
     ]
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 🧩 Sidebar Widgets CRUD
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * POST /account/:account_number/api/entity/:entityId/sidebar-widgets
+ * Create a new sidebar widget
+ */
+router.post('/api/entity/:entityId/sidebar-widgets', async (req, res) => {
+    try {
+        const Entity = await tenantCollection(req, "Entity")
+        const { entityId } = req.params
+        const { type, label, icon, color, config } = req.body
+
+        if (!type || !label) {
+            return res.status(400).json({ error: 'type and label are required' })
+        }
+
+        const entity = await Entity.findById(entityId)
+        if (!entity) return res.status(404).json({ error: 'Entity not found' })
+
+        const maxOrder = (entity.sidebarWidgets || []).reduce((max, w) => Math.max(max, w.order || 0), -1)
+
+        const widget = {
+            type,
+            label,
+            icon: icon || 'solar:widget-bold-duotone',
+            color: color || '#4361ee',
+            order: maxOrder + 1,
+            visible: true,
+            config: config || {}
+        }
+
+        entity.sidebarWidgets = entity.sidebarWidgets || []
+        entity.sidebarWidgets.push(widget)
+        await entity.save()
+
+        const created = entity.sidebarWidgets[entity.sidebarWidgets.length - 1]
+        res.json({ success: true, widget: created })
+
+    } catch (error) {
+        console.error('[API] Sidebar widget create error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * PUT /account/:account_number/api/entity/:entityId/sidebar-widgets/:widgetId
+ * Update a sidebar widget
+ */
+router.put('/api/entity/:entityId/sidebar-widgets/:widgetId', async (req, res) => {
+    try {
+        const Entity = await tenantCollection(req, "Entity")
+        const { entityId, widgetId } = req.params
+        const { type, label, icon, color, config, visible } = req.body
+
+        const entity = await Entity.findById(entityId)
+        if (!entity) return res.status(404).json({ error: 'Entity not found' })
+
+        const widget = (entity.sidebarWidgets || []).id(widgetId)
+        if (!widget) return res.status(404).json({ error: 'Widget not found' })
+
+        if (type !== undefined) widget.type = type
+        if (label !== undefined) widget.label = label
+        if (icon !== undefined) widget.icon = icon
+        if (color !== undefined) widget.color = color
+        if (config !== undefined) widget.config = config
+        if (visible !== undefined) widget.visible = visible
+
+        await entity.save()
+        res.json({ success: true, widget })
+
+    } catch (error) {
+        console.error('[API] Sidebar widget update error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * DELETE /account/:account_number/api/entity/:entityId/sidebar-widgets/:widgetId
+ * Delete a sidebar widget
+ */
+router.delete('/api/entity/:entityId/sidebar-widgets/:widgetId', async (req, res) => {
+    try {
+        const Entity = await tenantCollection(req, "Entity")
+        const { entityId, widgetId } = req.params
+
+        const entity = await Entity.findById(entityId)
+        if (!entity) return res.status(404).json({ error: 'Entity not found' })
+
+        entity.sidebarWidgets = (entity.sidebarWidgets || []).filter(w => w._id.toString() !== widgetId)
+        await entity.save()
+        res.json({ success: true })
+
+    } catch (error) {
+        console.error('[API] Sidebar widget delete error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
 
 module.exports = router
 

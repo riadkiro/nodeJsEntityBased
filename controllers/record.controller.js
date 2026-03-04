@@ -1294,7 +1294,12 @@ module.exports = {
                             }
                         }
 
-                        for (const relRec of relRecs) {
+                        // Only create card widgets for DIRECT relations (not inverse)
+                        // Inverse relations are already displayed in the summary section of the EJS template
+                        // For direct relations, show only ONE card widget (the first related record)
+                        if (rel.direction === 'direct') {
+                            // Direct relation: show 1 card widget for the first related record
+                            const relRec = relRecs[0];
                             relatedCardWidgets.push({
                                 relationKey: rel.key,
                                 relationLabel: rel.label || tgt.name || 'Relation',
@@ -1325,6 +1330,7 @@ module.exports = {
                                 }
                             });
                         }
+                        // Inverse relations: skip card widgets — already shown in inverse relations summary
                     }
                 }
             } catch (cardWidgetErr) {

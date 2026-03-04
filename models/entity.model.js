@@ -164,6 +164,32 @@ const EntitySchema = new mongoose.Schema(
       type: Boolean,
       default: true
     },
+    // 🧩 Custom sidebar widgets
+    sidebarWidgets: [{
+      _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
+      type: {
+        type: String,
+        enum: ['html', 'link', 'iframe', 'note', 'separator', 'image', 'links-group', 'tasks'],
+        required: true
+      },
+      label: { type: String, required: true },
+      icon: { type: String, default: 'solar:widget-bold-duotone' },
+      color: { type: String, default: '#4361ee' },
+      order: { type: Number, default: 0 },
+      visible: { type: Boolean, default: true },
+      config: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
+        // html: { content: '<p>...</p>' }
+        // link: { url: 'https://...', target: '_blank', description: '' }
+        // iframe: { url: 'https://...', height: 200 }
+        // note: { content: 'some text...' }
+        // separator: {}
+        // image: { url: '/uploads/...', alt: '' }
+        // links-group: { links: [{ label, url, icon, target }] }
+        // tasks: { tasks: [{ label: 'Do this', done: false }] }
+      }
+    }],
     // 📊 DataGrid schemas attached to this entity
     gridSchemas: [{
       schemaId: { type: mongoose.Schema.Types.ObjectId, ref: 'LineSchema' },

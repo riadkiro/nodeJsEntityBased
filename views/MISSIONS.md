@@ -23,8 +23,9 @@ Reproduire l'interface de image-42.png : page Consultation avec header, zone foc
 - ✅ Icônes affichées à côté de chaque label via field.ui.icon
 
 #### Phase 5 : Tableaux Dynamiques
-- [ ] Tabs multi-tableaux quand l'entité en a plusieurs
-- [ ] Barre actions rapides en bas (Ajouter traitement, Ctrl+O Ordonnance, Ctrl+E Examen)
+- ✅ Tabs multi-tableaux quand l'entité en a plusieurs (record-lines.ejs gère déjà N schemas avec panels individuels)
+- ✅ LineSchemas prescription_v1 + invoice_v1 intégrés au seed et attachés aux entities (gridSchemas)
+- [ ] Barre actions rapides en bas (Ajouter traitement, Ctrl+O Ordonnance, Ctrl+E Examen) — future feature
 
 #### Phase 6 : Symptômes en mode tag/chip ✅
 - ✅ Entité Symptômes avec 20 records (Fatigue, Toux, Céphalées, Douleur thoracique...)

@@ -744,34 +744,53 @@
         </div>
     </template>
 
-    <!-- One panel per schema -->
-    <template x-for="schema in schemas" :key="schema._id">
-        <div class="panel !p-0 overflow-hidden" :class="schemas.indexOf(schema) > 0 ? 'mt-4' : ''">
-            <!-- Schema Panel Header -->
-            <div class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
-                @click="toggleSchemaOpen(schema._id)">
-                <div class="flex items-center gap-1.5">
-                    <iconify-icon :icon="getSchemaInputMode(schema) === 'form' ? 'solar:heart-pulse-bold-duotone' : getSchemaInputMode(schema) === 'table' ? 'solar:notebook-bold-duotone' : 'solar:document-text-bold-duotone'" width="14" class="text-success"></iconify-icon>
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400" x-text="schema.name"></span>
-                    <span x-show="getSchemaLines(schema._id).length > 0" class="text-[9px] bg-success/10 text-success min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1" x-text="getSchemaLines(schema._id).length"></span>
-                </div>
-                <div class="flex items-center gap-1">
-                    <!-- Template picker button (shown when templates available) -->
-                    <button x-show="getTemplatesForSchema(schema._id).length > 0"
-                            @click.stop="activeSchemaId = schema._id; templatePicker[schema._id] = !templatePicker[schema._id]"
-                            class="dg-analytics-tab" :class="{ 'active': templatePicker[schema._id] }"
-                            style="padding: 2px 6px; font-size: 10px;" title="Modèles">
-                        <iconify-icon icon="solar:clipboard-list-bold-duotone" width="12"></iconify-icon>
-                        <span x-text="getTemplatesForSchema(schema._id).length" class="text-[9px]"></span>
+    <!-- Single panel with tabs when multiple schemas -->
+    <template x-if="!loading && schemas.length > 0">
+        <div class="panel !p-0 overflow-hidden">
+            <!-- Tab bar (shown only when multiple schemas) -->
+            <div x-show="schemas.length > 1"
+                 class="flex items-center gap-1 px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 overflow-x-auto" style="scrollbar-width: none;">
+                <template x-for="schema in schemas" :key="schema._id">
+                    <button type="button"
+                        class="lp-schema-pill"
+                        :class="{ 'active': activeSchemaId === schema._id }"
+                        @click="activeSchemaId = schema._id">
+                        <iconify-icon :icon="getSchemaInputMode(schema) === 'form' ? 'solar:heart-pulse-bold-duotone' : getSchemaInputMode(schema) === 'table' ? 'solar:notebook-bold-duotone' : 'solar:document-text-bold-duotone'" width="12"></iconify-icon>
+                        <span x-text="schema.label || schema.name"></span>
+                        <span x-show="getSchemaLines(schema._id).length > 0" class="text-[9px] bg-success/10 text-success min-w-[14px] h-3.5 rounded-full flex items-center justify-center font-bold px-1" x-text="getSchemaLines(schema._id).length"></span>
                     </button>
-                    <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="isSchemaOpen(schema._id) ? '' : '-rotate-90'" class="transition-transform text-gray-300"></iconify-icon>
-                </div>
+                </template>
             </div>
 
-            <!-- Schema Body -->
-            <div x-show="isSchemaOpen(schema._id)" x-collapse
-                 @click="activeSchemaId = schema._id"
-                 @focusin="activeSchemaId = schema._id">
+            <!-- Schema content (one at a time) -->
+            <template x-for="schema in schemas" :key="schema._id">
+                <div x-show="activeSchemaId === schema._id">
+                    <!-- Schema Panel Header (single schema only — tab bar replaces this when multi) -->
+                    <div x-show="schemas.length === 1"
+                         class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
+                         @click="toggleSchemaOpen(schema._id)">
+                        <div class="flex items-center gap-1.5">
+                            <iconify-icon :icon="getSchemaInputMode(schema) === 'form' ? 'solar:heart-pulse-bold-duotone' : getSchemaInputMode(schema) === 'table' ? 'solar:notebook-bold-duotone' : 'solar:document-text-bold-duotone'" width="14" class="text-success"></iconify-icon>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400" x-text="schema.name"></span>
+                            <span x-show="getSchemaLines(schema._id).length > 0" class="text-[9px] bg-success/10 text-success min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1" x-text="getSchemaLines(schema._id).length"></span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <!-- Template picker button (shown when templates available) -->
+                            <button x-show="getTemplatesForSchema(schema._id).length > 0"
+                                    @click.stop="activeSchemaId = schema._id; templatePicker[schema._id] = !templatePicker[schema._id]"
+                                    class="dg-analytics-tab" :class="{ 'active': templatePicker[schema._id] }"
+                                    style="padding: 2px 6px; font-size: 10px;" title="Modèles">
+                                <iconify-icon icon="solar:clipboard-list-bold-duotone" width="12"></iconify-icon>
+                                <span x-text="getTemplatesForSchema(schema._id).length" class="text-[9px]"></span>
+                            </button>
+                            <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="isSchemaOpen(schema._id) ? '' : '-rotate-90'" class="transition-transform text-gray-300"></iconify-icon>
+                        </div>
+                    </div>
+
+                    <!-- Schema Body (always open when multi-tab, toggle when single) -->
+                    <div x-show="schemas.length > 1 || isSchemaOpen(schema._id)" x-collapse
+                         @click="activeSchemaId = schema._id"
+                         @focusin="activeSchemaId = schema._id">
 
                 <!-- ═══ Analytics Toggle Bar (for schemas with analytics) ═══ -->
                 <div x-show="schema.analyticsConfig && schema.analyticsConfig.enabled"
@@ -1308,7 +1327,9 @@
                     </span>
                 </div>
             </div><!-- end schema body -->
-        </div><!-- end panel -->
+                </div><!-- end schema content -->
+            </template><!-- end schema loop -->
+        </div><!-- end single panel -->
     </template>
 
     <!-- ═══ Add Lines Modal ═══ -->

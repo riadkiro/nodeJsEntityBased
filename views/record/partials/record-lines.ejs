@@ -2023,6 +2023,27 @@ document.addEventListener('alpine:init', () => {
                     ];
                 }
 
+                // Seed 3 empty rows for schemas with no data (table/catalog modes)
+                for (const s of this.schemas) {
+                    if ((this.linesMap[s._id] || []).length === 0) {
+                        const emptyRows = [];
+                        for (let i = 0; i < 3; i++) {
+                            const values = {};
+                            for (const col of (s.columns || []).filter(c => c.visible !== false)) {
+                                values[col.key] = '';
+                            }
+                            emptyRows.push({
+                                _tempId: 'empty_' + s._id + '_' + i,
+                                lineType: s.defaultLineType || s.lineTypes?.[0] || 'default',
+                                values,
+                                computed: {},
+                                order: i
+                            });
+                        }
+                        this.linesMap[s._id] = emptyRows;
+                    }
+                }
+
                 // Recompute formulas for each schema
                 for (const s of this.schemas) {
                     this.activeSchemaId = s._id;

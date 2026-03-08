@@ -695,7 +695,17 @@
 
                     <!-- Custom Tab Content — Layout Builder (rows/panels like cockpit) -->
                     <template x-if="activeTabMeta && activeTabMeta.isCustom">
-                        <div class="p-4" style="background: #f7f8fa;">
+                        <div class="p-4" :style="ctEditMode ? 'background: #f7f8fa;' : 'background: transparent;'">
+                            <!-- Header bar with edit toggle -->
+                            <div style="display: flex; align-items: center; justify-content: flex-end; margin-bottom: 12px; gap: 8px;">
+                                <button type="button" @click="ctEditMode = !ctEditMode"
+                                        :style="ctEditMode ? 'background: var(--primary-color, #4361ee); color: white; border: 1px solid var(--primary-color, #4361ee);' : 'background: white; color: #6b7280; border: 1px solid #e5e7eb;'"
+                                        style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;">
+                                    <iconify-icon :icon="ctEditMode ? 'solar:eye-bold' : 'solar:pen-new-round-bold'" width="14"></iconify-icon>
+                                    <span x-text="ctEditMode ? 'Aperçu' : 'Modifier'"></span>
+                                </button>
+                            </div>
+
                             <!-- Empty State (no rows yet) -->
                             <template x-if="!getTabRows(activeTab) || getTabRows(activeTab).length === 0">
                                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; border: 2px dashed #d1d5db; border-radius: 12px; background: white;">
@@ -712,13 +722,14 @@
                             <!-- Rows -->
                             <div style="display: flex; flex-direction: column; gap: 16px;">
                                 <template x-for="(row, rowIndex) in getTabRows(activeTab)" :key="row.id">
-                                    <div style="position: relative; padding-top: 36px; overflow: visible;"
+                                    <div :style="'position: relative; overflow: visible;' + (ctEditMode ? 'padding-top: 36px;' : '')"
                                          x-data="{ rowHover: false }"
                                          @mouseenter="rowHover = true"
                                          @mouseleave="rowHover = false">
 
-                                        <!-- Row Toolbar (hover) -->
-                                        <div :style="'position: absolute; top: 4px; left: 50%; transform: translateX(-50%); background: white; border-radius: 8px; padding: 3px; z-index: 50; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 2px 8px rgba(0,0,0,0.08); white-space: nowrap;' + (rowHover ? 'opacity:1; pointer-events:auto; visibility:visible;' : 'opacity:0; pointer-events:none; visibility:hidden;')"
+                                        <!-- Row Toolbar (hover, edit mode only) -->
+                                        <div x-show="ctEditMode"
+                                             :style="'position: absolute; top: 4px; left: 50%; transform: translateX(-50%); background: white; border-radius: 8px; padding: 3px; z-index: 50; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 2px 8px rgba(0,0,0,0.08); white-space: nowrap;' + (rowHover ? 'opacity:1; pointer-events:auto; visibility:visible;' : 'opacity:0; pointer-events:none; visibility:hidden;')"
                                              style="transition: opacity 0.15s ease;">
                                             <div style="display: flex; flex-direction: row; align-items: center; gap: 2px;">
                                                 <!-- Layout presets -->
@@ -773,16 +784,19 @@
 
                                             <!-- Columns -->
                                             <template x-for="(col, colIndex) in row.columns" :key="col.id">
-                                                <div :style="'grid-column: span ' + (col.width || Math.floor(12 / row.columns.length)) + '; position: relative; min-height: 90px; border: 2px dashed #d1d5db; border-radius: 12px; background: white; transition: border-color 0.15s;'"
-                                                     onmouseover="this.style.borderColor='#9ca3af'" onmouseout="this.style.borderColor='#d1d5db'">
+                                                <div :style="'grid-column: span ' + (col.width || Math.floor(12 / row.columns.length)) + '; position: relative; min-height:' + (ctEditMode ? '90px' : (col.blockId ? 'auto' : '0px')) + '; border-radius: 12px; background: white; transition: all 0.2s;' + (ctEditMode ? 'border: 2px dashed #d1d5db;' : (col.blockId ? 'border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.04);' : 'border: none;'))"
+                                                     :onmouseover="ctEditMode ? `this.style.borderColor='#9ca3af'` : ''"
+                                                     :onmouseout="ctEditMode ? `this.style.borderColor='#d1d5db'` : ''">
 
-                                                    <!-- Resize Handle (cockpit pattern: inside column, right edge) -->
-                                                    <div :style="'position: absolute; right: 0; top: 50%; transform: translate(50%, -50%); cursor: col-resize; z-index: 50; display: flex; align-items: center; transition: opacity 0.15s;' + (rowHover ? 'opacity:1; pointer-events:auto;' : 'opacity:0; pointer-events:none;')"
-                                                         @mousedown.prevent.stop="ctStartResize(activeTab, row.id, colIndex, $event)"
-                                                         class="text-gray-400 hover:text-primary">
-                                                        <iconify-icon icon="solar:alt-arrow-left-bold" width="12"></iconify-icon>
-                                                        <iconify-icon icon="solar:alt-arrow-right-bold" width="12" style="margin-left: -4px;"></iconify-icon>
-                                                    </div>
+                                                    <!-- Resize Handle (cockpit pattern: inside column, right edge, edit mode only) -->
+                                                    <template x-if="ctEditMode">
+                                                        <div :style="'position: absolute; right: 0; top: 50%; transform: translate(50%, -50%); cursor: col-resize; z-index: 50; display: flex; align-items: center; transition: opacity 0.15s;' + (rowHover ? 'opacity:1; pointer-events:auto;' : 'opacity:0; pointer-events:none;')"
+                                                             @mousedown.prevent.stop="ctStartResize(activeTab, row.id, colIndex, $event)"
+                                                             class="text-gray-400 hover:text-primary">
+                                                            <iconify-icon icon="solar:alt-arrow-left-bold" width="12"></iconify-icon>
+                                                            <iconify-icon icon="solar:alt-arrow-right-bold" width="12" style="margin-left: -4px;"></iconify-icon>
+                                                        </div>
+                                                    </template>
 
                                                     <!-- If column has a widget -->
                                                     <template x-if="col.blockId && getTabBlock(activeTab, col.blockId)">
@@ -793,11 +807,20 @@
                                                                 <div x-show="blockHover"
                                                                      style="position: absolute; top: 6px; right: 6px; display: flex; gap: 2px; z-index: 10;"
                                                                      x-cloak>
-                                                                    <button type="button" @click.stop="ctRemoveBlock(activeTab, row.id, col.id)"
-                                                                            title="Supprimer ce widget"
-                                                                            style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: none; cursor: pointer; background: rgba(231,81,90,0.1); color: #e7515a;">
-                                                                        <iconify-icon icon="solar:trash-bin-trash-bold" width="12"></iconify-icon>
+                                                                    <!-- Settings button (always) -->
+                                                                    <button type="button" @click.stop="ctConfigModal = { open: true, tabKey: activeTab, blockId: col.blockId }"
+                                                                            title="Configurer ce widget"
+                                                                            style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: none; cursor: pointer; background: rgba(67,97,238,0.1); color: #4361ee;">
+                                                                        <iconify-icon icon="solar:settings-bold" width="12"></iconify-icon>
                                                                     </button>
+                                                                    <!-- Delete button (edit mode only) -->
+                                                                    <template x-if="ctEditMode">
+                                                                        <button type="button" @click.stop="ctRemoveBlock(activeTab, row.id, col.id)"
+                                                                                title="Supprimer ce widget"
+                                                                                style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: none; cursor: pointer; background: rgba(231,81,90,0.1); color: #e7515a;">
+                                                                            <iconify-icon icon="solar:trash-bin-trash-bold" width="12"></iconify-icon>
+                                                                        </button>
+                                                                    </template>
                                                                 </div>
                                                                 <!-- Widget Content Render -->
                                                                 <div x-data="{ block: getTabBlock(activeTab, col.blockId) }" style="height: 100%;">
@@ -937,8 +960,8 @@
                                                         </div>
                                                     </template>
 
-                                                    <!-- Empty column: Add / Delete buttons -->
-                                                    <template x-if="!col.blockId">
+                                                    <!-- Empty column: Add / Delete buttons (edit mode only) -->
+                                                    <template x-if="!col.blockId && ctEditMode">
                                                         <div style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 100%; min-height: 90px;">
                                                             <!-- Add Widget Button -->
                                                             <button type="button"
@@ -964,8 +987,8 @@
                                 </template>
                             </div>
 
-                            <!-- Add Row Button (bottom) -->
-                            <template x-if="getTabRows(activeTab) && getTabRows(activeTab).length > 0">
+                            <!-- Add Row Button (bottom, edit mode only) -->
+                            <template x-if="ctEditMode && getTabRows(activeTab) && getTabRows(activeTab).length > 0">
                                 <div style="margin-top: 16px; display: flex; justify-content: center;">
                                     <button type="button" @click="ctAddRow(activeTab)"
                                             style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; color: #6b7280; border: 2px dashed #d1d5db; border-radius: 10px; background: transparent; cursor: pointer; font-size: 13px; transition: all 0.15s;"
@@ -1020,6 +1043,198 @@
                                     </button>
                                 </template>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- ═══ Widget Config Modal ═══ -->
+                    <div x-show="ctConfigModal.open"
+                         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                         style="display: none; position: fixed; inset: 0; z-index: 999; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); background: rgba(0,0,0,0.3);"
+                         class="flex items-center justify-center"
+                         @click.self="ctConfigModal.open = false"
+                         @keydown.escape.window="if(ctConfigModal.open) ctConfigModal.open = false"
+                         x-cloak>
+                        <div @click.stop
+                             style="background: white; border-radius: 16px; padding: 0; width: 100%; max-width: 480px; margin: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.06); overflow: hidden;"
+                             x-show="ctConfigModal.open"
+                             x-transition:enter="transition ease-out duration-200 delay-50"
+                             x-transition:enter-start="opacity-0 scale-95 translate-y-2" x-transition:enter-end="opacity-100 scale-100 translate-y-0">
+
+                            <template x-if="ctConfigModal.open && ctConfigModal.blockId">
+                                <div x-data="{ get cfgBlock() { return getTabBlock(ctConfigModal.tabKey, ctConfigModal.blockId) || {} } }">
+                                    <!-- Header -->
+                                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #f3f4f6;">
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <div style="width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;"
+                                                 :style="'background: ' + (ctWidgetCatalog.find(w => w.type === cfgBlock.type)?.bg || 'rgba(67,97,238,0.1)')">
+                                                <iconify-icon :icon="ctWidgetCatalog.find(w => w.type === cfgBlock.type)?.icon || 'solar:widget-bold-duotone'" width="18"
+                                                              :style="'color: ' + (ctWidgetCatalog.find(w => w.type === cfgBlock.type)?.color || '#4361ee')"></iconify-icon>
+                                            </div>
+                                            <div>
+                                                <h3 style="font-size: 15px; font-weight: 700; color: #111827; margin: 0;" x-text="'Configurer ' + (cfgBlock.title || 'Widget')"></h3>
+                                                <p style="font-size: 11px; color: #9ca3af; margin: 2px 0 0 0;" x-text="ctWidgetCatalog.find(w => w.type === cfgBlock.type)?.desc || ''"></p>
+                                            </div>
+                                        </div>
+                                        <button type="button" @click="ctConfigModal.open = false"
+                                                style="width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer; background: #f3f4f6; color: #6b7280; display: flex; align-items: center; justify-content: center;"
+                                                onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
+                                            <iconify-icon icon="tabler:x" width="16"></iconify-icon>
+                                        </button>
+                                    </div>
+
+                                    <!-- Config Body -->
+                                    <div style="padding: 20px;">
+                                        <!-- Common: Title -->
+                                        <div style="margin-bottom: 16px;">
+                                            <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Titre du widget</label>
+                                            <input type="text" :value="cfgBlock.title || ''"
+                                                   @input="cfgBlock.title = $el.value"
+                                                   style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.15s;"
+                                                   onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
+                                                   placeholder="Nom du widget...">
+                                        </div>
+
+                                        <!-- Notes-specific config -->
+                                        <template x-if="cfgBlock.type === 'notes'">
+                                            <div>
+                                                <div style="padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #f3f4f6;">
+                                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                                                        <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #4361ee;"></iconify-icon>
+                                                        <span style="font-size: 11px; font-weight: 600; color: #374151;">Notes liées au record</span>
+                                                    </div>
+                                                    <p style="font-size: 11px; color: #6b7280; margin: 0; line-height: 1.4;">Le contenu des notes est sauvegardé directement dans ce record. Il est unique à cet enregistrement.</p>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- Tasks-specific config -->
+                                        <template x-if="cfgBlock.type === 'tasks'">
+                                            <div>
+                                                <div style="padding: 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #dcfce7;">
+                                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                                                        <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #00ab55;"></iconify-icon>
+                                                        <span style="font-size: 11px; font-weight: 600; color: #374151;">Tâches liées au record</span>
+                                                    </div>
+                                                    <p style="font-size: 11px; color: #6b7280; margin: 0; line-height: 1.4;">Les tâches sont liées à cet enregistrement spécifique, pas à l'entity. Elles sont visibles uniquement dans ce record.</p>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- KPI-specific config -->
+                                        <template x-if="cfgBlock.type === 'kpi'">
+                                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Source de données</label>
+                                                    <select :value="cfgBlock.config?.source || 'count'"
+                                                            @change="if(!cfgBlock.config) cfgBlock.config = {}; cfgBlock.config.source = $el.value"
+                                                            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white;">
+                                                        <option value="count">Nombre de records</option>
+                                                        <option value="sum">Somme d'un champ</option>
+                                                        <option value="average">Moyenne d'un champ</option>
+                                                        <option value="manual">Valeur manuelle</option>
+                                                    </select>
+                                                </div>
+                                                <template x-if="cfgBlock.config?.source === 'manual'">
+                                                    <div>
+                                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Valeur</label>
+                                                        <input type="number" :value="cfgBlock.config?.value || 0"
+                                                               @input="cfgBlock.config.value = parseFloat($el.value) || 0"
+                                                               style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none;">
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+
+                                        <!-- Chart-specific config -->
+                                        <template x-if="cfgBlock.type === 'chart'">
+                                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Type de graphique</label>
+                                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                                                        <template x-for="ct in [{v:'bar',l:'Barres',i:'solar:chart-bold-duotone'},{v:'line',l:'Lignes',i:'solar:graph-up-bold-duotone'},{v:'pie',l:'Camembert',i:'solar:pie-chart-bold-duotone'},{v:'doughnut',l:'Donut',i:'solar:pie-chart-2-bold-duotone'},{v:'area',l:'Aire',i:'solar:chart-2-bold-duotone'},{v:'radar',l:'Radar',i:'solar:radar-bold-duotone'}]" :key="ct.v">
+                                                            <button type="button"
+                                                                    @click="if(!cfgBlock.config) cfgBlock.config = {}; cfgBlock.config.chartType = ct.v"
+                                                                    :style="'display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 500; transition: all 0.15s;' + ((cfgBlock.config?.chartType || 'bar') === ct.v ? 'background: rgba(67,97,238,0.1); border: 1px solid rgba(67,97,238,0.3); color: #4361ee;' : 'background: white; border: 1px solid #e5e7eb; color: #6b7280;')">
+                                                                <iconify-icon :icon="ct.i" width="18"></iconify-icon>
+                                                                <span x-text="ct.l"></span>
+                                                            </button>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- Embed/Iframe config -->
+                                        <template x-if="cfgBlock.type === 'iframe'">
+                                            <div>
+                                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">URL à embarquer</label>
+                                                <input type="url" :value="cfgBlock.config?.url || ''"
+                                                       @input="if(!cfgBlock.config) cfgBlock.config = {}; cfgBlock.config.url = $el.value"
+                                                       style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.15s;"
+                                                       onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
+                                                       placeholder="https://example.com">
+                                                <p style="font-size: 11px; color: #9ca3af; margin: 6px 0 0 0;">Entrez l'URL complète du contenu à intégrer (iframe)</p>
+                                            </div>
+                                        </template>
+
+                                        <!-- Timeline config -->
+                                        <template x-if="cfgBlock.type === 'timeline'">
+                                            <div>
+                                                <div style="padding: 12px; background: #faf5ff; border-radius: 8px; border: 1px solid #f3e8ff;">
+                                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                                                        <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #805dca;"></iconify-icon>
+                                                        <span style="font-size: 11px; font-weight: 600; color: #374151;">Historique du record</span>
+                                                    </div>
+                                                    <p style="font-size: 11px; color: #6b7280; margin: 0; line-height: 1.4;">La timeline affiche automatiquement l'historique des modifications de ce record (créations, mises à jour, changements de statut).</p>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- Fields config -->
+                                        <template x-if="cfgBlock.type === 'fields'">
+                                            <div>
+                                                <div style="padding: 12px; background: #eff6ff; border-radius: 8px; border: 1px solid #dbeafe;">
+                                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                                                        <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #2196f3;"></iconify-icon>
+                                                        <span style="font-size: 11px; font-weight: 600; color: #374151;">Champs de l'entity</span>
+                                                    </div>
+                                                    <p style="font-size: 11px; color: #6b7280; margin: 0; line-height: 1.4;">Affiche les champs sélectionnés de cette entity. Configurez les champs à afficher dans le panneau de configuration avancée.</p>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- Cards config -->
+                                        <template x-if="cfgBlock.type === 'cards'">
+                                            <div>
+                                                <div style="padding: 12px; background: #fff7ed; border-radius: 8px; border: 1px solid #fed7aa;">
+                                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                                                        <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #e2a03f;"></iconify-icon>
+                                                        <span style="font-size: 11px; font-weight: 600; color: #374151;">Records liés</span>
+                                                    </div>
+                                                    <p style="font-size: 11px; color: #6b7280; margin: 0; line-height: 1.4;">Affiche les records liés à cet enregistrement sous forme de cartes. La configuration avancée permet de choisir l'entity source.</p>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <!-- Footer -->
+                                    <div style="display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid #f3f4f6;">
+                                        <button type="button" @click="ctConfigModal.open = false"
+                                                style="padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; border: 1px solid #e5e7eb; background: white; color: #374151; cursor: pointer;"
+                                                onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'">
+                                            Annuler
+                                        </button>
+                                        <button type="button"
+                                                @click="ctSaveLayout(ctConfigModal.tabKey); ctConfigModal.open = false"
+                                                style="padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; border: none; background: var(--primary-color, #4361ee); color: white; cursor: pointer;"
+                                                onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                            <iconify-icon icon="solar:check-circle-bold" width="14" style="vertical-align: -2px; margin-right: 4px;"></iconify-icon>
+                                            Enregistrer
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>
@@ -1325,8 +1540,10 @@
 
                 // ═══ Layout Builder State ═══
                 customTabLayouts: {},   // { tabKey: { rows: [...], blocks: {...} } }
+                ctEditMode: false,     // toggle between edit (builder) and view (display) mode
                 ctWidgetPickerOpen: false,
                 ctWidgetPickerTarget: null, // { tabKey, rowId, colId }
+                ctConfigModal: { open: false, tabKey: null, blockId: null }, // per-widget config modal
                 ctWidgetCatalog: [
                     { type: 'notes',    label: 'Notes',      icon: 'solar:document-text-bold-duotone', color: '#4361ee', bg: 'rgba(67,97,238,0.1)',  desc: 'Texte enrichi' },
                     { type: 'tasks',    label: 'Tâches',     icon: 'solar:checklist-bold-duotone',     color: '#00ab55', bg: 'rgba(0,171,85,0.1)',   desc: 'Checklist' },

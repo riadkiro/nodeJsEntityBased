@@ -1452,22 +1452,22 @@
                                                             </label>
                                                         </template>
                                                         <div style="height: 1px; background: #f3f4f6; margin: 4px 0;"></div>
-                                                        <!-- Custom fields -->
-                                                        <template x-for="f in ctEntityFields" :key="f._id">
-                                                            <label :style="'display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; cursor: pointer; transition: background 0.1s;' + ((cfgBlock.config.selectedFields || []).includes(f._id) ? 'background: rgba(67,97,238,0.05);' : '')"
+                                                        <!-- Custom fields (EJS-rendered) -->
+                                                        <% (entity.customFields || []).filter(function(f) { return f; }).forEach(function(f) { var fId = (f._id || '').toString(); var fLabel = f.label || f.name || ''; var fType = f.type || 'text'; var fIcon = (f.ui && f.ui.icon) || 'solar:document-text-linear'; %>
+                                                            <label :style="'display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; cursor: pointer; transition: background 0.1s;' + ((cfgBlock.config.selectedFields || []).includes('<%= fId %>') ? 'background: rgba(67,97,238,0.05);' : '')"
                                                                    onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
                                                                 <input type="checkbox"
-                                                                       :checked="(cfgBlock.config.selectedFields || []).includes(f._id)"
+                                                                       :checked="(cfgBlock.config.selectedFields || []).includes('<%= fId %>')"
                                                                        @change="if (!cfgBlock.config.selectedFields) cfgBlock.config.selectedFields = [];
-                                                                                const idx = cfgBlock.config.selectedFields.indexOf(f._id);
+                                                                                const idx = cfgBlock.config.selectedFields.indexOf('<%= fId %>');
                                                                                 if (idx > -1) cfgBlock.config.selectedFields.splice(idx, 1);
-                                                                                else cfgBlock.config.selectedFields.push(f._id);"
+                                                                                else cfgBlock.config.selectedFields.push('<%= fId %>');"
                                                                        style="width: 14px; height: 14px; accent-color: #4361ee; flex-shrink: 0;">
-                                                                <iconify-icon :icon="f.icon || 'solar:document-text-linear'" width="14" style="color: #9ca3af; flex-shrink: 0;"></iconify-icon>
-                                                                <span style="font-size: 12px; color: #374151;" x-text="f.label"></span>
-                                                                <span style="font-size: 10px; color: #9ca3af; margin-left: auto;" x-text="f.type"></span>
+                                                                <iconify-icon icon="<%= fIcon %>" width="14" style="color: #9ca3af; flex-shrink: 0;"></iconify-icon>
+                                                                <span style="font-size: 12px; color: #374151;"><%= fLabel %></span>
+                                                                <span style="font-size: 10px; color: #9ca3af; margin-left: auto;"><%= fType %></span>
                                                             </label>
-                                                        </template>
+                                                        <% }); %>
                                                     </div>
                                                 </div>
                                                 <!-- Display mode -->
@@ -1494,21 +1494,21 @@
                                                 <div>
                                                     <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Source (relation)</label>
                                                     <div style="display: flex; flex-direction: column; gap: 6px;">
-                                                        <template x-for="rel in ctEntityRelations" :key="rel.key">
-                                                            <button type="button" @click="cfgBlock.config.relationKey = rel.key; cfgBlock.config.targetEntityId = rel.targetId; cfgBlock.config.targetEntityName = rel.targetName"
-                                                                    :style="'display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; text-align: left; width: 100%; transition: all 0.15s;' + ((cfgBlock.config.relationKey || '') === rel.key ? 'background: rgba(67,97,238,0.08); border: 1px solid rgba(67,97,238,0.3);' : 'background: white; border: 1px solid #e5e7eb;')">
-                                                                <div :style="'width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; background: ' + rel.targetColor + '15; flex-shrink: 0;'">
-                                                                    <iconify-icon :icon="rel.targetIcon || 'solar:box-bold-duotone'" width="14" :style="'color: ' + rel.targetColor"></iconify-icon>
+                                                        <% (entity.relations || []).forEach(function(r) { var rKey = r.key || ''; var rLabel = r.label || ''; var rTargetName = (r.targetEntity && r.targetEntity.name) || ''; var rTargetIcon = (r.targetEntity && r.targetEntity.icon) || 'solar:box-bold-duotone'; var rTargetColor = (r.targetEntity && r.targetEntity.color) || '#4361ee'; var rTargetId = (r.targetEntity && r.targetEntity._id ? r.targetEntity._id.toString() : ''); var rCardinality = r.cardinality || 'many'; %>
+                                                            <button type="button" @click="cfgBlock.config.relationKey = '<%= rKey %>'; cfgBlock.config.targetEntityId = '<%= rTargetId %>'; cfgBlock.config.targetEntityName = '<%= rTargetName %>'"
+                                                                    :style="'display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; text-align: left; width: 100%; transition: all 0.15s;' + ((cfgBlock.config.relationKey || '') === '<%= rKey %>' ? 'background: rgba(67,97,238,0.08); border: 1px solid rgba(67,97,238,0.3);' : 'background: white; border: 1px solid #e5e7eb;')">
+                                                                <div style="width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; background: <%= rTargetColor %>15; flex-shrink: 0;">
+                                                                    <iconify-icon icon="<%= rTargetIcon %>" width="14" style="color: <%= rTargetColor %>;"></iconify-icon>
                                                                 </div>
                                                                 <div>
-                                                                    <div style="font-size: 12px; font-weight: 600; color: #374151;" x-text="rel.label || rel.targetName"></div>
-                                                                    <div style="font-size: 10px; color: #9ca3af;" x-text="rel.targetName + ' (' + rel.cardinality + ')'"></div>
+                                                                    <div style="font-size: 12px; font-weight: 600; color: #374151;"><%= rLabel || rTargetName %></div>
+                                                                    <div style="font-size: 10px; color: #9ca3af;"><%= rTargetName %> (<%= rCardinality %>)</div>
                                                                 </div>
-                                                                <template x-if="(cfgBlock.config.relationKey || '') === rel.key">
+                                                                <template x-if="(cfgBlock.config.relationKey || '') === '<%= rKey %>'">
                                                                     <iconify-icon icon="solar:check-circle-bold" width="16" style="color: #4361ee; margin-left: auto;"></iconify-icon>
                                                                 </template>
                                                             </button>
-                                                        </template>
+                                                        <% }); %>
                                                     </div>
                                                 </div>
                                                 <!-- Max cards -->

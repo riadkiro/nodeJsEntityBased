@@ -1084,80 +1084,349 @@
                                     </div>
 
                                     <!-- Config Body -->
-                                    <div style="padding: 20px;">
+                                    <div style="padding: 20px; max-height: 60vh; overflow-y: auto;">
                                         <!-- Common: Title -->
                                         <div style="margin-bottom: 16px;">
                                             <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Titre du widget</label>
                                             <input type="text" :value="cfgBlock.title || ''"
                                                    @input="cfgBlock.title = $el.value"
-                                                   style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.15s;"
+                                                   style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.15s; box-sizing: border-box;"
                                                    onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
                                                    placeholder="Nom du widget...">
                                         </div>
 
-                                        <!-- Notes-specific config -->
+                                        <!-- ══════════ NOTES ══════════ -->
                                         <template x-if="cfgBlock.type === 'notes'">
-                                            <div>
-                                                <div style="padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #f3f4f6;">
-                                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                                                        <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #4361ee;"></iconify-icon>
-                                                        <span style="font-size: 11px; font-weight: 600; color: #374151;">Notes liées au record</span>
-                                                    </div>
-                                                    <p style="font-size: 11px; color: #6b7280; margin: 0; line-height: 1.4;">Le contenu des notes est sauvegardé directement dans ce record. Il est unique à cet enregistrement.</p>
+                                            <div style="padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #f3f4f6;">
+                                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                                                    <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #4361ee;"></iconify-icon>
+                                                    <span style="font-size: 11px; font-weight: 600; color: #374151;">Notes liées au record</span>
                                                 </div>
+                                                <p style="font-size: 11px; color: #6b7280; margin: 0; line-height: 1.4;">Le contenu des notes est sauvegardé directement dans ce record. Il est unique à cet enregistrement.</p>
                                             </div>
                                         </template>
 
-                                        <!-- Tasks-specific config -->
+                                        <!-- ══════════ TASKS ══════════ -->
                                         <template x-if="cfgBlock.type === 'tasks'">
-                                            <div>
-                                                <div style="padding: 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #dcfce7;">
-                                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                                                        <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #00ab55;"></iconify-icon>
-                                                        <span style="font-size: 11px; font-weight: 600; color: #374151;">Tâches liées au record</span>
-                                                    </div>
-                                                    <p style="font-size: 11px; color: #6b7280; margin: 0; line-height: 1.4;">Les tâches sont liées à cet enregistrement spécifique, pas à l'entity. Elles sont visibles uniquement dans ce record.</p>
+                                            <div style="padding: 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #dcfce7;">
+                                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                                                    <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #00ab55;"></iconify-icon>
+                                                    <span style="font-size: 11px; font-weight: 600; color: #374151;">Tâches liées au record</span>
                                                 </div>
+                                                <p style="font-size: 11px; color: #6b7280; margin: 0; line-height: 1.4;">Les tâches sont liées à cet enregistrement spécifique. Elles sont visibles uniquement dans ce record.</p>
                                             </div>
                                         </template>
 
-                                        <!-- KPI-specific config -->
+                                        <!-- ══════════ KPI ══════════ -->
                                         <template x-if="cfgBlock.type === 'kpi'">
-                                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                            <div style="display: flex; flex-direction: column; gap: 14px;"
+                                                 x-init="if(!cfgBlock.config) cfgBlock.config = {}">
+                                                <!-- Data source -->
                                                 <div>
                                                     <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Source de données</label>
-                                                    <select :value="cfgBlock.config?.source || 'count'"
-                                                            @change="if(!cfgBlock.config) cfgBlock.config = {}; cfgBlock.config.source = $el.value"
-                                                            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white;">
-                                                        <option value="count">Nombre de records</option>
-                                                        <option value="sum">Somme d'un champ</option>
-                                                        <option value="average">Moyenne d'un champ</option>
-                                                        <option value="manual">Valeur manuelle</option>
+                                                    <select :value="cfgBlock.config.dataSource || 'current'"
+                                                            @change="cfgBlock.config.dataSource = $el.value"
+                                                            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+                                                        <option value="current" x-text="'Entity actuelle — ' + ctEntityInfo.name"></option>
+                                                        <template x-for="rel in ctEntityRelations" :key="rel.key">
+                                                            <option :value="'rel:' + rel.key" x-text="'Relation — ' + (rel.label || rel.targetName)"></option>
+                                                        </template>
                                                     </select>
                                                 </div>
-                                                <template x-if="cfgBlock.config?.source === 'manual'">
+                                                <!-- Aggregation -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Type d'agrégation</label>
+                                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+                                                        <template x-for="agg in [{v:'count',l:'Nombre'},{v:'sum',l:'Somme'},{v:'avg',l:'Moyenne'},{v:'min',l:'Minimum'},{v:'max',l:'Maximum'},{v:'manual',l:'Manuel'}]" :key="agg.v">
+                                                            <button type="button" @click="cfgBlock.config.aggregation = agg.v"
+                                                                    :style="'padding: 6px; border-radius: 6px; font-size: 11px; font-weight: 500; cursor: pointer; text-align: center; transition: all 0.15s;' + ((cfgBlock.config.aggregation || 'count') === agg.v ? 'background: rgba(67,97,238,0.1); border: 1px solid rgba(67,97,238,0.3); color: #4361ee;' : 'background: white; border: 1px solid #e5e7eb; color: #6b7280;')"
+                                                                    x-text="agg.l"></button>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                                <!-- Field (for sum/avg/min/max) -->
+                                                <template x-if="cfgBlock.config.aggregation && cfgBlock.config.aggregation !== 'count' && cfgBlock.config.aggregation !== 'manual'">
                                                     <div>
-                                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Valeur</label>
-                                                        <input type="number" :value="cfgBlock.config?.value || 0"
-                                                               @input="cfgBlock.config.value = parseFloat($el.value) || 0"
-                                                               style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none;">
+                                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Champ à agréger</label>
+                                                        <select :value="cfgBlock.config.field || ''"
+                                                                @change="cfgBlock.config.field = $el.value"
+                                                                style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+                                                            <option value="">— Choisir un champ —</option>
+                                                            <template x-for="f in ctEntityFields.filter(f => ['number','currency','decimal'].includes(f.type) || f.inputType === 'number')" :key="f._id">
+                                                                <option :value="f._id" x-text="f.label"></option>
+                                                            </template>
+                                                        </select>
                                                     </div>
                                                 </template>
+                                                <!-- Manual value -->
+                                                <template x-if="cfgBlock.config.aggregation === 'manual'">
+                                                    <div>
+                                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Valeur manuelle</label>
+                                                        <input type="number" :value="cfgBlock.config.manualValue || 0"
+                                                               @input="cfgBlock.config.manualValue = parseFloat($el.value) || 0"
+                                                               style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; box-sizing: border-box;">
+                                                    </div>
+                                                </template>
+                                                <!-- Prefix / Suffix -->
+                                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                                    <div>
+                                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Préfixe</label>
+                                                        <input type="text" :value="cfgBlock.config.prefix || ''"
+                                                               @input="cfgBlock.config.prefix = $el.value"
+                                                               placeholder="ex: $, €"
+                                                               style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; box-sizing: border-box;">
+                                                    </div>
+                                                    <div>
+                                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Suffixe</label>
+                                                        <input type="text" :value="cfgBlock.config.suffix || ''"
+                                                               @input="cfgBlock.config.suffix = $el.value"
+                                                               placeholder="ex: %, pts"
+                                                               style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; box-sizing: border-box;">
+                                                    </div>
+                                                </div>
+                                                <!-- Color -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Couleur de l'indicateur</label>
+                                                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                                        <template x-for="c in ['#4361ee','#00ab55','#e7515a','#e2a03f','#805dca','#2196f3','#1b2e4b']" :key="c">
+                                                            <button type="button" @click="cfgBlock.config.color = c"
+                                                                    :style="'width: 28px; height: 28px; border-radius: 8px; border: 2px solid ' + ((cfgBlock.config.color || '#4361ee') === c ? c : 'transparent') + '; background: ' + c + '; cursor: pointer; transition: all 0.15s;'"></button>
+                                                        </template>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </template>
 
-                                        <!-- Chart-specific config -->
+                                        <!-- ══════════ CHART ══════════ -->
                                         <template x-if="cfgBlock.type === 'chart'">
-                                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                            <div style="display: flex; flex-direction: column; gap: 14px;"
+                                                 x-init="if(!cfgBlock.config) cfgBlock.config = {}">
+                                                <!-- Chart type -->
                                                 <div>
                                                     <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Type de graphique</label>
-                                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
                                                         <template x-for="ct in [{v:'bar',l:'Barres',i:'solar:chart-bold-duotone'},{v:'line',l:'Lignes',i:'solar:graph-up-bold-duotone'},{v:'pie',l:'Camembert',i:'solar:pie-chart-bold-duotone'},{v:'doughnut',l:'Donut',i:'solar:pie-chart-2-bold-duotone'},{v:'area',l:'Aire',i:'solar:chart-2-bold-duotone'},{v:'radar',l:'Radar',i:'solar:radar-bold-duotone'}]" :key="ct.v">
-                                                            <button type="button"
-                                                                    @click="if(!cfgBlock.config) cfgBlock.config = {}; cfgBlock.config.chartType = ct.v"
-                                                                    :style="'display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 500; transition: all 0.15s;' + ((cfgBlock.config?.chartType || 'bar') === ct.v ? 'background: rgba(67,97,238,0.1); border: 1px solid rgba(67,97,238,0.3); color: #4361ee;' : 'background: white; border: 1px solid #e5e7eb; color: #6b7280;')">
+                                                            <button type="button" @click="cfgBlock.config.chartType = ct.v"
+                                                                    :style="'display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 500; transition: all 0.15s;' + ((cfgBlock.config.chartType || 'bar') === ct.v ? 'background: rgba(67,97,238,0.1); border: 1px solid rgba(67,97,238,0.3); color: #4361ee;' : 'background: white; border: 1px solid #e5e7eb; color: #6b7280;')">
                                                                 <iconify-icon :icon="ct.i" width="18"></iconify-icon>
                                                                 <span x-text="ct.l"></span>
+                                                            </button>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                                <!-- Data source -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Source de données</label>
+                                                    <select :value="cfgBlock.config.dataSource || 'current'"
+                                                            @change="cfgBlock.config.dataSource = $el.value"
+                                                            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+                                                        <option value="current" x-text="'Entity actuelle — ' + ctEntityInfo.name"></option>
+                                                        <template x-for="rel in ctEntityRelations" :key="rel.key">
+                                                            <option :value="'rel:' + rel.key" x-text="'Relation — ' + (rel.label || rel.targetName)"></option>
+                                                        </template>
+                                                    </select>
+                                                </div>
+                                                <!-- X Axis -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
+                                                        <iconify-icon icon="solar:arrow-right-bold" width="12" style="color: #9ca3af; margin-right: 2px;"></iconify-icon>
+                                                        Axe X (catégorie / temps)
+                                                    </label>
+                                                    <select :value="cfgBlock.config.xField || ''"
+                                                            @change="cfgBlock.config.xField = $el.value"
+                                                            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+                                                        <option value="">— Choisir un champ —</option>
+                                                        <option value="date">📅 Date de création</option>
+                                                        <option value="status">🏷️ Statut</option>
+                                                        <template x-for="f in ctEntityFields" :key="f._id">
+                                                            <option :value="f._id" x-text="f.label"></option>
+                                                        </template>
+                                                    </select>
+                                                </div>
+                                                <!-- Y Axis -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
+                                                        <iconify-icon icon="solar:arrow-up-bold" width="12" style="color: #9ca3af; margin-right: 2px;"></iconify-icon>
+                                                        Axe Y (valeur)
+                                                    </label>
+                                                    <select :value="cfgBlock.config.yField || 'count'"
+                                                            @change="cfgBlock.config.yField = $el.value"
+                                                            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+                                                        <option value="count">📊 Nombre de records</option>
+                                                        <template x-for="f in ctEntityFields.filter(f => ['number','currency','decimal'].includes(f.type) || f.inputType === 'number')" :key="f._id">
+                                                            <option :value="f._id" x-text="'Σ ' + f.label"></option>
+                                                        </template>
+                                                    </select>
+                                                </div>
+                                                <!-- Color scheme -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Palette de couleurs</label>
+                                                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                                        <template x-for="palette in [
+                                                            {v:'blue',    colors:['#4361ee','#6b8aff','#93afff']},
+                                                            {v:'green',   colors:['#00ab55','#36c77a','#6ee3a0']},
+                                                            {v:'sunset',  colors:['#e7515a','#e2a03f','#e6c73e']},
+                                                            {v:'purple',  colors:['#805dca','#a78bfa','#c4b5fd']},
+                                                            {v:'multi',   colors:['#4361ee','#00ab55','#e7515a','#e2a03f']}
+                                                        ]" :key="palette.v">
+                                                            <button type="button" @click="cfgBlock.config.colorScheme = palette.v"
+                                                                    :style="'display: flex; gap: 2px; padding: 6px 8px; border-radius: 8px; cursor: pointer; transition: all 0.15s;' + ((cfgBlock.config.colorScheme || 'blue') === palette.v ? 'border: 2px solid #4361ee; background: rgba(67,97,238,0.05);' : 'border: 2px solid transparent; background: #f9fafb;')">
+                                                                <template x-for="(c, i) in palette.colors" :key="i">
+                                                                    <div :style="'width: 14px; height: 14px; border-radius: 3px; background: ' + c"></div>
+                                                                </template>
+                                                            </button>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                                <!-- Show legend -->
+                                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0;">
+                                                    <span style="font-size: 12px; font-weight: 600; color: #374151;">Afficher la légende</span>
+                                                    <label style="position: relative; display: inline-block; width: 36px; height: 20px; cursor: pointer;">
+                                                        <input type="checkbox" :checked="cfgBlock.config.showLegend !== false"
+                                                               @change="cfgBlock.config.showLegend = $el.checked"
+                                                               style="opacity: 0; width: 0; height: 0;">
+                                                        <span :style="'position: absolute; inset: 0; border-radius: 20px; transition: all 0.2s;' + ((cfgBlock.config.showLegend !== false) ? 'background: #4361ee;' : 'background: #d1d5db;')"></span>
+                                                        <span :style="'position: absolute; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: white; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);' + ((cfgBlock.config.showLegend !== false) ? 'left: 18px;' : 'left: 2px;')"></span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- ══════════ TIMELINE ══════════ -->
+                                        <template x-if="cfgBlock.type === 'timeline'">
+                                            <div style="display: flex; flex-direction: column; gap: 14px;"
+                                                 x-init="if(!cfgBlock.config) cfgBlock.config = {}">
+                                                <!-- Source -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Source de la timeline</label>
+                                                    <select :value="cfgBlock.config.source || 'record'"
+                                                            @change="cfgBlock.config.source = $el.value"
+                                                            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+                                                        <option value="record">🔵 Ce record (activité du record)</option>
+                                                        <option value="current" x-text="'📂 Entity actuelle — ' + ctEntityInfo.name"></option>
+                                                        <template x-for="rel in ctEntityRelations" :key="rel.key">
+                                                            <option :value="'rel:' + rel.key" x-text="'🔗 Relation — ' + (rel.label || rel.targetName)"></option>
+                                                        </template>
+                                                    </select>
+                                                </div>
+                                                <!-- Date field -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Champ de date</label>
+                                                    <select :value="cfgBlock.config.dateField || 'createdAt'"
+                                                            @change="cfgBlock.config.dateField = $el.value"
+                                                            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+                                                        <option value="createdAt">📅 Date de création</option>
+                                                        <option value="updatedAt">🔄 Date de modification</option>
+                                                        <option value="date">📆 Champ Date standard</option>
+                                                        <template x-for="f in ctEntityFields.filter(f => f.type === 'date' || f.inputType === 'date' || f.inputType === 'datetime-local')" :key="f._id">
+                                                            <option :value="f._id" x-text="f.label"></option>
+                                                        </template>
+                                                    </select>
+                                                </div>
+                                                <!-- Icon -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Icône des événements</label>
+                                                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                                        <template x-for="ic in [
+                                                            'solar:clock-circle-bold-duotone',
+                                                            'solar:calendar-bold-duotone',
+                                                            'solar:check-circle-bold-duotone',
+                                                            'solar:star-bold-duotone',
+                                                            'solar:flag-bold-duotone',
+                                                            'solar:heart-pulse-bold-duotone',
+                                                            'solar:stethoscope-bold-duotone',
+                                                            'solar:pill-bold-duotone',
+                                                            'solar:chat-round-dots-bold-duotone',
+                                                            'solar:phone-bold-duotone',
+                                                            'solar:document-text-bold-duotone',
+                                                            'solar:user-bold-duotone'
+                                                        ]" :key="ic">
+                                                            <button type="button" @click="cfgBlock.config.icon = ic"
+                                                                    :style="'width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s;' + ((cfgBlock.config.icon || 'solar:clock-circle-bold-duotone') === ic ? 'background: rgba(128,93,202,0.15); border: 1px solid rgba(128,93,202,0.4); color: #805dca;' : 'background: #f9fafb; border: 1px solid #e5e7eb; color: #9ca3af;')">
+                                                                <iconify-icon :icon="ic" width="16"></iconify-icon>
+                                                            </button>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                                <!-- Max items -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Nombre max d'événements</label>
+                                                    <select :value="cfgBlock.config.maxItems || 10"
+                                                            @change="cfgBlock.config.maxItems = parseInt($el.value)"
+                                                            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+                                                        <option value="5">5 derniers</option>
+                                                        <option value="10">10 derniers</option>
+                                                        <option value="20">20 derniers</option>
+                                                        <option value="50">50 derniers</option>
+                                                    </select>
+                                                </div>
+                                                <!-- Color -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Couleur de la timeline</label>
+                                                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                                        <template x-for="c in ['#805dca','#4361ee','#00ab55','#e7515a','#e2a03f','#2196f3','#1b2e4b']" :key="c">
+                                                            <button type="button" @click="cfgBlock.config.color = c"
+                                                                    :style="'width: 28px; height: 28px; border-radius: 8px; border: 2px solid ' + ((cfgBlock.config.color || '#805dca') === c ? c : 'transparent') + '; background: ' + c + '; cursor: pointer; transition: all 0.15s;'"></button>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- ══════════ FIELDS ══════════ -->
+                                        <template x-if="cfgBlock.type === 'fields'">
+                                            <div style="display: flex; flex-direction: column; gap: 14px;"
+                                                 x-init="if(!cfgBlock.config) cfgBlock.config = {}; if(!cfgBlock.config.selectedFields) cfgBlock.config.selectedFields = []">
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 8px;">
+                                                        Champs à afficher
+                                                        <span style="font-weight: 400; color: #9ca3af;" x-text="'(' + (cfgBlock.config.selectedFields || []).length + ' sélectionnés)'"></span>
+                                                    </label>
+                                                    <div style="max-height: 240px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 8px; padding: 4px;">
+                                                        <!-- Standard fields -->
+                                                        <template x-for="sf in [{id:'title',label:'Titre',icon:'solar:text-bold'},{id:'date',label:'Date',icon:'solar:calendar-bold'},{id:'description',label:'Description',icon:'solar:document-text-bold'}]" :key="sf.id">
+                                                            <label :style="'display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; cursor: pointer; transition: background 0.1s;' + ((cfgBlock.config.selectedFields || []).includes(sf.id) ? 'background: rgba(67,97,238,0.05);' : '')"
+                                                                   onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
+                                                                <input type="checkbox"
+                                                                       :checked="(cfgBlock.config.selectedFields || []).includes(sf.id)"
+                                                                       @change="if (!cfgBlock.config.selectedFields) cfgBlock.config.selectedFields = [];
+                                                                                const idx = cfgBlock.config.selectedFields.indexOf(sf.id);
+                                                                                if (idx > -1) cfgBlock.config.selectedFields.splice(idx, 1);
+                                                                                else cfgBlock.config.selectedFields.push(sf.id);"
+                                                                       style="width: 14px; height: 14px; accent-color: #4361ee; flex-shrink: 0;">
+                                                                <iconify-icon :icon="sf.icon" width="14" style="color: #9ca3af; flex-shrink: 0;"></iconify-icon>
+                                                                <span style="font-size: 12px; color: #374151;" x-text="sf.label"></span>
+                                                                <span style="font-size: 10px; color: #9ca3af; margin-left: auto;">Standard</span>
+                                                            </label>
+                                                        </template>
+                                                        <div style="height: 1px; background: #f3f4f6; margin: 4px 0;"></div>
+                                                        <!-- Custom fields -->
+                                                        <template x-for="f in ctEntityFields" :key="f._id">
+                                                            <label :style="'display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; cursor: pointer; transition: background 0.1s;' + ((cfgBlock.config.selectedFields || []).includes(f._id) ? 'background: rgba(67,97,238,0.05);' : '')"
+                                                                   onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
+                                                                <input type="checkbox"
+                                                                       :checked="(cfgBlock.config.selectedFields || []).includes(f._id)"
+                                                                       @change="if (!cfgBlock.config.selectedFields) cfgBlock.config.selectedFields = [];
+                                                                                const idx = cfgBlock.config.selectedFields.indexOf(f._id);
+                                                                                if (idx > -1) cfgBlock.config.selectedFields.splice(idx, 1);
+                                                                                else cfgBlock.config.selectedFields.push(f._id);"
+                                                                       style="width: 14px; height: 14px; accent-color: #4361ee; flex-shrink: 0;">
+                                                                <iconify-icon :icon="f.icon || 'solar:document-text-linear'" width="14" style="color: #9ca3af; flex-shrink: 0;"></iconify-icon>
+                                                                <span style="font-size: 12px; color: #374151;" x-text="f.label"></span>
+                                                                <span style="font-size: 10px; color: #9ca3af; margin-left: auto;" x-text="f.type"></span>
+                                                            </label>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                                <!-- Display mode -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Mode d'affichage</label>
+                                                    <div style="display: flex; gap: 6px;">
+                                                        <template x-for="mode in [{v:'list',l:'Liste',i:'solar:list-bold'},{v:'grid',l:'Grille',i:'solar:widget-bold'},{v:'compact',l:'Compact',i:'solar:minimize-square-bold'}]" :key="mode.v">
+                                                            <button type="button" @click="cfgBlock.config.displayMode = mode.v"
+                                                                    :style="'display: flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.15s;' + ((cfgBlock.config.displayMode || 'list') === mode.v ? 'background: rgba(67,97,238,0.1); border: 1px solid rgba(67,97,238,0.3); color: #4361ee;' : 'background: white; border: 1px solid #e5e7eb; color: #6b7280;')">
+                                                                <iconify-icon :icon="mode.i" width="14"></iconify-icon>
+                                                                <span x-text="mode.l"></span>
                                                             </button>
                                                         </template>
                                                     </div>
@@ -1165,54 +1434,71 @@
                                             </div>
                                         </template>
 
-                                        <!-- Embed/Iframe config -->
-                                        <template x-if="cfgBlock.type === 'iframe'">
-                                            <div>
-                                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">URL à embarquer</label>
-                                                <input type="url" :value="cfgBlock.config?.url || ''"
-                                                       @input="if(!cfgBlock.config) cfgBlock.config = {}; cfgBlock.config.url = $el.value"
-                                                       style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.15s;"
-                                                       onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
-                                                       placeholder="https://example.com">
-                                                <p style="font-size: 11px; color: #9ca3af; margin: 6px 0 0 0;">Entrez l'URL complète du contenu à intégrer (iframe)</p>
-                                            </div>
-                                        </template>
-
-                                        <!-- Timeline config -->
-                                        <template x-if="cfgBlock.type === 'timeline'">
-                                            <div>
-                                                <div style="padding: 12px; background: #faf5ff; border-radius: 8px; border: 1px solid #f3e8ff;">
-                                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                                                        <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #805dca;"></iconify-icon>
-                                                        <span style="font-size: 11px; font-weight: 600; color: #374151;">Historique du record</span>
-                                                    </div>
-                                                    <p style="font-size: 11px; color: #6b7280; margin: 0; line-height: 1.4;">La timeline affiche automatiquement l'historique des modifications de ce record (créations, mises à jour, changements de statut).</p>
-                                                </div>
-                                            </div>
-                                        </template>
-
-                                        <!-- Fields config -->
-                                        <template x-if="cfgBlock.type === 'fields'">
-                                            <div>
-                                                <div style="padding: 12px; background: #eff6ff; border-radius: 8px; border: 1px solid #dbeafe;">
-                                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                                                        <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #2196f3;"></iconify-icon>
-                                                        <span style="font-size: 11px; font-weight: 600; color: #374151;">Champs de l'entity</span>
-                                                    </div>
-                                                    <p style="font-size: 11px; color: #6b7280; margin: 0; line-height: 1.4;">Affiche les champs sélectionnés de cette entity. Configurez les champs à afficher dans le panneau de configuration avancée.</p>
-                                                </div>
-                                            </div>
-                                        </template>
-
-                                        <!-- Cards config -->
+                                        <!-- ══════════ CARDS ══════════ -->
                                         <template x-if="cfgBlock.type === 'cards'">
-                                            <div>
-                                                <div style="padding: 12px; background: #fff7ed; border-radius: 8px; border: 1px solid #fed7aa;">
-                                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                                                        <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #e2a03f;"></iconify-icon>
-                                                        <span style="font-size: 11px; font-weight: 600; color: #374151;">Records liés</span>
+                                            <div style="display: flex; flex-direction: column; gap: 14px;"
+                                                 x-init="if(!cfgBlock.config) cfgBlock.config = {}">
+                                                <!-- Relation source -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Source (relation)</label>
+                                                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                                                        <template x-for="rel in ctEntityRelations" :key="rel.key">
+                                                            <button type="button" @click="cfgBlock.config.relationKey = rel.key; cfgBlock.config.targetEntityId = rel.targetId; cfgBlock.config.targetEntityName = rel.targetName"
+                                                                    :style="'display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; text-align: left; width: 100%; transition: all 0.15s;' + ((cfgBlock.config.relationKey || '') === rel.key ? 'background: rgba(67,97,238,0.08); border: 1px solid rgba(67,97,238,0.3);' : 'background: white; border: 1px solid #e5e7eb;')">
+                                                                <div :style="'width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; background: ' + rel.targetColor + '15; flex-shrink: 0;'">
+                                                                    <iconify-icon :icon="rel.targetIcon || 'solar:box-bold-duotone'" width="14" :style="'color: ' + rel.targetColor"></iconify-icon>
+                                                                </div>
+                                                                <div>
+                                                                    <div style="font-size: 12px; font-weight: 600; color: #374151;" x-text="rel.label || rel.targetName"></div>
+                                                                    <div style="font-size: 10px; color: #9ca3af;" x-text="rel.targetName + ' (' + rel.cardinality + ')'"></div>
+                                                                </div>
+                                                                <template x-if="(cfgBlock.config.relationKey || '') === rel.key">
+                                                                    <iconify-icon icon="solar:check-circle-bold" width="16" style="color: #4361ee; margin-left: auto;"></iconify-icon>
+                                                                </template>
+                                                            </button>
+                                                        </template>
                                                     </div>
-                                                    <p style="font-size: 11px; color: #6b7280; margin: 0; line-height: 1.4;">Affiche les records liés à cet enregistrement sous forme de cartes. La configuration avancée permet de choisir l'entity source.</p>
+                                                </div>
+                                                <!-- Max cards -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Nombre max de cartes</label>
+                                                    <select :value="cfgBlock.config.maxCards || 5"
+                                                            @change="cfgBlock.config.maxCards = parseInt($el.value)"
+                                                            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+                                                        <option value="3">3 cartes</option>
+                                                        <option value="5">5 cartes</option>
+                                                        <option value="10">10 cartes</option>
+                                                        <option value="20">20 cartes</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- ══════════ EMBED / IFRAME ══════════ -->
+                                        <template x-if="cfgBlock.type === 'iframe'">
+                                            <div style="display: flex; flex-direction: column; gap: 14px;"
+                                                 x-init="if(!cfgBlock.config) cfgBlock.config = {}">
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">URL à embarquer</label>
+                                                    <input type="url" :value="cfgBlock.config.url || ''"
+                                                           @input="cfgBlock.config.url = $el.value"
+                                                           style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.15s; box-sizing: border-box;"
+                                                           onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
+                                                           placeholder="https://example.com">
+                                                </div>
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Hauteur (px)</label>
+                                                    <input type="number" :value="cfgBlock.config.height || 300"
+                                                           @input="cfgBlock.config.height = parseInt($el.value) || 300"
+                                                           style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; box-sizing: border-box;"
+                                                           min="100" max="1000" step="50">
+                                                </div>
+                                                <div style="padding: 10px; background: #fef3c7; border-radius: 8px; border: 1px solid #fde68a;">
+                                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                                        <iconify-icon icon="solar:danger-triangle-bold" width="14" style="color: #d97706;"></iconify-icon>
+                                                        <span style="font-size: 11px; font-weight: 600; color: #92400e;">Sécurité</span>
+                                                    </div>
+                                                    <p style="font-size: 11px; color: #78716c; margin: 4px 0 0 0; line-height: 1.4;">Seuls les sites autorisant l'intégration iframe fonctionneront. Certains sites bloquent l'intégration pour des raisons de sécurité.</p>
                                                 </div>
                                             </div>
                                         </template>
@@ -1513,6 +1799,36 @@
             const entitySlug = '<%= entity.slug %>';
             const viewId = 'record_tabs_' + entityId;
             const initialMeta = <%- JSON.stringify(locals.relationTabsMeta || []) %>;
+
+            // Entity metadata for widget config
+            const ctEntityFields = <%- JSON.stringify(
+                (entity.customFields || []).filter(f => f != null).map(f => ({
+                    _id: (f._id || '').toString(),
+                    label: f.label || f.name || '',
+                    name: f.name || '',
+                    type: f.type || 'string',
+                    inputType: f.inputType || '',
+                    icon: (f.ui && f.ui.icon) || ''
+                }))
+            ) %>;
+            const ctEntityRelations = <%- JSON.stringify(
+                (entity.relations || []).map(r => ({
+                    key: r.key || '',
+                    label: r.label || '',
+                    targetName: (r.targetEntity && r.targetEntity.name) || '',
+                    targetSlug: (r.targetEntity && r.targetEntity.slug) || '',
+                    targetIcon: (r.targetEntity && r.targetEntity.icon) || '',
+                    targetColor: (r.targetEntity && r.targetEntity.color) || '#4361ee',
+                    targetId: (r.targetEntity && r.targetEntity._id ? r.targetEntity._id.toString() : ''),
+                    cardinality: r.cardinality || 'one-to-many'
+                }))
+            ) %>;
+            const ctEntityInfo = {
+                name: '<%= entity.name || "" %>',
+                slug: '<%= entity.slug || "" %>',
+                icon: '<%= entity.icon || "solar:box-bold-duotone" %>',
+                color: '<%= entity.color || "#4361ee" %>'
+            };
 
             return {
                 allTabs: [],

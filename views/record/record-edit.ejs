@@ -466,14 +466,20 @@
 
         </div>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• RELATION TABS BAR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
-        <% if (locals.relationTabsMeta && locals.relationTabsMeta.length > 0) { %>
-        <div x-data="relationTabs()" class="mb-4" style="display:none">
+        <!-- Alpine Store for sharing tab state across components -->
+        <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('recordTabs', { activeTab: '__self__', fieldAssignments: {} });
+        });
+        </script>
+
+        <!-- ═══════════════════ UNIFIED TABS BAR ═══════════════════ -->
+        <div x-data="recordTabs()" class="mb-4" id="unified-tabs-bar">
             <!-- Tab Bar -->
             <div class="flex items-center bg-white dark:bg-[#1b2e4b] rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
                 <!-- Scrollable Tabs Container -->
-                <div class="flex-1 flex items-center gap-0.5 overflow-x-auto hide-scrollbar px-1.5 py-1.5" id="relation-tabs-scroll">
-                    <!-- Self Tab (entity itself) â€” always first -->
+                <div class="flex-1 flex items-center gap-0.5 overflow-x-auto hide-scrollbar px-1.5 py-1.5" id="unified-tabs-scroll">
+                    <!-- Self Tab (entity itself) — always first -->
                     <button type="button"
                             @click="selectTab('__self__')"
                             class="relation-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 shrink-0 select-none"
@@ -486,15 +492,18 @@
                                 :style="activeTab === '__self__' ? 'color:<%= entity.color || '#4361ee' %>' : ''"
                                 :class="activeTab !== '__self__' ? 'text-gray-400 dark:text-gray-500' : ''"></iconify-icon>
                         </span>
-                        <span><%= entity.name %></span>
+                        <span><%= entity.nameSingular || entity.name %></span>
                     </button>
 
                     <!-- Separator between self and relations -->
-                    <div class="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1 shrink-0"></div>
+                    <template x-if="visibleTabs.length > 0">
+                        <div class="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1 shrink-0"></div>
+                    </template>
 
                     <!-- Relation Tabs -->
                     <template x-for="tab in visibleTabs" :key="tab.key">
-                        <div class="flex items-center shrink-0">
+                        <div class="flex items-center shrink-0 relation-tab-draggable cursor-grab active:cursor-grabbing"
+                             :data-tab-key="tab.key">
                             <button type="button"
                                     @click="selectTab(tab.key)"
                                     class="relation-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-200 select-none"
@@ -514,21 +523,39 @@
                                           ? 'bg-primary/20 text-primary'
                                           : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'"
                                       x-text="tab._count"></span>
-                                <span x-show="tab.direction === 'inverse'" class="text-[8px] text-amber-500 font-bold uppercase tracking-wider opacity-60">â†©</span>
+
                             </button>
-                            <!-- Quick Add button per tab -->
-                            <button type="button"
-                                    @click.stop="canAddOnTab(tab) && openQuickCreate(tab)"
-                                    class="w-5 h-5 rounded flex items-center justify-center ml-0.5 transition-all shrink-0"
-                                    :class="canAddOnTab(tab)
-                                        ? 'text-gray-300 dark:text-gray-600 hover:text-primary hover:bg-primary/10 cursor-pointer'
-                                        : 'text-gray-200 dark:text-gray-700 cursor-not-allowed opacity-40'"
-                                    :title="canAddOnTab(tab) ? 'Créer ' + tab.label : 'Ajout non disponible'"
-                                    :disabled="!canAddOnTab(tab)">
-                                <iconify-icon icon="tabler:plus" width="12"></iconify-icon>
-                            </button>
+                            <!-- Quick Add button per tab (not for custom tabs) -->
+                            <template x-if="!tab.isCustom">
+                                <button type="button"
+                                        @click.stop="canAddOnTab(tab) && openQuickCreate(tab)"
+                                        class="w-5 h-5 rounded flex items-center justify-center ml-0.5 transition-all shrink-0 no-drag"
+                                        :class="canAddOnTab(tab)
+                                            ? 'text-gray-300 dark:text-gray-600 hover:text-primary hover:bg-primary/10 cursor-pointer'
+                                            : 'text-gray-200 dark:text-gray-700 cursor-not-allowed opacity-40'"
+                                        :title="canAddOnTab(tab) ? 'Créer ' + tab.label : 'Ajout non disponible'"
+                                        :disabled="!canAddOnTab(tab)">
+                                    <iconify-icon icon="tabler:plus" width="12"></iconify-icon>
+                                </button>
+                            </template>
+                            <!-- Remove button for custom tabs -->
+                            <template x-if="tab.isCustom">
+                                <button type="button"
+                                        @click.stop="removeCustomTab(tab.key)"
+                                        class="w-5 h-5 rounded flex items-center justify-center ml-0.5 text-gray-300 dark:text-gray-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all shrink-0 no-drag cursor-pointer"
+                                        title="Supprimer cet onglet">
+                                    <iconify-icon icon="tabler:x" width="11"></iconify-icon>
+                                </button>
+                            </template>
                         </div>
                     </template>
+
+                    <!-- Add Custom Tab Button -->
+                    <button type="button" @click="openCustomTabModal()"
+                            class="flex items-center justify-center w-7 h-7 rounded-lg text-gray-400 hover:text-primary hover:bg-primary/10 transition-all shrink-0 no-drag"
+                            title="Ajouter un onglet personnalisé">
+                        <iconify-icon icon="solar:add-square-bold-duotone" width="15"></iconify-icon>
+                    </button>
                 </div>
 
                 <!-- Config Button -->
@@ -562,7 +589,7 @@
                 <p class="text-[10px] text-gray-400 dark:text-gray-500 mb-3">
                     Glissez pour réordonner. Activez ou désactivez les relations à afficher.
                 </p>
-                <div id="relation-tabs-sortable" class="space-y-1.5">
+                <div id="unified-tabs-sortable" class="space-y-1.5">
                     <template x-for="tab in allTabs" :key="'cfg-' + tab.key">
                         <div class="flex items-center gap-2 px-2.5 py-2 rounded-lg border dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30 cursor-grab active:cursor-grabbing transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
                              :data-key="tab.key">
@@ -583,7 +610,7 @@
                 </div>
             </div>
 
-            <!-- Tab Content Area (only shown for relation tabs, not for __self__) -->
+            <!-- Relation Tab Content Area (only shown for relation tabs, not for __self__) -->
             <div x-show="activeTab && activeTab !== '__self__'" x-transition:enter="transition ease-out duration-200"
                  x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0"
                  class="mt-3" x-cloak>
@@ -648,7 +675,8 @@
                     </template>
 
                     <!-- Empty State -->
-                    <template x-if="!tabLoading && tabRecords.length === 0 && activeTab && activeTab !== '__self__'">
+                    <!-- Empty State (Relation tabs only — not custom) -->
+                    <template x-if="!tabLoading && tabRecords.length === 0 && activeTab && activeTab !== '__self__' && !(activeTabMeta && activeTabMeta.isCustom)">
                         <div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500">
                             <iconify-icon icon="solar:box-minimalistic-bold-duotone" width="36" class="mb-3 opacity-40"></iconify-icon>
                             <span class="text-xs mb-3">Aucun enregistrement lié</span>
@@ -664,10 +692,340 @@
                             </template>
                         </div>
                     </template>
+
+                    <!-- Custom Tab Content — Layout Builder (rows/panels like cockpit) -->
+                    <template x-if="activeTabMeta && activeTabMeta.isCustom">
+                        <div class="p-4" style="background: #f7f8fa;">
+                            <!-- Empty State (no rows yet) -->
+                            <template x-if="!getTabRows(activeTab) || getTabRows(activeTab).length === 0">
+                                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; border: 2px dashed #d1d5db; border-radius: 12px; background: white;">
+                                    <iconify-icon icon="solar:widget-5-bold-duotone" width="48" style="color: #9ca3af; margin-bottom: 12px;"></iconify-icon>
+                                    <p style="color: #6b7280; margin-bottom: 12px; font-size: 14px;">Aucun contenu. Commencez à construire !</p>
+                                    <button type="button" @click="ctAddRow(activeTab)"
+                                            style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; background: var(--primary-color, #4361ee); color: white; border-radius: 8px; font-size: 13px; font-weight: 600; border: none; cursor: pointer;">
+                                        <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
+                                        Ajouter une ligne
+                                    </button>
+                                </div>
+                            </template>
+
+                            <!-- Rows -->
+                            <div style="display: flex; flex-direction: column; gap: 16px;">
+                                <template x-for="(row, rowIndex) in getTabRows(activeTab)" :key="row.id">
+                                    <div style="position: relative; padding-top: 36px; overflow: visible;"
+                                         x-data="{ rowHover: false }"
+                                         @mouseenter="rowHover = true"
+                                         @mouseleave="rowHover = false">
+
+                                        <!-- Row Toolbar (hover) -->
+                                        <div :style="'position: absolute; top: 4px; left: 50%; transform: translateX(-50%); background: white; border-radius: 8px; padding: 3px; z-index: 50; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 2px 8px rgba(0,0,0,0.08); white-space: nowrap;' + (rowHover ? 'opacity:1; pointer-events:auto; visibility:visible;' : 'opacity:0; pointer-events:none; visibility:hidden;')"
+                                             style="transition: opacity 0.15s ease;">
+                                            <div style="display: flex; flex-direction: row; align-items: center; gap: 2px;">
+                                                <!-- Layout presets -->
+                                                <button type="button" @click.stop="ctSetRowLayout(activeTab, row.id, 1)"
+                                                        title="1 Colonne"
+                                                        style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; border: none; cursor: pointer; background: transparent; flex-shrink: 0;"
+                                                        onmouseover="this.style.background='rgba(67,97,238,0.1)'" onmouseout="this.style.background='transparent'">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                                                </button>
+                                                <button type="button" @click.stop="ctSetRowLayout(activeTab, row.id, 2)"
+                                                        title="2 Colonnes"
+                                                        style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; border: none; cursor: pointer; background: transparent; flex-shrink: 0;"
+                                                        onmouseover="this.style.background='rgba(67,97,238,0.1)'" onmouseout="this.style.background='transparent'">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="6" height="16" rx="1"/><rect x="14" y="4" width="6" height="16" rx="1"/></svg>
+                                                </button>
+                                                <button type="button" @click.stop="ctSetRowLayout(activeTab, row.id, 3)"
+                                                        title="3 Colonnes"
+                                                        style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; border: none; cursor: pointer; background: transparent; flex-shrink: 0;"
+                                                        onmouseover="this.style.background='rgba(67,97,238,0.1)'" onmouseout="this.style.background='transparent'">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="4" height="16" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="17" y="4" width="4" height="16" rx="1"/></svg>
+                                                </button>
+                                                <div style="width: 1px; height: 20px; background: #e5e7eb; margin: 0 2px; flex-shrink: 0;"></div>
+                                                <!-- Move Up -->
+                                                <button type="button" @click.stop="ctMoveRow(activeTab, row.id, -1)"
+                                                        title="Monter"
+                                                        :style="rowIndex > 0 ? '' : 'visibility: hidden; width: 0; padding: 0; margin: 0; overflow: hidden;'"
+                                                        style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: #6b7280; flex-shrink: 0;"
+                                                        onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">
+                                                    <iconify-icon icon="solar:arrow-up-outline" width="14"></iconify-icon>
+                                                </button>
+                                                <!-- Move Down -->
+                                                <button type="button" @click.stop="ctMoveRow(activeTab, row.id, 1)"
+                                                        title="Descendre"
+                                                        :style="rowIndex < getTabRows(activeTab).length - 1 ? '' : 'visibility: hidden; width: 0; padding: 0; margin: 0; overflow: hidden;'"
+                                                        style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: #6b7280; flex-shrink: 0;"
+                                                        onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">
+                                                    <iconify-icon icon="solar:arrow-down-outline" width="14"></iconify-icon>
+                                                </button>
+                                                <div style="width: 1px; height: 20px; background: #e5e7eb; margin: 0 2px; flex-shrink: 0;"></div>
+                                                <!-- Delete Row -->
+                                                <button type="button" @click.stop="ctDeleteRow(activeTab, row.id)"
+                                                        title="Supprimer la ligne"
+                                                        style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: #6b7280; flex-shrink: 0;"
+                                                        onmouseover="this.style.background='rgba(231,81,90,0.1)';this.style.color='#e7515a'" onmouseout="this.style.background='transparent';this.style.color='#6b7280'">
+                                                    <iconify-icon icon="solar:trash-bin-minimalistic-outline" width="14"></iconify-icon>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Row Grid (12-unit, cockpit pattern) -->
+                                        <div style="display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px;">
+
+                                            <!-- Columns -->
+                                            <template x-for="(col, colIndex) in row.columns" :key="col.id">
+                                                <div :style="'grid-column: span ' + (col.width || Math.floor(12 / row.columns.length)) + '; position: relative; min-height: 90px; border: 2px dashed #d1d5db; border-radius: 12px; background: white; transition: border-color 0.15s;'"
+                                                     onmouseover="this.style.borderColor='#9ca3af'" onmouseout="this.style.borderColor='#d1d5db'">
+
+                                                    <!-- Resize Handle (cockpit pattern: inside column, right edge) -->
+                                                    <div :style="'position: absolute; right: 0; top: 50%; transform: translate(50%, -50%); cursor: col-resize; z-index: 50; display: flex; align-items: center; transition: opacity 0.15s;' + (rowHover ? 'opacity:1; pointer-events:auto;' : 'opacity:0; pointer-events:none;')"
+                                                         @mousedown.prevent.stop="ctStartResize(activeTab, row.id, colIndex, $event)"
+                                                         class="text-gray-400 hover:text-primary">
+                                                        <iconify-icon icon="solar:alt-arrow-left-bold" width="12"></iconify-icon>
+                                                        <iconify-icon icon="solar:alt-arrow-right-bold" width="12" style="margin-left: -4px;"></iconify-icon>
+                                                    </div>
+
+                                                    <!-- If column has a widget -->
+                                                    <template x-if="col.blockId && getTabBlock(activeTab, col.blockId)">
+                                                        <div style="position: relative; height: 100%;">
+                                                            <!-- Block toolbar on hover -->
+                                                            <div x-data="{ blockHover: false }" style="height: 100%;"
+                                                                 @mouseenter="blockHover = true" @mouseleave="blockHover = false">
+                                                                <div x-show="blockHover"
+                                                                     style="position: absolute; top: 6px; right: 6px; display: flex; gap: 2px; z-index: 10;"
+                                                                     x-cloak>
+                                                                    <button type="button" @click.stop="ctRemoveBlock(activeTab, row.id, col.id)"
+                                                                            title="Supprimer ce widget"
+                                                                            style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: none; cursor: pointer; background: rgba(231,81,90,0.1); color: #e7515a;">
+                                                                        <iconify-icon icon="solar:trash-bin-trash-bold" width="12"></iconify-icon>
+                                                                    </button>
+                                                                </div>
+                                                                <!-- Widget Content Render -->
+                                                                <div x-data="{ block: getTabBlock(activeTab, col.blockId) }" style="height: 100%;">
+                                                                    <!-- Notes Widget -->
+                                                                    <template x-if="block && block.type === 'notes'">
+                                                                        <div class="panel" style="height: 100%; border: none; border-radius: 12px;">
+                                                                            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+                                                                                <iconify-icon icon="solar:document-text-bold-duotone" width="14" style="color: #9ca3af;"></iconify-icon>
+                                                                                <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Notes'"></span>
+                                                                                <!-- Format toolbar -->
+                                                                                <div style="margin-left: auto; display: flex; gap: 2px;">
+                                                                                    <button type="button" @click="_execCmd('bold')" style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 4px; border: none; cursor: pointer; color: #9ca3af; background: transparent;" title="Gras">
+                                                                                        <iconify-icon icon="solar:text-bold-linear" width="12"></iconify-icon>
+                                                                                    </button>
+                                                                                    <button type="button" @click="_execCmd('italic')" style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 4px; border: none; cursor: pointer; color: #9ca3af; background: transparent;" title="Italique">
+                                                                                        <iconify-icon icon="solar:text-italic-linear" width="12"></iconify-icon>
+                                                                                    </button>
+                                                                                    <button type="button" @click="_execCmd('insertUnorderedList')" style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 4px; border: none; cursor: pointer; color: #9ca3af; background: transparent;" title="Liste">
+                                                                                        <iconify-icon icon="solar:list-bold-duotone" width="12"></iconify-icon>
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div contenteditable="true"
+                                                                                 :id="'ct-editor-' + col.blockId"
+                                                                                 @input="ctOnBlockInput(activeTab, col.blockId)"
+                                                                                 style="min-height: 100px; padding: 12px; outline: none; font-size: 13px; line-height: 1.7; color: #374151;"
+                                                                                 x-effect="ctLoadBlockContent(activeTab, col.blockId)"
+                                                                            ></div>
+                                                                        </div>
+                                                                    </template>
+                                                                    <!-- Tasks Widget -->
+                                                                    <template x-if="block && block.type === 'tasks'">
+                                                                        <div class="panel" style="height: 100%; border: none; border-radius: 12px;">
+                                                                            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+                                                                                <iconify-icon icon="solar:checklist-bold-duotone" width="14" style="color: #00ab55;"></iconify-icon>
+                                                                                <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Tâches'"></span>
+                                                                            </div>
+                                                                            <div style="padding: 12px;">
+                                                                                <template x-for="(task, i) in (block.tasks || [])" :key="i">
+                                                                                    <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f9fafb;">
+                                                                                        <input type="checkbox" :checked="task.done" @change="task.done = $el.checked; ctSaveLayout(activeTab)"
+                                                                                               style="width: 16px; height: 16px; border-radius: 4px; accent-color: #4361ee;">
+                                                                                        <span style="font-size: 13px;" :style="task.done && 'text-decoration: line-through; color: #9ca3af;'" x-text="task.text"></span>
+                                                                                    </div>
+                                                                                </template>
+                                                                                <div style="margin-top: 8px;">
+                                                                                    <input type="text" placeholder="+ Nouvelle tâche..."
+                                                                                           @keydown.enter="ctAddTask(activeTab, col.blockId, $el.value); $el.value = ''"
+                                                                                           style="width: 100%; border: none; outline: none; font-size: 13px; color: #6b7280; padding: 4px 0;">
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </template>
+                                                                    <!-- Timeline Widget -->
+                                                                    <template x-if="block && block.type === 'timeline'">
+                                                                        <div class="panel" style="height: 100%; border: none; border-radius: 12px;">
+                                                                            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+                                                                                <iconify-icon icon="solar:clock-circle-bold-duotone" width="14" style="color: #805dca;"></iconify-icon>
+                                                                                <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Timeline'"></span>
+                                                                            </div>
+                                                                            <div style="padding: 12px;">
+                                                                                <div style="display: flex; flex-direction: column; gap: 12px;">
+                                                                                    <div style="display: flex; gap: 10px;">
+                                                                                        <div style="width: 8px; height: 8px; border-radius: 50%; background: #4361ee; margin-top: 5px; flex-shrink: 0;"></div>
+                                                                                        <div>
+                                                                                            <div style="font-size: 13px; font-weight: 500;">Aucune activité</div>
+                                                                                            <div style="font-size: 11px; color: #9ca3af;">Les événements apparaîtront ici</div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </template>
+                                                                    <!-- KPI Widget -->
+                                                                    <template x-if="block && block.type === 'kpi'">
+                                                                        <div class="panel" style="height: 100%; border: none; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px;">
+                                                                            <div style="font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;" x-text="block.title || 'KPI'"></div>
+                                                                            <div style="font-size: 36px; font-weight: 800; color: var(--primary-color, #4361ee); margin: 4px 0;">0</div>
+                                                                            <div style="font-size: 12px; color: #00ab55;">↑ —</div>
+                                                                        </div>
+                                                                    </template>
+                                                                    <!-- Chart Widget -->
+                                                                    <template x-if="block && block.type === 'chart'">
+                                                                        <div class="panel" style="height: 100%; border: none; border-radius: 12px;">
+                                                                            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+                                                                                <iconify-icon icon="solar:chart-bold-duotone" width="14" style="color: #e7515a;"></iconify-icon>
+                                                                                <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Graphique'"></span>
+                                                                            </div>
+                                                                            <div style="padding: 24px; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 13px;">
+                                                                                <iconify-icon icon="solar:chart-2-bold-duotone" width="48" style="opacity: 0.3;"></iconify-icon>
+                                                                            </div>
+                                                                        </div>
+                                                                    </template>
+                                                                    <!-- Fields Widget -->
+                                                                    <template x-if="block && block.type === 'fields'">
+                                                                        <div class="panel" style="height: 100%; border: none; border-radius: 12px;">
+                                                                            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+                                                                                <iconify-icon icon="solar:layers-bold-duotone" width="14" style="color: #2196f3;"></iconify-icon>
+                                                                                <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Champs'"></span>
+                                                                                <span style="font-size: 10px; background: rgba(67,97,238,0.1); color: #4361ee; padding: 1px 6px; border-radius: 9999px; font-weight: 700; margin-left: 4px;"
+                                                                                      x-text="(block.fields || []).length"></span>
+                                                                            </div>
+                                                                            <div style="padding: 16px; text-align: center; color: #9ca3af; font-size: 12px;">
+                                                                                <iconify-icon icon="solar:layers-minimalistic-bold-duotone" width="24" style="opacity: 0.3; margin-bottom: 4px;"></iconify-icon>
+                                                                                <div>Configurez les champs dans les paramètres</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </template>
+                                                                    <!-- Cards Widget -->
+                                                                    <template x-if="block && block.type === 'cards'">
+                                                                        <div class="panel" style="height: 100%; border: none; border-radius: 12px;">
+                                                                            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+                                                                                <iconify-icon icon="solar:card-bold-duotone" width="14" style="color: #e2a03f;"></iconify-icon>
+                                                                                <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Cartes'"></span>
+                                                                            </div>
+                                                                            <div style="padding: 16px; text-align: center; color: #9ca3af; font-size: 12px;">
+                                                                                <iconify-icon icon="solar:card-2-bold-duotone" width="24" style="opacity: 0.3; margin-bottom: 4px;"></iconify-icon>
+                                                                                <div>Cartes liées</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </template>
+                                                                    <!-- Iframe Widget -->
+                                                                    <template x-if="block && block.type === 'iframe'">
+                                                                        <div class="panel" style="height: 100%; border: none; border-radius: 12px;">
+                                                                            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+                                                                                <iconify-icon icon="solar:code-bold-duotone" width="14" style="color: #00ab55;"></iconify-icon>
+                                                                                <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Contenu embarqué'"></span>
+                                                                            </div>
+                                                                            <div style="padding: 16px; text-align: center; color: #9ca3af; font-size: 12px;">
+                                                                                <iconify-icon icon="solar:code-square-bold-duotone" width="24" style="opacity: 0.3; margin-bottom: 4px;"></iconify-icon>
+                                                                                <div>Embed / iframe</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </template>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+
+                                                    <!-- Empty column: Add / Delete buttons -->
+                                                    <template x-if="!col.blockId">
+                                                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 100%; min-height: 90px;">
+                                                            <!-- Add Widget Button -->
+                                                            <button type="button"
+                                                                    @click="ctWidgetPickerOpen = true; ctWidgetPickerTarget = { tabKey: activeTab, rowId: row.id, colId: col.id }"
+                                                                    style="width: 36px; height: 36px; border-radius: 50%; background: rgba(67,97,238,0.1); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s;"
+                                                                    onmouseover="this.style.background='rgba(67,97,238,0.2)'" onmouseout="this.style.background='rgba(67,97,238,0.1)'">
+                                                                <iconify-icon icon="solar:add-circle-bold" width="18" style="color: #4361ee;"></iconify-icon>
+                                                            </button>
+                                                            <!-- Delete Column Button -->
+                                                            <button type="button"
+                                                                    @click.stop="ctDeleteColumn(activeTab, row.id, col.id)"
+                                                                    style="width: 30px; height: 30px; border-radius: 50%; background: rgba(231,81,90,0.1); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s;"
+                                                                    onmouseover="this.style.background='rgba(231,81,90,0.2)'" onmouseout="this.style.background='rgba(231,81,90,0.1)'"
+                                                                    title="Supprimer">
+                                                                <iconify-icon icon="solar:trash-bin-trash-bold" width="14" style="color: #e7515a;"></iconify-icon>
+                                                            </button>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Add Row Button (bottom) -->
+                            <template x-if="getTabRows(activeTab) && getTabRows(activeTab).length > 0">
+                                <div style="margin-top: 16px; display: flex; justify-content: center;">
+                                    <button type="button" @click="ctAddRow(activeTab)"
+                                            style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; color: #6b7280; border: 2px dashed #d1d5db; border-radius: 10px; background: transparent; cursor: pointer; font-size: 13px; transition: all 0.15s;"
+                                            onmouseover="this.style.color='#4361ee';this.style.borderColor='#4361ee'" onmouseout="this.style.color='#6b7280';this.style.borderColor='#d1d5db'">
+                                        <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
+                                        Ajouter une ligne
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- ═══ Widget Catalog Modal ═══ -->
+                    <div x-show="ctWidgetPickerOpen"
+                         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                         style="display: none; position: fixed; inset: 0; z-index: 999; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); background: rgba(0,0,0,0.3);"
+                         class="flex items-center justify-center"
+                         @click.self="ctWidgetPickerOpen = false"
+                         @keydown.escape.window="ctWidgetPickerOpen = false"
+                         x-cloak>
+                        <div @click.stop
+                             style="background: white; border-radius: 16px; padding: 24px; width: 100%; max-width: 480px; margin: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.06);"
+                             x-show="ctWidgetPickerOpen"
+                             x-transition:enter="transition ease-out duration-200 delay-50"
+                             x-transition:enter-start="opacity-0 scale-95 translate-y-2" x-transition:enter-end="opacity-100 scale-100 translate-y-0">
+                            <!-- Header -->
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                                <div>
+                                    <h3 style="font-size: 16px; font-weight: 700; color: #111827; margin: 0;">Ajouter un widget</h3>
+                                    <p style="font-size: 12px; color: #9ca3af; margin: 4px 0 0 0;">Choisissez le composant à insérer</p>
+                                </div>
+                                <button type="button" @click="ctWidgetPickerOpen = false"
+                                        style="width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer; background: #f3f4f6; color: #6b7280; display: flex; align-items: center; justify-content: center;"
+                                        onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
+                                    <iconify-icon icon="tabler:x" width="16"></iconify-icon>
+                                </button>
+                            </div>
+                            <!-- Widget Grid -->
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                                <template x-for="w in ctWidgetCatalog" :key="w.type">
+                                    <button type="button"
+                                            @click="ctInsertWidget(w.type)"
+                                            style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; border-radius: 12px; border: 1px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.15s;"
+                                            onmouseover="this.style.borderColor='rgba(67,97,238,0.3)';this.style.background='rgba(67,97,238,0.03)'" onmouseout="this.style.borderColor='#f3f4f6';this.style.background='white'">
+                                        <div style="width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;"
+                                             :style="'background: ' + w.bg">
+                                            <iconify-icon :icon="w.icon" width="20" :style="'color: ' + w.color"></iconify-icon>
+                                        </div>
+                                        <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="w.label"></span>
+                                        <span style="font-size: 10px; color: #9ca3af; line-height: 1.3; text-align: center;" x-text="w.desc"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• QUICK CREATE MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+            <!-- ═══════════════════ QUICK CREATE MODAL ═══════════════════ -->
             <div x-show="qcOpen" x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
                  x-transition:leave="transition ease-in duration-200"
@@ -840,25 +1198,166 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ═══ Custom Tab Modal ═══ -->
+            <div x-show="ctOpen" x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 z-[999] flex items-center justify-center bg-black/30 dark:bg-black/50"
+                 style="backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);"
+                 @click.self="closeCustomTabModal()"
+                 x-cloak>
+                <div class="bg-white dark:bg-[#0e1726] rounded-xl w-full max-w-sm mx-4"
+                     style="box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.06);"
+                     @click.stop
+                     x-show="ctOpen"
+                     x-transition:enter="transition ease-out duration-200 delay-50"
+                     x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+                     x-transition:enter-end="opacity-100 scale-100 translate-y-0">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between px-5 py-3.5 border-b dark:border-gray-800">
+                        <div class="flex items-center gap-2">
+                            <iconify-icon icon="solar:folder-favourite-bookmark-bold-duotone" width="18" class="text-primary"></iconify-icon>
+                            <h3 class="font-semibold text-sm dark:text-gray-200">Nouvel onglet personnalisé</h3>
+                        </div>
+                        <button type="button" @click="closeCustomTabModal()"
+                                class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
+                            <iconify-icon icon="tabler:x" width="16"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="px-5 py-4 space-y-4">
+                        <!-- Icon Picker (inline) -->
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Icône</label>
+                            <div class="flex items-center gap-2">
+                                <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center ring-1 ring-primary/20">
+                                    <iconify-icon :icon="ctIcon" width="18" class="text-primary"></iconify-icon>
+                                </div>
+                                <button type="button" @click="ctIconPickerOpen = !ctIconPickerOpen"
+                                        class="flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primary/5 transition-all text-gray-500 hover:text-primary active:scale-95 bg-white dark:bg-[#1b2e4b]"
+                                        title="Choisir une icône">
+                                    <iconify-icon icon="tabler:palette" width="16"></iconify-icon>
+                                </button>
+                            </div>
+                            <!-- Inline Icon Grid (slides down inside modal) -->
+                            <div x-show="ctIconPickerOpen" x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0"
+                                 x-transition:leave="transition ease-in duration-150"
+                                 x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 -translate-y-1"
+                                 class="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700 shadow-lg shadow-gray-200/60 dark:shadow-black/30"
+                                 x-cloak>
+                                <div style="display: grid !important; grid-template-columns: repeat(7, 1fr) !important; gap: 6px !important;">
+                                    <template x-for="icon in ctIconOptions" :key="icon">
+                                        <button type="button" @click="ctIcon = icon; ctIconPickerOpen = false"
+                                                class="flex items-center justify-center rounded-lg transition-all text-gray-400 hover:text-primary"
+                                                :class="ctIcon === icon ? 'bg-primary/15 text-primary ring-1 ring-primary/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700'"
+                                                :title="icon"
+                                                style="width: 36px; height: 36px;">
+                                            <iconify-icon :icon="icon" width="18"></iconify-icon>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab Name -->
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2" for="ct-name-input">Nom de l'onglet</label>
+                            <input type="text" id="ct-name-input" x-model="ctName"
+                                   @keyup.enter="submitCustomTab()"
+                                   class="form-input w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200"
+                                   placeholder="Ex: Notes, Documents, Suivi...">
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="flex items-center justify-end gap-2 px-5 py-3.5 border-t dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20 rounded-b-xl">
+                        <button type="button" @click="closeCustomTabModal()"
+                                class="px-4 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all">
+                            Annuler
+                        </button>
+                        <button type="button" @click="submitCustomTab()"
+                                :disabled="!ctName.trim()"
+                                class="flex items-center gap-1.5 px-5 py-2 rounded-lg text-xs font-bold text-white bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg hover:shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                            <iconify-icon icon="tabler:check" width="14"></iconify-icon>
+                            <span>Créer</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <script>
-        function relationTabs() {
+        function recordTabs() {
             const accountNumber = '<%= account_number %>';
             const recordId = '<%= record._id %>';
             const entityId = '<%= entity._id %>';
             const entitySlug = '<%= entity.slug %>';
-            const viewId = 'record-edit-' + entityId;
+            const viewId = 'record_tabs_' + entityId;
             const initialMeta = <%- JSON.stringify(locals.relationTabsMeta || []) %>;
 
             return {
                 allTabs: [],
-                activeTab: '__self__',  // Self tab is active by default
+                customTabs: [],  // Custom tabs created by user
+                activeTab: '__self__',  // Self tab is active by default (synced to $store.recordTabs)
                 tabLoading: false,
                 tabRecords: [],
                 tabCache: {},
                 showConfig: false,
                 _sortableInstance: null,
+                _tabBarSortable: null,
+
+                // Custom tab content (per-tab notes) — legacy, kept for migration
+                customTabContents: {},  // { tabKey: '<html content>' }
+                _contentSaveTimer: null,
+                _contentSaving: false,
+
+                // Per-tab field assignment — legacy, kept for migration
+                fieldAssignments: {},   // { 'standard_title': 'custom_notes_123', ... }
+                fieldPickerOpen: false, // whether the field picker dropdown is open
+                fieldPickerTab: null,   // which custom tab the picker is for
+
+                // Per-tab layout mode — legacy  
+                tabLayouts: {},         // { 'custom_123': 'side-fields-notes', ... }
+
+                // ═══ Layout Builder State ═══
+                customTabLayouts: {},   // { tabKey: { rows: [...], blocks: {...} } }
+                ctWidgetPickerOpen: false,
+                ctWidgetPickerTarget: null, // { tabKey, rowId, colId }
+                ctWidgetCatalog: [
+                    { type: 'notes',    label: 'Notes',      icon: 'solar:document-text-bold-duotone', color: '#4361ee', bg: 'rgba(67,97,238,0.1)',  desc: 'Texte enrichi' },
+                    { type: 'tasks',    label: 'Tâches',     icon: 'solar:checklist-bold-duotone',     color: '#00ab55', bg: 'rgba(0,171,85,0.1)',   desc: 'Checklist' },
+                    { type: 'timeline', label: 'Timeline',   icon: 'solar:clock-circle-bold-duotone',  color: '#805dca', bg: 'rgba(128,93,202,0.1)', desc: 'Historique' },
+                    { type: 'kpi',      label: 'KPI',        icon: 'solar:graph-up-bold-duotone',      color: '#e7515a', bg: 'rgba(231,81,90,0.1)',  desc: 'Indicateur' },
+                    { type: 'chart',    label: 'Graphique',  icon: 'solar:chart-bold-duotone',         color: '#e2a03f', bg: 'rgba(226,160,63,0.1)', desc: 'Visualisation' },
+                    { type: 'fields',   label: 'Champs',     icon: 'solar:layers-bold-duotone',        color: '#2196f3', bg: 'rgba(33,150,243,0.1)', desc: 'Champs entity' },
+                    { type: 'cards',    label: 'Cartes',     icon: 'solar:card-bold-duotone',          color: '#e2a03f', bg: 'rgba(226,160,63,0.1)', desc: 'Records liés' },
+                    { type: 'iframe',   label: 'Embed',      icon: 'solar:code-bold-duotone',          color: '#00ab55', bg: 'rgba(0,171,85,0.1)',   desc: 'Contenu externe' },
+                ],
+                ctResizeState: { active: false, tabKey: null, rowId: null, colIndex: null, startX: 0, startWidths: [] },
+
+                // Custom Tab Modal state
+                ctOpen: false,
+                ctName: '',
+                ctIcon: 'solar:widget-bold-duotone',
+                ctIconPickerOpen: false,
+                ctIconOptions: [
+                    'solar:widget-bold-duotone', 'solar:document-text-bold-duotone', 'solar:notes-bold-duotone',
+                    'solar:clipboard-list-bold-duotone', 'solar:stethoscope-bold-duotone', 'solar:heart-pulse-bold-duotone',
+                    'solar:pill-bold-duotone', 'solar:test-tube-bold-duotone', 'solar:shield-check-bold-duotone',
+                    'solar:calendar-bold-duotone', 'solar:user-bold-duotone', 'solar:users-group-rounded-bold-duotone',
+                    'solar:chat-round-dots-bold-duotone', 'solar:phone-bold-duotone', 'solar:mailbox-bold-duotone',
+                    'solar:folder-bold-duotone', 'solar:file-text-bold-duotone', 'solar:chart-bold-duotone',
+                    'solar:star-bold-duotone', 'solar:flag-bold-duotone', 'solar:map-point-bold-duotone',
+                    'solar:clock-circle-bold-duotone', 'solar:camera-bold-duotone', 'solar:gallery-bold-duotone',
+                    'solar:link-bold-duotone', 'solar:settings-bold-duotone', 'solar:tag-bold-duotone',
+                    'solar:bookmark-bold-duotone', 'solar:dollar-bold-duotone', 'solar:delivery-bold-duotone',
+                    'solar:home-bold-duotone', 'solar:database-bold-duotone', 'solar:code-bold-duotone',
+                    'solar:lock-bold-duotone', 'solar:eye-bold-duotone'
+                ],
 
                 // Quick Create Modal state
                 qcOpen: false,
@@ -911,15 +1410,101 @@
                     return true;
                 },
 
+                // Custom Tab Modal
+                openCustomTabModal() {
+                    this.ctName = '';
+                    this.ctIcon = 'solar:widget-bold-duotone';
+                    this.ctIconPickerOpen = false;
+                    this.ctOpen = true;
+                    this.$nextTick(() => {
+                        const input = document.getElementById('ct-name-input');
+                        if (input) input.focus();
+                    });
+                },
+
+                closeCustomTabModal() {
+                    this.ctOpen = false;
+                    this.ctName = '';
+                },
+
+                submitCustomTab() {
+                    const name = this.ctName.trim();
+                    if (!name) return;
+
+                    // Prevent duplicate custom tab names
+                    const duplicate = this.allTabs.find(t => t.isCustom && t.label.toLowerCase() === name.toLowerCase());
+                    if (duplicate) {
+                        this._showToast('Un onglet avec ce nom existe déjà', 'error');
+                        return;
+                    }
+
+                    const tabKey = 'custom_' + Date.now();
+                    const newTab = {
+                        key: tabKey,
+                        label: name,
+                        icon: this.ctIcon || 'solar:widget-bold-duotone',
+                        color: '#4361ee',
+                        visible: true,
+                        _count: 0,
+                        direction: 'custom',
+                        isCustom: true
+                    };
+
+                    this.allTabs.push(newTab);
+                    this.customTabs.push(newTab);
+                    this.closeCustomTabModal();
+                    this.selectTab(tabKey);
+                    this._savePrefs();
+                },
+
+                removeCustomTab(key) {
+                    this.allTabs = this.allTabs.filter(t => t.key !== key);
+                    this.customTabs = this.customTabs.filter(t => t.key !== key);
+                    if (this.activeTab === key) {
+                        this.activeTab = '__self__';
+                        Alpine.store('recordTabs').activeTab = '__self__';
+                        this.tabRecords = [];
+                    }
+                    this._savePrefs();
+                },
+
                 async init() {
-                    // Load saved preferences
+                    // Load saved preferences from account-level API
                     let savedTabPrefs = null;
+                    let savedCustomTabs = null;
+                    let savedTabOrder = null;
                     try {
-                        const res = await fetch(`/account/${accountNumber}/api/user/view-preferences/${viewId}`, { credentials: 'include' });
+                        const res = await fetch(`/account/${accountNumber}/api/account/view-preferences/${viewId}`, { credentials: 'include' });
                         const data = await res.json();
                         savedTabPrefs = data?.preferences?.relationTabs || null;
+                        savedCustomTabs = data?.preferences?.customTabs || null;
+                        savedTabOrder = data?.preferences?.tabOrder || null;
+                        // Load field assignments
+                        if (data?.preferences?.fieldAssignments) {
+                            this.fieldAssignments = data.preferences.fieldAssignments;
+                            this.$store.recordTabs.fieldAssignments = { ...this.fieldAssignments };
+                        }
+                        // Load per-tab layouts
+                        if (data?.preferences?.tabLayouts) {
+                            this.tabLayouts = data.preferences.tabLayouts;
+                        }
+                        // Load layout builder data
+                        if (data?.preferences?.customTabLayouts) {
+                            this.customTabLayouts = data.preferences.customTabLayouts;
+                        }
                     } catch (e) { /* ignore */ }
 
+                    // Fallback: try user-level preferences (backward compatibility)
+                    if (!savedTabPrefs) {
+                        try {
+                            const res = await fetch(`/account/${accountNumber}/api/user/view-preferences/record-edit-${entityId}`, { credentials: 'include' });
+                            const data = await res.json();
+                            savedTabPrefs = data?.preferences?.relationTabs || null;
+                        } catch (e) { /* ignore */ }
+                    }
+
+                    // Build relation tabs from initialMeta + saved prefs
+                    let relationTabs = [];
                     if (savedTabPrefs && Array.isArray(savedTabPrefs)) {
                         const metaMap = {};
                         initialMeta.forEach(m => { metaMap[m.key] = { ...m, _count: m.count || 0, visible: true }; });
@@ -931,9 +1516,47 @@
                             }
                         });
                         Object.values(metaMap).forEach(m => merged.push(m));
-                        this.allTabs = merged;
+                        relationTabs = merged;
                     } else {
-                        this.allTabs = initialMeta.map(m => ({ ...m, _count: m.count || 0, visible: true }));
+                        relationTabs = initialMeta.map(m => ({ ...m, _count: m.count || 0, visible: true }));
+                    }
+
+                    // Load custom tabs
+                    let customTabsList = [];
+                    if (savedCustomTabs && Array.isArray(savedCustomTabs)) {
+                        customTabsList = savedCustomTabs.map(ct => ({
+                            ...ct,
+                            _count: 0,
+                            direction: 'custom',
+                            isCustom: true,
+                            visible: ct.visible !== false
+                        }));
+                        // Load saved content for each custom tab
+                        savedCustomTabs.forEach(ct => {
+                            if (ct.content) {
+                                this.customTabContents[ct.key] = ct.content;
+                            }
+                        });
+                    }
+                    this.customTabs = customTabsList;
+
+                    // Combine and apply saved order
+                    const allCombined = [...relationTabs, ...customTabsList];
+                    if (savedTabOrder && Array.isArray(savedTabOrder) && savedTabOrder.length > 0) {
+                        const tabMap = {};
+                        allCombined.forEach(t => { tabMap[t.key] = t; });
+                        const ordered = [];
+                        savedTabOrder.forEach(key => {
+                            if (tabMap[key]) {
+                                ordered.push(tabMap[key]);
+                                delete tabMap[key];
+                            }
+                        });
+                        // Append any new tabs not in saved order
+                        Object.values(tabMap).forEach(t => ordered.push(t));
+                        this.allTabs = ordered;
+                    } else {
+                        this.allTabs = allCombined;
                     }
 
                     // Init SortableJS for config panel
@@ -943,29 +1566,59 @@
                                 this.$nextTick(() => this._initSortable());
                             }
                         });
+                        // Init SortableJS for tab bar drag & drop
+                        this._initTabBarSortable();
                     });
 
                     // Expose for relation fields panel quick create
                     window.relationTabsApp = this;
+
+                    // Sync activeTab changes to Alpine store so panelLayout can react
+                    this.$watch('activeTab', (val) => {
+                        Alpine.store('recordTabs').activeTab = val;
+                        // When switching to a custom tab, relocate its assigned fields
+                        if (val && val.startsWith('custom_')) {
+                            this._relocateAssignedFieldsForTab(val);
+                        }
+                    });
                 },
 
                 _initSortable() {
-                    const el = document.getElementById('relation-tabs-sortable');
+                    const el = document.getElementById('unified-tabs-sortable');
                     if (!el || this._sortableInstance) return;
                     if (typeof Sortable === 'undefined') return;
 
-                    this._sortableInstance = Sortable.create(el, {
+                    this._sortableInstance = new Sortable(el, {
                         handle: '.drag-handle',
                         animation: 200,
                         ghostClass: 'opacity-30',
+                        onStart: () => {
+                            this._preDragOrder = this.allTabs.map(t => t.key);
+                        },
                         onEnd: (evt) => {
-                            const newOrder = Array.from(el.children)
-                                .map(child => child.getAttribute('data-key'))
-                                .filter(Boolean);
+                            const { oldDraggableIndex, newDraggableIndex } = evt;
+                            if (oldDraggableIndex === newDraggableIndex) return;
+
+                            // Compute new order from pre-drag snapshot
+                            const order = [...this._preDragOrder];
+                            const [moved] = order.splice(oldDraggableIndex, 1);
+                            order.splice(newDraggableIndex, 0, moved);
                             const tabMap = {};
                             this.allTabs.forEach(t => { tabMap[t.key] = t; });
-                            this.allTabs = newOrder.map(key => tabMap[key]).filter(Boolean);
-                            this._savePrefs();
+                            const newTabs = order.map(key => tabMap[key]).filter(Boolean);
+
+                            // Destroy Sortable FIRST to release DOM references
+                            this._sortableInstance.destroy();
+                            this._sortableInstance = null;
+
+                            // FLUSH: clear array to force Alpine to destroy all x-for DOM nodes
+                            this.allTabs = [];
+                            // REBUILD: on next tick, set new order so Alpine rebuilds fresh DOM
+                            this.$nextTick(() => {
+                                this.allTabs = newTabs;
+                                this.$nextTick(() => this._initSortable());
+                                this._savePrefs();
+                            });
                         }
                     });
                 },
@@ -985,6 +1638,14 @@
                     }
 
                     this.activeTab = key;
+
+                    // Custom tabs don't have entity data to fetch
+                    const tabMeta = this.allTabs.find(t => t.key === key);
+                    if (tabMeta && tabMeta.isCustom) {
+                        this.tabRecords = [];
+                        this.tabLoading = false;
+                        return;
+                    }
 
                     // Check cache
                     if (this.tabCache[key]) {
@@ -1011,7 +1672,7 @@
                     }
                 },
 
-                // â•â•â• Quick Create Modal â•â•â•
+                // ═══ Quick Create Modal ═══
                 async openQuickCreate(tab) {
                     if (!tab) return;
                     this.qcTab = tab;
@@ -1120,7 +1781,7 @@
                             if (token.id === 'date') {
                                 return new Date().toISOString().split('T')[0];
                             }
-                            // Custom fields â€” match by field_id
+                            // Custom fields — match by field_id
                             const val = this.qcCustom[token.id];
                             if (val) return val;
                             // Check if it's a date field and format nicely
@@ -1286,7 +1947,10 @@
                 },
 
                 resetConfig() {
-                    this.allTabs = initialMeta.map(m => ({ ...m, _count: m.count || 0, visible: true }));
+                    // Reset relation tabs to defaults but PRESERVE custom tabs
+                    const resetRelations = initialMeta.map(m => ({ ...m, _count: m.count || 0, visible: true }));
+                    const existingCustom = this.allTabs.filter(t => t.isCustom);
+                    this.allTabs = [...resetRelations, ...existingCustom];
                     this._savePrefs();
                     if (this._sortableInstance) {
                         this._sortableInstance.destroy();
@@ -1295,21 +1959,647 @@
                     this.$nextTick(() => this._initSortable());
                 },
 
-                async _savePrefs() {
-                    const prefs = this.allTabs.map(t => ({ key: t.key, visible: t.visible !== false }));
+                // Init SortableJS on the tab bar buttons for direct drag reorder
+                _initTabBarSortable() {
+                    const scrollContainer = document.getElementById('unified-tabs-scroll');
+                    if (!scrollContainer || this._tabBarSortable) return;
+                    if (typeof Sortable === 'undefined') return;
+
+                    this._tabBarSortable = new Sortable(scrollContainer, {
+                        animation: 200,
+                        ghostClass: 'opacity-30',
+                        draggable: '.relation-tab-draggable',
+                        filter: '.no-drag',
+                        preventOnFilter: false,
+                        onStart: () => {
+                            // Snapshot visible tab keys BEFORE any DOM mutation
+                            this._preDragVisibleKeys = this.allTabs
+                                .filter(t => t.visible !== false)
+                                .map(t => t.key);
+                        },
+                        onEnd: (evt) => {
+                            const { oldDraggableIndex, newDraggableIndex } = evt;
+                            if (oldDraggableIndex === newDraggableIndex) return;
+
+                            // Use pre-drag snapshot to identify which tabs moved
+                            const visibleKeys = [...this._preDragVisibleKeys];
+                            const fromKey = visibleKeys[oldDraggableIndex];
+                            const toKey = visibleKeys[newDraggableIndex];
+                            if (!fromKey || !toKey) return;
+
+                            // Find positions in the FULL allTabs array (includes hidden tabs)
+                            const fromIdx = this.allTabs.findIndex(t => t.key === fromKey);
+                            const toIdx = this.allTabs.findIndex(t => t.key === toKey);
+                            if (fromIdx === -1 || toIdx === -1) return;
+
+                            // Compute new order
+                            const newTabs = [...this.allTabs];
+                            const [moved] = newTabs.splice(fromIdx, 1);
+                            newTabs.splice(toIdx, 0, moved);
+
+                            // Destroy Sortable FIRST to release DOM references
+                            this._tabBarSortable.destroy();
+                            this._tabBarSortable = null;
+
+                            // FLUSH: clear array to force Alpine to destroy all x-for DOM nodes
+                            this.allTabs = [];
+                            // REBUILD: on next tick, set new order so Alpine rebuilds fresh DOM
+                            this.$nextTick(() => {
+                                this.allTabs = newTabs;
+                                this.$nextTick(() => this._initTabBarSortable());
+                                this._savePrefs();
+                            });
+                        }
+                    });
+                },
+
+                // ═══ Custom Tab Content (Notes Editor) ═══
+                _loadTabContent(tabKey) {
+                    if (!tabKey || !tabKey.startsWith('custom_')) return;
+                    this.$nextTick(() => {
+                        const editor = document.getElementById('custom-tab-editor-' + tabKey);
+                        if (!editor) return;
+                        const saved = this.customTabContents[tabKey] || '';
+                        if (editor.innerHTML !== saved) {
+                            editor.innerHTML = saved;
+                        }
+                        // Show placeholder styling if empty
+                        if (!saved) {
+                            editor.setAttribute('data-placeholder', 'Écrivez vos notes ici...');
+                        }
+                    });
+                },
+
+                _onCustomTabInput() {
+                    const tabKey = this.activeTab;
+                    if (!tabKey || !tabKey.startsWith('custom_')) return;
+                    const editor = document.getElementById('custom-tab-editor-' + tabKey);
+                    if (!editor) return;
+
+                    // Sync DOM → state
+                    this.customTabContents[tabKey] = editor.innerHTML;
+
+                    // Debounced save (1 second after last keystroke)
+                    if (this._contentSaveTimer) clearTimeout(this._contentSaveTimer);
+                    this._contentSaveTimer = setTimeout(() => {
+                        this._saveCustomTabContent();
+                    }, 1000);
+                },
+
+                async _saveCustomTabContent() {
+                    this._contentSaving = true;
                     try {
-                        await fetch(`/account/${accountNumber}/api/user/view-preferences`, {
+                        await this._savePrefs();
+                    } finally {
+                        this._contentSaving = false;
+                    }
+                },
+
+                _execCmd(cmd) {
+                    document.execCommand(cmd, false, null);
+                    // Re-focus editor
+                    const editor = document.getElementById('custom-tab-editor-' + this.activeTab);
+                    if (editor) editor.focus();
+                },
+
+                _onCustomTabPaste(event) {
+                    const html = event.clipboardData?.getData('text/html');
+                    const text = event.clipboardData?.getData('text/plain') || '';
+                    if (html) {
+                        // Clean paste: strip dangerous tags but keep basic formatting
+                        const temp = document.createElement('div');
+                        temp.innerHTML = html;
+                        // Remove scripts, styles, meta
+                        temp.querySelectorAll('script,style,meta,link').forEach(el => el.remove());
+                        document.execCommand('insertHTML', false, temp.innerHTML);
+                    } else {
+                        document.execCommand('insertText', false, text);
+                    }
+                    this._onCustomTabInput();
+                },
+
+                // ═══ Per-Tab Field Assignment ═══
+                getAvailableFields() {
+                    const allFields = [];
+                    const seen = new Set();
+                    
+                    // Method 1: Scan DOM for record-field-wrapper elements (both EJS and legacy)
+                    document.querySelectorAll('.record-field-wrapper[data-field-id]').forEach(el => {
+                        const fid = el.dataset.fieldId;
+                        if (seen.has(fid) || this.fieldAssignments[fid]) return;
+                        seen.add(fid);
+                        allFields.push({ 
+                            id: fid, 
+                            label: el.dataset.fieldLabel || fid, 
+                            type: el.dataset.fieldType || 'custom' 
+                        });
+                    });
+                    
+                    // Method 2: Read from legacy builder's fieldsById (for fields not yet rendered)
+                    if (window.recordFormApp?.fieldsById) {
+                        Object.entries(window.recordFormApp.fieldsById).forEach(([fieldId, field]) => {
+                            if (field.type === 'relation') return; // Relations have their own panel
+                            const fid = (field.type || 'custom') + '_' + fieldId;
+                            if (seen.has(fid) || this.fieldAssignments[fid]) return;
+                            seen.add(fid);
+                            allFields.push({
+                                id: fid,
+                                label: field.label || field.name || fieldId,
+                                type: field.type || 'custom'
+                            });
+                        });
+                    }
+                    
+                    return allFields;
+                },
+
+                getFieldsForTab(tabKey) {
+                    return Object.entries(this.fieldAssignments)
+                        .filter(([_, tk]) => tk === tabKey)
+                        .map(([fid, _]) => {
+                            // Try to get label from DOM
+                            const el = document.querySelector(`.record-field-wrapper[data-field-id="${fid}"]`);
+                            if (el) {
+                                return { id: fid, label: el.dataset.fieldLabel || fid, type: el.dataset.fieldType || 'custom' };
+                            }
+                            // Try from legacy builder
+                            const parts = fid.split('_');
+                            const type = parts[0];
+                            const rawId = parts.slice(1).join('_');
+                            if (window.recordFormApp?.fieldsById?.[rawId]) {
+                                const field = window.recordFormApp.fieldsById[rawId];
+                                return { id: fid, label: field.label || field.name || rawId, type };
+                            }
+                            return { id: fid, label: fid, type: 'custom' };
+                        });
+                },
+
+                assignFieldToTab(fieldId, tabKey) {
+                    this.fieldAssignments[fieldId] = tabKey;
+                    this.$store.recordTabs.fieldAssignments = { ...this.fieldAssignments };
+                    this.fieldPickerOpen = false;
+                    this._refreshFieldsDisplay();
+                    this._savePrefs();
+                },
+
+                unassignField(fieldId) {
+                    delete this.fieldAssignments[fieldId];
+                    this.$store.recordTabs.fieldAssignments = { ...this.fieldAssignments };
+                    this._refreshFieldsDisplay();
+                    this._savePrefs();
+                },
+
+                _refreshFieldsDisplay() {
+                    // For legacy builder: trigger rebuildCanvas to re-render with updated visibility
+                    if (window.recordFormApp?.rebuildCanvas) {
+                        window.recordFormApp.rebuildCanvas();
+                    }
+                    // For EJS layout: fields use x-show which auto-updates via the store
+                    // Relocate fields for the active custom tab
+                    if (this.activeTab?.startsWith('custom_')) {
+                        this.$nextTick(() => this._relocateAssignedFieldsForTab(this.activeTab));
+                    }
+                },
+
+                _relocateField(fieldId, tabKey) {
+                    // Not used anymore for legacy builder — fields are re-rendered in custom tab container
+                },
+
+                _returnFieldToForm(fieldId) {
+                    // Not used anymore — rebuildCanvas handles re-showing fields
+                },
+
+                _relocateAssignedFieldsForTab(tabKey) {
+                    this.$nextTick(() => {
+                        const container = document.getElementById('custom-tab-fields-' + tabKey);
+                        if (!container) return;
+                        
+                        // Get fields assigned to this tab
+                        const assignedFields = Object.entries(this.fieldAssignments)
+                            .filter(([_, tk]) => tk === tabKey)
+                            .map(([fid, _]) => fid);
+                        
+                        // Always clear container first to prevent duplication
+                        container.innerHTML = '';
+                        
+                        if (assignedFields.length === 0) return;
+                        
+                        // Render assigned fields in the container
+                        let html = '';
+                        assignedFields.forEach(fid => {
+                            const parts = fid.split('_');
+                            const type = parts[0];
+                            const rawId = parts.slice(1).join('_');
+                            
+                            // Try legacy builder: render the field using renderField
+                            if (window.recordFormApp?.fieldsById?.[rawId]) {
+                                const field = window.recordFormApp.fieldsById[rawId];
+                                const layoutItem = window.recordFormApp.layout?.find(item => item.fieldId === rawId);
+                                if (layoutItem) {
+                                    const fieldHtml = window.recordFormApp.renderField(field, layoutItem.id);
+                                    html += `<div class="mb-3 assigned-field-clone" data-source-field-id="${fid}">${fieldHtml}</div>`;
+                                    return;
+                                }
+                            }
+                            
+                            // Try EJS fields: find the wrapper in the form and clone it
+                            const formField = document.querySelector(`#panels-main-zone .record-field-wrapper[data-field-id="${fid}"]`);
+                            if (formField) {
+                                const clone = formField.cloneNode(true);
+                                clone.style.display = '';
+                                clone.removeAttribute('x-show');
+                                clone.classList.add('assigned-field-clone');
+                                clone.dataset.sourceFieldId = fid;
+                                container.appendChild(clone);
+                            }
+                        });
+                        
+                        // Set the HTML for legacy builder fields
+                        if (html) {
+                            container.insertAdjacentHTML('beforeend', html);
+                            // Re-init Alpine for dynamic elements (like tag pickers)
+                            container.querySelectorAll('[x-data]').forEach(el => {
+                                if (!el._x_dataStack) {
+                                    Alpine.initTree(el);
+                                }
+                            });
+                        }
+                    });
+                },
+
+                // ═══ Per-Tab Layout ═══
+                getTabLayout(tabKey) {
+                    return this.tabLayouts[tabKey] || 'stacked';
+                },
+
+                setTabLayout(tabKey, layout) {
+                    this.tabLayouts[tabKey] = layout;
+                    this._savePrefs();
+                },
+
+                async _savePrefs() {
+                    const relationPrefs = this.allTabs
+                        .filter(t => !t.isCustom)
+                        .map(t => ({ key: t.key, visible: t.visible !== false }));
+                    const customPrefs = this.allTabs
+                        .filter(t => t.isCustom)
+                        .map(t => ({
+                            key: t.key,
+                            label: t.label,
+                            icon: t.icon,
+                            color: t.color || '#4361ee',
+                            visible: t.visible !== false,
+                            content: this.customTabContents[t.key] || ''
+                        }));
+                    const tabOrder = this.allTabs.map(t => t.key);
+                    try {
+                        await fetch(`/account/${accountNumber}/api/account/view-preferences`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
                             body: JSON.stringify({
                                 viewId,
-                                preferences: { relationTabs: prefs }
+                                preferences: {
+                                    relationTabs: relationPrefs,
+                                    customTabs: customPrefs,
+                                    tabOrder,
+                                    fieldAssignments: this.fieldAssignments,
+                                    tabLayouts: this.tabLayouts,
+                                    customTabLayouts: this.customTabLayouts
+                                }
                             })
                         });
                     } catch (e) {
                         console.error('Error saving relation tabs prefs:', e);
                     }
+                },
+
+                // ═══════════════════ LAYOUT BUILDER METHODS ═══════════════════
+
+                _ensureTabLayout(tabKey) {
+                    if (!this.customTabLayouts[tabKey]) {
+                        this.customTabLayouts[tabKey] = { rows: [], blocks: {} };
+                    }
+                    return this.customTabLayouts[tabKey];
+                },
+
+                _genId(prefix) {
+                    return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                },
+
+                getTabRows(tabKey) {
+                    const layout = this.customTabLayouts[tabKey];
+                    return layout ? layout.rows : [];
+                },
+
+                getTabBlock(tabKey, blockId) {
+                    const layout = this.customTabLayouts[tabKey];
+                    return layout && layout.blocks ? layout.blocks[blockId] : null;
+                },
+
+                ctAddRow(tabKey) {
+                    const layout = this._ensureTabLayout(tabKey);
+                    const colId = this._genId('col');
+                    layout.rows.push({
+                        id: this._genId('row'),
+                        columns: [{ id: colId, width: 12, blockId: null }]
+                    });
+                    this.ctSaveLayout(tabKey);
+                },
+
+                ctDeleteRow(tabKey, rowId) {
+                    const layout = this._ensureTabLayout(tabKey);
+                    const rowIdx = layout.rows.findIndex(r => r.id === rowId);
+                    if (rowIdx === -1) return;
+                    // Clean up blocks in this row
+                    const row = layout.rows[rowIdx];
+                    row.columns.forEach(col => {
+                        if (col.blockId && layout.blocks[col.blockId]) {
+                            delete layout.blocks[col.blockId];
+                        }
+                    });
+                    layout.rows.splice(rowIdx, 1);
+                    this.ctSaveLayout(tabKey);
+                },
+
+                ctMoveRow(tabKey, rowId, direction) {
+                    const layout = this._ensureTabLayout(tabKey);
+                    const idx = layout.rows.findIndex(r => r.id === rowId);
+                    const newIdx = idx + direction;
+                    if (newIdx < 0 || newIdx >= layout.rows.length) return;
+                    const [moved] = layout.rows.splice(idx, 1);
+                    layout.rows.splice(newIdx, 0, moved);
+                    this.ctSaveLayout(tabKey);
+                },
+
+                ctSetRowLayout(tabKey, rowId, colCount) {
+                    const layout = this._ensureTabLayout(tabKey);
+                    const row = layout.rows.find(r => r.id === rowId);
+                    if (!row) return;
+                    
+                    // Preserve existing blocks
+                    const existingBlocks = row.columns.filter(c => c.blockId).map(c => c.blockId);
+                    
+                    // Calculate widths (12-unit grid)
+                    const colWidth = Math.floor(12 / colCount);
+                    const remainder = 12 % colCount;
+                    
+                    // Build new columns with widths
+                    const newCols = [];
+                    for (let i = 0; i < colCount; i++) {
+                        newCols.push({
+                            id: this._genId('col'),
+                            width: colWidth + (i < remainder ? 1 : 0),
+                            blockId: existingBlocks[i] || null
+                        });
+                    }
+                    
+                    // Clean up orphaned blocks (blocks that were in columns beyond colCount)
+                    existingBlocks.slice(colCount).forEach(bId => {
+                        if (layout.blocks[bId]) delete layout.blocks[bId];
+                    });
+                    
+                    row.columns = newCols;
+                    this.ctSaveLayout(tabKey);
+                },
+
+                ctDeleteColumn(tabKey, rowId, colId) {
+                    const layout = this._ensureTabLayout(tabKey);
+                    const row = layout.rows.find(r => r.id === rowId);
+                    if (!row) return;
+                    
+                    if (row.columns.length <= 1) {
+                        this.ctDeleteRow(tabKey, rowId);
+                        return;
+                    }
+                    
+                    const colIdx = row.columns.findIndex(c => c.id === colId);
+                    if (colIdx === -1) return;
+                    const col = row.columns[colIdx];
+                    const freedWidth = col.width || Math.floor(12 / row.columns.length);
+                    
+                    if (col.blockId && layout.blocks[col.blockId]) {
+                        delete layout.blocks[col.blockId];
+                    }
+                    row.columns.splice(colIdx, 1);
+                    
+                    // Redistribute freed width
+                    const extraPerCol = Math.floor(freedWidth / row.columns.length);
+                    let rem = freedWidth % row.columns.length;
+                    row.columns.forEach((c, i) => {
+                        c.width = (c.width || 1) + extraPerCol + (i < rem ? 1 : 0);
+                    });
+                    
+                    this.ctSaveLayout(tabKey);
+                },
+
+                ctRemoveBlock(tabKey, rowId, colId) {
+                    const layout = this._ensureTabLayout(tabKey);
+                    const row = layout.rows.find(r => r.id === rowId);
+                    if (!row) return;
+                    const col = row.columns.find(c => c.id === colId);
+                    if (!col || !col.blockId) return;
+                    if (layout.blocks[col.blockId]) {
+                        delete layout.blocks[col.blockId];
+                    }
+                    col.blockId = null;
+                    this.ctSaveLayout(tabKey);
+                },
+
+                ctInsertWidget(widgetType) {
+                    const target = this.ctWidgetPickerTarget;
+                    if (!target) return;
+                    
+                    const layout = this._ensureTabLayout(target.tabKey);
+                    const row = layout.rows.find(r => r.id === target.rowId);
+                    if (!row) return;
+                    const col = row.columns.find(c => c.id === target.colId);
+                    if (!col) return;
+                    
+                    const blockId = this._genId('block');
+                    const defaultTitles = {
+                        notes: 'Notes', tasks: 'Tâches', timeline: 'Timeline',
+                        kpi: 'KPI', chart: 'Graphique', fields: 'Champs',
+                        cards: 'Cartes', iframe: 'Embed'
+                    };
+                    
+                    const block = {
+                        type: widgetType,
+                        title: defaultTitles[widgetType] || widgetType,
+                    };
+                    
+                    if (widgetType === 'notes') block.content = '';
+                    if (widgetType === 'tasks') block.tasks = [];
+                    if (widgetType === 'fields') block.fields = [];
+                    
+                    layout.blocks[blockId] = block;
+                    col.blockId = blockId;
+                    
+                    this.ctWidgetPickerOpen = false;
+                    this.ctWidgetPickerTarget = null;
+                    this.ctSaveLayout(target.tabKey);
+                },
+
+                ctAddTask(tabKey, blockId, text) {
+                    if (!text || !text.trim()) return;
+                    const layout = this._ensureTabLayout(tabKey);
+                    const block = layout.blocks[blockId];
+                    if (!block || block.type !== 'tasks') return;
+                    if (!block.tasks) block.tasks = [];
+                    block.tasks.push({ text: text.trim(), done: false });
+                    this.ctSaveLayout(tabKey);
+                },
+
+                ctOnBlockInput(tabKey, blockId) {
+                    const layout = this._ensureTabLayout(tabKey);
+                    const block = layout.blocks[blockId];
+                    if (!block || block.type !== 'notes') return;
+                    
+                    const editor = document.getElementById('ct-editor-' + blockId);
+                    if (!editor) return;
+                    block.content = editor.innerHTML;
+                    
+                    // Debounced save
+                    if (this._contentSaveTimer) clearTimeout(this._contentSaveTimer);
+                    this._contentSaveTimer = setTimeout(() => {
+                        this.ctSaveLayout(tabKey);
+                    }, 1000);
+                },
+
+                ctLoadBlockContent(tabKey, blockId) {
+                    if (!tabKey || !blockId) return;
+                    this.$nextTick(() => {
+                        const layout = this.customTabLayouts[tabKey];
+                        if (!layout || !layout.blocks[blockId]) return;
+                        const block = layout.blocks[blockId];
+                        if (block.type !== 'notes') return;
+                        
+                        const editor = document.getElementById('ct-editor-' + blockId);
+                        if (!editor) return;
+                        const saved = block.content || '';
+                        if (editor.innerHTML !== saved) {
+                            editor.innerHTML = saved;
+                        }
+                    });
+                },
+
+                // ═══ Column Resize (cockpit builder pattern) ═══
+
+                ctStartResize(tabKey, rowId, colIndex, event) {
+                    event.preventDefault();
+                    const layout = this.customTabLayouts[tabKey];
+                    if (!layout) return;
+                    const row = layout.rows.find(r => r.id === rowId);
+                    if (!row) return;
+
+                    this.ctResizeState = {
+                        active: true,
+                        tabKey: tabKey,
+                        rowId: rowId,
+                        colIndex: colIndex,
+                        startX: event.clientX,
+                        startWidths: row.columns.map(c => c.width)
+                    };
+
+                    // Add document-level listeners
+                    document.addEventListener('mousemove', this._ctDoResize = (e) => this.ctDoResize(e));
+                    document.addEventListener('mouseup', this._ctEndResize = () => this.ctEndResize());
+                    document.body.style.cursor = 'col-resize';
+                    document.body.style.userSelect = 'none';
+                },
+
+                ctDoResize(event) {
+                    if (!this.ctResizeState.active) return;
+
+                    const { tabKey, rowId, colIndex, startX, startWidths } = this.ctResizeState;
+                    const layout = this.customTabLayouts[tabKey];
+                    if (!layout) return;
+                    const row = layout.rows.find(r => r.id === rowId);
+                    if (!row) return;
+
+                    // Get the grid container width
+                    const gridContainer = document.querySelector('[style*="grid-template-columns: repeat(12"]');
+                    if (!gridContainer) return;
+
+                    const gridWidth = gridContainer.offsetWidth;
+                    const colUnitWidth = gridWidth / 12; // Width of one grid unit
+
+                    // Calculate delta in grid units
+                    const deltaX = event.clientX - startX;
+                    const deltaUnits = Math.round(deltaX / colUnitWidth);
+
+                    if (deltaUnits === 0) return;
+
+                    const leftWidth = startWidths[colIndex];
+                    const isLastColumn = colIndex === row.columns.length - 1;
+
+                    if (isLastColumn) {
+                        // Last column: shrinking creates a new empty column
+                        let newLeftWidth = leftWidth + deltaUnits;
+
+                        // Enforce min width of 1
+                        if (newLeftWidth < 1) newLeftWidth = 1;
+
+                        // Calculate remaining space
+                        const totalUsed = row.columns.reduce((sum, col, idx) =>
+                            sum + (idx === colIndex ? newLeftWidth : col.width), 0);
+                        const remaining = 12 - totalUsed;
+
+                        if (remaining > 0) {
+                            // Create or update the new column
+                            if (row.columns.length === startWidths.length) {
+                                // Add new empty column
+                                row.columns.push({ id: this._genId('col'), width: remaining, blockId: null });
+                                startWidths.push(0); // Track the new column
+                            } else {
+                                // Update existing new column width
+                                row.columns[colIndex + 1].width = remaining;
+                            }
+                            row.columns[colIndex].width = newLeftWidth;
+                        } else if (remaining <= 0) {
+                            // Remove the new column if no space
+                            if (row.columns.length > startWidths.length) {
+                                row.columns.pop();
+                            }
+                            row.columns[colIndex].width = leftWidth; // Reset to original
+                        }
+                    } else {
+                        // Normal resize between two columns
+                        const rightWidth = startWidths[colIndex + 1];
+
+                        let newLeftWidth = leftWidth + deltaUnits;
+                        let newRightWidth = rightWidth - deltaUnits;
+
+                        // Enforce min width of 1 for each column
+                        if (newLeftWidth < 1) {
+                            newLeftWidth = 1;
+                            newRightWidth = leftWidth + rightWidth - 1;
+                        }
+                        if (newRightWidth < 1) {
+                            newRightWidth = 1;
+                            newLeftWidth = leftWidth + rightWidth - 1;
+                        }
+
+                        // Apply new widths
+                        row.columns[colIndex].width = newLeftWidth;
+                        row.columns[colIndex + 1].width = newRightWidth;
+                    }
+                },
+
+                ctEndResize() {
+                    if (this.ctResizeState.active) {
+                        this.ctSaveLayout(this.ctResizeState.tabKey);
+                    }
+                    this.ctResizeState.active = false;
+                    document.removeEventListener('mousemove', this._ctDoResize);
+                    document.removeEventListener('mouseup', this._ctEndResize);
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                },
+
+                ctSaveLayout(tabKey) {
+                    // Debounced save via _savePrefs
+                    this._savePrefs();
                 }
             };
         }
@@ -1317,10 +2607,31 @@
         <style>
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Custom tab editor placeholder */
+        .custom-tab-editor-area:empty::before {
+            content: attr(data-placeholder);
+            color: #9ca3af;
+            pointer-events: none;
+            font-style: italic;
+        }
+        .dark .custom-tab-editor-area:empty::before {
+            color: #6b7280;
+        }
+        .custom-tab-content {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+        }
+        .dark .custom-tab-content {
+            border-color: #374151;
+            background: #111827;
+        }
         </style>
-        <% } %>
+
 
         <div class="record-layout-container" x-data="panelLayout()" id="panels-container"
+            x-show="$store.recordTabs.activeTab === '__self__'"
             :style="'grid-template-columns: repeat(12, 1fr)'">
             
             <!-- â•â•â• Main Form Content (Column 0) â•â•â• -->
@@ -1348,7 +2659,7 @@
                     <template x-if="designMode">
                         <div class="panel-drag-handle">
                             <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
-                            <span>Attributs</span>
+                            <span><%= entity.nameSingular || entity.name %></span>
                         </div>
                     </template>
                 <div class="panel">
@@ -1363,6 +2674,9 @@
                                         <% row.columns.forEach(function(col, colIndex) { %>
                                             <div class="px-2 mb-3" style="width: <%= (col.width / 12 * 100).toFixed(4) %>%">
                                                 <% (col.fields || []).forEach(function(field) { %>
+                                                <% var _fid = field.type + '_' + field.fieldId; %>
+                                                <% var _flabel = ''; if (field.type === 'standard' && locals.entityFormFieldDefs && locals.entityFormFieldDefs.standard[field.fieldId]) { _flabel = locals.entityFormFieldDefs.standard[field.fieldId].label || field.fieldId; } else if (field.type === 'custom' && locals.entityFormFieldDefs && locals.entityFormFieldDefs.custom[field.fieldId]) { _flabel = locals.entityFormFieldDefs.custom[field.fieldId].label || locals.entityFormFieldDefs.custom[field.fieldId].name || field.fieldId; } else if (field.type === 'relation' && locals.entityFormFieldDefs && locals.entityFormFieldDefs.relation[field.fieldId]) { _flabel = locals.entityFormFieldDefs.relation[field.fieldId].label || field.fieldId; } else if (field.type === 'classification' && locals.entityFormFieldDefs && locals.entityFormFieldDefs.classification[field.fieldId]) { _flabel = locals.entityFormFieldDefs.classification[field.fieldId].label || field.fieldId; } else { _flabel = field.label || field.fieldId; } %>
+                                                <div class="record-field-wrapper" data-field-id="<%= _fid %>" data-field-label="<%= _flabel %>" data-field-type="<%= field.type %>" x-show="!($store.recordTabs.fieldAssignments && $store.recordTabs.fieldAssignments['<%= _fid %>'])">
                                                     <% if (field.type === 'standard') { %>
                                                         <% var def = locals.entityFormFieldDefs && locals.entityFormFieldDefs.standard[field.fieldId]; %>
                                                         <% if (def) { %>
@@ -1934,6 +3248,7 @@
                                                             </div>
                                                         <% } %>
                                                     <% } %>
+                                                </div><!-- end record-field-wrapper -->
                                                 <% }); %>
                                             </div>
                                         <% }); %>
@@ -1943,79 +3258,64 @@
                         </div>
 
                     <% } else { %>
-                        <!-- ========== LEGACY LAYOUT (Tabs + Canvas) ========== -->
-                        <!-- Tabbed Attributes Section -->
-                        <!-- Tabbed Attributes Section -->
+                        <!-- ========== LEGACY LAYOUT (Direct Fields — no header) ========== -->
                         <div>
-                            <div class="flex justify-between items-end pb-4 border-b border-gray-100">
-                                <div class="flex items-center gap-4">
+                            <!-- Design Mode Compact Toolbar (only visible in design mode) -->
+                            <div x-show="designMode" x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0"
+                                 class="flex items-center justify-between pb-3 mb-3 border-b border-dashed border-gray-200 dark:border-gray-700" x-cloak>
+                                <div class="flex items-center gap-2">
                                     <template x-for="tab in tabs" :key="tab.id">
-                                        <div class="relative group/tab flex items-center gap-1.5">
-                                            <div @click="setActiveTab(tab.id)"
-                                                class="cursor-pointer pb-2.5 px-2 flex items-center gap-2 relative transition-all duration-300 before:transition-all before:duration-500 before:absolute hover:text-primary before:bottom-0 before:w-0 before:left-0 before:right-0 before:m-auto before:h-[2px] before:bg-primary"
-                                                :class="activeTab === tab.id ? 'before:w-full text-primary font-semibold' : 'text-gray-500 font-medium'">
-
-                                                <iconify-icon :icon="tab.icon || 'tabler:apps'" width="16"
-                                                    :class="activeTab === tab.id ? 'text-primary' : 'text-gray-400'"></iconify-icon>
-
-                                                <template x-if="editingTabId !== tab.id">
-                                                    <span class="text-sm tracking-tight" x-text="tab.title"
-                                                        @dblclick="startEditingTab(tab)"></span>
-                                                </template>
-                                                <template x-if="editingTabId === tab.id">
-                                                    <div
-                                                        class="flex items-center gap-2 bg-white px-2 py-0.5 rounded shadow-sm ring-1 ring-gray-200">
-                                                        <%- include('../components/icon-picker', {
-                                                            onSelect: '(icon) => { tempTabIcon = icon }' ,
-                                                            initialIcon: 'tempTabIcon' }) %>
-                                                            <input type="text" x-model="tempTabTitle"
-                                                                @keyup.enter="saveTabTitle()" @blur="saveTabTitle()"
-                                                                x-init="$nextTick(() => $el.focus())"
-                                                                class="!p-0 !h-auto !bg-transparent !border-none !text-sm !font-semibold !text-primary focus:ring-0 min-w-[70px]">
-                                                    </div>
-                                                </template>
-                                            </div>
-
-                                            <!-- Tab Actions (Design Mode) -->
-                                            <div x-show="designMode && activeTab === tab.id"
-                                                class="flex items-center gap-1 pb-2.5">
-                                                <button type="button" @click="startEditingTab(tab)"
-                                                    class="text-gray-400 hover:text-primary transition-colors">
-                                                    <iconify-icon icon="solar:pen-2-linear" width="14"></iconify-icon>
-                                                </button>
-                                                <button type="button" x-show="tabs.length > 1"
-                                                    @click="removeTab(tab.id)"
-                                                    class="text-gray-400 hover:text-red-500 transition-colors">
-                                                    <iconify-icon icon="solar:trash-bin-trash-linear"
-                                                        width="14"></iconify-icon>
-                                                </button>
-                                            </div>
+                                        <div class="flex items-center gap-1">
+                                            <button type="button" @click="setActiveTab(tab.id)"
+                                                class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
+                                                :class="activeTab === tab.id ? 'bg-primary/10 text-primary ring-1 ring-primary/20' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'">
+                                                <iconify-icon :icon="tab.icon || 'tabler:apps'" width="13"></iconify-icon>
+                                                <span x-text="tab.title"></span>
+                                            </button>
+                                            <button type="button" x-show="activeTab === tab.id" @click="startEditingTab(tab)"
+                                                class="text-gray-300 hover:text-primary transition-colors">
+                                                <iconify-icon icon="solar:pen-2-linear" width="12"></iconify-icon>
+                                            </button>
+                                            <button type="button" x-show="tabs.length > 1 && activeTab === tab.id"
+                                                @click="removeTab(tab.id)"
+                                                class="text-gray-300 hover:text-red-500 transition-colors">
+                                                <iconify-icon icon="solar:trash-bin-trash-linear" width="12"></iconify-icon>
+                                            </button>
                                         </div>
                                     </template>
-
-                                    <!-- Add Tab Button -->
-                                    <button x-show="designMode" @click="addTab()" type="button"
-                                        class="pb-2.5 text-gray-400 hover:text-primary transition-colors"
+                                    <button @click="addTab()" type="button"
+                                        class="text-gray-300 hover:text-primary transition-colors"
                                         title="Ajouter un onglet">
-                                        <iconify-icon icon="tabler:plus" width="18"></iconify-icon>
+                                        <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
                                     </button>
                                 </div>
-
-                                <div class="flex items-center gap-3 pb-2.5">
-                                    <button x-show="designMode" @click="openModal = true" type="button"
-                                        class="text-[11px] font-bold text-primary hover:bg-primary/5 px-4 py-1.5 rounded-lg transition-all flex items-center gap-2 border border-primary/20">
-                                        <iconify-icon icon="tabler:circle-plus" width="16"></iconify-icon>
+                                <div class="flex items-center gap-2">
+                                    <button @click="openModal = true" type="button"
+                                        class="text-[10px] font-bold text-primary hover:bg-primary/5 px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 border border-primary/20">
+                                        <iconify-icon icon="tabler:circle-plus" width="14"></iconify-icon>
                                         <span>AJOUTER UN CHAMP</span>
                                     </button>
-
                                     <button type="button" @click="designMode = !designMode"
-                                        class="p-2 rounded-lg transition-all"
-                                        :class="designMode ? 'bg-primary text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
-                                        title="Mode Layout">
-                                        <iconify-icon icon="tabler:layout-dashboard" width="20"></iconify-icon>
+                                        class="p-1.5 rounded-lg bg-primary text-white shadow-md transition-all"
+                                        title="Quitter le mode layout">
+                                        <iconify-icon icon="tabler:layout-dashboard" width="16"></iconify-icon>
                                     </button>
                                 </div>
                             </div>
+
+                            <!-- Tab editing inline (when editing tab name) -->
+                            <template x-if="editingTabId">
+                                <div class="flex items-center gap-2 mb-3 px-2 py-1.5 bg-white dark:bg-[#1b2e4b] rounded-lg shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 w-fit">
+                                    <%- include('../components/icon-picker', {
+                                        onSelect: '(icon) => { tempTabIcon = icon }' ,
+                                        initialIcon: 'tempTabIcon' }) %>
+                                    <input type="text" x-model="tempTabTitle"
+                                        @keyup.enter="saveTabTitle()" @blur="saveTabTitle()"
+                                        x-init="$nextTick(() => $el.focus())"
+                                        class="!p-0 !h-auto !bg-transparent !border-none !text-sm !font-semibold !text-primary focus:ring-0 min-w-[70px]">
+                                </div>
+                            </template>
 
                             <!-- Standard Fields (Only on first tab for now) -->
                             <div class="flex flex-wrap -mx-2" x-show="activeTab === tabs[0]?.id">
@@ -3679,33 +4979,57 @@
                 // â•â•â• PERSISTENCE â•â•â•
                 async loadColumnLayout() {
                     try {
-                        const resp = await fetch(`/account/${accountNumber}/api/user/view-preferences/record_panels_${entityId}`, { credentials: 'include' });
+                        // Try account-level preferences first
+                        let resp = await fetch(`/account/${accountNumber}/api/account/view-preferences/record_panels_${entityId}`, { credentials: 'include' });
+                        let data = null;
                         if (resp.ok) {
-                            const data = await resp.json();
-                            if (data?.preferences?.columnWidths) {
-                                const saved = data.preferences.columnWidths;
-                                // Migrate from old percentage format (75/25) to 12-unit grid (8/4)
-                                const isOldFormat = saved.some(c => c.width > 12);
-                                if (isOldFormat) {
-                                    const total = saved.reduce((sum, c) => sum + c.width, 0);
-                                    saved.forEach(c => {
-                                        c.width = Math.round((c.width / total) * 12);
-                                    });
-                                    // Ensure total is exactly 12
-                                    const newTotal = saved.reduce((sum, c) => sum + c.width, 0);
-                                    if (newTotal !== 12) saved[0].width += (12 - newTotal);
+                            data = await resp.json();
+                        }
+
+                        // Fallback: try user-level preferences (backward compatibility)
+                        if (!data?.preferences?.columnWidths) {
+                            try {
+                                const userResp = await fetch(`/account/${accountNumber}/api/user/view-preferences/record_panels_${entityId}`, { credentials: 'include' });
+                                if (userResp.ok) {
+                                    const userData = await userResp.json();
+                                    if (userData?.preferences?.columnWidths) {
+                                        data = userData;
+                                    }
                                 }
-                                this.columns = saved;
+                            } catch(e) { /* ignore fallback error */ }
+                        }
+
+                        if (data?.preferences?.columnWidths) {
+                            const saved = data.preferences.columnWidths;
+                            // Migrate from old percentage format (75/25) to 12-unit grid (8/4)
+                            const isOldFormat = saved.some(c => c.width > 12);
+                            if (isOldFormat) {
+                                const total = saved.reduce((sum, c) => sum + c.width, 0);
+                                saved.forEach(c => {
+                                    c.width = Math.round((c.width / total) * 12);
+                                });
+                                // Ensure total is exactly 12
+                                const newTotal = saved.reduce((sum, c) => sum + c.width, 0);
+                                if (newTotal !== 12) saved[0].width += (12 - newTotal);
                             }
-                            if (data?.preferences?.extraColumns) {
-                                this.extraColumns = data.preferences.extraColumns;
-                            }
-                            // Validate total = 12 (fix corrupted saved data)
-                            this._enforceTotal12();
-                            // Load panel layout (panel order + column assignments)
-                            if (data?.preferences?.panelLayout) {
-                                this.$nextTick(() => this.applyPanelLayout(data.preferences.panelLayout));
-                            }
+                            this.columns = saved;
+                        }
+                        if (data?.preferences?.extraColumns) {
+                            this.extraColumns = data.preferences.extraColumns;
+                        }
+                        // Safeguard: always ensure sidebar column exists
+                        if (this.columns.length < 2 || !this.columns.find(c => c.id === 'sidebar')) {
+                            const mainWidth = this.columns[0]?.width || 8;
+                            this.columns = [
+                                { id: 'main', width: Math.min(mainWidth, 8) },
+                                { id: 'sidebar', width: Math.max(12 - Math.min(mainWidth, 8), 4) }
+                            ];
+                        }
+                        // Validate total = 12 (fix corrupted saved data)
+                        this._enforceTotal12();
+                        // Load panel layout (panel order + column assignments)
+                        if (data?.preferences?.panelLayout) {
+                            this.$nextTick(() => this.applyPanelLayout(data.preferences.panelLayout));
                         }
                     } catch(e) { console.warn('Could not load column layout:', e); }
                 },
@@ -3770,7 +5094,7 @@
 
                 async saveColumnLayout() {
                     try {
-                        await fetch(`/account/${accountNumber}/api/user/view-preferences`, {
+                        await fetch(`/account/${accountNumber}/api/account/view-preferences`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
@@ -3808,7 +5132,7 @@
                     });
 
                     try {
-                        await fetch(`/account/${accountNumber}/api/user/view-preferences`, {
+                        await fetch(`/account/${accountNumber}/api/account/view-preferences`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
@@ -3965,10 +5289,22 @@
 
                     let inputHtml = this.renderField(field, item.id);
 
+                    // Build data attributes for field assignment system
+                    const fieldType = field.type || 'custom';
+                    const fieldLabel = field.label || field.name || field.key || item.fieldId;
+                    const fieldAssignId = fieldType + '_' + item.fieldId;
+                    // Check if this field is assigned to a tab
+                    const store = window.Alpine?.store('recordTabs');
+                    const isAssigned = store?.fieldAssignments?.[fieldAssignId];
+                    const hideStyle = isAssigned ? 'display:none;' : '';
+
                     return `
-                    <div class="field-item group relative px-2 py-0.5 h-fit" 
-                         style="width: ${widthPct}%" 
-                         data-id="${item.id}">
+                    <div class="field-item group relative px-2 py-0.5 h-fit record-field-wrapper" 
+                         style="width: ${widthPct}%;${hideStyle}" 
+                         data-id="${item.id}"
+                         data-field-id="${fieldAssignId}"
+                         data-field-label="${fieldLabel}"
+                         data-field-type="${fieldType}">
                         
                         <div class="relative ${isDesign ? 'bg-white border border-transparent hover:border-gray-200 hover:shadow-sm rounded-lg p-1.5' : ''} transition-all duration-200 h-fit">
                             

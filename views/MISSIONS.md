@@ -1,46 +1,26 @@
 
-Prémission: ✅ TOUTES TERMINÉES
 
-- ✅ image-48 : Vue compacte des champs + bouton "Ajouter un champ" → modal management terminé
-- ✅ image-49 : Padding input 29px !important → terminé
-- ✅ image-50 : Pas de RDV en double + groupement `pièces jointes | relations activées | Enregistrer` → terminé
-- ✅ image-51/52 : Icons sans style rond, hover expandable pill → terminé
+Avant de commencer cla demande suivante check toujours nos rules, les styles visuels, priviligie toujours le style qu on a deja sur le site, le design doit etre pensé mode dark et light, utilise les memes style css deja validé(check rules), fais un plan et execute le en autopilote, pour les icons genre edit/ delete / add privilie toujours line dual tole de solar avec width 24 et height 24:
 
+http://localhost:3000/account/9194/record/consultations/69a53cfcde03671e05ed2350/edit  : pour la page records, je dois avoir un systeme de tabs comme ici pour inspiration : ![alt text](image-53.png) par defaut la premiere tab est l'entité en cours, genre si je suis dans consultation ca affiche Consultation, on aura a coté un petit boutton plus pour creer de nouveau tabs, et en on aura automatiquement les tabs des entités liées à l'entité en cours, par exemple si je suis dans consultation, j'aurai les tabs des entités liées à consultation, comme patient, que je peux activé ou désactivé, les pj, des document et modèles... chaque tabs est personnablisable je peux y rajouté des panels, des composant etc, avec un systeme de layout flexible, ou je peux creer des colones facilement comme on a deja, mais la ce sera à l'interieur du tab en cours, memelogique avec drag and drop pour reorder, resiser cree et supprime des collones pour martcher l'espace, check notre systeme actuel dans doc editor react/ et aussi dans page builder : cockpit builder et edit page colone systeme sans oublier de checker les rules pour eviter les craches alpine/react/sortablejs, privilie toujours sortable pour drag an drop, les tabs aussi sont organisable via drag and drop... ![alt text](image-54.png) le titre attributs sera supprimé mettre les champs directements, apres changement du layout tout doit s'enregistrer dans la base de donné, dans une partie account preferences pas juste user preferences, parce que un compte peut etre geré par plusieurs utilisateurs mais le layout des pages doit suivre le compte pas le user
 
-Mission 1 : 
+---
 
-### Objectif principal
-Reproduire l'interface de image-42.png : page Consultation avec header, zone focus, tableaux dynamiques, sidebar patient/documents
+## ✅ Réalisé
 
-### Sous-tâches
+- [x] **Titre "Attributs" supprimé** — les champs s'affichent directement sans header inutile
+- [x] **Custom Tab Modal** — bouton "+" ouvre un modal pour créer un onglet personnalisé (nom + icône)
+- [x] **Tab Bar Drag & Drop** — les onglets sont réorganisables directement dans la barre via SortableJS
+- [x] **Custom tabs persistés** — sauvegardés dans account preferences (customTabs + tabOrder)
+- [x] **Custom tab content area** — contenu placeholder pour les onglets personnalisés
+- [x] **Bouton × pour supprimer** — les custom tabs ont un bouton de suppression
+- [x] **Fix: Drag & Drop Alpine+SortableJS** — technique "Flush & Rebuild" pour résoudre le conflit d'ordre entre Alpine.js et SortableJS lors du reorder
+- [x] **Fix: Sidebar safeguard** — protection dans loadColumnLayout() pour garantir que la colonne sidebar existe toujours
+- [x] **Layout par tab (Phase 1)** — Éditeur de notes riche (contenteditable) par custom tab avec toolbar (B/I/U/listes), auto-save debounced (1s), contenu persisté dans account preferences
+- [x] **Per-tab field assignment** — Ré-assignment de champs du formulaire principal vers les custom tabs : bouton «+ Ajouter» avec dropdown listant les champs disponibles, rendering dans le custom tab, tags × pour retirer, persistance dans account preferences (fieldAssignments), support EJS layout + legacy Alpine builder, rebuildCanvas() côté legacy pour masquer/afficher
+- [x] **Fix: Custom Tab Modal scope** — le modal ctOpen était hors du scope x-data="recordTabs()", déplacé à l'intérieur du composant Alpine pour que le bouton "+" fonctionne
+- [x] **Layout par tab (Phase 2)** — Système de disposition flexible par custom tab : 3 modes (Empilé, Côte-à-côte Champs|Notes, Côte-à-côte Notes|Champs) via sélecteur "Disposition" dans le header du tab, persisté par tab dans account preferences (tabLayouts), grid-cols-2 avec overflow-hidden pour un rendu propre
 
-#### Phase 1 : Seed Data Intelligent ✅
-- ✅ Enrichir patients : allergies, antécédents, groupe sanguin, médecin traitant, mutuelle
-- ✅ Enrichir consultations : symptômes réalistes et détaillés, poids/taille fixes, examens cliniques
-- ✅ Explorer le LineSchema Traitement pour seed de données traitement (prescription_v1 + invoice_v1 intégrés au seed)
+## 🔲 Reste à faire
 
-#### Phase 2 : Champs de Consultation avec icônes ✅ (déjà actif)
-- ✅ Icônes affichées à côté de chaque label via field.ui.icon
-
-#### Phase 5 : Tableaux Dynamiques
-- ✅ Tabs multi-tableaux quand l'entité en a plusieurs (record-lines.ejs gère déjà N schemas avec panels individuels)
-- ✅ LineSchemas prescription_v1 + invoice_v1 intégrés au seed et attachés aux entities (gridSchemas)
-- [ ] Barre actions rapides en bas (Ajouter traitement, Ctrl+O Ordonnance, Ctrl+E Examen) — future feature
-
-#### Phase 6 : Symptômes en mode tag/chip ✅
-- ✅ Entité Symptômes avec 20 records (Fatigue, Toux, Céphalées, Douleur thoracique...)
-- ✅ Relation Consultation → Symptômes en mode many-to-many (multi-select tag)
-
-### Références
-![alt text](image-42.png) 
-![alt text](image-46.png)
-![alt text](image-47.png)
-
-### Notes
-- Tout les champs auront des icons, afficher les icons a coté du champ
-- Zone focus = bloc principal consultation (motif, symptômes, diagnostic)
-- Sidebar droite = fiche patient + documents
-- Pattern réutilisable : header customizable, focus, tableaux dynamiques, sidebar
-- Privilégier icons au lieu de labels quand possible
-- Champs avec render custom et calculé
-- Résultat pixel-perfect image-42.png
+(rien pour l'instant)

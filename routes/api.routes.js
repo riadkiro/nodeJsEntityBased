@@ -790,6 +790,76 @@ router.get('/api/user/view-preferences/:viewId', async (req, res) => {
 })
 
 /**
+ * POST /account/:account_number/api/account/view-preferences
+ * Save account-level preferences for a specific view (shared across all users in the account)
+ */
+router.post('/api/account/view-preferences', async (req, res) => {
+    try {
+        const AccountPreferences = await tenantCollection(req, "AccountPreferences")
+        const { viewId, preferences } = req.body
+
+        if (!viewId) {
+            return res.status(400).json({ error: 'viewId is required' })
+        }
+
+        const accountId = req.account_number
+
+        // Build $set object — only update fields that were actually sent
+        const setFields = {
+            accountId,
+            viewId,
+            updatedAt: new Date()
+        }
+
+        // Set each preference key individually to avoid overwriting other keys
+        if (preferences && typeof preferences === 'object') {
+            Object.keys(preferences).forEach(key => {
+                if (preferences[key] !== undefined) {
+                    setFields[`preferences.${key}`] = preferences[key]
+                }
+            })
+        }
+
+        await AccountPreferences.findOneAndUpdate(
+            { accountId, viewId },
+            { $set: setFields },
+            { upsert: true, new: true }
+        )
+
+        res.json({ success: true })
+
+    } catch (error) {
+        console.error('[API] Account preferences save error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * GET /account/:account_number/api/account/view-preferences/:viewId
+ * Get account-level preferences for a specific view
+ */
+router.get('/api/account/view-preferences/:viewId', async (req, res) => {
+    try {
+        const AccountPreferences = await tenantCollection(req, "AccountPreferences")
+        const { viewId } = req.params
+        const accountId = req.account_number
+
+        const prefs = await AccountPreferences.findOne({
+            accountId,
+            viewId
+        }).lean()
+
+        res.json({
+            preferences: prefs?.preferences || null
+        })
+
+    } catch (error) {
+        console.error('[API] Account preferences fetch error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
  * GET /account/:account_number/api/analytics/today
  * Dashboard analytics — consultation progression based on classification status
  * Returns: { today, urgencies, topMedications, byStatus, waitingRoom, schedule, tasks }

@@ -1,4 +1,4 @@
-﻿<%- include('../components/tag-picker') %>
+<%- include('../components/tag-picker') %>
 <div x-data="recordForm()" class="space-y-4">
     <form action="/account/<%= account_number %>/record/<%= entity.slug %>/update/<%= record._id %>" method="POST"
         enctype="multipart/form-data" id="main-record-form">
@@ -1127,10 +1127,13 @@
                                                     <select :value="cfgBlock.config.dataSource || 'current'"
                                                             @change="cfgBlock.config.dataSource = $el.value"
                                                             style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
-                                                        <option value="current" x-text="'Entity actuelle — ' + ctEntityInfo.name"></option>
-                                                        <template x-for="rel in ctEntityRelations" :key="rel.key">
-                                                            <option :value="'rel:' + rel.key" x-text="'Relation — ' + (rel.label || rel.targetName)"></option>
-                                                        </template>
+                                                        <option value="current">📂 Entity — <%= entity.name || '' %></option>
+                                                        <% (entity.relations || []).forEach(function(r) { var tName = (r.targetEntity && r.targetEntity.name) || r.label || ''; %>
+                                                        <option value="rel:<%= r.key || '' %>">🔗 Relation — <%= tName %></option>
+                                                        <% }); %>
+                                                        <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema; }).forEach(function(gs) { %>
+                                                        <option value="grid:<%= (gs.schemaId || gs.schema._id || '').toString() %>">📊 Tableau — <%= gs.schema.name || '' %></option>
+                                                        <% }); %>
                                                     </select>
                                                 </div>
                                                 <!-- Aggregation -->
@@ -1152,9 +1155,18 @@
                                                                 @change="cfgBlock.config.field = $el.value"
                                                                 style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
                                                             <option value="">— Choisir un champ —</option>
-                                                            <template x-for="f in ctEntityFields.filter(f => ['number','currency','decimal'].includes(f.type) || f.inputType === 'number')" :key="f._id">
-                                                                <option :value="f._id" x-text="f.label"></option>
-                                                            </template>
+                                                            <optgroup label="Champs entity">
+                                                            <% (entity.customFields || []).filter(function(f) { return f && (['number','currency','decimal'].indexOf(f.type) > -1 || f.inputType === 'number'); }).forEach(function(f) { %>
+                                                            <option value="<%= (f._id || '').toString() %>"><%= f.label || f.name || '' %></option>
+                                                            <% }); %>
+                                                            </optgroup>
+                                                            <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema && gs.schema.columns; }).forEach(function(gs) { %>
+                                                            <optgroup label="📊 <%= gs.schema.name || '' %>">
+                                                            <% gs.schema.columns.filter(function(c) { return c && ['number','money','formula'].indexOf(c.type) > -1; }).forEach(function(c) { %>
+                                                            <option value="grid:<%= (gs.schemaId || gs.schema._id || '').toString() %>:<%= c.key %>"><%= c.label || c.key %><%= c.config && c.config.unit ? ' (' + c.config.unit + ')' : '' %></option>
+                                                            <% }); %>
+                                                            </optgroup>
+                                                            <% }); %>
                                                         </select>
                                                     </div>
                                                 </template>
@@ -1220,10 +1232,13 @@
                                                     <select :value="cfgBlock.config.dataSource || 'current'"
                                                             @change="cfgBlock.config.dataSource = $el.value"
                                                             style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
-                                                        <option value="current" x-text="'Entity actuelle — ' + ctEntityInfo.name"></option>
-                                                        <template x-for="rel in ctEntityRelations" :key="rel.key">
-                                                            <option :value="'rel:' + rel.key" x-text="'Relation — ' + (rel.label || rel.targetName)"></option>
-                                                        </template>
+                                                        <option value="current">📂 Entity — <%= entity.name || '' %></option>
+                                                        <% (entity.relations || []).forEach(function(r) { var tName = (r.targetEntity && r.targetEntity.name) || r.label || ''; %>
+                                                        <option value="rel:<%= r.key || '' %>">🔗 Relation — <%= tName %></option>
+                                                        <% }); %>
+                                                        <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema; }).forEach(function(gs) { %>
+                                                        <option value="grid:<%= (gs.schemaId || gs.schema._id || '').toString() %>">📊 Tableau — <%= gs.schema.name || '' %></option>
+                                                        <% }); %>
                                                     </select>
                                                 </div>
                                                 <!-- X Axis -->
@@ -1236,11 +1251,22 @@
                                                             @change="cfgBlock.config.xField = $el.value"
                                                             style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
                                                         <option value="">— Choisir un champ —</option>
+                                                        <optgroup label="Champs standard">
                                                         <option value="date">📅 Date de création</option>
                                                         <option value="status">🏷️ Statut</option>
-                                                        <template x-for="f in ctEntityFields" :key="f._id">
-                                                            <option :value="f._id" x-text="f.label"></option>
-                                                        </template>
+                                                        </optgroup>
+                                                        <optgroup label="Champs entity">
+                                                        <% (entity.customFields || []).filter(function(f) { return f; }).forEach(function(f) { %>
+                                                        <option value="<%= (f._id || '').toString() %>"><%= f.label || f.name || '' %></option>
+                                                        <% }); %>
+                                                        </optgroup>
+                                                        <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema && gs.schema.columns; }).forEach(function(gs) { %>
+                                                        <optgroup label="📊 <%= gs.schema.name || '' %>">
+                                                        <% gs.schema.columns.filter(function(c) { return c; }).forEach(function(c) { %>
+                                                        <option value="grid:<%= (gs.schemaId || gs.schema._id || '').toString() %>:<%= c.key %>"><%= c.label || c.key %><%= c.config && c.config.unit ? ' (' + c.config.unit + ')' : '' %></option>
+                                                        <% }); %>
+                                                        </optgroup>
+                                                        <% }); %>
                                                     </select>
                                                 </div>
                                                 <!-- Y Axis -->
@@ -1253,9 +1279,18 @@
                                                             @change="cfgBlock.config.yField = $el.value"
                                                             style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
                                                         <option value="count">📊 Nombre de records</option>
-                                                        <template x-for="f in ctEntityFields.filter(f => ['number','currency','decimal'].includes(f.type) || f.inputType === 'number')" :key="f._id">
-                                                            <option :value="f._id" x-text="'Σ ' + f.label"></option>
-                                                        </template>
+                                                        <optgroup label="Champs entity">
+                                                        <% (entity.customFields || []).filter(function(f) { return f && (['number','currency','decimal'].indexOf(f.type) > -1 || f.inputType === 'number'); }).forEach(function(f) { %>
+                                                        <option value="<%= (f._id || '').toString() %>">Σ <%= f.label || f.name || '' %></option>
+                                                        <% }); %>
+                                                        </optgroup>
+                                                        <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema && gs.schema.columns; }).forEach(function(gs) { %>
+                                                        <optgroup label="📊 <%= gs.schema.name || '' %>">
+                                                        <% gs.schema.columns.filter(function(c) { return c && ['number','money','formula'].indexOf(c.type) > -1; }).forEach(function(c) { %>
+                                                        <option value="grid:<%= (gs.schemaId || gs.schema._id || '').toString() %>:<%= c.key %>">Σ <%= c.label || c.key %><%= c.config && c.config.unit ? ' (' + c.config.unit + ')' : '' %></option>
+                                                        <% }); %>
+                                                        </optgroup>
+                                                        <% }); %>
                                                     </select>
                                                 </div>
                                                 <!-- Color scheme -->
@@ -1303,10 +1338,13 @@
                                                             @change="cfgBlock.config.source = $el.value"
                                                             style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
                                                         <option value="record">🔵 Ce record (activité du record)</option>
-                                                        <option value="current" x-text="'📂 Entity actuelle — ' + ctEntityInfo.name"></option>
-                                                        <template x-for="rel in ctEntityRelations" :key="rel.key">
-                                                            <option :value="'rel:' + rel.key" x-text="'🔗 Relation — ' + (rel.label || rel.targetName)"></option>
-                                                        </template>
+                                                        <option value="current">📂 Entity — <%= entity.name || '' %></option>
+                                                        <% (entity.relations || []).forEach(function(r) { var tName = (r.targetEntity && r.targetEntity.name) || r.label || ''; %>
+                                                        <option value="rel:<%= r.key || '' %>">🔗 Relation — <%= tName %></option>
+                                                        <% }); %>
+                                                        <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema; }).forEach(function(gs) { %>
+                                                        <option value="grid:<%= (gs.schemaId || gs.schema._id || '').toString() %>">📊 Tableau — <%= gs.schema.name || '' %></option>
+                                                        <% }); %>
                                                     </select>
                                                 </div>
                                                 <!-- Date field -->
@@ -1315,12 +1353,26 @@
                                                     <select :value="cfgBlock.config.dateField || 'createdAt'"
                                                             @change="cfgBlock.config.dateField = $el.value"
                                                             style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+                                                        <optgroup label="Champs standard">
                                                         <option value="createdAt">📅 Date de création</option>
                                                         <option value="updatedAt">🔄 Date de modification</option>
                                                         <option value="date">📆 Champ Date standard</option>
-                                                        <template x-for="f in ctEntityFields.filter(f => f.type === 'date' || f.inputType === 'date' || f.inputType === 'datetime-local')" :key="f._id">
-                                                            <option :value="f._id" x-text="f.label"></option>
-                                                        </template>
+                                                        </optgroup>
+                                                        <% var dateFields = (entity.customFields || []).filter(function(f) { return f && (f.type === 'date' || f.inputType === 'date' || f.inputType === 'datetime-local'); }); %>
+                                                        <% if (dateFields.length > 0) { %>
+                                                        <optgroup label="Champs personnalisés">
+                                                        <% dateFields.forEach(function(f) { %>
+                                                        <option value="<%= (f._id || '').toString() %>"><%= f.label || f.name || '' %></option>
+                                                        <% }); %>
+                                                        </optgroup>
+                                                        <% } %>
+                                                        <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema && gs.schema.columns; }).forEach(function(gs) { var dateCols = gs.schema.columns.filter(function(c) { return c && c.type === 'date'; }); if (dateCols.length > 0) { %>
+                                                        <optgroup label="📊 <%= gs.schema.name || '' %>">
+                                                        <% dateCols.forEach(function(c) { %>
+                                                        <option value="grid:<%= (gs.schemaId || gs.schema._id || '').toString() %>:<%= c.key %>"><%= c.label || c.key %></option>
+                                                        <% }); %>
+                                                        </optgroup>
+                                                        <% } }); %>
                                                     </select>
                                                 </div>
                                                 <!-- Icon -->
@@ -1829,6 +1881,20 @@
                 icon: '<%= entity.icon || "solar:box-bold-duotone" %>',
                 color: '<%= entity.color || "#4361ee" %>'
             };
+            const ctGridSchemas = <%- JSON.stringify(
+                (locals.gridSchemas || []).filter(gs => gs && gs.schema).map(gs => ({
+                    id: (gs.schemaId || gs.schema._id || '').toString(),
+                    name: gs.schema.name || gs.label || '',
+                    slug: gs.schema.slug || '',
+                    columns: (gs.schema.columns || []).filter(c => c).map(c => ({
+                        key: c.key || '',
+                        label: c.label || '',
+                        type: c.type || 'text',
+                        unit: (c.config && c.config.unit) || '',
+                        normalRange: (c.config && c.config.normalRange) || null
+                    }))
+                }))
+            ) %>;
 
             return {
                 allTabs: [],

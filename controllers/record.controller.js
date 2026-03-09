@@ -417,6 +417,33 @@ module.exports = {
                 }
             }
 
+            // Always inject missing custom fields into the layout
+            if (!activeFormName && !entityFormLayout && entity.customFields && entity.customFields.length > 0) {
+                const layoutFields = !Array.isArray(resolvedLayout) ? (resolvedLayout.fields || []) : resolvedLayout;
+                const existingFieldIds = new Set(layoutFields.map(f => f.fieldId));
+                const missingCustomFields = entity.customFields.filter(cf => {
+                    const cfId = (cf._id || cf).toString();
+                    return !existingFieldIds.has(cfId);
+                });
+                if (missingCustomFields.length > 0) {
+                    const newFields = missingCustomFields.map(cf => {
+                        const cfId = (cf._id || cf).toString();
+                        const type = cf.type || 'string';
+                        const subtype = cf.subtype || '';
+                        let width = 6;
+                        if (['textarea', 'richtext'].includes(type) || ['textarea', 'richtext'].includes(subtype)) {
+                            width = 12;
+                        }
+                        return { fieldId: cfId, width, id: `auto_${cfId}`, tabId: 'default' };
+                    });
+                    if (!Array.isArray(resolvedLayout) && resolvedLayout.fields) {
+                        resolvedLayout.fields = [...resolvedLayout.fields, ...newFields];
+                    } else if (Array.isArray(resolvedLayout)) {
+                        resolvedLayout = [...resolvedLayout, ...newFields];
+                    }
+                }
+            }
+
             // Build referenceTitleTokens metadata for client-side live preview
             const referenceTitleTokens = entity.referenceTitleTokens || [{ t: 'field', id: 'title' }];
             // Build a fieldId → fieldName map for resolving tokens client-side
@@ -921,6 +948,7 @@ module.exports = {
                 }
             }
 
+
             // Always inject missing relation fields into the layout (they may be absent from saved entity.layout)
             // Only inject DIRECT relations (not inverse) — inverse are sidebar-only
             if (!activeFormName && !entityFormLayout && directRelations.length > 0) {
@@ -938,6 +966,39 @@ module.exports = {
                         resolvedLayout.fields = [...resolvedLayout.fields, ...relFields];
                     } else if (Array.isArray(resolvedLayout)) {
                         resolvedLayout = [...resolvedLayout, ...relFields];
+                    }
+                }
+            }
+
+            // Always inject missing custom fields into the layout
+            // (fields added to entity after layout was saved would otherwise be invisible)
+            if (!activeFormName && !entityFormLayout && entity.customFields && entity.customFields.length > 0) {
+                const layoutFields = !Array.isArray(resolvedLayout) ? (resolvedLayout.fields || []) : resolvedLayout;
+                const existingFieldIds = new Set(layoutFields.map(f => f.fieldId));
+                const missingCustomFields = entity.customFields.filter(cf => {
+                    const cfId = (cf._id || cf).toString();
+                    return !existingFieldIds.has(cfId);
+                });
+                if (missingCustomFields.length > 0) {
+                    const newFields = missingCustomFields.map(cf => {
+                        const cfId = (cf._id || cf).toString();
+                        const type = cf.type || 'string';
+                        const subtype = cf.subtype || '';
+                        let width = 6;
+                        if (['textarea', 'richtext'].includes(type) || ['textarea', 'richtext'].includes(subtype)) {
+                            width = 12;
+                        }
+                        return {
+                            fieldId: cfId,
+                            width,
+                            id: `auto_${cfId}`,
+                            tabId: 'default'
+                        };
+                    });
+                    if (!Array.isArray(resolvedLayout) && resolvedLayout.fields) {
+                        resolvedLayout.fields = [...resolvedLayout.fields, ...newFields];
+                    } else if (Array.isArray(resolvedLayout)) {
+                        resolvedLayout = [...resolvedLayout, ...newFields];
                     }
                 }
             }

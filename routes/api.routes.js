@@ -1666,86 +1666,282 @@ router.delete('/api/entity/:entityId/sidebar-widgets/:widgetId', async (req, res
 })
 
 /**
+ * GET /account/:account_number/api/widget/entities
+ * Fetch all entities with their relations, classifications, and custom fields
+ * Used by widget config modals to build dynamic filter options
+ */
+router.get('/api/widget/entities', async (req, res) => {
+    try {
+        await tenantCollection(req, "Classification")
+        await tenantCollection(req, "FieldTemplate")
+        const Entity = await tenantCollection(req, "Entity")
+        const entities = await Entity.find({})
+            .populate('classifications')
+            .populate({ path: 'relations.targetEntity', select: 'name slug icon color' })
+            .populate({ path: 'customFields', select: 'name label type inputType options type_config ui' })
+            .select('name slug icon color relations classifications customFields statusClassification')
+            .lean()
+
+        const result = entities.map(e => ({
+            _id: e._id.toString(),
+            name: e.name,
+            slug: e.slug,
+            icon: e.icon || 'solar:widget-bold-duotone',
+            color: e.color || '#4361ee',
+            relations: (e.relations || []).map(r => ({
+                key: r.key,
+                label: r.label || '',
+                cardinality: r.cardinality || 'one-to-many',
+                targetEntity: r.targetEntity ? {
+                    _id: (r.targetEntity._id || r.targetEntity).toString(),
+                    name: r.targetEntity.name || '',
+                    slug: r.targetEntity.slug || '',
+                    icon: r.targetEntity.icon || '',
+                    color: r.targetEntity.color || ''
+                } : null
+            })),
+            classifications: (e.classifications || []).filter(c => c && typeof c === 'object').map(c => ({
+                _id: c._id.toString(),
+                name: c.name || '',
+                options: (c.options || []).map(o => ({
+                    _id: (o._id || '').toString(),
+                    label: o.label || o.name || '',
+                    color: o.color || ''
+                }))
+            })),
+            customFields: (e.customFields || []).filter(cf => cf && typeof cf === 'object').map(cf => ({
+                _id: cf._id.toString(),
+                name: cf.name || cf.label || '',
+                label: cf.label || cf.name || '',
+                type: cf.type || 'text',
+                inputType: cf.inputType || cf.type || 'text'
+            })),
+            dateFields: (e.customFields || []).filter(cf => {
+                return cf && typeof cf === 'object' && (cf.type === 'date' || cf.inputType === 'date' || cf.inputType === 'datetime-local')
+            }).map(cf => ({
+                _id: cf._id.toString(),
+                label: cf.label || cf.name || ''
+            })),
+            numericFields: (e.customFields || []).filter(cf => {
+                return cf && typeof cf === 'object' && ['number', 'currency', 'decimal'].includes(cf.type)
+            }).map(cf => ({
+                _id: cf._id.toString(),
+                label: cf.label || cf.name || ''
+            }))
+        }))
+
+        res.json({ entities: result })
+    } catch (error) {
+        console.error('[API] Widget entities error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
  * GET /account/:account_number/api/widget/chart-data
  * Fetch aggregated record counts grouped by time period for Chart widget
- * Query params: entityId, period (month|week|day), months (default 6)
+ * Query params: 
+ *   entityId, period (year|month|week|day), months (default 6),
+ *   dateField (createdAt|updatedAt|custom field id),
+ *   relationFilter (JSON: {key, value}), 
+ *   classificationFilter (JSON: {classificationId, optionId}),
+ *   yField (count|fieldId), yAgg (count|sum|avg)
  */
 router.get('/api/widget/chart-data', async (req, res) => {
     try {
         const Record = await tenantCollection(req, "Record")
         const Entity = await tenantCollection(req, "Entity")
-        const { entityId, period = 'month', months = 6 } = req.query
+        const { entityId, period = 'month', months = 6, dateField = 'createdAt',
+            relationFilter, classificationFilter, yField = 'count', yAgg = 'count' } = req.query
 
         if (!entityId) return res.status(400).json({ error: 'entityId is required' })
 
-        const entity = await Entity.findById(entityId).select('name slug icon color').lean()
+        const entity = await Entity.findById(entityId).select('name slug icon color customFields').lean()
         if (!entity) return res.status(404).json({ error: 'Entity not found' })
 
-        // Calculate date range
+        // Build query filter
         const now = new Date()
         const startDate = new Date(now)
         startDate.setMonth(startDate.getMonth() - parseInt(months))
         startDate.setDate(1)
         startDate.setHours(0, 0, 0, 0)
 
-        // Fetch records with creation dates
-        const records = await Record.find({
-            entityId: entityId,
-            createdAt: { $gte: startDate }
-        }).select('createdAt').lean()
+        const query = { entityId: entityId }
+
+        // Date filter based on dateField
+        const isCustomDateField = dateField && dateField !== 'createdAt' && dateField !== 'updatedAt'
+        if (!isCustomDateField) {
+            query[dateField || 'createdAt'] = { $gte: startDate }
+        }
+
+        // Relation filter: filter records that have a specific relation value
+        if (relationFilter) {
+            try {
+                const rf = typeof relationFilter === 'string' ? JSON.parse(relationFilter) : relationFilter
+                if (rf.key && rf.value) {
+                    query['relations'] = {
+                        $elemMatch: {
+                            relationKey: rf.key,
+                            value: { $in: [rf.value, ...(Array.isArray(rf.value) ? rf.value : [])] }
+                        }
+                    }
+                }
+            } catch (e) { /* ignore parse error */ }
+        }
+
+        // Classification filter: filter records with specific classification option
+        if (classificationFilter) {
+            try {
+                const cf = typeof classificationFilter === 'string' ? JSON.parse(classificationFilter) : classificationFilter
+                if (cf.classificationId && cf.optionId) {
+                    query['classificationValues'] = {
+                        $elemMatch: {
+                            classificationId: cf.classificationId,
+                            optionId: cf.optionId
+                        }
+                    }
+                }
+            } catch (e) { /* ignore parse error */ }
+        }
+
+        // Select fields needed
+        let selectFields = 'createdAt updatedAt'
+        if (isCustomDateField) selectFields += ' customFields'
+        if (yField && yField !== 'count') selectFields += ' customFields'
+
+        const records = await Record.find(query).select(selectFields).lean()
+
+        // Extract date from each record
+        const getRecordDate = (r) => {
+            if (isCustomDateField) {
+                const cf = (r.customFields || []).find(c => {
+                    const fid = (c.field_id?._id || c.field_id || '').toString()
+                    return fid === dateField
+                })
+                return cf && cf.value ? new Date(cf.value) : null
+            }
+            return r[dateField || 'createdAt'] ? new Date(r[dateField || 'createdAt']) : null
+        }
+
+        // Filter by date range for custom fields (can't do it in MongoDB query)
+        let filteredRecords = records
+        if (isCustomDateField) {
+            filteredRecords = records.filter(r => {
+                const d = getRecordDate(r)
+                return d && d >= startDate && d <= now
+            })
+        }
 
         // Group by period
         const grouped = {}
         const labels = []
         const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
 
-        if (period === 'month') {
-            // Generate all months in range
+        if (period === 'year') {
+            const startYear = startDate.getFullYear()
+            const endYear = now.getFullYear()
+            for (let y = startYear; y <= endYear; y++) {
+                const key = `${y}`
+                labels.push({ key, label: `${y}` })
+                grouped[key] = []
+            }
+            filteredRecords.forEach(r => {
+                const d = getRecordDate(r)
+                if (d) {
+                    const key = `${d.getFullYear()}`
+                    if (grouped[key]) grouped[key].push(r)
+                }
+            })
+        } else if (period === 'month') {
             const cursor = new Date(startDate)
             while (cursor <= now) {
                 const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
                 const label = `${monthNames[cursor.getMonth()]} ${cursor.getFullYear()}`
                 labels.push({ key, label })
-                grouped[key] = 0
+                grouped[key] = []
                 cursor.setMonth(cursor.getMonth() + 1)
             }
-            // Count per month
-            records.forEach(r => {
-                const d = new Date(r.createdAt)
-                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-                if (grouped[key] !== undefined) grouped[key]++
+            filteredRecords.forEach(r => {
+                const d = getRecordDate(r)
+                if (d) {
+                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+                    if (grouped[key]) grouped[key].push(r)
+                }
             })
         } else if (period === 'week') {
-            // Group by ISO week
             const getWeekKey = (d) => {
                 const date = new Date(d)
                 const dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 1)) / 86400000)
                 const weekNum = Math.ceil((dayOfYear + 1) / 7)
                 return `${date.getFullYear()}-W${String(weekNum).padStart(2, '0')}`
             }
-            // Generate weeks
             const cursor = new Date(startDate)
             while (cursor <= now) {
                 const key = getWeekKey(cursor)
-                if (!grouped[key] && grouped[key] !== 0) {
+                if (!grouped[key]) {
                     labels.push({ key, label: `S${key.split('-W')[1]}` })
-                    grouped[key] = 0
+                    grouped[key] = []
                 }
                 cursor.setDate(cursor.getDate() + 7)
             }
-            records.forEach(r => {
-                const key = getWeekKey(r.createdAt)
-                if (grouped[key] !== undefined) grouped[key]++
+            filteredRecords.forEach(r => {
+                const d = getRecordDate(r)
+                if (d) {
+                    const key = getWeekKey(d)
+                    if (grouped[key]) grouped[key].push(r)
+                }
+            })
+        } else if (period === 'day') {
+            // Last 30 days
+            const cursor = new Date(now)
+            cursor.setDate(cursor.getDate() - 30)
+            while (cursor <= now) {
+                const key = cursor.toISOString().split('T')[0]
+                const label = `${cursor.getDate()} ${monthNames[cursor.getMonth()]}`
+                labels.push({ key, label })
+                grouped[key] = []
+                cursor.setDate(cursor.getDate() + 1)
+            }
+            filteredRecords.forEach(r => {
+                const d = getRecordDate(r)
+                if (d) {
+                    const key = d.toISOString().split('T')[0]
+                    if (grouped[key]) grouped[key].push(r)
+                }
             })
         }
 
-        const data = labels.map(l => grouped[l.key] || 0)
+        // Compute Y values (count or aggregate on a field)
+        let data
+        if (yField && yField !== 'count' && yAgg !== 'count') {
+            // Aggregate a specific numeric field
+            data = labels.map(l => {
+                const recs = grouped[l.key] || []
+                if (recs.length === 0) return 0
+                const values = recs.map(r => {
+                    const cf = (r.customFields || []).find(c => {
+                        const fid = (c.field_id?._id || c.field_id || '').toString()
+                        return fid === yField
+                    })
+                    return cf ? parseFloat(cf.value) || 0 : 0
+                }).filter(v => !isNaN(v))
+                if (values.length === 0) return 0
+                if (yAgg === 'sum') return values.reduce((a, b) => a + b, 0)
+                if (yAgg === 'avg') return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100
+                if (yAgg === 'min') return Math.min(...values)
+                if (yAgg === 'max') return Math.max(...values)
+                return values.length
+            })
+        } else {
+            data = labels.map(l => (grouped[l.key] || []).length)
+        }
+
         const labelTexts = labels.map(l => l.label)
 
         res.json({
             labels: labelTexts,
             data,
-            total: records.length,
+            total: filteredRecords.length,
             entityName: entity.name,
             entityColor: entity.color || '#4361ee'
         })
@@ -1758,14 +1954,19 @@ router.get('/api/widget/chart-data', async (req, res) => {
 /**
  * GET /account/:account_number/api/widget/timeline-data
  * Fetch recent records for Timeline widget
- * Query params: entityId (source entity), recordId (current record), relationKey (optional), limit (default 10)
+ * Query params: 
+ *   entityId (source entity), recordId (current record), relationKey (optional), limit (default 10),
+ *   dateField (createdAt|updatedAt|custom field id),
+ *   relationFilter (JSON: {key, value}),
+ *   classificationFilter (JSON: {classificationId, optionId})
  */
 router.get('/api/widget/timeline-data', async (req, res) => {
     try {
         const mongoose = require('mongoose')
         const Record = await tenantCollection(req, "Record")
         const Entity = await tenantCollection(req, "Entity")
-        const { entityId, recordId, relationKey, limit = 10 } = req.query
+        const { entityId, recordId, relationKey, limit = 10, dateField = 'createdAt',
+            relationFilter, classificationFilter } = req.query
 
         if (!entityId) return res.status(400).json({ error: 'entityId required' })
 
@@ -1775,6 +1976,44 @@ router.get('/api/widget/timeline-data', async (req, res) => {
         if (!entity) return res.status(404).json({ error: 'Entity not found' })
 
         let timelineRecords = []
+        const isCustomDateField = dateField && dateField !== 'createdAt' && dateField !== 'updatedAt'
+
+        // Build base query with filters
+        const buildFilterQuery = (baseQuery) => {
+            // Relation filter
+            if (relationFilter) {
+                try {
+                    const rf = typeof relationFilter === 'string' ? JSON.parse(relationFilter) : relationFilter
+                    if (rf.key && rf.value) {
+                        baseQuery['relations'] = {
+                            $elemMatch: {
+                                relationKey: rf.key,
+                                value: { $in: [rf.value, ...(Array.isArray(rf.value) ? rf.value : [])] }
+                            }
+                        }
+                    }
+                } catch (e) { /* ignore */ }
+            }
+
+            // Classification filter
+            if (classificationFilter) {
+                try {
+                    const cf = typeof classificationFilter === 'string' ? JSON.parse(classificationFilter) : classificationFilter
+                    if (cf.classificationId && cf.optionId) {
+                        baseQuery['classificationValues'] = {
+                            $elemMatch: {
+                                classificationId: cf.classificationId,
+                                optionId: cf.optionId
+                            }
+                        }
+                    }
+                } catch (e) { /* ignore */ }
+            }
+            return baseQuery
+        }
+
+        // Determine sort field for MongoDB
+        const sortField = isCustomDateField ? 'createdAt' : (dateField || 'createdAt')
 
         if (relationKey && recordId) {
             // Fetch records from a related entity
@@ -1782,7 +2021,6 @@ router.get('/api/widget/timeline-data', async (req, res) => {
             if (!record) return res.status(404).json({ error: 'Record not found' })
 
             if (relationKey.startsWith('inv_')) {
-                // Inverse relation — find records in source entity that reference this record
                 const sourceRelKey = relationKey.replace('inv_', '')
                 const sourceEntities = await Entity.find({
                     'relations.key': sourceRelKey,
@@ -1790,7 +2028,7 @@ router.get('/api/widget/timeline-data', async (req, res) => {
                 }).select('_id name slug icon color').lean()
 
                 for (const srcEnt of sourceEntities) {
-                    const relRecords = await Record.find({
+                    const q = buildFilterQuery({
                         entityId: srcEnt._id,
                         $or: [
                             { 'relations': { $elemMatch: { relationKey: sourceRelKey, value: record._id } } },
@@ -1798,15 +2036,16 @@ router.get('/api/widget/timeline-data', async (req, res) => {
                             { 'relations': { $elemMatch: { relationKey: sourceRelKey, value: { $in: [record._id, record._id.toString()] } } } }
                         ]
                     })
-                        .select('_id title computedTitle createdAt updatedAt entityId')
-                        .sort({ createdAt: -1 })
+                    const relRecords = await Record.find(q)
+                        .select('_id title computedTitle createdAt updatedAt entityId customFields')
+                        .sort({ [sortField]: -1 })
                         .limit(parseInt(limit))
                         .lean()
 
                     timelineRecords.push(...relRecords.map(r => ({
                         _id: r._id,
                         title: r.computedTitle || r.title || 'Sans titre',
-                        date: r.createdAt,
+                        date: getDateFromRecord(r, dateField, isCustomDateField),
                         entityName: srcEnt.name || '',
                         entitySlug: srcEnt.slug || '',
                         entityIcon: srcEnt.icon || 'solar:widget-bold-duotone',
@@ -1814,7 +2053,6 @@ router.get('/api/widget/timeline-data', async (req, res) => {
                     })))
                 }
             } else {
-                // Direct relation — find records linked via relation value
                 const rel = (entity.relations || []).find(r => r.key === relationKey)
                 if (rel) {
                     const rv = (record.relations || []).find(r => r.relationKey === relationKey)
@@ -1823,16 +2061,17 @@ router.get('/api/widget/timeline-data', async (req, res) => {
                         const validIds = targetIds.filter(id => mongoose.Types.ObjectId.isValid(id))
                         if (validIds.length > 0) {
                             const targetEntity = rel.targetEntity || {}
-                            const relRecords = await Record.find({ _id: { $in: validIds } })
-                                .select('_id title computedTitle createdAt updatedAt entityId')
-                                .sort({ createdAt: -1 })
+                            const q = buildFilterQuery({ _id: { $in: validIds } })
+                            const relRecords = await Record.find(q)
+                                .select('_id title computedTitle createdAt updatedAt entityId customFields')
+                                .sort({ [sortField]: -1 })
                                 .limit(parseInt(limit))
                                 .lean()
 
                             timelineRecords = relRecords.map(r => ({
                                 _id: r._id,
                                 title: r.computedTitle || r.title || 'Sans titre',
-                                date: r.createdAt,
+                                date: getDateFromRecord(r, dateField, isCustomDateField),
                                 entityName: targetEntity.name || '',
                                 entitySlug: targetEntity.slug || '',
                                 entityIcon: targetEntity.icon || 'solar:widget-bold-duotone',
@@ -1843,18 +2082,18 @@ router.get('/api/widget/timeline-data', async (req, res) => {
                 }
             }
         } else {
-            // Fetch records directly from the entity (e.g. consultations for a patient)
-            // Find records that are linked to the current record via any relation
-            const allRecords = await Record.find({ entityId })
-                .select('_id title computedTitle createdAt updatedAt')
-                .sort({ createdAt: -1 })
+            // Fetch records directly from the entity
+            const q = buildFilterQuery({ entityId })
+            const allRecords = await Record.find(q)
+                .select('_id title computedTitle createdAt updatedAt customFields')
+                .sort({ [sortField]: -1 })
                 .limit(parseInt(limit))
                 .lean()
 
             timelineRecords = allRecords.map(r => ({
                 _id: r._id,
                 title: r.computedTitle || r.title || 'Sans titre',
-                date: r.createdAt,
+                date: getDateFromRecord(r, dateField, isCustomDateField),
                 entityName: entity.name || '',
                 entitySlug: entity.slug || '',
                 entityIcon: entity.icon || 'solar:widget-bold-duotone',
@@ -1875,6 +2114,18 @@ router.get('/api/widget/timeline-data', async (req, res) => {
         res.status(500).json({ error: error.message })
     }
 })
+
+// Helper: extract date from record based on dateField config
+function getDateFromRecord(r, dateField, isCustomDateField) {
+    if (isCustomDateField) {
+        const cf = (r.customFields || []).find(c => {
+            const fid = (c.field_id?._id || c.field_id || '').toString()
+            return fid === dateField
+        })
+        return cf && cf.value ? cf.value : r.createdAt
+    }
+    return r[dateField || 'createdAt']
+}
 
 module.exports = router
 

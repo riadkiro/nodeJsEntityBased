@@ -886,15 +886,12 @@
                                                                                      const cfg = block.config || {};
                                                                                      const src = cfg.dataSource || 'entity:' + _eId;
                                                                                      const parts = src.split(':');
-                                                                                     const srcType = parts[0];
-                                                                                     const srcId = parts.slice(1).join(':');
-                                                                                     let url = '/account/' + _acct + '/api/widget/timeline-data?entityId=';
-                                                                                     if (srcType === 'relation') {
-                                                                                         url += _eId + '&recordId=' + _rId + '&relationKey=' + srcId;
-                                                                                     } else {
-                                                                                         url += (srcId || _eId);
-                                                                                     }
+                                                                                      const entityId3 = src.startsWith('entity:') ? src.split(':')[1] : _eId;
+                                                                                      let url = '/account/' + _acct + '/api/widget/timeline-data?entityId=' + entityId3 + '&recordId=' + _rId;
                                                                                      url += '&limit=' + (cfg.maxItems || 10);
+                                                                                      if (cfg.dateField) url += '&dateField=' + cfg.dateField;
+                                                                                      if (cfg.relationFilterKey && cfg.relationFilterValue) { url += '&relationFilter=' + encodeURIComponent(JSON.stringify({key: cfg.relationFilterKey, value: cfg.relationFilterValue})); }
+                                                                                      if (cfg.classificationFilterId && cfg.classificationFilterOption) { url += '&classificationFilter=' + encodeURIComponent(JSON.stringify({classificationId: cfg.classificationFilterId, optionId: cfg.classificationFilterOption})); }
                                                                                      const resp = await fetch(url, { credentials: 'include' });
                                                                                      const data = await resp.json();
                                                                                      tlRecords = data.records || [];
@@ -972,7 +969,12 @@
                                                                                      const src = cfg.dataSource || 'entity:' + _eId;
                                                                                      const parts = src.split(':');
                                                                                      const srcId = parts.slice(1).join(':') || _eId;
-                                                                                     const url = '/account/' + _acct + '/api/widget/chart-data?entityId=' + srcId + '&period=month&months=6';
+                                                                                     let url = '/account/' + _acct + '/api/widget/chart-data?entityId=' + (src.startsWith('entity:') ? src.split(':')[1] : srcId);
+                                                                                      url += '&period=' + (cfg.period || 'month') + '&months=6';
+                                                                                      if (cfg.dateField) url += '&dateField=' + cfg.dateField;
+                                                                                      if (cfg.yField && cfg.yField !== 'count') { url += '&yField=' + cfg.yField + '&yAgg=' + (cfg.yAgg || 'sum'); }
+                                                                                      if (cfg.relationFilterKey && cfg.relationFilterValue) { url += '&relationFilter=' + encodeURIComponent(JSON.stringify({key: cfg.relationFilterKey, value: cfg.relationFilterValue})); }
+                                                                                      if (cfg.classificationFilterId && cfg.classificationFilterOption) { url += '&classificationFilter=' + encodeURIComponent(JSON.stringify({classificationId: cfg.classificationFilterId, optionId: cfg.classificationFilterOption})); }
                                                                                      const resp = await fetch(url, { credentials: 'include' });
                                                                                      const data = await resp.json();
                                                                                      chartTotal = data.total || 0;
@@ -1329,7 +1331,35 @@
                                         <!-- ══════════ CHART ══════════ -->
                                         <template x-if="cfgBlock.type === 'chart'">
                                             <div style="display: flex; flex-direction: column; gap: 14px;"
-                                                 x-init="if(!cfgBlock.config) cfgBlock.config = {}">
+                                                 x-data="{ 
+                                                     _entities: [], _selectedEntity: null, _relRecords: [], _relSearching: false, _relSearchQuery: '',
+                                                     async loadEntities() {
+                                                         try {
+                                                             const resp = await fetch('/account/<%= account_number %>/api/widget/entities', { credentials: 'include' });
+                                                             const d = await resp.json();
+                                                             this._entities = d.entities || [];
+                                                             this.updateSelectedEntity();
+                                                         } catch(e) { console.error(e); }
+                                                     },
+                                                     updateSelectedEntity() {
+                                                         const src = this.cfgBlock.config.dataSource || 'entity:<%= entity._id %>';
+                                                         const entityId = src.startsWith('entity:') ? src.split(':')[1] : '<%= entity._id %>';
+                                                         this._selectedEntity = this._entities.find(e => e._id === entityId) || null;
+                                                     },
+                                                     async searchRelRecords(relKey) {
+                                                         if (!this._selectedEntity || !relKey) return;
+                                                         const rel = this._selectedEntity.relations.find(r => r.key === relKey);
+                                                         if (!rel || !rel.targetEntity) return;
+                                                         this._relSearching = true;
+                                                         try {
+                                                             const resp = await fetch('/account/<%= account_number %>/record/api/search?entityId=' + rel.targetEntity._id + '&q=' + encodeURIComponent(this._relSearchQuery || '') + '&limit=20', { credentials: 'include' });
+                                                             const d = await resp.json();
+                                                             this._relRecords = (d.data || d.records || []).map(r => ({ _id: r.id || r._id, title: r.label || r.computedTitle || r.title || 'Sans titre' }));
+                                                         } catch(e) { this._relRecords = []; }
+                                                         this._relSearching = false;
+                                                     }
+                                                 }"
+                                                 x-init="if(!cfgBlock.config) cfgBlock.config = {}; loadEntities()">
                                                 <!-- Chart type -->
                                                 <div>
                                                     <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Type de graphique</label>
@@ -1343,73 +1373,183 @@
                                                         </template>
                                                     </div>
                                                 </div>
-                                                <!-- Data source -->
-                                                <div>
-                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Source de données</label>
-                                                    <select :value="cfgBlock.config.dataSource || 'current'"
-                                                            @change="cfgBlock.config.dataSource = $el.value"
-                                                            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
-                                                        <option value="current">📂 Entity — <%= entity.name || '' %></option>
-                                                        <% (entity.relations || []).forEach(function(r) { var tName = (r.targetEntity && r.targetEntity.name) || r.label || ''; %>
-                                                        <option value="rel:<%= r.key || '' %>">🔗 Relation — <%= tName %></option>
-                                                        <% }); %>
-                                                        <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema; }).forEach(function(gs) { %>
-                                                        <option value="grid:<%= (gs.schemaId || gs.schema._id || '').toString() %>">📊 Tableau — <%= gs.schema.name || '' %></option>
-                                                        <% }); %>
-                                                    </select>
-                                                </div>
-                                                <!-- X Axis -->
+                                                <!-- ─── Data source (entity) ─── -->
                                                 <div>
                                                     <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
-                                                        <iconify-icon icon="solar:arrow-right-bold" width="12" style="color: #9ca3af; margin-right: 2px;"></iconify-icon>
-                                                        Axe X (catégorie / temps)
+                                                        <iconify-icon icon="solar:database-bold-duotone" width="13" style="color: #4361ee; margin-right: 2px;"></iconify-icon>
+                                                        Source de données
                                                     </label>
-                                                    <select :value="cfgBlock.config.xField || ''"
-                                                            @change="cfgBlock.config.xField = $el.value"
+                                                    <select :value="cfgBlock.config.dataSource || 'entity:<%= entity._id %>'"
+                                                            @change="cfgBlock.config.dataSource = $el.value; updateSelectedEntity(); cfgBlock.config.relationFilterKey = ''; cfgBlock.config.relationFilterValue = ''; cfgBlock.config.classificationFilterId = ''; cfgBlock.config.classificationFilterOption = '';"
                                                             style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
-                                                        <option value="">— Choisir un champ —</option>
-                                                        <optgroup label="Champs standard">
-                                                        <option value="date">📅 Date de création</option>
-                                                        <option value="status">🏷️ Statut</option>
-                                                        </optgroup>
-                                                        <optgroup label="Champs entity">
-                                                        <% (entity.customFields || []).filter(function(f) { return f; }).forEach(function(f) { %>
-                                                        <option value="<%= (f._id || '').toString() %>"><%= f.label || f.name || '' %></option>
-                                                        <% }); %>
-                                                        </optgroup>
-                                                        <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema && gs.schema.columns; }).forEach(function(gs) { %>
-                                                        <optgroup label="📊 <%= gs.schema.name || '' %>">
-                                                        <% gs.schema.columns.filter(function(c) { return c; }).forEach(function(c) { %>
-                                                        <option value="grid:<%= (gs.schemaId || gs.schema._id || '').toString() %>:<%= c.key %>"><%= c.label || c.key %><%= c.config && c.config.unit ? ' (' + c.config.unit + ')' : '' %></option>
-                                                        <% }); %>
-                                                        </optgroup>
-                                                        <% }); %>
+                                                        <template x-for="ent in _entities" :key="ent._id">
+                                                            <option :value="'entity:' + ent._id" x-text="'📂 ' + ent.name" :selected="(cfgBlock.config.dataSource || 'entity:<%= entity._id %>') === 'entity:' + ent._id"></option>
+                                                        </template>
                                                     </select>
                                                 </div>
-                                                <!-- Y Axis -->
+
+                                                <!-- ─── Period grouping (X axis) ─── -->
                                                 <div>
                                                     <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
-                                                        <iconify-icon icon="solar:arrow-up-bold" width="12" style="color: #9ca3af; margin-right: 2px;"></iconify-icon>
+                                                        <iconify-icon icon="solar:calendar-bold-duotone" width="13" style="color: #00ab55; margin-right: 2px;"></iconify-icon>
+                                                        Période (axe X)
+                                                    </label>
+                                                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+                                                        <template x-for="p in [{v:'day',l:'Jour'},{v:'week',l:'Semaine'},{v:'month',l:'Mois'},{v:'year',l:'Année'}]" :key="p.v">
+                                                            <button type="button" @click="cfgBlock.config.period = p.v"
+                                                                    :style="'padding: 7px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.15s;' + ((cfgBlock.config.period || 'month') === p.v ? 'background: rgba(0,171,85,0.1); border: 1px solid rgba(0,171,85,0.3); color: #00ab55;' : 'background: white; border: 1px solid #e5e7eb; color: #6b7280;')"
+                                                                    x-text="p.l"></button>
+                                                        </template>
+                                                    </div>
+                                                </div>
+
+                                                <!-- ─── Date source ─── -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
+                                                        <iconify-icon icon="solar:clock-circle-bold-duotone" width="13" style="color: #805dca; margin-right: 2px;"></iconify-icon>
+                                                        Source de la date
+                                                    </label>
+                                                    <select :value="cfgBlock.config.dateField || 'createdAt'"
+                                                            @change="cfgBlock.config.dateField = $el.value"
+                                                            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+                                                        <option value="createdAt">📅 Date de création</option>
+                                                        <option value="updatedAt">🔄 Date de modification</option>
+                                                        <template x-if="_selectedEntity && _selectedEntity.dateFields.length > 0">
+                                                            <optgroup label="Champs personnalisés">
+                                                                <template x-for="df in _selectedEntity.dateFields" :key="df._id">
+                                                                    <option :value="df._id" x-text="df.label"></option>
+                                                                </template>
+                                                            </optgroup>
+                                                        </template>
+                                                    </select>
+                                                </div>
+
+                                                <!-- ─── Y Axis ─── -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
+                                                        <iconify-icon icon="solar:arrow-up-bold" width="12" style="color: #e7515a; margin-right: 2px;"></iconify-icon>
                                                         Axe Y (valeur)
                                                     </label>
                                                     <select :value="cfgBlock.config.yField || 'count'"
                                                             @change="cfgBlock.config.yField = $el.value"
                                                             style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
                                                         <option value="count">📊 Nombre de records</option>
-                                                        <optgroup label="Champs entity">
-                                                        <% (entity.customFields || []).filter(function(f) { return f && (['number','currency','decimal'].indexOf(f.type) > -1 || f.inputType === 'number'); }).forEach(function(f) { %>
-                                                        <option value="<%= (f._id || '').toString() %>">Σ <%= f.label || f.name || '' %></option>
-                                                        <% }); %>
-                                                        </optgroup>
-                                                        <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema && gs.schema.columns; }).forEach(function(gs) { %>
-                                                        <optgroup label="📊 <%= gs.schema.name || '' %>">
-                                                        <% gs.schema.columns.filter(function(c) { return c && ['number','money','formula'].indexOf(c.type) > -1; }).forEach(function(c) { %>
-                                                        <option value="grid:<%= (gs.schemaId || gs.schema._id || '').toString() %>:<%= c.key %>">Σ <%= c.label || c.key %><%= c.config && c.config.unit ? ' (' + c.config.unit + ')' : '' %></option>
-                                                        <% }); %>
-                                                        </optgroup>
-                                                        <% }); %>
+                                                        <template x-if="_selectedEntity && _selectedEntity.numericFields.length > 0">
+                                                            <optgroup label="Champs numériques">
+                                                                <template x-for="nf in _selectedEntity.numericFields" :key="nf._id">
+                                                                    <option :value="nf._id" x-text="'Σ ' + nf.label"></option>
+                                                                </template>
+                                                            </optgroup>
+                                                        </template>
                                                     </select>
+                                                    <!-- Aggregation type (shown if Y field is not count) -->
+                                                    <template x-if="cfgBlock.config.yField && cfgBlock.config.yField !== 'count'">
+                                                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 6px;">
+                                                            <template x-for="a in [{v:'sum',l:'Somme'},{v:'avg',l:'Moyenne'},{v:'min',l:'Min'},{v:'max',l:'Max'}]" :key="a.v">
+                                                                <button type="button" @click="cfgBlock.config.yAgg = a.v"
+                                                                        :style="'padding: 5px; border-radius: 5px; font-size: 10px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.12s;' + ((cfgBlock.config.yAgg || 'sum') === a.v ? 'background: rgba(231,81,90,0.1); border: 1px solid rgba(231,81,90,0.3); color: #e7515a;' : 'background: white; border: 1px solid #e5e7eb; color: #9ca3af;')"
+                                                                        x-text="a.l"></button>
+                                                            </template>
+                                                        </div>
+                                                    </template>
                                                 </div>
+
+                                                <!-- SEPARATOR: Filters -->
+                                                <div style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
+                                                    <div style="flex: 1; height: 1px; background: #e5e7eb;"></div>
+                                                    <span style="font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">Filtres</span>
+                                                    <div style="flex: 1; height: 1px; background: #e5e7eb;"></div>
+                                                </div>
+
+                                                <!-- ─── Relation filter ─── -->
+                                                <template x-if="_selectedEntity && _selectedEntity.relations.length > 0">
+                                                    <div>
+                                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
+                                                            <iconify-icon icon="solar:link-round-bold-duotone" width="13" style="color: #e2a03f; margin-right: 2px;"></iconify-icon>
+                                                            Filtrer par relation
+                                                        </label>
+                                                        <select :value="cfgBlock.config.relationFilterKey || ''"
+                                                                @change="cfgBlock.config.relationFilterKey = $el.value; cfgBlock.config.relationFilterValue = ''; _relRecords = []; if ($el.value) searchRelRecords($el.value)"
+                                                                style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box; margin-bottom: 6px;">
+                                                            <option value="">— Aucun filtre relation —</option>
+                                                            <template x-for="rel in _selectedEntity.relations" :key="rel.key">
+                                                                <option :value="rel.key" x-text="'🔗 ' + rel.label + (rel.targetEntity ? ' → ' + rel.targetEntity.name : '')"></option>
+                                                            </template>
+                                                        </select>
+                                                        <!-- Record search (when a relation is selected) -->
+                                                        <template x-if="cfgBlock.config.relationFilterKey">
+                                                            <div>
+                                                                <div style="position: relative;">
+                                                                    <input type="text" x-model="_relSearchQuery" @input.debounce.300ms="searchRelRecords(cfgBlock.config.relationFilterKey)"
+                                                                           placeholder="Rechercher un record..."
+                                                                           style="width: 100%; padding: 7px 10px 7px 30px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 12px; outline: none; box-sizing: border-box;"
+                                                                           onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'">
+                                                                    <iconify-icon icon="solar:magnifer-linear" width="14" style="position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: #9ca3af;"></iconify-icon>
+                                                                    <template x-if="_relSearching">
+                                                                        <div style="position: absolute; right: 9px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; border: 2px solid #e5e7eb; border-top-color: #4361ee; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                                                                    </template>
+                                                                </div>
+                                                                <div style="max-height: 140px; overflow-y: auto; border: 1px solid #f3f4f6; border-radius: 6px; margin-top: 4px;" x-show="_relRecords.length > 0">
+                                                                    <template x-for="rec in _relRecords" :key="rec._id">
+                                                                        <button type="button" @click="cfgBlock.config.relationFilterValue = rec._id; cfgBlock.config.relationFilterLabel = rec.title || rec.computedTitle || 'Sans titre'"
+                                                                                :style="'display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 10px; border: none; cursor: pointer; font-size: 12px; text-align: left; transition: background 0.1s;' + (cfgBlock.config.relationFilterValue === rec._id ? 'background: rgba(67,97,238,0.08); color: #4361ee; font-weight: 600;' : 'background: transparent; color: #374151;')"
+                                                                                onmouseover="this.style.background='#f9fafb'" onmouseout="if(!this.classList.contains('selected')) this.style.background='transparent'">
+                                                                            <iconify-icon :icon="cfgBlock.config.relationFilterValue === rec._id ? 'solar:check-circle-bold' : 'solar:record-circle-linear'" width="14"
+                                                                                :style="'color: ' + (cfgBlock.config.relationFilterValue === rec._id ? '#4361ee' : '#d1d5db')"></iconify-icon>
+                                                                            <span x-text="rec.title || rec.computedTitle || 'Sans titre'" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                                                                        </button>
+                                                                    </template>
+                                                                </div>
+                                                                <template x-if="cfgBlock.config.relationFilterValue">
+                                                                    <div style="display: flex; align-items: center; gap: 4px; margin-top: 4px; padding: 4px 8px; background: rgba(67,97,238,0.05); border-radius: 6px; border: 1px solid rgba(67,97,238,0.15);">
+                                                                        <iconify-icon icon="solar:check-circle-bold" width="12" style="color: #4361ee;"></iconify-icon>
+                                                                        <span style="font-size: 11px; color: #4361ee; font-weight: 600;" x-text="cfgBlock.config.relationFilterLabel || 'Sélectionné'"></span>
+                                                                        <button type="button" @click="cfgBlock.config.relationFilterValue = ''; cfgBlock.config.relationFilterLabel = ''"
+                                                                                style="margin-left: auto; background: none; border: none; cursor: pointer; color: #9ca3af; padding: 0;">
+                                                                            <iconify-icon icon="tabler:x" width="12"></iconify-icon>
+                                                                        </button>
+                                                                    </div>
+                                                                </template>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+
+                                                <!-- ─── Classification/Tag filter ─── -->
+                                                <template x-if="_selectedEntity && _selectedEntity.classifications.length > 0">
+                                                    <div>
+                                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
+                                                            <iconify-icon icon="solar:tag-bold-duotone" width="13" style="color: #805dca; margin-right: 2px;"></iconify-icon>
+                                                            Filtrer par tag / classification
+                                                        </label>
+                                                        <select :value="cfgBlock.config.classificationFilterId || ''"
+                                                                @change="cfgBlock.config.classificationFilterId = $el.value; cfgBlock.config.classificationFilterOption = ''"
+                                                                style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box; margin-bottom: 6px;">
+                                                            <option value="">— Aucun filtre —</option>
+                                                            <template x-for="cls in _selectedEntity.classifications" :key="cls._id">
+                                                                <option :value="cls._id" x-text="'🏷️ ' + cls.name"></option>
+                                                            </template>
+                                                        </select>
+                                                        <!-- Options of selected classification -->
+                                                        <template x-if="cfgBlock.config.classificationFilterId">
+                                                            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                                                <template x-for="opt in (_selectedEntity.classifications.find(c => c._id === cfgBlock.config.classificationFilterId) || {options:[]}).options" :key="opt._id">
+                                                                    <button type="button" @click="cfgBlock.config.classificationFilterOption = opt._id"
+                                                                            :style="'padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.12s;' + (cfgBlock.config.classificationFilterOption === opt._id ? 'background: ' + (opt.color || '#4361ee') + '; border: 1px solid ' + (opt.color || '#4361ee') + '; color: white;' : 'background: #f9fafb; border: 1px solid #e5e7eb; color: #6b7280;')"
+                                                                            x-text="opt.label"></button>
+                                                                </template>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+
+                                                <!-- SEPARATOR: Appearance -->
+                                                <div style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
+                                                    <div style="flex: 1; height: 1px; background: #e5e7eb;"></div>
+                                                    <span style="font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">Apparence</span>
+                                                    <div style="flex: 1; height: 1px; background: #e5e7eb;"></div>
+                                                </div>
+
                                                 <!-- Color scheme -->
                                                 <div>
                                                     <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Palette de couleurs</label>
@@ -1447,50 +1587,159 @@
                                         <!-- ══════════ TIMELINE ══════════ -->
                                         <template x-if="cfgBlock.type === 'timeline'">
                                             <div style="display: flex; flex-direction: column; gap: 14px;"
-                                                 x-init="if(!cfgBlock.config) cfgBlock.config = {}">
-                                                <!-- Source -->
+                                                 x-data="{ 
+                                                     _tlEntities: [], _tlSelectedEntity: null, _tlRelRecords: [], _tlRelSearching: false, _tlRelSearchQuery: '',
+                                                     async loadTlEntities() {
+                                                         try {
+                                                             const resp = await fetch('/account/<%= account_number %>/api/widget/entities', { credentials: 'include' });
+                                                             const d = await resp.json();
+                                                             this._tlEntities = d.entities || [];
+                                                             this.updateTlEntity();
+                                                         } catch(e) { console.error(e); }
+                                                     },
+                                                     updateTlEntity() {
+                                                         const src = this.cfgBlock.config.dataSource || 'entity:<%= entity._id %>';
+                                                         const entityId = src.startsWith('entity:') ? src.split(':')[1] : '<%= entity._id %>';
+                                                         this._tlSelectedEntity = this._tlEntities.find(e => e._id === entityId) || null;
+                                                     },
+                                                     async searchTlRelRecords(relKey) {
+                                                         if (!this._tlSelectedEntity || !relKey) return;
+                                                         const rel = this._tlSelectedEntity.relations.find(r => r.key === relKey);
+                                                         if (!rel || !rel.targetEntity) return;
+                                                         this._tlRelSearching = true;
+                                                         try {
+                                                             const resp = await fetch('/account/<%= account_number %>/record/api/search?entityId=' + rel.targetEntity._id + '&q=' + encodeURIComponent(this._tlRelSearchQuery || '') + '&limit=20', { credentials: 'include' });
+                                                             const d = await resp.json();
+                                                             this._tlRelRecords = (d.data || d.records || []).map(r => ({ _id: r.id || r._id, title: r.label || r.computedTitle || r.title || 'Sans titre' }));
+                                                         } catch(e) { this._tlRelRecords = []; }
+                                                         this._tlRelSearching = false;
+                                                     }
+                                                 }"
+                                                 x-init="if(!cfgBlock.config) cfgBlock.config = {}; loadTlEntities()">
+                                                <!-- ─── Source (entity) ─── -->
                                                 <div>
-                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Source de la timeline</label>
-                                                    <select :value="cfgBlock.config.source || 'record'"
-                                                            @change="cfgBlock.config.source = $el.value"
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
+                                                        <iconify-icon icon="solar:database-bold-duotone" width="13" style="color: #805dca; margin-right: 2px;"></iconify-icon>
+                                                        Source de la timeline
+                                                    </label>
+                                                    <select :value="cfgBlock.config.dataSource || 'entity:<%= entity._id %>'"
+                                                            @change="cfgBlock.config.dataSource = $el.value; updateTlEntity(); cfgBlock.config.relationFilterKey = ''; cfgBlock.config.relationFilterValue = ''; cfgBlock.config.classificationFilterId = ''; cfgBlock.config.classificationFilterOption = '';"
                                                             style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
-                                                        <option value="record">🔵 Ce record (activité du record)</option>
-                                                        <option value="current">📂 Entity — <%= entity.name || '' %></option>
-                                                        <% (entity.relations || []).forEach(function(r) { var tName = (r.targetEntity && r.targetEntity.name) || r.label || ''; %>
-                                                        <option value="rel:<%= r.key || '' %>">🔗 Relation — <%= tName %></option>
-                                                        <% }); %>
-                                                        <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema; }).forEach(function(gs) { %>
-                                                        <option value="grid:<%= (gs.schemaId || gs.schema._id || '').toString() %>">📊 Tableau — <%= gs.schema.name || '' %></option>
-                                                        <% }); %>
+                                                        <template x-for="ent in _tlEntities" :key="ent._id">
+                                                            <option :value="'entity:' + ent._id" x-text="'📂 ' + ent.name" :selected="(cfgBlock.config.dataSource || 'entity:<%= entity._id %>') === 'entity:' + ent._id"></option>
+                                                        </template>
                                                     </select>
                                                 </div>
-                                                <!-- Date field -->
+                                                <!-- ─── Date field ─── -->
                                                 <div>
-                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Champ de date</label>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
+                                                        <iconify-icon icon="solar:clock-circle-bold-duotone" width="13" style="color: #805dca; margin-right: 2px;"></iconify-icon>
+                                                        Champ de date
+                                                    </label>
                                                     <select :value="cfgBlock.config.dateField || 'createdAt'"
                                                             @change="cfgBlock.config.dateField = $el.value"
                                                             style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
-                                                        <optgroup label="Champs standard">
                                                         <option value="createdAt">📅 Date de création</option>
                                                         <option value="updatedAt">🔄 Date de modification</option>
-                                                        <option value="date">📆 Champ Date standard</option>
-                                                        </optgroup>
-                                                        <% var dateFields = (entity.customFields || []).filter(function(f) { return f && (f.type === 'date' || f.inputType === 'date' || f.inputType === 'datetime-local'); }); %>
-                                                        <% if (dateFields.length > 0) { %>
-                                                        <optgroup label="Champs personnalisés">
-                                                        <% dateFields.forEach(function(f) { %>
-                                                        <option value="<%= (f._id || '').toString() %>"><%= f.label || f.name || '' %></option>
-                                                        <% }); %>
-                                                        </optgroup>
-                                                        <% } %>
-                                                        <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema && gs.schema.columns; }).forEach(function(gs) { var dateCols = gs.schema.columns.filter(function(c) { return c && c.type === 'date'; }); if (dateCols.length > 0) { %>
-                                                        <optgroup label="📊 <%= gs.schema.name || '' %>">
-                                                        <% dateCols.forEach(function(c) { %>
-                                                        <option value="grid:<%= (gs.schemaId || gs.schema._id || '').toString() %>:<%= c.key %>"><%= c.label || c.key %></option>
-                                                        <% }); %>
-                                                        </optgroup>
-                                                        <% } }); %>
+                                                        <template x-if="_tlSelectedEntity && _tlSelectedEntity.dateFields.length > 0">
+                                                            <optgroup label="Champs personnalisés">
+                                                                <template x-for="df in _tlSelectedEntity.dateFields" :key="df._id">
+                                                                    <option :value="df._id" x-text="df.label"></option>
+                                                                </template>
+                                                            </optgroup>
+                                                        </template>
                                                     </select>
+                                                </div>
+
+                                                <!-- SEPARATOR: Filters -->
+                                                <div style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
+                                                    <div style="flex: 1; height: 1px; background: #e5e7eb;"></div>
+                                                    <span style="font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">Filtres</span>
+                                                    <div style="flex: 1; height: 1px; background: #e5e7eb;"></div>
+                                                </div>
+
+                                                <!-- ─── Relation filter ─── -->
+                                                <template x-if="_tlSelectedEntity && _tlSelectedEntity.relations.length > 0">
+                                                    <div>
+                                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
+                                                            <iconify-icon icon="solar:link-round-bold-duotone" width="13" style="color: #e2a03f; margin-right: 2px;"></iconify-icon>
+                                                            Filtrer par relation
+                                                        </label>
+                                                        <select :value="cfgBlock.config.relationFilterKey || ''"
+                                                                @change="cfgBlock.config.relationFilterKey = $el.value; cfgBlock.config.relationFilterValue = ''; _tlRelRecords = []; if ($el.value) searchTlRelRecords($el.value)"
+                                                                style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box; margin-bottom: 6px;">
+                                                            <option value="">— Aucun filtre relation —</option>
+                                                            <template x-for="rel in _tlSelectedEntity.relations" :key="rel.key">
+                                                                <option :value="rel.key" x-text="'🔗 ' + rel.label + (rel.targetEntity ? ' → ' + rel.targetEntity.name : '')"></option>
+                                                            </template>
+                                                        </select>
+                                                        <template x-if="cfgBlock.config.relationFilterKey">
+                                                            <div>
+                                                                <div style="position: relative;">
+                                                                    <input type="text" x-model="_tlRelSearchQuery" @input.debounce.300ms="searchTlRelRecords(cfgBlock.config.relationFilterKey)"
+                                                                           placeholder="Rechercher un record..."
+                                                                           style="width: 100%; padding: 7px 10px 7px 30px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 12px; outline: none; box-sizing: border-box;"
+                                                                           onfocus="this.style.borderColor='#805dca'" onblur="this.style.borderColor='#e5e7eb'">
+                                                                    <iconify-icon icon="solar:magnifer-linear" width="14" style="position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: #9ca3af;"></iconify-icon>
+                                                                </div>
+                                                                <div style="max-height: 140px; overflow-y: auto; border: 1px solid #f3f4f6; border-radius: 6px; margin-top: 4px;" x-show="_tlRelRecords.length > 0">
+                                                                    <template x-for="rec in _tlRelRecords" :key="rec._id">
+                                                                        <button type="button" @click="cfgBlock.config.relationFilterValue = rec._id; cfgBlock.config.relationFilterLabel = rec.title || rec.computedTitle || 'Sans titre'"
+                                                                                :style="'display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 10px; border: none; cursor: pointer; font-size: 12px; text-align: left;' + (cfgBlock.config.relationFilterValue === rec._id ? 'background: rgba(128,93,202,0.08); color: #805dca; font-weight: 600;' : 'background: transparent; color: #374151;')"
+                                                                                onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='transparent'">
+                                                                            <iconify-icon :icon="cfgBlock.config.relationFilterValue === rec._id ? 'solar:check-circle-bold' : 'solar:record-circle-linear'" width="14"
+                                                                                :style="'color: ' + (cfgBlock.config.relationFilterValue === rec._id ? '#805dca' : '#d1d5db')"></iconify-icon>
+                                                                            <span x-text="rec.title || rec.computedTitle || 'Sans titre'" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                                                                        </button>
+                                                                    </template>
+                                                                </div>
+                                                                <template x-if="cfgBlock.config.relationFilterValue">
+                                                                    <div style="display: flex; align-items: center; gap: 4px; margin-top: 4px; padding: 4px 8px; background: rgba(128,93,202,0.05); border-radius: 6px; border: 1px solid rgba(128,93,202,0.15);">
+                                                                        <iconify-icon icon="solar:check-circle-bold" width="12" style="color: #805dca;"></iconify-icon>
+                                                                        <span style="font-size: 11px; color: #805dca; font-weight: 600;" x-text="cfgBlock.config.relationFilterLabel || 'Sélectionné'"></span>
+                                                                        <button type="button" @click="cfgBlock.config.relationFilterValue = ''; cfgBlock.config.relationFilterLabel = ''"
+                                                                                style="margin-left: auto; background: none; border: none; cursor: pointer; color: #9ca3af; padding: 0;">
+                                                                            <iconify-icon icon="tabler:x" width="12"></iconify-icon>
+                                                                        </button>
+                                                                    </div>
+                                                                </template>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+
+                                                <!-- ─── Classification/Tag filter ─── -->
+                                                <template x-if="_tlSelectedEntity && _tlSelectedEntity.classifications.length > 0">
+                                                    <div>
+                                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
+                                                            <iconify-icon icon="solar:tag-bold-duotone" width="13" style="color: #805dca; margin-right: 2px;"></iconify-icon>
+                                                            Filtrer par tag / classification
+                                                        </label>
+                                                        <select :value="cfgBlock.config.classificationFilterId || ''"
+                                                                @change="cfgBlock.config.classificationFilterId = $el.value; cfgBlock.config.classificationFilterOption = ''"
+                                                                style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box; margin-bottom: 6px;">
+                                                            <option value="">— Aucun filtre —</option>
+                                                            <template x-for="cls in _tlSelectedEntity.classifications" :key="cls._id">
+                                                                <option :value="cls._id" x-text="'🏷️ ' + cls.name"></option>
+                                                            </template>
+                                                        </select>
+                                                        <template x-if="cfgBlock.config.classificationFilterId">
+                                                            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                                                <template x-for="opt in (_tlSelectedEntity.classifications.find(c => c._id === cfgBlock.config.classificationFilterId) || {options:[]}).options" :key="opt._id">
+                                                                    <button type="button" @click="cfgBlock.config.classificationFilterOption = opt._id"
+                                                                            :style="'padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.12s;' + (cfgBlock.config.classificationFilterOption === opt._id ? 'background: ' + (opt.color || '#805dca') + '; border: 1px solid ' + (opt.color || '#805dca') + '; color: white;' : 'background: #f9fafb; border: 1px solid #e5e7eb; color: #6b7280;')"
+                                                                            x-text="opt.label"></button>
+                                                                </template>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+
+                                                <!-- SEPARATOR: Appearance -->
+                                                <div style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
+                                                    <div style="flex: 1; height: 1px; background: #e5e7eb;"></div>
+                                                    <span style="font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">Apparence</span>
+                                                    <div style="flex: 1; height: 1px; background: #e5e7eb;"></div>
                                                 </div>
                                                 <!-- Icon -->
                                                 <div>

@@ -1665,5 +1665,216 @@ router.delete('/api/entity/:entityId/sidebar-widgets/:widgetId', async (req, res
     }
 })
 
+/**
+ * GET /account/:account_number/api/widget/chart-data
+ * Fetch aggregated record counts grouped by time period for Chart widget
+ * Query params: entityId, period (month|week|day), months (default 6)
+ */
+router.get('/api/widget/chart-data', async (req, res) => {
+    try {
+        const Record = await tenantCollection(req, "Record")
+        const Entity = await tenantCollection(req, "Entity")
+        const { entityId, period = 'month', months = 6 } = req.query
+
+        if (!entityId) return res.status(400).json({ error: 'entityId is required' })
+
+        const entity = await Entity.findById(entityId).select('name slug icon color').lean()
+        if (!entity) return res.status(404).json({ error: 'Entity not found' })
+
+        // Calculate date range
+        const now = new Date()
+        const startDate = new Date(now)
+        startDate.setMonth(startDate.getMonth() - parseInt(months))
+        startDate.setDate(1)
+        startDate.setHours(0, 0, 0, 0)
+
+        // Fetch records with creation dates
+        const records = await Record.find({
+            entityId: entityId,
+            createdAt: { $gte: startDate }
+        }).select('createdAt').lean()
+
+        // Group by period
+        const grouped = {}
+        const labels = []
+        const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+
+        if (period === 'month') {
+            // Generate all months in range
+            const cursor = new Date(startDate)
+            while (cursor <= now) {
+                const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
+                const label = `${monthNames[cursor.getMonth()]} ${cursor.getFullYear()}`
+                labels.push({ key, label })
+                grouped[key] = 0
+                cursor.setMonth(cursor.getMonth() + 1)
+            }
+            // Count per month
+            records.forEach(r => {
+                const d = new Date(r.createdAt)
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+                if (grouped[key] !== undefined) grouped[key]++
+            })
+        } else if (period === 'week') {
+            // Group by ISO week
+            const getWeekKey = (d) => {
+                const date = new Date(d)
+                const dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 1)) / 86400000)
+                const weekNum = Math.ceil((dayOfYear + 1) / 7)
+                return `${date.getFullYear()}-W${String(weekNum).padStart(2, '0')}`
+            }
+            // Generate weeks
+            const cursor = new Date(startDate)
+            while (cursor <= now) {
+                const key = getWeekKey(cursor)
+                if (!grouped[key] && grouped[key] !== 0) {
+                    labels.push({ key, label: `S${key.split('-W')[1]}` })
+                    grouped[key] = 0
+                }
+                cursor.setDate(cursor.getDate() + 7)
+            }
+            records.forEach(r => {
+                const key = getWeekKey(r.createdAt)
+                if (grouped[key] !== undefined) grouped[key]++
+            })
+        }
+
+        const data = labels.map(l => grouped[l.key] || 0)
+        const labelTexts = labels.map(l => l.label)
+
+        res.json({
+            labels: labelTexts,
+            data,
+            total: records.length,
+            entityName: entity.name,
+            entityColor: entity.color || '#4361ee'
+        })
+    } catch (error) {
+        console.error('[API] Chart data error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * GET /account/:account_number/api/widget/timeline-data
+ * Fetch recent records for Timeline widget
+ * Query params: entityId (source entity), recordId (current record), relationKey (optional), limit (default 10)
+ */
+router.get('/api/widget/timeline-data', async (req, res) => {
+    try {
+        const mongoose = require('mongoose')
+        const Record = await tenantCollection(req, "Record")
+        const Entity = await tenantCollection(req, "Entity")
+        const { entityId, recordId, relationKey, limit = 10 } = req.query
+
+        if (!entityId) return res.status(400).json({ error: 'entityId required' })
+
+        const entity = await Entity.findById(entityId)
+            .populate({ path: 'relations.targetEntity', select: 'name slug icon color' })
+            .lean()
+        if (!entity) return res.status(404).json({ error: 'Entity not found' })
+
+        let timelineRecords = []
+
+        if (relationKey && recordId) {
+            // Fetch records from a related entity
+            const record = await Record.findById(recordId).lean()
+            if (!record) return res.status(404).json({ error: 'Record not found' })
+
+            if (relationKey.startsWith('inv_')) {
+                // Inverse relation — find records in source entity that reference this record
+                const sourceRelKey = relationKey.replace('inv_', '')
+                const sourceEntities = await Entity.find({
+                    'relations.key': sourceRelKey,
+                    'relations.targetEntity': entity._id
+                }).select('_id name slug icon color').lean()
+
+                for (const srcEnt of sourceEntities) {
+                    const relRecords = await Record.find({
+                        entityId: srcEnt._id,
+                        $or: [
+                            { 'relations': { $elemMatch: { relationKey: sourceRelKey, value: record._id } } },
+                            { 'relations': { $elemMatch: { relationKey: sourceRelKey, value: record._id.toString() } } },
+                            { 'relations': { $elemMatch: { relationKey: sourceRelKey, value: { $in: [record._id, record._id.toString()] } } } }
+                        ]
+                    })
+                        .select('_id title computedTitle createdAt updatedAt entityId')
+                        .sort({ createdAt: -1 })
+                        .limit(parseInt(limit))
+                        .lean()
+
+                    timelineRecords.push(...relRecords.map(r => ({
+                        _id: r._id,
+                        title: r.computedTitle || r.title || 'Sans titre',
+                        date: r.createdAt,
+                        entityName: srcEnt.name || '',
+                        entitySlug: srcEnt.slug || '',
+                        entityIcon: srcEnt.icon || 'solar:widget-bold-duotone',
+                        entityColor: srcEnt.color || '#4361ee',
+                    })))
+                }
+            } else {
+                // Direct relation — find records linked via relation value
+                const rel = (entity.relations || []).find(r => r.key === relationKey)
+                if (rel) {
+                    const rv = (record.relations || []).find(r => r.relationKey === relationKey)
+                    if (rv && rv.value) {
+                        const targetIds = Array.isArray(rv.value) ? rv.value : [rv.value]
+                        const validIds = targetIds.filter(id => mongoose.Types.ObjectId.isValid(id))
+                        if (validIds.length > 0) {
+                            const targetEntity = rel.targetEntity || {}
+                            const relRecords = await Record.find({ _id: { $in: validIds } })
+                                .select('_id title computedTitle createdAt updatedAt entityId')
+                                .sort({ createdAt: -1 })
+                                .limit(parseInt(limit))
+                                .lean()
+
+                            timelineRecords = relRecords.map(r => ({
+                                _id: r._id,
+                                title: r.computedTitle || r.title || 'Sans titre',
+                                date: r.createdAt,
+                                entityName: targetEntity.name || '',
+                                entitySlug: targetEntity.slug || '',
+                                entityIcon: targetEntity.icon || 'solar:widget-bold-duotone',
+                                entityColor: targetEntity.color || '#4361ee',
+                            }))
+                        }
+                    }
+                }
+            }
+        } else {
+            // Fetch records directly from the entity (e.g. consultations for a patient)
+            // Find records that are linked to the current record via any relation
+            const allRecords = await Record.find({ entityId })
+                .select('_id title computedTitle createdAt updatedAt')
+                .sort({ createdAt: -1 })
+                .limit(parseInt(limit))
+                .lean()
+
+            timelineRecords = allRecords.map(r => ({
+                _id: r._id,
+                title: r.computedTitle || r.title || 'Sans titre',
+                date: r.createdAt,
+                entityName: entity.name || '',
+                entitySlug: entity.slug || '',
+                entityIcon: entity.icon || 'solar:widget-bold-duotone',
+                entityColor: entity.color || '#4361ee',
+            }))
+        }
+
+        // Sort by date descending
+        timelineRecords.sort((a, b) => new Date(b.date) - new Date(a.date))
+
+        res.json({
+            records: timelineRecords.slice(0, parseInt(limit)),
+            total: timelineRecords.length,
+            entityName: entity.name
+        })
+    } catch (error) {
+        console.error('[API] Timeline data error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
 module.exports = router
 

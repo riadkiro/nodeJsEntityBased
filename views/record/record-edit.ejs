@@ -874,24 +874,82 @@
                                                                             </div>
                                                                         </div>
                                                                     </template>
-                                                                    <!-- Timeline Widget -->
+                                                                    <!-- Timeline Widget (LIVE) -->
                                                                     <template x-if="block && block.type === 'timeline'">
-                                                                        <div class="panel" style="height: 100%; border: none; border-radius: 12px;">
+                                                                        <div class="panel" style="height: 100%; border: none; border-radius: 12px;"
+                                                                             x-data="{ tlRecords: [], tlLoading: true, tlError: '' }"
+                                                                             x-init="(async () => {
+                                                                                 try {
+                                                                                     const _eId = '<%= entity._id %>';
+                                                                                     const _acct = '<%= account_number %>';
+                                                                                     const _rId = '<%= record._id %>';
+                                                                                     const cfg = block.config || {};
+                                                                                     const src = cfg.dataSource || 'entity:' + _eId;
+                                                                                     const parts = src.split(':');
+                                                                                     const srcType = parts[0];
+                                                                                     const srcId = parts.slice(1).join(':');
+                                                                                     let url = '/account/' + _acct + '/api/widget/timeline-data?entityId=';
+                                                                                     if (srcType === 'relation') {
+                                                                                         url += _eId + '&recordId=' + _rId + '&relationKey=' + srcId;
+                                                                                     } else {
+                                                                                         url += (srcId || _eId);
+                                                                                     }
+                                                                                     url += '&limit=' + (cfg.maxItems || 10);
+                                                                                     const resp = await fetch(url, { credentials: 'include' });
+                                                                                     const data = await resp.json();
+                                                                                     tlRecords = data.records || [];
+                                                                                 } catch(e) { tlError = e.message; console.error('Timeline error:', e); }
+                                                                                 tlLoading = false;
+                                                                             })()">
                                                                             <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
                                                                                 <iconify-icon icon="solar:clock-circle-bold-duotone" width="14" style="color: #805dca;"></iconify-icon>
                                                                                 <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Timeline'"></span>
+                                                                                <span style="font-size: 10px; background: rgba(128,93,202,0.1); color: #805dca; padding: 1px 6px; border-radius: 9999px; font-weight: 700; margin-left: 4px;"
+                                                                                      x-text="tlRecords.length"></span>
                                                                             </div>
-                                                                            <div style="padding: 12px;">
-                                                                                <div style="display: flex; flex-direction: column; gap: 12px;">
-                                                                                    <div style="display: flex; gap: 10px;">
-                                                                                        <div style="width: 8px; height: 8px; border-radius: 50%; background: #4361ee; margin-top: 5px; flex-shrink: 0;"></div>
-                                                                                        <div>
-                                                                                            <div style="font-size: 13px; font-weight: 500;">Aucune activité</div>
-                                                                                            <div style="font-size: 11px; color: #9ca3af;">Les événements apparaîtront ici</div>
-                                                                                        </div>
+                                                                            <!-- Loading -->
+                                                                            <template x-if="tlLoading">
+                                                                                <div style="padding: 24px; text-align: center; color: #9ca3af;">
+                                                                                    <div style="width: 20px; height: 20px; border: 2px solid #e5e7eb; border-top-color: #805dca; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                                                                                    <div style="font-size: 11px; margin-top: 8px;">Chargement...</div>
+                                                                                </div>
+                                                                            </template>
+                                                                            <!-- Empty state -->
+                                                                            <template x-if="!tlLoading && tlRecords.length === 0">
+                                                                                <div style="padding: 24px; text-align: center; color: #9ca3af; font-size: 12px;">
+                                                                                    <iconify-icon icon="solar:clock-circle-bold-duotone" width="32" style="opacity: 0.3;"></iconify-icon>
+                                                                                    <div style="margin-top: 4px;">Aucun événement</div>
+                                                                                </div>
+                                                                            </template>
+                                                                            <!-- Records timeline -->
+                                                                            <template x-if="!tlLoading && tlRecords.length > 0">
+                                                                                <div style="padding: 12px; max-height: 400px; overflow-y: auto;">
+                                                                                    <div style="position: relative; padding-left: 20px;">
+                                                                                        <!-- vertical line -->
+                                                                                        <div style="position: absolute; left: 5px; top: 8px; bottom: 8px; width: 2px; background: linear-gradient(to bottom, #805dca, rgba(128,93,202,0.1));"></div>
+                                                                                        <template x-for="(tr, ti) in tlRecords" :key="ti">
+                                                                                            <div style="position: relative; padding-bottom: 16px; padding-left: 12px;">
+                                                                                                <!-- dot -->
+                                                                                                <div :style="'position: absolute; left: -17px; top: 4px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid ' + (tr.entityColor || '#805dca') + '; background: white; z-index: 1;'"></div>
+                                                                                                <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                                                                                    <div style="flex: 1; min-width: 0;">
+                                                                                                        <a :href="'/account/<%= account_number %>/record/' + tr.entitySlug + '/' + tr._id + '/edit'"
+                                                                                                           style="font-size: 13px; font-weight: 500; color: #111827; text-decoration: none; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                                                                                           x-text="tr.title"
+                                                                                                           @mouseover="$el.style.color='#4361ee'" @mouseout="$el.style.color='#111827'"></a>
+                                                                                                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                                                                                                            <iconify-icon :icon="tr.entityIcon || 'solar:widget-bold-duotone'" width="12" :style="'color:' + (tr.entityColor || '#805dca')"></iconify-icon>
+                                                                                                            <span style="font-size: 11px; color: #9ca3af;" x-text="tr.entityName"></span>
+                                                                                                            <span style="font-size: 10px; color: #d1d5db;">•</span>
+                                                                                                            <span style="font-size: 11px; color: #9ca3af;" x-text="tr.date ? new Date(tr.date).toLocaleDateString('fr-FR', {day:'numeric',month:'short',year:'numeric'}) : ''"></span>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </template>
                                                                                     </div>
                                                                                 </div>
-                                                                            </div>
+                                                                            </template>
                                                                         </div>
                                                                     </template>
                                                                     <!-- KPI Widget -->
@@ -902,16 +960,75 @@
                                                                             <div style="font-size: 12px; color: #00ab55;">↑ —</div>
                                                                         </div>
                                                                     </template>
-                                                                    <!-- Chart Widget -->
+                                                                    <!-- Chart Widget (LIVE) -->
                                                                     <template x-if="block && block.type === 'chart'">
-                                                                        <div class="panel" style="height: 100%; border: none; border-radius: 12px;">
+                                                                        <div class="panel" style="height: 100%; border: none; border-radius: 12px;"
+                                                                             x-data="{ chartLoading: true, chartError: '', chartTotal: 0, _chartInstance: null }"
+                                                                             x-init="(async () => {
+                                                                                 try {
+                                                                                     const _eId = '<%= entity._id %>';
+                                                                                     const _acct = '<%= account_number %>';
+                                                                                     const cfg = block.config || {};
+                                                                                     const src = cfg.dataSource || 'entity:' + _eId;
+                                                                                     const parts = src.split(':');
+                                                                                     const srcId = parts.slice(1).join(':') || _eId;
+                                                                                     const url = '/account/' + _acct + '/api/widget/chart-data?entityId=' + srcId + '&period=month&months=6';
+                                                                                     const resp = await fetch(url, { credentials: 'include' });
+                                                                                     const data = await resp.json();
+                                                                                     chartTotal = data.total || 0;
+                                                                                     const elId = 'ct-chart-' + block.id;
+                                                                                     const chartType = cfg.chartType || 'bar';
+                                                                                     const color = data.entityColor || cfg.colorScheme || '#4361ee';
+                                                                                     const apexType = chartType === 'pie' || chartType === 'doughnut' || chartType === 'donut' ? 'donut' :
+                                                                                                      chartType === 'radar' ? 'radar' :
+                                                                                                      chartType === 'area' ? 'area' :
+                                                                                                      chartType === 'line' ? 'line' : 'bar';
+                                                                                     await $nextTick();
+                                                                                     await new Promise(r => setTimeout(r, 100));
+                                                                                     const el = document.getElementById(elId);
+                                                                                     if (el && typeof ApexCharts !== 'undefined') {
+                                                                                         const opts = apexType === 'donut' ? {
+                                                                                             chart: { type: 'donut', height: 250, fontFamily: 'Nunito, sans-serif' },
+                                                                                             series: data.data,
+                                                                                             labels: data.labels,
+                                                                                             colors: ['#4361ee','#00ab55','#e7515a','#e2a03f','#805dca','#2196f3'],
+                                                                                             legend: { position: 'bottom', fontSize: '11px' },
+                                                                                             plotOptions: { pie: { donut: { size: '65%' } } }
+                                                                                         } : {
+                                                                                             chart: { type: apexType, height: 250, fontFamily: 'Nunito, sans-serif', toolbar: { show: false }, sparkline: { enabled: false } },
+                                                                                             series: [{ name: data.entityName || 'Records', data: data.data }],
+                                                                                             xaxis: { categories: data.labels, labels: { style: { fontSize: '10px', colors: '#9ca3af' } } },
+                                                                                             yaxis: { labels: { style: { fontSize: '10px', colors: '#9ca3af' } },
+                                                                                                      forceNiceScale: true, min: 0 },
+                                                                                             colors: [color],
+                                                                                             fill: apexType === 'area' ? { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 } } : {},
+                                                                                             stroke: { curve: 'smooth', width: apexType === 'line' || apexType === 'area' ? 2 : 0 },
+                                                                                             plotOptions: apexType === 'bar' ? { bar: { borderRadius: 4, columnWidth: '50%' } } : {},
+                                                                                             dataLabels: { enabled: false },
+                                                                                             grid: { borderColor: '#f3f4f6', strokeDashArray: 3, padding: { left: 8, right: 8 } },
+                                                                                             tooltip: { theme: 'light', y: { formatter: v => v + ' records' } }
+                                                                                         };
+                                                                                         _chartInstance = new ApexCharts(el, opts);
+                                                                                         _chartInstance.render();
+                                                                                     }
+                                                                                 } catch(e) { chartError = e.message; console.error('Chart error:', e); }
+                                                                                 chartLoading = false;
+                                                                             })()">
                                                                             <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
                                                                                 <iconify-icon icon="solar:chart-bold-duotone" width="14" style="color: #e7515a;"></iconify-icon>
                                                                                 <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Graphique'"></span>
+                                                                                <span style="font-size: 10px; background: rgba(231,81,90,0.1); color: #e7515a; padding: 1px 6px; border-radius: 9999px; font-weight: 700; margin-left: auto;"
+                                                                                      x-show="chartTotal > 0" x-text="chartTotal + ' total'"></span>
                                                                             </div>
-                                                                            <div style="padding: 24px; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 13px;">
-                                                                                <iconify-icon icon="solar:chart-2-bold-duotone" width="48" style="opacity: 0.3;"></iconify-icon>
-                                                                            </div>
+                                                                            <!-- Loading -->
+                                                                            <template x-if="chartLoading">
+                                                                                <div style="padding: 40px; text-align: center; color: #9ca3af;">
+                                                                                    <div style="width: 20px; height: 20px; border: 2px solid #e5e7eb; border-top-color: #e7515a; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                                                                                    <div style="font-size: 11px; margin-top: 8px;">Chargement du graphique...</div>
+                                                                                </div>
+                                                                            </template>
+                                                                            <!-- Chart container -->
+                                                                            <div :id="'ct-chart-' + block.id" style="padding: 8px 4px 0 4px; min-height: 250px;"></div>
                                                                         </div>
                                                                     </template>
                                                                     <!-- Fields Widget -->
@@ -3226,6 +3343,7 @@
             border-color: #374151;
             background: #111827;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
         </style>
 
 

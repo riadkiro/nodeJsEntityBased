@@ -790,16 +790,16 @@
                                         </div>
 
                                         <!-- Row Grid (12-unit, cockpit pattern) -->
-                                        <div style="display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px;">
+                                        <div style="display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; align-items: stretch;">
 
                                             <!-- Columns -->
                                             <template x-for="(col, colIndex) in row.columns" :key="col.id">
-                                                <div :style="'grid-column: span ' + (col.width || Math.floor(12 / row.columns.length)) + '; position: relative; min-height:' + (ctEditMode ? '90px' : (col.blockId ? 'auto' : '0px')) + '; border-radius: 12px; background: white; transition: all 0.2s ease;' + (ctEditMode ? 'border: 2px dashed #d1d5db;' : (col.blockId ? 'border: 1px solid rgba(229,231,235,0.8); box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02);' : 'border: none;'))"
+                                                <div :style="'grid-column: span ' + (col.width || Math.floor(12 / row.columns.length)) + '; position: relative; display: flex; flex-direction: column; min-height:' + (ctEditMode ? '90px' : (col.blockIds && col.blockIds.length ? 'auto' : '0px')) + '; border-radius: 12px; background: white; transition: all 0.2s ease;' + (ctEditMode ? 'border: 2px dashed #d1d5db;' : (col.blockIds && col.blockIds.length ? 'border: 1px solid rgba(229,231,235,0.8); box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02);' : 'border: none;'))"
                                                      class="ct-col-sortable"
                                                      :data-col-id="col.id"
                                                      :data-row-id="row.id"
-                                                     :onmouseover="ctEditMode ? `this.style.borderColor='#9ca3af'` : (col.blockId ? `this.style.boxShadow='0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)'; this.style.borderColor='rgba(209,213,219,0.6)'` : '')"
-                                                     :onmouseout="ctEditMode ? `this.style.borderColor='#d1d5db'` : (col.blockId ? `this.style.boxShadow='0 1px 3px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02)'; this.style.borderColor='rgba(229,231,235,0.8)'` : '')">
+                                                     :onmouseover="ctEditMode ? `this.style.borderColor='#9ca3af'` : (col.blockIds && col.blockIds.length ? `this.style.boxShadow='0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)'; this.style.borderColor='rgba(209,213,219,0.6)'` : '')"
+                                                     :onmouseout="ctEditMode ? `this.style.borderColor='#d1d5db'` : (col.blockIds && col.blockIds.length ? `this.style.boxShadow='0 1px 3px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02)'; this.style.borderColor='rgba(229,231,235,0.8)'` : '')">
 
                                                     <!-- Resize Handle (cockpit pattern: inside column, right edge, edit mode only) -->
                                                     <template x-if="ctEditMode">
@@ -811,9 +811,10 @@
                                                         </div>
                                                     </template>
 
-                                                    <!-- If column has a widget -->
-                                                    <template x-if="col.blockId && getTabBlock(activeTab, col.blockId)">
-                                                        <div style="position: relative; height: 100%;" class="ct-widget-item" :data-block-id="col.blockId">
+                                                    <!-- Stacked widgets in column -->
+                                                    <template x-for="(bid, bidIdx) in (col.blockIds || [])" :key="bid">
+                                                        <template x-if="getTabBlock(activeTab, bid)">
+                                                        <div style="position: relative; flex: 1;" class="ct-widget-item" :data-block-id="bid">
                                                             <!-- Block toolbar on hover -->
                                                             <div x-data="{ blockHover: false }" style="height: 100%;"
                                                                  @mouseenter="blockHover = true" @mouseleave="blockHover = false">
@@ -821,14 +822,14 @@
                                                                      style="position: absolute; top: 3px; right: 3px; display: flex; gap: 1px; z-index: 10;"
                                                                      x-cloak>
                                                                     <!-- Settings button (always) -->
-                                                                    <button type="button" @click.stop="ctConfigModal = { open: true, tabKey: activeTab, blockId: col.blockId }"
+                                                                    <button type="button" @click.stop="ctConfigModal = { open: true, tabKey: activeTab, blockId: bid }"
                                                                             title="Configurer"
                                                                             style="width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 4px; border: none; cursor: pointer; background: rgba(67,97,238,0.08); color: #4361ee;">
                                                                         <iconify-icon icon="solar:settings-bold" width="10"></iconify-icon>
                                                                     </button>
                                                                     <!-- Delete button (edit mode only) -->
                                                                     <template x-if="ctEditMode">
-                                                                        <button type="button" @click.stop="ctRemoveBlock(activeTab, row.id, col.id)"
+                                                                        <button type="button" @click.stop="ctRemoveBlock(activeTab, row.id, col.id, bid)"
                                                                                 title="Supprimer"
                                                                                 style="width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 4px; border: none; cursor: pointer; background: rgba(231,81,90,0.08); color: #e7515a;">
                                                                             <iconify-icon icon="solar:trash-bin-trash-bold" width="10"></iconify-icon>
@@ -836,7 +837,7 @@
                                                                     </template>
                                                                 </div>
                                                                 <!-- Widget Content Render -->
-                                                                <div x-data="{ block: getTabBlock(activeTab, col.blockId) }" style="height: 100%;">
+                                                                <div x-data="{ block: getTabBlock(activeTab, bid) }" style="height: 100%;">
                                                                     <!-- Notes Widget -->
                                                                     <template x-if="block && block.type === 'notes'">
                                                                         <div style="height: 100%; border: none; border-radius: 12px;">
@@ -857,10 +858,10 @@
                                                                                 </div>
                                                                             </div>
                                                                             <div contenteditable="true"
-                                                                                 :id="'ct-editor-' + col.blockId"
-                                                                                 @input="ctOnBlockInput(activeTab, col.blockId)"
+                                                                                 :id="'ct-editor-' + bid"
+                                                                                 @input="ctOnBlockInput(activeTab, bid)"
                                                                                  style="min-height: 100px; padding: 12px; outline: none; font-size: 13px; line-height: 1.7; color: #374151;"
-                                                                                 x-effect="ctLoadBlockContent(activeTab, col.blockId)"
+                                                                                 x-effect="ctLoadBlockContent(activeTab, bid)"
                                                                             ></div>
                                                                         </div>
                                                                     </template>
@@ -881,7 +882,7 @@
                                                                                 </template>
                                                                                 <div style="margin-top: 8px;">
                                                                                     <input type="text" placeholder="+ Nouvelle tâche..."
-                                                                                           @keydown.enter="ctAddTask(activeTab, col.blockId, $el.value); $el.value = ''"
+                                                                                           @keydown.enter="ctAddTask(activeTab, bid, $el.value); $el.value = ''"
                                                                                            style="width: 100%; border: none; outline: none; font-size: 13px; color: #6b7280; padding: 4px 0;">
                                                                                 </div>
                                                                             </div>
@@ -1091,25 +1092,29 @@
                                                             </div>
                                                         </div>
                                                     </template>
+                                                    </template>
 
-                                                    <!-- Empty column: Add / Delete buttons (edit mode only) -->
-                                                    <template x-if="!col.blockId && ctEditMode">
-                                                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 100%; min-height: 90px;">
+                                                    <!-- Add widget button (edit mode, shown at bottom of column) -->
+                                                    <template x-if="ctEditMode">
+                                                        <div :style="(col.blockIds && col.blockIds.length) ? 'display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 0; flex-shrink: 0;' : 'display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; min-height: 90px;'">
                                                             <!-- Add Widget Button -->
                                                             <button type="button"
                                                                     @click="ctWidgetPickerOpen = true; ctWidgetPickerTarget = { tabKey: activeTab, rowId: row.id, colId: col.id }"
-                                                                    style="width: 36px; height: 36px; border-radius: 50%; background: rgba(67,97,238,0.1); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s;"
-                                                                    onmouseover="this.style.background='rgba(67,97,238,0.2)'" onmouseout="this.style.background='rgba(67,97,238,0.1)'">
-                                                                <iconify-icon icon="solar:add-circle-bold" width="18" style="color: #4361ee;"></iconify-icon>
+                                                                    :style="(col.blockIds && col.blockIds.length) ? 'width: 100%; height: 28px; border-radius: 6px; background: transparent; border: 1.5px dashed #d1d5db; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s; margin: 0 8px; color: #9ca3af; font-size: 11px;' : 'width: 36px; height: 36px; border-radius: 50%; background: rgba(67,97,238,0.1); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s;'"
+                                                                    onmouseover="this.style.borderColor='#4361ee';this.style.color='#4361ee';this.style.background='rgba(67,97,238,0.06)'" onmouseout="this.style.borderColor='#d1d5db';this.style.color='#9ca3af';this.style.background='transparent'">
+                                                                <iconify-icon icon="solar:add-circle-bold" :width="(col.blockIds && col.blockIds.length) ? '12' : '18'" style="color: inherit;"></iconify-icon>
+                                                                <span x-show="col.blockIds && col.blockIds.length" style="font-size: 10px; font-weight: 500;">Ajouter</span>
                                                             </button>
-                                                            <!-- Delete Column Button -->
-                                                            <button type="button"
-                                                                    @click.stop="ctDeleteColumn(activeTab, row.id, col.id)"
-                                                                    style="width: 30px; height: 30px; border-radius: 50%; background: rgba(231,81,90,0.1); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s;"
-                                                                    onmouseover="this.style.background='rgba(231,81,90,0.2)'" onmouseout="this.style.background='rgba(231,81,90,0.1)'"
-                                                                    title="Supprimer">
-                                                                <iconify-icon icon="solar:trash-bin-trash-bold" width="14" style="color: #e7515a;"></iconify-icon>
-                                                            </button>
+                                                            <!-- Delete Column Button (only when empty) -->
+                                                            <template x-if="!col.blockIds || !col.blockIds.length">
+                                                                <button type="button"
+                                                                        @click.stop="ctDeleteColumn(activeTab, row.id, col.id)"
+                                                                        style="width: 30px; height: 30px; border-radius: 50%; background: rgba(231,81,90,0.1); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s;"
+                                                                        onmouseover="this.style.background='rgba(231,81,90,0.2)'" onmouseout="this.style.background='rgba(231,81,90,0.1)'"
+                                                                        title="Supprimer">
+                                                                    <iconify-icon icon="solar:trash-bin-trash-bold" width="14" style="color: #e7515a;"></iconify-icon>
+                                                                </button>
+                                                            </template>
                                                         </div>
                                                     </template>
                                                 </div>
@@ -3259,7 +3264,20 @@
                     if (!this.customTabLayouts[tabKey]) {
                         this.customTabLayouts[tabKey] = { rows: [], blocks: {} };
                     }
-                    return this.customTabLayouts[tabKey];
+                    const layout = this.customTabLayouts[tabKey];
+                    if (layout.rows) {
+                        layout.rows.forEach(row => {
+                            if (row.columns) {
+                                row.columns.forEach(col => {
+                                    if (!col.blockIds) {
+                                        col.blockIds = col.blockId ? [col.blockId] : [];
+                                        delete col.blockId;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    return layout;
                 },
 
                 _genId(prefix) {
@@ -3281,7 +3299,7 @@
                     const colId = this._genId('col');
                     layout.rows.push({
                         id: this._genId('row'),
-                        columns: [{ id: colId, width: 12, blockId: null }]
+                        columns: [{ id: colId, width: 12, blockIds: [] }]
                     });
                     this.ctSaveLayout(tabKey);
                 },
@@ -3293,9 +3311,9 @@
                     // Clean up blocks in this row
                     const row = layout.rows[rowIdx];
                     row.columns.forEach(col => {
-                        if (col.blockId && layout.blocks[col.blockId]) {
-                            delete layout.blocks[col.blockId];
-                        }
+                        (col.blockIds || []).forEach(bid => {
+                            if (layout.blocks[bid]) delete layout.blocks[bid];
+                        });
                     });
                     layout.rows.splice(rowIdx, 1);
                     this.ctSaveLayout(tabKey);
@@ -3372,7 +3390,7 @@
                                     if (fromColId === toColId) return; // same column, no move needed
 
                                     const layout = self._ensureTabLayout(tabKey);
-                                    // Find source column and clear blockId
+                                    // Find source column
                                     let srcCol = null;
                                     layout.rows.forEach(r => r.columns.forEach(c => {
                                         if (c.id === fromColId) srcCol = c;
@@ -3388,10 +3406,12 @@
                                     evt.item.remove();
                                     evt.from.appendChild(evt.item);
 
-                                    // Swap: if target already has a block, swap them
-                                    const oldTargetBlock = tgtCol.blockId;
-                                    tgtCol.blockId = srcCol.blockId;
-                                    srcCol.blockId = oldTargetBlock;
+                                    // Move block from source to target array
+                                    if (!srcCol.blockIds) srcCol.blockIds = [];
+                                    if (!tgtCol.blockIds) tgtCol.blockIds = [];
+                                    const bidIdx = srcCol.blockIds.indexOf(blockId);
+                                    if (bidIdx > -1) srcCol.blockIds.splice(bidIdx, 1);
+                                    tgtCol.blockIds.splice(evt.newIndex, 0, blockId);
                                     self.ctSaveLayout(tabKey);
                                 }
                             });
@@ -3413,8 +3433,11 @@
                     const row = layout.rows.find(r => r.id === rowId);
                     if (!row) return;
                     
-                    // Preserve existing blocks
-                    const existingBlocks = row.columns.filter(c => c.blockId).map(c => c.blockId);
+                    // Preserve existing blocks from all columns
+                    const existingBlocks = [];
+                    row.columns.forEach(c => {
+                        (c.blockIds || []).forEach(bid => existingBlocks.push(bid));
+                    });
                     
                     // Calculate widths (12-unit grid)
                     const colWidth = Math.floor(12 / colCount);
@@ -3426,7 +3449,7 @@
                         newCols.push({
                             id: this._genId('col'),
                             width: colWidth + (i < remainder ? 1 : 0),
-                            blockId: existingBlocks[i] || null
+                            blockIds: existingBlocks[i] ? [existingBlocks[i]] : []
                         });
                     }
                     
@@ -3454,8 +3477,10 @@
                     const col = row.columns[colIdx];
                     const freedWidth = col.width || Math.floor(12 / row.columns.length);
                     
-                    if (col.blockId && layout.blocks[col.blockId]) {
-                        delete layout.blocks[col.blockId];
+                    if (col.blockIds && col.blockIds.length) {
+                        col.blockIds.forEach(bid => {
+                            if (layout.blocks[bid]) delete layout.blocks[bid];
+                        });
                     }
                     row.columns.splice(colIdx, 1);
                     
@@ -3469,16 +3494,18 @@
                     this.ctSaveLayout(tabKey);
                 },
 
-                ctRemoveBlock(tabKey, rowId, colId) {
+                ctRemoveBlock(tabKey, rowId, colId, blockId) {
                     const layout = this._ensureTabLayout(tabKey);
                     const row = layout.rows.find(r => r.id === rowId);
                     if (!row) return;
                     const col = row.columns.find(c => c.id === colId);
-                    if (!col || !col.blockId) return;
-                    if (layout.blocks[col.blockId]) {
-                        delete layout.blocks[col.blockId];
+                    if (!col || !col.blockIds) return;
+                    const bidIdx = col.blockIds.indexOf(blockId);
+                    if (bidIdx === -1) return;
+                    if (layout.blocks[blockId]) {
+                        delete layout.blocks[blockId];
                     }
-                    col.blockId = null;
+                    col.blockIds.splice(bidIdx, 1);
                     this.ctSaveLayout(tabKey);
                 },
 
@@ -3509,7 +3536,8 @@
                     if (widgetType === 'fields') block.fields = [];
                     
                     layout.blocks[blockId] = block;
-                    col.blockId = blockId;
+                    if (!col.blockIds) col.blockIds = [];
+                    col.blockIds.push(blockId);
                     
                     this.ctWidgetPickerOpen = false;
                     this.ctWidgetPickerTarget = null;
@@ -3625,7 +3653,7 @@
                             // Create or update the new column
                             if (row.columns.length === startWidths.length) {
                                 // Add new empty column
-                                row.columns.push({ id: this._genId('col'), width: remaining, blockId: null });
+                                row.columns.push({ id: this._genId('col'), width: remaining, blockIds: [] });
                                 startWidths.push(0); // Track the new column
                             } else {
                                 // Update existing new column width

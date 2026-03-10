@@ -720,9 +720,13 @@
                             </template>
 
                             <!-- Rows -->
-                            <div style="display: flex; flex-direction: column; gap: 16px;">
+                            <div style="display: flex; flex-direction: column; gap: 16px;"
+                                 :id="'ct-rows-' + activeTab"
+                                 x-effect="if (ctEditMode) { $nextTick(() => ctInitSortables()); } else { ctDestroySortables(); }">
                                 <template x-for="(row, rowIndex) in getTabRows(activeTab)" :key="row.id">
                                     <div :style="'position: relative; overflow: visible;' + (ctEditMode ? 'padding-top: 20px;' : '')"
+                                         class="ct-row-item"
+                                         :data-row-id="row.id"
                                          x-data="{ rowHover: false }"
                                          @mouseenter="rowHover = true"
                                          @mouseleave="rowHover = false">
@@ -732,6 +736,12 @@
                                              :style="'position: absolute; top: 0; left: 0; height: 19px; display: flex; align-items: center; z-index: 50; gap: 0;' + (rowHover ? 'opacity:1; pointer-events:auto;' : 'opacity:0; pointer-events:none;')"
                                              style="transition: opacity 0.12s ease;">
                                             <div style="display: inline-flex; align-items: center; gap: 1px; background: rgba(255,255,255,0.95); backdrop-filter: blur(6px); border-radius: 0 0 6px 0; padding: 0 3px; height: 19px; border-bottom: 1px solid rgba(0,0,0,0.04); border-right: 1px solid rgba(0,0,0,0.04);">
+                                                <!-- Drag Handle -->
+                                                <div class="ct-row-drag-handle" style="width: 17px; height: 17px; display: inline-flex; align-items: center; justify-content: center; cursor: grab; color: #d1d5db; flex-shrink: 0; border-radius: 3px;" title="Glisser pour réordonner"
+                                                     onmouseover="this.style.color='#6b7280';this.style.background='#f3f4f6'" onmouseout="this.style.color='#d1d5db';this.style.background='transparent'">
+                                                    <iconify-icon icon="solar:hamburger-menu-linear" width="10"></iconify-icon>
+                                                </div>
+                                                <div style="width: 1px; height: 11px; background: #e5e7eb; margin: 0 1px; flex-shrink: 0;"></div>
                                                 <!-- Layout presets -->
                                                 <button type="button" @click.stop="ctSetRowLayout(activeTab, row.id, 1)"
                                                         title="1 col"
@@ -785,6 +795,9 @@
                                             <!-- Columns -->
                                             <template x-for="(col, colIndex) in row.columns" :key="col.id">
                                                 <div :style="'grid-column: span ' + (col.width || Math.floor(12 / row.columns.length)) + '; position: relative; min-height:' + (ctEditMode ? '90px' : (col.blockId ? 'auto' : '0px')) + '; border-radius: 12px; background: white; transition: all 0.2s ease;' + (ctEditMode ? 'border: 2px dashed #d1d5db;' : (col.blockId ? 'border: 1px solid rgba(229,231,235,0.8); box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02);' : 'border: none;'))"
+                                                     class="ct-col-sortable"
+                                                     :data-col-id="col.id"
+                                                     :data-row-id="row.id"
                                                      :onmouseover="ctEditMode ? `this.style.borderColor='#9ca3af'` : (col.blockId ? `this.style.boxShadow='0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)'; this.style.borderColor='rgba(209,213,219,0.6)'` : '')"
                                                      :onmouseout="ctEditMode ? `this.style.borderColor='#d1d5db'` : (col.blockId ? `this.style.boxShadow='0 1px 3px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02)'; this.style.borderColor='rgba(229,231,235,0.8)'` : '')">
 
@@ -800,7 +813,7 @@
 
                                                     <!-- If column has a widget -->
                                                     <template x-if="col.blockId && getTabBlock(activeTab, col.blockId)">
-                                                        <div style="position: relative; height: 100%;">
+                                                        <div style="position: relative; height: 100%;" class="ct-widget-item" :data-block-id="col.blockId">
                                                             <!-- Block toolbar on hover -->
                                                             <div x-data="{ blockHover: false }" style="height: 100%;"
                                                                  @mouseenter="blockHover = true" @mouseleave="blockHover = false">
@@ -2292,6 +2305,7 @@
                 ctWidgetPickerOpen: false,
                 ctWidgetPickerTarget: null, // { tabKey, rowId, colId }
                 ctConfigModal: { open: false, tabKey: null, blockId: null }, // per-widget config modal
+                _ctSortables: {},       // { 'rows': Sortable, 'col_xxx': Sortable, ... }
                 ctWidgetCatalog: [
                     { type: 'notes',    label: 'Notes',      icon: 'solar:document-text-bold-duotone', color: '#4361ee', bg: 'rgba(67,97,238,0.1)',  desc: 'Texte enrichi' },
                     { type: 'tasks',    label: 'Tâches',     icon: 'solar:checklist-bold-duotone',     color: '#00ab55', bg: 'rgba(0,171,85,0.1)',   desc: 'Checklist' },
@@ -3297,6 +3311,103 @@
                     this.ctSaveLayout(tabKey);
                 },
 
+                // ═══ SortableJS Drag & Drop ═══
+                ctInitSortables() {
+                    this.ctDestroySortables();
+                    const tabKey = this.activeTab;
+                    if (!tabKey) return;
+                    const self = this;
+
+                    // 1. Row Sortable — reorder entire rows
+                    this.$nextTick(() => {
+                        const rowsContainer = document.getElementById('ct-rows-' + tabKey);
+                        if (!rowsContainer) return;
+
+                        self._ctSortables['rows'] = Sortable.create(rowsContainer, {
+                            animation: 180,
+                            ghostClass: 'ct-sortable-ghost',
+                            chosenClass: 'ct-sortable-chosen',
+                            dragClass: 'ct-sortable-drag',
+                            handle: '.ct-row-drag-handle',
+                            draggable: '.ct-row-item',
+                            swapThreshold: 0.65,
+                            onEnd(evt) {
+                                const rowId = evt.item.dataset.rowId;
+                                if (!rowId || evt.oldIndex === evt.newIndex) return;
+                                const layout = self._ensureTabLayout(tabKey);
+                                const fromIdx = layout.rows.findIndex(r => r.id === rowId);
+                                if (fromIdx === -1) return;
+                                // Revert DOM — Alpine manages DOM via x-for
+                                const items = Array.from(rowsContainer.querySelectorAll(':scope > .ct-row-item'));
+                                const ref = items[evt.oldIndex] || null;
+                                if (ref) rowsContainer.insertBefore(evt.item, ref);
+                                else rowsContainer.appendChild(evt.item);
+                                // Splice data
+                                const [moved] = layout.rows.splice(fromIdx, 1);
+                                layout.rows.splice(evt.newIndex, 0, moved);
+                                self.ctSaveLayout(tabKey);
+                            }
+                        });
+
+                        // 2. Widget Sortable — drag widgets between columns (cross-row)
+                        const colEls = rowsContainer.querySelectorAll('.ct-col-sortable');
+                        colEls.forEach(colEl => {
+                            const colId = colEl.dataset.colId;
+                            const rowId = colEl.dataset.rowId;
+                            if (!colId) return;
+
+                            self._ctSortables['col_' + colId] = Sortable.create(colEl, {
+                                group: { name: 'ct-widgets', pull: true, put: true },
+                                animation: 150,
+                                ghostClass: 'ct-widget-ghost',
+                                draggable: '.ct-widget-item',
+                                swapThreshold: 0.65,
+                                onEnd(evt) {
+                                    const blockId = evt.item.dataset.blockId;
+                                    const fromRowId = evt.from.dataset.rowId;
+                                    const fromColId = evt.from.dataset.colId;
+                                    const toRowId = evt.to.dataset.rowId;
+                                    const toColId = evt.to.dataset.colId;
+                                    if (!blockId || !fromColId || !toColId) return;
+                                    if (fromColId === toColId) return; // same column, no move needed
+
+                                    const layout = self._ensureTabLayout(tabKey);
+                                    // Find source column and clear blockId
+                                    let srcCol = null;
+                                    layout.rows.forEach(r => r.columns.forEach(c => {
+                                        if (c.id === fromColId) srcCol = c;
+                                    }));
+                                    // Find target column
+                                    let tgtCol = null;
+                                    layout.rows.forEach(r => r.columns.forEach(c => {
+                                        if (c.id === toColId) tgtCol = c;
+                                    }));
+                                    if (!srcCol || !tgtCol) return;
+
+                                    // Revert DOM — Alpine manages it
+                                    evt.item.remove();
+                                    evt.from.appendChild(evt.item);
+
+                                    // Swap: if target already has a block, swap them
+                                    const oldTargetBlock = tgtCol.blockId;
+                                    tgtCol.blockId = srcCol.blockId;
+                                    srcCol.blockId = oldTargetBlock;
+                                    self.ctSaveLayout(tabKey);
+                                }
+                            });
+                        });
+                    });
+                },
+
+                ctDestroySortables() {
+                    Object.keys(this._ctSortables).forEach(key => {
+                        if (this._ctSortables[key] && typeof this._ctSortables[key].destroy === 'function') {
+                            this._ctSortables[key].destroy();
+                        }
+                    });
+                    this._ctSortables = {};
+                },
+
                 ctSetRowLayout(tabKey, rowId, colCount) {
                     const layout = this._ensureTabLayout(tabKey);
                     const row = layout.rows.find(r => r.id === rowId);
@@ -3592,6 +3703,29 @@
             border-color: #374151;
             background: #111827;
         }
+        /* SortableJS — Row drag states */
+        .ct-sortable-ghost {
+            opacity: 0.15;
+            border: 2px dashed #4361ee !important;
+            border-radius: 12px;
+            background: rgba(67, 97, 238, 0.04) !important;
+        }
+        .ct-sortable-chosen {
+            box-shadow: 0 8px 25px rgba(67, 97, 238, 0.15);
+            border-radius: 12px;
+        }
+        .ct-sortable-drag {
+            opacity: 0.9;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
+            border-radius: 12px;
+        }
+        /* SortableJS — Widget drag states */
+        .ct-widget-ghost {
+            opacity: 0.2;
+            border: 2px dashed #805dca !important;
+            border-radius: 12px;
+        }
+        .ct-row-drag-handle:active { cursor: grabbing; }
         @keyframes spin { to { transform: rotate(360deg); } }
         </style>
 

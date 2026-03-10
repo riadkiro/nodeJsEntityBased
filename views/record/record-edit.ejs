@@ -869,12 +869,13 @@
                                                                     </template>
                                                                     <!-- Tasks Widget -->
                                                                     <template x-if="block && block.type === 'tasks'">
-                                                                        <div style="height: 100%; border: none; border-radius: 12px;">
-                                                                            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+                                                                        <div style="height: 100%; border: none; border-radius: 12px; display: flex; flex-direction: column;">
+                                                                            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6; flex-shrink: 0;">
                                                                                 <iconify-icon icon="solar:checklist-bold-duotone" width="14" style="color: #00ab55;"></iconify-icon>
                                                                                 <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Tâches'"></span>
+                                                                                <span style="margin-left: auto; font-size: 10px; color: #9ca3af; font-weight: 500;" x-text="(block.tasks || []).length + ' tâche' + ((block.tasks || []).length > 1 ? 's' : '')"></span>
                                                                             </div>
-                                                                            <div style="padding: 12px;">
+                                                                            <div style="flex: 1; overflow-y: auto; max-height: 280px; padding: 8px 12px;" class="hide-scrollbar">
                                                                                 <template x-for="(task, i) in (block.tasks || [])" :key="i">
                                                                                     <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f9fafb;">
                                                                                         <input type="checkbox" :checked="task.done" @change="task.done = $el.checked; ctSaveLayout(activeTab)"
@@ -882,11 +883,11 @@
                                                                                         <span style="font-size: 13px;" :style="task.done && 'text-decoration: line-through; color: #9ca3af;'" x-text="task.text"></span>
                                                                                     </div>
                                                                                 </template>
-                                                                                <div style="margin-top: 8px;">
-                                                                                    <input type="text" placeholder="+ Nouvelle tâche..."
-                                                                                           @keydown.enter="ctAddTask(activeTab, bid, $el.value); $el.value = ''"
-                                                                                           style="width: 100%; border: none; outline: none; font-size: 13px; color: #6b7280; padding: 4px 0;">
-                                                                                </div>
+                                                                            </div>
+                                                                            <div style="padding: 8px 12px; border-top: 1px solid #f3f4f6; flex-shrink: 0;">
+                                                                                <input type="text" placeholder="+ Nouvelle tâche..."
+                                                                                       @keydown.enter.prevent="ctAddTask(activeTab, bid, $el.value); $el.value = ''"
+                                                                                       style="width: 100%; border: none; outline: none; font-size: 13px; color: #6b7280; padding: 4px 0;">
                                                                             </div>
                                                                         </div>
                                                                     </template>

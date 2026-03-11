@@ -894,7 +894,7 @@
                                                                     <!-- Timeline Widget (LIVE) -->
                                                                     <template x-if="block && block.type === 'timeline'">
                                                                         <div style="height: 100%; border: none; border-radius: 12px;"
-                                                                             x-data="{ tlRecords: [], tlLoading: true, tlError: '' }"
+                                                                             x-data="{ tlRecords: [], tlAllRecords: [], tlLoading: true, tlError: '', _tlPeriod: 'all', _tlSort: (block.config||{}).sortOrder || 'desc' }"
                                                                              x-init="(async () => {
                                                                                  try {
                                                                                      const _eId = '<%= entity._id %>';
@@ -912,13 +912,28 @@
                                                                                        if (cfg.advancedFilters && cfg.advancedFilters.length > 0) { const vf = cfg.advancedFilters.filter(f => f.field && f.operator); if(vf.length>0) url += '&advancedFilters=' + encodeURIComponent(JSON.stringify(vf)) + '&advancedFiltersLogic=' + (cfg.advancedFiltersLogic || 'and'); }
                                                                                      const resp = await fetch(url, { credentials: 'include' });
                                                                                      const data = await resp.json();
-                                                                                     tlRecords = data.records || [];
+                                                                                     tlAllRecords = data.records || []; tlRecords = tlAllRecords.slice();
                                                                                  } catch(e) { tlError = e.message; console.error('Timeline error:', e); }
                                                                                  tlLoading = false;
                                                                              })()">
                                                                             <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
                                                                                 <iconify-icon icon="solar:clock-circle-bold-duotone" width="14" style="color: #805dca;"></iconify-icon>
                                                                                 <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Timeline'"></span>
+
+                                                                                 <div style="display: flex; align-items: center; gap: 2px; margin-left: auto; background: #f3f4f6; border-radius: 6px; padding: 2px;">
+                                                                                     <template x-for="pr in [{v:'all',l:'Tout'},{v:'1m',l:'1M'},{v:'3m',l:'3M'},{v:'6m',l:'6M'},{v:'1y',l:'1A'}]" :key="pr.v">
+                                                                                         <button type="button" 
+                                                                                                 @click="_tlPeriod = pr.v; const now2 = new Date(); const cutoff = new Date(); if(pr.v==='1m') cutoff.setMonth(cutoff.getMonth()-1); else if(pr.v==='3m') cutoff.setMonth(cutoff.getMonth()-3); else if(pr.v==='6m') cutoff.setMonth(cutoff.getMonth()-6); else if(pr.v==='1y') cutoff.setFullYear(cutoff.getFullYear()-1); if(pr.v==='all'){ tlRecords = tlAllRecords.slice(); } else { tlRecords = tlAllRecords.filter(r => { const d = r.date ? new Date(r.date) : null; return d && d >= cutoff; }); }"
+                                                                                                 :style="'padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; line-height: 1.2;' + (_tlPeriod === pr.v ? 'background: white; color: #374151; box-shadow: 0 1px 2px rgba(0,0,0,0.08);' : 'background: transparent; color: #9ca3af;')"
+                                                                                                 x-text="pr.l"></button>
+                                                                                     </template>
+                                                                                 </div>
+                                                                                 <button type="button" @click="_tlSort = _tlSort === 'desc' ? 'asc' : 'desc'; tlRecords = [...tlRecords].sort((a,b) => { const da = a.date ? new Date(a.date) : new Date(0); const db = b.date ? new Date(b.date) : new Date(0); return _tlSort === 'desc' ? db - da : da - db; })"
+                                                                                         :title="_tlSort === 'desc' ? 'Plus récent d\'abord' : 'Plus ancien d\'abord'"
+                                                                                         style="padding: 3px; border-radius: 4px; border: none; background: transparent; cursor: pointer; color: #9ca3af; transition: all 0.15s; display: flex; align-items: center;"
+                                                                                         onmouseover="this.style.color='#4361ee';this.style.background='rgba(67,97,238,0.06)'" onmouseout="this.style.color='#9ca3af';this.style.background='transparent'">
+                                                                                     <iconify-icon :icon="_tlSort === 'desc' ? 'solar:sort-from-top-to-bottom-bold' : 'solar:sort-from-bottom-to-top-bold'" width="14"></iconify-icon>
+                                                                                 </button>
                                                                                 <span style="font-size: 10px; background: rgba(128,93,202,0.1); color: #805dca; padding: 1px 6px; border-radius: 9999px; font-weight: 700; margin-left: 4px;"
                                                                                       x-text="tlRecords.length"></span>
                                                                             </div>
@@ -978,7 +993,7 @@
                                                                     <!-- Chart Widget (LIVE) -->
                                                                     <template x-if="block && block.type === 'chart'">
                                                                         <div style="height: 100%; border: none; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;"
-                                                                             x-data="{ chartLoading: true, chartError: '', chartTotal: 0, _chartInstance: null }"
+                                                                             x-data="{ chartLoading: true, chartError: '', chartTotal: 0, _chartInstance: null, _chartPeriod: (block.config||{}).defaultRange || '6m', _chartPeriodLabel: '' }"
                                                                              x-init="(async () => {
                                                                                  try {
                                                                                      const _eId = '<%= entity._id %>';
@@ -988,7 +1003,7 @@
                                                                                      const parts = src.split(':');
                                                                                      const srcId = parts.slice(1).join(':') || _eId;
                                                                                      let url = '/account/' + _acct + '/api/widget/chart-data?entityId=' + (src.startsWith('entity:') ? src.split(':')[1] : srcId);
-                                                                                      url += '&period=' + (cfg.period || 'month') + '&months=6';
+                                                                                      const _pMap = {'1m':1,'3m':3,'6m':6,'1y':12,'ytd':12,'all':60}; const _months = _pMap[_chartPeriod] || 6; url += '&period=' + (cfg.period || 'month') + '&months=' + _months;
                                                                                       if (cfg.dateField) url += '&dateField=' + cfg.dateField;
                                                                                       if (cfg.yField && cfg.yField !== 'count') { url += '&yField=' + cfg.yField + '&yAgg=' + (cfg.yAgg || 'sum'); }
                                                                                       if (cfg.relationFilterKey && cfg.relationFilterValue) { url += '&relationFilter=' + encodeURIComponent(JSON.stringify({key: cfg.relationFilterKey, value: cfg.relationFilterValue})); }
@@ -1045,6 +1060,15 @@
                                                                             <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
                                                                                 <iconify-icon icon="solar:chart-bold-duotone" width="14" style="color: #e7515a;"></iconify-icon>
                                                                                 <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Graphique'"></span>
+
+                                                                                 <div style="display: flex; align-items: center; gap: 2px; margin-left: auto; background: #f3f4f6; border-radius: 6px; padding: 2px;">
+                                                                                     <template x-for="pr in [{v:'1m',l:'1M'},{v:'3m',l:'3M'},{v:'6m',l:'6M'},{v:'1y',l:'1A'},{v:'all',l:'Tout'}]" :key="pr.v">
+                                                                                         <button type="button" 
+                                                                                                 @click="if(_chartPeriod !== pr.v) { _chartPeriod = pr.v; chartLoading = true; const _eId2 = '<%- entity._id %>'; const _acct2 = '<%- account_number %>'; const cfg2 = block.config || {}; const src2 = cfg2.dataSource || 'entity:' + _eId2; const srcId2 = src2.startsWith('entity:') ? src2.split(':')[1] : _eId2; const _pMap2 = {'1m':1,'3m':3,'6m':6,'1y':12,'all':60}; let url2 = '/account/' + _acct2 + '/api/widget/chart-data?entityId=' + srcId2 + '&period=' + (cfg2.period||'month') + '&months=' + (_pMap2[pr.v]||6); if(cfg2.dateField) url2+='&dateField='+cfg2.dateField; if(cfg2.yField&&cfg2.yField!=='count'){url2+='&yField='+cfg2.yField+'&yAgg='+(cfg2.yAgg||'sum');} if(cfg2.advancedFilters&&cfg2.advancedFilters.length>0){const vf2=cfg2.advancedFilters.filter(f=>f.field&&f.operator);if(vf2.length>0)url2+='&advancedFilters='+encodeURIComponent(JSON.stringify(vf2))+'&advancedFiltersLogic='+(cfg2.advancedFiltersLogic||'and');} fetch(url2,{credentials:'include'}).then(r=>r.json()).then(data2=>{ chartTotal=data2.total||0; if(_chartInstance){_chartInstance.destroy();} const elId2='ct-chart-'+block.id; const el2=document.getElementById(elId2); if(el2&&typeof ApexCharts!=='undefined'){ const chartType2=cfg2.chartType||'bar'; const color2=data2.entityColor||cfg2.colorScheme||'#4361ee'; const apexType2=chartType2==='pie'||chartType2==='doughnut'||chartType2==='donut'?'donut':chartType2==='radar'?'radar':chartType2==='area'?'area':chartType2==='line'?'line':'bar'; const dataLen2=(data2.data||[]).length; const nonZeroCount2=(data2.data||[]).filter(v=>v>0).length; const dynColWidth2=dataLen2<=3?'35%':dataLen2<=6?'45%':dataLen2<=12?'55%':'65%'; const opts2=apexType2==='donut'?{chart:{type:'donut',height:'100%',fontFamily:'Nunito,sans-serif',animations:{enabled:true,easing:'easeinout',speed:400}},series:data2.data,labels:data2.labels,colors:['#4361ee','#00ab55','#e7515a','#e2a03f','#805dca','#2196f3'],legend:{position:'bottom',fontSize:'11px'},plotOptions:{pie:{donut:{size:'68%',labels:{show:true,total:{show:true,label:'Total',fontSize:'11px',color:'#9ca3af'}}}}},stroke:{width:2,colors:['#fff']},dataLabels:{enabled:false}}:{chart:{type:apexType2,height:'100%',fontFamily:'Nunito,sans-serif',toolbar:{show:false},animations:{enabled:true,easing:'easeinout',speed:400}},series:[{name:data2.entityName||'Records',data:data2.data}],xaxis:{categories:data2.labels,labels:{style:{fontSize:'10px',colors:'#9ca3af',fontWeight:500},rotate:dataLen2>8?-45:0,rotateAlways:dataLen2>8},axisBorder:{show:false},axisTicks:{show:false}},yaxis:{labels:{style:{fontSize:'10px',colors:'#9ca3af'},formatter:function(v){return Number.isInteger(v)?v:v.toFixed(1);}},forceNiceScale:true,min:0,tickAmount:4},colors:[color2],fill:apexType2==='bar'?{type:'gradient',gradient:{shade:'light',type:'vertical',shadeIntensity:0.2,gradientToColors:[color2],inverseColors:false,opacityFrom:1,opacityTo:0.85,stops:[0,100]}}:apexType2==='area'?{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.45,opacityTo:0.05,stops:[0,90,100]}}:{},stroke:{curve:'smooth',width:apexType2==='line'||apexType2==='area'?3:0,lineCap:'round'},plotOptions:apexType2==='bar'?{bar:{borderRadius:6,borderRadiusApplication:'end',columnWidth:dynColWidth2}}:{},dataLabels:{enabled:nonZeroCount2<=8&&apexType2==='bar',style:{fontSize:'10px',fontWeight:600,colors:['#fff']},offsetY:-4,formatter:function(v){return v>0?v:'';}},grid:{borderColor:'#f1f3f5',strokeDashArray:4,padding:{left:4,right:4,top:0,bottom:0},xaxis:{lines:{show:false}},yaxis:{lines:{show:true}}},tooltip:{theme:'light',style:{fontSize:'12px'},y:{formatter:function(v){return v+' records';}},marker:{show:true}},states:{hover:{filter:{type:'darken',value:0.15}}}}; _chartInstance=new ApexCharts(el2,opts2);_chartInstance.render();} chartLoading=false; }).catch(e=>{chartLoading=false;console.error(e);}); }"
+                                                                                                 :style="'padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; line-height: 1.2;' + (_chartPeriod === pr.v ? 'background: white; color: #374151; box-shadow: 0 1px 2px rgba(0,0,0,0.08);' : 'background: transparent; color: #9ca3af;')"
+                                                                                                 x-text="pr.l"></button>
+                                                                                     </template>
+                                                                                 </div>
                                                                                 <span style="font-size: 10px; background: rgba(231,81,90,0.1); color: #e7515a; padding: 1px 6px; border-radius: 9999px; font-weight: 700; margin-left: auto;"
                                                                                       x-show="chartTotal > 0" x-text="chartTotal + ' total'"></span>
                                                                             </div>
@@ -1432,6 +1456,21 @@
                                                         </template>
                                                     </div>
                                                 </div>
+
+                                                                <!-- ─── Default Range ─── -->
+                                                                <div>
+                                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
+                                                                        <iconify-icon icon="solar:calendar-search-bold-duotone" width="13" style="color: #e2a03f; margin-right: 2px;"></iconify-icon>
+                                                                        Plage par défaut
+                                                                    </label>
+                                                                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;">
+                                                                        <template x-for="dr in [{v:'1m',l:'1 mois'},{v:'3m',l:'3 mois'},{v:'6m',l:'6 mois'},{v:'1y',l:'1 an'},{v:'all',l:'Tout'}]" :key="dr.v">
+                                                                            <button type="button" @click="cfgBlock.config.defaultRange = dr.v"
+                                                                                    :style="'padding: 6px 4px; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.15s;' + ((cfgBlock.config.defaultRange || '6m') === dr.v ? 'background: rgba(226,160,63,0.1); border: 1px solid rgba(226,160,63,0.3); color: #e2a03f;' : 'background: white; border: 1px solid #e5e7eb; color: #6b7280;')"
+                                                                                    x-text="dr.l"></button>
+                                                                        </template>
+                                                                    </div>
+                                                                </div>
 
                                                 <!-- ─── Date source ─── -->
                                                 <div>
@@ -1844,6 +1883,22 @@
                                                     </div>
                                                 </div>
                                                 <!-- Max items -->
+                                                                <!-- Sort order -->
+                                                                <div>
+                                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
+                                                                        <iconify-icon icon="solar:sort-vertical-bold-duotone" width="13" style="color: #2196f3; margin-right: 2px;"></iconify-icon>
+                                                                        Ordre de tri
+                                                                    </label>
+                                                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                                                                        <template x-for="so in [{v:'desc',l:'Plus récent',i:'solar:sort-from-top-to-bottom-bold'},{v:'asc',l:'Plus ancien',i:'solar:sort-from-bottom-to-top-bold'}]" :key="so.v">
+                                                                            <button type="button" @click="cfgBlock.config.sortOrder = so.v"
+                                                                                    :style="'display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s;' + ((cfgBlock.config.sortOrder || 'desc') === so.v ? 'background: rgba(33,150,243,0.1); border: 1px solid rgba(33,150,243,0.3); color: #2196f3;' : 'background: white; border: 1px solid #e5e7eb; color: #6b7280;')">
+                                                                                <iconify-icon :icon="so.i" width="14"></iconify-icon>
+                                                                                <span x-text="so.l"></span>
+                                                                            </button>
+                                                                        </template>
+                                                                    </div>
+                                                                </div>
                                                 <div>
                                                     <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Nombre max d'événements</label>
                                                     <select :value="cfgBlock.config.maxItems || 10"

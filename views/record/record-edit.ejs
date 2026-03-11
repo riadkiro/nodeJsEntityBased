@@ -907,7 +907,7 @@
                                                                                          let url = '/account/<%= account_number %>/api/widget/timeline-data?entityId=' + entityId3 + '&recordId=<%= record._id %>';
                                                                                          url += '&limit=' + (cfg.maxItems || 10);
                                                                                          if (cfg.dateField) url += '&dateField=' + cfg.dateField;
-                                                                                         if (cfg.sortOrder) url += '&sort=' + cfg.sortOrder;
+                                                                                         url += '&sort=' + this._tlSort;
                                                                                          if (cfg.relationFilterKey && cfg.relationFilterValue) url += '&relationFilter=' + encodeURIComponent(JSON.stringify({key: cfg.relationFilterKey, value: cfg.relationFilterValue}));
                                                                                          if (cfg.classificationFilterId && cfg.classificationFilterOption) url += '&classificationFilter=' + encodeURIComponent(JSON.stringify({classificationId: cfg.classificationFilterId, optionId: cfg.classificationFilterOption}));
                                                                                          if (cfg.advancedFilters && cfg.advancedFilters.length > 0) { const vf = cfg.advancedFilters.filter(f => f.field && f.operator); if(vf.length>0) url += '&advancedFilters=' + encodeURIComponent(JSON.stringify(vf)) + '&advancedFiltersLogic=' + (cfg.advancedFiltersLogic || 'and'); }
@@ -949,7 +949,7 @@
                                                                                                  x-text="pr.l"></button>
                                                                                      </template>
                                                                                  </div>
-                                                                                 <button type="button" @click="_tlSort = _tlSort === 'desc' ? 'asc' : 'desc'; applyFilters()"
+                                                                                 <button type="button" @click="_tlSort = _tlSort === 'desc' ? 'asc' : 'desc'; fetchTimeline()"
                                                                                          :title="_tlSort === 'desc' ? 'Plus récent d\'abord' : 'Plus ancien d\'abord'"
                                                                                          style="padding: 3px; border-radius: 4px; border: none; background: transparent; cursor: pointer; color: #9ca3af; transition: all 0.15s; display: flex; align-items: center;"
                                                                                          onmouseover="this.style.color='#4361ee';this.style.background='rgba(67,97,238,0.06)'" onmouseout="this.style.color='#9ca3af';this.style.background='transparent'">

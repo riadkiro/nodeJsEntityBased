@@ -1900,9 +1900,11 @@ router.get('/api/widget/chart-data', async (req, res) => {
                 }
             })
         } else if (period === 'day') {
-            // Last 30 days
+            // Use months parameter to determine how many days to show
+            const daysCount = Math.max(7, parseInt(months) * 30)
             const cursor = new Date(now)
-            cursor.setDate(cursor.getDate() - 30)
+            cursor.setDate(cursor.getDate() - daysCount)
+            cursor.setHours(0, 0, 0, 0)
             while (cursor <= now) {
                 const key = cursor.toISOString().split('T')[0]
                 const label = `${cursor.getDate()} ${monthNames[cursor.getMonth()]}`
@@ -1974,7 +1976,7 @@ router.get('/api/widget/timeline-data', async (req, res) => {
         const Record = await tenantCollection(req, "Record")
         const Entity = await tenantCollection(req, "Entity")
         const { entityId, recordId, relationKey, limit = 10, dateField = 'createdAt',
-            relationFilter, classificationFilter,
+            sort = 'desc', relationFilter, classificationFilter,
             advancedFilters: afRaw, advancedFiltersLogic = 'and' } = req.query
 
         // Parse advanced filters
@@ -2032,6 +2034,7 @@ router.get('/api/widget/timeline-data', async (req, res) => {
         }
 
         // Determine sort field for MongoDB
+        const sortDirection = sort === 'asc' ? 1 : -1
         const sortField = isCustomDateField ? 'createdAt' : (dateField || 'createdAt')
 
         if (relationKey && recordId) {
@@ -2057,7 +2060,7 @@ router.get('/api/widget/timeline-data', async (req, res) => {
                     })
                     const relRecords = await Record.find(q)
                         .select('_id title computedTitle createdAt updatedAt entityId customFields')
-                        .sort({ [sortField]: -1 })
+                        .sort({ [sortField]: sortDirection })
                         .limit(parseInt(limit))
                         .lean()
 
@@ -2083,7 +2086,7 @@ router.get('/api/widget/timeline-data', async (req, res) => {
                             const q = applyAllFilters({ _id: { $in: validIds } })
                             const relRecords = await Record.find(q)
                                 .select('_id title computedTitle createdAt updatedAt entityId customFields')
-                                .sort({ [sortField]: -1 })
+                                .sort({ [sortField]: sortDirection })
                                 .limit(parseInt(limit))
                                 .lean()
 
@@ -2105,7 +2108,7 @@ router.get('/api/widget/timeline-data', async (req, res) => {
             const q = applyAllFilters({ entityId })
             const allRecords = await Record.find(q)
                 .select('_id title computedTitle createdAt updatedAt customFields')
-                .sort({ [sortField]: -1 })
+                .sort({ [sortField]: sortDirection })
                 .limit(parseInt(limit))
                 .lean()
 
@@ -2120,8 +2123,10 @@ router.get('/api/widget/timeline-data', async (req, res) => {
             }))
         }
 
-        // Sort by date descending
-        timelineRecords.sort((a, b) => new Date(b.date) - new Date(a.date))
+        // Sort by date using requested direction
+        timelineRecords.sort((a, b) => sort === 'asc'
+            ? new Date(a.date) - new Date(b.date)
+            : new Date(b.date) - new Date(a.date))
 
         res.json({
             records: timelineRecords.slice(0, parseInt(limit)),

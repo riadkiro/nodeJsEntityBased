@@ -894,28 +894,49 @@
                                                                     <!-- Timeline Widget (LIVE) -->
                                                                     <template x-if="block && block.type === 'timeline'">
                                                                         <div style="height: 100%; border: none; border-radius: 12px;"
-                                                                             x-data="{ tlRecords: [], tlAllRecords: [], tlLoading: true, tlError: '', _tlPeriod: 'all', _tlSort: (block.config||{}).sortOrder || 'desc' }"
-                                                                             x-init="(async () => {
-                                                                                 try {
-                                                                                     const _eId = '<%= entity._id %>';
-                                                                                     const _acct = '<%= account_number %>';
-                                                                                     const _rId = '<%= record._id %>';
-                                                                                     const cfg = block.config || {};
-                                                                                     const src = cfg.dataSource || 'entity:' + _eId;
-                                                                                     const parts = src.split(':');
-                                                                                      const entityId3 = src.startsWith('entity:') ? src.split(':')[1] : _eId;
-                                                                                      let url = '/account/' + _acct + '/api/widget/timeline-data?entityId=' + entityId3 + '&recordId=' + _rId;
-                                                                                     url += '&limit=' + (cfg.maxItems || 10);
-                                                                                      if (cfg.dateField) url += '&dateField=' + cfg.dateField;
-                                                                                      if (cfg.relationFilterKey && cfg.relationFilterValue) { url += '&relationFilter=' + encodeURIComponent(JSON.stringify({key: cfg.relationFilterKey, value: cfg.relationFilterValue})); }
-                                                                                      if (cfg.classificationFilterId && cfg.classificationFilterOption) { url += '&classificationFilter=' + encodeURIComponent(JSON.stringify({classificationId: cfg.classificationFilterId, optionId: cfg.classificationFilterOption})); }
-                                                                                       if (cfg.advancedFilters && cfg.advancedFilters.length > 0) { const vf = cfg.advancedFilters.filter(f => f.field && f.operator); if(vf.length>0) url += '&advancedFilters=' + encodeURIComponent(JSON.stringify(vf)) + '&advancedFiltersLogic=' + (cfg.advancedFiltersLogic || 'and'); }
-                                                                                     const resp = await fetch(url, { credentials: 'include' });
-                                                                                     const data = await resp.json();
-                                                                                     tlAllRecords = data.records || []; tlRecords = tlAllRecords.slice();
-                                                                                 } catch(e) { tlError = e.message; console.error('Timeline error:', e); }
-                                                                                 tlLoading = false;
-                                                                             })()">
+                                                                             x-data="{
+                                                                                 tlRecords: [], tlAllRecords: [], tlLoading: true, tlError: '',
+                                                                                 _tlPeriod: 'all',
+                                                                                 _tlSort: (block.config||{}).sortOrder || 'desc',
+                                                                                 async fetchTimeline() {
+                                                                                     this.tlLoading = true;
+                                                                                     try {
+                                                                                         const cfg = block.config || {};
+                                                                                         const src = cfg.dataSource || 'entity:<%= entity._id %>';
+                                                                                         const entityId3 = src.startsWith('entity:') ? src.split(':')[1] : '<%= entity._id %>';
+                                                                                         let url = '/account/<%= account_number %>/api/widget/timeline-data?entityId=' + entityId3 + '&recordId=<%= record._id %>';
+                                                                                         url += '&limit=' + (cfg.maxItems || 10);
+                                                                                         if (cfg.dateField) url += '&dateField=' + cfg.dateField;
+                                                                                         if (cfg.sortOrder) url += '&sort=' + cfg.sortOrder;
+                                                                                         if (cfg.relationFilterKey && cfg.relationFilterValue) url += '&relationFilter=' + encodeURIComponent(JSON.stringify({key: cfg.relationFilterKey, value: cfg.relationFilterValue}));
+                                                                                         if (cfg.classificationFilterId && cfg.classificationFilterOption) url += '&classificationFilter=' + encodeURIComponent(JSON.stringify({classificationId: cfg.classificationFilterId, optionId: cfg.classificationFilterOption}));
+                                                                                         if (cfg.advancedFilters && cfg.advancedFilters.length > 0) { const vf = cfg.advancedFilters.filter(f => f.field && f.operator); if(vf.length>0) url += '&advancedFilters=' + encodeURIComponent(JSON.stringify(vf)) + '&advancedFiltersLogic=' + (cfg.advancedFiltersLogic || 'and'); }
+                                                                                         const resp = await fetch(url, { credentials: 'include' });
+                                                                                         const data = await resp.json();
+                                                                                         this.tlAllRecords = data.records || [];
+                                                                                         this.applyFilters();
+                                                                                     } catch(e) { this.tlError = e.message; console.error('Timeline error:', e); }
+                                                                                     this.tlLoading = false;
+                                                                                 },
+                                                                                 applyFilters() {
+                                                                                     let result = this.tlAllRecords.slice();
+                                                                                     if (this._tlPeriod !== 'all') {
+                                                                                         const cutoff = new Date();
+                                                                                         if (this._tlPeriod === '1m') cutoff.setMonth(cutoff.getMonth() - 1);
+                                                                                         else if (this._tlPeriod === '3m') cutoff.setMonth(cutoff.getMonth() - 3);
+                                                                                         else if (this._tlPeriod === '6m') cutoff.setMonth(cutoff.getMonth() - 6);
+                                                                                         else if (this._tlPeriod === '1y') cutoff.setFullYear(cutoff.getFullYear() - 1);
+                                                                                         result = result.filter(r => { const d = r.date ? new Date(r.date) : null; return d && d >= cutoff; });
+                                                                                     }
+                                                                                     result.sort((a, b) => {
+                                                                                         const da = a.date ? new Date(a.date) : new Date(0);
+                                                                                         const db = b.date ? new Date(b.date) : new Date(0);
+                                                                                         return this._tlSort === 'desc' ? db - da : da - db;
+                                                                                     });
+                                                                                     this.tlRecords = result;
+                                                                                 }
+                                                                             }"
+                                                                             x-init="fetchTimeline()">
                                                                             <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
                                                                                 <iconify-icon icon="solar:clock-circle-bold-duotone" width="14" style="color: #805dca;"></iconify-icon>
                                                                                 <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Timeline'"></span>
@@ -923,12 +944,12 @@
                                                                                  <div style="display: flex; align-items: center; gap: 2px; margin-left: auto; background: #f3f4f6; border-radius: 6px; padding: 2px;">
                                                                                      <template x-for="pr in [{v:'all',l:'Tout'},{v:'1m',l:'1M'},{v:'3m',l:'3M'},{v:'6m',l:'6M'},{v:'1y',l:'1A'}]" :key="pr.v">
                                                                                          <button type="button" 
-                                                                                                 @click="_tlPeriod = pr.v; const now2 = new Date(); const cutoff = new Date(); if(pr.v==='1m') cutoff.setMonth(cutoff.getMonth()-1); else if(pr.v==='3m') cutoff.setMonth(cutoff.getMonth()-3); else if(pr.v==='6m') cutoff.setMonth(cutoff.getMonth()-6); else if(pr.v==='1y') cutoff.setFullYear(cutoff.getFullYear()-1); if(pr.v==='all'){ tlRecords = tlAllRecords.slice(); } else { tlRecords = tlAllRecords.filter(r => { const d = r.date ? new Date(r.date) : null; return d && d >= cutoff; }); }"
+                                                                                                 @click="_tlPeriod = pr.v; applyFilters()"
                                                                                                  :style="'padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; line-height: 1.2;' + (_tlPeriod === pr.v ? 'background: white; color: #374151; box-shadow: 0 1px 2px rgba(0,0,0,0.08);' : 'background: transparent; color: #9ca3af;')"
                                                                                                  x-text="pr.l"></button>
                                                                                      </template>
                                                                                  </div>
-                                                                                 <button type="button" @click="_tlSort = _tlSort === 'desc' ? 'asc' : 'desc'; tlRecords = [...tlRecords].sort((a,b) => { const da = a.date ? new Date(a.date) : new Date(0); const db = b.date ? new Date(b.date) : new Date(0); return _tlSort === 'desc' ? db - da : da - db; })"
+                                                                                 <button type="button" @click="_tlSort = _tlSort === 'desc' ? 'asc' : 'desc'; applyFilters()"
                                                                                          :title="_tlSort === 'desc' ? 'Plus récent d\'abord' : 'Plus ancien d\'abord'"
                                                                                          style="padding: 3px; border-radius: 4px; border: none; background: transparent; cursor: pointer; color: #9ca3af; transition: all 0.15s; display: flex; align-items: center;"
                                                                                          onmouseover="this.style.color='#4361ee';this.style.background='rgba(67,97,238,0.06)'" onmouseout="this.style.color='#9ca3af';this.style.background='transparent'">
@@ -993,70 +1014,48 @@
                                                                     <!-- Chart Widget (LIVE) -->
                                                                     <template x-if="block && block.type === 'chart'">
                                                                         <div style="height: 100%; border: none; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;"
-                                                                             x-data="{ chartLoading: true, chartError: '', chartTotal: 0, _chartInstance: null, _chartPeriod: (block.config||{}).defaultRange || '6m', _chartPeriodLabel: '' }"
-                                                                             x-init="(async () => {
-                                                                                 try {
-                                                                                     const _eId = '<%= entity._id %>';
-                                                                                     const _acct = '<%= account_number %>';
-                                                                                     const cfg = block.config || {};
-                                                                                     const src = cfg.dataSource || 'entity:' + _eId;
-                                                                                     const parts = src.split(':');
-                                                                                     const srcId = parts.slice(1).join(':') || _eId;
-                                                                                     let url = '/account/' + _acct + '/api/widget/chart-data?entityId=' + (src.startsWith('entity:') ? src.split(':')[1] : srcId);
-                                                                                      const _pMap = {'1m':1,'3m':3,'6m':6,'1y':12,'ytd':12,'all':60}; const _months = _pMap[_chartPeriod] || 6; url += '&period=' + (cfg.period || 'month') + '&months=' + _months;
-                                                                                      if (cfg.dateField) url += '&dateField=' + cfg.dateField;
-                                                                                      if (cfg.yField && cfg.yField !== 'count') { url += '&yField=' + cfg.yField + '&yAgg=' + (cfg.yAgg || 'sum'); }
-                                                                                      if (cfg.relationFilterKey && cfg.relationFilterValue) { url += '&relationFilter=' + encodeURIComponent(JSON.stringify({key: cfg.relationFilterKey, value: cfg.relationFilterValue})); }
-                                                                                      if (cfg.classificationFilterId && cfg.classificationFilterOption) { url += '&classificationFilter=' + encodeURIComponent(JSON.stringify({classificationId: cfg.classificationFilterId, optionId: cfg.classificationFilterOption})); }
-                                                                                       if (cfg.advancedFilters && cfg.advancedFilters.length > 0) { const vf = cfg.advancedFilters.filter(f => f.field && f.operator); if(vf.length>0) url += '&advancedFilters=' + encodeURIComponent(JSON.stringify(vf)) + '&advancedFiltersLogic=' + (cfg.advancedFiltersLogic || 'and'); }
-                                                                                     const resp = await fetch(url, { credentials: 'include' });
-                                                                                     const data = await resp.json();
-                                                                                     chartTotal = data.total || 0;
-                                                                                     const elId = 'ct-chart-' + block.id;
-                                                                                     const chartType = cfg.chartType || 'bar';
-                                                                                     const color = data.entityColor || cfg.colorScheme || '#4361ee';
-                                                                                     const apexType = chartType === 'pie' || chartType === 'doughnut' || chartType === 'donut' ? 'donut' :
-                                                                                                      chartType === 'radar' ? 'radar' :
-                                                                                                      chartType === 'area' ? 'area' :
-                                                                                                      chartType === 'line' ? 'line' : 'bar';
-                                                                                     await $nextTick();
-                                                                                     await new Promise(r => setTimeout(r, 100));
-                                                                                     const el = document.getElementById(elId);
-                                                                                     if (el && typeof ApexCharts !== 'undefined') {
-                                                                                         // Dynamic bar width: thicker when fewer data points
-                                                                                         const dataLen = (data.data || []).length;
-                                                                                         const nonZeroCount = (data.data || []).filter(v => v > 0).length;
-                                                                                         const dynColWidth = dataLen <= 3 ? '35%' : dataLen <= 6 ? '45%' : dataLen <= 12 ? '55%' : '65%';
-                                                                                         const chartH = '100%';
-                                                                                         const opts = apexType === 'donut' ? {
-                                                                                             chart: { type: 'donut', height: chartH, fontFamily: 'Nunito, sans-serif', animations: { enabled: true, easing: 'easeinout', speed: 600 } },
-                                                                                             series: data.data,
-                                                                                             labels: data.labels,
-                                                                                             colors: ['#4361ee','#00ab55','#e7515a','#e2a03f','#805dca','#2196f3','#00bcd4','#ff5722'],
-                                                                                             legend: { position: 'bottom', fontSize: '11px', fontWeight: 500, markers: { width: 8, height: 8, radius: 2 } },
-                                                                                             plotOptions: { pie: { donut: { size: '68%', labels: { show: true, name: { fontSize: '12px' }, value: { fontSize: '20px', fontWeight: 700 }, total: { show: true, label: 'Total', fontSize: '11px', color: '#9ca3af' } } } } },
-                                                                                             stroke: { width: 2, colors: ['#fff'] },
-                                                                                             dataLabels: { enabled: false }
-                                                                                         } : {
-                                                                                             chart: { type: apexType, height: chartH, fontFamily: 'Nunito, sans-serif', toolbar: { show: false }, sparkline: { enabled: false }, animations: { enabled: true, easing: 'easeinout', speed: 600, animateGradually: { enabled: true, delay: 80 } } },
-                                                                                             series: [{ name: data.entityName || 'Records', data: data.data }],
-                                                                                             xaxis: { categories: data.labels, labels: { style: { fontSize: '10px', colors: '#9ca3af', fontWeight: 500 }, rotate: dataLen > 8 ? -45 : 0, rotateAlways: dataLen > 8 }, axisBorder: { show: false }, axisTicks: { show: false } },
-                                                                                             yaxis: { labels: { style: { fontSize: '10px', colors: '#9ca3af' }, formatter: function(v) { return Number.isInteger(v) ? v : v.toFixed(1); } }, forceNiceScale: true, min: 0, tickAmount: 4 },
-                                                                                             colors: [color],
-                                                                                             fill: apexType === 'bar' ? { type: 'gradient', gradient: { shade: 'light', type: 'vertical', shadeIntensity: 0.2, gradientToColors: [color], inverseColors: false, opacityFrom: 1, opacityTo: 0.85, stops: [0, 100] } } : apexType === 'area' ? { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [0, 90, 100] } } : {},
-                                                                                             stroke: { curve: 'smooth', width: apexType === 'line' || apexType === 'area' ? 3 : 0, lineCap: 'round' },
-                                                                                             plotOptions: apexType === 'bar' ? { bar: { borderRadius: 6, borderRadiusApplication: 'end', columnWidth: dynColWidth, distributed: false } } : {},
-                                                                                             dataLabels: { enabled: nonZeroCount <= 8 && apexType === 'bar', style: { fontSize: '10px', fontWeight: 600, colors: ['#fff'] }, offsetY: -4, formatter: function(v) { return v > 0 ? v : ''; } },
-                                                                                             grid: { borderColor: '#f1f3f5', strokeDashArray: 4, padding: { left: 4, right: 4, top: 0, bottom: 0 }, xaxis: { lines: { show: false } }, yaxis: { lines: { show: true } } },
-                                                                                             tooltip: { theme: 'light', style: { fontSize: '12px' }, y: { formatter: function(v) { return v + ' records'; } }, marker: { show: true } },
-                                                                                             states: { hover: { filter: { type: 'darken', value: 0.15 } }, active: { filter: { type: 'darken', value: 0.2 } } }
-                                                                                         };
-                                                                                         _chartInstance = new ApexCharts(el, opts);
-                                                                                         _chartInstance.render();
-                                                                                     }
-                                                                                 } catch(e) { chartError = e.message; console.error('Chart error:', e); }
-                                                                                 chartLoading = false;
-                                                                             })()">
+                                                                             x-data="{
+                                                                                 chartLoading: true, chartError: '', chartTotal: 0,
+                                                                                 _chartInstance: null,
+                                                                                 _chartPeriod: (block.config||{}).defaultRange || '6m',
+                                                                                 async fetchChart() {
+                                                                                     this.chartLoading = true;
+                                                                                     try {
+                                                                                         const cfg = block.config || {};
+                                                                                         const src = cfg.dataSource || 'entity:<%= entity._id %>';
+                                                                                         const srcId = src.startsWith('entity:') ? src.split(':')[1] : '<%= entity._id %>';
+                                                                                         const _pMap = {'1m':1,'3m':3,'6m':6,'1y':12,'all':60};
+                                                                                         let url = '/account/<%= account_number %>/api/widget/chart-data?entityId=' + srcId;
+                                                                                         url += '&period=' + (cfg.period || 'month') + '&months=' + (_pMap[this._chartPeriod] || 6);
+                                                                                         if (cfg.dateField) url += '&dateField=' + cfg.dateField;
+                                                                                         if (cfg.yField && cfg.yField !== 'count') url += '&yField=' + cfg.yField + '&yAgg=' + (cfg.yAgg || 'sum');
+                                                                                         if (cfg.relationFilterKey && cfg.relationFilterValue) url += '&relationFilter=' + encodeURIComponent(JSON.stringify({key: cfg.relationFilterKey, value: cfg.relationFilterValue}));
+                                                                                         if (cfg.classificationFilterId && cfg.classificationFilterOption) url += '&classificationFilter=' + encodeURIComponent(JSON.stringify({classificationId: cfg.classificationFilterId, optionId: cfg.classificationFilterOption}));
+                                                                                         if (cfg.advancedFilters && cfg.advancedFilters.length > 0) { const vf = cfg.advancedFilters.filter(f => f.field && f.operator); if(vf.length>0) url += '&advancedFilters=' + encodeURIComponent(JSON.stringify(vf)) + '&advancedFiltersLogic=' + (cfg.advancedFiltersLogic || 'and'); }
+                                                                                         const resp = await fetch(url, { credentials: 'include' });
+                                                                                         const data = await resp.json();
+                                                                                         this.chartTotal = data.total || 0;
+                                                                                         if (this._chartInstance) { this._chartInstance.destroy(); this._chartInstance = null; }
+                                                                                         const elId = 'ct-chart-' + block.id;
+                                                                                         await this.$nextTick();
+                                                                                         await new Promise(r => setTimeout(r, 120));
+                                                                                         const el = document.getElementById(elId);
+                                                                                         if (el && typeof ApexCharts !== 'undefined') {
+                                                                                             const chartType = cfg.chartType || 'bar';
+                                                                                             const color = data.entityColor || cfg.colorScheme || '#4361ee';
+                                                                                             const apexType = chartType==='pie'||chartType==='doughnut'||chartType==='donut'?'donut':chartType==='radar'?'radar':chartType==='area'?'area':chartType==='line'?'line':'bar';
+                                                                                             const dataLen = (data.data||[]).length;
+                                                                                             const nonZeroCount = (data.data||[]).filter(v=>v>0).length;
+                                                                                             const dynColWidth = dataLen<=3?'35%':dataLen<=6?'45%':dataLen<=12?'55%':'65%';
+                                                                                             const opts = apexType==='donut'?{chart:{type:'donut',height:'100%',fontFamily:'Nunito,sans-serif',animations:{enabled:true,easing:'easeinout',speed:500}},series:data.data,labels:data.labels,colors:['#4361ee','#00ab55','#e7515a','#e2a03f','#805dca','#2196f3','#00bcd4','#ff5722'],legend:{position:'bottom',fontSize:'11px',fontWeight:500},plotOptions:{pie:{donut:{size:'68%',labels:{show:true,name:{fontSize:'12px'},value:{fontSize:'20px',fontWeight:700},total:{show:true,label:'Total',fontSize:'11px',color:'#9ca3af'}}}}},stroke:{width:2,colors:['#fff']},dataLabels:{enabled:false}}:{chart:{type:apexType,height:'100%',fontFamily:'Nunito,sans-serif',toolbar:{show:false},animations:{enabled:true,easing:'easeinout',speed:500,animateGradually:{enabled:true,delay:80}}},series:[{name:data.entityName||'Records',data:data.data}],xaxis:{categories:data.labels,labels:{style:{fontSize:'10px',colors:'#9ca3af',fontWeight:500},rotate:dataLen>8?-45:0,rotateAlways:dataLen>8},axisBorder:{show:false},axisTicks:{show:false}},yaxis:{labels:{style:{fontSize:'10px',colors:'#9ca3af'},formatter:function(v){return Number.isInteger(v)?v:v.toFixed(1);}},forceNiceScale:true,min:0,tickAmount:4},colors:[color],fill:apexType==='bar'?{type:'gradient',gradient:{shade:'light',type:'vertical',shadeIntensity:0.2,gradientToColors:[color],inverseColors:false,opacityFrom:1,opacityTo:0.85,stops:[0,100]}}:apexType==='area'?{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.45,opacityTo:0.05,stops:[0,90,100]}}:{},stroke:{curve:'smooth',width:apexType==='line'||apexType==='area'?3:0,lineCap:'round'},plotOptions:apexType==='bar'?{bar:{borderRadius:6,borderRadiusApplication:'end',columnWidth:dynColWidth}}:{},dataLabels:{enabled:nonZeroCount<=8&&apexType==='bar',style:{fontSize:'10px',fontWeight:600,colors:['#fff']},offsetY:-4,formatter:function(v){return v>0?v:'';}},grid:{borderColor:'#f1f3f5',strokeDashArray:4,padding:{left:4,right:4,top:0,bottom:0},xaxis:{lines:{show:false}},yaxis:{lines:{show:true}}},tooltip:{theme:'light',style:{fontSize:'12px'},y:{formatter:function(v){return v+' records';}},marker:{show:true}},states:{hover:{filter:{type:'darken',value:0.15}}}};
+                                                                                             this._chartInstance = new ApexCharts(el, opts);
+                                                                                             this._chartInstance.render();
+                                                                                         }
+                                                                                     } catch(e) { this.chartError = e.message; console.error('Chart error:', e); }
+                                                                                     this.chartLoading = false;
+                                                                                 }
+                                                                             }"
+                                                                             x-init="fetchChart()">
                                                                             <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
                                                                                 <iconify-icon icon="solar:chart-bold-duotone" width="14" style="color: #e7515a;"></iconify-icon>
                                                                                 <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Graphique'"></span>
@@ -1064,7 +1063,7 @@
                                                                                  <div style="display: flex; align-items: center; gap: 2px; margin-left: auto; background: #f3f4f6; border-radius: 6px; padding: 2px;">
                                                                                      <template x-for="pr in [{v:'1m',l:'1M'},{v:'3m',l:'3M'},{v:'6m',l:'6M'},{v:'1y',l:'1A'},{v:'all',l:'Tout'}]" :key="pr.v">
                                                                                          <button type="button" 
-                                                                                                 @click="if(_chartPeriod !== pr.v) { _chartPeriod = pr.v; chartLoading = true; const _eId2 = '<%- entity._id %>'; const _acct2 = '<%- account_number %>'; const cfg2 = block.config || {}; const src2 = cfg2.dataSource || 'entity:' + _eId2; const srcId2 = src2.startsWith('entity:') ? src2.split(':')[1] : _eId2; const _pMap2 = {'1m':1,'3m':3,'6m':6,'1y':12,'all':60}; let url2 = '/account/' + _acct2 + '/api/widget/chart-data?entityId=' + srcId2 + '&period=' + (cfg2.period||'month') + '&months=' + (_pMap2[pr.v]||6); if(cfg2.dateField) url2+='&dateField='+cfg2.dateField; if(cfg2.yField&&cfg2.yField!=='count'){url2+='&yField='+cfg2.yField+'&yAgg='+(cfg2.yAgg||'sum');} if(cfg2.advancedFilters&&cfg2.advancedFilters.length>0){const vf2=cfg2.advancedFilters.filter(f=>f.field&&f.operator);if(vf2.length>0)url2+='&advancedFilters='+encodeURIComponent(JSON.stringify(vf2))+'&advancedFiltersLogic='+(cfg2.advancedFiltersLogic||'and');} fetch(url2,{credentials:'include'}).then(r=>r.json()).then(data2=>{ chartTotal=data2.total||0; if(_chartInstance){_chartInstance.destroy();} const elId2='ct-chart-'+block.id; const el2=document.getElementById(elId2); if(el2&&typeof ApexCharts!=='undefined'){ const chartType2=cfg2.chartType||'bar'; const color2=data2.entityColor||cfg2.colorScheme||'#4361ee'; const apexType2=chartType2==='pie'||chartType2==='doughnut'||chartType2==='donut'?'donut':chartType2==='radar'?'radar':chartType2==='area'?'area':chartType2==='line'?'line':'bar'; const dataLen2=(data2.data||[]).length; const nonZeroCount2=(data2.data||[]).filter(v=>v>0).length; const dynColWidth2=dataLen2<=3?'35%':dataLen2<=6?'45%':dataLen2<=12?'55%':'65%'; const opts2=apexType2==='donut'?{chart:{type:'donut',height:'100%',fontFamily:'Nunito,sans-serif',animations:{enabled:true,easing:'easeinout',speed:400}},series:data2.data,labels:data2.labels,colors:['#4361ee','#00ab55','#e7515a','#e2a03f','#805dca','#2196f3'],legend:{position:'bottom',fontSize:'11px'},plotOptions:{pie:{donut:{size:'68%',labels:{show:true,total:{show:true,label:'Total',fontSize:'11px',color:'#9ca3af'}}}}},stroke:{width:2,colors:['#fff']},dataLabels:{enabled:false}}:{chart:{type:apexType2,height:'100%',fontFamily:'Nunito,sans-serif',toolbar:{show:false},animations:{enabled:true,easing:'easeinout',speed:400}},series:[{name:data2.entityName||'Records',data:data2.data}],xaxis:{categories:data2.labels,labels:{style:{fontSize:'10px',colors:'#9ca3af',fontWeight:500},rotate:dataLen2>8?-45:0,rotateAlways:dataLen2>8},axisBorder:{show:false},axisTicks:{show:false}},yaxis:{labels:{style:{fontSize:'10px',colors:'#9ca3af'},formatter:function(v){return Number.isInteger(v)?v:v.toFixed(1);}},forceNiceScale:true,min:0,tickAmount:4},colors:[color2],fill:apexType2==='bar'?{type:'gradient',gradient:{shade:'light',type:'vertical',shadeIntensity:0.2,gradientToColors:[color2],inverseColors:false,opacityFrom:1,opacityTo:0.85,stops:[0,100]}}:apexType2==='area'?{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.45,opacityTo:0.05,stops:[0,90,100]}}:{},stroke:{curve:'smooth',width:apexType2==='line'||apexType2==='area'?3:0,lineCap:'round'},plotOptions:apexType2==='bar'?{bar:{borderRadius:6,borderRadiusApplication:'end',columnWidth:dynColWidth2}}:{},dataLabels:{enabled:nonZeroCount2<=8&&apexType2==='bar',style:{fontSize:'10px',fontWeight:600,colors:['#fff']},offsetY:-4,formatter:function(v){return v>0?v:'';}},grid:{borderColor:'#f1f3f5',strokeDashArray:4,padding:{left:4,right:4,top:0,bottom:0},xaxis:{lines:{show:false}},yaxis:{lines:{show:true}}},tooltip:{theme:'light',style:{fontSize:'12px'},y:{formatter:function(v){return v+' records';}},marker:{show:true}},states:{hover:{filter:{type:'darken',value:0.15}}}}; _chartInstance=new ApexCharts(el2,opts2);_chartInstance.render();} chartLoading=false; }).catch(e=>{chartLoading=false;console.error(e);}); }"
+                                                                                                 @click="_chartPeriod = pr.v; fetchChart()"
                                                                                                  :style="'padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; line-height: 1.2;' + (_chartPeriod === pr.v ? 'background: white; color: #374151; box-shadow: 0 1px 2px rgba(0,0,0,0.08);' : 'background: transparent; color: #9ca3af;')"
                                                                                                  x-text="pr.l"></button>
                                                                                      </template>

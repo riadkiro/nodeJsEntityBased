@@ -909,6 +909,7 @@
                                                                                       if (cfg.dateField) url += '&dateField=' + cfg.dateField;
                                                                                       if (cfg.relationFilterKey && cfg.relationFilterValue) { url += '&relationFilter=' + encodeURIComponent(JSON.stringify({key: cfg.relationFilterKey, value: cfg.relationFilterValue})); }
                                                                                       if (cfg.classificationFilterId && cfg.classificationFilterOption) { url += '&classificationFilter=' + encodeURIComponent(JSON.stringify({classificationId: cfg.classificationFilterId, optionId: cfg.classificationFilterOption})); }
+                                                                                       if (cfg.advancedFilters && cfg.advancedFilters.length > 0) { const vf = cfg.advancedFilters.filter(f => f.field && f.operator); if(vf.length>0) url += '&advancedFilters=' + encodeURIComponent(JSON.stringify(vf)) + '&advancedFiltersLogic=' + (cfg.advancedFiltersLogic || 'and'); }
                                                                                      const resp = await fetch(url, { credentials: 'include' });
                                                                                      const data = await resp.json();
                                                                                      tlRecords = data.records || [];
@@ -976,7 +977,7 @@
                                                                     </template>
                                                                     <!-- Chart Widget (LIVE) -->
                                                                     <template x-if="block && block.type === 'chart'">
-                                                                        <div style="height: 100%; border: none; border-radius: 12px;"
+                                                                        <div style="height: 100%; border: none; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;"
                                                                              x-data="{ chartLoading: true, chartError: '', chartTotal: 0, _chartInstance: null }"
                                                                              x-init="(async () => {
                                                                                  try {
@@ -992,6 +993,7 @@
                                                                                       if (cfg.yField && cfg.yField !== 'count') { url += '&yField=' + cfg.yField + '&yAgg=' + (cfg.yAgg || 'sum'); }
                                                                                       if (cfg.relationFilterKey && cfg.relationFilterValue) { url += '&relationFilter=' + encodeURIComponent(JSON.stringify({key: cfg.relationFilterKey, value: cfg.relationFilterValue})); }
                                                                                       if (cfg.classificationFilterId && cfg.classificationFilterOption) { url += '&classificationFilter=' + encodeURIComponent(JSON.stringify({classificationId: cfg.classificationFilterId, optionId: cfg.classificationFilterOption})); }
+                                                                                       if (cfg.advancedFilters && cfg.advancedFilters.length > 0) { const vf = cfg.advancedFilters.filter(f => f.field && f.operator); if(vf.length>0) url += '&advancedFilters=' + encodeURIComponent(JSON.stringify(vf)) + '&advancedFiltersLogic=' + (cfg.advancedFiltersLogic || 'and'); }
                                                                                      const resp = await fetch(url, { credentials: 'include' });
                                                                                      const data = await resp.json();
                                                                                      chartTotal = data.total || 0;
@@ -1006,26 +1008,33 @@
                                                                                      await new Promise(r => setTimeout(r, 100));
                                                                                      const el = document.getElementById(elId);
                                                                                      if (el && typeof ApexCharts !== 'undefined') {
+                                                                                         // Dynamic bar width: thicker when fewer data points
+                                                                                         const dataLen = (data.data || []).length;
+                                                                                         const nonZeroCount = (data.data || []).filter(v => v > 0).length;
+                                                                                         const dynColWidth = dataLen <= 3 ? '35%' : dataLen <= 6 ? '45%' : dataLen <= 12 ? '55%' : '65%';
+                                                                                         const chartH = '100%';
                                                                                          const opts = apexType === 'donut' ? {
-                                                                                             chart: { type: 'donut', height: 250, fontFamily: 'Nunito, sans-serif' },
+                                                                                             chart: { type: 'donut', height: chartH, fontFamily: 'Nunito, sans-serif', animations: { enabled: true, easing: 'easeinout', speed: 600 } },
                                                                                              series: data.data,
                                                                                              labels: data.labels,
-                                                                                             colors: ['#4361ee','#00ab55','#e7515a','#e2a03f','#805dca','#2196f3'],
-                                                                                             legend: { position: 'bottom', fontSize: '11px' },
-                                                                                             plotOptions: { pie: { donut: { size: '65%' } } }
+                                                                                             colors: ['#4361ee','#00ab55','#e7515a','#e2a03f','#805dca','#2196f3','#00bcd4','#ff5722'],
+                                                                                             legend: { position: 'bottom', fontSize: '11px', fontWeight: 500, markers: { width: 8, height: 8, radius: 2 } },
+                                                                                             plotOptions: { pie: { donut: { size: '68%', labels: { show: true, name: { fontSize: '12px' }, value: { fontSize: '20px', fontWeight: 700 }, total: { show: true, label: 'Total', fontSize: '11px', color: '#9ca3af' } } } } },
+                                                                                             stroke: { width: 2, colors: ['#fff'] },
+                                                                                             dataLabels: { enabled: false }
                                                                                          } : {
-                                                                                             chart: { type: apexType, height: 250, fontFamily: 'Nunito, sans-serif', toolbar: { show: false }, sparkline: { enabled: false } },
+                                                                                             chart: { type: apexType, height: chartH, fontFamily: 'Nunito, sans-serif', toolbar: { show: false }, sparkline: { enabled: false }, animations: { enabled: true, easing: 'easeinout', speed: 600, animateGradually: { enabled: true, delay: 80 } } },
                                                                                              series: [{ name: data.entityName || 'Records', data: data.data }],
-                                                                                             xaxis: { categories: data.labels, labels: { style: { fontSize: '10px', colors: '#9ca3af' } } },
-                                                                                             yaxis: { labels: { style: { fontSize: '10px', colors: '#9ca3af' } },
-                                                                                                      forceNiceScale: true, min: 0 },
+                                                                                             xaxis: { categories: data.labels, labels: { style: { fontSize: '10px', colors: '#9ca3af', fontWeight: 500 }, rotate: dataLen > 8 ? -45 : 0, rotateAlways: dataLen > 8 }, axisBorder: { show: false }, axisTicks: { show: false } },
+                                                                                             yaxis: { labels: { style: { fontSize: '10px', colors: '#9ca3af' }, formatter: function(v) { return Number.isInteger(v) ? v : v.toFixed(1); } }, forceNiceScale: true, min: 0, tickAmount: 4 },
                                                                                              colors: [color],
-                                                                                             fill: apexType === 'area' ? { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 } } : {},
-                                                                                             stroke: { curve: 'smooth', width: apexType === 'line' || apexType === 'area' ? 2 : 0 },
-                                                                                             plotOptions: apexType === 'bar' ? { bar: { borderRadius: 4, columnWidth: '50%' } } : {},
-                                                                                             dataLabels: { enabled: false },
-                                                                                             grid: { borderColor: '#f3f4f6', strokeDashArray: 3, padding: { left: 8, right: 8 } },
-                                                                                             tooltip: { theme: 'light', y: { formatter: v => v + ' records' } }
+                                                                                             fill: apexType === 'bar' ? { type: 'gradient', gradient: { shade: 'light', type: 'vertical', shadeIntensity: 0.2, gradientToColors: [color], inverseColors: false, opacityFrom: 1, opacityTo: 0.85, stops: [0, 100] } } : apexType === 'area' ? { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [0, 90, 100] } } : {},
+                                                                                             stroke: { curve: 'smooth', width: apexType === 'line' || apexType === 'area' ? 3 : 0, lineCap: 'round' },
+                                                                                             plotOptions: apexType === 'bar' ? { bar: { borderRadius: 6, borderRadiusApplication: 'end', columnWidth: dynColWidth, distributed: false } } : {},
+                                                                                             dataLabels: { enabled: nonZeroCount <= 8 && apexType === 'bar', style: { fontSize: '10px', fontWeight: 600, colors: ['#fff'] }, offsetY: -4, formatter: function(v) { return v > 0 ? v : ''; } },
+                                                                                             grid: { borderColor: '#f1f3f5', strokeDashArray: 4, padding: { left: 4, right: 4, top: 0, bottom: 0 }, xaxis: { lines: { show: false } }, yaxis: { lines: { show: true } } },
+                                                                                             tooltip: { theme: 'light', style: { fontSize: '12px' }, y: { formatter: function(v) { return v + ' records'; } }, marker: { show: true } },
+                                                                                             states: { hover: { filter: { type: 'darken', value: 0.15 } }, active: { filter: { type: 'darken', value: 0.2 } } }
                                                                                          };
                                                                                          _chartInstance = new ApexCharts(el, opts);
                                                                                          _chartInstance.render();
@@ -1047,7 +1056,7 @@
                                                                                 </div>
                                                                             </template>
                                                                             <!-- Chart container -->
-                                                                            <div :id="'ct-chart-' + block.id" style="padding: 8px 4px 0 4px; min-height: 250px;"></div>
+                                                                            <div :id="'ct-chart-' + block.id" style="padding: 4px 4px 0 4px; flex: 1; min-height: 200px;"></div>
                                                                         </div>
                                                                     </template>
                                                                     <!-- Fields Widget -->
@@ -1478,92 +1487,113 @@
                                                 <!-- SEPARATOR: Filters -->
                                                 <div style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
                                                     <div style="flex: 1; height: 1px; background: #e5e7eb;"></div>
-                                                    <span style="font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">Filtres</span>
+                                                    <span style="font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">Filtres Avancés</span>
                                                     <div style="flex: 1; height: 1px; background: #e5e7eb;"></div>
                                                 </div>
 
-                                                <!-- ─── Relation filter ─── -->
-                                                <template x-if="_selectedEntity && _selectedEntity.relations.length > 0">
-                                                    <div>
-                                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
-                                                            <iconify-icon icon="solar:link-round-bold-duotone" width="13" style="color: #e2a03f; margin-right: 2px;"></iconify-icon>
-                                                            Filtrer par relation
-                                                        </label>
-                                                        <select :value="cfgBlock.config.relationFilterKey || ''"
-                                                                @change="cfgBlock.config.relationFilterKey = $el.value; cfgBlock.config.relationFilterValue = ''; _relRecords = []; if ($el.value) searchRelRecords($el.value)"
-                                                                style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box; margin-bottom: 6px;">
-                                                            <option value="">— Aucun filtre relation —</option>
-                                                            <template x-for="rel in _selectedEntity.relations" :key="rel.key">
-                                                                <option :value="rel.key" x-text="'🔗 ' + rel.label + (rel.targetEntity ? ' → ' + rel.targetEntity.name : '')"></option>
-                                                            </template>
-                                                        </select>
-                                                        <!-- Record search (when a relation is selected) -->
-                                                        <template x-if="cfgBlock.config.relationFilterKey">
-                                                            <div>
-                                                                <div style="position: relative;">
-                                                                    <input type="text" x-model="_relSearchQuery" @input.debounce.300ms="searchRelRecords(cfgBlock.config.relationFilterKey)"
-                                                                           placeholder="Rechercher un record..."
-                                                                           style="width: 100%; padding: 7px 10px 7px 30px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 12px; outline: none; box-sizing: border-box;"
-                                                                           onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'">
-                                                                    <iconify-icon icon="solar:magnifer-linear" width="14" style="position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: #9ca3af;"></iconify-icon>
-                                                                    <template x-if="_relSearching">
-                                                                        <div style="position: absolute; right: 9px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; border: 2px solid #e5e7eb; border-top-color: #4361ee; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                                                <!-- Advanced filter builder (Chart) -->
+                                                <div x-data="{
+                                                    _afFields: [],
+                                                    _afLoading: false,
+                                                    async loadFields() {
+                                                        const src = cfgBlock.config.dataSource || 'entity:<%= entity._id %>';
+                                                        const entityId = src.startsWith('entity:') ? src.split(':')[1] : '<%= entity._id %>';
+                                                        this._afLoading = true;
+                                                        try {
+                                                            const resp = await fetch('/account/<%= account_number %>/api/widget/entity-fields/' + entityId, { credentials: 'include' });
+                                                            const d = await resp.json();
+                                                            this._afFields = d.fields || [];
+                                                        } catch(e) { console.error(e); }
+                                                        this._afLoading = false;
+                                                    },
+                                                    getOpsForType(type) {
+                                                        const t=[{v:'contains',l:'Contient'},{v:'equals',l:'Égal'},{v:'not_equals',l:'Différent'},{v:'starts_with',l:'Commence par'},{v:'ends_with',l:'Finit par'},{v:'is_empty',l:'Vide'},{v:'is_not_empty',l:'Non vide'}];
+                                                        const n=[{v:'equals',l:'='},{v:'not_equals',l:'≠'},{v:'gt',l:'&gt;'},{v:'gte',l:'≥'},{v:'lt',l:'&lt;'},{v:'lte',l:'≤'},{v:'between',l:'Entre'},{v:'is_empty',l:'Vide'},{v:'is_not_empty',l:'Non vide'}];
+                                                        const d=[{v:'equals',l:'Égal'},{v:'gt',l:'Après'},{v:'gte',l:'Après ou le'},{v:'lt',l:'Avant'},{v:'lte',l:'Avant ou le'},{v:'between',l:'Entre'},{v:'is_empty',l:'Vide'},{v:'is_not_empty',l:'Non vide'}];
+                                                        const c=[{v:'equals',l:'Est'},{v:'not_equals',l:'Pas égal'},{v:'is_empty',l:'Vide'},{v:'is_not_empty',l:'Non vide'}];
+                                                        if (['number','currency','decimal'].includes(type)) return n;
+                                                        if (['date','datetime-local'].includes(type)) return d;
+                                                        if (type==='classification') return c;
+                                                        return t;
+                                                    },
+                                                    isNoValueOp(op) { return ['is_empty','is_not_empty'].includes(op); },
+                                                    addFilter() { if(!cfgBlock.config.advancedFilters) cfgBlock.config.advancedFilters=[]; cfgBlock.config.advancedFilters.push({field:'',operator:'contains',value:'',value2:''}); },
+                                                    removeFilter(i) { cfgBlock.config.advancedFilters.splice(i,1); },
+                                                    getFieldObj(fid) { return this._afFields.find(f=>f._id===fid)||null; }
+                                                }" x-init="loadFields(); if(!cfgBlock.config.advancedFilters) cfgBlock.config.advancedFilters=[]; if(!cfgBlock.config.advancedFiltersLogic) cfgBlock.config.advancedFiltersLogic='and';"
+                                                   x-effect="$watch('cfgBlock.config.dataSource', ()=>loadFields())">
+                                                    <template x-if="(cfgBlock.config.advancedFilters||[]).length > 1">
+                                                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                                                            <span style="font-size:11px;color:#6b7280;">Combiner avec</span>
+                                                            <button type="button" @click="cfgBlock.config.advancedFiltersLogic = cfgBlock.config.advancedFiltersLogic==='and'?'or':'and'"
+                                                                    :style="'padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;'+(cfgBlock.config.advancedFiltersLogic==='and'?'background:rgba(67,97,238,.1);border:1px solid rgba(67,97,238,.3);color:#4361ee;':'background:rgba(0,171,85,.1);border:1px solid rgba(0,171,85,.3);color:#00ab55;')"
+                                                                    x-text="cfgBlock.config.advancedFiltersLogic==='and'?'ET':'OU'"></button>
+                                                        </div>
+                                                    </template>
+                                                    <template x-for="(af,afi) in (cfgBlock.config.advancedFilters||[])" :key="afi">
+                                                        <div style="padding:8px 10px;background:#f9fafb;border-radius:8px;border:1px solid #f3f4f6;margin-bottom:6px;position:relative;">
+                                                            <button type="button" @click="removeFilter(afi)" style="position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;border:none;cursor:pointer;background:rgba(231,81,90,.08);color:#e7515a;display:flex;align-items:center;justify-content:center;z-index:1;"
+                                                                    onmouseover="this.style.background='rgba(231,81,90,.18)'" onmouseout="this.style.background='rgba(231,81,90,.08)'">
+                                                                <iconify-icon icon="tabler:x" width="10"></iconify-icon>
+                                                            </button>
+                                                            <select :value="af.field" @change="af.field=$el.value;const fo=getFieldObj($el.value);if(fo){const ops=getOpsForType(fo.type);af.operator=ops[0]?.v||'contains';}af.value='';af.value2='';"
+                                                                    style="width:100%;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;outline:none;background:white;box-sizing:border-box;margin-bottom:6px;padding-right:30px;">
+                                                                <option value="">— Choisir un champ —</option>
+                                                                <optgroup label="Système"><template x-for="f in _afFields.filter(f=>f.category==='system')" :key="f._id"><option :value="f._id" x-text="f.label"></option></template></optgroup>
+                                                                <optgroup label="Champs personnalisés"><template x-for="f in _afFields.filter(f=>f.category==='custom')" :key="f._id"><option :value="f._id" x-text="f.label"></option></template></optgroup>
+                                                                <optgroup label="Classifications"><template x-for="f in _afFields.filter(f=>f.category==='classification')" :key="f._id"><option :value="f._id" x-text="'🏷️ '+f.label"></option></template></optgroup>
+                                                            </select>
+                                                            <template x-if="af.field">
+                                                                <div style="display:flex;flex-direction:column;gap:6px;">
+                                                                    <select :value="af.operator" @change="af.operator=$el.value;if(isNoValueOp($el.value)){af.value='';af.value2='';}"
+                                                                            style="padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;outline:none;background:white;box-sizing:border-box;">
+                                                                        <template x-for="op in getOpsForType((getFieldObj(af.field)||{}).type)" :key="op.v"><option :value="op.v" x-text="op.l"></option></template>
+                                                                    </select>
+                                                                    <template x-if="!isNoValueOp(af.operator)">
+                                                                        <div>
+                                                                            <template x-if="getFieldObj(af.field)&&getFieldObj(af.field).type==='classification'">
+                                                                                <select :value="af.value" @change="af.value=$el.value" style="padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;outline:none;background:white;box-sizing:border-box;">
+                                                                                    <option value="">— option —</option>
+                                                                                    <template x-for="opt in (getFieldObj(af.field)||{}).options||[]" :key="opt._id"><option :value="opt._id" x-text="opt.label"></option></template>
+                                                                                </select>
+                                                                            </template>
+                                                                            <template x-if="getFieldObj(af.field)&&['date','datetime-local'].includes(getFieldObj(af.field).type)">
+                                                                                <div style="display:flex;gap:4px;">
+                                                                                    <input type="date" :value="af.value" @input="af.value=$el.value" style="flex:1;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;outline:none;box-sizing:border-box;">
+                                                                                    <template x-if="af.operator==='between'"><input type="date" :value="af.value2" @input="af.value2=$el.value" style="flex:1;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;outline:none;box-sizing:border-box;"></template>
+                                                                                </div>
+                                                                            </template>
+                                                                            <template x-if="getFieldObj(af.field)&&['number','currency','decimal'].includes(getFieldObj(af.field).type)">
+                                                                                <div style="display:flex;gap:4px;">
+                                                                                    <input type="number" :value="af.value" @input="af.value=$el.value" style="flex:1;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;outline:none;box-sizing:border-box;" placeholder="Valeur">
+                                                                                    <template x-if="af.operator==='between'"><input type="number" :value="af.value2" @input="af.value2=$el.value" style="flex:1;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;outline:none;box-sizing:border-box;" placeholder="Max"></template>
+                                                                                </div>
+                                                                            </template>
+                                                                            <template x-if="getFieldObj(af.field)&&!['classification','date','datetime-local','number','currency','decimal'].includes(getFieldObj(af.field).type)">
+                                                                                <input type="text" :value="af.value" @input="af.value=$el.value" style="width:100%;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;outline:none;box-sizing:border-box;" placeholder="Valeur...">
+                                                                            </template>
+                                                                        </div>
                                                                     </template>
                                                                 </div>
-                                                                <div style="max-height: 140px; overflow-y: auto; border: 1px solid #f3f4f6; border-radius: 6px; margin-top: 4px;" x-show="_relRecords.length > 0">
-                                                                    <template x-for="rec in _relRecords" :key="rec._id">
-                                                                        <button type="button" @click="cfgBlock.config.relationFilterValue = rec._id; cfgBlock.config.relationFilterLabel = rec.title || rec.computedTitle || 'Sans titre'"
-                                                                                :style="'display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 10px; border: none; cursor: pointer; font-size: 12px; text-align: left; transition: background 0.1s;' + (cfgBlock.config.relationFilterValue === rec._id ? 'background: rgba(67,97,238,0.08); color: #4361ee; font-weight: 600;' : 'background: transparent; color: #374151;')"
-                                                                                onmouseover="this.style.background='#f9fafb'" onmouseout="if(!this.classList.contains('selected')) this.style.background='transparent'">
-                                                                            <iconify-icon :icon="cfgBlock.config.relationFilterValue === rec._id ? 'solar:check-circle-bold' : 'solar:record-circle-linear'" width="14"
-                                                                                :style="'color: ' + (cfgBlock.config.relationFilterValue === rec._id ? '#4361ee' : '#d1d5db')"></iconify-icon>
-                                                                            <span x-text="rec.title || rec.computedTitle || 'Sans titre'" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
-                                                                        </button>
-                                                                    </template>
-                                                                </div>
-                                                                <template x-if="cfgBlock.config.relationFilterValue">
-                                                                    <div style="display: flex; align-items: center; gap: 4px; margin-top: 4px; padding: 4px 8px; background: rgba(67,97,238,0.05); border-radius: 6px; border: 1px solid rgba(67,97,238,0.15);">
-                                                                        <iconify-icon icon="solar:check-circle-bold" width="12" style="color: #4361ee;"></iconify-icon>
-                                                                        <span style="font-size: 11px; color: #4361ee; font-weight: 600;" x-text="cfgBlock.config.relationFilterLabel || 'Sélectionné'"></span>
-                                                                        <button type="button" @click="cfgBlock.config.relationFilterValue = ''; cfgBlock.config.relationFilterLabel = ''"
-                                                                                style="margin-left: auto; background: none; border: none; cursor: pointer; color: #9ca3af; padding: 0;">
-                                                                            <iconify-icon icon="tabler:x" width="12"></iconify-icon>
-                                                                        </button>
-                                                                    </div>
-                                                                </template>
-                                                            </div>
-                                                        </template>
-                                                    </div>
-                                                </template>
-
-                                                <!-- ─── Classification/Tag filter ─── -->
-                                                <template x-if="_selectedEntity && _selectedEntity.classifications.length > 0">
-                                                    <div>
-                                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
-                                                            <iconify-icon icon="solar:tag-bold-duotone" width="13" style="color: #805dca; margin-right: 2px;"></iconify-icon>
-                                                            Filtrer par tag / classification
-                                                        </label>
-                                                        <select :value="cfgBlock.config.classificationFilterId || ''"
-                                                                @change="cfgBlock.config.classificationFilterId = $el.value; cfgBlock.config.classificationFilterOption = ''"
-                                                                style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box; margin-bottom: 6px;">
-                                                            <option value="">— Aucun filtre —</option>
-                                                            <template x-for="cls in _selectedEntity.classifications" :key="cls._id">
-                                                                <option :value="cls._id" x-text="'🏷️ ' + cls.name"></option>
                                                             </template>
-                                                        </select>
-                                                        <!-- Options of selected classification -->
-                                                        <template x-if="cfgBlock.config.classificationFilterId">
-                                                            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                                                                <template x-for="opt in (_selectedEntity.classifications.find(c => c._id === cfgBlock.config.classificationFilterId) || {options:[]}).options" :key="opt._id">
-                                                                    <button type="button" @click="cfgBlock.config.classificationFilterOption = opt._id"
-                                                                            :style="'padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.12s;' + (cfgBlock.config.classificationFilterOption === opt._id ? 'background: ' + (opt.color || '#4361ee') + '; border: 1px solid ' + (opt.color || '#4361ee') + '; color: white;' : 'background: #f9fafb; border: 1px solid #e5e7eb; color: #6b7280;')"
-                                                                            x-text="opt.label"></button>
-                                                                </template>
                                                             </div>
-                                                        </template>
-                                                    </div>
-                                                </template>
-
+                                                    </template>
+                                                    <button type="button" @click="addFilter()"
+                                                            style="display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:6px;border:1px dashed #d1d5db;background:transparent;color:#6b7280;font-size:11px;font-weight:500;cursor:pointer;width:100%;justify-content:center;transition:all .15s;"
+                                                            onmouseover="this.style.borderColor='#4361ee';this.style.color='#4361ee';this.style.background='rgba(67,97,238,.03)'" onmouseout="this.style.borderColor='#d1d5db';this.style.color='#6b7280';this.style.background='transparent'">
+                                                        <iconify-icon icon="solar:add-circle-bold" width="14"></iconify-icon>
+                                                        Ajouter un filtre
+                                                    </button>
+                                                    <template x-if="(cfgBlock.config.advancedFilters||[]).filter(f=>f.field&&f.operator).length>0">
+                                                        <div style="margin-top:4px;padding:6px 10px;background:rgba(67,97,238,.04);border-radius:6px;border:1px solid rgba(67,97,238,.1);">
+                                                            <div style="display:flex;align-items:center;gap:4px;">
+                                                                <iconify-icon icon="solar:filter-bold-duotone" width="12" style="color:#4361ee;"></iconify-icon>
+                                                                <span style="font-size:10px;font-weight:600;color:#4361ee;" x-text="(cfgBlock.config.advancedFilters||[]).filter(f=>f.field&&f.operator).length+' filtre(s) actif(s)'"></span>
+                                                                <button type="button" @click="cfgBlock.config.advancedFilters=[]" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:10px;padding:0;" onmouseover="this.style.color='#e7515a'" onmouseout="this.style.color='#9ca3af'">Tout effacer</button>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
                                                 <!-- SEPARATOR: Appearance -->
                                                 <div style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
                                                     <div style="flex: 1; height: 1px; background: #e5e7eb;"></div>
@@ -1675,87 +1705,113 @@
                                                 <!-- SEPARATOR: Filters -->
                                                 <div style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
                                                     <div style="flex: 1; height: 1px; background: #e5e7eb;"></div>
-                                                    <span style="font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">Filtres</span>
+                                                    <span style="font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">Filtres Avancés</span>
                                                     <div style="flex: 1; height: 1px; background: #e5e7eb;"></div>
                                                 </div>
 
-                                                <!-- ─── Relation filter ─── -->
-                                                <template x-if="_tlSelectedEntity && _tlSelectedEntity.relations.length > 0">
-                                                    <div>
-                                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
-                                                            <iconify-icon icon="solar:link-round-bold-duotone" width="13" style="color: #e2a03f; margin-right: 2px;"></iconify-icon>
-                                                            Filtrer par relation
-                                                        </label>
-                                                        <select :value="cfgBlock.config.relationFilterKey || ''"
-                                                                @change="cfgBlock.config.relationFilterKey = $el.value; cfgBlock.config.relationFilterValue = ''; _tlRelRecords = []; if ($el.value) searchTlRelRecords($el.value)"
-                                                                style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box; margin-bottom: 6px;">
-                                                            <option value="">— Aucun filtre relation —</option>
-                                                            <template x-for="rel in _tlSelectedEntity.relations" :key="rel.key">
-                                                                <option :value="rel.key" x-text="'🔗 ' + rel.label + (rel.targetEntity ? ' → ' + rel.targetEntity.name : '')"></option>
-                                                            </template>
-                                                        </select>
-                                                        <template x-if="cfgBlock.config.relationFilterKey">
-                                                            <div>
-                                                                <div style="position: relative;">
-                                                                    <input type="text" x-model="_tlRelSearchQuery" @input.debounce.300ms="searchTlRelRecords(cfgBlock.config.relationFilterKey)"
-                                                                           placeholder="Rechercher un record..."
-                                                                           style="width: 100%; padding: 7px 10px 7px 30px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 12px; outline: none; box-sizing: border-box;"
-                                                                           onfocus="this.style.borderColor='#805dca'" onblur="this.style.borderColor='#e5e7eb'">
-                                                                    <iconify-icon icon="solar:magnifer-linear" width="14" style="position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: #9ca3af;"></iconify-icon>
-                                                                </div>
-                                                                <div style="max-height: 140px; overflow-y: auto; border: 1px solid #f3f4f6; border-radius: 6px; margin-top: 4px;" x-show="_tlRelRecords.length > 0">
-                                                                    <template x-for="rec in _tlRelRecords" :key="rec._id">
-                                                                        <button type="button" @click="cfgBlock.config.relationFilterValue = rec._id; cfgBlock.config.relationFilterLabel = rec.title || rec.computedTitle || 'Sans titre'"
-                                                                                :style="'display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 10px; border: none; cursor: pointer; font-size: 12px; text-align: left;' + (cfgBlock.config.relationFilterValue === rec._id ? 'background: rgba(128,93,202,0.08); color: #805dca; font-weight: 600;' : 'background: transparent; color: #374151;')"
-                                                                                onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='transparent'">
-                                                                            <iconify-icon :icon="cfgBlock.config.relationFilterValue === rec._id ? 'solar:check-circle-bold' : 'solar:record-circle-linear'" width="14"
-                                                                                :style="'color: ' + (cfgBlock.config.relationFilterValue === rec._id ? '#805dca' : '#d1d5db')"></iconify-icon>
-                                                                            <span x-text="rec.title || rec.computedTitle || 'Sans titre'" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
-                                                                        </button>
+                                                <!-- Advanced filter builder (Timeline) -->
+                                                <div x-data="{
+                                                    _afFields: [],
+                                                    _afLoading: false,
+                                                    async loadFields() {
+                                                        const src = cfgBlock.config.dataSource || 'entity:<%= entity._id %>';
+                                                        const entityId = src.startsWith('entity:') ? src.split(':')[1] : '<%= entity._id %>';
+                                                        this._afLoading = true;
+                                                        try {
+                                                            const resp = await fetch('/account/<%= account_number %>/api/widget/entity-fields/' + entityId, { credentials: 'include' });
+                                                            const d = await resp.json();
+                                                            this._afFields = d.fields || [];
+                                                        } catch(e) { console.error(e); }
+                                                        this._afLoading = false;
+                                                    },
+                                                    getOpsForType(type) {
+                                                        const t=[{v:'contains',l:'Contient'},{v:'equals',l:'Égal'},{v:'not_equals',l:'Différent'},{v:'starts_with',l:'Commence par'},{v:'ends_with',l:'Finit par'},{v:'is_empty',l:'Vide'},{v:'is_not_empty',l:'Non vide'}];
+                                                        const n=[{v:'equals',l:'='},{v:'not_equals',l:'≠'},{v:'gt',l:'&gt;'},{v:'gte',l:'≥'},{v:'lt',l:'&lt;'},{v:'lte',l:'≤'},{v:'between',l:'Entre'},{v:'is_empty',l:'Vide'},{v:'is_not_empty',l:'Non vide'}];
+                                                        const d=[{v:'equals',l:'Égal'},{v:'gt',l:'Après'},{v:'gte',l:'Après ou le'},{v:'lt',l:'Avant'},{v:'lte',l:'Avant ou le'},{v:'between',l:'Entre'},{v:'is_empty',l:'Vide'},{v:'is_not_empty',l:'Non vide'}];
+                                                        const c=[{v:'equals',l:'Est'},{v:'not_equals',l:'Pas égal'},{v:'is_empty',l:'Vide'},{v:'is_not_empty',l:'Non vide'}];
+                                                        if (['number','currency','decimal'].includes(type)) return n;
+                                                        if (['date','datetime-local'].includes(type)) return d;
+                                                        if (type==='classification') return c;
+                                                        return t;
+                                                    },
+                                                    isNoValueOp(op) { return ['is_empty','is_not_empty'].includes(op); },
+                                                    addFilter() { if(!cfgBlock.config.advancedFilters) cfgBlock.config.advancedFilters=[]; cfgBlock.config.advancedFilters.push({field:'',operator:'contains',value:'',value2:''}); },
+                                                    removeFilter(i) { cfgBlock.config.advancedFilters.splice(i,1); },
+                                                    getFieldObj(fid) { return this._afFields.find(f=>f._id===fid)||null; }
+                                                }" x-init="loadFields(); if(!cfgBlock.config.advancedFilters) cfgBlock.config.advancedFilters=[]; if(!cfgBlock.config.advancedFiltersLogic) cfgBlock.config.advancedFiltersLogic='and';"
+                                                   x-effect="$watch('cfgBlock.config.dataSource', ()=>loadFields())">
+                                                    <template x-if="(cfgBlock.config.advancedFilters||[]).length > 1">
+                                                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                                                            <span style="font-size:11px;color:#6b7280;">Combiner avec</span>
+                                                            <button type="button" @click="cfgBlock.config.advancedFiltersLogic = cfgBlock.config.advancedFiltersLogic==='and'?'or':'and'"
+                                                                    :style="'padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;'+(cfgBlock.config.advancedFiltersLogic==='and'?'background:rgba(67,97,238,.1);border:1px solid rgba(67,97,238,.3);color:#4361ee;':'background:rgba(0,171,85,.1);border:1px solid rgba(0,171,85,.3);color:#00ab55;')"
+                                                                    x-text="cfgBlock.config.advancedFiltersLogic==='and'?'ET':'OU'"></button>
+                                                        </div>
+                                                    </template>
+                                                    <template x-for="(af,afi) in (cfgBlock.config.advancedFilters||[])" :key="afi">
+                                                        <div style="padding:8px 10px;background:#f9fafb;border-radius:8px;border:1px solid #f3f4f6;margin-bottom:6px;position:relative;">
+                                                            <button type="button" @click="removeFilter(afi)" style="position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;border:none;cursor:pointer;background:rgba(231,81,90,.08);color:#e7515a;display:flex;align-items:center;justify-content:center;z-index:1;"
+                                                                    onmouseover="this.style.background='rgba(231,81,90,.18)'" onmouseout="this.style.background='rgba(231,81,90,.08)'">
+                                                                <iconify-icon icon="tabler:x" width="10"></iconify-icon>
+                                                            </button>
+                                                            <select :value="af.field" @change="af.field=$el.value;const fo=getFieldObj($el.value);if(fo){const ops=getOpsForType(fo.type);af.operator=ops[0]?.v||'contains';}af.value='';af.value2='';"
+                                                                    style="width:100%;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;outline:none;background:white;box-sizing:border-box;margin-bottom:6px;padding-right:30px;">
+                                                                <option value="">— Choisir un champ —</option>
+                                                                <optgroup label="Système"><template x-for="f in _afFields.filter(f=>f.category==='system')" :key="f._id"><option :value="f._id" x-text="f.label"></option></template></optgroup>
+                                                                <optgroup label="Champs personnalisés"><template x-for="f in _afFields.filter(f=>f.category==='custom')" :key="f._id"><option :value="f._id" x-text="f.label"></option></template></optgroup>
+                                                                <optgroup label="Classifications"><template x-for="f in _afFields.filter(f=>f.category==='classification')" :key="f._id"><option :value="f._id" x-text="'🏷️ '+f.label"></option></template></optgroup>
+                                                            </select>
+                                                            <template x-if="af.field">
+                                                                <div style="display:flex;flex-direction:column;gap:6px;">
+                                                                    <select :value="af.operator" @change="af.operator=$el.value;if(isNoValueOp($el.value)){af.value='';af.value2='';}"
+                                                                            style="padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;outline:none;background:white;box-sizing:border-box;">
+                                                                        <template x-for="op in getOpsForType((getFieldObj(af.field)||{}).type)" :key="op.v"><option :value="op.v" x-text="op.l"></option></template>
+                                                                    </select>
+                                                                    <template x-if="!isNoValueOp(af.operator)">
+                                                                        <div>
+                                                                            <template x-if="getFieldObj(af.field)&&getFieldObj(af.field).type==='classification'">
+                                                                                <select :value="af.value" @change="af.value=$el.value" style="padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;outline:none;background:white;box-sizing:border-box;">
+                                                                                    <option value="">— option —</option>
+                                                                                    <template x-for="opt in (getFieldObj(af.field)||{}).options||[]" :key="opt._id"><option :value="opt._id" x-text="opt.label"></option></template>
+                                                                                </select>
+                                                                            </template>
+                                                                            <template x-if="getFieldObj(af.field)&&['date','datetime-local'].includes(getFieldObj(af.field).type)">
+                                                                                <div style="display:flex;gap:4px;">
+                                                                                    <input type="date" :value="af.value" @input="af.value=$el.value" style="flex:1;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;outline:none;box-sizing:border-box;">
+                                                                                    <template x-if="af.operator==='between'"><input type="date" :value="af.value2" @input="af.value2=$el.value" style="flex:1;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;outline:none;box-sizing:border-box;"></template>
+                                                                                </div>
+                                                                            </template>
+                                                                            <template x-if="getFieldObj(af.field)&&['number','currency','decimal'].includes(getFieldObj(af.field).type)">
+                                                                                <div style="display:flex;gap:4px;">
+                                                                                    <input type="number" :value="af.value" @input="af.value=$el.value" style="flex:1;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;outline:none;box-sizing:border-box;" placeholder="Valeur">
+                                                                                    <template x-if="af.operator==='between'"><input type="number" :value="af.value2" @input="af.value2=$el.value" style="flex:1;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;outline:none;box-sizing:border-box;" placeholder="Max"></template>
+                                                                                </div>
+                                                                            </template>
+                                                                            <template x-if="getFieldObj(af.field)&&!['classification','date','datetime-local','number','currency','decimal'].includes(getFieldObj(af.field).type)">
+                                                                                <input type="text" :value="af.value" @input="af.value=$el.value" style="width:100%;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;outline:none;box-sizing:border-box;" placeholder="Valeur...">
+                                                                            </template>
+                                                                        </div>
                                                                     </template>
                                                                 </div>
-                                                                <template x-if="cfgBlock.config.relationFilterValue">
-                                                                    <div style="display: flex; align-items: center; gap: 4px; margin-top: 4px; padding: 4px 8px; background: rgba(128,93,202,0.05); border-radius: 6px; border: 1px solid rgba(128,93,202,0.15);">
-                                                                        <iconify-icon icon="solar:check-circle-bold" width="12" style="color: #805dca;"></iconify-icon>
-                                                                        <span style="font-size: 11px; color: #805dca; font-weight: 600;" x-text="cfgBlock.config.relationFilterLabel || 'Sélectionné'"></span>
-                                                                        <button type="button" @click="cfgBlock.config.relationFilterValue = ''; cfgBlock.config.relationFilterLabel = ''"
-                                                                                style="margin-left: auto; background: none; border: none; cursor: pointer; color: #9ca3af; padding: 0;">
-                                                                            <iconify-icon icon="tabler:x" width="12"></iconify-icon>
-                                                                        </button>
-                                                                    </div>
-                                                                </template>
-                                                            </div>
-                                                        </template>
-                                                    </div>
-                                                </template>
-
-                                                <!-- ─── Classification/Tag filter ─── -->
-                                                <template x-if="_tlSelectedEntity && _tlSelectedEntity.classifications.length > 0">
-                                                    <div>
-                                                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
-                                                            <iconify-icon icon="solar:tag-bold-duotone" width="13" style="color: #805dca; margin-right: 2px;"></iconify-icon>
-                                                            Filtrer par tag / classification
-                                                        </label>
-                                                        <select :value="cfgBlock.config.classificationFilterId || ''"
-                                                                @change="cfgBlock.config.classificationFilterId = $el.value; cfgBlock.config.classificationFilterOption = ''"
-                                                                style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box; margin-bottom: 6px;">
-                                                            <option value="">— Aucun filtre —</option>
-                                                            <template x-for="cls in _tlSelectedEntity.classifications" :key="cls._id">
-                                                                <option :value="cls._id" x-text="'🏷️ ' + cls.name"></option>
                                                             </template>
-                                                        </select>
-                                                        <template x-if="cfgBlock.config.classificationFilterId">
-                                                            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                                                                <template x-for="opt in (_tlSelectedEntity.classifications.find(c => c._id === cfgBlock.config.classificationFilterId) || {options:[]}).options" :key="opt._id">
-                                                                    <button type="button" @click="cfgBlock.config.classificationFilterOption = opt._id"
-                                                                            :style="'padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.12s;' + (cfgBlock.config.classificationFilterOption === opt._id ? 'background: ' + (opt.color || '#805dca') + '; border: 1px solid ' + (opt.color || '#805dca') + '; color: white;' : 'background: #f9fafb; border: 1px solid #e5e7eb; color: #6b7280;')"
-                                                                            x-text="opt.label"></button>
-                                                                </template>
                                                             </div>
-                                                        </template>
-                                                    </div>
-                                                </template>
-
+                                                    </template>
+                                                    <button type="button" @click="addFilter()"
+                                                            style="display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:6px;border:1px dashed #d1d5db;background:transparent;color:#6b7280;font-size:11px;font-weight:500;cursor:pointer;width:100%;justify-content:center;transition:all .15s;"
+                                                            onmouseover="this.style.borderColor='#4361ee';this.style.color='#4361ee';this.style.background='rgba(67,97,238,.03)'" onmouseout="this.style.borderColor='#d1d5db';this.style.color='#6b7280';this.style.background='transparent'">
+                                                        <iconify-icon icon="solar:add-circle-bold" width="14"></iconify-icon>
+                                                        Ajouter un filtre
+                                                    </button>
+                                                    <template x-if="(cfgBlock.config.advancedFilters||[]).filter(f=>f.field&&f.operator).length>0">
+                                                        <div style="margin-top:4px;padding:6px 10px;background:rgba(67,97,238,.04);border-radius:6px;border:1px solid rgba(67,97,238,.1);">
+                                                            <div style="display:flex;align-items:center;gap:4px;">
+                                                                <iconify-icon icon="solar:filter-bold-duotone" width="12" style="color:#4361ee;"></iconify-icon>
+                                                                <span style="font-size:10px;font-weight:600;color:#4361ee;" x-text="(cfgBlock.config.advancedFilters||[]).filter(f=>f.field&&f.operator).length+' filtre(s) actif(s)'"></span>
+                                                                <button type="button" @click="cfgBlock.config.advancedFilters=[]" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:10px;padding:0;" onmouseover="this.style.color='#e7515a'" onmouseout="this.style.color='#9ca3af'">Tout effacer</button>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
                                                 <!-- SEPARATOR: Appearance -->
                                                 <div style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
                                                     <div style="flex: 1; height: 1px; background: #e5e7eb;"></div>
@@ -1942,6 +1998,93 @@
                                             </div>
                                         </template>
                                     </div>
+
+                                    
+                                    <!-- ═══ Saved Filters (for chart/timeline) ═══ -->
+                                    <template x-if="cfgBlock && (cfgBlock.type === 'chart' || cfgBlock.type === 'timeline') && cfgBlock.config && cfgBlock.config.advancedFilters && cfgBlock.config.advancedFilters.filter(f => f.field && f.operator).length > 0">
+                                        <div style="padding: 10px 20px; border-top: 1px solid #f3f4f6;"
+                                             x-data="{
+                                                 sfName: '',
+                                                 sfExpanded: false,
+                                                 getSavedFilters() {
+                                                     const layout = customTabLayouts[ctConfigModal.tabKey];
+                                                     return (layout && layout.savedFilters) ? Object.entries(layout.savedFilters) : [];
+                                                 },
+                                                 saveFilter() {
+                                                     if (!this.sfName.trim()) return;
+                                                     const layout = customTabLayouts[ctConfigModal.tabKey];
+                                                     if (!layout) return;
+                                                     if (!layout.savedFilters) layout.savedFilters = {};
+                                                     const id = 'sf_' + Date.now();
+                                                     layout.savedFilters[id] = {
+                                                         name: this.sfName.trim(),
+                                                         filters: JSON.parse(JSON.stringify(cfgBlock.config.advancedFilters.filter(f => f.field && f.operator))),
+                                                         logic: cfgBlock.config.advancedFiltersLogic || 'and',
+                                                         createdAt: new Date().toISOString()
+                                                     };
+                                                     this.sfName = '';
+                                                     ctSaveLayout(ctConfigModal.tabKey);
+                                                 },
+                                                 loadFilter(id) {
+                                                     const layout = customTabLayouts[ctConfigModal.tabKey];
+                                                     if (!layout || !layout.savedFilters || !layout.savedFilters[id]) return;
+                                                     const sf = layout.savedFilters[id];
+                                                     cfgBlock.config.advancedFilters = JSON.parse(JSON.stringify(sf.filters));
+                                                     cfgBlock.config.advancedFiltersLogic = sf.logic || 'and';
+                                                     cfgBlock.config.savedFilterId = id;
+                                                 },
+                                                 deleteFilter(id) {
+                                                     const layout = customTabLayouts[ctConfigModal.tabKey];
+                                                     if (!layout || !layout.savedFilters) return;
+                                                     delete layout.savedFilters[id];
+                                                     if (cfgBlock.config.savedFilterId === id) cfgBlock.config.savedFilterId = '';
+                                                     ctSaveLayout(ctConfigModal.tabKey);
+                                                 }
+                                             }">
+                                            <button type="button" @click="sfExpanded = !sfExpanded"
+                                                    style="display: flex; align-items: center; gap: 6px; width: 100%; padding: 0; border: none; background: none; cursor: pointer; color: #6b7280; font-size: 11px; font-weight: 600;">
+                                                <iconify-icon icon="solar:bookmark-bold-duotone" width="14" style="color: #e2a03f;"></iconify-icon>
+                                                Filtres sauvegardés
+                                                <iconify-icon :icon="sfExpanded ? 'tabler:chevron-up' : 'tabler:chevron-down'" width="14" style="margin-left: auto;"></iconify-icon>
+                                            </button>
+                                            <template x-if="sfExpanded">
+                                                <div style="margin-top: 8px;">
+                                                    <div style="display: flex; gap: 4px; margin-bottom: 8px;">
+                                                        <input type="text" x-model="sfName" placeholder="Nom du filtre..."
+                                                               style="flex: 1; padding: 5px 8px; border: 1px solid #e5e7eb; border-radius: 5px; font-size: 11px; outline: none; box-sizing: border-box;"
+                                                               @keydown.enter.prevent="saveFilter()">
+                                                        <button type="button" @click="saveFilter()"
+                                                                :disabled="!sfName.trim()"
+                                                                :style="'padding: 5px 10px; border-radius: 5px; border: none; font-size: 11px; font-weight: 600; cursor: pointer;' + (sfName.trim() ? 'background: #e2a03f; color: white;' : 'background: #f3f4f6; color: #9ca3af; cursor: default;')">
+                                                            <iconify-icon icon="solar:bookmark-bold" width="12" style="vertical-align: -1px;"></iconify-icon>
+                                                            Sauvegarder
+                                                        </button>
+                                                    </div>
+                                                    <template x-for="[sfId, sf] in getSavedFilters()" :key="sfId">
+                                                        <div style="display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 6px; margin-bottom: 4px;"
+                                                             :style="cfgBlock.config.savedFilterId === sfId ? 'background: rgba(226,160,63,0.08); border: 1px solid rgba(226,160,63,0.2);' : 'background: #f9fafb; border: 1px solid #f3f4f6;'">
+                                                            <iconify-icon icon="solar:bookmark-bold-duotone" width="12" style="color: #e2a03f; flex-shrink: 0;"></iconify-icon>
+                                                            <span style="font-size: 11px; font-weight: 500; color: #374151; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" x-text="sf.name"></span>
+                                                            <span style="font-size: 9px; color: #9ca3af; flex-shrink: 0;" x-text="sf.filters.length + ' filtre(s)'"></span>
+                                                            <button type="button" @click="loadFilter(sfId)"
+                                                                    style="padding: 2px 6px; border-radius: 4px; border: none; background: rgba(67,97,238,0.1); color: #4361ee; font-size: 10px; font-weight: 600; cursor: pointer;">
+                                                                Charger
+                                                            </button>
+                                                            <button type="button" @click="deleteFilter(sfId)"
+                                                                    style="width: 18px; height: 18px; border-radius: 50%; border: none; background: rgba(231,81,90,0.08); color: #e7515a; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                                                <iconify-icon icon="tabler:x" width="10"></iconify-icon>
+                                                            </button>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="getSavedFilters().length === 0">
+                                                        <div style="text-align: center; padding: 8px; color: #9ca3af; font-size: 10px;">
+                                                            Aucun filtre sauvegardé
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
 
                                     <!-- Footer -->
                                     <div style="display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid #f3f4f6;">

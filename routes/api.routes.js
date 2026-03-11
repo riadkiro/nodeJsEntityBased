@@ -1752,9 +1752,14 @@ router.get('/api/widget/chart-data', async (req, res) => {
         const Record = await tenantCollection(req, "Record")
         const Entity = await tenantCollection(req, "Entity")
         const { entityId, period = 'month', months = 6, dateField = 'createdAt',
-            relationFilter, classificationFilter, yField = 'count', yAgg = 'count' } = req.query
+            relationFilter, classificationFilter, yField = 'count', yAgg = 'count',
+            advancedFilters: afRaw, advancedFiltersLogic = 'and' } = req.query
 
         if (!entityId) return res.status(400).json({ error: 'entityId is required' })
+
+        // Parse advanced filters
+        let advancedFilters = []
+        if (afRaw) { try { advancedFilters = JSON.parse(afRaw) } catch (e) { } }
 
         const entity = await Entity.findById(entityId).select('name slug icon color customFields').lean()
         if (!entity) return res.status(404).json({ error: 'Entity not found' })
@@ -1808,6 +1813,9 @@ router.get('/api/widget/chart-data', async (req, res) => {
         let selectFields = 'createdAt updatedAt'
         if (isCustomDateField) selectFields += ' customFields'
         if (yField && yField !== 'count') selectFields += ' customFields'
+
+        // Apply advanced filters
+        applyAdvancedFilters(query, advancedFilters, advancedFiltersLogic, entity)
 
         const records = await Record.find(query).select(selectFields).lean()
 
@@ -1966,7 +1974,12 @@ router.get('/api/widget/timeline-data', async (req, res) => {
         const Record = await tenantCollection(req, "Record")
         const Entity = await tenantCollection(req, "Entity")
         const { entityId, recordId, relationKey, limit = 10, dateField = 'createdAt',
-            relationFilter, classificationFilter } = req.query
+            relationFilter, classificationFilter,
+            advancedFilters: afRaw, advancedFiltersLogic = 'and' } = req.query
+
+        // Parse advanced filters
+        let advancedFilters = []
+        if (afRaw) { try { advancedFilters = JSON.parse(afRaw) } catch (e) { } }
 
         if (!entityId) return res.status(400).json({ error: 'entityId required' })
 
@@ -2012,6 +2025,12 @@ router.get('/api/widget/timeline-data', async (req, res) => {
             return baseQuery
         }
 
+        // Also apply advanced filters (applied to all queries below)
+        const applyAllFilters = (baseQuery) => {
+            const q = buildFilterQuery(baseQuery)
+            return applyAdvancedFilters(q, advancedFilters, advancedFiltersLogic, entity)
+        }
+
         // Determine sort field for MongoDB
         const sortField = isCustomDateField ? 'createdAt' : (dateField || 'createdAt')
 
@@ -2028,7 +2047,7 @@ router.get('/api/widget/timeline-data', async (req, res) => {
                 }).select('_id name slug icon color').lean()
 
                 for (const srcEnt of sourceEntities) {
-                    const q = buildFilterQuery({
+                    const q = applyAllFilters({
                         entityId: srcEnt._id,
                         $or: [
                             { 'relations': { $elemMatch: { relationKey: sourceRelKey, value: record._id } } },
@@ -2061,7 +2080,7 @@ router.get('/api/widget/timeline-data', async (req, res) => {
                         const validIds = targetIds.filter(id => mongoose.Types.ObjectId.isValid(id))
                         if (validIds.length > 0) {
                             const targetEntity = rel.targetEntity || {}
-                            const q = buildFilterQuery({ _id: { $in: validIds } })
+                            const q = applyAllFilters({ _id: { $in: validIds } })
                             const relRecords = await Record.find(q)
                                 .select('_id title computedTitle createdAt updatedAt entityId customFields')
                                 .sort({ [sortField]: -1 })
@@ -2083,7 +2102,7 @@ router.get('/api/widget/timeline-data', async (req, res) => {
             }
         } else {
             // Fetch records directly from the entity
-            const q = buildFilterQuery({ entityId })
+            const q = applyAllFilters({ entityId })
             const allRecords = await Record.find(q)
                 .select('_id title computedTitle createdAt updatedAt customFields')
                 .sort({ [sortField]: -1 })
@@ -2126,6 +2145,170 @@ function getDateFromRecord(r, dateField, isCustomDateField) {
     }
     return r[dateField || 'createdAt']
 }
+
+/**
+ * Apply advanced filters to a MongoDB query object
+ * @param {Object} query - existing MongoDB query
+ * @param {Array} filters - [{field, operator, value, value2}]
+ * @param {String} logic - "and" | "or"
+ * @param {Object} entity - entity with customFields populated
+ */
+function applyAdvancedFilters(query, filters, logic = 'and', entity = null) {
+    if (!filters || !Array.isArray(filters) || filters.length === 0) return query
+
+    const conditions = []
+    for (const f of filters) {
+        if (!f.field || !f.operator) continue
+
+        let cond = null
+        const isSystemField = ['createdAt', 'updatedAt', 'title', 'computedTitle', 'status'].includes(f.field)
+        const isClassification = f.field.startsWith('classif:')
+
+        if (isClassification) {
+            const classifId = f.field.replace('classif:', '')
+            if (f.operator === 'equals' && f.value) {
+                cond = { 'classificationValues': { $elemMatch: { classificationId: classifId, optionId: f.value } } }
+            } else if (f.operator === 'not_equals' && f.value) {
+                cond = { 'classificationValues': { $not: { $elemMatch: { classificationId: classifId, optionId: f.value } } } }
+            } else if (f.operator === 'is_empty') {
+                cond = {
+                    $or: [
+                        { 'classificationValues': { $not: { $elemMatch: { classificationId: classifId } } } },
+                        { 'classificationValues': { $elemMatch: { classificationId: classifId, optionId: { $in: [null, ''] } } } }
+                    ]
+                }
+            } else if (f.operator === 'is_not_empty') {
+                cond = { 'classificationValues': { $elemMatch: { classificationId: classifId, optionId: { $nin: [null, ''] } } } }
+            }
+        } else if (isSystemField) {
+            const path = f.field
+            cond = buildFieldCondition(path, f.operator, f.value, f.value2)
+        } else {
+            // Custom field - query on customFields array
+            const baseCond = { 'customFields.field_id': f.field }
+            const valueCond = buildCustomFieldCondition(f.operator, f.value, f.value2)
+            if (valueCond) {
+                cond = { customFields: { $elemMatch: { field_id: f.field, ...valueCond } } }
+            }
+        }
+
+        if (cond) conditions.push(cond)
+    }
+
+    if (conditions.length === 0) return query
+
+    if (logic === 'or') {
+        if (query.$or) {
+            query.$and = query.$and || []
+            query.$and.push({ $or: conditions })
+        } else {
+            query.$or = conditions
+        }
+    } else {
+        query.$and = query.$and || []
+        query.$and.push(...conditions)
+    }
+
+    return query
+}
+
+function buildFieldCondition(path, operator, value, value2) {
+    switch (operator) {
+        case 'equals': return { [path]: value }
+        case 'not_equals': return { [path]: { $ne: value } }
+        case 'contains': return { [path]: { $regex: value, $options: 'i' } }
+        case 'not_contains': return { [path]: { $not: { $regex: value, $options: 'i' } } }
+        case 'starts_with': return { [path]: { $regex: '^' + value, $options: 'i' } }
+        case 'ends_with': return { [path]: { $regex: value + '$', $options: 'i' } }
+        case 'gt': return { [path]: { $gt: isNaN(value) ? value : parseFloat(value) } }
+        case 'gte': return { [path]: { $gte: isNaN(value) ? value : parseFloat(value) } }
+        case 'lt': return { [path]: { $lt: isNaN(value) ? value : parseFloat(value) } }
+        case 'lte': return { [path]: { $lte: isNaN(value) ? value : parseFloat(value) } }
+        case 'between': return { [path]: { $gte: isNaN(value) ? value : parseFloat(value), $lte: isNaN(value2) ? value2 : parseFloat(value2) } }
+        case 'is_empty': return { $or: [{ [path]: { $exists: false } }, { [path]: null }, { [path]: '' }] }
+        case 'is_not_empty': return { [path]: { $exists: true, $nin: [null, ''] } }
+        default: return null
+    }
+}
+
+function buildCustomFieldCondition(operator, value, value2) {
+    switch (operator) {
+        case 'equals': return { value: value }
+        case 'not_equals': return { value: { $ne: value } }
+        case 'contains': return { value: { $regex: value, $options: 'i' } }
+        case 'not_contains': return { value: { $not: { $regex: value, $options: 'i' } } }
+        case 'starts_with': return { value: { $regex: '^' + value, $options: 'i' } }
+        case 'ends_with': return { value: { $regex: value + '$', $options: 'i' } }
+        case 'gt': return { value: { $gt: isNaN(value) ? value : parseFloat(value) } }
+        case 'gte': return { value: { $gte: isNaN(value) ? value : parseFloat(value) } }
+        case 'lt': return { value: { $lt: isNaN(value) ? value : parseFloat(value) } }
+        case 'lte': return { value: { $lte: isNaN(value) ? value : parseFloat(value) } }
+        case 'between': return { value: { $gte: isNaN(value) ? value : parseFloat(value), $lte: isNaN(value2) ? value2 : parseFloat(value2) } }
+        case 'is_empty': return { $or: [{ value: { $exists: false } }, { value: null }, { value: '' }] }
+        case 'is_not_empty': return { value: { $exists: true, $nin: [null, ''] } }
+        default: return null
+    }
+}
+
+/**
+ * GET /account/:account_number/api/widget/entity-fields/:entityId
+ * Returns all filterable fields for a given entity (system fields + custom fields + classifications)
+ * Used by the advanced filter builder in widget config modals
+ */
+router.get('/api/widget/entity-fields/:entityId', async (req, res) => {
+    try {
+        await tenantCollection(req, "Classification")
+        await tenantCollection(req, "FieldTemplate")
+        const Entity = await tenantCollection(req, "Entity")
+        const entity = await Entity.findById(req.params.entityId)
+            .populate('classifications')
+            .populate({ path: 'customFields', select: 'name label type inputType options type_config ui' })
+            .lean()
+
+        if (!entity) return res.status(404).json({ error: 'Entity not found' })
+
+        const fields = []
+
+        // System fields
+        fields.push(
+            { _id: 'createdAt', label: 'Date de création', type: 'date', category: 'system' },
+            { _id: 'updatedAt', label: 'Date de modification', type: 'date', category: 'system' },
+            { _id: 'title', label: 'Titre', type: 'text', category: 'system' },
+            { _id: 'computedTitle', label: 'Titre calculé', type: 'text', category: 'system' }
+        )
+
+            // Custom fields
+            ; (entity.customFields || []).filter(cf => cf && typeof cf === 'object').forEach(cf => {
+                fields.push({
+                    _id: cf._id.toString(),
+                    label: cf.label || cf.name || '',
+                    type: cf.type || cf.inputType || 'text',
+                    category: 'custom',
+                    options: cf.options || []
+                })
+            })
+
+            // Classifications
+            ; (entity.classifications || []).filter(c => c && typeof c === 'object').forEach(c => {
+                fields.push({
+                    _id: 'classif:' + c._id.toString(),
+                    label: c.name || '',
+                    type: 'classification',
+                    category: 'classification',
+                    options: (c.options || []).map(o => ({
+                        _id: (o._id || '').toString(),
+                        label: o.label || o.name || '',
+                        color: o.color || ''
+                    }))
+                })
+            })
+
+        res.json({ fields })
+    } catch (error) {
+        console.error('[API] Entity fields error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
 
 module.exports = router
 

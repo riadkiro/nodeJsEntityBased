@@ -891,13 +891,14 @@
                                                                             </div>
                                                                         </div>
                                                                     </template>
-                                                                    <!-- Timeline Widget (LIVE) -->
+                                                                    <!-- Timeline Widget (LIVE — Vristo Activity Log style) -->
                                                                     <template x-if="block && block.type === 'timeline'">
                                                                         <div style="height: 100%; border: none; border-radius: 12px;"
                                                                              x-data="{
                                                                                  tlRecords: [], tlAllRecords: [], tlLoading: true, tlError: '',
                                                                                  _tlPeriod: 'all',
                                                                                  _tlSort: (block.config||{}).sortOrder || 'desc',
+                                                                                 _tlColors: ['#805dca','#00ab55','#4361ee','#e7515a','#e2a03f','#2196f3','#00bcd4','#1b2e4b'],
                                                                                  async fetchTimeline() {
                                                                                      this.tlLoading = true;
                                                                                      try {
@@ -937,11 +938,10 @@
                                                                                  }
                                                                              }"
                                                                              x-init="fetchTimeline()">
-                                                                            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
-                                                                                <iconify-icon icon="solar:clock-circle-bold-duotone" width="14" style="color: #805dca;"></iconify-icon>
-                                                                                <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Timeline'"></span>
-
-                                                                                 <div style="display: flex; align-items: center; gap: 2px; margin-left: auto; background: #f3f4f6; border-radius: 6px; padding: 2px;">
+                                                                            <!-- Header bar (Vristo panel style) -->
+                                                                            <div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #e0e6ed;">
+                                                                                <span style="font-size: 15px; font-weight: 600; color: #111827; flex: 1;" x-text="block.title || 'Activity Log'"></span>
+                                                                                 <div style="display: flex; align-items: center; gap: 2px; background: #f3f4f6; border-radius: 6px; padding: 2px;">
                                                                                      <template x-for="pr in [{v:'all',l:'Tout'},{v:'1m',l:'1M'},{v:'3m',l:'3M'},{v:'6m',l:'6M'},{v:'1y',l:'1A'}]" :key="pr.v">
                                                                                          <button type="button" 
                                                                                                  @click="_tlPeriod = pr.v; applyFilters()"
@@ -951,49 +951,53 @@
                                                                                  </div>
                                                                                  <button type="button" @click="_tlSort = _tlSort === 'desc' ? 'asc' : 'desc'; fetchTimeline()"
                                                                                          :title="_tlSort === 'desc' ? 'Plus récent d\'abord' : 'Plus ancien d\'abord'"
-                                                                                         style="padding: 3px; border-radius: 4px; border: none; background: transparent; cursor: pointer; color: #9ca3af; transition: all 0.15s; display: flex; align-items: center;"
+                                                                                         style="width: 28px; height: 28px; border-radius: 6px; border: none; background: transparent; cursor: pointer; color: #9ca3af; transition: all 0.15s; display: flex; align-items: center; justify-content: center;"
                                                                                          onmouseover="this.style.color='#4361ee';this.style.background='rgba(67,97,238,0.06)'" onmouseout="this.style.color='#9ca3af';this.style.background='transparent'">
-                                                                                     <iconify-icon :icon="_tlSort === 'desc' ? 'solar:sort-from-top-to-bottom-bold' : 'solar:sort-from-bottom-to-top-bold'" width="14"></iconify-icon>
+                                                                                     <iconify-icon :icon="_tlSort === 'desc' ? 'solar:sort-from-top-to-bottom-bold' : 'solar:sort-from-bottom-to-top-bold'" width="16"></iconify-icon>
                                                                                  </button>
-                                                                                <span style="font-size: 10px; background: rgba(128,93,202,0.1); color: #805dca; padding: 1px 6px; border-radius: 9999px; font-weight: 700; margin-left: 4px;"
+                                                                                <span style="font-size: 10px; background: rgba(128,93,202,0.1); color: #805dca; padding: 2px 8px; border-radius: 9999px; font-weight: 700;"
                                                                                       x-text="tlRecords.length"></span>
                                                                             </div>
                                                                             <!-- Loading -->
                                                                             <template x-if="tlLoading">
-                                                                                <div style="padding: 24px; text-align: center; color: #9ca3af;">
-                                                                                    <div style="width: 20px; height: 20px; border: 2px solid #e5e7eb; border-top-color: #805dca; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
-                                                                                    <div style="font-size: 11px; margin-top: 8px;">Chargement...</div>
+                                                                                <div style="padding: 32px; text-align: center; color: #9ca3af;">
+                                                                                    <div style="width: 24px; height: 24px; border: 2.5px solid #e5e7eb; border-top-color: #805dca; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                                                                                    <div style="font-size: 12px; margin-top: 10px;">Chargement...</div>
                                                                                 </div>
                                                                             </template>
                                                                             <!-- Empty state -->
                                                                             <template x-if="!tlLoading && tlRecords.length === 0">
-                                                                                <div style="padding: 24px; text-align: center; color: #9ca3af; font-size: 12px;">
-                                                                                    <iconify-icon icon="solar:clock-circle-bold-duotone" width="32" style="opacity: 0.3;"></iconify-icon>
-                                                                                    <div style="margin-top: 4px;">Aucun événement</div>
+                                                                                <div style="padding: 32px; text-align: center; color: #9ca3af; font-size: 13px;">
+                                                                                    <iconify-icon icon="solar:clock-circle-bold-duotone" width="40" style="opacity: 0.25; display: block; margin: 0 auto 8px auto;"></iconify-icon>
+                                                                                    <div>Aucun événement</div>
                                                                                 </div>
                                                                             </template>
-                                                                            <!-- Records timeline -->
+                                                                            <!-- Records timeline (Vristo Activity Log style) -->
                                                                             <template x-if="!tlLoading && tlRecords.length > 0">
-                                                                                <div style="padding: 12px; max-height: 400px; overflow-y: auto;">
-                                                                                    <div style="position: relative; padding-left: 20px;">
-                                                                                        <!-- vertical line -->
-                                                                                        <div style="position: absolute; left: 5px; top: 8px; bottom: 8px; width: 2px; background: linear-gradient(to bottom, #805dca, rgba(128,93,202,0.1));"></div>
+                                                                                <div style="padding: 16px 16px 8px 16px; max-height: 420px; overflow-y: auto;" class="hide-scrollbar">
+                                                                                    <div style="display: flex; flex-direction: column; gap: 20px;">
                                                                                         <template x-for="(tr, ti) in tlRecords" :key="ti">
-                                                                                            <div style="position: relative; padding-bottom: 16px; padding-left: 12px;">
-                                                                                                <!-- dot -->
-                                                                                                <div :style="'position: absolute; left: -17px; top: 4px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid ' + (tr.entityColor || '#805dca') + '; background: white; z-index: 1;'"></div>
-                                                                                                <div style="display: flex; align-items: flex-start; gap: 8px;">
-                                                                                                    <div style="flex: 1; min-width: 0;">
-                                                                                                        <a :href="'/account/<%= account_number %>/record/' + tr.entitySlug + '/' + tr._id + '/edit'"
-                                                                                                           style="font-size: 13px; font-weight: 500; color: #111827; text-decoration: none; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                                                                                                           x-text="tr.title"
-                                                                                                           @mouseover="$el.style.color='#4361ee'" @mouseout="$el.style.color='#111827'"></a>
-                                                                                                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-                                                                                                            <iconify-icon :icon="tr.entityIcon || 'solar:widget-bold-duotone'" width="12" :style="'color:' + (tr.entityColor || '#805dca')"></iconify-icon>
-                                                                                                            <span style="font-size: 11px; color: #9ca3af;" x-text="tr.entityName"></span>
-                                                                                                            <span style="font-size: 10px; color: #d1d5db;">•</span>
-                                                                                                            <span style="font-size: 11px; color: #9ca3af;" x-text="tr.date ? new Date(tr.date).toLocaleDateString('fr-FR', {day:'numeric',month:'short',year:'numeric'}) : ''"></span>
-                                                                                                        </div>
+                                                                                            <div style="display: flex; align-items: flex-start; gap: 12px; position: relative;">
+                                                                                                <!-- Colored circle icon (Vristo style) -->
+                                                                                                <div style="position: relative; flex-shrink: 0;">
+                                                                                                    <!-- Vertical line between items -->
+                                                                                                    <template x-if="ti < tlRecords.length - 1">
+                                                                                                        <div :style="'position: absolute; left: 50%; top: 36px; width: 2px; height: calc(100% + 8px); transform: translateX(-50%); background: rgba(0,0,0,0.06);'"></div>
+                                                                                                    </template>
+                                                                                                    <div :style="'width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 2px 8px ' + (tr.entityColor || _tlColors[ti % _tlColors.length]) + '40; background: ' + (tr.entityColor || _tlColors[ti % _tlColors.length]) + ';'">
+                                                                                                        <iconify-icon :icon="tr.entityIcon || 'solar:document-text-bold'" width="14" style="color: white;"></iconify-icon>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <!-- Content -->
+                                                                                                <div style="flex: 1; min-width: 0; padding-top: 2px;">
+                                                                                                    <a :href="'/account/<%= account_number %>/record/' + tr.entitySlug + '/' + tr._id + '/edit'"
+                                                                                                       style="font-size: 13px; font-weight: 600; color: #111827; text-decoration: none; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4;"
+                                                                                                       x-text="tr.title"
+                                                                                                       onmouseover="this.style.color='#4361ee'" onmouseout="this.style.color='#111827'"></a>
+                                                                                                    <div style="display: flex; align-items: center; gap: 6px; margin-top: 3px;">
+                                                                                                        <span style="font-size: 11px; color: #888e95;" x-text="tr.entityName"></span>
+                                                                                                        <span style="font-size: 9px; color: #d1d5db;">•</span>
+                                                                                                        <span style="font-size: 11px; color: #888e95;" x-text="tr.date ? new Date(tr.date).toLocaleDateString('fr-FR', {day:'numeric',month:'short',year:'numeric'}) : ''"></span>
                                                                                                     </div>
                                                                                                 </div>
                                                                                             </div>
@@ -1003,21 +1007,92 @@
                                                                             </template>
                                                                         </div>
                                                                     </template>
-                                                                    <!-- KPI Widget -->
+                                                                    <!-- KPI Widget (Vristo style with sparkline) -->
                                                                     <template x-if="block && block.type === 'kpi'">
-                                                                        <div style="height: 100%; border: none; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px;">
-                                                                            <div style="font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;" x-text="block.title || 'KPI'"></div>
-                                                                            <div style="font-size: 36px; font-weight: 800; color: var(--primary-color, #4361ee); margin: 4px 0;">0</div>
-                                                                            <div style="font-size: 12px; color: #00ab55;">↑ —</div>
+                                                                        <div style="height: 100%; border: none; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; position: relative;"
+                                                                             x-data="{
+                                                                                 kpiValue: 0, kpiLoading: true, _kpiSparkInstance: null,
+                                                                                 async fetchKpi() {
+                                                                                     this.kpiLoading = true;
+                                                                                     try {
+                                                                                         const cfg = block.config || {};
+                                                                                         if (cfg.aggregation === 'manual') {
+                                                                                             this.kpiValue = cfg.manualValue || 0;
+                                                                                         } else {
+                                                                                             const src = cfg.dataSource || 'current';
+                                                                                             let entityId = '<%= entity._id %>';
+                                                                                             if (src.startsWith('entity:')) entityId = src.split(':')[1];
+                                                                                             let url = '/account/<%= account_number %>/api/widget/chart-data?entityId=' + entityId + '&period=month&months=6';
+                                                                                             if (cfg.dateField) url += '&dateField=' + cfg.dateField;
+                                                                                             if (cfg.field && cfg.aggregation && cfg.aggregation !== 'count') url += '&yField=' + cfg.field + '&yAgg=' + cfg.aggregation;
+                                                                                             const resp = await fetch(url, { credentials: 'include' });
+                                                                                             const data = await resp.json();
+                                                                                             this.kpiValue = data.total || (data.data || []).reduce((s, v) => s + v, 0);
+                                                                                             this.renderSparkline(data.data || []);
+                                                                                         }
+                                                                                     } catch(e) { console.error('KPI error:', e); }
+                                                                                     this.kpiLoading = false;
+                                                                                 },
+                                                                                 renderSparkline(sparkData) {
+                                                                                     if (this._kpiSparkInstance) { this._kpiSparkInstance.destroy(); this._kpiSparkInstance = null; }
+                                                                                     const elId = 'ct-kpi-spark-' + block.id;
+                                                                                     this.$nextTick(() => {
+                                                                                         setTimeout(() => {
+                                                                                             const el = document.getElementById(elId);
+                                                                                             if (!el || typeof ApexCharts === 'undefined' || !sparkData.length) return;
+                                                                                             const color = (block.config || {}).color || '#4361ee';
+                                                                                             this._kpiSparkInstance = new ApexCharts(el, {
+                                                                                                 series: [{ data: sparkData }],
+                                                                                                 chart: { height: 80, type: 'area', fontFamily: 'Nunito, sans-serif', sparkline: { enabled: true } },
+                                                                                                 stroke: { curve: 'smooth', width: 2 },
+                                                                                                 colors: [color],
+                                                                                                 fill: { type: 'gradient', gradient: { type: 'vertical', shadeIntensity: 1, inverseColors: false, opacityFrom: 0.3, opacityTo: 0.05, stops: [0, 100] } },
+                                                                                                 grid: { padding: { top: 5, bottom: 0, left: 0, right: 0 } },
+                                                                                                 yaxis: { show: false },
+                                                                                                 tooltip: { x: { show: false }, y: { title: { formatter: () => '' } } }
+                                                                                             });
+                                                                                             this._kpiSparkInstance.render();
+                                                                                         }, 100);
+                                                                                     });
+                                                                                 },
+                                                                                 formatKpi(v) {
+                                                                                     const cfg = block.config || {};
+                                                                                     let str = '';
+                                                                                     if (v >= 1000000) str = (v / 1000000).toFixed(1) + 'M';
+                                                                                     else if (v >= 1000) str = (v / 1000).toFixed(1) + 'K';
+                                                                                     else str = Number.isInteger(v) ? v.toString() : v.toFixed(1);
+                                                                                     return (cfg.prefix || '') + str + (cfg.suffix || '');
+                                                                                 }
+                                                                             }"
+                                                                             x-init="fetchKpi()">
+                                                                            <!-- Top area: icon + value -->
+                                                                            <div style="display: flex; align-items: center; gap: 12px; padding: 16px 16px 8px 16px;">
+                                                                                <div :style="'width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: ' + ((block.config||{}).color || '#4361ee') + '18; color: ' + ((block.config||{}).color || '#4361ee') + ';'">
+                                                                                    <iconify-icon icon="solar:graph-up-bold-duotone" width="22"></iconify-icon>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <div style="font-size: 22px; font-weight: 700; color: #111827; line-height: 1.2;" x-text="kpiLoading ? '...' : formatKpi(kpiValue)"></div>
+                                                                                    <div style="font-size: 12px; color: #888e95; font-weight: 500; margin-top: 1px;" x-text="block.title || 'KPI'"></div>
+                                                                                </div>
+                                                                            </div>
+                                                                            <!-- Sparkline area (Vristo Followers style) -->
+                                                                            <div style="flex: 1; position: relative; min-height: 60px;">
+                                                                                <div :id="'ct-kpi-spark-' + block.id" style="position: absolute; bottom: 0; left: 0; width: 100%;"></div>
+                                                                            </div>
                                                                         </div>
                                                                     </template>
-                                                                    <!-- Chart Widget (LIVE) -->
+                                                                    <!-- Chart Widget (LIVE — with reactivity fix & Vristo style) -->
                                                                     <template x-if="block && block.type === 'chart'">
                                                                         <div style="height: 100%; border: none; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;"
                                                                              x-data="{
                                                                                  chartLoading: true, chartError: '', chartTotal: 0,
                                                                                  _chartInstance: null,
                                                                                  _chartPeriod: (block.config||{}).defaultRange || '6m',
+                                                                                 _lastConfigHash: '',
+                                                                                 _getConfigHash() {
+                                                                                     const cfg = block.config || {};
+                                                                                     return JSON.stringify([cfg.chartType, cfg.dataSource, cfg.period, cfg.dateField, cfg.yField, cfg.yAgg, cfg.colorScheme, cfg.defaultRange, cfg.relationFilterKey, cfg.relationFilterValue, cfg.classificationFilterId, cfg.classificationFilterOption]);
+                                                                                 },
                                                                                  async fetchChart() {
                                                                                      this.chartLoading = true;
                                                                                      try {
@@ -1038,48 +1113,52 @@
                                                                                          if (this._chartInstance) { this._chartInstance.destroy(); this._chartInstance = null; }
                                                                                          const elId = 'ct-chart-' + block.id;
                                                                                          await this.$nextTick();
-                                                                                         await new Promise(r => setTimeout(r, 120));
                                                                                          const el = document.getElementById(elId);
+                                                                                         if (el) el.innerHTML = '';
+                                                                                         await new Promise(r => setTimeout(r, 80));
                                                                                          if (el && typeof ApexCharts !== 'undefined') {
                                                                                              const chartType = cfg.chartType || 'bar';
-                                                                                             const color = data.entityColor || cfg.colorScheme || '#4361ee';
-                                                                                             const apexType = chartType==='pie'||chartType==='doughnut'||chartType==='donut'?'donut':chartType==='radar'?'radar':chartType==='area'?'area':chartType==='line'?'line':'bar';
+                                                                                             const color = cfg.colorScheme || data.entityColor || '#4361ee';
+                                                                                             const isLineOrArea = chartType==='line'||chartType==='area';
+                                                                                             const apexType = chartType==='pie'||chartType==='doughnut'||chartType==='donut'?'donut':chartType==='radar'?'radar':isLineOrArea?'area':'bar';
                                                                                              const dataLen = (data.data||[]).length;
                                                                                              const nonZeroCount = (data.data||[]).filter(v=>v>0).length;
                                                                                              const dynColWidth = dataLen<=3?'35%':dataLen<=6?'45%':dataLen<=12?'55%':'65%';
-                                                                                             const opts = apexType==='donut'?{chart:{type:'donut',height:'100%',fontFamily:'Nunito,sans-serif',animations:{enabled:true,easing:'easeinout',speed:500}},series:data.data,labels:data.labels,colors:['#4361ee','#00ab55','#e7515a','#e2a03f','#805dca','#2196f3','#00bcd4','#ff5722'],legend:{position:'bottom',fontSize:'11px',fontWeight:500},plotOptions:{pie:{donut:{size:'68%',labels:{show:true,name:{fontSize:'12px'},value:{fontSize:'20px',fontWeight:700},total:{show:true,label:'Total',fontSize:'11px',color:'#9ca3af'}}}}},stroke:{width:2,colors:['#fff']},dataLabels:{enabled:false}}:{chart:{type:apexType,height:'100%',fontFamily:'Nunito,sans-serif',toolbar:{show:false},animations:{enabled:true,easing:'easeinout',speed:500,animateGradually:{enabled:true,delay:80}}},series:[{name:data.entityName||'Records',data:data.data}],xaxis:{categories:data.labels,labels:{style:{fontSize:'10px',colors:'#9ca3af',fontWeight:500},rotate:dataLen>8?-45:0,rotateAlways:dataLen>8},axisBorder:{show:false},axisTicks:{show:false}},yaxis:{labels:{style:{fontSize:'10px',colors:'#9ca3af'},formatter:function(v){return Number.isInteger(v)?v:v.toFixed(1);}},forceNiceScale:true,min:0,tickAmount:4},colors:[color],fill:apexType==='bar'?{type:'gradient',gradient:{shade:'light',type:'vertical',shadeIntensity:0.2,gradientToColors:[color],inverseColors:false,opacityFrom:1,opacityTo:0.85,stops:[0,100]}}:apexType==='area'?{type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.45,opacityTo:0.05,stops:[0,90,100]}}:{},stroke:{curve:'smooth',width:apexType==='line'||apexType==='area'?3:0,lineCap:'round'},plotOptions:apexType==='bar'?{bar:{borderRadius:6,borderRadiusApplication:'end',columnWidth:dynColWidth}}:{},dataLabels:{enabled:nonZeroCount<=8&&apexType==='bar',style:{fontSize:'10px',fontWeight:600,colors:['#fff']},offsetY:-4,formatter:function(v){return v>0?v:'';}},grid:{borderColor:'#f1f3f5',strokeDashArray:4,padding:{left:4,right:4,top:0,bottom:0},xaxis:{lines:{show:false}},yaxis:{lines:{show:true}}},tooltip:{theme:'light',style:{fontSize:'12px'},y:{formatter:function(v){return v+' records';}},marker:{show:true}},states:{hover:{filter:{type:'darken',value:0.15}}}};
+                                                                                             const opts = apexType==='donut'?{chart:{type:'donut',height:'100%',fontFamily:'Nunito,sans-serif',animations:{enabled:true,easing:'easeinout',speed:500}},series:data.data,labels:data.labels,colors:['#4361ee','#00ab55','#e7515a','#e2a03f','#805dca','#2196f3','#00bcd4','#ff5722'],legend:{position:'bottom',fontSize:'11px',fontWeight:500},plotOptions:{pie:{donut:{size:'68%',labels:{show:true,name:{fontSize:'12px'},value:{fontSize:'20px',fontWeight:700},total:{show:true,label:'Total',fontSize:'11px',color:'#9ca3af'}}}}},stroke:{width:2,colors:['#fff']},dataLabels:{enabled:false}}:{chart:{type:apexType,height:'100%',fontFamily:'Nunito,sans-serif',toolbar:{show:false},animations:{enabled:true,easing:'easeinout',speed:500,animateGradually:{enabled:true,delay:80}}},series:[{name:data.entityName||'Records',data:data.data}],xaxis:{categories:data.labels,labels:{style:{fontSize:'10px',colors:'#9ca3af',fontWeight:500},rotate:dataLen>8?-45:0,rotateAlways:dataLen>8},axisBorder:{show:false},axisTicks:{show:false}},yaxis:{labels:{style:{fontSize:'10px',colors:'#9ca3af'},formatter:function(v){return Number.isInteger(v)?v:v.toFixed(1);}},forceNiceScale:true,min:0,tickAmount:4},colors:[color],fill:apexType==='bar'?{type:'gradient',gradient:{shade:'light',type:'vertical',shadeIntensity:0.25,gradientToColors:[color],inverseColors:false,opacityFrom:1,opacityTo:0.85,stops:[0,100]}}:apexType==='area'?{type:'gradient',gradient:{opacityFrom:0.45,opacityTo:0.05,stops:[0,90,100]}}:{},stroke:{curve:'smooth',width:apexType==='area'?2.5:0,lineCap:'round'},plotOptions:apexType==='bar'?{bar:{borderRadius:8,borderRadiusApplication:'end',columnWidth:dynColWidth}}:{},dataLabels:{enabled:nonZeroCount<=8&&apexType==='bar',style:{fontSize:'10px',fontWeight:600,colors:['#fff']},offsetY:-4,formatter:function(v){return v>0?v:'';}},grid:{borderColor:'#e0e6ed',strokeDashArray:5,padding:{left:4,right:4,top:-8,bottom:0},xaxis:{lines:{show:false}},yaxis:{lines:{show:true}}},tooltip:{theme:'light',style:{fontSize:'12px'},y:{formatter:function(v){return v+' records';}},marker:{show:true}},states:{hover:{filter:{type:'darken',value:0.12}}}};
                                                                                              this._chartInstance = new ApexCharts(el, opts);
                                                                                              this._chartInstance.render();
                                                                                          }
+                                                                                         this._lastConfigHash = this._getConfigHash();
                                                                                      } catch(e) { this.chartError = e.message; console.error('Chart error:', e); }
                                                                                      this.chartLoading = false;
                                                                                  }
                                                                              }"
-                                                                             x-init="fetchChart()">
-                                                                            <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
-                                                                                <iconify-icon icon="solar:chart-bold-duotone" width="14" style="color: #e7515a;"></iconify-icon>
-                                                                                <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Graphique'"></span>
+                                                                             x-init="fetchChart()"
+                                                                             x-effect="const h = _getConfigHash(); if (_lastConfigHash && h !== _lastConfigHash) { _chartPeriod = (block.config||{}).defaultRange || _chartPeriod; fetchChart(); }">
+                                                                            <!-- Header (Vristo panel style) -->
+                                                                            <div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #e0e6ed;">
+                                                                                <span style="font-size: 15px; font-weight: 600; color: #111827;" x-text="block.title || 'Graphique'"></span>
 
                                                                                  <div style="display: flex; align-items: center; gap: 2px; margin-left: auto; background: #f3f4f6; border-radius: 6px; padding: 2px;">
                                                                                      <template x-for="pr in [{v:'1m',l:'1M'},{v:'3m',l:'3M'},{v:'6m',l:'6M'},{v:'1y',l:'1A'},{v:'all',l:'Tout'}]" :key="pr.v">
                                                                                          <button type="button" 
-                                                                                                 @click="_chartPeriod = pr.v; fetchChart()"
-                                                                                                 :style="'padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; line-height: 1.2;' + (_chartPeriod === pr.v ? 'background: white; color: #374151; box-shadow: 0 1px 2px rgba(0,0,0,0.08);' : 'background: transparent; color: #9ca3af;')"
+                                                                                                 @click="_chartPeriod = pr.v; block.config = block.config || {}; block.config.defaultRange = pr.v; ctSaveLayout(activeTab); fetchChart()"
+                                                                                                 :style="'padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; line-height: 1.2;' + (_chartPeriod === pr.v ? 'background: white; color: #374151; box-shadow: 0 1px 3px rgba(0,0,0,0.1);' : 'background: transparent; color: #9ca3af;')"
                                                                                                  x-text="pr.l"></button>
                                                                                      </template>
                                                                                  </div>
-                                                                                <span style="font-size: 10px; background: rgba(231,81,90,0.1); color: #e7515a; padding: 1px 6px; border-radius: 9999px; font-weight: 700; margin-left: auto;"
+                                                                                <span style="font-size: 11px; background: rgba(67,97,238,0.1); color: #4361ee; padding: 2px 10px; border-radius: 9999px; font-weight: 700; margin-left: 4px;"
                                                                                       x-show="chartTotal > 0" x-text="chartTotal + ' total'"></span>
                                                                             </div>
                                                                             <!-- Loading -->
                                                                             <template x-if="chartLoading">
-                                                                                <div style="padding: 40px; text-align: center; color: #9ca3af;">
-                                                                                    <div style="width: 20px; height: 20px; border: 2px solid #e5e7eb; border-top-color: #e7515a; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
-                                                                                    <div style="font-size: 11px; margin-top: 8px;">Chargement du graphique...</div>
+                                                                                <div style="padding: 48px; text-align: center; color: #9ca3af;">
+                                                                                    <div style="width: 24px; height: 24px; border: 2.5px solid #e5e7eb; border-top-color: #4361ee; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                                                                                    <div style="font-size: 12px; margin-top: 10px;">Chargement du graphique...</div>
                                                                                 </div>
                                                                             </template>
                                                                             <!-- Chart container -->
-                                                                            <div :id="'ct-chart-' + block.id" style="padding: 4px 4px 0 4px; flex: 1; min-height: 200px;"></div>
+                                                                            <div :id="'ct-chart-' + block.id" style="padding: 8px 8px 12px 8px; flex: 1; min-height: 220px; overflow: hidden;"></div>
                                                                         </div>
                                                                     </template>
                                                                     <!-- Fields Widget -->

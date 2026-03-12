@@ -1756,6 +1756,7 @@ router.get('/api/widget/chart-data', async (req, res) => {
             advancedFilters: afRaw, advancedFiltersLogic = 'and' } = req.query
 
         if (!entityId) return res.status(400).json({ error: 'entityId is required' })
+        console.log('[CHART-DEBUG] period=', period, 'months=', months, 'startDate will be', parseInt(months), 'months ago')
 
         // Parse advanced filters
         let advancedFilters = []

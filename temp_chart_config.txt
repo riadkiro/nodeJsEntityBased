@@ -1,0 +1,161 @@
+﻿L1341: <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Titre du widget</label>
+L1342: <input type="text" :value="cfgBlock.title || ''"
+L1343: @input="cfgBlock.title = $el.value"
+L1344: style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.15s; box-sizing: border-box;"
+L1345: onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
+L1346: placeholder="Nom du widget...">
+L1347: </div>
+L1348: 
+L1349: <!-- ══════════ NOTES ══════════ -->
+L1350: <template x-if="cfgBlock.type === 'notes'">
+L1351: <div style="padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #f3f4f6;">
+L1352: <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+L1353: <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #4361ee;"></iconify-icon>
+L1354: <span style="font-size: 11px; font-weight: 600; color: #374151;">Notes liées au record</span>
+L1355: </div>
+L1356: <p style="font-size: 11px; color: #6b7280; margin: 0; line-height: 1.4;">Le contenu des notes est sauvegardé directement dans ce record. Il est unique à cet enregistrement.</p>
+L1357: </div>
+L1358: </template>
+L1359: 
+L1360: <!-- ══════════ TASKS ══════════ -->
+L1361: <template x-if="cfgBlock.type === 'tasks'">
+L1362: <div style="padding: 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #dcfce7;">
+L1363: <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+L1364: <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #00ab55;"></iconify-icon>
+L1365: <span style="font-size: 11px; font-weight: 600; color: #374151;">Tâches liées au record</span>
+L1366: </div>
+L1367: <p style="font-size: 11px; color: #6b7280; margin: 0; line-height: 1.4;">Les tâches sont liées à cet enregistrement spécifique. Elles sont visibles uniquement dans ce record.</p>
+L1368: </div>
+L1369: </template>
+L1370: 
+L1371: <!-- ══════════ KPI ══════════ -->
+L1372: <template x-if="cfgBlock.type === 'kpi'">
+L1373: <div style="display: flex; flex-direction: column; gap: 14px;"
+L1374: x-init="if(!cfgBlock.config) cfgBlock.config = {}">
+L1375: <!-- Data source -->
+L1376: <div>
+L1377: <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Source de données</label>
+L1378: <select :value="cfgBlock.config.dataSource || 'current'"
+L1379: @change="cfgBlock.config.dataSource = $el.value"
+L1380: style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+L1381: <option value="current">📂 Entity — <%= entity.name || '' %></option>
+L1382: <% (entity.relations || []).forEach(function(r) { var tName = (r.targetEntity && r.targetEntity.name) || r.label || ''; %>
+L1383: <option value="rel:<%= r.key || '' %>">🔗 Relation — <%= tName %></option>
+L1384: <% }); %>
+L1385: <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema; }).forEach(function(gs) { %>
+L1386: <option value="grid:<%= (gs.schemaId || gs.schema._id || '').toString() %>">📊 Tableau — <%= gs.schema.name || '' %></option>
+L1387: <% }); %>
+L1388: </select>
+L1389: </div>
+L1390: <!-- Aggregation -->
+L1391: <div>
+L1392: <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Type d'agrégation</label>
+L1393: <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+L1394: <template x-for="agg in [{v:'count',l:'Nombre'},{v:'sum',l:'Somme'},{v:'avg',l:'Moyenne'},{v:'min',l:'Minimum'},{v:'max',l:'Maximum'},{v:'manual',l:'Manuel'}]" :key="agg.v">
+L1395: <button type="button" @click="cfgBlock.config.aggregation = agg.v"
+L1396: :style="'padding: 6px; border-radius: 6px; font-size: 11px; font-weight: 500; cursor: pointer; text-align: center; transition: all 0.15s;' + ((cfgBlock.config.aggregation || 'count')
+L1397: x-text="agg.l"></button>
+L1398: </template>
+L1399: </div>
+L1400: </div>
+L1401: <!-- Field (for sum/avg/min/max) -->
+L1402: <template x-if="cfgBlock.config.aggregation && cfgBlock.config.aggregation !== 'count' && cfgBlock.config.aggregation !== 'manual'">
+L1403: <div>
+L1404: <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Champ à agréger</label>
+L1405: <select :value="cfgBlock.config.field || ''"
+L1406: @change="cfgBlock.config.field = $el.value"
+L1407: style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+L1408: <option value="">— Choisir un champ —</option>
+L1409: <optgroup label="Champs entity">
+L1410: <% (entity.customFields || []).filter(function(f) { return f && (['number','currency','decimal'].indexOf(f.type) > -1 || f.inputType === 'number'); }).forEach(function(f) { %>
+L1411: <option value="<%= (f._id || '').toString() %>"><%= f.label || f.name || '' %></option>
+L1412: <% }); %>
+L1413: </optgroup>
+L1414: <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema && gs.schema.columns; }).forEach(function(gs) { %>
+L1415: <optgroup label="📊 <%= gs.schema.name || '' %>">
+L1416: <% gs.schema.columns.filter(function(c) { return c && ['number','money','formula'].indexOf(c.type) > -1; }).forEach(function(c) { %>
+L1417: <option value="grid:<%= (gs.schemaId || gs.schema._id || '').toString() %>:<%= c.key %>"><%= c.label || c.key %><%= c.config && c.config.unit ? ' (' + c.config.unit + ')' : '' %></option>
+L1418: <% }); %>
+L1419: </optgroup>
+L1420: <% }); %>
+L1421: </select>
+L1422: </div>
+L1423: </template>
+L1424: <!-- Manual value -->
+L1425: <template x-if="cfgBlock.config.aggregation === 'manual'">
+L1426: <div>
+L1427: <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Valeur manuelle</label>
+L1428: <input type="number" :value="cfgBlock.config.manualValue || 0"
+L1429: @input="cfgBlock.config.manualValue = parseFloat($el.value) || 0"
+L1430: style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; box-sizing: border-box;">
+L1431: </div>
+L1432: </template>
+L1433: <!-- Prefix / Suffix -->
+L1434: <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+L1435: <div>
+L1436: <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Préfixe</label>
+L1437: <input type="text" :value="cfgBlock.config.prefix || ''"
+L1438: @input="cfgBlock.config.prefix = $el.value"
+L1439: placeholder="ex: $, €"
+L1440: style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; box-sizing: border-box;">
+L1441: </div>
+L1442: <div>
+L1443: <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Suffixe</label>
+L1444: <input type="text" :value="cfgBlock.config.suffix || ''"
+L1445: @input="cfgBlock.config.suffix = $el.value"
+L1446: placeholder="ex: %, pts"
+L1447: style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; box-sizing: border-box;">
+L1448: </div>
+L1449: </div>
+L1450: <!-- Color -->
+L1451: <div>
+L1452: <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Couleur de l'indicateur</label>
+L1453: <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+L1454: <template x-for="c in ['#4361ee','#00ab55','#e7515a','#e2a03f','#805dca','#2196f3','#1b2e4b']" :key="c">
+L1455: <button type="button" @click="cfgBlock.config.color = c"
+L1456: :style="'width: 28px; height: 28px; border-radius: 8px; border: 2px solid ' + ((cfgBlock.config.color || '#4361ee') === c ? c : 'transparent') + '; background: ' + c + '; cursor: poi
+L1457: </template>
+L1458: </div>
+L1459: </div>
+L1460: </div>
+L1461: </template>
+L1462: 
+L1463: <!-- ══════════ CHART ══════════ -->
+L1464: <template x-if="cfgBlock.type === 'chart'">
+L1465: <div style="display: flex; flex-direction: column; gap: 14px;"
+L1466: x-data="{ 
+L1467: _entities: [], _selectedEntity: null, _relRecords: [], _relSearching: false, _relSearchQuery: '',
+L1468: async loadEntities() {
+L1469: try {
+L1470: const resp = await fetch('/account/<%= account_number %>/api/widget/entities', { credentials: 'include' });
+L1471: const d = await resp.json();
+L1472: this._entities = d.entities || [];
+L1473: this.updateSelectedEntity();
+L1474: } catch(e) { console.error(e); }
+L1475: },
+L1476: updateSelectedEntity() {
+L1477: const src = this.cfgBlock.config.dataSource || 'entity:<%= entity._id %>';
+L1478: const entityId = src.startsWith('entity:') ? src.split(':')[1] : '<%= entity._id %>';
+L1479: this._selectedEntity = this._entities.find(e => e._id === entityId) || null;
+L1480: },
+L1481: async searchRelRecords(relKey) {
+L1482: if (!this._selectedEntity || !relKey) return;
+L1483: const rel = this._selectedEntity.relations.find(r => r.key === relKey);
+L1484: if (!rel || !rel.targetEntity) return;
+L1485: this._relSearching = true;
+L1486: try {
+L1487: const resp = await fetch('/account/<%= account_number %>/record/api/search?entityId=' + rel.targetEntity._id + '&q=' + encodeURIComponent(this._relSearchQuery || '') + '&limit=20', { creden
+L1488: const d = await resp.json();
+L1489: this._relRecords = (d.data || d.records || []).map(r => ({ _id: r.id || r._id, title: r.label || r.computedTitle || r.title || 'Sans titre' }));
+L1490: } catch(e) { this._relRecords = []; }
+L1491: this._relSearching = false;
+L1492: }
+L1493: }"
+L1494: x-init="if(!cfgBlock.config) cfgBlock.config = {}; loadEntities()">
+L1495: <!-- Chart type -->
+L1496: <div>
+L1497: <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Type de graphique</label>
+L1498: <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+L1499: <template x-for="ct in [{v:'bar',l:'Barres',i:'solar:chart-bold-duotone'},{v:'line',l:'Lignes',i:'solar:graph-up-bold-duotone'},{v:'pie',l:'Camembert',i:'solar:pie-chart-bold-duotone'},{v:'dough
+L1500: <button type="button" @click="cfgBlock.config.chartType = ct.v"
+L1501: :style="'display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 500; transition: 

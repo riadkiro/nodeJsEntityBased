@@ -1100,8 +1100,11 @@
                                                                                          const src = cfg.dataSource || 'entity:<%= entity._id %>';
                                                                                          const srcId = src.startsWith('entity:') ? src.split(':')[1] : '<%= entity._id %>';
                                                                                          const _pMap = {'1m':1,'3m':3,'6m':6,'1y':12,'all':60};
+                                                                                         const _monthsVal = _pMap[this._chartPeriod] || 6;
+                                                                                         const _autoGranularity = _monthsVal <= 3 ? 'day' : _monthsVal <= 12 ? 'month' : 'month';
+                                                                                         const _period = cfg.period === 'auto' || !cfg.period ? _autoGranularity : (_monthsVal <= 1 && cfg.period === 'month' ? 'day' : _monthsVal >= 6 && cfg.period === 'day' ? 'month' : cfg.period);
                                                                                          let url = '/account/<%= account_number %>/api/widget/chart-data?entityId=' + srcId;
-                                                                                         url += '&period=' + (cfg.period || 'month') + '&months=' + (_pMap[this._chartPeriod] || 6);
+                                                                                         url += '&period=' + _period + '&months=' + _monthsVal;
                                                                                          if (cfg.dateField) url += '&dateField=' + cfg.dateField;
                                                                                          if (cfg.yField && cfg.yField !== 'count') url += '&yField=' + cfg.yField + '&yAgg=' + (cfg.yAgg || 'sum');
                                                                                          if (cfg.relationFilterKey && cfg.relationFilterValue) url += '&relationFilter=' + encodeURIComponent(JSON.stringify({key: cfg.relationFilterKey, value: cfg.relationFilterValue}));
@@ -1124,7 +1127,7 @@
                                                                                              const dataLen = (data.data||[]).length;
                                                                                              const nonZeroCount = (data.data||[]).filter(v=>v>0).length;
                                                                                              const dynColWidth = dataLen<=3?'35%':dataLen<=6?'45%':dataLen<=12?'55%':'65%';
-                                                                                             const opts = apexType==='donut'?{chart:{type:'donut',height:'100%',fontFamily:'Nunito,sans-serif',animations:{enabled:true,easing:'easeinout',speed:500}},series:data.data,labels:data.labels,colors:['#4361ee','#00ab55','#e7515a','#e2a03f','#805dca','#2196f3','#00bcd4','#ff5722'],legend:{position:'bottom',fontSize:'11px',fontWeight:500},plotOptions:{pie:{donut:{size:'68%',labels:{show:true,name:{fontSize:'12px'},value:{fontSize:'20px',fontWeight:700},total:{show:true,label:'Total',fontSize:'11px',color:'#9ca3af'}}}}},stroke:{width:2,colors:['#fff']},dataLabels:{enabled:false}}:{chart:{type:apexType,height:'100%',fontFamily:'Nunito,sans-serif',toolbar:{show:false},animations:{enabled:true,easing:'easeinout',speed:500,animateGradually:{enabled:true,delay:80}}},series:[{name:data.entityName||'Records',data:data.data}],xaxis:{categories:data.labels,labels:{style:{fontSize:'10px',colors:'#9ca3af',fontWeight:500},rotate:dataLen>8?-45:0,rotateAlways:dataLen>8},axisBorder:{show:false},axisTicks:{show:false}},yaxis:{labels:{style:{fontSize:'10px',colors:'#9ca3af'},formatter:function(v){return Number.isInteger(v)?v:v.toFixed(1);}},forceNiceScale:true,min:0,tickAmount:4},colors:[color],fill:apexType==='bar'?{type:'gradient',gradient:{shade:'light',type:'vertical',shadeIntensity:0.25,gradientToColors:[color],inverseColors:false,opacityFrom:1,opacityTo:0.85,stops:[0,100]}}:apexType==='area'?{type:'gradient',gradient:{opacityFrom:0.45,opacityTo:0.05,stops:[0,90,100]}}:{},stroke:{curve:'smooth',width:apexType==='area'?2.5:0,lineCap:'round'},plotOptions:apexType==='bar'?{bar:{borderRadius:8,borderRadiusApplication:'end',columnWidth:dynColWidth}}:{},dataLabels:{enabled:nonZeroCount<=8&&apexType==='bar',style:{fontSize:'10px',fontWeight:600,colors:['#fff']},offsetY:-4,formatter:function(v){return v>0?v:'';}},grid:{borderColor:'#e0e6ed',strokeDashArray:5,padding:{left:4,right:4,top:-8,bottom:0},xaxis:{lines:{show:false}},yaxis:{lines:{show:true}}},tooltip:{theme:'light',style:{fontSize:'12px'},y:{formatter:function(v){return v+' records';}},marker:{show:true}},states:{hover:{filter:{type:'darken',value:0.12}}}};
+                                                                                             const opts = apexType==='donut'?{chart:{type:'donut',height:'100%',fontFamily:'Nunito,sans-serif',animations:{enabled:true,easing:'easeinout',speed:500}},series:data.data,labels:data.labels,colors:['#4361ee','#00ab55','#e7515a','#e2a03f','#805dca','#2196f3','#00bcd4','#ff5722'],legend:{position:'bottom',fontSize:'11px',fontWeight:500},plotOptions:{pie:{donut:{size:'68%',labels:{show:true,name:{fontSize:'12px'},value:{fontSize:'20px',fontWeight:700},total:{show:true,label:'Total',fontSize:'11px',color:'#9ca3af'}}}}},stroke:{width:2,colors:['#fff']},dataLabels:{enabled:false}}:{chart:{type:apexType,height:'100%',fontFamily:'Nunito,sans-serif',toolbar:{show:false},dropShadow:{enabled:apexType==='area',blur:3,color:color,opacity:0.4},animations:{enabled:true,easing:'easeinout',speed:500,animateGradually:{enabled:true,delay:80}}},series:[{name:data.entityName||'Records',data:data.data}],xaxis:{categories:data.labels,labels:{style:{fontSize:'10px',colors:'#9ca3af',fontWeight:500},rotate:dataLen>8?-45:0,rotateAlways:dataLen>8},axisBorder:{show:false},axisTicks:{show:false}},yaxis:{labels:{style:{fontSize:'10px',colors:'#9ca3af'},formatter:function(v){return Number.isInteger(v)?v:v.toFixed(1);}},forceNiceScale:true,min:0,tickAmount:4},colors:[color],fill:apexType==='bar'?{type:'gradient',gradient:{shade:'light',type:'vertical',shadeIntensity:0.25,gradientToColors:[color],inverseColors:false,opacityFrom:1,opacityTo:0.85,stops:[0,100]}}:apexType==='area'?{type:'gradient',gradient:{opacityFrom:0.45,opacityTo:0.05,stops:[0,90,100]}}:{},stroke:{curve:'smooth',width:apexType==='area'?2:0,lineCap:'round'},plotOptions:apexType==='bar'?{bar:{borderRadius:8,borderRadiusApplication:'end',columnWidth:dynColWidth}}:{},dataLabels:{enabled:nonZeroCount<=8&&apexType==='bar',style:{fontSize:'10px',fontWeight:600,colors:['#fff']},offsetY:-4,formatter:function(v){return v>0?v:'';}},grid:{borderColor:'#e0e6ed',strokeDashArray:5,padding:{left:4,right:4,top:-8,bottom:0},xaxis:{lines:{show:false}},yaxis:{lines:{show:true}}},tooltip:{theme:'light',style:{fontSize:'12px'},y:{formatter:function(v){return v+' records';}},marker:{show:true}},states:{hover:{filter:{type:'darken',value:0.12}}}};
                                                                                              this._chartInstance = new ApexCharts(el, opts);
                                                                                              this._chartInstance.render();
                                                                                          }
@@ -2102,6 +2105,131 @@
                                             </div>
                                         </template>
 
+                                        <!-- ══════════ LINES-HISTORY ══════════ -->
+                                        <template x-if="cfgBlock.type === 'lines-history'">
+                                            <div style="display: flex; flex-direction: column; gap: 14px;"
+                                                 x-data="{
+                                                     _availableSchemas: [],
+                                                     _loading: true,
+                                                     async loadSchemas() {
+                                                         this._loading = true;
+                                                         try {
+                                                             const resp = await fetch('/account/<%= account_number %>/api/widget/available-schemas?entityId=<%= entity._id %>', { credentials: 'include' });
+                                                             const d = await resp.json();
+                                                             this._availableSchemas = d.schemas || [];
+                                                         } catch(e) { console.error(e); }
+                                                         this._loading = false;
+                                                     },
+                                                     getSelected() {
+                                                         if (!cfgBlock.config || !cfgBlock.config.schemaId) return null;
+                                                         return this._availableSchemas.find(s => s.schemaId === cfgBlock.config.schemaId) || null;
+                                                     },
+                                                     selectSchema(schema) {
+                                                         if (!cfgBlock.config) cfgBlock.config = {};
+                                                         cfgBlock.config.schemaId = schema.schemaId;
+                                                         cfgBlock.config.schemaName = schema.schemaName;
+                                                         cfgBlock.config.source = schema.source;
+                                                         cfgBlock.config.relationPath = schema.path || [];
+                                                         cfgBlock.config.entityName = schema.entityName;
+                                                         cfgBlock.config.relationLabel = schema.relationLabel || '';
+                                                         cfgBlock.config.columns = schema.columns || [];
+                                                     }
+                                                 }"
+                                                 x-init="if(!cfgBlock.config) cfgBlock.config = {}; loadSchemas()">
+
+                                                <!-- Schema picker -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Tableau dynamique à afficher</label>
+                                                    <template x-if="_loading">
+                                                        <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 12px;">
+                                                            <iconify-icon icon="svg-spinners:ring-resize" width="18"></iconify-icon>
+                                                            Chargement des tableaux...
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="!_loading && _availableSchemas.length === 0">
+                                                        <div style="padding: 12px; background: #fef3c7; border-radius: 8px; border: 1px solid #fde68a;">
+                                                            <p style="font-size: 11px; color: #92400e; margin: 0;">Aucun tableau dynamique trouvé pour cette entité ou ses relations.</p>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="!_loading && _availableSchemas.length > 0">
+                                                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                                                            <template x-for="schema in _availableSchemas" :key="schema.schemaId + (schema.relationLabel || '')">
+                                                                <button type="button" @click="selectSchema(schema)"
+                                                                    :style="'display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; cursor: pointer; transition: all 0.15s; text-align: left; width: 100%; border: 1.5px solid ' + (cfgBlock.config.schemaId === schema.schemaId && JSON.stringify(cfgBlock.config.relationPath || []) === JSON.stringify(schema.path || []) ? '#1abc9c' : '#e5e7eb') + '; background: ' + (cfgBlock.config.schemaId === schema.schemaId && JSON.stringify(cfgBlock.config.relationPath || []) === JSON.stringify(schema.path || []) ? '#f0fdfa' : 'white')">
+                                                                    <div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;"
+                                                                         :style="'background:' + (schema.source === 'direct' ? 'rgba(26,188,156,0.12)' : 'rgba(67,97,238,0.12)')">
+                                                                        <iconify-icon :icon="schema.source === 'direct' ? 'solar:clipboard-list-bold-duotone' : 'solar:link-round-bold-duotone'" width="18"
+                                                                            :style="'color:' + (schema.source === 'direct' ? '#1abc9c' : '#4361ee')"></iconify-icon>
+                                                                    </div>
+                                                                    <div style="flex: 1; min-width: 0;">
+                                                                        <div style="font-size: 13px; font-weight: 600; color: #1f2937;" x-text="schema.schemaName"></div>
+                                                                        <div style="font-size: 11px; color: #9ca3af; margin-top: 1px;" x-text="schema.source === 'direct' ? ('Direct — ' + schema.entityName) : ('Via ' + schema.relationLabel)"></div>
+                                                                    </div>
+                                                                    <template x-if="cfgBlock.config.schemaId === schema.schemaId && JSON.stringify(cfgBlock.config.relationPath || []) === JSON.stringify(schema.path || [])">
+                                                                        <iconify-icon icon="solar:check-circle-bold" width="20" style="color: #1abc9c; flex-shrink: 0;"></iconify-icon>
+                                                                    </template>
+                                                                </button>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+                                                </div>
+
+                                                <!-- Display options -->
+                                                <template x-if="cfgBlock.config.schemaId">
+                                                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                                                        <!-- Group by record toggle -->
+                                                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0;">
+                                                            <label style="font-size: 12px; font-weight: 600; color: #374151;">Grouper par enregistrement</label>
+                                                            <label style="position: relative; width: 36px; height: 20px; display: inline-block;">
+                                                                <input type="checkbox" :checked="cfgBlock.config.groupBy !== false"
+                                                                    @change="cfgBlock.config.groupBy = $el.checked"
+                                                                    style="opacity: 0; width: 0; height: 0;">
+                                                                <span :style="'position: absolute; cursor: pointer; inset: 0; border-radius: 20px; transition: all 0.2s; background:' + (cfgBlock.config.groupBy !== false ? '#1abc9c' : '#d1d5db')">
+                                                                    <span :style="'position: absolute; width: 16px; height: 16px; border-radius: 50%; background: white; top: 2px; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transform: translateX(' + (cfgBlock.config.groupBy !== false ? '16px' : '2px') + ')'"></span>
+                                                                </span>
+                                                            </label>
+                                                        </div>
+                                                        <!-- Sort direction -->
+                                                        <div>
+                                                            <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Tri par date</label>
+                                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                                                                <button type="button" @click="cfgBlock.config.sortDirection = 'desc'"
+                                                                    :style="'padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; text-align: center; transition: all 0.15s; border: 1.5px solid ' + ((cfgBlock.config.sortDirection || 'desc') === 'desc' ? '#1abc9c' : '#e5e7eb') + '; background: ' + ((cfgBlock.config.sortDirection || 'desc') === 'desc' ? '#f0fdfa' : 'white') + '; color: ' + ((cfgBlock.config.sortDirection || 'desc') === 'desc' ? '#1abc9c' : '#6b7280')">
+                                                                    ↓ Plus récent d'abord
+                                                                </button>
+                                                                <button type="button" @click="cfgBlock.config.sortDirection = 'asc'"
+                                                                    :style="'padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; text-align: center; transition: all 0.15s; border: 1.5px solid ' + ((cfgBlock.config.sortDirection || 'desc') === 'asc' ? '#1abc9c' : '#e5e7eb') + '; background: ' + ((cfgBlock.config.sortDirection || 'desc') === 'asc' ? '#f0fdfa' : 'white') + '; color: ' + ((cfgBlock.config.sortDirection || 'desc') === 'asc' ? '#1abc9c' : '#6b7280')">
+                                                                    ↑ Plus ancien d'abord
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Limit -->
+                                                        <div>
+                                                            <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Nombre max de lignes</label>
+                                                            <select :value="cfgBlock.config.limit || 50"
+                                                                @change="cfgBlock.config.limit = parseInt($el.value)"
+                                                                style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+                                                                <option value="25">25 lignes</option>
+                                                                <option value="50">50 lignes</option>
+                                                                <option value="100">100 lignes</option>
+                                                                <option value="200">200 lignes</option>
+                                                                <option value="500">500 lignes</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </template>
+
+                                                <!-- Info box -->
+                                                <div style="padding: 10px; background: #ecfdf5; border-radius: 8px; border: 1px solid #d1fae5;">
+                                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                                        <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #1abc9c;"></iconify-icon>
+                                                        <span style="font-size: 11px; font-weight: 600; color: #065f46;">Historique des lignes</span>
+                                                    </div>
+                                                    <p style="font-size: 11px; color: #6b7280; margin: 4px 0 0 0; line-height: 1.4;">Ce widget agrège les lignes d'un tableau dynamique à travers les enregistrements liés. Par exemple : voir tous les traitements prescrits dans les consultations d'un patient.</p>
+                                                </div>
+                                            </div>
+                                        </template>
+
                                         <!-- ══════════ EMBED / IFRAME ══════════ -->
                                         <template x-if="cfgBlock.type === 'iframe'">
                                             <div style="display: flex; flex-direction: column; gap: 14px;"
@@ -2598,6 +2726,7 @@
                     { type: 'chart',    label: 'Graphique',  icon: 'solar:chart-bold-duotone',         color: '#e2a03f', bg: 'rgba(226,160,63,0.1)', desc: 'Visualisation' },
                     { type: 'fields',   label: 'Champs',     icon: 'solar:layers-bold-duotone',        color: '#2196f3', bg: 'rgba(33,150,243,0.1)', desc: 'Champs entity' },
                     { type: 'cards',    label: 'Cartes',     icon: 'solar:card-bold-duotone',          color: '#e2a03f', bg: 'rgba(226,160,63,0.1)', desc: 'Records liés' },
+{ type: 'lines-history', label: 'Historique lignes', icon: 'solar:clipboard-list-bold-duotone', color: '#1abc9c', bg: 'rgba(26,188,156,0.1)', desc: 'Tableau dynamique agrégé' },
                     { type: 'iframe',   label: 'Embed',      icon: 'solar:code-bold-duotone',          color: '#00ab55', bg: 'rgba(0,171,85,0.1)',   desc: 'Contenu externe' },
                 ],
                 ctResizeState: { active: false, tabKey: null, rowId: null, colIndex: null, startX: 0, startWidths: [] },

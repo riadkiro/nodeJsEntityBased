@@ -1,0 +1,43 @@
+﻿L2104: 
+L2105:                                         <!-- ══════════ EMBED / IFRAME ══════════ -->
+L2106:                                         <template x-if="cfgBlock.type === 'iframe'">
+L2107:                                             <div style="display: flex; flex-direction: column; gap: 14px;"
+L2108:                                                  x-init="if(!cfgBlock.config) cfgBlock.config = {}">
+L2109:                                                 <div>
+L2110:                                                     <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">URL à embarquer</label>
+L2111:                                                     <input type="url" :value="cfgBlock.config.url || ''"
+L2112:                                                            @input="cfgBlock.config.url = $el.value"
+L2113:                                                            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.15s; box-sizing: border-box;"
+L2114:                                                            onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
+L2115:                                                            placeholder="https://example.com">
+L2116:                                                 </div>
+L2117:                                                 <div>
+L2118:                                                     <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Hauteur (px)</label>
+L2119:                                                     <input type="number" :value="cfgBlock.config.height || 300"
+L2120:                                                            @input="cfgBlock.config.height = parseInt($el.value) || 300"
+L2121:                                                            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; box-sizing: border-box;"
+L2122:                                                            min="100" max="1000" step="50">
+L2123:                                                 </div>
+L2124:                                                 <div style="padding: 10px; background: #fef3c7; border-radius: 8px; border: 1px solid #fde68a;">
+L2125:                                                     <div style="display: flex; align-items: center; gap: 6px;">
+L2126:                                                         <iconify-icon icon="solar:danger-triangle-bold" width="14" style="color: #d97706;"></iconify-icon>
+L2127:                                                         <span style="font-size: 11px; font-weight: 600; color: #92400e;">Sécurité</span>
+L2128:                                                     </div>
+L2129:                                                     <p style="font-size: 11px; color: #78716c; margin: 4px 0 0 0; line-height: 1.4;">Seuls les sites autorisant l'intégration iframe fonctionneront. Certains sites bloquent l'intégration pour des raisons de sécurité.</p>
+L2130:                                                 </div>
+L2131:                                             </div>
+L2132:                                         </template>
+L2133:                                     </div>
+L2134: 
+L2135:                                     
+L2136:                                     <!-- ═══ Saved Filters (for chart/timeline) ═══ -->
+L2137:                                     <template x-if="cfgBlock && (cfgBlock.type === 'chart' || cfgBlock.type === 'timeline') && cfgBlock.config && cfgBlock.config.advancedFilters && cfgBlock.config.advancedFilters.filter(f => f.field && f.operator).length > 0">
+L2138:                                         <div style="padding: 10px 20px; border-top: 1px solid #f3f4f6;"
+L2139:                                              x-data="{
+L2140:                                                  sfName: '',
+L2141:                                                  sfExpanded: false,
+L2142:                                                  getSavedFilters() {
+L2143:                                                      const layout = customTabLayouts[ctConfigModal.tabKey];
+L2144:                                                      return (layout && layout.savedFilters) ? Object.entries(layout.savedFilters) : [];
+L2145:                                                  },
+L2146:                                                  saveFilter() {

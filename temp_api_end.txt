@@ -1,0 +1,16 @@
+﻿L2306:                         label: o.label || o.name || '',
+L2307:                         color: o.color || ''
+L2308:                     }))
+L2309:                 })
+L2310:             })
+L2311: 
+L2312:         res.json({ fields })
+L2313:     } catch (error) {
+L2314:         console.error('[API] Entity fields error:', error)
+L2315:         res.status(500).json({ error: error.message })
+L2316:     }
+L2317: })
+L2318: 
+L2319: module.exports = router
+L2320: 
+L2321: 

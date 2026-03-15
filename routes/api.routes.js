@@ -1756,7 +1756,7 @@ router.get('/api/widget/chart-data', async (req, res) => {
             advancedFilters: afRaw, advancedFiltersLogic = 'and' } = req.query
 
         if (!entityId) return res.status(400).json({ error: 'entityId is required' })
-        console.log('[CHART-DEBUG] period=', period, 'months=', months, 'startDate will be', parseInt(months), 'months ago')
+
 
         // Parse advanced filters
         let advancedFilters = []
@@ -1901,8 +1901,8 @@ router.get('/api/widget/chart-data', async (req, res) => {
                 }
             })
         } else if (period === 'day') {
-            // Use months parameter to determine how many days to show
-            const daysCount = Math.max(7, parseInt(months) * 30)
+            // Use months parameter to determine how many days to show (cap at 180 to avoid browser crash)
+            const daysCount = Math.min(180, Math.max(7, parseInt(months) * 30))
             const cursor = new Date(now)
             cursor.setDate(cursor.getDate() - daysCount)
             cursor.setHours(0, 0, 0, 0)
@@ -2312,6 +2312,274 @@ router.get('/api/widget/entity-fields/:entityId', async (req, res) => {
         res.json({ fields })
     } catch (error) {
         console.error('[API] Entity fields error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * GET /account/:account_number/api/widget/lines-history
+ * Fetch DocumentLine entries across related records for the lines-history widget.
+ *
+ * Query params:
+ *   - recordId       : current record ObjectId
+ *   - schemaId       : LineSchema ObjectId to query
+ *   - source         : 'direct' | 'indirect'
+ *   - relationPath   : JSON string, array of { relationKey, targetEntityId }
+ *   - limit          : max lines (default 100)
+ *   - sortDirection  : 'asc' | 'desc' (default 'desc')
+ */
+router.get('/api/widget/lines-history', async (req, res) => {
+    try {
+        const mongoose = require('mongoose')
+        const Record = await tenantCollection(req, 'Record')
+        const DocumentLine = await tenantCollection(req, 'DocumentLine')
+        const LineSchema = await tenantCollection(req, 'LineSchema')
+        const Entity = await tenantCollection(req, 'Entity')
+        if (!Record || !DocumentLine || !LineSchema) {
+            return res.status(500).json({ error: 'Models not available' })
+        }
+
+        const { recordId, schemaId, source, relationPath: relationPathStr, limit: limitStr, sortDirection } = req.query
+        if (!recordId || !schemaId) {
+            return res.status(400).json({ error: 'recordId and schemaId are required' })
+        }
+
+        const limitNum = Math.min(parseInt(limitStr) || 100, 500)
+        const sortDir = sortDirection === 'asc' ? 1 : -1
+
+        // Load the schema for column definitions
+        const schema = await LineSchema.findById(schemaId).lean()
+        if (!schema) {
+            return res.status(404).json({ error: 'LineSchema not found' })
+        }
+
+        let targetRecordIds = []
+
+        if (source === 'direct') {
+            // Direct: DocumentLines on the current record
+            targetRecordIds = [new mongoose.Types.ObjectId(recordId)]
+        } else {
+            // Indirect: follow the relation chain to find target records
+            let relationPath = []
+            try { relationPath = JSON.parse(relationPathStr || '[]') } catch(e) { /* ignore */ }
+
+            if (!relationPath.length) {
+                return res.json({ groups: [], schema: { columns: schema.columns, name: schema.name }, total: 0 })
+            }
+
+            // Step through the relation chain
+            let currentRecordIds = [new mongoose.Types.ObjectId(recordId)]
+
+            for (const step of relationPath) {
+                if (!step.relationKey) break
+
+                // Find the relation definition on the source entity to determine direction
+                // We need to find records that are linked via this relation
+                const nextIds = new Set()
+
+                // Strategy 1: Forward lookup — current records have relations[].value pointing to targets
+                const forwardRecords = await Record.find({
+                    _id: { $in: currentRecordIds },
+                    'relations.relationKey': step.relationKey
+                }).select('relations').lean()
+
+                for (const r of forwardRecords) {
+                    const rel = (r.relations || []).find(x => x.relationKey === step.relationKey)
+                    if (rel && rel.value) {
+                        const vals = Array.isArray(rel.value) ? rel.value : [rel.value]
+                        vals.forEach(v => { if (v) nextIds.add(v.toString()) })
+                    }
+                }
+
+                // Strategy 2: Inverse lookup — other records have relations[].value pointing to current records
+                if (nextIds.size === 0) {
+                    const inverseRecords = await Record.find({
+                        'relations': {
+                            $elemMatch: {
+                                relationKey: step.relationKey,
+                                value: { $in: currentRecordIds }
+                            }
+                        }
+                    }).select('_id').lean()
+
+                    for (const r of inverseRecords) {
+                        nextIds.add(r._id.toString())
+                    }
+
+                    // Also check where value is an array containing any of currentRecordIds
+                    if (nextIds.size === 0) {
+                        const inverseRecords2 = await Record.find({
+                            'relations.relationKey': step.relationKey,
+                            'relations.value': { $in: currentRecordIds }
+                        }).select('_id').lean()
+
+                        for (const r of inverseRecords2) {
+                            nextIds.add(r._id.toString())
+                        }
+                    }
+                }
+
+                currentRecordIds = [...nextIds].map(id => new mongoose.Types.ObjectId(id))
+                if (currentRecordIds.length === 0) break
+            }
+
+            targetRecordIds = currentRecordIds
+        }
+
+        if (targetRecordIds.length === 0) {
+            return res.json({ groups: [], schema: { columns: schema.columns, name: schema.name }, total: 0 })
+        }
+
+        // Fetch DocumentLines for all target records
+        const lines = await DocumentLine.find({
+            documentId: { $in: targetRecordIds },
+            schemaId: new mongoose.Types.ObjectId(schemaId)
+        }).sort({ order: 1 }).limit(limitNum).lean()
+
+        // Fetch parent record metadata for grouping
+        const parentRecords = await Record.find({
+            _id: { $in: targetRecordIds }
+        }).select('title computedTitle createdAt date entityId').lean()
+
+        const parentMap = {}
+        parentRecords.forEach(r => {
+            parentMap[r._id.toString()] = {
+                _id: r._id,
+                title: r.computedTitle || r.title || 'Sans titre',
+                date: r.date || r.createdAt,
+                entityId: r.entityId
+            }
+        })
+
+        // Group lines by parent record
+        const groupMap = {}
+        for (const line of lines) {
+            const parentId = line.documentId.toString()
+            if (!groupMap[parentId]) {
+                groupMap[parentId] = {
+                    record: parentMap[parentId] || { _id: parentId, title: 'Sans titre', date: null },
+                    lines: []
+                }
+            }
+            groupMap[parentId].lines.push(line)
+        }
+
+        // Sort groups by record date
+        const groups = Object.values(groupMap).sort((a, b) => {
+            const da = a.record.date ? new Date(a.record.date).getTime() : 0
+            const db = b.record.date ? new Date(b.record.date).getTime() : 0
+            return sortDir * (db - da)
+        })
+
+        res.json({
+            groups,
+            schema: {
+                _id: schema._id,
+                name: schema.name,
+                columns: schema.columns
+            },
+            total: lines.length
+        })
+    } catch (error) {
+        console.error('[API] Lines history error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * GET /account/:account_number/api/widget/available-schemas
+ * Return all LineSchemas available for a given entity and its related entities.
+ * Used by the lines-history widget config modal.
+ */
+router.get('/api/widget/available-schemas', async (req, res) => {
+    try {
+        const Entity = await tenantCollection(req, 'Entity')
+        const LineSchema = await tenantCollection(req, 'LineSchema')
+        if (!Entity || !LineSchema) {
+            return res.status(500).json({ error: 'Models not available' })
+        }
+
+        const { entityId } = req.query
+        if (!entityId) return res.status(400).json({ error: 'entityId required' })
+
+        const entity = await Entity.findById(entityId)
+            .populate('relations.targetEntity', 'name slug gridSchemas')
+            .lean()
+        if (!entity) return res.status(404).json({ error: 'Entity not found' })
+
+        const result = []
+
+        // 1. Direct schemas: schemas attached to this entity
+        const directSchemaIds = (entity.gridSchemas || []).map(gs => gs.schemaId).filter(Boolean)
+        if (directSchemaIds.length > 0) {
+            const directSchemas = await LineSchema.find({ _id: { $in: directSchemaIds } }).select('name slug columns').lean()
+            for (const s of directSchemas) {
+                result.push({
+                    schemaId: s._id,
+                    schemaName: s.name,
+                    source: 'direct',
+                    path: [],
+                    entityName: entity.name,
+                    columns: (s.columns || []).map(c => ({ key: c.key, label: c.label, type: c.type }))
+                })
+            }
+        }
+
+        // 2. Indirect schemas: schemas on related entities (1 hop)
+        for (const rel of (entity.relations || [])) {
+            if (!rel.targetEntity) continue
+            const target = rel.targetEntity
+            const targetSchemaIds = (target.gridSchemas || []).map(gs => gs.schemaId).filter(Boolean)
+            if (targetSchemaIds.length > 0) {
+                const targetSchemas = await LineSchema.find({ _id: { $in: targetSchemaIds } }).select('name slug columns').lean()
+                for (const s of targetSchemas) {
+                    result.push({
+                        schemaId: s._id,
+                        schemaName: s.name,
+                        source: 'indirect',
+                        path: [{ relationKey: rel.key, targetEntityId: target._id, label: rel.label || target.name }],
+                        entityName: target.name,
+                        relationLabel: rel.label || target.name,
+                        columns: (s.columns || []).map(c => ({ key: c.key, label: c.label, type: c.type }))
+                    })
+                }
+            }
+
+            // 2b. Indirect schemas: 2 hops (entity → related → related's related)
+            if (target._id) {
+                const deepTarget = await Entity.findById(target._id)
+                    .populate('relations.targetEntity', 'name slug gridSchemas')
+                    .lean()
+                if (deepTarget) {
+                    for (const rel2 of (deepTarget.relations || [])) {
+                        if (!rel2.targetEntity) continue
+                        const target2 = rel2.targetEntity
+                        const t2SchemaIds = (target2.gridSchemas || []).map(gs => gs.schemaId).filter(Boolean)
+                        if (t2SchemaIds.length > 0) {
+                            const t2Schemas = await LineSchema.find({ _id: { $in: t2SchemaIds } }).select('name slug columns').lean()
+                            for (const s of t2Schemas) {
+                                result.push({
+                                    schemaId: s._id,
+                                    schemaName: s.name,
+                                    source: 'indirect',
+                                    path: [
+                                        { relationKey: rel.key, targetEntityId: target._id, label: rel.label || target.name },
+                                        { relationKey: rel2.key, targetEntityId: target2._id, label: rel2.label || target2.name }
+                                    ],
+                                    entityName: target2.name,
+                                    relationLabel: `${rel.label || target.name} → ${rel2.label || target2.name}`,
+                                    columns: (s.columns || []).map(c => ({ key: c.key, label: c.label, type: c.type }))
+                                })
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        res.json({ schemas: result })
+    } catch (error) {
+        console.error('[API] Available schemas error:', error)
         res.status(500).json({ error: error.message })
     }
 })

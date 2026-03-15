@@ -1,0 +1,13 @@
+﻿L1381: style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+L1382: <option value="current">�Y", Entity �?" <%= entity.name || '' %></option>
+L1383: <% (entity.relations || []).forEach(function(r) { var tName = (r.targetEntity && r.targetEntity.name) || r.label || ''; %>
+L1384: <option value="rel:<%= r.key || '' %>">�Y"- Relation �?" <%= tName %></option>
+L1385: <% }); %>
+L1386: <% (locals.gridSchemas || []).filter(function(gs) { return gs && gs.schema; }).forEach(function(gs) { %>
+L1387: <option value="grid:<%= (gs.schemaId || gs.schema._id || '').toString() %>">�Y"S Tableau �?" <%= gs.schema.name || '' %></option>
+L1388: <% }); %>
+L1389: </select>
+L1390: </div>
+L1391: <!-- Aggregation -->
+L1392: <div>
+L1393: <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Type d'agrégation</label>

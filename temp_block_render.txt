@@ -1,0 +1,21 @@
+﻿L841: <!-- Widget Content Render -->
+L842: <div x-data="{ block: getTabBlock(activeTab, bid) }" style="height: 100%;">
+L843: <!-- Notes Widget -->
+L844: <template x-if="block && block.type === 'notes'">
+L845: <div style="height: 100%; border: none; border-radius: 12px;">
+L846: <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+L847: <iconify-icon icon="solar:document-text-bold-duotone" width="14" style="color: #9ca3af;"></iconify-icon>
+L848: <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Notes'"></span>
+L849: <!-- Format toolbar -->
+L850: <div style="margin-left: auto; display: flex; gap: 2px;">
+L851: <button type="button" @click="_execCmd('bold')" style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 4px; bor
+L852: <iconify-icon icon="solar:text-bold-linear" width="12"></iconify-icon>
+L853: </button>
+L854: <button type="button" @click="_execCmd('italic')" style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 4px; b
+L855: <iconify-icon icon="solar:text-italic-linear" width="12"></iconify-icon>
+L856: </button>
+L857: <button type="button" @click="_execCmd('insertUnorderedList')" style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-r
+L858: <iconify-icon icon="solar:list-bold-duotone" width="12"></iconify-icon>
+L859: </button>
+L860: </div>
+L861: </div>

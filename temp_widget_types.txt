@@ -1,0 +1,51 @@
+﻿L2591: ctConfigModal: { open: false, tabKey: null, blockId: null }, // per-widget config modal
+L2592: _ctSortables: {},       // { 'rows': Sortable, 'col_xxx': Sortable, ... }
+L2593: ctWidgetCatalog: [
+L2594: { type: 'notes',    label: 'Notes',      icon: 'solar:document-text-bold-duotone', color: '#4361ee', bg: 'rgba(67,97,238,0.1)',  desc: 'Texte enrichi' },
+L2595: { type: 'tasks',    label: 'Tâches',     icon: 'solar:checklist-bold-duotone',     color: '#00ab55', bg: 'rgba(0,171,85,0.1)',   desc: 'Checklist' },
+L2596: { type: 'timeline', label: 'Timeline',   icon: 'solar:clock-circle-bold-duotone',  color: '#805dca', bg: 'rgba(128,93,202,0.1)', desc: 'Historique' },
+L2597: { type: 'kpi',      label: 'KPI',        icon: 'solar:graph-up-bold-duotone',      color: '#e7515a', bg: 'rgba(231,81,90,0.1)',  desc: 'Indicateur' },
+L2598: { type: 'chart',    label: 'Graphique',  icon: 'solar:chart-bold-duotone',         color: '#e2a03f', bg: 'rgba(226,160,63,0.1)', desc: 'Visualisation' },
+L2599: { type: 'fields',   label: 'Champs',     icon: 'solar:layers-bold-duotone',        color: '#2196f3', bg: 'rgba(33,150,243,0.1)', desc: 'Champs entity' },
+L2600: { type: 'cards',    label: 'Cartes',     icon: 'solar:card-bold-duotone',          color: '#e2a03f', bg: 'rgba(226,160,63,0.1)', desc: 'Records liés' },
+L2601: { type: 'iframe',   label: 'Embed',      icon: 'solar:code-bold-duotone',          color: '#00ab55', bg: 'rgba(0,171,85,0.1)',   desc: 'Contenu externe' },
+L2602: ],
+L2603: ctResizeState: { active: false, tabKey: null, rowId: null, colIndex: null, startX: 0, startWidths: [] },
+L2604: 
+L2605: // Custom Tab Modal state
+L2606: ctOpen: false,
+L2607: ctName: '',
+L2608: ctIcon: 'solar:widget-bold-duotone',
+L2609: ctIconPickerOpen: false,
+L2610: ctIconOptions: [
+L2611: 'solar:widget-bold-duotone', 'solar:document-text-bold-duotone', 'solar:notes-bold-duotone',
+L2612: 'solar:clipboard-list-bold-duotone', 'solar:stethoscope-bold-duotone', 'solar:heart-pulse-bold-duotone',
+L2613: 'solar:pill-bold-duotone', 'solar:test-tube-bold-duotone', 'solar:shield-check-bold-duotone',
+L2614: 'solar:calendar-bold-duotone', 'solar:user-bold-duotone', 'solar:users-group-rounded-bold-duotone',
+L2615: 'solar:chat-round-dots-bold-duotone', 'solar:phone-bold-duotone', 'solar:mailbox-bold-duotone',
+L2616: 'solar:folder-bold-duotone', 'solar:file-text-bold-duotone', 'solar:chart-bold-duotone',
+L2617: 'solar:star-bold-duotone', 'solar:flag-bold-duotone', 'solar:map-point-bold-duotone',
+L2618: 'solar:clock-circle-bold-duotone', 'solar:camera-bold-duotone', 'solar:gallery-bold-duotone',
+L2619: 'solar:link-bold-duotone', 'solar:settings-bold-duotone', 'solar:tag-bold-duotone',
+L2620: 'solar:bookmark-bold-duotone', 'solar:dollar-bold-duotone', 'solar:delivery-bold-duotone',
+L2621: 'solar:home-bold-duotone', 'solar:database-bold-duotone', 'solar:code-bold-duotone',
+L2622: 'solar:lock-bold-duotone', 'solar:eye-bold-duotone'
+L2623: ],
+L2624: 
+L2625: // Quick Create Modal state
+L2626: qcOpen: false,
+L2627: qcTab: null,
+L2628: qcLoading: false,
+L2629: qcSaving: false,
+L2630: qcTitle: '',
+L2631: qcFields: [],
+L2632: qcClassifications: [],
+L2633: qcCustom: {},
+L2634: qcClassifValues: {},  // { classifId: optionId } or { classifId: [optionId, ...] }
+L2635: qcEntityRelations: [], // relation definitions from target entity
+L2636: qcTitleTokens: [],    // referenceTitleTokens from target entity
+L2637: qcAutoTitle: false,   // true when title should be auto-generated
+L2638: 
+L2639: get visibleTabs() {
+L2640: return this.allTabs.filter(t => t.visible !== false);
+L2641: },

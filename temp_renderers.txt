@@ -1,0 +1,76 @@
+﻿L1176: </div>
+L1177: </div>
+L1178: </template>
+L1179: <!-- Cards Widget -->
+L1180: <template x-if="block && block.type === 'cards'">
+L1181: <div style="height: 100%; border: none; border-radius: 12px;">
+L1182: <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+L1183: <iconify-icon icon="solar:card-bold-duotone" width="14" style="color: #e2a03f;"></iconify-icon>
+L1184: <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Cartes'"></span>
+L1185: </div>
+L1186: <div style="padding: 16px; text-align: center; color: #9ca3af; font-size: 12px;">
+L1187: <iconify-icon icon="solar:card-2-bold-duotone" width="24" style="opacity: 0.3; margin-bottom: 4px;"></iconify-icon>
+L1188: <div>Cartes liées</div>
+L1189: </div>
+L1190: </div>
+L1191: </template>
+L1192: <!-- Iframe Widget -->
+L1193: <template x-if="block && block.type === 'iframe'">
+L1194: <div style="height: 100%; border: none; border-radius: 12px;">
+L1195: <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6;">
+L1196: <iconify-icon icon="solar:code-bold-duotone" width="14" style="color: #00ab55;"></iconify-icon>
+L1197: <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="block.title || 'Contenu embarqué'"></span>
+L1198: </div>
+L1199: <div style="padding: 16px; text-align: center; color: #9ca3af; font-size: 12px;">
+L1200: <iconify-icon icon="solar:code-square-bold-duotone" width="24" style="opacity: 0.3; margin-bottom: 4px;"></iconify-icon>
+L1201: <div>Embed / iframe</div>
+L1202: </div>
+L1203: </div>
+L1204: </template>
+L1205: </div>
+L1206: </div>
+L1207: </div>
+L1208: </template>
+L1209: </template>
+L1210: 
+L1211: <!-- Add widget button (edit mode, shown at bottom of column) -->
+L1212: <template x-if="ctEditMode">
+L1213: <div :style="(col.blockIds && col.blockIds.length) ? 'display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 0; flex-shrink: 0;' : 'display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; min
+L1214: <!-- Add Widget Button -->
+L1215: <button type="button"
+L1216: @click="ctWidgetPickerOpen = true; ctWidgetPickerTarget = { tabKey: activeTab, rowId: row.id, colId: col.id }"
+L1217: :style="(col.blockIds && col.blockIds.length) ? 'width: 100%; height: 28px; border-radius: 6px; background: transparent; border: 1.5px dashed #d1d5db; cursor: pointer; display: flex; align-items: center; justify-content: center; gap
+L1218: onmouseover="this.style.borderColor='#4361ee';this.style.color='#4361ee';this.style.background='rgba(67,97,238,0.06)'" onmouseout="this.style.borderColor='#d1d5db';this.style.color='#9ca3af';this.style.background='transparent'">
+L1219: <iconify-icon icon="solar:add-circle-bold" :width="(col.blockIds && col.blockIds.length) ? '12' : '18'" style="color: inherit;"></iconify-icon>
+L1220: <span x-show="col.blockIds && col.blockIds.length" style="font-size: 10px; font-weight: 500;">Ajouter</span>
+L1221: </button>
+L1222: <!-- Delete Column Button (only when empty) -->
+L1223: <template x-if="!col.blockIds || !col.blockIds.length">
+L1224: <button type="button"
+L1225: @click.stop="ctDeleteColumn(activeTab, row.id, col.id)"
+L1226: style="width: 30px; height: 30px; border-radius: 50%; background: rgba(231,81,90,0.1); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s;"
+L1227: onmouseover="this.style.background='rgba(231,81,90,0.2)'" onmouseout="this.style.background='rgba(231,81,90,0.1)'"
+L1228: title="Supprimer">
+L1229: <iconify-icon icon="solar:trash-bin-trash-bold" width="14" style="color: #e7515a;"></iconify-icon>
+L1230: </button>
+L1231: </template>
+L1232: </div>
+L1233: </template>
+L1234: </div>
+L1235: </template>
+L1236: </div>
+L1237: </div>
+L1238: </template>
+L1239: </div>
+L1240: 
+L1241: <!-- Add Row Button (bottom, edit mode only) -->
+L1242: <template x-if="ctEditMode && getTabRows(activeTab) && getTabRows(activeTab).length > 0">
+L1243: <div style="margin-top: 16px; display: flex; justify-content: center;">
+L1244: <button type="button" @click="ctAddRow(activeTab)"
+L1245: style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; color: #6b7280; border: 2px dashed #d1d5db; border-radius: 10px; background: transparent; cursor: pointer; font-size: 13px; transition: all 0.15s;"
+L1246: onmouseover="this.style.color='#4361ee';this.style.borderColor='#4361ee'" onmouseout="this.style.color='#6b7280';this.style.borderColor='#d1d5db'">
+L1247: <iconify-icon icon="solar:add-circle-linear" width="16"></iconify-icon>
+L1248: Ajouter une ligne
+L1249: </button>
+L1250: </div>
+L1251: </template>

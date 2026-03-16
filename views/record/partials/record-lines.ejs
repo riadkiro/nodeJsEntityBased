@@ -2450,17 +2450,17 @@ document.addEventListener('alpine:init', () => {
                     }
                 }
 
-                // Recompute formulas for each schema
+                // Recompute formulas for each schema (temporarily switch activeSchemaId for context)
+                const savedSchemaId = this.activeSchemaId;
                 for (const s of this.schemas) {
                     this.activeSchemaId = s._id;
                     (this.linesMap[s._id] || []).forEach(l => this.recomputeLine(l));
                     this.recomputeTotals();
                 }
 
-                // Reset active to first
-                if (this.schemas.length > 0) {
-                    this.activeSchemaId = this.schemas[0]._id;
-                }
+                // Restore active schema (keep current tab, fallback to first)
+                const currentIsValid = this.schemas.some(s => s._id === savedSchemaId);
+                this.activeSchemaId = currentIsValid ? savedSchemaId : (this.schemas[0]?._id || null);
                 this.initSortable();
             } catch (e) {
                 console.error('[LinesPanel] Load lines error:', e);

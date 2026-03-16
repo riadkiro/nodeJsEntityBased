@@ -40,9 +40,18 @@ const GridSchemaTemplateSchema = new mongoose.Schema({
     // Scope
     scope: {
         type: String,
-        enum: ['global', 'workspace', 'entity'],
+        enum: ['global', 'workspace', 'entity', 'record'],
         default: 'workspace'
     },
+
+    // Record-specific preset (when linked to a specific patient, order, etc.)
+    recordId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Record',
+        default: null
+    },
+    // Origin record label for display (e.g. "Mr Dupont")
+    recordLabel: { type: String, default: '' },
 
     // Tags for filtering/searching
     tags: [String],                                    // ["médical", "endocrinologie"]
@@ -58,5 +67,6 @@ GridSchemaTemplateSchema.index({ slug: 1 });
 GridSchemaTemplateSchema.index({ schemaId: 1 });
 GridSchemaTemplateSchema.index({ scope: 1 });
 GridSchemaTemplateSchema.index({ tags: 1 });
+GridSchemaTemplateSchema.index({ recordId: 1 });
 
 module.exports = mongoose.model('GridSchemaTemplate', GridSchemaTemplateSchema);

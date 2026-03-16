@@ -715,14 +715,167 @@
         padding: 10px 14px; background: #fff;
     }
     .dark .dg-timeline-content { background: #0e1726; border-color: #253b5c; }
+
+    /* ═══════════════════════════════════════════════════════════
+       Lines Toolbar (presets, history, create-doc)
+       ═══════════════════════════════════════════════════════════ */
+    .lp-toolbar {
+        display: flex; align-items: center; gap: 2px;
+        padding: 3px 8px;
+        border-bottom: 1px solid #f0f0f0;
+        background: transparent;
+    }
+    .dark .lp-toolbar { border-color: #1b2e4b; }
+    .lp-toolbar-btn {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 3px 8px; border-radius: 6px;
+        font-size: 10px; font-weight: 500; color: #6b7280;
+        cursor: pointer; border: none; background: transparent;
+        transition: all 0.15s; white-space: nowrap;
+        position: relative;
+    }
+    .dark .lp-toolbar-btn { color: #888ea8; }
+    .lp-toolbar-btn:hover { background: rgba(67,97,238,0.06); color: #4361ee; }
+    .lp-toolbar-btn.active { background: rgba(67,97,238,0.1); color: #4361ee; font-weight: 600; }
+    .lp-toolbar-sep {
+        width: 1px; height: 16px; background: #e5e7eb; margin: 0 2px;
+    }
+    .dark .lp-toolbar-sep { background: #253b5c; }
+
+    /* Preset dropdown panel */
+    .lp-preset-dropdown {
+        position: absolute; top: 100%; left: 0; z-index: 100;
+        min-width: 280px; max-width: 360px;
+        background: #fff; border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+        margin-top: 4px; padding: 4px 0;
+        overflow: hidden;
+    }
+    .dark .lp-preset-dropdown { background: #0e1726; border-color: #253b5c; box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+    .lp-preset-section-label {
+        padding: 6px 12px 2px; font-size: 9px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.08em;
+        color: #9ca3af;
+    }
+    .dark .lp-preset-section-label { color: #4a5568; }
+    .lp-preset-item {
+        display: flex; align-items: center; gap: 8px;
+        padding: 7px 12px; cursor: pointer;
+        transition: background 0.1s; font-size: 12px;
+    }
+    .lp-preset-item:hover { background: rgba(67,97,238,0.06); }
+    .dark .lp-preset-item:hover { background: rgba(67,97,238,0.1); }
+    .lp-preset-item-icon {
+        width: 26px; height: 26px; border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; font-size: 14px;
+    }
+    .lp-preset-item-info { flex: 1; min-width: 0; }
+    .lp-preset-item-name {
+        font-weight: 600; color: #1f2937;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .dark .lp-preset-item-name { color: #e0e6ed; }
+    .lp-preset-item-meta {
+        font-size: 10px; color: #9ca3af; display: flex; align-items: center; gap: 4px;
+    }
+    .lp-preset-item-badge {
+        font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 10px;
+        background: rgba(67,97,238,0.1); color: #4361ee;
+    }
+    .lp-preset-item-delete {
+        opacity: 0; padding: 2px; border-radius: 4px; border: none;
+        background: transparent; cursor: pointer; color: #ef4444;
+        transition: all 0.12s;
+    }
+    .lp-preset-item:hover .lp-preset-item-delete { opacity: 1; }
+    .lp-preset-item-delete:hover { background: rgba(239,68,68,0.1); }
+    .lp-preset-divider {
+        height: 1px; background: #f0f0f0; margin: 4px 0;
+    }
+    .dark .lp-preset-divider { background: #1b2e4b; }
+    .lp-preset-empty {
+        padding: 16px 12px; text-align: center;
+        font-size: 11px; color: #9ca3af;
+    }
+    .lp-preset-add-btn {
+        display: flex; align-items: center; gap: 6px;
+        padding: 8px 12px; cursor: pointer; font-size: 11px;
+        font-weight: 600; color: #4361ee;
+        border-top: 1px solid #f0f0f0;
+        transition: background 0.1s;
+    }
+    .dark .lp-preset-add-btn { border-color: #1b2e4b; color: #6993ff; }
+    .lp-preset-add-btn:hover { background: rgba(67,97,238,0.04); }
+
+    /* Save Preset Modal extras */
+    .lp-save-scope-option {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 14px; border-radius: 10px; cursor: pointer;
+        border: 1.5px solid #e5e7eb; transition: all 0.15s;
+    }
+    .dark .lp-save-scope-option { border-color: #253b5c; }
+    .lp-save-scope-option:hover { border-color: #d1d5db; }
+    .dark .lp-save-scope-option:hover { border-color: #3b4a5e; }
+    .lp-save-scope-option.active {
+        border-color: #4361ee; background: rgba(67,97,238,0.04);
+    }
+    .lp-save-scope-option .lp-scope-radio {
+        width: 16px; height: 16px; border-radius: 50%;
+        border: 2px solid #d1d5db; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.15s;
+    }
+    .dark .lp-save-scope-option .lp-scope-radio { border-color: #3b4a5e; }
+    .lp-save-scope-option.active .lp-scope-radio {
+        border-color: #4361ee;
+    }
+    .lp-save-scope-option.active .lp-scope-radio::after {
+        content: ''; width: 8px; height: 8px; border-radius: 50%;
+        background: #4361ee;
+    }
+    .lp-save-scope-info { flex: 1; }
+    .lp-save-scope-title {
+        font-size: 12px; font-weight: 600; color: #1f2937;
+    }
+    .dark .lp-save-scope-title { color: #e0e6ed; }
+    .lp-save-scope-desc {
+        font-size: 10px; color: #9ca3af; margin-top: 2px;
+    }
+    .lp-save-preview {
+        border: 1px solid #e5e7eb; border-radius: 8px;
+        overflow: hidden; margin-top: 12px;
+    }
+    .dark .lp-save-preview { border-color: #253b5c; }
+    .lp-save-preview-header {
+        padding: 6px 10px; background: #f8f9fa;
+        font-size: 10px; font-weight: 600; color: #6b7280;
+        text-transform: uppercase; letter-spacing: 0.05em;
+        display: flex; align-items: center; gap: 4px;
+    }
+    .dark .lp-save-preview-header { background: #1b2e4b; color: #888ea8; }
+    .lp-save-preview-item {
+        padding: 5px 10px; font-size: 11px; color: #374151;
+        border-top: 1px solid #f3f4f6;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .dark .lp-save-preview-item { color: #e0e6ed; border-color: #1b2e4b; }
+    .lp-save-preview-item:first-child { border-top: none; }
 </style>
 
+<script type="application/json" id="linesPanel-relations">
+<%- JSON.stringify({
+    recordRelations: (locals.record && record._denorm && record._denorm.relations) || [],
+    entityRelations: (locals.entity && entity.relations || []).map(r => ({ key: r.key, label: r.label, targetEntity: r.targetEntity, cardinality: r.cardinality }))
+}) %>
+</script>
 <div data-id="lines"
-    x-data='linesPanel({
-        recordId: "<%= locals.record && record._id ? record._id : '' %>",
-        accountNumber: "<%= account_number %>",
-        entityId: "<%= locals.entity ? entity._id : '' %>"
-    })'
+    x-data="linesPanel({
+        recordId: '<%= locals.record && record._id ? record._id : '' %>',
+        accountNumber: '<%= account_number %>',
+        entityId: '<%= locals.entity ? entity._id : '' %>'
+    })"
 >
     <!-- Loading state -->
     <template x-if="loading">
@@ -792,6 +945,108 @@
                          @click="activeSchemaId = schema._id"
                          @focusin="activeSchemaId = schema._id">
 
+                <!-- ═══ Toolbar Mini (presets, actions) ═══ -->
+                <div class="lp-toolbar">
+                    <!-- Presets button with dropdown -->
+                    <div style="position: relative;">
+                        <button type="button" class="lp-toolbar-btn"
+                                :class="{ 'active': presetDropdown[schema._id] }"
+                                @click.stop="activeSchemaId = schema._id; togglePresetDropdown(schema._id)">
+                            <iconify-icon icon="solar:clipboard-check-bold-duotone" width="13"></iconify-icon>
+                            Presets
+                            <span x-show="getTemplatesForSchema(schema._id).length > 0"
+                                  class="lp-preset-item-badge" x-text="getTemplatesForSchema(schema._id).length"></span>
+                        </button>
+                        <!-- Preset Dropdown -->
+                        <template x-if="presetDropdown[schema._id]">
+                            <div>
+                                <div style="position: fixed; inset: 0; z-index: 99;"
+                                     @click.stop="presetDropdown[schema._id] = false"></div>
+                                <div class="lp-preset-dropdown" @click.stop>
+                                    <!-- Record-specific presets -->
+                                    <template x-if="getRecordPresets(schema._id).length > 0">
+                                        <div>
+                                            <div class="lp-preset-section-label">
+                                                <iconify-icon icon="solar:user-bold-duotone" width="10"></iconify-icon>
+                                                <span x-text="linkedRecords.length > 0 ? (linkedRecords[0].relationLabel + ' : ' + linkedRecords[0].recordTitle) : 'Pour ce record'"></span>
+                                            </div>
+                                            <template x-for="preset in getRecordPresets(schema._id)" :key="preset._id">
+                                                <div class="lp-preset-item" @click="applyTemplate(preset); presetDropdown[schema._id] = false">
+                                                    <div class="lp-preset-item-icon" :style="'background:' + (preset.color || '#4361ee') + '15; color:' + (preset.color || '#4361ee')">
+                                                        <iconify-icon :icon="preset.icon || 'solar:clipboard-check-bold-duotone'" width="14"></iconify-icon>
+                                                    </div>
+                                                    <div class="lp-preset-item-info">
+                                                        <div class="lp-preset-item-name" x-text="preset.name"></div>
+                                                        <div class="lp-preset-item-meta">
+                                                            <span class="lp-preset-item-badge" x-text="(preset.presetRows || []).length + ' lignes'"></span>
+                                                        </div>
+                                                    </div>
+                                                    <button class="lp-preset-item-delete" @click.stop="deletePreset(preset._id)" title="Supprimer">
+                                                        <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="14"></iconify-icon>
+                                                    </button>
+                                                </div>
+                                            </template>
+                                            <div class="lp-preset-divider"></div>
+                                        </div>
+                                    </template>
+                                    <!-- Global presets -->
+                                    <div class="lp-preset-section-label">
+                                        <iconify-icon icon="solar:global-bold-duotone" width="10"></iconify-icon>
+                                        Presets globaux
+                                    </div>
+                                    <template x-if="getGlobalPresets(schema._id).length === 0">
+                                        <div class="lp-preset-empty">
+                                            <iconify-icon icon="solar:clipboard-list-broken" width="20" style="opacity: 0.4; display: block; margin: 0 auto 4px;"></iconify-icon>
+                                            Aucun preset disponible
+                                        </div>
+                                    </template>
+                                    <template x-for="preset in getGlobalPresets(schema._id)" :key="preset._id">
+                                        <div class="lp-preset-item" @click="applyTemplate(preset); presetDropdown[schema._id] = false">
+                                            <div class="lp-preset-item-icon" :style="'background:' + (preset.color || '#4361ee') + '15; color:' + (preset.color || '#4361ee')">
+                                                <iconify-icon :icon="preset.icon || 'solar:clipboard-list-bold-duotone'" width="14"></iconify-icon>
+                                            </div>
+                                            <div class="lp-preset-item-info">
+                                                <div class="lp-preset-item-name" x-text="preset.name"></div>
+                                                <div class="lp-preset-item-meta">
+                                                    <span class="lp-preset-item-badge" x-text="(preset.presetRows || []).length + ' lignes'"></span>
+                                                    <span x-show="preset.description" x-text="preset.description" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                                                </div>
+                                            </div>
+                                            <button class="lp-preset-item-delete" @click.stop="deletePreset(preset._id)" title="Supprimer">
+                                                <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="14"></iconify-icon>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <!-- Save current as preset -->
+                                    <div class="lp-preset-add-btn"
+                                         @click="presetDropdown[schema._id] = false; openSavePresetModal(schema._id)">
+                                        <iconify-icon icon="solar:add-circle-bold-duotone" width="14"></iconify-icon>
+                                        Sauvegarder comme preset
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="lp-toolbar-sep"></div>
+
+                    <!-- Save preset shortcut -->
+                    <button type="button" class="lp-toolbar-btn"
+                            x-show="getSchemaLines(schema._id).length > 0"
+                            @click.stop="activeSchemaId = schema._id; openSavePresetModal(schema._id)">
+                        <iconify-icon icon="solar:diskette-bold-duotone" width="13"></iconify-icon>
+                        Sauvegarder
+                    </button>
+
+                    <!-- Template picker (existing feature, moved to toolbar) -->
+                    <button type="button" class="lp-toolbar-btn"
+                            x-show="getTemplatesForSchema(schema._id).length > 0"
+                            :class="{ 'active': templatePicker[schema._id] }"
+                            @click.stop="activeSchemaId = schema._id; templatePicker[schema._id] = !templatePicker[schema._id]">
+                        <iconify-icon icon="solar:notes-bold-duotone" width="13"></iconify-icon>
+                        Modèles
+                    </button>
+                </div>
                 <!-- ═══ Analytics Toggle Bar (for schemas with analytics) ═══ -->
                 <div x-show="schema.analyticsConfig && schema.analyticsConfig.enabled"
                      class="dg-analytics-bar">
@@ -1776,6 +2031,115 @@
                 </div>
             </div>
         </template>
+
+    <!-- ═══ Save Preset Modal ═══ -->
+    <template x-if="savePresetModal.open">
+        <div class="lp-modal-overlay" @click.self="savePresetModal.open = false" @keydown.escape.window="savePresetModal.open = false">
+            <div class="lp-modal" style="max-width: 520px;">
+                <!-- Header -->
+                <div class="lp-modal-header">
+                    <h3>
+                        <iconify-icon icon="solar:clipboard-check-bold-duotone" width="18" class="text-primary"></iconify-icon>
+                        Sauvegarder comme preset
+                    </h3>
+                    <button class="lp-modal-close" @click="savePresetModal.open = false">
+                        <iconify-icon icon="tabler:x" width="16"></iconify-icon>
+                    </button>
+                </div>
+
+                <!-- Body -->
+                <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; max-height: 65vh; overflow-y: auto;">
+                    <!-- Name -->
+                    <div>
+                        <label style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Nom du preset</label>
+                        <input type="text" class="lp-input" style="width: 100%; height: 38px; font-size: 13px; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 0 12px;"
+                               placeholder="Ex: Protocole Grippe, Suivi Thyroïde..."
+                               x-model="savePresetModal.name"
+                               x-ref="presetNameInput"
+                               @keydown.enter.prevent="confirmSavePreset()" />
+                    </div>
+
+                    <!-- Scope -->
+                    <div>
+                        <label style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Portée</label>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div class="lp-save-scope-option"
+                                 :class="{ 'active': savePresetModal.scope === 'workspace' }"
+                                 @click="savePresetModal.scope = 'workspace'">
+                                <div class="lp-scope-radio"></div>
+                                <iconify-icon icon="solar:global-bold-duotone" width="18" style="color: #4361ee;"></iconify-icon>
+                                <div class="lp-save-scope-info">
+                                    <div class="lp-save-scope-title">Preset global</div>
+                                    <div class="lp-save-scope-desc">Disponible pour tous les records de ce type</div>
+                                </div>
+                            </div>
+                            <!-- Linked parent option (e.g., "Pour toutes les consultations de Patient: Martin") -->
+                            <template x-for="lr in linkedRecords" :key="lr.recordId">
+                                <div class="lp-save-scope-option"
+                                     :class="{ 'active': savePresetModal.scope === 'linked' && savePresetModal.linkedRecordId === lr.recordId }"
+                                     @click="savePresetModal.scope = 'linked'; savePresetModal.linkedRecordId = lr.recordId; savePresetModal.linkedRecordLabel = lr.recordTitle; savePresetModal.linkedRelationLabel = lr.relationLabel">
+                                    <div class="lp-scope-radio"></div>
+                                    <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="18" style="color: #f59e0b;"></iconify-icon>
+                                    <div class="lp-save-scope-info">
+                                        <div class="lp-save-scope-title">
+                                            <span x-text="lr.relationLabel"></span> : <span x-text="lr.recordTitle" style="color: #4361ee;"></span>
+                                        </div>
+                                        <div class="lp-save-scope-desc">
+                                            Visible dans tous les records liés à <span x-text="lr.recordTitle" style="font-weight: 600;"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                            <div class="lp-save-scope-option"
+                                 :class="{ 'active': savePresetModal.scope === 'record' }"
+                                 @click="savePresetModal.scope = 'record'">
+                                <div class="lp-scope-radio"></div>
+                                <iconify-icon icon="solar:document-bold-duotone" width="18" style="color: #22c55e;"></iconify-icon>
+                                <div class="lp-save-scope-info">
+                                    <div class="lp-save-scope-title">Ce record uniquement</div>
+                                    <div class="lp-save-scope-desc">Lié à ce record spécifique seulement</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preview -->
+                    <div class="lp-save-preview">
+                        <div class="lp-save-preview-header">
+                            <iconify-icon icon="solar:eye-bold-duotone" width="12"></iconify-icon>
+                            <span x-text="getSchemaLines(savePresetModal.schemaId).length + ' lignes seront sauvegardées'"></span>
+                        </div>
+                        <template x-for="(line, idx) in getSchemaLines(savePresetModal.schemaId).slice(0, 6)" :key="idx">
+                            <div class="lp-save-preview-item">
+                                <span style="color: #9ca3af; font-size: 10px; min-width: 14px;" x-text="idx + 1"></span>
+                                <span x-text="getLinePreviewLabel(line, savePresetModal.schemaId)"></span>
+                            </div>
+                        </template>
+                        <div x-show="getSchemaLines(savePresetModal.schemaId).length > 6"
+                             class="lp-save-preview-item" style="color: #9ca3af; font-style: italic;">
+                            <span x-text="'+ ' + (getSchemaLines(savePresetModal.schemaId).length - 6) + ' autres lignes...'"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="lp-modal-footer">
+                    <div></div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="lp-btn-cancel" @click="savePresetModal.open = false">Annuler</button>
+                        <button class="lp-btn-add"
+                                :disabled="!savePresetModal.name.trim() || savePresetModal.saving"
+                                @click="confirmSavePreset()">
+                            <iconify-icon x-show="!savePresetModal.saving" icon="solar:diskette-bold" width="14"></iconify-icon>
+                            <iconify-icon x-show="savePresetModal.saving" icon="svg-spinners:ring-resize" width="14"></iconify-icon>
+                            <span x-text="savePresetModal.saving ? 'Sauvegarde...' : 'Sauvegarder'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
 </div><!-- end x-data linesPanel -->
 
 <script>
@@ -1786,6 +2150,35 @@ document.addEventListener('alpine:init', () => {
         entityId: config.entityId,
         loading: true,
         saving: false,
+
+        // Linked parent records (e.g., patient linked to consultation)
+        linkedRecords: (() => {
+            const linked = [];
+            try {
+                const jsonEl = document.getElementById('linesPanel-relations');
+                if (!jsonEl) return linked;
+                const data = JSON.parse(jsonEl.textContent || '{}');
+                const entityRels = data.entityRelations || [];
+                const recordRels = data.recordRelations || [];
+                for (const eRel of entityRels) {
+                    const rRel = recordRels.find(r => r.relationKey === eRel.key);
+                    if (rRel && rRel.records && rRel.records.length > 0) {
+                        for (const rec of rRel.records) {
+                            linked.push({
+                                relationKey: eRel.key,
+                                relationLabel: eRel.label || '',
+                                recordId: rec._id,
+                                recordTitle: rec.title || '',
+                                entitySlug: rec.entitySlug || ''
+                            });
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('[DataGrid] Error parsing relations:', e);
+            }
+            return linked;
+        })(),
 
         schemas: [],
         activeSchemaId: null,
@@ -1869,7 +2262,19 @@ document.addEventListener('alpine:init', () => {
         formAddValues: {},   // { 'schemaId_colKey': value } — form add field values
         gridTemplates: [],   // Available templates for this entity's schemas
         templatePicker: {},  // { schemaId: boolean } — template picker open state
+        presetDropdown: {},  // { schemaId: boolean } — preset dropdown open state
 
+        // Save Preset Modal state
+        savePresetModal: {
+            open: false,
+            name: '',
+            scope: 'workspace',
+            schemaId: null,
+            saving: false,
+            linkedRecordId: null,
+            linkedRecordLabel: '',
+            linkedRelationLabel: ''
+        },
         get activeSchema() {
             return this.schemas.find(s => s._id === this.activeSchemaId) || null;
         },
@@ -1978,6 +2383,7 @@ document.addEventListener('alpine:init', () => {
                     this.analyticsView[s._id] = 'data';
                     this.formAddOpen[s._id] = false;
                     this.templatePicker[s._id] = false;
+                    this.presetDropdown[s._id] = false;
                 }
 
                 if (this.schemas.length > 0) {
@@ -2947,12 +3353,23 @@ document.addEventListener('alpine:init', () => {
             this.debouncedSave();
         },
 
-        // Load templates for schemas
+        // Load templates for schemas (includes record-specific + linked parent presets)
         async loadTemplates() {
             try {
                 const schemaIds = this.schemas.map(s => s._id).join(',');
                 if (!schemaIds) return;
-                const res = await fetch(`/account/${this.accountNumber}/api/grid-templates?schemaId=${schemaIds}`, {
+                let url = `/account/${this.accountNumber}/api/grid-templates?schemaId=${schemaIds}`;
+                // Include current record + all linked records (patient, etc.)
+                const allRecordIds = [this.recordId];
+                for (const lr of this.linkedRecords) {
+                    if (lr.recordId && !allRecordIds.includes(lr.recordId)) {
+                        allRecordIds.push(lr.recordId);
+                    }
+                }
+                if (allRecordIds.length > 0) {
+                    url += `&includeRecord=${allRecordIds.join(',')}`;
+                }
+                const res = await fetch(url, {
                     credentials: 'include'
                 });
                 const data = await res.json();
@@ -2991,6 +3408,170 @@ document.addEventListener('alpine:init', () => {
             } catch (e) {
                 console.error('[DataGrid] Apply template error:', e);
             }
+        },
+
+        // ═══ PRESETS SYSTEM ═══════════════════════════════════════════
+
+        // Toggle preset dropdown
+        togglePresetDropdown(schemaId) {
+            const isOpen = this.presetDropdown[schemaId];
+            // Close all dropdowns first
+            for (const s of this.schemas) {
+                this.presetDropdown[s._id] = false;
+            }
+            this.presetDropdown[schemaId] = !isOpen;
+        },
+
+        // Get record-specific presets for a schema (current record + linked parents)
+        getRecordPresets(schemaId) {
+            const sid = schemaId?.toString();
+            const rid = this.recordId?.toString();
+            // Include IDs of current record + all linked parent records
+            const allIds = new Set();
+            if (rid) allIds.add(rid);
+            for (const lr of this.linkedRecords) {
+                if (lr.recordId) allIds.add(lr.recordId.toString());
+            }
+            if (allIds.size === 0) return [];
+            return this.gridTemplates.filter(t => {
+                const tSchemaId = (t.schemaId?._id || t.schemaId)?.toString();
+                const tRecordId = t.recordId?.toString();
+                return tSchemaId === sid && tRecordId && allIds.has(tRecordId);
+            });
+        },
+
+        // Get global/workspace presets for a schema (not record-specific)
+        getGlobalPresets(schemaId) {
+            const sid = schemaId?.toString();
+            return this.gridTemplates.filter(t => {
+                const tSchemaId = (t.schemaId?._id || t.schemaId)?.toString();
+                return tSchemaId === sid && !t.recordId;
+            });
+        },
+
+        // Open save preset modal
+        openSavePresetModal(schemaId) {
+            this.activeSchemaId = schemaId;
+            this.savePresetModal = {
+                open: true,
+                name: '',
+                scope: this.linkedRecords.length > 0 ? 'linked' : 'workspace',
+                schemaId: schemaId,
+                saving: false,
+                linkedRecordId: this.linkedRecords.length > 0 ? this.linkedRecords[0].recordId : null,
+                linkedRecordLabel: this.linkedRecords.length > 0 ? this.linkedRecords[0].recordTitle : '',
+                linkedRelationLabel: this.linkedRecords.length > 0 ? this.linkedRecords[0].relationLabel : ''
+            };
+            this.$nextTick(() => {
+                if (this.$refs.presetNameInput) {
+                    this.$refs.presetNameInput.focus();
+                }
+            });
+        },
+
+        // Confirm save preset
+        async confirmSavePreset() {
+            const { name, scope, schemaId, linkedRecordId, linkedRecordLabel, linkedRelationLabel } = this.savePresetModal;
+            if (!name.trim()) return;
+
+            this.savePresetModal.saving = true;
+            try {
+                // Determine recordId based on scope:
+                // - 'workspace': no recordId (global)
+                // - 'linked': parent record ID (e.g., patient) → visible on all consultations of this patient
+                // - 'record': current record ID → only on this specific record
+                let targetRecordId = undefined;
+                let targetRecordLabel = '';
+                let backendScope = scope === 'linked' ? 'record' : scope;
+
+                if (scope === 'linked' && linkedRecordId) {
+                    targetRecordId = linkedRecordId;
+                    targetRecordLabel = `${linkedRelationLabel}: ${linkedRecordLabel}`;
+                } else if (scope === 'record') {
+                    targetRecordId = this.recordId;
+                    targetRecordLabel = document.title || '';
+                }
+
+                const payload = {
+                    name: name.trim(),
+                    schemaId,
+                    documentId: this.recordId,
+                    scope: backendScope,
+                    recordId: targetRecordId,
+                    recordLabel: targetRecordLabel
+                };
+
+                const res = await fetch(`/account/${this.accountNumber}/api/grid-templates/save-from-record`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (data.success && data.template) {
+                    // Add to local templates list
+                    this.gridTemplates.push(data.template);
+                    this.savePresetModal.open = false;
+                    console.log('[Presets] Saved preset:', data.template.name);
+                } else {
+                    console.error('[Presets] Save error:', data.error);
+                    alert('Erreur: ' + (data.error || 'Impossible de sauvegarder'));
+                }
+            } catch (e) {
+                console.error('[Presets] Save error:', e);
+                alert('Erreur réseau lors de la sauvegarde');
+            } finally {
+                this.savePresetModal.saving = false;
+            }
+        },
+
+        // Delete a preset
+        async deletePreset(presetId) {
+            if (!confirm('Supprimer ce preset ?')) return;
+            try {
+                const res = await fetch(`/account/${this.accountNumber}/api/grid-templates/${presetId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Remove from local list
+                    this.gridTemplates = this.gridTemplates.filter(t => t._id !== presetId);
+                    console.log('[Presets] Deleted preset:', presetId);
+                }
+            } catch (e) {
+                console.error('[Presets] Delete error:', e);
+            }
+        },
+
+        // Get a human-readable label for a line (for preview)
+        getLinePreviewLabel(line, schemaId) {
+            const schema = this.schemas.find(s => s._id === schemaId);
+            if (!schema || !line) return '—';
+
+            // Try relation label first
+            const relCol = (schema.columns || []).find(c => c.type === 'relation');
+            if (relCol && line.values[relCol.key + '_label']) {
+                return line.values[relCol.key + '_label'];
+            }
+
+            // Try first visible text column
+            const textCol = (schema.columns || []).find(c =>
+                c.type === 'text' && c.visible !== false
+            );
+            if (textCol && line.values[textCol.key]) {
+                return line.values[textCol.key];
+            }
+
+            // Fallback: first non-empty value
+            for (const col of (schema.columns || []).filter(c => c.visible !== false)) {
+                const val = line.values[col.key];
+                if (val && typeof val === 'string' && val.trim()) return val;
+                if (val && typeof val === 'number') return `${col.label}: ${val}`;
+            }
+
+            return `Ligne ${(line.order || 0) + 1}`;
         },
 
         // ── Sortable init ───────────────────────────────────

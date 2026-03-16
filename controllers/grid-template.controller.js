@@ -6,7 +6,7 @@ module.exports = {
     async list(req, res) {
         try {
             const GridSchemaTemplate = await tenantCollection(req, "GridSchemaTemplate");
-            const { schemaId, scope, tags } = req.query;
+            const { schemaId, scope, tags, includeRecord } = req.query;
 
             const filter = {};
             if (schemaId) {
@@ -17,9 +17,24 @@ module.exports = {
             if (scope) filter.scope = scope;
             if (tags) filter.tags = { $in: tags.split(',') };
 
+            // When includeRecord is provided, return both:
+            // - global/workspace presets (no recordId)
+            // - record-specific presets for these records
+            // Supports comma-separated IDs (e.g., includeRecord=consultationId,patientId)
+            if (includeRecord) {
+                const recordIds = includeRecord.split(',').map(id => id.trim()).filter(Boolean);
+                filter.$or = [
+                    { recordId: null },
+                    { recordId: { $exists: false } },
+                    ...(recordIds.length > 1
+                        ? [{ recordId: { $in: recordIds } }]
+                        : [{ recordId: recordIds[0] }])
+                ];
+            }
+
             const templates = await GridSchemaTemplate.find(filter)
                 .populate('schemaId', 'name slug inputMode dataMode')
-                .sort({ name: 1 });
+                .sort({ scope: 1, name: 1 });
 
             res.json({ success: true, templates });
         } catch (error) {
@@ -124,6 +139,62 @@ module.exports = {
             res.json({ success: true });
         } catch (error) {
             console.error('GridTemplate delete error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    },
+
+    // ─── Save current record lines as a preset (from record) ───────
+    async saveFromRecord(req, res) {
+        try {
+            const GridSchemaTemplate = await tenantCollection(req, "GridSchemaTemplate");
+            const DocumentLine = await tenantCollection(req, "DocumentLine");
+
+            const { name, schemaId, documentId, scope, recordId, recordLabel, icon, color, description, tags } = req.body;
+
+            if (!name || !schemaId || !documentId) {
+                return res.status(400).json({ success: false, error: 'name, schemaId and documentId are required' });
+            }
+
+            // Fetch current lines for this schema on this document
+            const currentLines = await DocumentLine.find({ documentId, schemaId })
+                .sort({ order: 1 })
+                .lean();
+
+            if (currentLines.length === 0) {
+                return res.status(400).json({ success: false, error: 'No lines to save' });
+            }
+
+            // Build preset rows from current lines (strip IDs, documentId, timestamps)
+            const presetRows = currentLines.map((line, idx) => ({
+                lineType: line.lineType || 'default',
+                values: line.values || {},
+                order: idx
+            }));
+
+            const template = new GridSchemaTemplate({
+                name,
+                slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, ''),
+                description: description || `Preset saved from record`,
+                icon: icon || 'solar:clipboard-check-bold-duotone',
+                color: color || '#4361ee',
+                schemaId,
+                presetRows,
+                formLayout: { columns: 3, fieldOrder: [] },
+                scope: scope || 'workspace',
+                recordId: scope === 'record' ? recordId : null,
+                recordLabel: scope === 'record' ? (recordLabel || '') : '',
+                tags: tags || [],
+                createdBy: req.user?._id
+            });
+
+            await template.save();
+
+            // Populate schemaId for response
+            await template.populate('schemaId', 'name slug inputMode dataMode');
+
+            res.json({ success: true, template });
+        } catch (error) {
+            console.error('GridTemplate saveFromRecord error:', error);
             res.status(500).json({ success: false, error: error.message });
         }
     },

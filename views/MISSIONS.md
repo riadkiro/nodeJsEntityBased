@@ -25,5 +25,19 @@ http://localhost:3000/account/9194/record/consultations/69a53cfcde03671e05ed2350
 
 (rien pour l'instant)
 
-Mission du 15/03/2026
-![alt text](image-55.png) pour un tableau dynamique, je dois avoir l'historique, genre historique des traitements, historiques des commandes, historiques des factures.... pour cela on doit etre flexible au niveau des relations, genre pour consultation je dois avoir l'historique des factures/taritement etc par rapport a au patient lié a la consultation, trouve moi donc la meilleure combine et structure possible pour ca, peut etre lié les tableau dynamique a patient azu lieux de consultation? mais afficher le ui dans consultation via liaison indirect  ? ou lié a consultation mais pourvoir trié par patient .... qu'est ce qui est mieux ? donc au niveau UI, un tableau doit avoir une petite toolbar en haut avec historique, creer doncument, je dois aussi avoir en widget a possibilité d'afficher les records d'un tableau dynamique sans povoir modifier juste afficher le tableau,...je dois aussi avoir un btn a coté de edit ![alt text](image-56.png)qui permet d'enregistrer un set de ligne, genre pour traitement j'enregistre Atenor, Rexaban, Exforge avec leur frequence etc, je peux enregistrer ca sur le record genre comme traitement habiotuel pour Mr Dupondt, ou globalement genre Protocol Grippe, je peux retrouver alors ces enregistrement rapidement pour un encodage rapide, je peux faire la meme chose pour un suivi, Pour les analyse de labo, jai un tableau dynamique Analyse, je peux enregistrer comme suivi de la tyroide, ou suivie dibete... j'ai alors acces à l ensebme des metrics en un clique... cree moi ce systeme de facon PRO, ultra UX/UI, beau design etc, met des données demo seur le compte Actirama tenant 9194...
+## Mission du 15/03/2026 — Tableaux Dynamiques : Presets & Toolbar
+
+### ✅ Réalisé
+
+- [x] **Modèle GridSchemaTemplate** — Ajout `recordId`, `recordLabel`, scope `'record'` pour presets par-record
+- [x] **API Backend** — `POST /api/grid-templates/save-from-record` + filter `includeRecord` dans `GET /api/grid-templates`
+- [x] **Toolbar Mini** — Barre `Presets | Sauvegarder | Modèles` au-dessus du tableau dynamique
+- [x] **Dropdown Presets** — Sections "Pour ce record" + "Presets globaux" avec badges de comptage, icônes colorées, suppression
+- [x] **Modal Sauvegarder** — Nom, portée (Global / Record), preview des lignes, validation
+- [x] **Données Démo tenant 9194** — 2 schemas (Ordonnance 6 cols + Analyses 13 cols) + 6 presets (Grippe, HTA, Douleur, Thyroïde, Lipidique, Rénal)
+
+### 🔲 Reste à faire
+
+- [ ] Scoper les schemas créés aux entités spécifiques (Patients, Consultations) via `/account/9194/line-schemas`
+- [ ] Widget read-only pour afficher un tableau dynamique sans possibilité de modification
+- [ ] Historique des records liés (affichage indirect via liaison Patient → Consultations)

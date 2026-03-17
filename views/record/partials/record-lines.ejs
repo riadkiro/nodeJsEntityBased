@@ -115,18 +115,15 @@
     /* Relation search dropdown */
     .lp-relation-wrap { position: relative; }
     .lp-relation-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        z-index: 50;
+        position: fixed;
+        z-index: 9999;
+        min-width: 280px;
         background: #fff;
         border: 1px solid #e5e7eb;
         border-radius: 8px;
         box-shadow: 0 8px 24px rgba(0,0,0,0.12);
         max-height: 180px;
         overflow-y: auto;
-        margin-top: 2px;
     }
     .dark .lp-relation-dropdown {
         background: #0e1726;
@@ -1177,7 +1174,9 @@
                 </div>
 
                 <!-- Table (catalog & table modes only, hidden for form mode) -->
-                <div class="overflow-x-auto" x-show="getSchemaInputMode(schema) !== 'form'">
+                <div x-show="getSchemaInputMode(schema) !== 'form'"
+                     :class="relationSearch.open ? '' : 'overflow-x-auto'"
+                     :style="relationSearch.open ? 'overflow: visible' : ''">
                     <table class="lines-panel-table">
                         <thead>
                             <tr>
@@ -1209,13 +1208,14 @@
                                             <div class="lp-relation-wrap">
                                                 <input type="text" class="lp-input"
                                                     :value="getRelationLabel(line)"
-                                                    @focus="openRelationSearch(lineIdx, getRelationCol().key)"
-                                                    @input="searchRelation(lineIdx, getRelationCol().key, $event.target.value)"
+                                                    @focus="openRelationSearch(lineIdx, getRelationCol().key, $event)"
+                                                    @input="searchRelation(lineIdx, getRelationCol().key, $event.target.value, $event)"
                                                     @keydown.escape="closeRelationSearch()"
                                                     :placeholder="'🔍 ' + (getRelationCol()?.label || 'Article')" />
                                                 <!-- Dropdown -->
                                                 <div x-show="relationSearch.lineIdx === lineIdx && relationSearch.colKey === getRelationCol().key && relationSearch.open"
                                                     class="lp-relation-dropdown"
+                                                    :style="'top:' + (relationSearch._top || 0) + 'px; left:' + (relationSearch._left || 0) + 'px; width:' + (relationSearch._width || 280) + 'px'"
                                                     @click.outside="closeRelationSearch()">
                                                     <template x-if="relationSearch.loading">
                                                         <div class="px-3 py-2 text-xs text-gray-400 text-center">
@@ -1389,13 +1389,14 @@
                                                 <div class="lp-relation-wrap">
                                                     <input type="text" class="lp-input"
                                                         :value="line.values[col.key + '_label'] || ''"
-                                                        @focus="openRelationSearch(lineIdx, col.key)"
-                                                        @input="searchRelation(lineIdx, col.key, $event.target.value)"
+                                                        @focus="openRelationSearch(lineIdx, col.key, $event)"
+                                                        @input="searchRelation(lineIdx, col.key, $event.target.value, $event)"
                                                         @keydown.escape="closeRelationSearch()"
                                                         :placeholder="'🔍 ' + col.label" />
                                                     <!-- Dropdown -->
                                                     <div x-show="relationSearch.lineIdx === lineIdx && relationSearch.colKey === col.key && relationSearch.open"
                                                         class="lp-relation-dropdown"
+                                                        :style="'top:' + (relationSearch._top || 0) + 'px; left:' + (relationSearch._left || 0) + 'px; width:' + (relationSearch._width || 280) + 'px'"
                                                         @click.outside="closeRelationSearch()">
                                                         <template x-if="relationSearch.loading">
                                                             <div class="px-3 py-2 text-xs text-gray-400 text-center">
@@ -2500,7 +2501,10 @@ document.addEventListener('alpine:init', () => {
             loading: false,
             results: [],
             query: '',
-            debounceTimer: null
+            debounceTimer: null,
+            _top: 0,
+            _left: 0,
+            _width: 280
         },
 
         // Multiselect dropdown state
@@ -3379,23 +3383,33 @@ document.addEventListener('alpine:init', () => {
         },
 
         // ── Relation search (autocomplete) ─────────────────
-        openRelationSearch(lineIdx, colKey) {
+        _positionRelDropdown(el) {
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            this.relationSearch._top = rect.bottom + 2;
+            this.relationSearch._left = rect.left;
+            this.relationSearch._width = Math.max(rect.width, 280);
+        },
+
+        openRelationSearch(lineIdx, colKey, event) {
             this.relationSearch.lineIdx = lineIdx;
             this.relationSearch.colKey = colKey;
             this.relationSearch.open = true;
             this.relationSearch.results = [];
             this.relationSearch.query = '';
+            if (event?.target) this._positionRelDropdown(event.target);
         },
 
         closeRelationSearch() {
             this.relationSearch.open = false;
         },
 
-        searchRelation(lineIdx, colKey, query) {
+        searchRelation(lineIdx, colKey, query, event) {
             this.relationSearch.query = query;
             this.relationSearch.lineIdx = lineIdx;
             this.relationSearch.colKey = colKey;
             this.relationSearch.open = true;
+            if (event?.target) this._positionRelDropdown(event.target);
 
             clearTimeout(this.relationSearch.debounceTimer);
             this.relationSearch.debounceTimer = setTimeout(() => {

@@ -1488,7 +1488,7 @@
                                     </div>
                                     <!-- Actions (edit/delete) -->
                                     <div class="dg-form-entry-actions">
-                                        <button type="button" class="lp-row-btn edit" @click="activeSchemaId = schema._id; openEditLine(lineIdx)" title="Modifier">
+                                        <button type="button" class="lp-row-btn edit" @click="activeSchemaId = schema._id; openEditLine(lineIdx, schema._id)" title="Modifier">
                                             <iconify-icon icon="tabler:pencil" width="14"></iconify-icon>
                                         </button>
                                         <button type="button" class="lp-row-btn delete" @click="activeSchemaId = schema._id; removeLine(lineIdx)" title="Supprimer">
@@ -1567,11 +1567,19 @@
                                                     <div class="tp-divider"></div>
                                                     <div class="tp-options">
                                                         <template x-for="opt in (col.config?.options || []).filter(o => !formSelSearch[schema._id + '_' + col.key] || o.label.toLowerCase().includes((formSelSearch[schema._id + '_' + col.key] || '').toLowerCase()))" :key="opt.value">
-                                                            <div class="tp-option" @click="formAddValues[schema._id + '_' + col.key] = opt.value; formSelOpen[schema._id + '_' + col.key] = false">
-                                                                <div class="tp-option-icon" style="background:#dbeafe;">
-                                                                    <iconify-icon x-show="formAddValues[schema._id + '_' + col.key] === opt.value" icon="tabler:check" width="12" style="color:#2563eb;"></iconify-icon>
+                                                            <div class="tp-option" style="display:flex; align-items:center; justify-content:space-between;" @click="formAddValues[schema._id + '_' + col.key] = opt.value; formSelOpen[schema._id + '_' + col.key] = false">
+                                                                <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
+                                                                    <div class="tp-option-icon" style="background:#dbeafe;">
+                                                                        <iconify-icon x-show="formAddValues[schema._id + '_' + col.key] === opt.value" icon="tabler:check" width="12" style="color:#2563eb;"></iconify-icon>
+                                                                    </div>
+                                                                    <span class="tp-option-label" x-text="opt.label"></span>
                                                                 </div>
-                                                                <span class="tp-option-label" x-text="opt.label"></span>
+                                                                <button type="button" class="tp-option-delete"
+                                                                    :class="_pendingDeleteOpt === opt.value ? 'tp-option-delete--confirm' : ''"
+                                                                    @mousedown.prevent.stop="removeInlineOption(schema, col, opt.value)"
+                                                                    :title="_pendingDeleteOpt === opt.value ? 'Cliquer pour confirmer' : 'Supprimer cette option'">
+                                                                    <iconify-icon :icon="_pendingDeleteOpt === opt.value ? 'tabler:check' : 'tabler:trash'" width="12" style="pointer-events:none;"></iconify-icon>
+                                                                </button>
                                                             </div>
                                                         </template>
                                                         <template x-if="(col.config?.options || []).filter(o => !formSelSearch[schema._id + '_' + col.key] || o.label.toLowerCase().includes((formSelSearch[schema._id + '_' + col.key] || '').toLowerCase())).length === 0 && !(formSelSearch[schema._id + '_' + col.key] || '').trim()">
@@ -1623,11 +1631,19 @@
                                                     <div class="tp-divider"></div>
                                                     <div class="tp-options">
                                                         <template x-for="opt in (col.config?.options || []).filter(o => !formSelSearch[schema._id + '_' + col.key] || o.label.toLowerCase().includes((formSelSearch[schema._id + '_' + col.key] || '').toLowerCase()))" :key="opt.value">
-                                                            <div class="tp-option" @click="toggleFormAddMultiselect(schema._id, col.key, opt.value)">
-                                                                <div class="tp-option-icon" style="background:#dbeafe;">
-                                                                    <iconify-icon x-show="(formAddValues[schema._id + '_' + col.key] || []).includes(opt.value)" icon="tabler:check" width="12" style="color:#2563eb;"></iconify-icon>
+                                                            <div class="tp-option" style="display:flex; align-items:center; justify-content:space-between;" @click="toggleFormAddMultiselect(schema._id, col.key, opt.value)">
+                                                                <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
+                                                                    <div class="tp-option-icon" style="background:#dbeafe;">
+                                                                        <iconify-icon x-show="(formAddValues[schema._id + '_' + col.key] || []).includes(opt.value)" icon="tabler:check" width="12" style="color:#2563eb;"></iconify-icon>
+                                                                    </div>
+                                                                    <span class="tp-option-label" x-text="opt.label"></span>
                                                                 </div>
-                                                                <span class="tp-option-label" x-text="opt.label"></span>
+                                                                <button type="button" class="tp-option-delete"
+                                                                    :class="_pendingDeleteOpt === opt.value ? 'tp-option-delete--confirm' : ''"
+                                                                    @mousedown.prevent.stop="removeInlineOption(schema, col, opt.value)"
+                                                                    :title="_pendingDeleteOpt === opt.value ? 'Cliquer pour confirmer' : 'Supprimer cette option'">
+                                                                    <iconify-icon :icon="_pendingDeleteOpt === opt.value ? 'tabler:check' : 'tabler:trash'" width="12" style="pointer-events:none;"></iconify-icon>
+                                                                </button>
                                                             </div>
                                                         </template>
                                                         <template x-if="(col.config?.options || []).filter(o => !formSelSearch[schema._id + '_' + col.key] || o.label.toLowerCase().includes((formSelSearch[schema._id + '_' + col.key] || '').toLowerCase())).length === 0 && !(formSelSearch[schema._id + '_' + col.key] || '').trim()">
@@ -2057,7 +2073,7 @@
         <!-- ═══ Edit Line Modal ═══ -->
         <template x-if="editModal.open">
             <div class="lp-modal-overlay" @click.self="closeEditModal()" @keydown.escape.window="closeEditModal()">
-                <div class="lp-modal" style="max-width: 520px;">
+                <div class="lp-modal" style="max-width: 520px;" :style="editRelOpen ? 'overflow: visible' : ''">
                     <!-- Header -->
                     <div class="lp-modal-header">
                         <h3>
@@ -2070,57 +2086,112 @@
                     </div>
 
                     <!-- Form fields -->
-                    <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; max-height: 60vh; overflow-y: auto;">
-                        <!-- Entity/Relation name (always shown first) -->
+                    <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; max-height: 60vh;"
+                         :style="editRelOpen ? 'overflow: visible' : 'overflow-y: auto'">
+                        <!-- Entity/Relation (editable autocomplete) -->
                         <template x-if="getRelationCol()">
-                            <div style="padding: 10px 14px; background: linear-gradient(135deg, rgba(67,97,238,0.06), rgba(67,97,238,0.02)); border-radius: 8px; border: 1px solid rgba(67,97,238,0.12);">
+                            <div>
                                 <label style="display: block; font-size: 10px; font-weight: 600; color: #4361ee; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;" x-text="getRelationCol()?.label || 'Article'"></label>
-                                <div style="font-size: 14px; font-weight: 600; color: #1e293b;" x-text="getRelationLabel(lines[editModal.lineIdx]) || '—'"></div>
+                                <div class="tp-wrapper" @click.away="editRelOpen = false">
+                                    <!-- Trigger -->
+                                    <div class="tp-trigger" style="min-height:34px; padding:4px 8px; border-radius:8px;"
+                                         :class="editRelOpen ? 'tp-trigger--active' : ''"
+                                         @click="editRelOpen = true; editRelSearch = ''; searchEditRelation(); $nextTick(() => $refs.editRelInput?.focus())">
+                                        <template x-if="getEditLines()[editModal.lineIdx]?.values[getRelationCol()?.key]">
+                                            <span class="tp-tag" style="background:#dbeafe; color:#2563eb;">
+                                                <span x-text="getEditLines()[editModal.lineIdx]?.values[getRelationCol()?.key + '_label'] || getRelationLabel(getEditLines()[editModal.lineIdx]) || '—'"></span>
+                                                <button type="button" class="tp-tag-remove" @click.stop="getEditLines()[editModal.lineIdx].values[getRelationCol().key] = ''; getEditLines()[editModal.lineIdx].values[getRelationCol().key + '_label'] = ''">
+                                                    <iconify-icon icon="tabler:x" width="10"></iconify-icon>
+                                                </button>
+                                            </span>
+                                        </template>
+                                        <template x-if="!getEditLines()[editModal.lineIdx]?.values[getRelationCol()?.key]">
+                                            <span class="tp-placeholder">
+                                                <iconify-icon icon="solar:magnifer-bold-duotone" width="13" style="margin-right:4px; opacity:0.5;"></iconify-icon>
+                                                <span x-text="getRelationCol()?.label || 'Rechercher...'"></span>
+                                            </span>
+                                        </template>
+                                    </div>
+                                    <!-- Dropdown -->
+                                    <div class="tp-dropdown" style="min-width:280px; z-index:10000;" x-show="editRelOpen" x-cloak
+                                         x-transition:enter="transition ease-out duration-150"
+                                         x-transition:enter-start="opacity-0 translate-y-1"
+                                         x-transition:enter-end="opacity-100 translate-y-0"
+                                         @click.stop>
+                                        <div class="tp-search-wrap">
+                                            <input type="text" class="tp-search-input"
+                                                   x-ref="editRelInput"
+                                                   x-model="editRelSearch"
+                                                   :placeholder="'Rechercher ' + (getRelationCol()?.label || '') + '...'"
+                                                   @input.debounce.300ms="searchEditRelation()" />
+                                        </div>
+                                        <div class="tp-divider"></div>
+                                        <div class="tp-options">
+                                            <template x-if="editRelLoading">
+                                                <div style="padding:12px; text-align:center; color:#9ca3af; font-size:12px;">Chargement...</div>
+                                            </template>
+                                            <template x-for="result in (editRelResults || [])" :key="result.id">
+                                                <div class="tp-option" @click="
+                                                    getEditLines()[editModal.lineIdx].values[getRelationCol().key] = result.id;
+                                                    getEditLines()[editModal.lineIdx].values[getRelationCol().key + '_label'] = result.label;
+                                                    editRelOpen = false">
+                                                    <div class="tp-option-icon" style="background:#dbeafe;">
+                                                        <iconify-icon x-show="getEditLines()[editModal.lineIdx]?.values[getRelationCol()?.key] === result.id" icon="tabler:check" width="12" style="color:#2563eb;"></iconify-icon>
+                                                    </div>
+                                                    <span class="tp-option-label" x-text="result.label"></span>
+                                                </div>
+                                            </template>
+                                            <template x-if="!editRelLoading && !(editRelResults || []).length">
+                                                <div style="padding:12px; text-align:center; color:#9ca3af; font-size:12px;">Aucun résultat</div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </template>
-                        <template x-for="col in getVisibleColumnsForLine(lines[editModal.lineIdx]).filter(c => c.type !== 'relation')" :key="col.key">
+                        <template x-for="col in getVisibleColumnsForLine(getEditLines()[editModal.lineIdx]).filter(c => c.type !== 'relation')" :key="col.key">
                             <div>
                                 <label style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;" x-text="col.label"></label>
 
                                 <!-- Text / Textarea -->
                                 <template x-if="col.type === 'text' || col.type === 'textarea'">
                                     <input type="text" class="lp-input" style="width: 100%; height: 34px; font-size: 13px;"
-                                        :value="lines[editModal.lineIdx].values[col.key] || ''"
-                                        @input="lines[editModal.lineIdx].values[col.key] = $event.target.value"
+                                        :value="getEditLines()[editModal.lineIdx].values[col.key] || ''"
+                                        @input="getEditLines()[editModal.lineIdx].values[col.key] = $event.target.value"
                                         :placeholder="col.label" />
                                 </template>
 
                                 <!-- Number -->
                                 <template x-if="col.type === 'number'">
                                     <input type="number" class="lp-input" style="width: 100%; height: 34px; font-size: 13px;"
-                                        :value="lines[editModal.lineIdx].values[col.key] || ''"
-                                        @input="lines[editModal.lineIdx].values[col.key] = parseFloat($event.target.value) || 0; recomputeLine(lines[editModal.lineIdx])"
+                                        :value="getEditLines()[editModal.lineIdx].values[col.key] || ''"
+                                        @input="getEditLines()[editModal.lineIdx].values[col.key] = parseFloat($event.target.value) || 0; recomputeLine(getEditLines()[editModal.lineIdx])"
                                         step="any" />
                                 </template>
 
                                 <!-- Money -->
                                 <template x-if="col.type === 'money'">
                                     <input type="number" class="lp-input" style="width: 100%; height: 34px; font-size: 13px;"
-                                        :value="lines[editModal.lineIdx].values[col.key] || ''"
-                                        @input="lines[editModal.lineIdx].values[col.key] = parseFloat($event.target.value) || 0; recomputeLine(lines[editModal.lineIdx])"
+                                        :value="getEditLines()[editModal.lineIdx].values[col.key] || ''"
+                                        @input="getEditLines()[editModal.lineIdx].values[col.key] = parseFloat($event.target.value) || 0; recomputeLine(getEditLines()[editModal.lineIdx])"
                                         step="0.01" />
                                 </template>
 
                                 <!-- Date -->
                                 <template x-if="col.type === 'date'">
                                     <input type="date" class="lp-input" style="width: 100%; height: 34px; font-size: 13px;"
-                                        :value="lines[editModal.lineIdx].values[col.key] || ''"
-                                        @input="lines[editModal.lineIdx].values[col.key] = $event.target.value" />
+                                        :value="getEditLines()[editModal.lineIdx].values[col.key] || ''"
+                                        @input="getEditLines()[editModal.lineIdx].values[col.key] = $event.target.value" />
                                 </template>
 
                                 <!-- Select -->
                                 <template x-if="col.type === 'select'">
                                     <select class="lp-input" style="width: 100%; height: 34px; font-size: 13px;"
-                                        :value="lines[editModal.lineIdx].values[col.key] || ''"
-                                        @change="lines[editModal.lineIdx].values[col.key] = $event.target.value">
+                                        :value="getEditLines()[editModal.lineIdx].values[col.key] || ''"
+                                        @change="getEditLines()[editModal.lineIdx].values[col.key] = $event.target.value">
                                         <option value="">—</option>
-                                        <template x-for="opt in getSelectOptions(col, lines[editModal.lineIdx])" :key="opt.value">
-                                            <option :value="opt.value" x-text="opt.label" :selected="lines[editModal.lineIdx].values[col.key] === opt.value"></option>
+                                        <template x-for="opt in getSelectOptions(col, getEditLines()[editModal.lineIdx])" :key="opt.value">
+                                            <option :value="opt.value" x-text="opt.label" :selected="getEditLines()[editModal.lineIdx].values[col.key] === opt.value"></option>
                                         </template>
                                     </select>
                                 </template>
@@ -2130,10 +2201,10 @@
                                     <div class="lp-ms-wrap">
                                         <div class="lp-ms-trigger"
                                              @click.stop="openMultiselectDropdown('edit_' + editModal.lineIdx + '_' + col.key, col.key, $event)">
-                                            <template x-if="(lines[editModal.lineIdx].values[col.key] || []).length === 0">
+                                            <template x-if="(getEditLines()[editModal.lineIdx].values[col.key] || []).length === 0">
                                                 <span class="lp-ms-placeholder">Sélectionner...</span>
                                             </template>
-                                            <template x-for="selVal in (lines[editModal.lineIdx].values[col.key] || [])" :key="selVal">
+                                            <template x-for="selVal in (getEditLines()[editModal.lineIdx].values[col.key] || [])" :key="selVal">
                                                 <span class="tp-tag"
                                                       :style="'background:' + getMultiselectOptStyle(col, selVal).bg + '; color:' + getMultiselectOptStyle(col, selVal).text"
                                                       x-text="getMultiselectOptLabel(col, selVal)">
@@ -2156,12 +2227,12 @@
                                                     <div class="tp-options">
                                                         <template x-for="opt in filterMsOptions(col)" :key="opt.value">
                                                             <div class="tp-option"
-                                                                 @click.stop="toggleMultiselectValue(lines[editModal.lineIdx], col.key, opt.value)">
+                                                                 @click.stop="toggleMultiselectValue(getEditLines()[editModal.lineIdx], col.key, opt.value)">
                                                                 <div class="tp-option-icon"
-                                                                     :style="(lines[editModal.lineIdx].values[col.key] || []).includes(opt.value)
+                                                                     :style="(getEditLines()[editModal.lineIdx].values[col.key] || []).includes(opt.value)
                                                                          ? 'background:' + getMultiselectOptStyle(col, opt.value).bg + '; border: 2px solid ' + getMultiselectOptStyle(col, opt.value).bg
                                                                          : 'background: #fff; border: 2px solid #d1d5db'">
-                                                                    <iconify-icon x-show="(lines[editModal.lineIdx].values[col.key] || []).includes(opt.value)"
+                                                                    <iconify-icon x-show="(getEditLines()[editModal.lineIdx].values[col.key] || []).includes(opt.value)"
                                                                                   icon="tabler:check" width="12"
                                                                                   :style="'color:' + getMultiselectOptStyle(col, opt.value).text"></iconify-icon>
                                                                 </div>
@@ -2179,12 +2250,12 @@
                                 <template x-if="col.type === 'duration'">
                                     <div style="display: flex; gap: 6px; align-items: center;">
                                         <input type="number" class="lp-input" style="width: 80px; height: 34px; font-size: 13px; text-align: right;"
-                                            :value="lines[editModal.lineIdx].values[col.key]?.value || ''"
-                                            @input="if(!lines[editModal.lineIdx].values[col.key]) lines[editModal.lineIdx].values[col.key] = {}; lines[editModal.lineIdx].values[col.key].value = parseFloat($event.target.value) || 0"
+                                            :value="getEditLines()[editModal.lineIdx].values[col.key]?.value || ''"
+                                            @input="if(!getEditLines()[editModal.lineIdx].values[col.key]) getEditLines()[editModal.lineIdx].values[col.key] = {}; getEditLines()[editModal.lineIdx].values[col.key].value = parseFloat($event.target.value) || 0"
                                             min="0" step="1" />
                                         <select class="lp-input" style="width: auto; height: 34px; font-size: 13px;"
-                                            :value="lines[editModal.lineIdx].values[col.key]?.unit || (col.config?.units?.[0] || 'day')"
-                                            @change="if(!lines[editModal.lineIdx].values[col.key]) lines[editModal.lineIdx].values[col.key] = {}; lines[editModal.lineIdx].values[col.key].unit = $event.target.value">
+                                            :value="getEditLines()[editModal.lineIdx].values[col.key]?.unit || (col.config?.units?.[0] || 'day')"
+                                            @change="if(!getEditLines()[editModal.lineIdx].values[col.key]) getEditLines()[editModal.lineIdx].values[col.key] = {}; getEditLines()[editModal.lineIdx].values[col.key].unit = $event.target.value">
                                             <template x-for="u in (col.config?.units || ['day','week','month'])" :key="u">
                                                 <option :value="u" x-text="durationLabel(u)"></option>
                                             </template>
@@ -2196,12 +2267,12 @@
                                 <template x-if="col.type === 'dosage'">
                                     <div style="display: flex; gap: 6px; align-items: center;">
                                         <input type="number" class="lp-input" style="width: 80px; height: 34px; font-size: 13px; text-align: right;"
-                                            :value="lines[editModal.lineIdx].values[col.key]?.value || ''"
-                                            @input="if(!lines[editModal.lineIdx].values[col.key]) lines[editModal.lineIdx].values[col.key] = {}; lines[editModal.lineIdx].values[col.key].value = parseFloat($event.target.value) || 0"
+                                            :value="getEditLines()[editModal.lineIdx].values[col.key]?.value || ''"
+                                            @input="if(!getEditLines()[editModal.lineIdx].values[col.key]) getEditLines()[editModal.lineIdx].values[col.key] = {}; getEditLines()[editModal.lineIdx].values[col.key].value = parseFloat($event.target.value) || 0"
                                             min="0" step="any" />
                                         <select class="lp-input" style="width: auto; height: 34px; font-size: 13px;"
-                                            :value="lines[editModal.lineIdx].values[col.key]?.unit || (col.config?.units?.[0] || 'mg')"
-                                            @change="if(!lines[editModal.lineIdx].values[col.key]) lines[editModal.lineIdx].values[col.key] = {}; lines[editModal.lineIdx].values[col.key].unit = $event.target.value">
+                                            :value="getEditLines()[editModal.lineIdx].values[col.key]?.unit || (col.config?.units?.[0] || 'mg')"
+                                            @change="if(!getEditLines()[editModal.lineIdx].values[col.key]) getEditLines()[editModal.lineIdx].values[col.key] = {}; getEditLines()[editModal.lineIdx].values[col.key].unit = $event.target.value">
                                             <template x-for="u in (col.config?.units || ['mg','ml','g','cp'])" :key="u">
                                                 <option :value="u" x-text="u"></option>
                                             </template>
@@ -2212,13 +2283,13 @@
                                 <!-- Relation (display only) -->
                                 <template x-if="col.type === 'relation'">
                                     <div class="lp-input" style="width: 100%; height: 34px; font-size: 13px; display: flex; align-items: center; background: #f9fafb; color: #374151;"
-                                        x-text="lines[editModal.lineIdx].values[col.key + '_label'] || '—'"></div>
+                                        x-text="getEditLines()[editModal.lineIdx].values[col.key + '_label'] || '—'"></div>
                                 </template>
 
                                 <!-- Formula (computed, read-only) -->
                                 <template x-if="col.type === 'formula'">
                                     <div class="lp-input" style="width: 100%; height: 34px; font-size: 13px; display: flex; align-items: center; background: #f9fafb; color: #374151;"
-                                        x-text="formatComputed(lines[editModal.lineIdx], col)"></div>
+                                        x-text="formatComputed(getEditLines()[editModal.lineIdx], col)"></div>
                                 </template>
                             </div>
                         </template>
@@ -2461,7 +2532,11 @@ document.addEventListener('alpine:init', () => {
         },
 
         _saveTimers: {},  // per-schema save timers
-        editModal: { open: false, lineIdx: -1 },
+        editModal: { open: false, lineIdx: -1, schemaId: null },
+        editRelOpen: false,
+        editRelSearch: '',
+        editRelResults: [],
+        editRelLoading: false,
 
         // ═══ DataGrid V2: New mode state ═══
         analyticsView: {},   // { schemaId: 'data' | '<viewId>' } — which analytics view is active
@@ -3046,26 +3121,61 @@ document.addEventListener('alpine:init', () => {
         },
 
         // ── Edit Line Modal ──────────────────────────────────
-        openEditLine(lineIdx) {
-            const line = this.lines[lineIdx];
+        getEditLines() {
+            // Return the correct lines array for the current edit context
+            const schemaId = this.editModal.schemaId || this.activeSchemaId;
+            return this.linesMap[schemaId] || this.lines || [];
+        },
+
+        openEditLine(lineIdx, schemaId) {
+            const sid = schemaId || this.activeSchemaId;
+            const lines = this.linesMap[sid] || this.lines || [];
+            const line = lines[lineIdx];
             if (!line) return;
             this.editModal.lineIdx = lineIdx;
+            this.editModal.schemaId = sid;
             this.editModal.open = true;
         },
 
         closeEditModal() {
             this.editModal.open = false;
             this.editModal.lineIdx = -1;
+            this.editModal.schemaId = null;
+            this.editRelOpen = false;
+            this.editRelSearch = '';
+            this.editRelResults = [];
+            this.editRelLoading = false;
         },
 
         saveEditLine() {
-            const line = this.lines[this.editModal.lineIdx];
+            const lines = this.getEditLines();
+            const line = lines[this.editModal.lineIdx];
             if (line) {
                 this.recomputeLine(line);
                 this.recomputeTotals();
                 this.debouncedSave();
             }
             this.closeEditModal();
+        },
+
+        async searchEditRelation() {
+            const relCol = this.getRelationCol();
+            if (!relCol) return;
+            const entityId = relCol.config?.targetEntity;
+            if (!entityId) { this.editRelResults = []; return; }
+            this.editRelLoading = true;
+            try {
+                let url = `/account/${this.accountNumber}/record/api/search?entityId=${entityId}&page=1&limit=10`;
+                if (this.editRelSearch) url += `&q=${encodeURIComponent(this.editRelSearch)}`;
+                const res = await fetch(url, { credentials: 'include' });
+                const data = await res.json();
+                this.editRelResults = data.data || [];
+            } catch (e) {
+                console.error('Edit relation search failed:', e);
+                this.editRelResults = [];
+            } finally {
+                this.editRelLoading = false;
+            }
         },
 
         removeLine(idx) {
@@ -3624,6 +3734,44 @@ document.addEventListener('alpine:init', () => {
             if (col.config.options.some(o => o.value === slug || o.label.toLowerCase() === val.toLowerCase())) return;
             col.config.options.push({ value: slug, label: val });
             // Also save the column config back to the schema via API
+            this.saveInlineOptionToSchema(col);
+        },
+
+        // Remove an inline option from a select/multiselect column (2-step: confirm then delete)
+        _pendingDeleteOpt: null,
+        _pendingDeleteTimer: null,
+
+        removeInlineOption(schema, col, optValue) {
+            // Step 1: first click → mark as pending (show confirmation)
+            if (this._pendingDeleteOpt !== optValue) {
+                this._pendingDeleteOpt = optValue;
+                clearTimeout(this._pendingDeleteTimer);
+                this._pendingDeleteTimer = setTimeout(() => { this._pendingDeleteOpt = null; }, 3000);
+                return;
+            }
+            // Step 2: second click → actually delete
+            clearTimeout(this._pendingDeleteTimer);
+            this._pendingDeleteOpt = null;
+
+            if (!col.config?.options) return;
+            col.config.options = col.config.options.filter(o => o.value !== optValue);
+            // If this option was selected, clear it
+            const key = schema._id + '_' + col.key;
+            if (col.type === 'multiselect') {
+                const arr = this.formAddValues[key] || [];
+                this.formAddValues[key] = arr.filter(v => v !== optValue);
+            } else if (this.formAddValues[key] === optValue) {
+                this.formAddValues[key] = '';
+            }
+            // Also remove from any existing lines that use this value
+            (this.linesMap[schema._id] || []).forEach(line => {
+                if (col.type === 'multiselect' && Array.isArray(line.values[col.key])) {
+                    line.values[col.key] = line.values[col.key].filter(v => v !== optValue);
+                } else if (line.values[col.key] === optValue) {
+                    line.values[col.key] = '';
+                }
+            });
+            // Persist to schema
             this.saveInlineOptionToSchema(col);
         },
 

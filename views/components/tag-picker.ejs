@@ -175,6 +175,53 @@
 .dark .tp-option-label {
     color: #cbd5e1;
 }
+/* Delete button on options (hover-only) */
+.tp-option-delete {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: #d1d5db;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease, background 0.1s ease, color 0.1s ease;
+    flex-shrink: 0;
+}
+.tp-option:hover .tp-option-delete {
+    opacity: 1;
+}
+.tp-option-delete:hover {
+    background: #fee2e2;
+    color: #ef4444;
+}
+.dark .tp-option-delete:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+}
+.tp-option-delete iconify-icon,
+.tp-option-delete svg,
+.tp-option-delete * {
+    pointer-events: none;
+}
+/* Confirm state (first click → turns red, always visible) */
+.tp-option-delete--confirm {
+    opacity: 1 !important;
+    background: #fee2e2 !important;
+    color: #ef4444 !important;
+    animation: tp-delete-pulse 0.8s ease-in-out infinite alternate;
+}
+.dark .tp-option-delete--confirm {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #f87171 !important;
+}
+@keyframes tp-delete-pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.15); }
+}
 .tp-option-actions {
     display: flex;
     align-items: center;

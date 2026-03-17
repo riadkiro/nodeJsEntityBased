@@ -1490,7 +1490,7 @@
                             <% }) %>
                         <% } else if (sectionId==='lines') { %>
                             <!-- 📊 Tableau Dynamique Panel -->
-                            <div class="panel-sortable-item" data-panel-id="lines" x-show="isPanelVisible('lines')" x-collapse.duration.200ms>
+                            <div class="panel-sortable-item" data-panel-id="lines" x-show="isPanelVisible('lines')" x-collapse.duration.200ms style="position: relative; z-index: 50;">
                                 <template x-if="designMode">
                                     <div class="panel-drag-handle">
                                         <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>

@@ -582,6 +582,9 @@
         border: 2px dashed #e5e7eb; border-radius: 12px;
         padding: 14px; margin: 8px 12px 12px;
         background: #fafbfc; transition: all 0.15s;
+        overflow: visible;
+        position: relative;
+        z-index: 10;
     }
     .dark .dg-form-add { background: #1b2e4b; border-color: #253b5c; }
     .dg-form-add-grid {
@@ -899,7 +902,7 @@
 
     <!-- Single panel with tabs when multiple schemas -->
     <template x-if="!loading && schemas.length > 0">
-        <div class="panel !p-0 overflow-hidden">
+        <div class="panel !p-0">
             <!-- Tab bar (shown only when multiple schemas) -->
             <div x-show="schemas.length > 1"
                  class="flex items-center gap-1 px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 overflow-x-auto" style="scrollbar-width: none;">
@@ -1334,6 +1337,13 @@
                                                                         </div>
                                                                     </template>
                                                                 </div>
+                                                                <div class="tp-divider"></div>
+                                                                <div style="padding:4px 8px;">
+                                                                    <input type="text" class="lp-input" style="font-size:11px; padding:4px 8px; width:100%;"
+                                                                           placeholder="+ Nouvelle option…"
+                                                                           @keydown.enter.stop="addInlineOption(col, $event.target.value); $event.target.value = ''"
+                                                                           @click.stop />
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </template>
@@ -1465,7 +1475,12 @@
                                             <div class="dg-form-entry-field">
                                                 <label x-text="col.label"></label>
                                                 <div class="dg-value">
-                                                    <span x-text="formatCellValue(line.values[col.key], col)"></span>
+                                                    <template x-if="col.type === 'relation'">
+                                                        <span x-text="formatRelationValue(line, col)"></span>
+                                                    </template>
+                                                    <template x-if="col.type !== 'relation'">
+                                                        <span x-text="formatCellValue(line.values[col.key], col)"></span>
+                                                    </template>
                                                     <span x-html="getNormalRangeIndicator(line.values[col.key], col)"></span>
                                                 </div>
                                             </div>
@@ -1517,24 +1532,216 @@
                                                    x-model="formAddValues[schema._id + '_' + col.key]"
                                                    :placeholder="col.label" />
                                         </template>
-                                        <!-- Select -->
+                                        <!-- Select (ClickUp-style dropdown) -->
                                         <template x-if="col.type === 'select'">
-                                            <select class="lp-input"
-                                                    x-model="formAddValues[schema._id + '_' + col.key]">
-                                                <option value="">—</option>
-                                                <template x-for="opt in (col.config?.options || [])" :key="opt.value">
-                                                    <option :value="opt.value" x-text="opt.label"></option>
-                                                </template>
-                                            </select>
+                                            <div class="tp-wrapper" @click.away="formSelOpen[schema._id + '_' + col.key] = false">
+                                                <!-- Trigger -->
+                                                <div class="tp-trigger" style="min-height:28px; padding:2px 6px;"
+                                                     :class="formSelOpen[schema._id + '_' + col.key] ? 'tp-trigger--active' : ''"
+                                                     @click="formSelOpen[schema._id + '_' + col.key] = !formSelOpen[schema._id + '_' + col.key]; formSelSearch[schema._id + '_' + col.key] = ''; $nextTick(() => $refs['selInput_' + schema._id + '_' + col.key]?.focus())">
+                                                    <template x-if="formAddValues[schema._id + '_' + col.key]">
+                                                        <span class="tp-tag" style="background:#dbeafe; color:#2563eb;">
+                                                            <span x-text="(col.config?.options || []).find(o => o.value === formAddValues[schema._id + '_' + col.key])?.label || formAddValues[schema._id + '_' + col.key]"></span>
+                                                            <button type="button" class="tp-tag-remove" @click.stop="formAddValues[schema._id + '_' + col.key] = ''">
+                                                                <iconify-icon icon="tabler:x" width="10"></iconify-icon>
+                                                            </button>
+                                                        </span>
+                                                    </template>
+                                                    <template x-if="!formAddValues[schema._id + '_' + col.key]">
+                                                        <span class="tp-placeholder" x-text="col.label"></span>
+                                                    </template>
+                                                </div>
+                                                <!-- Dropdown -->
+                                                <div class="tp-dropdown" x-show="formSelOpen[schema._id + '_' + col.key]" x-cloak
+                                                     x-transition:enter="transition ease-out duration-150"
+                                                     x-transition:enter-start="opacity-0 translate-y-1"
+                                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                                     @click.stop>
+                                                    <div class="tp-search-wrap">
+                                                        <input type="text" class="tp-search-input"
+                                                               :x-ref="'selInput_' + schema._id + '_' + col.key"
+                                                               x-model="formSelSearch[schema._id + '_' + col.key]"
+                                                               placeholder="Rechercher ou créer..."
+                                                               @keydown.enter.prevent="formSelCreateOption(schema, col)" />
+                                                    </div>
+                                                    <div class="tp-divider"></div>
+                                                    <div class="tp-options">
+                                                        <template x-for="opt in (col.config?.options || []).filter(o => !formSelSearch[schema._id + '_' + col.key] || o.label.toLowerCase().includes((formSelSearch[schema._id + '_' + col.key] || '').toLowerCase()))" :key="opt.value">
+                                                            <div class="tp-option" @click="formAddValues[schema._id + '_' + col.key] = opt.value; formSelOpen[schema._id + '_' + col.key] = false">
+                                                                <div class="tp-option-icon" style="background:#dbeafe;">
+                                                                    <iconify-icon x-show="formAddValues[schema._id + '_' + col.key] === opt.value" icon="tabler:check" width="12" style="color:#2563eb;"></iconify-icon>
+                                                                </div>
+                                                                <span class="tp-option-label" x-text="opt.label"></span>
+                                                            </div>
+                                                        </template>
+                                                        <template x-if="(col.config?.options || []).filter(o => !formSelSearch[schema._id + '_' + col.key] || o.label.toLowerCase().includes((formSelSearch[schema._id + '_' + col.key] || '').toLowerCase())).length === 0 && !(formSelSearch[schema._id + '_' + col.key] || '').trim()">
+                                                            <div style="padding:12px; text-align:center; color:#9ca3af; font-size:12px;">Aucune option</div>
+                                                        </template>
+                                                    </div>
+                                                    <!-- + Créer -->
+                                                    <template x-if="(formSelSearch[schema._id + '_' + col.key] || '').trim() && !(col.config?.options || []).some(o => o.label.toLowerCase() === (formSelSearch[schema._id + '_' + col.key] || '').trim().toLowerCase())">
+                                                        <div class="tp-create-option" @click="formSelCreateOption(schema, col)">
+                                                            <iconify-icon icon="tabler:plus" width="14" style="color:#6b7280;"></iconify-icon>
+                                                            <span class="tp-create-label">Créer</span>
+                                                            <span class="tp-create-tag" x-text="formSelSearch[schema._id + '_' + col.key]"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <!-- Multiselect (ClickUp-style dropdown) -->
+                                        <template x-if="col.type === 'multiselect'">
+                                            <div class="tp-wrapper" @click.away="formSelOpen[schema._id + '_' + col.key] = false">
+                                                <!-- Trigger -->
+                                                <div class="tp-trigger" style="min-height:28px; padding:2px 6px;"
+                                                     :class="formSelOpen[schema._id + '_' + col.key] ? 'tp-trigger--active' : ''"
+                                                     @click="formSelOpen[schema._id + '_' + col.key] = !formSelOpen[schema._id + '_' + col.key]; formSelSearch[schema._id + '_' + col.key] = ''; $nextTick(() => $refs['selInput_' + schema._id + '_' + col.key]?.focus())">
+                                                    <template x-for="selVal in (formAddValues[schema._id + '_' + col.key] || [])" :key="selVal">
+                                                        <span class="tp-tag" style="background:#dbeafe; color:#2563eb;">
+                                                            <span x-text="(col.config?.options || []).find(o => o.value === selVal)?.label || selVal"></span>
+                                                            <button type="button" class="tp-tag-remove" @click.stop="toggleFormAddMultiselect(schema._id, col.key, selVal)">
+                                                                <iconify-icon icon="tabler:x" width="10"></iconify-icon>
+                                                            </button>
+                                                        </span>
+                                                    </template>
+                                                    <template x-if="!(formAddValues[schema._id + '_' + col.key] || []).length">
+                                                        <span class="tp-placeholder" x-text="col.label"></span>
+                                                    </template>
+                                                </div>
+                                                <!-- Dropdown -->
+                                                <div class="tp-dropdown" x-show="formSelOpen[schema._id + '_' + col.key]" x-cloak
+                                                     x-transition:enter="transition ease-out duration-150"
+                                                     x-transition:enter-start="opacity-0 translate-y-1"
+                                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                                     @click.stop>
+                                                    <div class="tp-search-wrap">
+                                                        <input type="text" class="tp-search-input"
+                                                               x-model="formSelSearch[schema._id + '_' + col.key]"
+                                                               placeholder="Rechercher ou créer..."
+                                                               @keydown.enter.prevent="formSelCreateOption(schema, col)" />
+                                                    </div>
+                                                    <div class="tp-divider"></div>
+                                                    <div class="tp-options">
+                                                        <template x-for="opt in (col.config?.options || []).filter(o => !formSelSearch[schema._id + '_' + col.key] || o.label.toLowerCase().includes((formSelSearch[schema._id + '_' + col.key] || '').toLowerCase()))" :key="opt.value">
+                                                            <div class="tp-option" @click="toggleFormAddMultiselect(schema._id, col.key, opt.value)">
+                                                                <div class="tp-option-icon" style="background:#dbeafe;">
+                                                                    <iconify-icon x-show="(formAddValues[schema._id + '_' + col.key] || []).includes(opt.value)" icon="tabler:check" width="12" style="color:#2563eb;"></iconify-icon>
+                                                                </div>
+                                                                <span class="tp-option-label" x-text="opt.label"></span>
+                                                            </div>
+                                                        </template>
+                                                        <template x-if="(col.config?.options || []).filter(o => !formSelSearch[schema._id + '_' + col.key] || o.label.toLowerCase().includes((formSelSearch[schema._id + '_' + col.key] || '').toLowerCase())).length === 0 && !(formSelSearch[schema._id + '_' + col.key] || '').trim()">
+                                                            <div style="padding:12px; text-align:center; color:#9ca3af; font-size:12px;">Aucune option</div>
+                                                        </template>
+                                                    </div>
+                                                    <!-- + Créer -->
+                                                    <template x-if="(formSelSearch[schema._id + '_' + col.key] || '').trim() && !(col.config?.options || []).some(o => o.label.toLowerCase() === (formSelSearch[schema._id + '_' + col.key] || '').trim().toLowerCase())">
+                                                        <div class="tp-create-option" @click="formSelCreateOption(schema, col)">
+                                                            <iconify-icon icon="tabler:plus" width="14" style="color:#6b7280;"></iconify-icon>
+                                                            <span class="tp-create-label">Créer</span>
+                                                            <span class="tp-create-tag" x-text="formSelSearch[schema._id + '_' + col.key]"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <!-- Relation (autocomplete dropdown) -->
+                                        <template x-if="col.type === 'relation'">
+                                            <div class="tp-wrapper" @click.away="formRelOpen[schema._id + '_' + col.key] = false">
+                                                <!-- Trigger -->
+                                                <div class="tp-trigger" style="min-height:28px; padding:2px 6px;"
+                                                     :class="formRelOpen[schema._id + '_' + col.key] ? 'tp-trigger--active' : ''"
+                                                     @click="formRelOpen[schema._id + '_' + col.key] = true; formRelSearch[schema._id + '_' + col.key] = ''; searchFormRelation(schema._id, col); $nextTick(() => $refs['relInput_' + schema._id + '_' + col.key]?.focus())">
+                                                    <template x-if="formAddValues[schema._id + '_' + col.key]">
+                                                        <span class="tp-tag" style="background:#dbeafe; color:#2563eb;">
+                                                            <span x-text="formAddValues[schema._id + '_' + col.key + '_label'] || formAddValues[schema._id + '_' + col.key]"></span>
+                                                            <button type="button" class="tp-tag-remove" @click.stop="formAddValues[schema._id + '_' + col.key] = ''; formAddValues[schema._id + '_' + col.key + '_label'] = ''">
+                                                                <iconify-icon icon="tabler:x" width="10"></iconify-icon>
+                                                            </button>
+                                                        </span>
+                                                    </template>
+                                                    <template x-if="!formAddValues[schema._id + '_' + col.key]">
+                                                        <span class="tp-placeholder">
+                                                            <iconify-icon icon="solar:magnifer-bold-duotone" width="13" style="margin-right:4px; opacity:0.5;"></iconify-icon>
+                                                            <span x-text="col.label"></span>
+                                                        </span>
+                                                    </template>
+                                                </div>
+                                                <!-- Dropdown -->
+                                                <div class="tp-dropdown" style="min-width:280px;" x-show="formRelOpen[schema._id + '_' + col.key]" x-cloak
+                                                     x-transition:enter="transition ease-out duration-150"
+                                                     x-transition:enter-start="opacity-0 translate-y-1"
+                                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                                     @click.stop>
+                                                    <div class="tp-search-wrap">
+                                                        <input type="text" class="tp-search-input"
+                                                               :x-ref="'relInput_' + schema._id + '_' + col.key"
+                                                               x-model="formRelSearch[schema._id + '_' + col.key]"
+                                                               :placeholder="'Rechercher ' + col.label + '...'"
+                                                               @input.debounce.300ms="searchFormRelation(schema._id, col)" />
+                                                    </div>
+                                                    <div class="tp-divider"></div>
+                                                    <div class="tp-options">
+                                                        <template x-if="formRelLoading[schema._id + '_' + col.key]">
+                                                            <div style="padding:12px; text-align:center; color:#9ca3af; font-size:12px;">Chargement...</div>
+                                                        </template>
+                                                        <template x-for="result in (formRelResults[schema._id + '_' + col.key] || [])" :key="result.id">
+                                                            <div class="tp-option" @click="formAddValues[schema._id + '_' + col.key] = result.id; formAddValues[schema._id + '_' + col.key + '_label'] = result.label; formRelOpen[schema._id + '_' + col.key] = false">
+                                                                <div class="tp-option-icon" style="background:#dbeafe;">
+                                                                    <iconify-icon x-show="formAddValues[schema._id + '_' + col.key] === result.id" icon="tabler:check" width="12" style="color:#2563eb;"></iconify-icon>
+                                                                </div>
+                                                                <span class="tp-option-label" x-text="result.label"></span>
+                                                            </div>
+                                                        </template>
+                                                        <template x-if="!formRelLoading[schema._id + '_' + col.key] && !(formRelResults[schema._id + '_' + col.key] || []).length">
+                                                            <div style="padding:12px; text-align:center; color:#9ca3af; font-size:12px;">Aucun résultat</div>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <!-- Duration -->
+                                        <template x-if="col.type === 'duration'">
+                                            <div style="display:flex; gap:4px; align-items:center;">
+                                                <input type="number" class="lp-input" style="width:60px; text-align:right;" min="0" step="1"
+                                                       :value="(formAddValues[schema._id + '_' + col.key] || {}).value || ''"
+                                                       @input="if(!formAddValues[schema._id + '_' + col.key]) formAddValues[schema._id + '_' + col.key] = {}; formAddValues[schema._id + '_' + col.key].value = parseFloat($event.target.value) || 0" />
+                                                <select class="lp-input" style="width:70px; font-size:10px;"
+                                                        :value="(formAddValues[schema._id + '_' + col.key] || {}).unit || (col.config?.units?.[0] || 'day')"
+                                                        @change="if(!formAddValues[schema._id + '_' + col.key]) formAddValues[schema._id + '_' + col.key] = {}; formAddValues[schema._id + '_' + col.key].unit = $event.target.value">
+                                                    <template x-for="u in (col.config?.units || ['day','week','month'])" :key="u">
+                                                        <option :value="u" x-text="durationLabel(u)"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                        </template>
+                                        <!-- Dosage -->
+                                        <template x-if="col.type === 'dosage'">
+                                            <div style="display:flex; gap:4px; align-items:center;">
+                                                <input type="number" class="lp-input" style="width:60px; text-align:right;" min="0" step="any"
+                                                       :value="(formAddValues[schema._id + '_' + col.key] || {}).value || ''"
+                                                       @input="if(!formAddValues[schema._id + '_' + col.key]) formAddValues[schema._id + '_' + col.key] = {}; formAddValues[schema._id + '_' + col.key].value = parseFloat($event.target.value) || 0" />
+                                                <select class="lp-input" style="width:70px; font-size:10px;"
+                                                        :value="(formAddValues[schema._id + '_' + col.key] || {}).unit || (col.config?.units?.[0] || 'mg')"
+                                                        @change="if(!formAddValues[schema._id + '_' + col.key]) formAddValues[schema._id + '_' + col.key] = {}; formAddValues[schema._id + '_' + col.key].unit = $event.target.value">
+                                                    <template x-for="u in (col.config?.units || ['mg','ml','g','cp'])" :key="u">
+                                                        <option :value="u" x-text="u"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                        </template>
+                                        <!-- Formula (read-only) -->
+                                        <template x-if="col.type === 'formula'">
+                                            <div class="lp-computed">= auto</div>
                                         </template>
                                     </div>
                                 </template>
                             </div>
                             <div class="flex justify-end gap-2 mt-3">
-                                <button class="lp-btn-cancel" style="padding: 6px 14px; font-size: 12px;"
+                                <button type="button" class="lp-btn-cancel" style="padding: 6px 14px; font-size: 12px;"
                                         @click="formAddOpen[schema._id] = false">Annuler</button>
-                                <button class="lp-btn-add" style="padding: 6px 16px; font-size: 12px;"
-                                        @click="submitFormEntry(schema)">  
+                                <button type="button" class="lp-btn-add" style="padding: 6px 16px; font-size: 12px;"
+                                        @click.stop="submitFormEntry(schema)">  
                                     <iconify-icon icon="tabler:check" width="13"></iconify-icon>
                                     Enregistrer
                                 </button>
@@ -2260,6 +2467,12 @@ document.addEventListener('alpine:init', () => {
         analyticsView: {},   // { schemaId: 'data' | '<viewId>' } — which analytics view is active
         formAddOpen: {},     // { schemaId: boolean } — whether form add panel is open
         formAddValues: {},   // { 'schemaId_colKey': value } — form add field values
+        formRelSearch: {},   // { 'schemaId_colKey': 'search query' } — relation search queries
+        formRelResults: {},  // { 'schemaId_colKey': [{id, label}] } — relation search results
+        formRelLoading: {},  // { 'schemaId_colKey': boolean } — relation loading state
+        formRelOpen: {},     // { 'schemaId_colKey': boolean } — relation dropdown open
+        formSelSearch: {},   // { 'schemaId_colKey': 'query' } — select/multiselect search
+        formSelOpen: {},     // { 'schemaId_colKey': boolean } — select dropdown open
         gridTemplates: [],   // Available templates for this entity's schemas
         templatePicker: {},  // { schemaId: boolean } — template picker open state
         presetDropdown: {},  // { schemaId: boolean } — preset dropdown open state
@@ -3271,7 +3484,38 @@ document.addEventListener('alpine:init', () => {
             if (col.type === 'dosage' && typeof value === 'object') {
                 return (value.value || 0) + ' ' + (value.unit || 'mg');
             }
+            // Resolve select → show label instead of value
+            if (col.type === 'select') {
+                const opt = (col.config?.options || []).find(o => o.value === value);
+                return opt ? opt.label : value;
+            }
+            // Resolve multiselect → show labels comma-separated
+            if (col.type === 'multiselect' && Array.isArray(value)) {
+                return value.map(v => {
+                    const opt = (col.config?.options || []).find(o => o.value === v);
+                    return opt ? opt.label : v;
+                }).join(', ') || '—';
+            }
+            // Resolve relation → show stored label
+            if (col.type === 'relation') {
+                // The label is stored under key + '_label' in the line values 
+                // but we only get the value here, so check if it looks like an ObjectId
+                if (typeof value === 'string' && /^[a-f0-9]{24}$/i.test(value)) {
+                    return '🔗 ' + value.slice(-6); // Show abbreviated ID as fallback
+                }
+                return value;
+            }
             return value;
+        },
+
+        // Format relation value — tries to use the stored _label from the line values
+        formatRelationValue(line, col) {
+            const labelKey = col.key + '_label';
+            if (line.values?.[labelKey]) return line.values[labelKey];
+            const val = line.values?.[col.key];
+            if (!val) return '—';
+            if (typeof val === 'string' && /^[a-f0-9]{24}$/i.test(val)) return '🔗 ' + val.slice(-6);
+            return val;
         },
 
         // Normal range indicator (✅ ⬆️ ⬇️)
@@ -3314,7 +3558,19 @@ document.addEventListener('alpine:init', () => {
                 if ((col.type === 'number' || col.type === 'money') && val) {
                     val = parseFloat(val) || 0;
                 }
-                values[col.key] = val || '';
+                // Preserve arrays for multiselect (don't convert [] to '')
+                if (col.type === 'multiselect') {
+                    values[col.key] = Array.isArray(val) ? val : (val ? [val] : []);
+                } else if (col.type === 'relation') {
+                    // Save both the ID and the label for relations
+                    values[col.key] = val || '';
+                    const labelKey = key + '_label';
+                    if (this.formAddValues[labelKey]) {
+                        values[col.key + '_label'] = this.formAddValues[labelKey];
+                    }
+                } else {
+                    values[col.key] = val || '';
+                }
             }
 
             // Add the line
@@ -3346,11 +3602,110 @@ document.addEventListener('alpine:init', () => {
             // Clear form
             for (const col of (schema.columns || []).filter(c => c.visible !== false)) {
                 this.formAddValues[schema._id + '_' + col.key] = '';
+                // Also clear relation label and dropdown states
+                if (col.type === 'relation') {
+                    this.formAddValues[schema._id + '_' + col.key + '_label'] = '';
+                }
             }
             this.formAddOpen[schema._id] = false;
 
             // Save (activeSchemaId was already set above)
             this.debouncedSave();
+        },
+
+        // Add inline option to a select/multiselect column (no config needed)
+        addInlineOption(col, value) {
+            if (!value || !value.trim()) return;
+            const val = value.trim();
+            const slug = val.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+            if (!col.config) col.config = {};
+            if (!col.config.options) col.config.options = [];
+            // Check duplicate
+            if (col.config.options.some(o => o.value === slug || o.label.toLowerCase() === val.toLowerCase())) return;
+            col.config.options.push({ value: slug, label: val });
+            // Also save the column config back to the schema via API
+            this.saveInlineOptionToSchema(col);
+        },
+
+        // Save updated column options to the schema (async, non-blocking)
+        async saveInlineOptionToSchema(col) {
+            const schema = this.schemas.find(s => s._id === this.activeSchemaId);
+            if (!schema) return;
+            const schemaCol = (schema.columns || []).find(c => c.key === col.key);
+            if (schemaCol) {
+                schemaCol.config = { ...schemaCol.config, options: col.config.options };
+            }
+            try {
+                await fetch(`/account/${this.accountNumber}/api/line-schemas/${schema._id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ columns: schema.columns })
+                });
+            } catch (e) { console.error('Failed to save inline option:', e); }
+        },
+
+        // Toggle multiselect value in form add
+        toggleFormAddMultiselect(schemaId, colKey, optValue) {
+            if (!optValue) return; // Guard against empty values
+            const key = schemaId + '_' + colKey;
+            if (!this.formAddValues[key]) this.formAddValues[key] = [];
+            const arr = [...this.formAddValues[key]];
+            const idx = arr.indexOf(optValue);
+            if (idx >= 0) arr.splice(idx, 1);
+            else arr.push(optValue);
+            this.formAddValues[key] = arr;
+        },
+
+        // Search relation records via API (for form add)
+        async searchFormRelation(schemaId, col) {
+            const key = schemaId + '_' + col.key;
+            const query = this.formRelSearch[key] || '';
+            const entityId = col.config?.targetEntity;
+            if (!entityId) {
+                this.formRelResults[key] = [];
+                return;
+            }
+            this.formRelLoading[key] = true;
+            try {
+                let url = `/account/${this.accountNumber}/record/api/search?entityId=${entityId}&page=1&limit=10`;
+                if (query) url += `&q=${encodeURIComponent(query)}`;
+                const res = await fetch(url, { credentials: 'include' });
+                const data = await res.json();
+                this.formRelResults[key] = data.data || [];
+            } catch (e) {
+                console.error('Relation search failed:', e);
+                this.formRelResults[key] = [];
+            } finally {
+                this.formRelLoading[key] = false;
+            }
+        },
+
+        // Create new option for select/multiselect (ClickUp-style "+ Créer")
+        formSelCreateOption(schema, col) {
+            const key = schema._id + '_' + col.key;
+            const label = (this.formSelSearch[key] || '').trim();
+            if (!label) return;
+            const slug = label.toLowerCase().replace(/[^a-z0-9\u00e0-\u00ff]+/g, '_').replace(/^_|_$/g, '');
+            if (!col.config) col.config = {};
+            if (!col.config.options) col.config.options = [];
+            // Check duplicate
+            if (col.config.options.some(o => o.value === slug || o.label.toLowerCase() === label.toLowerCase())) return;
+            col.config.options.push({ value: slug, label: label });
+            // For multiselect, auto-toggle the new option
+            if (col.type === 'multiselect') {
+                this.toggleFormAddMultiselect(schema._id, col.key, slug);
+            }
+            // For single select, auto-select the new option
+            if (col.type === 'select') {
+                this.formAddValues[key] = slug;
+                this.formSelOpen[key] = false;
+            }
+            // Clear search
+            this.formSelSearch[key] = '';
+            // Save schema options to backend
+            this.activeSchemaId = schema._id;
+            this.saveInlineOptionToSchema(col);
         },
 
         // Load templates for schemas (includes record-specific + linked parent presets)

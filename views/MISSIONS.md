@@ -40,4 +40,12 @@ http://localhost:3000/account/9194/record/consultations/69a53cfcde03671e05ed2350
 
 - [ ] Scoper les schemas créés aux entités spécifiques (Patients, Consultations) via `/account/9194/line-schemas`
 - [ ] Widget read-only pour afficher un tableau dynamique sans possibilité de modification
-- [ ] Historique des records liés (affichage indirect via liaison Patient → Consultations)
+- [ ] Historique des records liés (affichage indirect via liaison Patient → Consultations)
+
+Mission du 17/03/26
+
+![alt text](image-57.png) en UI d'un tableau dynamique, ajouter la possibilité ajouter une option si elle n'exist pas directement via le UI du tableau pas besoin d'aller en config, 
+
+![alt text](image-58.png) le tableau tairtement n'affiche pas correctement les relations, il affiche les ID, les options aussi il y'a un petit bug, quand je fais nouvelle mesure impossible d'encoder les données.... test et corrige
+
+![alt text](image-59.png) quand je clique sur config, le panel s'affcihe en bas, je veux plutot un modal 

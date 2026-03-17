@@ -71,12 +71,16 @@ module.exports = {
             const LineSchema = await tenantCollection(req, 'LineSchema');
             if (!LineSchema) return res.status(500).json({ error: 'Model not available' });
 
-            const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType } = req.body;
+            const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType, inputMode, dataMode, timeseriesConfig, analyticsConfig } = req.body;
 
             const schema = new LineSchema({
                 name,
                 slug,
                 description,
+                inputMode: inputMode || 'catalog',
+                dataMode: dataMode || 'items',
+                timeseriesConfig: timeseriesConfig || undefined,
+                analyticsConfig: analyticsConfig || undefined,
                 appliesTo: appliesTo || {},
                 sourceEntityId: sourceEntityId || null,
                 lineTypes: lineTypes || ['product'],
@@ -103,12 +107,16 @@ module.exports = {
             const LineSchema = await tenantCollection(req, 'LineSchema');
             if (!LineSchema) return res.status(500).json({ error: 'Model not available' });
 
-            const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType } = req.body;
+            const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType, inputMode, dataMode, timeseriesConfig, analyticsConfig } = req.body;
 
             const updateData = {};
             if (name !== undefined) updateData.name = name;
             if (slug !== undefined) updateData.slug = slug;
             if (description !== undefined) updateData.description = description;
+            if (inputMode !== undefined) updateData.inputMode = inputMode;
+            if (dataMode !== undefined) updateData.dataMode = dataMode;
+            if (timeseriesConfig !== undefined) updateData.timeseriesConfig = timeseriesConfig;
+            if (analyticsConfig !== undefined) updateData.analyticsConfig = analyticsConfig;
             if (appliesTo !== undefined) updateData.appliesTo = appliesTo;
             if (sourceEntityId !== undefined) updateData.sourceEntityId = sourceEntityId;
             if (lineTypes !== undefined) updateData.lineTypes = lineTypes;

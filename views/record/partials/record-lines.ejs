@@ -899,7 +899,11 @@
 
     <!-- Single panel with tabs when multiple schemas -->
     <template x-if="!loading && schemas.length > 0">
-        <div class="panel !p-0">
+        <div class="panel !p-0" @scroll.window.capture="if(relationSearch.open) closeRelationSearch()">
+            <!-- Backdrop for relation dropdown (click outside to close) -->
+            <div x-show="relationSearch.open"
+                 style="position: fixed; inset: 0; z-index: 9998;"
+                 @click.stop="closeRelationSearch()"></div>
             <!-- Tab bar (shown only when multiple schemas) -->
             <div x-show="schemas.length > 1"
                  class="flex items-center gap-1 px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 overflow-x-auto" style="scrollbar-width: none;">
@@ -1215,8 +1219,7 @@
                                                 <!-- Dropdown -->
                                                 <div x-show="relationSearch.lineIdx === lineIdx && relationSearch.colKey === getRelationCol().key && relationSearch.open"
                                                     class="lp-relation-dropdown"
-                                                    :style="'top:' + (relationSearch._top || 0) + 'px; left:' + (relationSearch._left || 0) + 'px; width:' + (relationSearch._width || 280) + 'px'"
-                                                    @click.outside="closeRelationSearch()">
+                                                    :style="'top:' + (relationSearch._top || 0) + 'px; left:' + (relationSearch._left || 0) + 'px; width:' + (relationSearch._width || 280) + 'px'">
                                                     <template x-if="relationSearch.loading">
                                                         <div class="px-3 py-2 text-xs text-gray-400 text-center">
                                                             <iconify-icon icon="svg-spinners:ring-resize" width="14"></iconify-icon>
@@ -1396,8 +1399,7 @@
                                                     <!-- Dropdown -->
                                                     <div x-show="relationSearch.lineIdx === lineIdx && relationSearch.colKey === col.key && relationSearch.open"
                                                         class="lp-relation-dropdown"
-                                                        :style="'top:' + (relationSearch._top || 0) + 'px; left:' + (relationSearch._left || 0) + 'px; width:' + (relationSearch._width || 280) + 'px'"
-                                                        @click.outside="closeRelationSearch()">
+                                                        :style="'top:' + (relationSearch._top || 0) + 'px; left:' + (relationSearch._left || 0) + 'px; width:' + (relationSearch._width || 280) + 'px'">
                                                         <template x-if="relationSearch.loading">
                                                             <div class="px-3 py-2 text-xs text-gray-400 text-center">
                                                                 <iconify-icon icon="svg-spinners:ring-resize" width="14"></iconify-icon>
@@ -3397,11 +3399,15 @@ document.addEventListener('alpine:init', () => {
             this.relationSearch.open = true;
             this.relationSearch.results = [];
             this.relationSearch.query = '';
-            if (event?.target) this._positionRelDropdown(event.target);
+            if (event?.target) {
+                this._positionRelDropdown(event.target);
+                this._relActiveInput = event.target;
+            }
         },
 
         closeRelationSearch() {
             this.relationSearch.open = false;
+            this._relActiveInput = null;
         },
 
         searchRelation(lineIdx, colKey, query, event) {

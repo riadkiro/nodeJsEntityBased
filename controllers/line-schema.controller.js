@@ -71,7 +71,7 @@ module.exports = {
             const LineSchema = await tenantCollection(req, 'LineSchema');
             if (!LineSchema) return res.status(500).json({ error: 'Model not available' });
 
-            const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType, inputMode, dataMode, timeseriesConfig, analyticsConfig } = req.body;
+            const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType, inputMode, dataMode, timeseriesConfig, analyticsConfig, snapshotConfig } = req.body;
 
             const schema = new LineSchema({
                 name,
@@ -89,6 +89,7 @@ module.exports = {
                     order: col.order ?? i
                 })),
                 totals: totals || {},
+                snapshotConfig: snapshotConfig || undefined,
                 defaultLineType: defaultLineType || (lineTypes && lineTypes[0]) || 'product',
                 createdBy: req.user?._id
             });
@@ -107,7 +108,7 @@ module.exports = {
             const LineSchema = await tenantCollection(req, 'LineSchema');
             if (!LineSchema) return res.status(500).json({ error: 'Model not available' });
 
-            const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType, inputMode, dataMode, timeseriesConfig, analyticsConfig } = req.body;
+            const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType, inputMode, dataMode, timeseriesConfig, analyticsConfig, snapshotConfig } = req.body;
 
             const updateData = {};
             if (name !== undefined) updateData.name = name;
@@ -127,6 +128,7 @@ module.exports = {
                 }));
             }
             if (totals !== undefined) updateData.totals = totals;
+            if (snapshotConfig !== undefined) updateData.snapshotConfig = snapshotConfig;
             if (defaultLineType !== undefined) updateData.defaultLineType = defaultLineType;
 
             const schema = await LineSchema.findByIdAndUpdate(

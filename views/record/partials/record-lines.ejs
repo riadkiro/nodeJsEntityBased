@@ -533,6 +533,280 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
+       Snapshot / Enregistrer
+       ═══════════════════════════════════════════════════════════ */
+    .lp-snapshot-area {
+        border-top: 1px solid #e5e7eb;
+        padding: 10px 16px;
+    }
+    .dark .lp-snapshot-area {
+        border-top-color: #1e293b;
+    }
+    .lp-snapshot-save-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+    .lp-snapshot-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 16px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #fff;
+        background: linear-gradient(135deg, #4361ee, #6366f1);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(67, 97, 238, 0.25);
+    }
+    .lp-snapshot-btn:hover {
+        background: linear-gradient(135deg, #3b52d4, #5453e0);
+        box-shadow: 0 4px 12px rgba(67, 97, 238, 0.35);
+        transform: translateY(-1px);
+    }
+    .lp-snapshot-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+    .lp-snapshot-history-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 0 4px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #6b7280;
+        cursor: pointer;
+        user-select: none;
+        transition: color 0.15s ease;
+    }
+    .lp-snapshot-history-toggle:hover {
+        color: #4361ee;
+    }
+    .dark .lp-snapshot-history-toggle {
+        color: #94a3b8;
+    }
+    .dark .lp-snapshot-history-toggle:hover {
+        color: #818cf8;
+    }
+    .lp-snapshot-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        font-size: 10px;
+        font-weight: 700;
+        color: #4361ee;
+        background: #e0e7ff;
+        border-radius: 9px;
+    }
+    .dark .lp-snapshot-badge {
+        background: rgba(67, 97, 238, 0.15);
+        color: #818cf8;
+    }
+    .lp-snapshot-history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding-top: 6px;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .lp-snapshot-empty {
+        text-align: center;
+        padding: 16px;
+        font-size: 12px;
+        color: #9ca3af;
+    }
+    .lp-snapshot-item {
+        border: 1px solid #f3f4f6;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: border-color 0.15s ease;
+    }
+    .lp-snapshot-item:hover {
+        border-color: #dbeafe;
+    }
+    .dark .lp-snapshot-item {
+        border-color: #1e293b;
+    }
+    .dark .lp-snapshot-item:hover {
+        border-color: #334155;
+    }
+    .lp-snapshot-item-header {
+        display: flex;
+        align-items: center;
+        padding: 8px 10px;
+        gap: 8px;
+        cursor: pointer;
+        background: #fafafa;
+        transition: background 0.15s ease;
+    }
+    .lp-snapshot-item-header:hover {
+        background: #f0f4ff;
+    }
+    .dark .lp-snapshot-item-header {
+        background: #111827;
+    }
+    .dark .lp-snapshot-item-header:hover {
+        background: #1e293b;
+    }
+    .lp-snapshot-date {
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+    }
+    .dark .lp-snapshot-date {
+        color: #e2e8f0;
+    }
+    .lp-snapshot-time {
+        font-size: 11px;
+        color: #9ca3af;
+    }
+    .lp-snapshot-count {
+        font-size: 11px;
+        color: #6b7280;
+        background: #f3f4f6;
+        padding: 1px 6px;
+        border-radius: 4px;
+    }
+    .dark .lp-snapshot-count {
+        background: #1e293b;
+        color: #94a3b8;
+    }
+    .lp-snapshot-delete {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: transparent;
+        color: #d1d5db;
+        border-radius: 6px;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.15s ease;
+    }
+    .lp-snapshot-item-header:hover .lp-snapshot-delete {
+        opacity: 1;
+    }
+    .lp-snapshot-delete:hover {
+        background: #fee2e2;
+        color: #ef4444;
+    }
+    .dark .lp-snapshot-delete:hover {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+    }
+    .lp-snapshot-lines {
+        border-top: 1px solid #f3f4f6;
+        padding: 8px;
+        background: #fff;
+    }
+    .dark .lp-snapshot-lines {
+        border-top-color: #1e293b;
+        background: #0e1726;
+    }
+    .lp-snapshot-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+    .lp-snapshot-table th {
+        font-size: 10px;
+        font-weight: 600;
+        color: #9ca3af;
+        text-align: left;
+        padding: 4px 8px;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    .dark .lp-snapshot-table th {
+        border-bottom-color: #1e293b;
+        color: #64748b;
+    }
+    .lp-snapshot-table td {
+        padding: 4px 8px;
+        color: #374151;
+        border-bottom: 1px solid #fafafa;
+    }
+    .dark .lp-snapshot-table td {
+        color: #cbd5e1;
+        border-bottom-color: #111827;
+    }
+    .lp-snapshot-date-input {
+        height: 30px;
+        font-size: 12px;
+        border-radius: 6px;
+        padding: 0 8px;
+        max-width: 150px;
+    }
+    .lp-snapshot-latest {
+        margin-top: 10px;
+        border: 1px solid #e0e7ff;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #fafbff;
+    }
+    .dark .lp-snapshot-latest {
+        border-color: #1e293b;
+        background: #111827;
+    }
+    .lp-snapshot-latest-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background: #f0f4ff;
+    }
+    .dark .lp-snapshot-latest-header {
+        background: #1e293b;
+    }
+    .lp-snapshot-latest-header .lp-snapshot-delete {
+        opacity: 0;
+    }
+    .lp-snapshot-latest-header:hover .lp-snapshot-delete {
+        opacity: 1;
+    }
+    .lp-snapshot-showmore {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 0;
+        margin-top: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #4361ee;
+        cursor: pointer;
+        user-select: none;
+        transition: color 0.15s ease;
+    }
+    .lp-snapshot-showmore:hover {
+        color: #3b52d4;
+    }
+    .dark .lp-snapshot-showmore {
+        color: #818cf8;
+    }
+    .dark .lp-snapshot-showmore:hover {
+        color: #a5b4fc;
+    }
+    .lp-snapshot-older-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
        DataGrid Mode: FORM (timeseries cards)
        ═══════════════════════════════════════════════════════════ */
     .dg-form-entries {
@@ -1086,8 +1360,9 @@
                     <div class="dg-template-grid">
                         <template x-for="tpl in getTemplatesForSchema(schema._id)" :key="tpl._id">
                             <div class="dg-template-card" @click="applyTemplate(tpl); templatePicker[schema._id] = false">
-                                <div class="dg-template-card-icon" x-text="tpl.icon ? '' : '📋'">
-                                    <iconify-icon x-show="tpl.icon" :icon="tpl.icon" width="22" :style="'color:' + (tpl.color || '#4361ee')"></iconify-icon>
+                                <div class="dg-template-card-icon">
+                                    <iconify-icon x-show="tpl.icon" :icon="tpl.icon || ''" width="22" :style="'color:' + (tpl.color || '#4361ee')"></iconify-icon>
+                                    <span x-show="!tpl.icon">📋</span>
                                 </div>
                                 <div class="dg-template-card-name" x-text="tpl.name"></div>
                                 <div class="dg-template-card-desc" x-text="tpl.description"></div>
@@ -1108,7 +1383,7 @@
                     <div style="display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;">
                         <template x-for="tpl in getTemplatesForSchema(schema._id).slice(0, 3)" :key="tpl._id">
                             <button class="dg-analytics-tab" style="padding: 4px 10px;" @click="applyTemplate(tpl)">
-                                <iconify-icon x-show="tpl.icon" :icon="tpl.icon" width="13" :style="'color:' + (tpl.color || '#4361ee')"></iconify-icon>
+                                <iconify-icon x-show="tpl.icon" :icon="tpl.icon || ''" width="13" :style="'color:' + (tpl.color || '#4361ee')"></iconify-icon>
                                 <span x-text="tpl.name" style="font-size: 11px;"></span>
                             </button>
                         </template>
@@ -1472,6 +1747,156 @@
                         <span x-show="getSchemaInputMode(schema) === 'table'">Ajouter une ligne</span>
                     </div>
                 </div>
+
+                <!-- ═══ Snapshot: Enregistrer + Historique ═══ -->
+                <template x-if="schema.snapshotConfig?.enabled">
+                    <div class="lp-snapshot-area" x-init="loadSnapshotHistory(schema)">
+                        <!-- Save row: date + button -->
+                        <div class="lp-snapshot-save-row">
+                            <input type="date"
+                                   class="lp-input lp-snapshot-date-input"
+                                   :value="snapshotDate[schema._id] || new Date().toISOString().split('T')[0]"
+                                   @input="snapshotDate[schema._id] = $event.target.value" />
+                            <button type="button" class="lp-snapshot-btn"
+                                    :disabled="snapshotSaving[schema._id] === true"
+                                    @click="saveSnapshot(schema)">
+                                <iconify-icon icon="solar:diskette-bold-duotone" width="16" style="pointer-events:none;"></iconify-icon>
+                                <span x-text="snapshotSaving[schema._id] === true ? 'Enregistrement...' : 'Enregistrer'" style="pointer-events:none;"></span>
+                            </button>
+                        </div>
+
+                        <!-- ═══ Latest snapshot (always visible) ═══ -->
+                        <template x-if="(snapshotHistory[schema._id] || []).length > 0">
+                            <div class="lp-snapshot-latest">
+                                <div class="lp-snapshot-latest-header">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <iconify-icon icon="solar:calendar-bold-duotone" width="16" style="color:#4361ee;"></iconify-icon>
+                                        <span class="lp-snapshot-date" x-text="new Date(snapshotHistory[schema._id][0].date).toLocaleDateString('fr-FR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'})"></span>
+                                        <span class="lp-snapshot-count" x-text="snapshotHistory[schema._id][0].lines.length + ' lignes'"></span>
+                                    </div>
+                                    <button type="button" class="lp-snapshot-delete"
+                                            @click.stop="deleteSnapshot(schema, snapshotHistory[schema._id][0]._id)">
+                                        <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="16"></iconify-icon>
+                                    </button>
+                                </div>
+                                <!-- Read-only table for latest snapshot -->
+                                <table class="lp-snapshot-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:24px;">#</th>
+                                            <template x-for="col in getVisibleColumnsForSchema(schema)" :key="col.key">
+                                                <th x-text="col.label"></th>
+                                            </template>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="(snapLine, sli) in snapshotHistory[schema._id][0].lines" :key="sli">
+                                            <tr>
+                                                <td style="color:#9ca3af;" x-text="sli + 1"></td>
+                                                <template x-for="col in getVisibleColumnsForSchema(schema)" :key="col.key">
+                                                    <td>
+                                                        <template x-if="col.type === 'multiselect'">
+                                                            <div style="display:flex; gap:3px; flex-wrap:wrap;">
+                                                                <template x-for="sv in (snapLine.values[col.key] || [])" :key="sv">
+                                                                    <span class="tp-tag" style="font-size:10px; padding:1px 6px;"
+                                                                          x-text="getMultiselectOptLabel(col, sv)"></span>
+                                                                </template>
+                                                            </div>
+                                                        </template>
+                                                        <template x-if="col.type === 'relation'">
+                                                            <span x-text="snapLine.values[col.key + '_label'] || snapLine.values[col.key] || '—'" style="color:#4361ee;"></span>
+                                                        </template>
+                                                        <template x-if="col.type !== 'multiselect' && col.type !== 'relation'">
+                                                            <span x-text="snapLine.values[col.key] ?? '—'"></span>
+                                                        </template>
+                                                    </td>
+                                                </template>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </template>
+
+                        <!-- ═══ Show more button ═══ -->
+                        <template x-if="(snapshotHistory[schema._id] || []).length > 1">
+                            <div>
+                                <div class="lp-snapshot-showmore" @click="snapshotShowAll[schema._id] = !snapshotShowAll[schema._id]">
+                                    <iconify-icon :icon="snapshotShowAll[schema._id] ? 'tabler:chevron-up' : 'tabler:chevron-down'" width="14"></iconify-icon>
+                                    <span x-text="snapshotShowAll[schema._id] ? 'Masquer' : 'Afficher ' + (snapshotHistory[schema._id].length - 1) + ' enregistrement(s) précédent(s)'"></span>
+                                </div>
+
+                                <!-- Older snapshots list -->
+                                <div x-show="snapshotShowAll[schema._id]" x-cloak
+                                     x-transition:enter="transition ease-out duration-200"
+                                     x-transition:enter-start="opacity-0"
+                                     x-transition:enter-end="opacity-100"
+                                     class="lp-snapshot-older-list">
+                                    <template x-for="(snap, snapIdx) in snapshotHistory[schema._id].slice(1)" :key="snap._id">
+                                        <div class="lp-snapshot-item">
+                                            <div class="lp-snapshot-item-header" @click="snapshotExpanded[snap._id] = !snapshotExpanded[snap._id]">
+                                                <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
+                                                    <iconify-icon :icon="snapshotExpanded[snap._id] ? 'tabler:chevron-down' : 'tabler:chevron-right'" width="14" style="color:#9ca3af; flex-shrink:0;"></iconify-icon>
+                                                    <iconify-icon icon="solar:calendar-bold-duotone" width="14" style="color:#4361ee; flex-shrink:0;"></iconify-icon>
+                                                    <span class="lp-snapshot-date" x-text="new Date(snap.date).toLocaleDateString('fr-FR', {day:'2-digit', month:'short', year:'numeric'})"></span>
+                                                    <span class="lp-snapshot-time" x-text="new Date(snap.createdAt).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})"></span>
+                                                    <span class="lp-snapshot-count" x-text="snap.lines.length + ' lignes'"></span>
+                                                </div>
+                                                <button type="button" class="lp-snapshot-delete"
+                                                        @click.stop="deleteSnapshot(schema, snap._id)">
+                                                    <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="16"></iconify-icon>
+                                                </button>
+                                            </div>
+                                            <!-- Expanded: show older snapshot lines -->
+                                            <div x-show="snapshotExpanded[snap._id]" x-cloak class="lp-snapshot-lines">
+                                                <table class="lp-snapshot-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th style="width:24px;">#</th>
+                                                            <template x-for="col in getVisibleColumnsForSchema(schema)" :key="col.key">
+                                                                <th x-text="col.label"></th>
+                                                            </template>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <template x-for="(snapLine, sli) in snap.lines" :key="sli">
+                                                            <tr>
+                                                                <td style="color:#9ca3af;" x-text="sli + 1"></td>
+                                                                <template x-for="col in getVisibleColumnsForSchema(schema)" :key="col.key">
+                                                                    <td>
+                                                                        <template x-if="col.type === 'multiselect'">
+                                                                            <div style="display:flex; gap:3px; flex-wrap:wrap;">
+                                                                                <template x-for="sv in (snapLine.values[col.key] || [])" :key="sv">
+                                                                                    <span class="tp-tag" style="font-size:10px; padding:1px 6px;"
+                                                                                          x-text="getMultiselectOptLabel(col, sv)"></span>
+                                                                                </template>
+                                                                            </div>
+                                                                        </template>
+                                                                        <template x-if="col.type === 'relation'">
+                                                                            <span x-text="snapLine.values[col.key + '_label'] || snapLine.values[col.key] || '—'" style="color:#4361ee;"></span>
+                                                                        </template>
+                                                                        <template x-if="col.type !== 'multiselect' && col.type !== 'relation'">
+                                                                            <span x-text="snapLine.values[col.key] ?? '—'"></span>
+                                                                        </template>
+                                                                    </td>
+                                                                </template>
+                                                            </tr>
+                                                        </template>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Empty state -->
+                        <template x-if="snapshotHistory[schema._id] && snapshotHistory[schema._id].length === 0">
+                            <div class="lp-snapshot-empty">Aucun enregistrement sauvegardé</div>
+                        </template>
+                    </div>
+                </template>
 
                 <!-- ═══ FORM MODE: Card entries + inline add form ═══ -->
                 <template x-if="getSchemaInputMode(schema) === 'form'">
@@ -3802,6 +4227,14 @@ document.addEventListener('alpine:init', () => {
         _pendingDeleteOpt: null,
         _pendingDeleteTimer: null,
 
+        // ── Snapshot state ──────────────────────────────────────
+        snapshotDate: {},          // schema._id → selected date
+        snapshotSaving: {},        // schema._id → boolean
+        snapshotHistory: {},       // schema._id → array of snapshots
+        snapshotHistoryOpen: {},   // schema._id → boolean
+        snapshotExpanded: {},      // snap._id → boolean
+        snapshotShowAll: {},       // schema._id → boolean (show older snapshots)
+
         removeInlineOption(schema, col, optValue) {
             // Step 1: first click → mark as pending (show confirmation)
             if (this._pendingDeleteOpt !== optValue) {
@@ -4228,6 +4661,99 @@ document.addEventListener('alpine:init', () => {
                     }
                 }
             });
+        },
+
+        // ═══════════════════════════════════════════════════════
+        // Snapshot / Enregistrer
+        // ═══════════════════════════════════════════════════════
+        getSnapshotTargetRecordId(schema) {
+            const cfg = schema.snapshotConfig;
+            if (!cfg) return this.recordId;
+            if (cfg.targetType === 'relation' && cfg.targetRelationKey) {
+                // Find the relation value from linkedRecords
+                const linked = (this.linkedRecords || []).find(r => r.relationKey === cfg.targetRelationKey);
+                if (linked && linked.recordId) {
+                    return linked.recordId;
+                }
+            }
+            return this.recordId;
+        },
+
+        async saveSnapshot(schema) {
+            console.log('[Snapshot] saveSnapshot called', schema?._id, schema?.name);
+            if (this.snapshotSaving[schema._id]) { console.log('[Snapshot] Already saving, skip'); return; }
+            const lines = this.getSchemaLines(schema._id);
+            console.log('[Snapshot] Lines count:', lines?.length);
+            if (!lines || lines.length === 0) {
+                window.showMessage?.('Aucune ligne à enregistrer', 'warning');
+                return;
+            }
+
+            this.snapshotSaving[schema._id] = true;
+            try {
+                const targetRecordId = this.getSnapshotTargetRecordId(schema);
+                const date = this.snapshotDate[schema._id] || new Date().toISOString().split('T')[0];
+                console.log('[Snapshot] Saving with date:', date, 'targetRecordId:', targetRecordId);
+
+                const url = `/account/${this.accountNumber}/api/grid-snapshots`;
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        schemaId: schema._id,
+                        recordId: this.recordId,
+                        targetRecordId: targetRecordId,
+                        targetEntityId: schema.snapshotConfig?.targetEntityId || null,
+                        date: date
+                    })
+                });
+                const data = await res.json();
+                console.log('[Snapshot] Response status:', res.status, 'data:', data);
+                if (res.ok) {
+                    window.showMessage?.('Enregistrement sauvegardé', 'success');
+                    // Add to history
+                    if (!this.snapshotHistory[schema._id]) this.snapshotHistory[schema._id] = [];
+                    this.snapshotHistory[schema._id].unshift(data.data);
+                } else {
+                    window.showMessage?.(data.error || 'Erreur', 'error');
+                }
+            } catch (e) {
+                console.error('[Snapshot] Save error:', e);
+                window.showMessage?.('Erreur lors de l\'enregistrement', 'error');
+            } finally {
+                this.snapshotSaving[schema._id] = false;
+            }
+        },
+
+        async loadSnapshotHistory(schema) {
+            console.log('[Snapshot] loadSnapshotHistory called', schema?._id, schema?.name);
+            try {
+                const targetRecordId = this.getSnapshotTargetRecordId(schema);
+                const url = `/account/${this.accountNumber}/api/grid-snapshots/${schema._id}/${targetRecordId}`;
+                console.log('[Snapshot] Loading from:', url);
+                const res = await fetch(url, { credentials: 'include' });
+                const data = await res.json();
+                console.log('[Snapshot] History loaded:', data.data?.length, 'snapshots');
+                this.snapshotHistory[schema._id] = data.data || [];
+            } catch (e) {
+                console.error('[Snapshot] Load history error:', e);
+                this.snapshotHistory[schema._id] = [];
+            }
+        },
+
+        async deleteSnapshot(schema, snapId) {
+            if (!confirm('Supprimer cet enregistrement ?')) return;
+            try {
+                const url = `/account/${this.accountNumber}/api/grid-snapshots/${snapId}`;
+                const res = await fetch(url, { method: 'DELETE', credentials: 'include' });
+                if (res.ok) {
+                    this.snapshotHistory[schema._id] = (this.snapshotHistory[schema._id] || []).filter(s => s._id !== snapId);
+                    window.showMessage?.('Enregistrement supprimé', 'success');
+                }
+            } catch (e) {
+                console.error('[Snapshot] Delete error:', e);
+            }
         }
     }));
 });

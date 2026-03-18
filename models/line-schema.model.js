@@ -123,6 +123,20 @@ const LineSchemaSchema = new mongoose.Schema({
         totalFormula: String                        // e.g. "subtotal + vat"
     },
 
+    // ══ Snapshot / Enregistrement Config ══
+    snapshotConfig: {
+        enabled: { type: Boolean, default: false },
+        targetType: {
+            type: String,
+            enum: ['self', 'relation'],
+            default: 'self'
+            // self     = snapshot is linked to the current record
+            // relation = snapshot is linked to a related record (e.g. Patient)
+        },
+        targetRelationKey: String,   // UUID key from entity.relations[].key (when targetType = 'relation')
+        targetEntityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Entity' }
+    },
+
     defaultLineType: String,
 
     createdBy: {

@@ -46,5 +46,5 @@ Mission du 17/03/26
 
 ![alt text](image-60.png) dans chaque tableau je dois avoir un tn enregistrer en bas , une foie cliqué ca enregistre les données avec par defaut la date d'ajourdui, jai alors l'historique des enregistrements, les enregistrement sont lié soit au record en cour soit a une de ses relations direct ou indirect, je dois pouvoir configurer ca dans la conifig du tableau
 
-![alt text](image-61.png) ici je dois pouvoir supprimer ou creer une option, comme on a fait ici  ![alt text](image-62.png) , check partout ou il y'a possibilité d'ajouter des options, et met ce systeme, en plus on a cette erreur  ![alt text](image-63.png) si on scroll
+
 

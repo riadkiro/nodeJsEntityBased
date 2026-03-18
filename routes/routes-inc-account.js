@@ -31,6 +31,7 @@ router.use("/mailbox", require("./mailbox.router.js"));
 router.use("/", require("./line-schema.router.js"));
 router.use("/", require("./document-line.router.js"));
 router.use("/", require("./grid-template.router.js"));
+router.use("/", require("./grid-snapshot.router.js"));
 
 router.use("/api/", require("./api/api-account.router.js"));
 router.use("/api/user", require("./api/api-user.router.js"));

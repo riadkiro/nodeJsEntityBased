@@ -300,6 +300,36 @@
                 </div>
             </template>
 
+            <!-- Snapshot / Enregistrement config -->
+            <div class="panel">
+                <div class="lsb-section-toggle" @click="snapshotOpen = !snapshotOpen">
+                    <h6><iconify-icon icon="solar:diskette-bold-duotone" width="14" class="text-primary"></iconify-icon> Enregistrement (Snapshot)</h6>
+                    <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="snapshotOpen ? '' : '-rotate-90'" class="transition-transform text-gray-400"></iconify-icon>
+                </div>
+                <div x-show="snapshotOpen" x-collapse class="px-3 pb-3 space-y-3">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" x-model="schema.snapshotConfig.enabled" class="form-checkbox" />
+                        <span class="text-xs font-semibold text-gray-600 dark:text-gray-300">Activer le bouton Enregistrer</span>
+                    </label>
+                    <div x-show="schema.snapshotConfig.enabled">
+                        <label class="mb-1 block text-xs font-semibold text-gray-500">Lier les enregistrements à</label>
+                        <select x-model="schema.snapshotConfig.targetType" class="form-select form-select-sm">
+                            <option value="self">Le record en cours</option>
+                            <option value="relation">Un record lié (relation)</option>
+                        </select>
+                    </div>
+                    <div x-show="schema.snapshotConfig.enabled && schema.snapshotConfig.targetType === 'relation'">
+                        <label class="mb-1 block text-xs font-semibold text-gray-500">Entité cible</label>
+                        <select x-model="schema.snapshotConfig.targetEntityId" class="form-select form-select-sm">
+                            <option value="">Choisir…</option>
+                            <% (entities || []).forEach(function(ent) { %>
+                                <option value="<%= ent._id %>"><%= ent.name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <!-- Totals config -->
             <div class="panel">
                 <div class="lsb-section-toggle" @click="totalsOpen = !totalsOpen">
@@ -506,7 +536,8 @@ function lineSchemaBuilder() {
                 _tempId: 'col_' + i + '_' + Date.now(),
                 _showWhenStr: (col.showWhen?.lineType?.[0]) || ''
             })),
-            totals: existingSchema.totals || {}
+            totals: existingSchema.totals || {},
+            snapshotConfig: existingSchema.snapshotConfig || { enabled: false, targetType: 'self', targetRelationKey: '', targetEntityId: '' }
         } : {
             name: '', slug: '', description: '',
             inputMode: 'catalog', dataMode: 'items',
@@ -515,11 +546,12 @@ function lineSchemaBuilder() {
             appliesTo: { entityIds: [], documentType: '' },
             lineTypes: ['product'], columns: [],
             totals: { subtotalKey: '', vatKey: '', totalFormula: '' },
+            snapshotConfig: { enabled: false, targetType: 'self', targetRelationKey: '', targetEntityId: '' },
             defaultLineType: 'product'
         },
 
         saving: false, expandedCol: null,
-        settingsOpen: true, lineTypesOpen: false, tsOpen: true, totalsOpen: false,
+        settingsOpen: true, lineTypesOpen: false, tsOpen: true, totalsOpen: false, snapshotOpen: false,
         newLineType: '', entitySearch: '',
         allEntities: allEntitiesData,
 
@@ -658,7 +690,8 @@ function lineSchemaBuilder() {
                 analyticsConfig: this.schema.analyticsConfig,
                 appliesTo: { entityIds: this.schema.appliesTo.entityIds || [], documentType: this.schema.appliesTo.documentType || undefined },
                 lineTypes: this.schema.lineTypes, columns: cleanColumns,
-                totals: this.schema.totals, defaultLineType: this.schema.defaultLineType
+                totals: this.schema.totals, defaultLineType: this.schema.defaultLineType,
+                snapshotConfig: this.schema.snapshotConfig
             };
             try {
                 const isNew = !this.schema._id;

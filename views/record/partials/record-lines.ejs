@@ -2090,8 +2090,8 @@
                     </div>
 
                     <!-- Form fields -->
-                    <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; max-height: 60vh;"
-                         :style="editRelOpen ? 'overflow: visible' : 'overflow-y: auto'">
+                    <div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; max-height: 60vh;"
+                         :style="{ overflow: editRelOpen ? 'visible' : 'auto' }">
                         <!-- Entity/Relation (editable autocomplete) -->
                         <template x-if="getRelationCol()">
                             <div>
@@ -3957,8 +3957,12 @@ document.addEventListener('alpine:init', () => {
         },
 
         // Open save preset modal
-        openSavePresetModal(schemaId) {
+        async openSavePresetModal(schemaId) {
             this.activeSchemaId = schemaId;
+
+            // Re-parse linkedRecords from DOM (may have been updated after save/HTMX swap)
+            await this._refreshLinkedRecords();
+
             this.savePresetModal = {
                 open: true,
                 name: '',
@@ -3974,6 +3978,66 @@ document.addEventListener('alpine:init', () => {
                     this.$refs.presetNameInput.focus();
                 }
             });
+        },
+
+        // Re-parse linked records from the DOM (server may have updated _denorm after save)
+        async _refreshLinkedRecords() {
+            // First try DOM
+            try {
+                const jsonEl = document.getElementById('linesPanel-relations');
+                if (jsonEl) {
+                    const data = JSON.parse(jsonEl.textContent || '{}');
+                    const entityRels = data.entityRelations || [];
+                    const recordRels = data.recordRelations || [];
+                    const linked = [];
+                    for (const eRel of entityRels) {
+                        const rRel = recordRels.find(r => r.relationKey === eRel.key);
+                        if (rRel && rRel.records && rRel.records.length > 0) {
+                            for (const rec of rRel.records) {
+                                linked.push({
+                                    relationKey: eRel.key,
+                                    relationLabel: eRel.label || '',
+                                    recordId: rec._id,
+                                    recordTitle: rec.title || '',
+                                    entitySlug: rec.entitySlug || ''
+                                });
+                            }
+                        }
+                    }
+                    if (linked.length > 0) {
+                        this.linkedRecords = linked;
+                        return;
+                    }
+                }
+            } catch (e) { /* ignore */ }
+
+            // Fallback: fetch from server sidebar data
+            if (this.recordId && this.linkedRecords.length === 0) {
+                try {
+                    const sidebarEl = document.querySelector('[data-relation-key]');
+                    if (sidebarEl) {
+                        // Parse from sidebar relation sections
+                        const linked = [];
+                        document.querySelectorAll('[data-relation-key]').forEach(el => {
+                            const key = el.dataset.relationKey;
+                            const label = el.dataset.relationLabel || '';
+                            el.querySelectorAll('[data-record-id]').forEach(recEl => {
+                                linked.push({
+                                    relationKey: key,
+                                    relationLabel: label,
+                                    recordId: recEl.dataset.recordId,
+                                    recordTitle: recEl.dataset.recordTitle || recEl.textContent.trim(),
+                                    entitySlug: recEl.dataset.entitySlug || ''
+                                });
+                            });
+                        });
+                        if (linked.length > 0) {
+                            this.linkedRecords = linked;
+                            return;
+                        }
+                    }
+                } catch(e) { /* ignore */ }
+            }
         },
 
         // Confirm save preset

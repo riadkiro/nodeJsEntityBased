@@ -44,8 +44,5 @@ http://localhost:3000/account/9194/record/consultations/69a53cfcde03671e05ed2350
 
 Mission du 17/03/26
 
-![alt text](image-57.png) en UI d'un tableau dynamique, ajouter la possibilité ajouter une option si elle n'exist pas directement via le UI du tableau pas besoin d'aller en config, 
+![alt text](image-60.png) dans chaque tableau je dois avoir un tn enregistrer en bas , une foie cliqué ca enregistre les données avec par defaut la date d'ajourdui, jai alors l'historique des enregistrements, les enregistrement sont lié soit au record en cour soit a une de ses relations direct ou indirect, je dois pouvoir configurer ca dans la conifig du tableau
 
-![alt text](image-58.png) le tableau tairtement n'affiche pas correctement les relations, il affiche les ID, les options aussi il y'a un petit bug, quand je fais nouvelle mesure impossible d'encoder les données.... test et corrige
-
-![alt text](image-59.png) quand je clique sur config, le panel s'affcihe en bas, je veux plutot un modal 

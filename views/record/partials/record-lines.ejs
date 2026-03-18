@@ -692,11 +692,7 @@
         color: #d1d5db;
         border-radius: 6px;
         cursor: pointer;
-        opacity: 0;
         transition: all 0.15s ease;
-    }
-    .lp-snapshot-item-header:hover .lp-snapshot-delete {
-        opacity: 1;
     }
     .lp-snapshot-delete:hover {
         background: #fee2e2;
@@ -1730,40 +1726,35 @@
                     </table>
                 </div>
 
-                <!-- Add row — catalog & table modes -->
-                <div x-show="getSchemaInputMode(schema) === 'catalog' || getSchemaInputMode(schema) === 'table'"
-                     class="lp-add-row-area" style="display: flex; gap: 0;">
-                    <div x-show="getSchemaInputMode(schema) === 'catalog'"
-                         style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;"
-                         @click.stop="activateAndOpenModal(schema._id)">
-                        <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
-                        <span>Ajouter des lignes</span>
+                <!-- ═══ Action bar: compact pills aligned right ═══ -->
+                <div style="display:flex; align-items:center; justify-content:flex-end; gap:6px; padding:8px 12px; border-top:1px dashed #e5e7eb;">
+                    <div style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; font-size:11px; font-weight:500; color:#6b7280; border:1px solid #e5e7eb; border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none;"
+                         @click.stop="addLineToSchema(schema._id)"
+                         onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee'; this.style.background='rgba(67,97,238,0.04)';"
+                         onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='#6b7280'; this.style.background='';">
+                        <iconify-icon icon="tabler:plus" width="13"></iconify-icon>
+                        <span>Ajouter</span>
                     </div>
-                    <div style="border-left: 1px solid #e5e7eb; padding: 0 10px; display: flex; align-items: center; flex: 1; justify-content: center; gap: 6px;"
-                         :style="getSchemaInputMode(schema) === 'table' ? 'border-left:none' : ''"
-                         class="dark:!border-gray-700"
-                         @click.stop="addLineToSchema(schema._id)" title="Ajouter une ligne vide">
-                        <iconify-icon icon="tabler:row-insert-bottom" width="14"></iconify-icon>
-                        <span x-show="getSchemaInputMode(schema) === 'table'">Ajouter une ligne</span>
+                    <div style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; font-size:11px; font-weight:500; color:#6b7280; border:1px solid #e5e7eb; border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none;"
+                         @click.stop="activateAndOpenModal(schema._id)"
+                         onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee'; this.style.background='rgba(67,97,238,0.04)';"
+                         onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='#6b7280'; this.style.background='';">
+                        <iconify-icon icon="tabler:layout-grid" width="13"></iconify-icon>
+                        <span>Catalogue</span>
+                    </div>
+                    <div x-show="schema.snapshotConfig?.enabled"
+                         :style="'display:inline-flex; align-items:center; gap:5px; padding:5px 12px; font-size:11px; font-weight:500; color:#6b7280; border:1px solid #e5e7eb; border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none;' + (snapshotSaving[schema._id] === true ? ' opacity:0.5; pointer-events:none;' : '')"
+                         @click.stop="saveSnapshot(schema)"
+                         onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee'; this.style.background='rgba(67,97,238,0.04)';"
+                         onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='#6b7280'; this.style.background='';">
+                        <iconify-icon icon="solar:check-circle-bold-duotone" width="13" style="pointer-events:none;"></iconify-icon>
+                        <span x-text="snapshotSaving[schema._id] === true ? 'Validation...' : 'Valider'" style="pointer-events:none;"></span>
                     </div>
                 </div>
 
-                <!-- ═══ Snapshot: Enregistrer + Historique ═══ -->
+                <!-- ═══ Snapshot: Historique ═══ -->
                 <template x-if="schema.snapshotConfig?.enabled">
-                    <div class="lp-snapshot-area" x-init="loadSnapshotHistory(schema)">
-                        <!-- Save row: date + button -->
-                        <div class="lp-snapshot-save-row">
-                            <input type="date"
-                                   class="lp-input lp-snapshot-date-input"
-                                   :value="snapshotDate[schema._id] || new Date().toISOString().split('T')[0]"
-                                   @input="snapshotDate[schema._id] = $event.target.value" />
-                            <button type="button" class="lp-snapshot-btn"
-                                    :disabled="snapshotSaving[schema._id] === true"
-                                    @click="saveSnapshot(schema)">
-                                <iconify-icon icon="solar:diskette-bold-duotone" width="16" style="pointer-events:none;"></iconify-icon>
-                                <span x-text="snapshotSaving[schema._id] === true ? 'Enregistrement...' : 'Enregistrer'" style="pointer-events:none;"></span>
-                            </button>
-                        </div>
+                    <div class="lp-snapshot-area">
 
                         <!-- ═══ Latest snapshot (always visible) ═══ -->
                         <template x-if="(snapshotHistory[schema._id] || []).length > 0">
@@ -1774,10 +1765,13 @@
                                         <span class="lp-snapshot-date" x-text="new Date(snapshotHistory[schema._id][0].date).toLocaleDateString('fr-FR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'})"></span>
                                         <span class="lp-snapshot-count" x-text="snapshotHistory[schema._id][0].lines.length + ' lignes'"></span>
                                     </div>
-                                    <button type="button" class="lp-snapshot-delete"
-                                            @click.stop="deleteSnapshot(schema, snapshotHistory[schema._id][0]._id)">
-                                        <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="16"></iconify-icon>
-                                    </button>
+                                    <a href="#" :style="'display:inline-flex; align-items:center; gap:4px; padding:4px 8px; border-radius:6px; text-decoration:none; transition:all 0.15s; font-size:11px; white-space:nowrap; ' + (_pendingDeleteSnap === snapshotHistory[schema._id][0]._id ? 'color:white; background:#ef4444;' : 'color:#d1d5db;')"
+                                       @click.prevent.stop="deleteSnapshot(schema, snapshotHistory[schema._id][0]._id)"
+                                       onmouseover="if(!this.style.backgroundColor || this.style.backgroundColor==='') { this.style.color='#ef4444'; this.style.background='#fee2e2'; }"
+                                       onmouseout="if(this.style.backgroundColor !== 'rgb(239, 68, 68)') { this.style.color='#d1d5db'; this.style.background=''; }">
+                                        <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="15" style="pointer-events:none;"></iconify-icon>
+                                        <span x-show="_pendingDeleteSnap === snapshotHistory[schema._id][0]._id" style="pointer-events:none;">Confirmer</span>
+                                    </a>
                                 </div>
                                 <!-- Read-only table for latest snapshot -->
                                 <table class="lp-snapshot-table">
@@ -1797,17 +1791,17 @@
                                                     <td>
                                                         <template x-if="col.type === 'multiselect'">
                                                             <div style="display:flex; gap:3px; flex-wrap:wrap;">
-                                                                <template x-for="sv in (snapLine.values[col.key] || [])" :key="sv">
+                                                                <template x-for="sv in (snapLine.values?.[col.key] || [])" :key="sv">
                                                                     <span class="tp-tag" style="font-size:10px; padding:1px 6px;"
                                                                           x-text="getMultiselectOptLabel(col, sv)"></span>
                                                                 </template>
                                                             </div>
                                                         </template>
                                                         <template x-if="col.type === 'relation'">
-                                                            <span x-text="snapLine.values[col.key + '_label'] || snapLine.values[col.key] || '—'" style="color:#4361ee;"></span>
+                                                            <span x-text="snapLine.values?.[col.key + '_label'] || snapLine.values?.[col.key] || '—'" style="color:#4361ee;"></span>
                                                         </template>
                                                         <template x-if="col.type !== 'multiselect' && col.type !== 'relation'">
-                                                            <span x-text="snapLine.values[col.key] ?? '—'"></span>
+                                                            <span x-text="snapLine.values?.[col.key] ?? '—'"></span>
                                                         </template>
                                                     </td>
                                                 </template>
@@ -1842,10 +1836,13 @@
                                                     <span class="lp-snapshot-time" x-text="new Date(snap.createdAt).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})"></span>
                                                     <span class="lp-snapshot-count" x-text="snap.lines.length + ' lignes'"></span>
                                                 </div>
-                                                <button type="button" class="lp-snapshot-delete"
-                                                        @click.stop="deleteSnapshot(schema, snap._id)">
-                                                    <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="16"></iconify-icon>
-                                                </button>
+                                                <a href="#" :style="'display:inline-flex; align-items:center; gap:4px; padding:4px 8px; border-radius:6px; text-decoration:none; flex-shrink:0; transition:all 0.15s; font-size:11px; white-space:nowrap; ' + (_pendingDeleteSnap === snap._id ? 'color:white; background:#ef4444;' : 'color:#d1d5db;')"
+                                                   @click.prevent.stop="deleteSnapshot(schema, snap._id)"
+                                                   onmouseover="if(!this.style.backgroundColor || this.style.backgroundColor==='') { this.style.color='#ef4444'; this.style.background='#fee2e2'; }"
+                                                   onmouseout="if(this.style.backgroundColor !== 'rgb(239, 68, 68)') { this.style.color='#d1d5db'; this.style.background=''; }">
+                                                    <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="14" style="pointer-events:none;"></iconify-icon>
+                                                    <span x-show="_pendingDeleteSnap === snap._id" style="pointer-events:none;">Confirmer</span>
+                                                </a>
                                             </div>
                                             <!-- Expanded: show older snapshot lines -->
                                             <div x-show="snapshotExpanded[snap._id]" x-cloak class="lp-snapshot-lines">
@@ -1866,17 +1863,17 @@
                                                                     <td>
                                                                         <template x-if="col.type === 'multiselect'">
                                                                             <div style="display:flex; gap:3px; flex-wrap:wrap;">
-                                                                                <template x-for="sv in (snapLine.values[col.key] || [])" :key="sv">
+                                                                                <template x-for="sv in (snapLine.values?.[col.key] || [])" :key="sv">
                                                                                     <span class="tp-tag" style="font-size:10px; padding:1px 6px;"
                                                                                           x-text="getMultiselectOptLabel(col, sv)"></span>
                                                                                 </template>
                                                                             </div>
                                                                         </template>
                                                                         <template x-if="col.type === 'relation'">
-                                                                            <span x-text="snapLine.values[col.key + '_label'] || snapLine.values[col.key] || '—'" style="color:#4361ee;"></span>
+                                                                            <span x-text="snapLine.values?.[col.key + '_label'] || snapLine.values?.[col.key] || '—'" style="color:#4361ee;"></span>
                                                                         </template>
                                                                         <template x-if="col.type !== 'multiselect' && col.type !== 'relation'">
-                                                                            <span x-text="snapLine.values[col.key] ?? '—'"></span>
+                                                                            <span x-text="snapLine.values?.[col.key] ?? '—'"></span>
                                                                         </template>
                                                                     </td>
                                                                 </template>
@@ -3158,6 +3155,12 @@ document.addEventListener('alpine:init', () => {
                     await this.loadLines();
                     // Load templates for template picker
                     this.loadTemplates();
+                    // Load snapshot history for schemas with snapshotConfig enabled
+                    for (const s of this.schemas) {
+                        if (s.snapshotConfig?.enabled) {
+                            this.loadSnapshotHistory(s);
+                        }
+                    }
                 }
             } catch (e) {
                 console.error('[LinesPanel] Load schemas error:', e);
@@ -3478,7 +3481,18 @@ document.addEventListener('alpine:init', () => {
                 this.recomputeLine(newLine);
                 schemaLines.push(newLine);
             }
-            this.linesMap[this.activeSchemaId] = [...(this.linesMap[this.activeSchemaId] || [])];
+
+            // Move empty lines to the end (encoding line always at bottom)
+            const allLines = this.linesMap[this.activeSchemaId] || [];
+            const filledLines = allLines.filter(l => {
+                if (!l.values) return false;
+                return Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0));
+            });
+            const emptyLines = allLines.filter(l => {
+                if (!l.values) return true;
+                return !Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0));
+            });
+            this.linesMap[this.activeSchemaId] = [...filledLines, ...emptyLines];
 
             this.recomputeTotals();
             this.debouncedSave();
@@ -3952,6 +3966,29 @@ document.addEventListener('alpine:init', () => {
 
             this.recomputeLine(line);
             this.closeRelationSearch();
+
+            // Move empty lines to the end + ensure at least one empty line at bottom
+            const allLines = this.linesMap[this.activeSchemaId] || [];
+            const filledLines = allLines.filter(l => {
+                if (!l.values) return false;
+                return Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0));
+            });
+            const emptyLines = allLines.filter(l => {
+                if (!l.values) return true;
+                return !Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0));
+            });
+            // Ensure at least one empty line at the bottom
+            if (emptyLines.length === 0) {
+                emptyLines.push({
+                    _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
+                    schemaId: this.activeSchemaId,
+                    lineType: this.activeSchema?.defaultLineType || this.activeSchema?.lineTypes?.[0] || 'default',
+                    values: {},
+                    computed: {},
+                    order: filledLines.length
+                });
+            }
+            this.linesMap[this.activeSchemaId] = [...filledLines, ...emptyLines];
             this.debouncedSave();
         },
 
@@ -4234,6 +4271,7 @@ document.addEventListener('alpine:init', () => {
         snapshotHistoryOpen: {},   // schema._id → boolean
         snapshotExpanded: {},      // snap._id → boolean
         snapshotShowAll: {},       // schema._id → boolean (show older snapshots)
+        _pendingDeleteSnap: null,  // snapId pending delete confirmation
 
         removeInlineOption(schema, col, optValue) {
             // Step 1: first click → mark as pending (show confirmation)
@@ -4681,11 +4719,19 @@ document.addEventListener('alpine:init', () => {
 
         async saveSnapshot(schema) {
             console.log('[Snapshot] saveSnapshot called', schema?._id, schema?.name);
-            if (this.snapshotSaving[schema._id]) { console.log('[Snapshot] Already saving, skip'); return; }
+            if (this.snapshotSaving[schema._id] === true) { console.log('[Snapshot] Already saving, skip'); return; }
             const lines = this.getSchemaLines(schema._id);
             console.log('[Snapshot] Lines count:', lines?.length);
-            if (!lines || lines.length === 0) {
-                window.showMessage?.('Aucune ligne à enregistrer', 'warning');
+            
+            // Check that there are lines with actual content (not just empty values)
+            const nonEmptyLines = (lines || []).filter(l => {
+                if (!l.values) return false;
+                return Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0));
+            });
+            console.log('[Snapshot] Non-empty lines:', nonEmptyLines.length);
+            
+            if (nonEmptyLines.length === 0) {
+                window.showMessage?.('Aucune ligne avec des données à enregistrer', 'warning');
                 return;
             }
 
@@ -4715,15 +4761,29 @@ document.addEventListener('alpine:init', () => {
                     // Add to history
                     if (!this.snapshotHistory[schema._id]) this.snapshotHistory[schema._id] = [];
                     this.snapshotHistory[schema._id].unshift(data.data);
+                    // Expand the new snapshot by default
+                    this.snapshotExpanded[data.data._id] = true;
+                    this.snapshotShowAll[schema._id] = true;
+                    
+                    // Clear lines in-place (splice preserves Alpine's DOM markers)
+                    const currentLines = this.linesMap[schema._id] || [];
+                    currentLines.splice(0, currentLines.length, {
+                        _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
+                        schemaId: schema._id,
+                        lineType: schema.defaultLineType || (schema.lineTypes && schema.lineTypes[0]) || 'default',
+                        values: {},
+                        computed: {},
+                        order: 0
+                    });
+                    this.debouncedSave();
                 } else {
                     window.showMessage?.(data.error || 'Erreur', 'error');
                 }
             } catch (e) {
                 console.error('[Snapshot] Save error:', e);
                 window.showMessage?.('Erreur lors de l\'enregistrement', 'error');
-            } finally {
-                this.snapshotSaving[schema._id] = false;
             }
+            this.snapshotSaving[schema._id] = false;
         },
 
         async loadSnapshotHistory(schema) {
@@ -4743,7 +4803,14 @@ document.addEventListener('alpine:init', () => {
         },
 
         async deleteSnapshot(schema, snapId) {
-            if (!confirm('Supprimer cet enregistrement ?')) return;
+            // Inline confirmation: first click sets pending, second click within 3s deletes
+            if (this._pendingDeleteSnap !== snapId) {
+                this._pendingDeleteSnap = snapId;
+                clearTimeout(this._pendingDeleteSnapTimer);
+                this._pendingDeleteSnapTimer = setTimeout(() => { this._pendingDeleteSnap = null; }, 3000);
+                return;
+            }
+            this._pendingDeleteSnap = null;
             try {
                 const url = `/account/${this.accountNumber}/api/grid-snapshots/${snapId}`;
                 const res = await fetch(url, { method: 'DELETE', credentials: 'include' });

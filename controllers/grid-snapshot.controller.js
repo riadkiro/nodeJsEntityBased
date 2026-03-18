@@ -11,13 +11,21 @@ module.exports = {
             const { schemaId, recordId, targetRecordId, targetEntityId, date, note } = req.body;
 
             // Fetch current lines for this record + schema
-            const lines = await DocumentLine.find({
+            const allLines = await DocumentLine.find({
                 documentId: recordId,
                 schemaId: schemaId
             }).sort({ order: 1 }).lean();
 
+            // Filter out empty lines (no meaningful values)
+            const lines = allLines.filter(l => {
+                if (!l.values) return false;
+                return Object.values(l.values).some(v => 
+                    v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0)
+                );
+            });
+
             if (lines.length === 0) {
-                return res.status(400).json({ error: 'Aucune ligne à enregistrer' });
+                return res.status(400).json({ error: 'Aucune ligne avec des données à enregistrer' });
             }
 
             // Create snapshot with copies of lines

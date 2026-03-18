@@ -514,7 +514,10 @@
         font-style: italic;
     }
     .lp-ms-dropdown {
-        position: fixed;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: 4px;
         min-width: 200px;
         max-width: 280px;
         background: #fff;
@@ -1315,8 +1318,7 @@
                                                             <div style="position: fixed; inset: 0; z-index: 9998;"
                                                                  @click.stop="closeMultiselectDropdown()"></div>
                                                             <!-- Dropdown panel -->
-                                                            <div class="lp-ms-dropdown"
-                                                                 :style="'top:' + (msDropdown.pos?.top || 0) + 'px; left:' + (msDropdown.pos?.left || 0) + 'px'">
+                                                            <div class="lp-ms-dropdown">
                                                                 <div class="tp-search-wrap">
                                                                     <input type="text" class="tp-search-input"
                                                                            placeholder="Rechercher..."
@@ -2009,8 +2011,7 @@
                                                                 <div>
                                                                     <div style="position: fixed; inset: 0; z-index: 9998;"
                                                                          @click.stop="closeMultiselectDropdown()"></div>
-                                                                    <div class="lp-ms-dropdown"
-                                                                         :style="'top:' + (msDropdown.pos?.top || 0) + 'px; left:' + (msDropdown.pos?.left || 0) + 'px'">
+                                                                    <div class="lp-ms-dropdown">
                                                                         <div class="tp-search-wrap">
                                                                             <input type="text" class="tp-search-input"
                                                                                    placeholder="Rechercher..."
@@ -2033,6 +2034,13 @@
                                                                                     <span class="tp-option-label" x-text="opt.label"></span>
                                                                                 </div>
                                                                             </template>
+                                                                        </div>
+                                                                        <div class="tp-divider"></div>
+                                                                        <div style="padding:4px 8px;">
+                                                                            <input type="text" class="lp-input" style="font-size:11px; padding:4px 8px; width:100%;"
+                                                                                   placeholder="+ Nouvelle option…"
+                                                                                   @keydown.enter.stop="addInlineOption(col, $event.target.value); $event.target.value = ''"
+                                                                                   @click.stop />
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -2219,8 +2227,7 @@
                                             <div>
                                                 <div style="position: fixed; inset: 0; z-index: 9998;"
                                                      @click.stop="closeMultiselectDropdown()"></div>
-                                                <div class="lp-ms-dropdown"
-                                                     :style="'top:' + (msDropdown.pos?.top || 0) + 'px; left:' + (msDropdown.pos?.left || 0) + 'px'">
+                                                <div class="lp-ms-dropdown">
                                                     <div class="tp-search-wrap">
                                                         <input type="text" class="tp-search-input"
                                                                placeholder="Rechercher..."
@@ -2243,6 +2250,13 @@
                                                                 <span class="tp-option-label" x-text="opt.label"></span>
                                                             </div>
                                                         </template>
+                                                    </div>
+                                                    <div class="tp-divider"></div>
+                                                    <div style="padding:4px 8px;">
+                                                        <input type="text" class="lp-input" style="font-size:11px; padding:4px 8px; width:100%;"
+                                                               placeholder="+ Nouvelle option…"
+                                                               @keydown.enter.stop="addInlineOption(col, $event.target.value); $event.target.value = ''"
+                                                               @click.stop />
                                                     </div>
                                                 </div>
                                             </div>
@@ -2512,8 +2526,7 @@ document.addEventListener('alpine:init', () => {
             lineIdx: -1,
             colKey: '',
             open: false,
-            query: '',
-            pos: null
+            query: ''
         },
 
         // Add Lines modal state
@@ -3324,15 +3337,6 @@ document.addEventListener('alpine:init', () => {
             this.msDropdown.open = true;
             this.msDropdown.query = '';
 
-            // Calculate fixed position from the trigger
-            if (event) {
-                const trigger = event.currentTarget || event.target;
-                const rect = trigger.getBoundingClientRect();
-                this.msDropdown.pos = {
-                    top: rect.bottom + 4,
-                    left: rect.left
-                };
-            }
         },
 
         closeMultiselectDropdown() {

@@ -1181,8 +1181,8 @@
 
                 <!-- Table (catalog & table modes only, hidden for form mode) -->
                 <div x-show="getSchemaInputMode(schema) !== 'form'"
-                     :class="relationSearch.open ? '' : 'overflow-x-auto'"
-                     :style="relationSearch.open ? 'overflow: visible' : ''">
+                     :class="(relationSearch.open || msDropdown.open) ? '' : 'overflow-x-auto'"
+                     :style="(relationSearch.open || msDropdown.open) ? 'overflow: visible' : ''">
                     <table class="lines-panel-table">
                         <thead>
                             <tr>
@@ -1295,9 +1295,9 @@
                                                 </select>
                                             </template>
 
-                                            <!-- Multiselect (inline tag-picker dropdown) -->
+                                            <!-- Multiselect (tp-style inline tag-picker dropdown) -->
                                             <template x-if="col.type === 'multiselect'">
-                                                <div class="lp-ms-wrap">
+                                                <div class="tp-wrapper" style="position:relative;">
                                                     <!-- Selected tags display (trigger) -->
                                                     <div class="lp-ms-trigger"
                                                          @click.stop="activeSchemaId = schema._id; openMultiselectDropdown(lineIdx, col.key, $event)">
@@ -1311,44 +1311,55 @@
                                                             </span>
                                                         </template>
                                                     </div>
-                                                    <!-- Backdrop + Dropdown (only rendered for the active one) -->
+                                                    <!-- Dropdown (tp-style) -->
                                                     <template x-if="msDropdown.lineIdx === lineIdx && msDropdown.colKey === col.key && msDropdown.open">
                                                         <div>
-                                                            <!-- Invisible backdrop to close on click -->
                                                             <div style="position: fixed; inset: 0; z-index: 9998;"
                                                                  @click.stop="closeMultiselectDropdown()"></div>
-                                                            <!-- Dropdown panel -->
-                                                            <div class="lp-ms-dropdown">
+                                                            <div class="tp-dropdown" style="z-index:9999;" @click.stop>
                                                                 <div class="tp-search-wrap">
                                                                     <input type="text" class="tp-search-input"
-                                                                           placeholder="Rechercher..."
+                                                                           placeholder="Rechercher ou créer..."
                                                                            :value="msDropdown.query"
-                                                                           @input="msDropdown.query = $event.target.value" />
+                                                                           @input="msDropdown.query = $event.target.value"
+                                                                           @keydown.enter.prevent="msCreateOption(col)" />
                                                                 </div>
                                                                 <div class="tp-divider"></div>
                                                                 <div class="tp-options">
                                                                     <template x-for="opt in filterMsOptions(col)" :key="opt.value">
-                                                                        <div class="tp-option"
+                                                                        <div class="tp-option" style="display:flex; align-items:center; justify-content:space-between;"
                                                                              @click.stop="toggleMultiselectValue(line, col.key, opt.value)">
-                                                                            <div class="tp-option-icon"
-                                                                                 :style="(line.values[col.key] || []).includes(opt.value)
-                                                                                     ? 'background:' + getMultiselectOptStyle(col, opt.value).bg + '; border: 2px solid ' + getMultiselectOptStyle(col, opt.value).bg
-                                                                                     : 'background: #fff; border: 2px solid #d1d5db'">
-                                                                                <iconify-icon x-show="(line.values[col.key] || []).includes(opt.value)"
-                                                                                              icon="tabler:check" width="12"
-                                                                                              :style="'color:' + getMultiselectOptStyle(col, opt.value).text"></iconify-icon>
+                                                                            <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
+                                                                                <div class="tp-option-icon"
+                                                                                     :style="(line.values[col.key] || []).includes(opt.value)
+                                                                                         ? 'background:' + getMultiselectOptStyle(col, opt.value).bg + '; border: 2px solid ' + getMultiselectOptStyle(col, opt.value).bg
+                                                                                         : 'background: #fff; border: 2px solid #d1d5db'">
+                                                                                    <iconify-icon x-show="(line.values[col.key] || []).includes(opt.value)"
+                                                                                                  icon="tabler:check" width="12"
+                                                                                                  :style="'color:' + getMultiselectOptStyle(col, opt.value).text"></iconify-icon>
+                                                                                </div>
+                                                                                <span class="tp-option-label" x-text="opt.label"></span>
                                                                             </div>
-                                                                            <span class="tp-option-label" x-text="opt.label"></span>
+                                                                            <button type="button" class="tp-option-delete"
+                                                                                :class="_pendingDeleteOpt === opt.value ? 'tp-option-delete--confirm' : ''"
+                                                                                @mousedown.prevent.stop="removeInlineOption(schemas.find(s => s._id === activeSchemaId), col, opt.value)"
+                                                                                :title="_pendingDeleteOpt === opt.value ? 'Cliquer pour confirmer' : 'Supprimer cette option'">
+                                                                                <iconify-icon :icon="_pendingDeleteOpt === opt.value ? 'tabler:check' : 'tabler:trash'" width="12" style="pointer-events:none;"></iconify-icon>
+                                                                            </button>
                                                                         </div>
                                                                     </template>
+                                                                    <template x-if="filterMsOptions(col).length === 0 && !(msDropdown.query || '').trim()">
+                                                                        <div style="padding:12px; text-align:center; color:#9ca3af; font-size:12px;">Aucune option</div>
+                                                                    </template>
                                                                 </div>
-                                                                <div class="tp-divider"></div>
-                                                                <div style="padding:4px 8px;">
-                                                                    <input type="text" class="lp-input" style="font-size:11px; padding:4px 8px; width:100%;"
-                                                                           placeholder="+ Nouvelle option…"
-                                                                           @keydown.enter.stop="addInlineOption(col, $event.target.value); $event.target.value = ''"
-                                                                           @click.stop />
-                                                                </div>
+                                                                <!-- + Créer -->
+                                                                <template x-if="(msDropdown.query || '').trim() && !(col.config?.options || []).some(o => o.label.toLowerCase() === (msDropdown.query || '').trim().toLowerCase())">
+                                                                    <div class="tp-create-option" @click.stop="msCreateOption(col)">
+                                                                        <iconify-icon icon="tabler:plus" width="14" style="color:#6b7280;"></iconify-icon>
+                                                                        <span class="tp-create-label">Créer</span>
+                                                                        <span class="tp-create-tag" x-text="msDropdown.query"></span>
+                                                                    </div>
+                                                                </template>
                                                             </div>
                                                         </div>
                                                     </template>
@@ -1992,9 +2003,9 @@
                                                         </div>
                                                     </template>
 
-                                                    <!-- Multiselect (inline tag-picker) -->
+                                                    <!-- Multiselect (tp-style) -->
                                                     <template x-if="col.type === 'multiselect'">
-                                                        <div class="lp-ms-wrap">
+                                                        <div class="tp-wrapper" style="position:relative;">
                                                             <div class="lp-ms-trigger"
                                                                  @click.stop="openMultiselectDropdown('add_' + item._id + '_' + col.key, col.key, $event)">
                                                                 <template x-if="(getSelectedItemValue(item._id, col.key) || []).length === 0">
@@ -2011,37 +2022,50 @@
                                                                 <div>
                                                                     <div style="position: fixed; inset: 0; z-index: 9998;"
                                                                          @click.stop="closeMultiselectDropdown()"></div>
-                                                                    <div class="lp-ms-dropdown">
+                                                                    <div class="tp-dropdown" style="z-index:9999;" @click.stop>
                                                                         <div class="tp-search-wrap">
                                                                             <input type="text" class="tp-search-input"
-                                                                                   placeholder="Rechercher..."
+                                                                                   placeholder="Rechercher ou créer..."
                                                                                    :value="msDropdown.query"
-                                                                                   @input="msDropdown.query = $event.target.value" />
+                                                                                   @input="msDropdown.query = $event.target.value"
+                                                                                   @keydown.enter.prevent="msCreateOption(col)" />
                                                                         </div>
                                                                         <div class="tp-divider"></div>
                                                                         <div class="tp-options">
                                                                             <template x-for="opt in filterMsOptions(col)" :key="opt.value">
-                                                                                <div class="tp-option"
+                                                                                <div class="tp-option" style="display:flex; align-items:center; justify-content:space-between;"
                                                                                      @click.stop="toggleSelectedItemMultiselect(item._id, col.key, opt.value)">
-                                                                                    <div class="tp-option-icon"
-                                                                                         :style="(getSelectedItemValue(item._id, col.key) || []).includes(opt.value)
-                                                                                             ? 'background:' + getMultiselectOptStyle(col, opt.value).bg + '; border: 2px solid ' + getMultiselectOptStyle(col, opt.value).bg
-                                                                                             : 'background: #fff; border: 2px solid #d1d5db'">
-                                                                                        <iconify-icon x-show="(getSelectedItemValue(item._id, col.key) || []).includes(opt.value)"
-                                                                                                      icon="tabler:check" width="12"
-                                                                                                      :style="'color:' + getMultiselectOptStyle(col, opt.value).text"></iconify-icon>
+                                                                                    <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
+                                                                                        <div class="tp-option-icon"
+                                                                                             :style="(getSelectedItemValue(item._id, col.key) || []).includes(opt.value)
+                                                                                                 ? 'background:' + getMultiselectOptStyle(col, opt.value).bg + '; border: 2px solid ' + getMultiselectOptStyle(col, opt.value).bg
+                                                                                                 : 'background: #fff; border: 2px solid #d1d5db'">
+                                                                                            <iconify-icon x-show="(getSelectedItemValue(item._id, col.key) || []).includes(opt.value)"
+                                                                                                          icon="tabler:check" width="12"
+                                                                                                          :style="'color:' + getMultiselectOptStyle(col, opt.value).text"></iconify-icon>
+                                                                                        </div>
+                                                                                        <span class="tp-option-label" x-text="opt.label"></span>
                                                                                     </div>
-                                                                                    <span class="tp-option-label" x-text="opt.label"></span>
+                                                                                    <button type="button" class="tp-option-delete"
+                                                                                        :class="_pendingDeleteOpt === opt.value ? 'tp-option-delete--confirm' : ''"
+                                                                                        @mousedown.prevent.stop="removeInlineOption(schemas.find(s => s._id === activeSchemaId), col, opt.value)"
+                                                                                        :title="_pendingDeleteOpt === opt.value ? 'Cliquer pour confirmer' : 'Supprimer cette option'">
+                                                                                        <iconify-icon :icon="_pendingDeleteOpt === opt.value ? 'tabler:check' : 'tabler:trash'" width="12" style="pointer-events:none;"></iconify-icon>
+                                                                                    </button>
                                                                                 </div>
                                                                             </template>
+                                                                            <template x-if="filterMsOptions(col).length === 0 && !(msDropdown.query || '').trim()">
+                                                                                <div style="padding:12px; text-align:center; color:#9ca3af; font-size:12px;">Aucune option</div>
+                                                                            </template>
                                                                         </div>
-                                                                        <div class="tp-divider"></div>
-                                                                        <div style="padding:4px 8px;">
-                                                                            <input type="text" class="lp-input" style="font-size:11px; padding:4px 8px; width:100%;"
-                                                                                   placeholder="+ Nouvelle option…"
-                                                                                   @keydown.enter.stop="addInlineOption(col, $event.target.value); $event.target.value = ''"
-                                                                                   @click.stop />
-                                                                        </div>
+                                                                        <!-- + Créer -->
+                                                                        <template x-if="(msDropdown.query || '').trim() && !(col.config?.options || []).some(o => o.label.toLowerCase() === (msDropdown.query || '').trim().toLowerCase())">
+                                                                            <div class="tp-create-option" @click.stop="msCreateOption(col)">
+                                                                                <iconify-icon icon="tabler:plus" width="14" style="color:#6b7280;"></iconify-icon>
+                                                                                <span class="tp-create-label">Créer</span>
+                                                                                <span class="tp-create-tag" x-text="msDropdown.query"></span>
+                                                                            </div>
+                                                                        </template>
                                                                     </div>
                                                                 </div>
                                                             </template>
@@ -2208,9 +2232,9 @@
                                     </select>
                                 </template>
 
-                                <!-- Multiselect (inline tag-picker) -->
+                                <!-- Multiselect (tp-style) -->
                                 <template x-if="col.type === 'multiselect'">
-                                    <div class="lp-ms-wrap">
+                                    <div class="tp-wrapper" style="position:relative;">
                                         <div class="lp-ms-trigger"
                                              @click.stop="openMultiselectDropdown('edit_' + editModal.lineIdx + '_' + col.key, col.key, $event)">
                                             <template x-if="(getEditLines()[editModal.lineIdx].values[col.key] || []).length === 0">
@@ -2227,37 +2251,50 @@
                                             <div>
                                                 <div style="position: fixed; inset: 0; z-index: 9998;"
                                                      @click.stop="closeMultiselectDropdown()"></div>
-                                                <div class="lp-ms-dropdown">
+                                                <div class="tp-dropdown" style="z-index:9999;" @click.stop>
                                                     <div class="tp-search-wrap">
                                                         <input type="text" class="tp-search-input"
-                                                               placeholder="Rechercher..."
+                                                               placeholder="Rechercher ou créer..."
                                                                :value="msDropdown.query"
-                                                               @input="msDropdown.query = $event.target.value" />
+                                                               @input="msDropdown.query = $event.target.value"
+                                                               @keydown.enter.prevent="msCreateOption(col)" />
                                                     </div>
                                                     <div class="tp-divider"></div>
                                                     <div class="tp-options">
                                                         <template x-for="opt in filterMsOptions(col)" :key="opt.value">
-                                                            <div class="tp-option"
+                                                            <div class="tp-option" style="display:flex; align-items:center; justify-content:space-between;"
                                                                  @click.stop="toggleMultiselectValue(getEditLines()[editModal.lineIdx], col.key, opt.value)">
-                                                                <div class="tp-option-icon"
-                                                                     :style="(getEditLines()[editModal.lineIdx].values[col.key] || []).includes(opt.value)
-                                                                         ? 'background:' + getMultiselectOptStyle(col, opt.value).bg + '; border: 2px solid ' + getMultiselectOptStyle(col, opt.value).bg
-                                                                         : 'background: #fff; border: 2px solid #d1d5db'">
-                                                                    <iconify-icon x-show="(getEditLines()[editModal.lineIdx].values[col.key] || []).includes(opt.value)"
-                                                                                  icon="tabler:check" width="12"
-                                                                                  :style="'color:' + getMultiselectOptStyle(col, opt.value).text"></iconify-icon>
+                                                                <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
+                                                                    <div class="tp-option-icon"
+                                                                         :style="(getEditLines()[editModal.lineIdx].values[col.key] || []).includes(opt.value)
+                                                                             ? 'background:' + getMultiselectOptStyle(col, opt.value).bg + '; border: 2px solid ' + getMultiselectOptStyle(col, opt.value).bg
+                                                                             : 'background: #fff; border: 2px solid #d1d5db'">
+                                                                        <iconify-icon x-show="(getEditLines()[editModal.lineIdx].values[col.key] || []).includes(opt.value)"
+                                                                                      icon="tabler:check" width="12"
+                                                                                      :style="'color:' + getMultiselectOptStyle(col, opt.value).text"></iconify-icon>
+                                                                    </div>
+                                                                    <span class="tp-option-label" x-text="opt.label"></span>
                                                                 </div>
-                                                                <span class="tp-option-label" x-text="opt.label"></span>
+                                                                <button type="button" class="tp-option-delete"
+                                                                    :class="_pendingDeleteOpt === opt.value ? 'tp-option-delete--confirm' : ''"
+                                                                    @mousedown.prevent.stop="removeInlineOption(schemas.find(s => s._id === activeSchemaId), col, opt.value)"
+                                                                    :title="_pendingDeleteOpt === opt.value ? 'Cliquer pour confirmer' : 'Supprimer cette option'">
+                                                                    <iconify-icon :icon="_pendingDeleteOpt === opt.value ? 'tabler:check' : 'tabler:trash'" width="12" style="pointer-events:none;"></iconify-icon>
+                                                                </button>
                                                             </div>
                                                         </template>
+                                                        <template x-if="filterMsOptions(col).length === 0 && !(msDropdown.query || '').trim()">
+                                                            <div style="padding:12px; text-align:center; color:#9ca3af; font-size:12px;">Aucune option</div>
+                                                        </template>
                                                     </div>
-                                                    <div class="tp-divider"></div>
-                                                    <div style="padding:4px 8px;">
-                                                        <input type="text" class="lp-input" style="font-size:11px; padding:4px 8px; width:100%;"
-                                                               placeholder="+ Nouvelle option…"
-                                                               @keydown.enter.stop="addInlineOption(col, $event.target.value); $event.target.value = ''"
-                                                               @click.stop />
-                                                    </div>
+                                                    <!-- + Créer -->
+                                                    <template x-if="(msDropdown.query || '').trim() && !(col.config?.options || []).some(o => o.label.toLowerCase() === (msDropdown.query || '').trim().toLowerCase())">
+                                                        <div class="tp-create-option" @click.stop="msCreateOption(col)">
+                                                            <iconify-icon icon="tabler:plus" width="14" style="color:#6b7280;"></iconify-icon>
+                                                            <span class="tp-create-label">Créer</span>
+                                                            <span class="tp-create-tag" x-text="msDropdown.query"></span>
+                                                        </div>
+                                                    </template>
                                                 </div>
                                             </div>
                                         </template>
@@ -3344,6 +3381,22 @@ document.addEventListener('alpine:init', () => {
             this.msDropdown.lineIdx = -1;
             this.msDropdown.colKey = '';
             this.msDropdown.query = '';
+        },
+
+        // Create new option from multiselect dropdown search (Rechercher ou créer...)
+        msCreateOption(col) {
+            const label = (this.msDropdown.query || '').trim();
+            if (!label) return;
+            const slug = label.toLowerCase().replace(/[^a-z0-9\u00e0-\u00ff]+/g, '_').replace(/^_|_$/g, '');
+            if (!col.config) col.config = {};
+            if (!col.config.options) col.config.options = [];
+            // Duplicate check
+            if (col.config.options.some(o => o.value === slug || o.label.toLowerCase() === label.toLowerCase())) return;
+            col.config.options.push({ value: slug, label: label });
+            // Clear search
+            this.msDropdown.query = '';
+            // Save schema options to backend
+            this.saveInlineOptionToSchema(col);
         },
 
         filterMsOptions(col) {

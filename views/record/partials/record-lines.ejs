@@ -2109,7 +2109,7 @@
         <!-- ═══ Edit Line Modal ═══ -->
         <template x-if="editModal.open">
             <div class="lp-modal-overlay" @click.self="closeEditModal()" @keydown.escape.window="closeEditModal()">
-                <div class="lp-modal" style="max-width: 520px;" :style="editRelOpen ? 'overflow: visible' : ''">
+                <div class="lp-modal" style="max-width: 520px;" :style="(editRelOpen || msDropdown.open) ? 'overflow: visible' : ''">
                     <!-- Header -->
                     <div class="lp-modal-header">
                         <h3>
@@ -2123,7 +2123,7 @@
 
                     <!-- Form fields -->
                     <div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; max-height: 60vh;"
-                         :style="{ overflow: editRelOpen ? 'visible' : 'auto' }">
+                         :style="{ overflow: (editRelOpen || msDropdown.open) ? 'visible' : 'auto' }">
                         <!-- Entity/Relation (editable autocomplete) -->
                         <template x-if="getRelationCol()">
                             <div>

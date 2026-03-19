@@ -4,10 +4,9 @@
     ═══════════════════════════════════════════════════════════════════ %>
 
 <style>
-    /* ═══════════════════════════════════════════════════════════
-       Dynamic Table — 2026 Premium Design
-       Palette: Vristo Blue #4361ee | Slate #1e293b | Ghost whites
-       ═══════════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════
+       Dynamic Table · 2026 Premium  ·  Vristo #4361ee
+       ═══════════════════════════════════════════════════ */
 
     /* ── Table Shell ── */
     .lines-panel-table {
@@ -18,79 +17,88 @@
     }
 
     /* ── Column Headers ── */
-    .lines-panel-table thead {
-        position: sticky;
-        top: 0;
-        z-index: 1;
+    .lines-panel-table thead tr {
+        position: relative;
     }
     .lines-panel-table th {
-        background: #fff;
-        padding: 9px 12px;
-        font-size: 10px;
-        font-weight: 700;
+        background: #f8fafc;
+        padding: 10px 14px;
+        font-size: 9.5px;
+        font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0.07em;
+        letter-spacing: 0.08em;
         color: #94a3b8;
-        border-bottom: 1.5px solid #f1f5f9;
+        border-top: 1px solid #edf0f5;
+        border-bottom: 2px solid #edf0f5;
         text-align: left;
         white-space: nowrap;
         user-select: none;
-        transition: color 0.15s;
     }
     .dark .lines-panel-table th {
-        background: #0e1726;
-        color: #475569;
+        background: #0a1628;
+        color: #3d5370;
         border-color: #1b2e4b;
     }
 
-    /* ── Table Rows ── */
+    /* ── Rows ── */
     .lines-panel-table td {
-        padding: 7px 12px;
-        border-bottom: 1px solid #f8fafc;
+        padding: 9px 14px;
+        border-bottom: 1px solid #f1f5f9;
         vertical-align: middle;
+        transition: background 0.15s;
     }
-    .dark .lines-panel-table td {
-        border-color: rgba(255,255,255,0.03);
+    .dark .lines-panel-table td { border-color: rgba(255,255,255,0.04); }
+    .lines-panel-table tbody tr { position: relative; }
+    .lines-panel-table tbody tr:last-child td { border-bottom: none; }
+
+    /* Row hover: left blue accent + very subtle bg */
+    .lines-panel-table tbody tr::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 2px; bottom: 2px;
+        width: 3px;
+        background: #4361ee;
+        border-radius: 0 3px 3px 0;
+        opacity: 0;
+        transition: opacity 0.18s;
     }
-    .lines-panel-table tbody tr {
-        transition: all 0.18s ease;
-        position: relative;
+    .lines-panel-table tbody tr:hover::before { opacity: 1; }
+    .lines-panel-table tbody tr:hover td { background: #f5f7ff; }
+    .dark .lines-panel-table tbody tr:hover td { background: rgba(67,97,238,0.05); }
+    .dark .lines-panel-table tbody tr:hover::before { background: #4361ee; }
+
+    /* ── Relation name pill (first column drug name) ── */
+    .lp-relation-pill-input {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
     }
-    .lines-panel-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-    .lines-panel-table tbody tr:hover td {
-        background: #f8f9ff;
-    }
-    .dark .lines-panel-table tbody tr:hover td {
-        background: rgba(67, 97, 238, 0.05);
+    .lp-relation-pill-input .lp-drug-icon {
+        width: 10px; height: 10px;
+        border-radius: 3px;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #4361ee, #805dca);
     }
 
-    /* ── Ghost Inputs (borderless at rest, alive on focus) ── */
+    /* ── Ghost Inputs ── */
     .lines-panel-table .lp-input {
         width: 100%;
         border: 1.5px solid transparent;
-        border-radius: 7px;
+        border-radius: 8px;
         padding: 5px 10px;
         font-size: 12.5px;
         font-weight: 500;
         background: transparent;
-        transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+        transition: all 0.15s;
         color: #1e293b;
         font-family: inherit;
     }
-    .dark .lines-panel-table .lp-input {
-        color: #cbd5e1;
-    }
-    .lines-panel-table .lp-input::placeholder {
-        color: #cbd5e1;
-        font-weight: 400;
-    }
-    .dark .lines-panel-table .lp-input::placeholder {
-        color: #334155;
-    }
+    .dark .lines-panel-table .lp-input { color: #cbd5e1; }
+    .lines-panel-table .lp-input::placeholder { color: #c8d0dc; font-weight: 400; }
+    .dark .lines-panel-table .lp-input::placeholder { color: #2d4263; }
     .lines-panel-table .lp-input:hover {
-        border-color: #e2e8f0;
+        border-color: #dde3f0;
         background: #fafbff;
     }
     .dark .lines-panel-table .lp-input:hover {
@@ -101,7 +109,7 @@
         outline: none;
         border-color: #4361ee;
         background: #fff;
-        box-shadow: 0 0 0 3px rgba(67,97,238,0.09);
+        box-shadow: 0 0 0 3px rgba(67,97,238,0.10);
         color: #0f172a;
     }
     .dark .lines-panel-table .lp-input:focus {
@@ -110,38 +118,25 @@
         box-shadow: 0 0 0 3px rgba(67,97,238,0.18);
     }
     .lines-panel-table select.lp-input {
-        cursor: pointer;
-        padding-right: 26px;
-        appearance: none;
+        cursor: pointer; padding-right: 28px; appearance: none;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
-        background-position: right 9px center;
+        background-position: right 10px center;
     }
 
-    /* ── Computed / Formula cells ── */
+    /* ── Computed cells ── */
     .lp-computed {
-        font-weight: 700;
-        color: #4361ee;
-        font-size: 13px;
-        text-align: right;
-        padding: 4px 10px;
-        background: rgba(67,97,238,0.06);
-        border-radius: 6px;
+        font-weight: 700; color: #4361ee; font-size: 13px;
+        text-align: right; padding: 4px 10px;
+        background: rgba(67,97,238,0.06); border-radius: 6px; display: inline-block;
     }
-    .dark .lp-computed {
-        color: #818cf8;
-        background: rgba(67,97,238,0.12);
-    }
+    .dark .lp-computed { color: #818cf8; background: rgba(67,97,238,0.12); }
 
     /* ── Drag handle ── */
     .lp-drag-handle {
-        cursor: grab;
-        color: #cbd5e1;
-        opacity: 0;
+        cursor: grab; color: #dde3f0; opacity: 0;
         transition: opacity 0.15s, color 0.15s;
-        padding: 2px;
-        display: flex;
-        align-items: center;
+        padding: 2px; display: flex; align-items: center;
     }
     .lines-panel-table tbody tr:hover .lp-drag-handle { opacity: 1; }
     .lp-drag-handle:active { cursor: grabbing; }
@@ -151,7 +146,7 @@
 
     /* ── Row action buttons ── */
     .lp-row-actions {
-        display: flex; gap: 1px; align-items: center;
+        display: flex; gap: 2px; align-items: center;
         opacity: 0; transition: opacity 0.15s;
     }
     .lines-panel-table tbody tr:hover .lp-row-actions { opacity: 1; }
@@ -161,9 +156,9 @@
         display: flex; align-items: center; justify-content: center;
         transition: all 0.12s;
     }
-    .lp-row-btn.edit { color: #94a3b8; }
+    .lp-row-btn.edit { color: #cbd5e1; }
     .lp-row-btn.edit:hover { color: #4361ee; background: rgba(67,97,238,0.08); }
-    .dark .lp-row-btn.edit { color: #334155; }
+    .dark .lp-row-btn.edit { color: #2d4263; }
     .dark .lp-row-btn.edit:hover { color: #818cf8; background: rgba(67,97,238,0.12); }
     .lp-row-btn.delete { color: #fca5a5; }
     .lp-row-btn.delete:hover { color: #ef4444; background: rgba(239,68,68,0.08); }
@@ -172,28 +167,33 @@
     .lp-relation-wrap { position: relative; }
     .lp-relation-dropdown {
         position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 9999;
-        background: #fff; border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        box-shadow: 0 8px 32px rgba(15,23,42,0.10), 0 2px 8px rgba(15,23,42,0.04);
+        background: #fff; border: 1px solid #edf0f5;
+        border-radius: 12px;
+        box-shadow: 0 12px 40px rgba(15,23,42,0.12), 0 2px 8px rgba(15,23,42,0.04);
         max-height: 200px; overflow-y: auto;
     }
     .dark .lp-relation-dropdown { background: #0f1c31; border-color: #1b2e4b; }
     .lp-relation-dropdown .lp-rel-item {
-        padding: 8px 14px; font-size: 12.5px; font-weight: 500;
+        padding: 9px 16px; font-size: 12.5px; font-weight: 500;
         cursor: pointer; transition: background 0.1s; color: #1e293b;
+        display: flex; align-items: center; gap: 8px;
     }
     .dark .lp-relation-dropdown .lp-rel-item { color: #cbd5e1; }
     .lp-relation-dropdown .lp-rel-item:hover { background: rgba(67,97,238,0.06); color: #4361ee; }
+    .lp-relation-dropdown .lp-rel-item:hover::before {
+        content: ''; width: 8px; height: 8px; border-radius: 2px;
+        background: linear-gradient(135deg,#4361ee,#805dca);
+        flex-shrink: 0;
+    }
 
     /* ── Totals bar ── */
     .lp-totals-bar {
         display: flex; justify-content: flex-end; gap: 28px;
-        padding: 12px 16px;
+        padding: 12px 18px;
         background: #f8fafc;
-        border-top: 1px solid #f1f5f9;
-        border-radius: 0 0 10px 10px;
+        border-top: 1px solid #edf0f5;
     }
-    .dark .lp-totals-bar { background: rgba(255,255,255,0.02); border-color: #1b2e4b; }
+    .dark .lp-totals-bar { background: rgba(255,255,255,0.015); border-color: #1b2e4b; }
     .lp-totals-bar .lp-total-item { display: flex; align-items: center; gap: 10px; }
     .lp-totals-bar .lp-total-label {
         font-weight: 700; color: #94a3b8;
@@ -213,62 +213,46 @@
     /* ── Schema tab pills ── */
     .lp-schema-pill {
         display: inline-flex; align-items: center; gap: 6px;
-        padding: 4px 13px; border-radius: 20px; font-size: 11px; font-weight: 600;
+        padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 600;
         cursor: pointer; border: 1.5px solid #e2e8f0; color: #64748b;
         background: #fff; transition: all 0.18s;
     }
-    .dark .lp-schema-pill {
-        border-color: #1b2e4b; background: transparent; color: #475569;
-    }
-    .lp-schema-pill:hover {
-        border-color: #4361ee; color: #4361ee; background: rgba(67,97,238,0.04);
-    }
+    .dark .lp-schema-pill { border-color: #1b2e4b; background: transparent; color: #475569; }
+    .lp-schema-pill:hover { border-color: #4361ee; color: #4361ee; background: rgba(67,97,238,0.04); }
     .lp-schema-pill.active {
         border-color: #4361ee; color: #4361ee;
-        background: rgba(67,97,238,0.08);
-        font-weight: 700;
+        background: rgba(67,97,238,0.08); font-weight: 700;
     }
 
-    /* ── Multiselect tags ── */
+    /* ── Multiselect tags — colorful pills ── */
     .lp-ms-tag {
         display: inline-flex; align-items: center; gap: 3px;
-        padding: 2px 9px; border-radius: 20px;
-        font-size: 11px; font-weight: 600;
-        background: rgba(67,97,238,0.08); color: #4361ee; margin: 2px;
+        padding: 2px 10px; border-radius: 20px;
+        font-size: 11px; font-weight: 600; margin: 2px;
+        background: rgba(67,97,238,0.09); color: #4361ee;
     }
-    .dark .lp-ms-tag { background: rgba(67,97,238,0.15); color: #818cf8; }
+    .dark .lp-ms-tag { background: rgba(67,97,238,0.18); color: #818cf8; }
     .lp-ms-tag .lp-ms-tag-x {
         cursor: pointer; font-size: 11px; line-height: 1;
-        opacity: 0.5; transition: opacity 0.12s; margin-left: 1px;
+        opacity: 0.45; transition: opacity 0.12s; margin-left: 2px;
     }
     .lp-ms-tag .lp-ms-tag-x:hover { opacity: 1; }
 
     /* ── Add row footer ── */
     .lp-add-row-area {
         display: flex; align-items: center; justify-content: center; gap: 6px;
-        padding: 11px; border-top: 1px dashed #e2e8f0;
-        cursor: pointer; color: #94a3b8; font-size: 11.5px; font-weight: 600;
+        padding: 12px; border-top: 1.5px dashed #edf0f5;
+        cursor: pointer; color: #c8d0dc; font-size: 11.5px; font-weight: 600;
         transition: all 0.18s; letter-spacing: 0.01em;
     }
-    .dark .lp-add-row-area { border-color: #1b2e4b; color: #334155; }
+    .dark .lp-add-row-area { border-color: #1b2e4b; color: #2d4263; }
     .lp-add-row-area:hover { background: rgba(67,97,238,0.03); color: #4361ee; }
 
-    /* ── Sortable ghost ── */
-    .lines-panel-table .sortable-ghost { opacity: 0.25; }
-    .lines-panel-table .sortable-chosen { background: rgba(67,97,238,0.04); }
-    .lines-panel-table th {
-        background: linear-gradient(135deg, rgba(67,97,238,0.04) 0%, rgba(67,97,238,0.01) 100%);
-        padding: 10px 14px;
-        font-size: 10px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #6366f1;
-        border-bottom: 2px solid rgba(67,97,238,0.12);
-        text-align: left;
-        white-space: nowrap;
-        user-select: none;
-    }
+    /* ── Sortable feedback ── */
+    .lines-panel-table .sortable-ghost { opacity: 0.2; }
+    .lines-panel-table .sortable-chosen td { background: #f5f7ff !important; }
+
+
 
     /* ── Add Lines Modal ─────────────────────────────── */
     .lp-modal-overlay {
@@ -1617,13 +1601,18 @@
                                         </span>
                                     </td>
                                     <!-- Row number -->
-                                    <td style="width:32px;">
-                                        <span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:5px; background:#f1f5f9; color:#94a3b8; font-size:10px; font-weight:700;" x-text="lineIdx + 1"></span>
+                                    <td style="width:36px; padding-left:10px;">
+                                        <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+                                            <span :style="'display:inline-flex; align-items:center; justify-content:center; width:10px; height:10px; border-radius:3px; flex-shrink:0; background:' + (['#4361ee','#00ab55','#805dca','#e7515a','#f59f00'][lineIdx % 5])"></span>
+                                            <span style="font-size:9px; font-weight:700; color:#c8d0dc; line-height:1;" x-text="lineIdx + 1"></span>
+                                        </div>
                                     </td>
                                     <!-- Relation name (always visible) -->
                                     <template x-if="getRelationCol()">
                                         <td class="lp-w-m">
                                             <div class="lp-relation-wrap">
+                                                <div style="display:flex; align-items:center; gap:7px;">
+                                                    <span :style="'width:10px; height:10px; border-radius:3px; flex-shrink:0; background:' + (['linear-gradient(135deg,#4361ee,#7086f5)','linear-gradient(135deg,#00ab55,#34d399)','linear-gradient(135deg,#805dca,#b794f4)','linear-gradient(135deg,#e7515a,#fb7185)','linear-gradient(135deg,#f59f00,#fbbf24)'][lineIdx % 5])"></span>
                                                 <input type="text" class="lp-input"
                                                     :value="getRelationLabel(line)"
                                                     @focus="openRelationSearch(lineIdx, getRelationCol().key)"
@@ -1631,6 +1620,7 @@
                                                     @blur="setTimeout(() => closeRelationSearch(), 200)"
                                                     @keydown.escape="closeRelationSearch()"
                                                     :placeholder="'🔍 ' + (getRelationCol()?.label || 'Article')" />
+                                                </div><!-- /flex wrapper -->
                                                 <!-- Dropdown -->
                                                 <div x-show="relationSearch.lineIdx === lineIdx && relationSearch.colKey === getRelationCol().key && relationSearch.open"
                                                     class="lp-relation-dropdown"

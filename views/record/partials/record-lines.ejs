@@ -1546,31 +1546,31 @@
                     <table class="whitespace-nowrap w-full">
                         <thead>
                             <tr class="border-b border-gray-200 dark:border-gray-800">
-                                <th class="px-2 py-2 text-left" style="width: 28px;"></th>
-                                <th class="px-2 py-2 text-left text-xs font-semibold uppercase text-gray-600 dark:text-gray-400" style="width: 24px;">#</th>
+                                <th class="px-1 py-1 text-left" style="width: 28px;"></th>
+                                <th class="px-1 py-1 text-left text-xs font-semibold uppercase text-gray-600 dark:text-gray-400" style="width: 24px;">#</th>
                                 <template x-if="getRelationColForSchema(schema)">
-                                    <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-600 dark:text-gray-400" style="min-width:120px;" x-text="getRelationColForSchema(schema)?.label || 'Article'"></th>
+                                    <th class="px-2 py-1 text-left text-xs font-semibold uppercase text-gray-600 dark:text-gray-400" style="min-width:120px;" x-text="getRelationColForSchema(schema)?.label || 'Article'"></th>
                                 </template>
                                 <template x-for="col in getVisibleColumnsForSchema(schema).filter(c => c.type !== 'relation')" :key="col.key">
-                                    <th class="px-3 py-2 text-left text-xs font-semibold uppercase text-gray-600 dark:text-gray-400" x-text="col.label"></th>
+                                    <th class="px-2 py-1 text-left text-xs font-semibold uppercase text-gray-600 dark:text-gray-400" x-text="col.label"></th>
                                 </template>
-                                <th class="px-2 py-2 text-left" style="width: 56px;"></th>
+                                <th class="px-1 py-1 text-left" style="width: 56px;"></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-transparent" :data-schema-id="schema._id">
                             <template x-for="(line, lineIdx) in getSchemaLines(schema._id)" :key="line._tempId || line._id || lineIdx">
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                     <!-- Drag handle -->
-                                    <td class="px-2 py-2">
+                                    <td class="px-1 py-1">
                                         <span class="lp-drag-handle">
                                             <iconify-icon icon="tabler:grip-vertical" width="14"></iconify-icon>
                                         </span>
                                     </td>
                                     <!-- Row number -->
-                                    <td class="px-2 py-2 text-xs text-gray-400" x-text="lineIdx + 1"></td>
+                                    <td class="px-1 py-1 text-xs text-gray-400" x-text="lineIdx + 1"></td>
                                     <!-- Relation name (always visible) -->
                                     <template x-if="getRelationCol()">
-                                        <td class="px-3 py-2 text-sm text-gray-900 dark:text-gray-100" style="min-width:120px;">
+                                        <td class="px-2 py-1 text-sm text-gray-900 dark:text-gray-100" style="min-width:120px;">
                                             <div class="lp-relation-wrap">
                                                 <input type="text" class="lp-input"
                                                     :value="getRelationLabel(line)"
@@ -1603,7 +1603,7 @@
                                     </template>
                                     <!-- Dynamic columns (excluding relation) -->
                                     <template x-for="col in getVisibleColumnsForLine(line).filter(c => c.type !== 'relation')" :key="col.key">
-                                        <td class="px-3 py-2 text-sm text-gray-900 dark:text-gray-100">
+                                        <td class="px-2 py-1 text-sm text-gray-900 dark:text-gray-100">
                                             <!-- Text -->
                                             <template x-if="col.type === 'text'">
                                                 <input type="text" class="lp-input"
@@ -1799,7 +1799,7 @@
                                         </td>
                                     </template>
                                     <!-- Actions (edit + delete) -->
-                                    <td class="px-2 py-2">
+                                    <td class="px-1 py-1">
                                         <div class="lp-row-actions">
                                             <button type="button" class="lp-row-btn edit" @click="activeSchemaId = schema._id; openEditLine(lineIdx)" title="Modifier">
                                                 <iconify-icon icon="tabler:pencil" width="14"></iconify-icon>

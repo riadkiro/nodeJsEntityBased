@@ -1359,9 +1359,6 @@
                                 @click.stop="activeSchemaId = schema._id; togglePresetDropdown(schema._id)">
                             <iconify-icon icon="solar:bookmark-circle-bold-duotone" width="14"></iconify-icon>
                             Presets
-                            <span x-show="(getPresetsForSchema ? getPresetsForSchema(schema._id) : getSchemaPresets ? getSchemaPresets(schema._id) : []).length > 0"
-                                  style="background:#4361ee; color:#fff; border-radius:10px; padding:0 5px; font-size:9px; font-weight:700; line-height:16px;"
-                                  x-text="(getPresetsForSchema ? getPresetsForSchema(schema._id) : getSchemaPresets ? getSchemaPresets(schema._id) : []).length"></span>
                         </button>
                         <!-- Preset Dropdown -->
                         <template x-if="presetDropdown[schema._id]">
@@ -1563,9 +1560,7 @@
                 </div>
 
                 <!-- Table (catalog & table modes only, hidden for form mode) -->
-                <div x-show="getSchemaInputMode(schema) !== 'form'" class="table-responsive">
-                     :class="(relationSearch.open || msDropdown.open) ? '' : 'overflow-x-auto'"
-                     :style="(relationSearch.open || msDropdown.open) ? 'overflow: visible' : ''">
+                <div x-show="getSchemaInputMode(schema) !== 'form'" class="table-responsive">
                     <table class="lines-panel-table">
                         <thead>
                             <tr>
@@ -1589,8 +1584,10 @@
                                             <iconify-icon icon="tabler:grip-vertical" width="14"></iconify-icon>
                                         </span>
                                     </td>
-                                    <!-- Row number (compact) -->
-                                    <td class="text-[10px] text-gray-400 font-semibold text-center" style="width:24px; padding:4px;" x-text="lineIdx + 1"></td>
+                                    <!-- Row number (compact) -->
+
+                                    <td class="text-[10px] text-gray-400 font-semibold text-center" style="width:24px; padding:4px;" x-text="lineIdx + 1"></td>
+
                                     <!-- Relation name (always visible) -->
                                     <template x-if="getRelationCol()">
                                         <td class="lp-w-m" style="padding: 5px 8px;">

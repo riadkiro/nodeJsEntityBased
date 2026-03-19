@@ -4,57 +4,66 @@
     ═══════════════════════════════════════════════════════════════════ %>
 
 <style>
-    /* ── Lines Panel Styles ───────────────────────────────── */
+    /* ── Lines Panel Styles — Vristo Clean Design ─────────── */
     .lines-panel-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 13px;
     }
     .lines-panel-table th {
-        background: #f8f9fa;
-        padding: 6px 8px;
+        background: transparent;
+        padding: 10px 12px;
         font-size: 10px;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #6b7280;
-        border-bottom: 2px solid #e5e7eb;
+        letter-spacing: 0.06em;
+        color: #9ca3af;
+        border-bottom: 1px solid #e5e7eb;
         text-align: left;
         white-space: nowrap;
         user-select: none;
     }
     .dark .lines-panel-table th {
-        background: #1b2e4b;
-        color: #888ea8;
-        border-color: #253b5c;
+        background: transparent;
+        color: #506690;
+        border-color: #1b2e4b;
     }
     .lines-panel-table td {
-        padding: 4px 6px;
-        border-bottom: 1px solid #f0f0f0;
+        padding: 8px 12px;
+        border-bottom: none;
         vertical-align: middle;
     }
     .dark .lines-panel-table td {
-        border-color: #1b2e4b;
+        border-color: transparent;
+    }
+    .lines-panel-table tbody tr {
+        transition: background 0.15s ease;
+    }
+    .lines-panel-table tbody tr:nth-child(even) {
+        background: #fafbff;
+    }
+    .dark .lines-panel-table tbody tr:nth-child(even) {
+        background: rgba(255, 255, 255, 0.015);
     }
     .lines-panel-table tbody tr:hover {
-        background: rgba(67, 97, 238, 0.03);
+        background: #f0f4ff;
     }
     .dark .lines-panel-table tbody tr:hover {
         background: rgba(67, 97, 238, 0.06);
     }
     .lines-panel-table .lp-input {
         width: 100%;
-        border: 1px solid transparent;
-        border-radius: 6px;
-        padding: 5px 8px;
-        font-size: 12px;
+        border: 1.5px solid transparent;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 12.5px;
         background: transparent;
-        transition: all 0.15s;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         color: inherit;
     }
     .lines-panel-table .lp-input:hover {
-        border-color: #e5e7eb;
-        background: #fafbfc;
+        border-color: #e0e7ff;
+        background: #f8faff;
     }
     .dark .lines-panel-table .lp-input:hover {
         border-color: #253b5c;
@@ -64,37 +73,42 @@
         outline: none;
         border-color: #4361ee;
         background: #fff;
-        box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.1);
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.08);
     }
     .dark .lines-panel-table .lp-input:focus {
         background: #0e1726;
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
     }
     .lines-panel-table select.lp-input {
         cursor: pointer;
-        padding-right: 20px;
+        padding-right: 24px;
     }
     /* Formula / computed cells */
     .lp-computed {
         font-weight: 600;
         color: #4361ee;
-        font-size: 12px;
+        font-size: 12.5px;
         text-align: right;
-        padding: 5px 8px;
+        padding: 6px 10px;
     }
     .dark .lp-computed {
         color: #6993ff;
     }
-    /* Drag handle */
+    /* Drag handle — hidden by default, revealed on row hover */
     .lp-drag-handle {
         cursor: grab;
         color: #d1d5db;
-        transition: color 0.15s;
+        transition: all 0.2s ease;
         padding: 2px;
+        opacity: 0;
+    }
+    .lines-panel-table tbody tr:hover .lp-drag-handle {
+        opacity: 1;
     }
     .lp-drag-handle:active { cursor: grabbing; }
-    .lp-drag-handle:hover { color: #6b7280; }
+    .lp-drag-handle:hover { color: #4361ee; }
     .dark .lp-drag-handle { color: #3b4a5e; }
-    .dark .lp-drag-handle:hover { color: #888ea8; }
+    .dark .lp-drag-handle:hover { color: #818cf8; }
     /* Row action buttons */
     .lp-row-actions {
         display: flex; gap: 2px; align-items: center;
@@ -146,15 +160,15 @@
         display: flex;
         justify-content: flex-end;
         gap: 24px;
-        padding: 10px 12px;
-        background: #f8f9fa;
-        border-top: 2px solid #e5e7eb;
+        padding: 12px 16px;
+        background: transparent;
+        border-top: 1px solid #e5e7eb;
         border-radius: 0 0 8px 8px;
         font-size: 12px;
     }
     .dark .lp-totals-bar {
-        background: #1b2e4b;
-        border-color: #253b5c;
+        background: transparent;
+        border-color: #1b2e4b;
     }
     .lp-totals-bar .lp-total-item {
         display: flex;
@@ -163,12 +177,12 @@
     }
     .lp-totals-bar .lp-total-label {
         font-weight: 600;
-        color: #6b7280;
+        color: #9ca3af;
         text-transform: uppercase;
         font-size: 10px;
         letter-spacing: 0.05em;
     }
-    .dark .lp-totals-bar .lp-total-label { color: #888ea8; }
+    .dark .lp-totals-bar .lp-total-label { color: #506690; }
     .lp-totals-bar .lp-total-value {
         font-weight: 700;
         font-size: 14px;
@@ -234,22 +248,23 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 8px;
+        padding: 10px;
         border-top: 1px dashed #e5e7eb;
         cursor: pointer;
         color: #9ca3af;
-        font-size: 12px;
-        transition: all 0.15s;
+        font-size: 11px;
+        font-weight: 500;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         gap: 6px;
     }
-    .dark .lp-add-row-area { border-color: #1b2e4b; color: #4a5568; }
+    .dark .lp-add-row-area { border-color: #1b2e4b; color: #506690; }
     .lp-add-row-area:hover {
         background: rgba(67, 97, 238, 0.04);
         color: #4361ee;
     }
     /* Sortable ghost */
-    .lines-panel-table .sortable-ghost { opacity: 0.3; }
-    .lines-panel-table .sortable-chosen { background: rgba(67, 97, 238, 0.05); }
+    .lines-panel-table .sortable-ghost { opacity: 0.25; }
+    .lines-panel-table .sortable-chosen { background: rgba(67, 97, 238, 0.06); border-radius: 6px; }
 
     /* ── Add Lines Modal ─────────────────────────────── */
     .lp-modal-overlay {
@@ -1117,26 +1132,26 @@
        ═══════════════════════════════════════════════════════════ */
     .lp-toolbar {
         display: flex; align-items: center; gap: 2px;
-        padding: 3px 8px;
+        padding: 4px 12px;
         border-bottom: 1px solid #f0f0f0;
         background: transparent;
     }
     .dark .lp-toolbar { border-color: #1b2e4b; }
     .lp-toolbar-btn {
         display: inline-flex; align-items: center; gap: 4px;
-        padding: 3px 8px; border-radius: 6px;
-        font-size: 10px; font-weight: 500; color: #6b7280;
+        padding: 4px 10px; border-radius: 6px;
+        font-size: 10px; font-weight: 600; color: #9ca3af;
         cursor: pointer; border: none; background: transparent;
-        transition: all 0.15s; white-space: nowrap;
+        transition: all 0.2s ease; white-space: nowrap;
         position: relative;
     }
-    .dark .lp-toolbar-btn { color: #888ea8; }
+    .dark .lp-toolbar-btn { color: #506690; }
     .lp-toolbar-btn:hover { background: rgba(67,97,238,0.06); color: #4361ee; }
-    .lp-toolbar-btn.active { background: rgba(67,97,238,0.1); color: #4361ee; font-weight: 600; }
+    .lp-toolbar-btn.active { background: rgba(67,97,238,0.1); color: #4361ee; font-weight: 700; }
     .lp-toolbar-sep {
-        width: 1px; height: 16px; background: #e5e7eb; margin: 0 2px;
+        width: 1px; height: 14px; background: #e5e7eb; margin: 0 4px;
     }
-    .dark .lp-toolbar-sep { background: #253b5c; }
+    .dark .lp-toolbar-sep { background: #1b2e4b; }
 
     /* Preset dropdown panel */
     .lp-preset-dropdown {
@@ -1316,12 +1331,12 @@
                 <div x-show="activeSchemaId === schema._id">
                     <!-- Schema Panel Header (single schema only — tab bar replaces this when multi) -->
                     <div x-show="schemas.length === 1"
-                         class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
+                         class="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
                          @click="toggleSchemaOpen(schema._id)">
-                        <div class="flex items-center gap-1.5">
-                            <iconify-icon :icon="getSchemaInputMode(schema) === 'form' ? 'solar:heart-pulse-bold-duotone' : getSchemaInputMode(schema) === 'table' ? 'solar:notebook-bold-duotone' : 'solar:document-text-bold-duotone'" width="14" class="text-success"></iconify-icon>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400" x-text="schema.name"></span>
-                            <span x-show="getSchemaLines(schema._id).length > 0" class="text-[9px] bg-success/10 text-success min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1" x-text="getSchemaLines(schema._id).length"></span>
+                        <div class="flex items-center gap-2">
+                            <span style="width:8px; height:8px; border-radius:50%; background:#00ab55; flex-shrink:0;"></span>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400" x-text="schema.name"></span>
+                            <span x-show="getSchemaLines(schema._id).length > 0" class="text-[9px] bg-primary/10 text-primary min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1.5" x-text="getSchemaLines(schema._id).length"></span>
                         </div>
                         <div class="flex items-center gap-1">
                             <!-- Template picker button (shown when templates available) -->
@@ -1846,16 +1861,16 @@
                     </table>
                 </div>
 
-                <!-- ═══ Action bar: compact pills aligned right ═══ -->
-                <div style="display:flex; align-items:center; justify-content:flex-end; gap:6px; padding:8px 12px; border-top:1px dashed #e5e7eb;">
-                    <div style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; font-size:11px; font-weight:500; color:#6b7280; border:1px solid #e5e7eb; border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none;"
+                <!-- ═══ Action bar: clean compact pills ═══ -->
+                <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:10px 16px;">
+                    <div style="display:inline-flex; align-items:center; gap:5px; padding:5px 14px; font-size:11px; font-weight:600; color:#6b7280; border:1.5px solid #e5e7eb; border-radius:8px; cursor:pointer; transition:all 0.2s; user-select:none;"
                          @click.stop="addLineToSchema(schema._id)"
                          onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee'; this.style.background='rgba(67,97,238,0.04)';"
                          onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='#6b7280'; this.style.background='';">
                         <iconify-icon icon="tabler:plus" width="13"></iconify-icon>
                         <span>Ajouter</span>
                     </div>
-                    <div style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; font-size:11px; font-weight:500; color:#6b7280; border:1px solid #e5e7eb; border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none;"
+                    <div style="display:inline-flex; align-items:center; gap:5px; padding:5px 14px; font-size:11px; font-weight:600; color:#6b7280; border:1.5px solid #e5e7eb; border-radius:8px; cursor:pointer; transition:all 0.2s; user-select:none;"
                          @click.stop="activateAndOpenModal(schema._id)"
                          onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee'; this.style.background='rgba(67,97,238,0.04)';"
                          onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='#6b7280'; this.style.background='';">
@@ -1863,10 +1878,10 @@
                         <span>Catalogue</span>
                     </div>
                     <div x-show="schema.snapshotConfig?.enabled"
-                         :style="'display:inline-flex; align-items:center; gap:5px; padding:5px 12px; font-size:11px; font-weight:500; color:#6b7280; border:1px solid #e5e7eb; border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none;' + (snapshotSaving[schema._id] === true ? ' opacity:0.5; pointer-events:none;' : '')"
+                         :style="'display:inline-flex; align-items:center; gap:5px; padding:5px 14px; font-size:11px; font-weight:600; color:white; background:#4361ee; border:1.5px solid #4361ee; border-radius:8px; cursor:pointer; transition:all 0.2s; user-select:none;' + (snapshotSaving[schema._id] === true ? ' opacity:0.5; pointer-events:none;' : '')"
                          @click.stop="saveSnapshot(schema)"
-                         onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee'; this.style.background='rgba(67,97,238,0.04)';"
-                         onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='#6b7280'; this.style.background='';">
+                         onmouseover="this.style.background='#3651d4'; this.style.borderColor='#3651d4';"
+                         onmouseout="this.style.background='#4361ee'; this.style.borderColor='#4361ee';">
                         <iconify-icon icon="solar:check-circle-bold-duotone" width="13" style="pointer-events:none;"></iconify-icon>
                         <span x-text="snapshotSaving[schema._id] === true ? 'Validation...' : 'Valider'" style="pointer-events:none;"></span>
                     </div>

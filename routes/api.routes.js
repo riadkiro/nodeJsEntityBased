@@ -2577,9 +2577,179 @@ router.get('/api/widget/available-schemas', async (req, res) => {
             }
         }
 
+        // 3. Fallback: All LineSchemas in workspace (not already found via entity.gridSchemas)
+        // This ensures schemas that exist but aren't explicitly linked to entities are still available
+        const foundSchemaIds = new Set(result.map(r => r.schemaId.toString()))
+        const allSchemas = await LineSchema.find({}).select('name slug columns').lean()
+        for (const s of allSchemas) {
+            if (!foundSchemaIds.has(s._id.toString())) {
+                result.push({
+                    schemaId: s._id,
+                    schemaName: s.name,
+                    source: 'direct',
+                    path: [],
+                    entityName: entity.name,
+                    columns: (s.columns || []).map(c => ({ key: c.key, label: c.label, type: c.type }))
+                })
+            }
+        }
+
         res.json({ schemas: result })
     } catch (error) {
         console.error('[API] Available schemas error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * GET /account/:account_number/api/widget/dynamic-table-data
+ * Fetch DocumentLines + Snapshots for the Dynamic Table widget in custom tabs.
+ *
+ * Query params:
+ *   - recordId       : current record ObjectId
+ *   - schemaId       : LineSchema ObjectId
+ *   - source         : 'direct' | 'indirect'
+ *   - relationPath   : JSON string, array of { relationKey, targetEntityId }
+ *   - includeSnapshots : 'true' to also fetch grid snapshots
+ */
+router.get('/api/widget/dynamic-table-data', async (req, res) => {
+    try {
+        const mongoose = require('mongoose')
+        const Record = await tenantCollection(req, 'Record')
+        const DocumentLine = await tenantCollection(req, 'DocumentLine')
+        const LineSchema = await tenantCollection(req, 'LineSchema')
+        const Entity = await tenantCollection(req, 'Entity')
+        if (!Record || !DocumentLine || !LineSchema) {
+            return res.status(500).json({ error: 'Models not available' })
+        }
+
+        const { recordId, schemaId, source, relationPath: relationPathStr, includeSnapshots } = req.query
+        if (!recordId || !schemaId) {
+            return res.status(400).json({ error: 'recordId and schemaId are required' })
+        }
+
+        // Load the schema for column definitions
+        const schema = await LineSchema.findById(schemaId).lean()
+        if (!schema) {
+            return res.status(404).json({ error: 'LineSchema not found' })
+        }
+
+        let targetRecordId = recordId
+
+        if (source === 'indirect') {
+            // Follow relation path to find the target record
+            let relationPath = []
+            try { relationPath = JSON.parse(relationPathStr || '[]') } catch (e) { /* ignore */ }
+
+            if (relationPath.length) {
+                let currentRecordIds = [new mongoose.Types.ObjectId(recordId)]
+
+                for (const step of relationPath) {
+                    if (!step.relationKey) break
+                    const nextIds = new Set()
+
+                    // Forward lookup
+                    const forwardRecords = await Record.find({
+                        _id: { $in: currentRecordIds },
+                        'relations.relationKey': step.relationKey
+                    }).select('relations').lean()
+
+                    for (const r of forwardRecords) {
+                        const rel = (r.relations || []).find(x => x.relationKey === step.relationKey)
+                        if (rel && rel.value) {
+                            const vals = Array.isArray(rel.value) ? rel.value : [rel.value]
+                            vals.forEach(v => { if (v) nextIds.add(v.toString()) })
+                        }
+                    }
+
+                    // Inverse lookup if forward yielded nothing
+                    if (nextIds.size === 0) {
+                        const inverseRecords = await Record.find({
+                            'relations': {
+                                $elemMatch: {
+                                    relationKey: step.relationKey,
+                                    value: { $in: currentRecordIds }
+                                }
+                            }
+                        }).select('_id').lean()
+
+                        for (const r of inverseRecords) {
+                            nextIds.add(r._id.toString())
+                        }
+                    }
+
+                    currentRecordIds = [...nextIds].map(id => new mongoose.Types.ObjectId(id))
+                    if (currentRecordIds.length === 0) break
+                }
+
+                // Use the first target record found
+                if (currentRecordIds.length > 0) {
+                    targetRecordId = currentRecordIds[0].toString()
+                }
+            }
+        }
+
+        // Fetch DocumentLines for the target record
+        const lines = await DocumentLine.find({
+            documentId: targetRecordId,
+            schemaId: new mongoose.Types.ObjectId(schemaId)
+        }).sort({ order: 1 }).lean()
+
+        // Fetch snapshots if requested
+        let snapshots = []
+        if (includeSnapshots === 'true') {
+            try {
+                const GridSnapshot = await tenantCollection(req, 'GridSnapshot')
+                if (GridSnapshot) {
+                    snapshots = await GridSnapshot.find({
+                        schemaId: new mongoose.Types.ObjectId(schemaId),
+                        targetRecordId: targetRecordId
+                    }).sort({ createdAt: -1 }).lean()
+                }
+            } catch (e) { /* GridSnapshot model may not exist */ }
+        }
+
+        // Get entity info for linked documents
+        const record = await Record.findById(targetRecordId).select('entityId title computedTitle').lean()
+        let entityInfo = null
+        if (record && record.entityId) {
+            entityInfo = await Entity.findById(record.entityId).select('name slug icon color gridSchemas').lean()
+        }
+
+        // Find the gridSchema config for this schema (for lineTypes, catalog settings etc.)
+        let gridSchemaConfig = null
+        if (entityInfo && entityInfo.gridSchemas) {
+            gridSchemaConfig = entityInfo.gridSchemas.find(gs => gs.schemaId && gs.schemaId.toString() === schemaId)
+        }
+
+        // Extract catalog entity from relation columns if gridSchemaConfig doesn't provide one
+        let catalogEntityId = gridSchemaConfig?.catalogEntityId || null
+        if (!catalogEntityId) {
+            const relationCol = (schema.columns || []).find(c => c.type === 'relation' && c.config?.targetEntity)
+            if (relationCol) {
+                catalogEntityId = relationCol.config.targetEntity
+            }
+        }
+
+        res.json({
+            lines,
+            schema: {
+                _id: schema._id,
+                name: schema.name,
+                columns: schema.columns || [],
+                totals: schema.totals || null,
+                slug: schema.slug,
+                lineTypes: schema.lineTypes || []
+            },
+            snapshots,
+            targetRecordId,
+            recordTitle: record ? (record.computedTitle || record.title || '') : '',
+            gridSchemaConfig: gridSchemaConfig || null,
+            catalogEntityId,
+            entityInfo: entityInfo ? { _id: entityInfo._id, name: entityInfo.name, slug: entityInfo.slug, icon: entityInfo.icon, color: entityInfo.color } : null
+        })
+    } catch (error) {
+        console.error('[API] Dynamic table data error:', error)
         res.status(500).json({ error: error.message })
     }
 })

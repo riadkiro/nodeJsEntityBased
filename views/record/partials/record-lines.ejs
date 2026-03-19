@@ -744,62 +744,182 @@
         padding: 0 8px;
         max-width: 150px;
     }
-    .lp-snapshot-latest {
-        margin-top: 10px;
-        border: 1px solid #e0e7ff;
-        border-radius: 8px;
-        overflow: hidden;
-        background: #fafbff;
+
+    /* ═══ TIMELINE HISTORY ═══ */
+    .lp-timeline {
+        position: relative;
+        padding: 4px 0 4px 0;
     }
-    .dark .lp-snapshot-latest {
-        border-color: #1e293b;
-        background: #111827;
+    .lp-timeline-line {
+        position: absolute;
+        left: 17px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: linear-gradient(to bottom, #e0e7ff, #dbeafe 50%, #e5e7eb);
+        border-radius: 1px;
     }
-    .lp-snapshot-latest-header {
+    .dark .lp-timeline-line {
+        background: linear-gradient(to bottom, #1e3a5f, #1e293b 50%, #111827);
+    }
+    .lp-timeline-entry {
+        position: relative;
+        padding-left: 38px;
+        margin-bottom: 2px;
+    }
+    .lp-timeline-entry:last-child {
+        margin-bottom: 0;
+    }
+    .lp-timeline-dot {
+        position: absolute;
+        left: 12px;
+        top: 12px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: white;
+        border: 2.5px solid #c7d2fe;
+        z-index: 1;
+        transition: all 0.2s ease;
+    }
+    .lp-timeline-entry.is-open .lp-timeline-dot {
+        border-color: #4361ee;
+        background: #4361ee;
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+    }
+    .dark .lp-timeline-dot {
+        background: #0e1726;
+        border-color: #334155;
+    }
+    .dark .lp-timeline-entry.is-open .lp-timeline-dot {
+        border-color: #818cf8;
+        background: #818cf8;
+        box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
+    }
+    .lp-timeline-header {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 8px 12px;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        user-select: none;
+    }
+    .lp-timeline-header:hover {
         background: #f0f4ff;
     }
-    .dark .lp-snapshot-latest-header {
+    .dark .lp-timeline-header:hover {
         background: #1e293b;
     }
-    .lp-snapshot-latest-header .lp-snapshot-delete {
-        opacity: 0;
+    .lp-timeline-chevron {
+        color: #9ca3af;
+        flex-shrink: 0;
+        transition: transform 0.2s ease;
     }
-    .lp-snapshot-latest-header:hover .lp-snapshot-delete {
-        opacity: 1;
+    .lp-timeline-entry.is-open .lp-timeline-chevron {
+        transform: rotate(90deg);
+        color: #4361ee;
     }
-    .lp-snapshot-showmore {
+    .lp-timeline-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .dark .lp-timeline-title {
+        color: #e2e8f0;
+    }
+    .lp-timeline-meta {
         display: flex;
         align-items: center;
-        justify-content: center;
         gap: 6px;
-        padding: 8px 0;
-        margin-top: 6px;
-        font-size: 12px;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+    .lp-timeline-time {
+        font-size: 10px;
+        color: #9ca3af;
+        font-weight: 500;
+    }
+    .lp-timeline-badge {
+        font-size: 9px;
+        color: #6b7280;
+        background: #f3f4f6;
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    .dark .lp-timeline-badge {
+        background: #1e293b;
+        color: #94a3b8;
+    }
+    .lp-timeline-delete {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 6px;
+        border-radius: 5px;
+        border: none;
+        background: transparent;
+        color: #d1d5db;
+        cursor: pointer;
+        font-size: 10px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.15s ease;
+        flex-shrink: 0;
+        opacity: 0;
+    }
+    .lp-timeline-header:hover .lp-timeline-delete {
+        opacity: 1;
+    }
+    .lp-timeline-delete:hover {
+        background: #fee2e2;
+        color: #ef4444;
+    }
+    .lp-timeline-delete.confirm {
+        background: #ef4444;
+        color: white;
+        opacity: 1;
+    }
+    .dark .lp-timeline-delete:hover {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+    }
+    .lp-timeline-body {
+        margin: 0 0 6px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+        background: white;
+    }
+    .dark .lp-timeline-body {
+        border-color: #1e293b;
+        background: #0e1726;
+    }
+    .lp-timeline-showmore {
+        position: relative;
+        padding-left: 38px;
+        margin-top: 4px;
+    }
+    .lp-timeline-showmore-btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 12px;
+        font-size: 11px;
         font-weight: 500;
         color: #4361ee;
         cursor: pointer;
         user-select: none;
-        transition: color 0.15s ease;
+        border-radius: 6px;
+        transition: all 0.15s;
     }
-    .lp-snapshot-showmore:hover {
-        color: #3b52d4;
-    }
-    .dark .lp-snapshot-showmore {
-        color: #818cf8;
-    }
-    .dark .lp-snapshot-showmore:hover {
-        color: #a5b4fc;
-    }
-    .lp-snapshot-older-list {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        max-height: 500px;
-        overflow-y: auto;
+    .lp-timeline-showmore-btn:hover {
+        background: rgba(67, 97, 238, 0.05);
     }
 
     /* ═══════════════════════════════════════════════════════════
@@ -1752,145 +1872,282 @@
                     </div>
                 </div>
 
-                <!-- ═══ Snapshot: Historique ═══ -->
+                <!-- ═══ Snapshot: Timeline Historique ═══ -->
                 <template x-if="schema.snapshotConfig?.enabled">
                     <div class="lp-snapshot-area">
 
-                        <!-- ═══ Latest snapshot (always visible) ═══ -->
+                        <!-- Timeline -->
                         <template x-if="(snapshotHistory[schema._id] || []).length > 0">
-                            <div class="lp-snapshot-latest">
-                                <div class="lp-snapshot-latest-header">
-                                    <div style="display:flex; align-items:center; gap:8px;">
-                                        <iconify-icon icon="solar:calendar-bold-duotone" width="16" style="color:#4361ee;"></iconify-icon>
-                                        <span class="lp-snapshot-date" x-text="new Date(snapshotHistory[schema._id][0].date).toLocaleDateString('fr-FR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'})"></span>
-                                        <span class="lp-snapshot-count" x-text="snapshotHistory[schema._id][0].lines.length + ' lignes'"></span>
-                                    </div>
-                                    <a href="#" :style="'display:inline-flex; align-items:center; gap:4px; padding:4px 8px; border-radius:6px; text-decoration:none; transition:all 0.15s; font-size:11px; white-space:nowrap; ' + (_pendingDeleteSnap === snapshotHistory[schema._id][0]._id ? 'color:white; background:#ef4444;' : 'color:#d1d5db;')"
-                                       @click.prevent.stop="deleteSnapshot(schema, snapshotHistory[schema._id][0]._id)"
-                                       onmouseover="if(!this.style.backgroundColor || this.style.backgroundColor==='') { this.style.color='#ef4444'; this.style.background='#fee2e2'; }"
-                                       onmouseout="if(this.style.backgroundColor !== 'rgb(239, 68, 68)') { this.style.color='#d1d5db'; this.style.background=''; }">
-                                        <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="15" style="pointer-events:none;"></iconify-icon>
-                                        <span x-show="_pendingDeleteSnap === snapshotHistory[schema._id][0]._id" style="pointer-events:none;">Confirmer</span>
-                                    </a>
-                                </div>
-                                <!-- Read-only table for latest snapshot -->
-                                <table class="lp-snapshot-table">
-                                    <thead>
-                                        <tr>
-                                            <th style="width:24px;">#</th>
-                                            <template x-for="col in getVisibleColumnsForSchema(schema)" :key="col.key">
-                                                <th x-text="col.label"></th>
-                                            </template>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <template x-for="(snapLine, sli) in snapshotHistory[schema._id][0].lines" :key="sli">
-                                            <tr>
-                                                <td style="color:#9ca3af;" x-text="sli + 1"></td>
-                                                <template x-for="col in getVisibleColumnsForSchema(schema)" :key="col.key">
-                                                    <td>
-                                                        <template x-if="col.type === 'multiselect'">
-                                                            <div style="display:flex; gap:3px; flex-wrap:wrap;">
-                                                                <template x-for="sv in (snapLine.values?.[col.key] || [])" :key="sv">
-                                                                    <span class="tp-tag" style="font-size:10px; padding:1px 6px;"
-                                                                          x-text="getMultiselectOptLabel(col, sv)"></span>
-                                                                </template>
-                                                            </div>
-                                                        </template>
-                                                        <template x-if="col.type === 'relation'">
-                                                            <span x-text="snapLine.values?.[col.key + '_label'] || snapLine.values?.[col.key] || '—'" style="color:#4361ee;"></span>
-                                                        </template>
-                                                        <template x-if="col.type !== 'multiselect' && col.type !== 'relation'">
-                                                            <span x-text="snapLine.values?.[col.key] ?? '—'"></span>
-                                                        </template>
-                                                    </td>
-                                                </template>
-                                            </tr>
-                                        </template>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </template>
+                            <div class="lp-timeline">
+                                <!-- Vertical line -->
+                                <div class="lp-timeline-line"></div>
 
-                        <!-- ═══ Show more button ═══ -->
-                        <template x-if="(snapshotHistory[schema._id] || []).length > 1">
-                            <div>
-                                <div class="lp-snapshot-showmore" @click="snapshotShowAll[schema._id] = !snapshotShowAll[schema._id]">
-                                    <iconify-icon :icon="snapshotShowAll[schema._id] ? 'tabler:chevron-up' : 'tabler:chevron-down'" width="14"></iconify-icon>
-                                    <span x-text="snapshotShowAll[schema._id] ? 'Masquer' : 'Afficher ' + (snapshotHistory[schema._id].length - 1) + ' enregistrement(s) précédent(s)'"></span>
-                                </div>
-
-                                <!-- Older snapshots list -->
-                                <div x-show="snapshotShowAll[schema._id]" x-cloak
-                                     x-transition:enter="transition ease-out duration-200"
-                                     x-transition:enter-start="opacity-0"
-                                     x-transition:enter-end="opacity-100"
-                                     class="lp-snapshot-older-list">
-                                    <template x-for="(snap, snapIdx) in snapshotHistory[schema._id].slice(1)" :key="snap._id">
-                                        <div class="lp-snapshot-item">
-                                            <div class="lp-snapshot-item-header" @click="snapshotExpanded[snap._id] = !snapshotExpanded[snap._id]">
-                                                <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
-                                                    <iconify-icon :icon="snapshotExpanded[snap._id] ? 'tabler:chevron-down' : 'tabler:chevron-right'" width="14" style="color:#9ca3af; flex-shrink:0;"></iconify-icon>
-                                                    <iconify-icon icon="solar:calendar-bold-duotone" width="14" style="color:#4361ee; flex-shrink:0;"></iconify-icon>
-                                                    <span class="lp-snapshot-date" x-text="new Date(snap.date).toLocaleDateString('fr-FR', {day:'2-digit', month:'short', year:'numeric'})"></span>
-                                                    <span class="lp-snapshot-time" x-text="new Date(snap.createdAt).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})"></span>
-                                                    <span class="lp-snapshot-count" x-text="snap.lines.length + ' lignes'"></span>
-                                                </div>
-                                                <a href="#" :style="'display:inline-flex; align-items:center; gap:4px; padding:4px 8px; border-radius:6px; text-decoration:none; flex-shrink:0; transition:all 0.15s; font-size:11px; white-space:nowrap; ' + (_pendingDeleteSnap === snap._id ? 'color:white; background:#ef4444;' : 'color:#d1d5db;')"
-                                                   @click.prevent.stop="deleteSnapshot(schema, snap._id)"
-                                                   onmouseover="if(!this.style.backgroundColor || this.style.backgroundColor==='') { this.style.color='#ef4444'; this.style.background='#fee2e2'; }"
-                                                   onmouseout="if(this.style.backgroundColor !== 'rgb(239, 68, 68)') { this.style.color='#d1d5db'; this.style.background=''; }">
-                                                    <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="14" style="pointer-events:none;"></iconify-icon>
-                                                    <span x-show="_pendingDeleteSnap === snap._id" style="pointer-events:none;">Confirmer</span>
-                                                </a>
+                                <!-- Entries: show first 10 -->
+                                <template x-for="(snap, snapIdx) in (snapshotHistory[schema._id] || []).slice(0, 10)" :key="snap._id">
+                                    <div class="lp-timeline-entry" :class="{ 'is-open': snapshotExpanded[snap._id] }">
+                                        <!-- Dot -->
+                                        <div class="lp-timeline-dot"></div>
+                                        <!-- Header -->
+                                        <div class="lp-timeline-header" @click="snapshotExpanded[snap._id] = !snapshotExpanded[snap._id]">
+                                            <iconify-icon :icon="snapshotExpanded[snap._id] ? 'tabler:chevron-down' : 'tabler:chevron-right'" width="14" class="lp-timeline-chevron"></iconify-icon>
+                                            <span class="lp-timeline-title" x-text="(schema.label || schema.name) + ' — ' + new Date(snap.date).toLocaleDateString('fr-FR', {day:'2-digit', month:'long', year:'numeric'})"></span>
+                                            <div class="lp-timeline-meta">
+                                                <span class="lp-timeline-time" x-text="new Date(snap.createdAt).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})"></span>
+                                                <span class="lp-timeline-badge" x-text="snap.lines.length + ' lignes'"></span>
                                             </div>
-                                            <!-- Expanded: show older snapshot lines -->
-                                            <div x-show="snapshotExpanded[snap._id]" x-cloak class="lp-snapshot-lines">
-                                                <table class="lp-snapshot-table">
-                                                    <thead>
+                                            <a href="#" class="lp-timeline-delete" :class="{ 'confirm': _pendingDeleteSnap === snap._id }"
+                                               @click.prevent.stop="deleteSnapshot(schema, snap._id)">
+                                                <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="13" style="pointer-events:none;"></iconify-icon>
+                                                <span x-show="_pendingDeleteSnap === snap._id" style="pointer-events:none;">Confirmer</span>
+                                            </a>
+                                        </div>
+                                        <!-- Expanded body -->
+                                        <div x-show="snapshotExpanded[snap._id]" x-cloak
+                                             x-transition:enter="transition ease-out duration-150"
+                                             x-transition:enter-start="opacity-0 -translate-y-1"
+                                             x-transition:enter-end="opacity-100 translate-y-0"
+                                             class="lp-timeline-body">
+                                            <table class="lp-snapshot-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width:24px;">#</th>
+                                                        <template x-for="col in getVisibleColumnsForSchema(schema)" :key="col.key">
+                                                            <th x-text="col.label"></th>
+                                                        </template>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <template x-for="(snapLine, sli) in snap.lines" :key="sli">
                                                         <tr>
-                                                            <th style="width:24px;">#</th>
+                                                            <td style="color:#9ca3af;" x-text="sli + 1"></td>
                                                             <template x-for="col in getVisibleColumnsForSchema(schema)" :key="col.key">
-                                                                <th x-text="col.label"></th>
+                                                                <td>
+                                                                    <template x-if="col.type === 'multiselect'">
+                                                                        <div style="display:flex; gap:3px; flex-wrap:wrap;">
+                                                                            <template x-for="sv in (snapLine.values?.[col.key] || [])" :key="sv">
+                                                                                <span class="tp-tag" style="font-size:10px; padding:1px 6px;"
+                                                                                      x-text="getMultiselectOptLabel(col, sv)"></span>
+                                                                            </template>
+                                                                        </div>
+                                                                    </template>
+                                                                    <template x-if="col.type === 'relation'">
+                                                                        <span x-text="snapLine.values?.[col.key + '_label'] || snapLine.values?.[col.key] || '—'" style="color:#4361ee;"></span>
+                                                                    </template>
+                                                                    <template x-if="col.type !== 'multiselect' && col.type !== 'relation'">
+                                                                        <span x-text="snapLine.values?.[col.key] ?? '—'"></span>
+                                                                    </template>
+                                                                </td>
                                                             </template>
                                                         </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <template x-for="(snapLine, sli) in snap.lines" :key="sli">
+                                                    </template>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Show more (if > 10 entries) -->
+                                <template x-if="(snapshotHistory[schema._id] || []).length > 10">
+                                    <div class="lp-timeline-showmore">
+                                        <div class="lp-timeline-showmore-btn" @click="snapshotShowAll[schema._id] = !snapshotShowAll[schema._id]">
+                                            <iconify-icon :icon="snapshotShowAll[schema._id] ? 'tabler:chevron-up' : 'tabler:dots'" width="14"></iconify-icon>
+                                            <span x-text="snapshotShowAll[schema._id] ? 'Masquer' : 'Afficher ' + ((snapshotHistory[schema._id] || []).length - 10) + ' plus ancien(s)'"></span>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Older entries (> 10) -->
+                                <template x-if="snapshotShowAll[schema._id] && (snapshotHistory[schema._id] || []).length > 10">
+                                    <div>
+                                        <template x-for="(snap, snapIdx) in (snapshotHistory[schema._id] || []).slice(10)" :key="snap._id">
+                                            <div class="lp-timeline-entry" :class="{ 'is-open': snapshotExpanded[snap._id] }">
+                                                <div class="lp-timeline-dot"></div>
+                                                <div class="lp-timeline-header" @click="snapshotExpanded[snap._id] = !snapshotExpanded[snap._id]">
+                                                    <iconify-icon :icon="snapshotExpanded[snap._id] ? 'tabler:chevron-down' : 'tabler:chevron-right'" width="14" class="lp-timeline-chevron"></iconify-icon>
+                                                    <span class="lp-timeline-title" x-text="(schema.label || schema.name) + ' — ' + new Date(snap.date).toLocaleDateString('fr-FR', {day:'2-digit', month:'long', year:'numeric'})"></span>
+                                                    <div class="lp-timeline-meta">
+                                                        <span class="lp-timeline-time" x-text="new Date(snap.createdAt).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})"></span>
+                                                        <span class="lp-timeline-badge" x-text="snap.lines.length + ' lignes'"></span>
+                                                    </div>
+                                                    <a href="#" class="lp-timeline-delete" :class="{ 'confirm': _pendingDeleteSnap === snap._id }"
+                                                       @click.prevent.stop="deleteSnapshot(schema, snap._id)">
+                                                        <iconify-icon icon="solar:trash-bin-minimalistic-bold-duotone" width="13" style="pointer-events:none;"></iconify-icon>
+                                                        <span x-show="_pendingDeleteSnap === snap._id" style="pointer-events:none;">Confirmer</span>
+                                                    </a>
+                                                </div>
+                                                <div x-show="snapshotExpanded[snap._id]" x-cloak
+                                                     x-transition:enter="transition ease-out duration-150"
+                                                     x-transition:enter-start="opacity-0 -translate-y-1"
+                                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                                     class="lp-timeline-body">
+                                                    <table class="lp-snapshot-table">
+                                                        <thead>
                                                             <tr>
-                                                                <td style="color:#9ca3af;" x-text="sli + 1"></td>
+                                                                <th style="width:24px;">#</th>
                                                                 <template x-for="col in getVisibleColumnsForSchema(schema)" :key="col.key">
-                                                                    <td>
-                                                                        <template x-if="col.type === 'multiselect'">
-                                                                            <div style="display:flex; gap:3px; flex-wrap:wrap;">
-                                                                                <template x-for="sv in (snapLine.values?.[col.key] || [])" :key="sv">
-                                                                                    <span class="tp-tag" style="font-size:10px; padding:1px 6px;"
-                                                                                          x-text="getMultiselectOptLabel(col, sv)"></span>
-                                                                                </template>
-                                                                            </div>
-                                                                        </template>
-                                                                        <template x-if="col.type === 'relation'">
-                                                                            <span x-text="snapLine.values?.[col.key + '_label'] || snapLine.values?.[col.key] || '—'" style="color:#4361ee;"></span>
-                                                                        </template>
-                                                                        <template x-if="col.type !== 'multiselect' && col.type !== 'relation'">
-                                                                            <span x-text="snapLine.values?.[col.key] ?? '—'"></span>
-                                                                        </template>
-                                                                    </td>
+                                                                    <th x-text="col.label"></th>
                                                                 </template>
                                                             </tr>
-                                                        </template>
-                                                    </tbody>
-                                                </table>
+                                                        </thead>
+                                                        <tbody>
+                                                            <template x-for="(snapLine, sli) in snap.lines" :key="sli">
+                                                                <tr>
+                                                                    <td style="color:#9ca3af;" x-text="sli + 1"></td>
+                                                                    <template x-for="col in getVisibleColumnsForSchema(schema)" :key="col.key">
+                                                                        <td>
+                                                                            <template x-if="col.type === 'multiselect'">
+                                                                                <div style="display:flex; gap:3px; flex-wrap:wrap;">
+                                                                                    <template x-for="sv in (snapLine.values?.[col.key] || [])" :key="sv">
+                                                                                        <span class="tp-tag" style="font-size:10px; padding:1px 6px;"
+                                                                                              x-text="getMultiselectOptLabel(col, sv)"></span>
+                                                                                    </template>
+                                                                                </div>
+                                                                            </template>
+                                                                            <template x-if="col.type === 'relation'">
+                                                                                <span x-text="snapLine.values?.[col.key + '_label'] || snapLine.values?.[col.key] || '—'" style="color:#4361ee;"></span>
+                                                                            </template>
+                                                                            <template x-if="col.type !== 'multiselect' && col.type !== 'relation'">
+                                                                                <span x-text="snapLine.values?.[col.key] ?? '—'"></span>
+                                                                            </template>
+                                                                        </td>
+                                                                    </template>
+                                                                </tr>
+                                                            </template>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </template>
-                                </div>
+                                        </template>
+                                    </div>
+                                </template>
                             </div>
                         </template>
 
                         <!-- Empty state -->
                         <template x-if="snapshotHistory[schema._id] && snapshotHistory[schema._id].length === 0">
                             <div class="lp-snapshot-empty">Aucun enregistrement sauvegardé</div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- ═══ Document Preview (when enableDocPreview is true) ═══ -->
+                <template x-if="enableDocPreview">
+                    <div style="margin-top: 8px; padding: 0 12px 12px;"
+                         x-data="{
+                             docs: [],
+                             loadingDocs: true,
+                             generatingId: null,
+                             previewUrl: '',
+                             previewTitle: '',
+                             previewOpen: false,
+                             async loadDocs() {
+                                 try {
+                                     const res = await fetch('/account/' + $data.accountNumber + '/api/smartdoc/templates/' + $data.entityId, { credentials: 'include' });
+                                     const data = await res.json();
+                                     this.docs = data.templates || data.data || [];
+                                 } catch(e) { console.error('Doc preview load error:', e); }
+                                 this.loadingDocs = false;
+                             },
+                             async generateDoc(tpl) {
+                                 this.generatingId = tpl._id;
+                                 try {
+                                     const res = await fetch('/account/' + $data.accountNumber + '/api/smartdoc/generate/' + tpl._id, {
+                                         method: 'POST',
+                                         headers: { 'Content-Type': 'application/json' },
+                                         credentials: 'include',
+                                         body: JSON.stringify({ recordId: $data.recordId })
+                                     });
+                                     const data = await res.json();
+                                     if (data.attachment?.url) {
+                                         this.previewUrl = data.attachment.url;
+                                         this.previewTitle = data.outputName || tpl.name || 'Document';
+                                         this.previewOpen = true;
+                                     }
+                                     window.showMessage?.('Document généré', 'success');
+                                 } catch(e) { console.error('Generate doc error:', e); window.showMessage?.('Erreur de génération', 'danger'); }
+                                 this.generatingId = null;
+                             }
+                         }"
+                         x-init="loadDocs()">
+
+                        <!-- Doc template list -->
+                        <template x-if="!loadingDocs && docs.length > 0">
+                            <div style="border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; background: white;">
+                                <div style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #f3f4f6; background: #f9fafb;">
+                                    <iconify-icon icon="solar:document-medicine-bold-duotone" width="14" style="color: #4361ee;"></iconify-icon>
+                                    <span style="font-size: 11px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.03em;">Documents liés</span>
+                                    <span style="font-size: 9px; background: rgba(67,97,238,0.1); color: #4361ee; padding: 1px 6px; border-radius: 10px; font-weight: 600;" x-text="docs.length"></span>
+                                </div>
+                                <div style="padding: 4px;">
+                                    <template x-for="tpl in docs" :key="tpl._id">
+                                        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; transition: all 0.15s;"
+                                             onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
+                                            <!-- Doc icon -->
+                                            <div style="width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
+                                                 :style="'background:' + (tpl.color || '#4361ee') + '15; color:' + (tpl.color || '#4361ee')">
+                                                <iconify-icon :icon="tpl.icon || 'solar:document-text-bold-duotone'" width="14"></iconify-icon>
+                                            </div>
+                                            <!-- Title -->
+                                            <span style="flex: 1; font-size: 12px; font-weight: 500; color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" x-text="tpl.name"></span>
+                                            <!-- Generate & Preview -->
+                                            <button type="button" @click.stop="generateDoc(tpl)" :disabled="generatingId === tpl._id"
+                                                    style="display: inline-flex; align-items: center; gap: 3px; padding: 4px 10px; font-size: 10px; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; transition: all 0.15s; white-space: nowrap;"
+                                                    :style="generatingId === tpl._id ? 'background: #f3f4f6; color: #9ca3af;' : 'background: rgba(0,171,85,0.1); color: #00ab55;'"
+                                                    onmouseover="if(!this.disabled) { this.style.background='rgba(0,171,85,0.2)'; }"
+                                                    onmouseout="if(!this.disabled) { this.style.background='rgba(0,171,85,0.1)'; }">
+                                                <iconify-icon :icon="generatingId === tpl._id ? 'line-md:loading-twotone-loop' : 'solar:play-bold'" width="10"></iconify-icon>
+                                                <span x-text="generatingId === tpl._id ? 'Génération...' : 'Générer & Voir'"></span>
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Document Preview Modal -->
+                        <template x-teleport="body">
+                            <div x-show="previewOpen"
+                                 x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                                 x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                                 style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);"
+                                 class="flex items-center justify-center"
+                                 @click.self="previewOpen = false"
+                                 @keydown.escape.window="previewOpen = false" x-cloak>
+                                <div @click.stop
+                                     style="background:white; border-radius:16px; width:90vw; max-width:900px; height:85vh; display:flex; flex-direction:column; box-shadow:0 25px 60px rgba(0,0,0,0.3); overflow:hidden;"
+                                     x-show="previewOpen"
+                                     x-transition:enter="transition ease-out duration-200 delay-50"
+                                     x-transition:enter-start="opacity-0 scale-95 translate-y-4" x-transition:enter-end="opacity-100 scale-100 translate-y-0">
+                                    <!-- Header -->
+                                    <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid #f3f4f6;">
+                                        <div style="display:flex; align-items:center; gap:10px;">
+                                            <div style="width:36px; height:36px; border-radius:10px; background:rgba(67,97,238,0.1); display:flex; align-items:center; justify-content:center;">
+                                                <iconify-icon icon="solar:document-text-bold-duotone" width="18" style="color:#4361ee;"></iconify-icon>
+                                            </div>
+                                            <div>
+                                                <h3 style="font-size:14px; font-weight:700; color:#111827; margin:0;" x-text="previewTitle"></h3>
+                                                <p style="font-size:11px; color:#9ca3af; margin:2px 0 0;">Aperçu du document</p>
+                                            </div>
+                                        </div>
+                                        <div style="display:flex; align-items:center; gap:6px;">
+                                            <a :href="previewUrl" target="_blank" style="display:inline-flex; align-items:center; gap:4px; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:600; text-decoration:none; background:rgba(67,97,238,0.1); color:#4361ee; transition:all 0.15s;"
+                                               onmouseover="this.style.background='rgba(67,97,238,0.2)'" onmouseout="this.style.background='rgba(67,97,238,0.1)'">
+                                                <iconify-icon icon="solar:arrow-right-up-bold" width="12"></iconify-icon>
+                                                Ouvrir
+                                            </a>
+                                            <button type="button" @click="previewOpen = false"
+                                                    style="width:32px; height:32px; border-radius:50%; border:none; cursor:pointer; background:#f3f4f6; color:#6b7280; display:flex; align-items:center; justify-content:center;"
+                                                    onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
+                                                <iconify-icon icon="tabler:x" width="16"></iconify-icon>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- Body: iframe preview -->
+                                    <div style="flex:1; overflow:hidden; background:#f3f4f6;">
+                                        <iframe :src="previewOpen ? previewUrl : ''" style="width:100%; height:100%; border:none;"></iframe>
+                                    </div>
+                                </div>
+                            </div>
                         </template>
                     </div>
                 </template>
@@ -3126,15 +3383,34 @@ document.addEventListener('alpine:init', () => {
                 this.loading = false;
                 return;
             }
+            // Check for schema filter from parent widget (dynamic-table block config)
+            const parentEl = this.$el.closest('[data-schema-filter]');
+            if (parentEl) {
+                this._schemaFilter = parentEl.dataset.schemaFilter || '';
+                this.enableDocPreview = parentEl.dataset.enableDocPreview === 'true';
+            }
             await this.loadSchemas();
         },
+
+        // Schema filter (set from parent widget data attribute)
+        _schemaFilter: '',
+        enableDocPreview: false,
+        docPreviewOpen: false,
+        docPreviewUrl: '',
+        docPreviewTitle: '',
 
         async loadSchemas() {
             try {
                 const url = `/account/${this.accountNumber}/api/line-schemas/by-context?entityId=${this.entityId}`;
                 const res = await fetch(url, { credentials: 'include' });
                 const data = await res.json();
-                this.schemas = data.data || [];
+                let schemas = data.data || [];
+
+                // Apply schema filter if set (from widget config)
+                if (this._schemaFilter) {
+                    schemas = schemas.filter(s => s._id === this._schemaFilter || s._id?.toString() === this._schemaFilter);
+                }
+                this.schemas = schemas;
 
                 // Initialize per-schema state
                 for (const s of this.schemas) {

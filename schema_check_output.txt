@@ -1,0 +1,985 @@
+﻿=== Schema: Traitement ===
+Columns: [
+  {
+    "key": "treatment",
+    "label": "Traitement",
+    "type": "relation",
+    "required": false,
+    "visible": true,
+    "width": "M",
+    "order": 0,
+    "showWhen": {
+      "lineType": [
+        "traitement"
+      ]
+    },
+    "config": {
+      "options": [
+        {
+          "value": "Matin",
+          "label": "Matin"
+        },
+        {
+          "value": "Midi",
+          "label": "Midi"
+        },
+        {
+          "value": "Soir",
+          "label": "Soir"
+        }
+      ],
+      "source": "manual",
+      "targetEntity": "69b911479bb20cc26f24d1cc",
+      "searchFields": [
+        "title"
+      ],
+      "displayFields": [
+        "title"
+      ]
+    },
+    "_id": "699d9787d0d108b786feb971"
+  },
+  {
+    "key": "frequency",
+    "label": "Fr├®quence",
+    "type": "multiselect",
+    "required": false,
+    "visible": true,
+    "width": "M",
+    "order": 1,
+    "showWhen": {
+      "lineType": []
+    },
+    "config": {
+      "options": [
+        {
+          "value": "m",
+          "label": "Matin"
+        },
+        {
+          "value": "s",
+          "label": "Soir"
+        }
+      ],
+      "source": "manual"
+    },
+    "_id": "699dc76ad0d108b786ff3a1b"
+  },
+  {
+    "key": "moment",
+    "label": "Moment",
+    "type": "multiselect",
+    "required": false,
+    "visible": true,
+    "width": "M",
+    "order": 2,
+    "showWhen": {
+      "lineType": []
+    },
+    "config": {
+      "options": [
+        {
+          "value": "3w/j",
+          "label": "3x/j"
+        },
+        {
+          "value": "1x_j",
+          "label": "1x/j"
+        },
+        {
+          "value": "2x_j",
+          "label": "2x/j"
+        },
+        {
+          "value": "au_besoin",
+          "label": "Au besoin"
+        }
+      ],
+      "source": "manual"
+    },
+    "_id": "699dc76ad0d108b786ff3a1c"
+  }
+]
+Totals: {"subtotalKey":"","vatKey":"","totalFormula":""}
+LineTypes: []
+---
+=== Schema: Facture ===
+Columns: [
+  {
+    "key": "Desc",
+    "label": "Description",
+    "type": "text",
+    "required": false,
+    "visible": true,
+    "width": "M",
+    "order": 0,
+    "showWhen": {
+      "lineType": []
+    },
+    "_id": "69a8c6fb066f2e812a7a1ba9"
+  },
+  {
+    "key": "P.U",
+    "label": "P.U",
+    "type": "text",
+    "required": false,
+    "visible": true,
+    "width": "M",
+    "order": 1,
+    "showWhen": {
+      "lineType": []
+    },
+    "_id": "69a8c6fb066f2e812a7a1baa"
+  },
+  {
+    "key": "TVA",
+    "label": "TVA",
+    "type": "text",
+    "required": false,
+    "visible": true,
+    "width": "M",
+    "order": 2,
+    "showWhen": {
+      "lineType": []
+    },
+    "_id": "69a8c6fb066f2e812a7a1bab"
+  }
+]
+Totals: {"subtotalKey":"","vatKey":"","totalFormula":""}
+LineTypes: ["product"]
+---
+=== Schema: Ordonnance ===
+Columns: [
+  {
+    "key": "treatment",
+    "label": "M├®dicament",
+    "type": "relation",
+    "required": true,
+    "visible": true,
+    "width": "L",
+    "order": 0,
+    "showWhen": {
+      "lineType": [
+        "treatment"
+      ]
+    },
+    "config": {
+      "targetEntity": null,
+      "searchFields": [
+        "title"
+      ],
+      "displayFields": [
+        "title"
+      ]
+    },
+    "_id": "69b72c1b00d04aa8a03aca50"
+  },
+  {
+    "key": "dosage",
+    "label": "Dosage",
+    "type": "dosage",
+    "required": false,
+    "visible": true,
+    "width": "S",
+    "order": 1,
+    "showWhen": {
+      "lineType": [
+        "treatment"
+      ]
+    },
+    "config": {
+      "units": [
+        "mg",
+        "ml",
+        "g",
+        "cp",
+        "gouttes",
+        "UI"
+      ]
+    },
+    "_id": "69b72c1b00d04aa8a03aca51"
+  },
+  {
+    "key": "frequency",
+    "label": "Fr├®quence",
+    "type": "select",
+    "required": false,
+    "visible": true,
+    "width": "M",
+    "order": 2,
+    "showWhen": {
+      "lineType": [
+        "treatment"
+      ]
+    },
+    "config": {
+      "source": "manual",
+      "options": [
+        {
+          "value": "1x_day",
+          "label": "1x / jour"
+        },
+        {
+          "value": "2x_day",
+          "label": "2x / jour"
+        },
+        {
+          "value": "3x_day",
+          "label": "3x / jour"
+        },
+        {
+          "value": "4x_day",
+          "label": "4x / jour"
+        },
+        {
+          "value": "every_6h",
+          "label": "Toutes les 6h"
+        },
+        {
+          "value": "every_8h",
+          "label": "Toutes les 8h"
+        },
+        {
+          "value": "every_12h",
+          "label": "Toutes les 12h"
+        },
+        {
+          "value": "weekly",
+          "label": "1x / semaine"
+        },
+        {
+          "value": "as_needed",
+          "label": "Si besoin"
+        }
+      ]
+    },
+    "_id": "69b72c1b00d04aa8a03aca52"
+  },
+  {
+    "key": "moment",
+    "label": "Moment",
+    "type": "multiselect",
+    "required": false,
+    "visible": true,
+    "width": "M",
+    "order": 3,
+    "showWhen": {
+      "lineType": [
+        "treatment"
+      ]
+    },
+    "config": {
+      "source": "manual",
+      "options": [
+        {
+          "value": "morning",
+          "label": "Matin",
+          "bg": "#dbeafe",
+          "text": "#1e40af"
+        },
+        {
+          "value": "noon",
+          "label": "Midi",
+          "bg": "#fef3c7",
+          "text": "#92400e"
+        },
+        {
+          "value": "evening",
+          "label": "Soir",
+          "bg": "#fce7f3",
+          "text": "#9d174d"
+        },
+        {
+          "value": "bedtime",
+          "label": "Au coucher",
+          "bg": "#e0e7ff",
+          "text": "#3730a3"
+        },
+        {
+          "value": "before_meal",
+          "label": "Avant repas",
+          "bg": "#dcfce7",
+          "text": "#166534"
+        },
+        {
+          "value": "after_meal",
+          "label": "Apr├¿s repas",
+          "bg": "#ecfdf5",
+          "text": "#065f46"
+        },
+        {
+          "value": "fasting",
+          "label": "├Ç jeun",
+          "bg": "#fae8ff",
+          "text": "#86198f"
+        }
+      ]
+    },
+    "_id": "69b72c1b00d04aa8a03aca53"
+  },
+  {
+    "key": "duration",
+    "label": "Dur├®e",
+    "type": "duration",
+    "required": false,
+    "visible": true,
+    "width": "S",
+    "order": 4,
+    "showWhen": {
+      "lineType": [
+        "treatment"
+      ]
+    },
+    "config": {
+      "units": [
+        "day",
+        "week",
+        "month"
+      ]
+    },
+    "_id": "69b72c1b00d04aa8a03aca54"
+  },
+  {
+    "key": "instructions",
+    "label": "Instructions",
+    "type": "textarea",
+    "required": false,
+    "visible": true,
+    "width": "L",
+    "order": 5,
+    "showWhen": {
+      "lineType": []
+    },
+    "_id": "69b72c1b00d04aa8a03aca55"
+  }
+]
+LineTypes: ["treatment","note"]
+---
+=== Schema: Analyses ===
+Columns: [
+  {
+    "key": "date",
+    "label": "Date",
+    "type": "date",
+    "required": true,
+    "visible": true,
+    "width": "S",
+    "order": 0,
+    "showWhen": {
+      "lineType": []
+    },
+    "_id": "69b72c1b00d04aa8a03aca59"
+  },
+  {
+    "key": "type_analyse",
+    "label": "Type",
+    "type": "select",
+    "required": false,
+    "visible": true,
+    "width": "M",
+    "order": 1,
+    "showWhen": {
+      "lineType": []
+    },
+    "config": {
+      "source": "manual",
+      "options": [
+        {
+          "value": "thyroide",
+          "label": "Thyro├»de"
+        },
+        {
+          "value": "lipides",
+          "label": "Bilan Lipidique"
+        },
+        {
+          "value": "glycemie",
+          "label": "Glyc├®mie"
+        },
+        {
+          "value": "renal",
+          "label": "Bilan R├®nal"
+        },
+        {
+          "value": "hepatique",
+          "label": "Bilan H├®patique"
+        },
+        {
+          "value": "nfs",
+          "label": "NFS"
+        },
+        {
+          "value": "autre",
+          "label": "Autre"
+        }
+      ]
+    },
+    "_id": "69b72c1b00d04aa8a03aca5a"
+  },
+  {
+    "key": "tsh",
+    "label": "TSH",
+    "type": "number",
+    "required": false,
+    "visible": true,
+    "width": "XS",
+    "order": 2,
+    "showWhen": {
+      "lineType": []
+    },
+    "config": {
+      "unit": "mUI/L",
+      "normalRange": {
+        "min": 0.27,
+        "max": 4.2
+      }
+    },
+    "_id": "69b72c1b00d04aa8a03aca5b"
+  },
+  {
+    "key": "t3_libre",
+    "label": "T3 libre",
+    "type": "number",
+    "required": false,
+    "visible": true,
+    "width": "XS",
+    "order": 3,
+    "showWhen": {
+      "lineType": []
+    },
+    "config": {
+      "unit": "pg/mL",
+      "normalRange": {
+        "min": 2,
+        "max": 4.4
+      }
+    },
+    "_id": "69b72c1b00d04aa8a03aca5c"
+  },
+  {
+    "key": "t4_libre",
+    "label": "T4 libre",
+    "type": "number",
+    "required": false,
+    "visible": true,
+    "width": "XS",
+    "order": 4,
+    "showWhen": {
+      "lineType": []
+    },
+    "config": {
+      "unit": "ng/dL",
+      "normalRange": {
+        "min": 0.93,
+        "max": 1.7
+      }
+    },
+    "_id": "69b72c1b00d04aa8a03aca5d"
+  },
+  {
+    "key": "glycemie",
+    "label": "Glyc├®mie",
+    "type": "number",
+    "required": false,
+    "visible": true,
+    "width": "XS",
+    "order": 5,
+    "showWhen": {
+      "lineType": []
+    },
+    "config": {
+      "unit": "g/L",
+      "normalRange": {
+        "min": 0.7,
+        "max": 1.1
+      }
+    },
+    "_id": "69b72c1b00d04aa8a03aca5e"
+  },
+  {
+    "key": "hba1c",
+    "label": "HbA1c",
+    "type": "number",
+    "required": false,
+    "visible": true,
+    "width": "XS",
+    "order": 6,
+    "showWhen": {
+      "lineType": []
+    },
+    "config": {
+      "unit": "%",
+      "normalRange": {
+        "min": 4,
+        "max": 6
+      }
+    },
+    "_id": "69b72c1b00d04aa8a03aca5f"
+  },
+  {
+    "key": "cholesterol",
+    "label": "Cholest├®rol total",
+    "type": "number",
+    "required": false,
+    "visible": true,
+    "width": "XS",
+    "order": 7,
+    "showWhen": {
+      "lineType": []
+    },
+    "config": {
+      "unit": "g/L",
+      "normalRange": {
+        "min": 0,
+        "max": 2
+      }
+    },
+    "_id": "69b72c1b00d04aa8a03aca60"
+  },
+  {
+    "key": "hdl",
+    "label": "HDL",
+    "type": "number",
+    "required": false,
+    "visible": true,
+    "width": "XS",
+    "order": 8,
+    "showWhen": {
+      "lineType": []
+    },
+    "config": {
+      "unit": "g/L",
+      "normalRange": {
+        "min": 0.4,
+        "max": 1
+      }
+    },
+    "_id": "69b72c1b00d04aa8a03aca61"
+  },
+  {
+    "key": "ldl",
+    "label": "LDL",
+    "type": "number",
+    "required": false,
+    "visible": true,
+    "width": "XS",
+    "order": 9,
+    "showWhen": {
+      "lineType": []
+    },
+    "config": {
+      "unit": "g/L",
+      "normalRange": {
+        "min": 0,
+        "max": 1.6
+      }
+    },
+    "_id": "69b72c1b00d04aa8a03aca62"
+  },
+  {
+    "key": "triglycerides",
+    "label": "Triglyc├®rides",
+    "type": "number",
+    "required": false,
+    "visible": true,
+    "width": "XS",
+    "order": 10,
+    "showWhen": {
+      "lineType": []
+    },
+    "config": {
+      "unit": "g/L",
+      "normalRange": {
+        "min": 0,
+        "max": 1.5
+      }
+    },
+    "_id": "69b72c1b00d04aa8a03aca63"
+  },
+  {
+    "key": "creatinine",
+    "label": "Cr├®atinine",
+    "type": "number",
+    "required": false,
+    "visible": true,
+    "width": "XS",
+    "order": 11,
+    "showWhen": {
+      "lineType": []
+    },
+    "config": {
+      "unit": "mg/L",
+      "normalRange": {
+        "min": 7,
+        "max": 13
+      }
+    },
+    "_id": "69b72c1b00d04aa8a03aca64"
+  },
+  {
+    "key": "commentaire",
+    "label": "Commentaire",
+    "type": "text",
+    "required": false,
+    "visible": true,
+    "width": "M",
+    "order": 12,
+    "showWhen": {
+      "lineType": []
+    },
+    "_id": "69b72c1b00d04aa8a03aca65"
+  }
+]
+LineTypes: ["default"]
+---
+=== Schema: Ordonnance Traitement ===
+Columns: [
+  {
+    "key": "treatment",
+    "label": "Traitement",
+    "type": "relation",
+    "required": true,
+    "visible": true,
+    "width": "L",
+    "order": 0,
+    "showWhen": {
+      "lineType": [
+        "treatment"
+      ]
+    },
+    "config": {
+      "targetEntity": "69b911479bb20cc26f24d1cc",
+      "searchFields": [
+        "title"
+      ],
+      "displayFields": [
+        "title"
+      ],
+      "applyDefaults": {
+        "description": "title"
+      }
+    },
+    "_id": "69b9d586fb5e533e03135bd5"
+  },
+  {
+    "key": "dosage",
+    "label": "Dosage",
+    "type": "dosage",
+    "required": false,
+    "visible": true,
+    "width": "S",
+    "order": 1,
+    "showWhen": {
+      "lineType": [
+        "treatment"
+      ]
+    },
+    "config": {
+      "units": [
+        "mg",
+        "ml",
+        "g",
+        "cp",
+        "gouttes"
+      ]
+    },
+    "_id": "69b9d586fb5e533e03135bd6"
+  },
+  {
+    "key": "frequency",
+    "label": "Fr├®quence",
+    "type": "select",
+    "required": false,
+    "visible": true,
+    "width": "M",
+    "order": 2,
+    "showWhen": {
+      "lineType": [
+        "treatment"
+      ]
+    },
+    "config": {
+      "source": "manual",
+      "options": [
+        {
+          "value": "1x_day",
+          "label": "1x / jour"
+        },
+        {
+          "value": "2x_day",
+          "label": "2x / jour"
+        },
+        {
+          "value": "3x_day",
+          "label": "3x / jour"
+        },
+        {
+          "value": "every_8h",
+          "label": "Toutes les 8h"
+        },
+        {
+          "value": "every_12h",
+          "label": "Toutes les 12h"
+        },
+        {
+          "value": "weekly",
+          "label": "1x / semaine"
+        },
+        {
+          "value": "as_needed",
+          "label": "Si besoin"
+        }
+      ]
+    },
+    "_id": "69b9d586fb5e533e03135bd7"
+  },
+  {
+    "key": "moment",
+    "label": "Moment",
+    "type": "multiselect",
+    "required": false,
+    "visible": true,
+    "width": "M",
+    "order": 3,
+    "showWhen": {
+      "lineType": [
+        "treatment"
+      ]
+    },
+    "config": {
+      "source": "manual",
+      "options": [
+        {
+          "value": "morning",
+          "label": "Matin"
+        },
+        {
+          "value": "noon",
+          "label": "Midi"
+        },
+        {
+          "value": "evening",
+          "label": "Soir"
+        },
+        {
+          "value": "bedtime",
+          "label": "Au coucher"
+        },
+        {
+          "value": "before_meal",
+          "label": "Avant repas"
+        },
+        {
+          "value": "after_meal",
+          "label": "Apr├¿s repas"
+        },
+        {
+          "value": "fasting",
+          "label": "├Ç jeun"
+        }
+      ]
+    },
+    "_id": "69b9d586fb5e533e03135bd8"
+  },
+  {
+    "key": "duration",
+    "label": "Dur├®e",
+    "type": "duration",
+    "required": false,
+    "visible": true,
+    "width": "S",
+    "order": 4,
+    "showWhen": {
+      "lineType": [
+        "treatment"
+      ]
+    },
+    "config": {
+      "units": [
+        "day",
+        "week",
+        "month"
+      ]
+    },
+    "_id": "69b9d586fb5e533e03135bd9"
+  },
+  {
+    "key": "instructions",
+    "label": "Instructions",
+    "type": "textarea",
+    "required": false,
+    "visible": true,
+    "width": "L",
+    "order": 5,
+    "showWhen": {
+      "lineType": []
+    },
+    "_id": "69b9d586fb5e533e03135bda"
+  }
+]
+Totals: {}
+LineTypes: ["treatment","note"]
+---
+=== Schema: Facture Standard ===
+Columns: [
+  {
+    "key": "description",
+    "label": "Description",
+    "type": "text",
+    "required": true,
+    "visible": true,
+    "width": "L",
+    "order": 0,
+    "config": {}
+  },
+  {
+    "key": "qty",
+    "label": "Qt├®",
+    "type": "number",
+    "required": true,
+    "visible": true,
+    "width": "XS",
+    "order": 1,
+    "showWhen": {
+      "lineType": [
+        "product",
+        "service"
+      ]
+    },
+    "config": {}
+  },
+  {
+    "key": "unitPrice",
+    "label": "P.U. HT",
+    "type": "money",
+    "required": true,
+    "visible": true,
+    "width": "S",
+    "order": 2,
+    "showWhen": {
+      "lineType": [
+        "product",
+        "service"
+      ]
+    },
+    "config": {
+      "currency": "MAD",
+      "decimals": 2
+    }
+  },
+  {
+    "key": "discount",
+    "label": "Remise %",
+    "type": "number",
+    "required": false,
+    "visible": true,
+    "width": "XS",
+    "order": 3,
+    "showWhen": {
+      "lineType": [
+        "product",
+        "service"
+      ]
+    },
+    "config": {}
+  },
+  {
+    "key": "vatRate",
+    "label": "TVA %",
+    "type": "number",
+    "required": false,
+    "visible": true,
+    "width": "XS",
+    "order": 4,
+    "showWhen": {
+      "lineType": [
+        "product",
+        "service"
+      ]
+    },
+    "config": {}
+  },
+  {
+    "key": "lineTotal",
+    "label": "Total HT",
+    "type": "formula",
+    "required": false,
+    "visible": true,
+    "width": "S",
+    "order": 5,
+    "showWhen": {
+      "lineType": [
+        "product",
+        "service"
+      ]
+    },
+    "config": {
+      "expression": "qty * unitPrice * (1 - discount / 100)",
+      "dependencies": [
+        "qty",
+        "unitPrice",
+        "discount"
+      ]
+    }
+  },
+  {
+    "key": "lineVat",
+    "label": "TVA",
+    "type": "formula",
+    "required": false,
+    "visible": true,
+    "width": "S",
+    "order": 6,
+    "showWhen": {
+      "lineType": [
+        "product",
+        "service"
+      ]
+    },
+    "config": {
+      "expression": "lineTotal * vatRate / 100",
+      "dependencies": [
+        "lineTotal",
+        "vatRate"
+      ]
+    }
+  },
+  {
+    "key": "note",
+    "label": "Note",
+    "type": "textarea",
+    "required": false,
+    "visible": true,
+    "width": "XL",
+    "order": 7,
+    "showWhen": {
+      "lineType": [
+        "note"
+      ]
+    },
+    "config": {}
+  }
+]
+Totals: {"subtotalKey":"lineTotal","vatKey":"lineVat","totalFormula":"subtotal + vat"}
+LineTypes: ["product","service","note"]
+---
+
+=== Existing DocumentLines ===
+Count: 5
+  doc: new ObjectId("699c58b249f03618827537e6") schema: undefined vals: undefined
+  doc: new ObjectId("699c58b249f0361882753715") schema: undefined vals: {"Fr├®quence":["Matin","Midi"]}
+  doc: new ObjectId("699c58b249f0361882753715") schema: undefined vals: {"Fr├®quence":["Matin","Midi"]}
+  doc: new ObjectId("699c58b249f0361882753715") schema: undefined vals: {"Fr├®quence":["Soir"]}
+  doc: new ObjectId("699c58b249f036188275370e") schema: undefined vals: {"Frequence":["m","s"],"Moment":["3w/j"],"Traitement":"699c58b249f036188275377d","Traitement_label":"Asthme - Symbicort Lambert"}
+
+=== GridSchemaTemplates ===
+Protocole Grippe - catalogEntityId: undefined - lineTypes: undefined
+Traitement Hypertension - catalogEntityId: undefined - lineTypes: undefined
+Traitement Douleur - catalogEntityId: undefined - lineTypes: undefined
+Suivi Thyro├»de - catalogEntityId: undefined - lineTypes: undefined
+Bilan Lipidique - catalogEntityId: undefined - lineTypes: undefined
+Bilan R├®nal - catalogEntityId: undefined - lineTypes: undefined
+Traitement habituel 2 - catalogEntityId: undefined - lineTypes: undefined
+Acidit├® gastrique - catalogEntityId: undefined - lineTypes: undefined
+Traitement acidit├® - catalogEntityId: undefined - lineTypes: undefined
+Consultation - catalogEntityId: undefined - lineTypes: undefined

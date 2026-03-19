@@ -466,6 +466,8 @@
 
         </div>
 
+        <!-- Dynamic Table Widget JS -->
+        <script src="/js/dt-widget.js"></script>
         <!-- Alpine Store for sharing tab state across components -->
         <script>
         document.addEventListener('alpine:init', () => {
@@ -1203,6 +1205,14 @@
                                                                                 <iconify-icon icon="solar:code-square-bold-duotone" width="24" style="opacity: 0.3; margin-bottom: 4px;"></iconify-icon>
                                                                                 <div>Embed / iframe</div>
                                                                             </div>
+                                                                        </div>
+                                                                    </template>
+                                                                    <!-- ═══ Dynamic Table Widget ═══ -->
+                                                                    <template x-if="block && block.type === 'dynamic-table'">
+                                                                        <div style="height: 100%; border-radius: 12px; overflow: visible; position: relative; z-index: 50;"
+                                                                             :data-schema-filter="block.config?.schemaId || ''"
+                                                                             :data-enable-doc-preview="block.config?.enableDocPreview ? 'true' : ''">
+                                                                            <%- include('partials/record-lines') %>
                                                                         </div>
                                                                     </template>
                                                                 </div>
@@ -2230,6 +2240,115 @@
                                             </div>
                                         </template>
 
+                                        <!-- ══════════ DYNAMIC TABLE ══════════ -->
+                                        <template x-if="cfgBlock.type === 'dynamic-table'">
+                                            <div style="display: flex; flex-direction: column; gap: 14px;"
+                                                 x-data="{
+                                                     _dtSchemas: [],
+                                                     _dtLoading: true,
+                                                     async loadSchemas() {
+                                                         this._dtLoading = true;
+                                                         try {
+                                                             const resp = await fetch('/account/<%= account_number %>/api/widget/available-schemas?entityId=<%= entity._id %>', { credentials: 'include' });
+                                                             const d = await resp.json();
+                                                             this._dtSchemas = d.schemas || [];
+                                                         } catch(e) { console.error(e); }
+                                                         this._dtLoading = false;
+                                                     },
+                                                     selectSchema(schema) {
+                                                         if (!cfgBlock.config) cfgBlock.config = {};
+                                                         cfgBlock.config.schemaId = schema.schemaId;
+                                                         cfgBlock.config.schemaName = schema.schemaName;
+                                                         cfgBlock.config.source = schema.source;
+                                                         cfgBlock.config.relationPath = schema.path || [];
+                                                         cfgBlock.config.entityName = schema.entityName;
+                                                         cfgBlock.config.relationLabel = schema.relationLabel || '';
+                                                         cfgBlock.config.columns = schema.columns || [];
+                                                     }
+                                                 }"
+                                                 x-init="if(!cfgBlock.config) cfgBlock.config = { displayMode: 'table', enableCatalog: true, enableAdd: true, enableSnapshots: true }; loadSchemas()">
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Tableau dynamique à utiliser</label>
+                                                    <template x-if="_dtLoading">
+                                                        <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 12px;">
+                                                            <iconify-icon icon="svg-spinners:ring-resize" width="18"></iconify-icon>
+                                                            Chargement des tableaux...
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="!_dtLoading && _dtSchemas.length === 0">
+                                                        <div style="padding: 12px; background: #fef3c7; border-radius: 8px; border: 1px solid #fde68a;">
+                                                            <p style="font-size: 11px; color: #92400e; margin: 0;">Aucun tableau dynamique trouvé.</p>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="!_dtLoading && _dtSchemas.length > 0">
+                                                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                                                            <template x-for="schema in _dtSchemas" :key="schema.schemaId + (schema.relationLabel || '')">
+                                                                <button type="button" @click="selectSchema(schema)"
+                                                                    :style="'display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; cursor: pointer; transition: all 0.15s; text-align: left; width: 100%; border: 1.5px solid ' + (cfgBlock.config.schemaId === schema.schemaId ? '#10b981' : '#e5e7eb') + '; background: ' + (cfgBlock.config.schemaId === schema.schemaId ? '#ecfdf5' : 'white')">
+                                                                    <div style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;"
+                                                                         :style="'background:' + (schema.source === 'direct' ? 'rgba(16,185,129,0.12)' : 'rgba(67,97,238,0.12)')">
+                                                                        <iconify-icon :icon="schema.source === 'direct' ? 'solar:list-check-bold-duotone' : 'solar:link-round-bold-duotone'" width="18"
+                                                                            :style="'color:' + (schema.source === 'direct' ? '#10b981' : '#4361ee')"></iconify-icon>
+                                                                    </div>
+                                                                    <div style="flex: 1; min-width: 0;">
+                                                                        <div style="font-size: 13px; font-weight: 600; color: #1f2937;" x-text="schema.schemaName"></div>
+                                                                        <div style="font-size: 11px; color: #9ca3af; margin-top: 1px;" x-text="schema.source === 'direct' ? ('Direct — ' + schema.entityName) : ('Via ' + schema.relationLabel)"></div>
+                                                                    </div>
+                                                                    <template x-if="cfgBlock.config.schemaId === schema.schemaId">
+                                                                        <iconify-icon icon="solar:check-circle-bold" width="20" style="color: #10b981; flex-shrink: 0;"></iconify-icon>
+                                                                    </template>
+                                                                </button>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                                <template x-if="cfgBlock.config.schemaId">
+                                                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                                                        <div>
+                                                            <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Mode d'affichage</label>
+                                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                                                                <button type="button" @click="cfgBlock.config.displayMode = 'table'"
+                                                                    :style="'display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px; border-radius: 10px; cursor: pointer; transition: all 0.15s; border: 1.5px solid ' + ((cfgBlock.config.displayMode || 'table') === 'table' ? '#10b981' : '#e5e7eb') + '; background: ' + ((cfgBlock.config.displayMode || 'table') === 'table' ? '#ecfdf5' : 'white')">
+                                                                    <iconify-icon icon="solar:list-check-bold-duotone" width="22" :style="'color:' + ((cfgBlock.config.displayMode || 'table') === 'table' ? '#10b981' : '#9ca3af')"></iconify-icon>
+                                                                    <span style="font-size: 12px; font-weight: 600;" :style="'color:' + ((cfgBlock.config.displayMode || 'table') === 'table' ? '#10b981' : '#6b7280')">Tableau</span>
+                                                                    <span style="font-size: 10px; color: #9ca3af;">Édition directe</span>
+                                                                </button>
+                                                                <button type="button" @click="cfgBlock.config.displayMode = 'split-doc'"
+                                                                    :style="'display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px; border-radius: 10px; cursor: pointer; transition: all 0.15s; border: 1.5px solid ' + ((cfgBlock.config.displayMode || 'table') === 'split-doc' ? '#10b981' : '#e5e7eb') + '; background: ' + ((cfgBlock.config.displayMode || 'table') === 'split-doc' ? '#ecfdf5' : 'white')">
+                                                                    <iconify-icon icon="solar:documents-bold-duotone" width="22" :style="'color:' + ((cfgBlock.config.displayMode || 'table') === 'split-doc' ? '#10b981' : '#9ca3af')"></iconify-icon>
+                                                                    <span style="font-size: 12px; font-weight: 600;" :style="'color:' + ((cfgBlock.config.displayMode || 'table') === 'split-doc' ? '#10b981' : '#6b7280')">Split Doc</span>
+                                                                    <span style="font-size: 10px; color: #9ca3af;">Documents + Aperçu</span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                                            <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 2px;">Options</label>
+                                                            <template x-for="opt in [{k:'enableAdd',l:'Ajouter des lignes'},{k:'enableCatalog',l:'Catalogue'},{k:'enableSnapshots',l:'Snapshots / Validation'}]" :key="opt.k">
+                                                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 0;">
+                                                                    <span style="font-size: 12px; color: #4b5563;" x-text="opt.l"></span>
+                                                                    <label style="position: relative; width: 36px; height: 20px; display: inline-block;">
+                                                                        <input type="checkbox" :checked="cfgBlock.config[opt.k] !== false"
+                                                                            @change="cfgBlock.config[opt.k] = $el.checked"
+                                                                            style="opacity: 0; width: 0; height: 0;">
+                                                                        <span :style="'position: absolute; cursor: pointer; inset: 0; border-radius: 20px; transition: all 0.2s; background:' + (cfgBlock.config[opt.k] !== false ? '#10b981' : '#d1d5db')">
+                                                                            <span :style="'position: absolute; width: 16px; height: 16px; border-radius: 50%; background: white; top: 2px; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transform: translateX(' + (cfgBlock.config[opt.k] !== false ? '16px' : '2px') + ')'"></span>
+                                                                        </span>
+                                                                    </label>
+                                                                </div>
+                                                            </template>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                                <div style="padding: 10px; background: #ecfdf5; border-radius: 8px; border: 1px solid #d1fae5;">
+                                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                                        <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #10b981;"></iconify-icon>
+                                                        <span style="font-size: 11px; font-weight: 600; color: #065f46;">Tableau dynamique</span>
+                                                    </div>
+                                                    <p style="font-size: 11px; color: #6b7280; margin: 4px 0 0 0; line-height: 1.4;">Ce widget affiche un tableau dynamique éditable. Le mode Split Doc permet de visualiser les documents générés.</p>
+                                                </div>
+                                            </div>
+                                        </template>
+
                                         <!-- ══════════ EMBED / IFRAME ══════════ -->
                                         <template x-if="cfgBlock.type === 'iframe'">
                                             <div style="display: flex; flex-direction: column; gap: 14px;"
@@ -2344,7 +2463,77 @@
                                                     </template>
                                                 </div>
                                             </template>
-                                        </div>
+
+                                        <!-- ══════════ DYNAMIC-TABLE ══════════ -->
+                                        <template x-if="cfgBlock.type === 'dynamic-table'">
+                                            <div style="display: flex; flex-direction: column; gap: 14px;"
+                                                 x-data="{
+                                                     _dtSchemas: [],
+                                                     _dtLoading: true,
+                                                     async loadSchemas() {
+                                                         try {
+                                                             const res = await fetch('/account/<%= account_number %>/api/line-schemas/by-context?entityId=<%= locals.entity ? entity._id : '' %>', { credentials: 'include' });
+                                                             const data = await res.json();
+                                                             this._dtSchemas = data.data || [];
+                                                         } catch(e) { console.error('Load schemas error:', e); }
+                                                         this._dtLoading = false;
+                                                     }
+                                                 }"
+                                                 x-init="loadSchemas(); if(!cfgBlock.config) cfgBlock.config = {}">
+                                                <!-- Schema selector -->
+                                                <div>
+                                                    <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">
+                                                        <iconify-icon icon="solar:list-check-bold-duotone" width="13" style="color: #10b981; margin-right: 2px;"></iconify-icon>
+                                                        Tableau à afficher
+                                                    </label>
+                                                    <template x-if="_dtLoading">
+                                                        <div style="padding: 10px; text-align: center; color: #9ca3af; font-size: 12px;">
+                                                            <iconify-icon icon="svg-spinners:ring-resize" width="16"></iconify-icon>
+                                                            <span style="margin-left: 4px;">Chargement...</span>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="!_dtLoading">
+                                                        <select :value="cfgBlock.config.schemaId || ''"
+                                                                @change="cfgBlock.config.schemaId = $el.value"
+                                                                style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; outline: none; background: white; box-sizing: border-box;">
+                                                            <option value="">📊 Tous les tableaux (avec tabs)</option>
+                                                            <template x-for="s in _dtSchemas" :key="s._id">
+                                                                <option :value="s._id" x-text="'📋 ' + (s.label || s.name)"></option>
+                                                            </template>
+                                                        </select>
+                                                    </template>
+                                                    <p style="font-size: 10px; color: #9ca3af; margin: 4px 0 0; line-height: 1.4;">
+                                                        Si un seul tableau est sélectionné, les onglets ne seront pas affichés.
+                                                    </p>
+                                                </div>
+
+                                                <!-- Enable document preview -->
+                                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0;">
+                                                    <div>
+                                                        <span style="font-size: 12px; font-weight: 600; color: #374151;">Preview documents</span>
+                                                        <p style="font-size: 10px; color: #9ca3af; margin: 2px 0 0;">Afficher les documents liés (ordonnances, etc.)</p>
+                                                    </div>
+                                                    <label style="position: relative; display: inline-block; width: 36px; height: 20px; cursor: pointer;">
+                                                        <input type="checkbox" :checked="cfgBlock.config.enableDocPreview === true"
+                                                               @change="cfgBlock.config.enableDocPreview = $el.checked"
+                                                               style="opacity: 0; width: 0; height: 0;">
+                                                        <span :style="'position: absolute; inset: 0; border-radius: 20px; transition: all 0.2s;' + (cfgBlock.config.enableDocPreview === true ? 'background: #4361ee;' : 'background: #d1d5db;')"></span>
+                                                        <span :style="'position: absolute; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: white; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);' + (cfgBlock.config.enableDocPreview === true ? 'left: 18px;' : 'left: 2px;')"></span>
+                                                    </label>
+                                                </div>
+
+                                                <!-- Info box -->
+                                                <div style="padding: 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #dcfce7;">
+                                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                                                        <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #10b981;"></iconify-icon>
+                                                        <span style="font-size: 11px; font-weight: 600; color: #374151;">Tableau dynamique éditable</span>
+                                                    </div>
+                                                    <p style="font-size: 11px; color: #6b7280; margin: 0; line-height: 1.4;">Permet d'ajouter des lignes, utiliser le catalogue, les presets et les snapshots. Si "Preview documents" est activé, les documents modèles liés seront visibles directement dans le widget.</p>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                    </div>
                                     </template>
 
                                     <!-- Footer -->
@@ -2726,7 +2915,8 @@
                     { type: 'chart',    label: 'Graphique',  icon: 'solar:chart-bold-duotone',         color: '#e2a03f', bg: 'rgba(226,160,63,0.1)', desc: 'Visualisation' },
                     { type: 'fields',   label: 'Champs',     icon: 'solar:layers-bold-duotone',        color: '#2196f3', bg: 'rgba(33,150,243,0.1)', desc: 'Champs entity' },
                     { type: 'cards',    label: 'Cartes',     icon: 'solar:card-bold-duotone',          color: '#e2a03f', bg: 'rgba(226,160,63,0.1)', desc: 'Records liés' },
-{ type: 'lines-history', label: 'Historique lignes', icon: 'solar:clipboard-list-bold-duotone', color: '#1abc9c', bg: 'rgba(26,188,156,0.1)', desc: 'Tableau dynamique agrégé' },
+                    { type: 'lines-history', label: 'Historique lignes', icon: 'solar:clipboard-list-bold-duotone', color: '#1abc9c', bg: 'rgba(26,188,156,0.1)', desc: 'Tableau dynamique agrégé' },
+                    { type: 'dynamic-table', label: 'Tableau', icon: 'solar:list-check-bold-duotone', color: '#10b981', bg: 'rgba(16,185,129,0.1)', desc: 'Tableau dynamique éditable' },
                     { type: 'iframe',   label: 'Embed',      icon: 'solar:code-bold-duotone',          color: '#00ab55', bg: 'rgba(0,171,85,0.1)',   desc: 'Contenu externe' },
                 ],
                 ctResizeState: { active: false, tabKey: null, rowId: null, colIndex: null, startX: 0, startWidths: [] },

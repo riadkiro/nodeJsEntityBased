@@ -8,7 +8,7 @@
     .lines-panel-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 12px;
+        font-size: 12px !important;
     }
     .lines-panel-table th {
         background: #f8f9fa;
@@ -29,10 +29,10 @@
         border-color: #253b5c;
     }
     .lines-panel-table td {
-        padding: 2px 5px;
+        padding: 2px 5px !important;
         border-bottom: 1px solid #f0f0f0;
         vertical-align: middle;
-        line-height: 1.2;
+        line-height: 1.2 !important;
     }
     .dark .lines-panel-table td {
         border-color: #1b2e4b;
@@ -47,13 +47,14 @@
         width: 100%;
         border: 1px solid transparent;
         border-radius: 5px;
-        padding: 2px 6px;
-        font-size: 11.5px;
+        padding: 2px 6px !important;
+        font-size: 11.5px !important;
         background: transparent;
         transition: border-color 0.12s, background 0.12s;
         color: inherit;
-        height: 26px;
-        line-height: 1.2;
+        height: 26px !important;
+        line-height: 1.2 !important;
+        box-sizing: border-box !important;
     }
     .lines-panel-table .lp-input:hover {
         border-color: #e5e7eb;
@@ -497,8 +498,8 @@
         display: flex;
         flex-wrap: wrap;
         gap: 2px;
-        padding: 1px 4px;
-        min-height: 26px;
+        padding: 1px 4px !important;
+        min-height: 26px !important;
         border: 1px solid transparent;
         border-radius: 5px;
         cursor: pointer;
@@ -1587,27 +1588,19 @@
                                             <iconify-icon icon="tabler:grip-vertical" width="14"></iconify-icon>
                                         </span>
                                     </td>
-                                    <!-- Row number (compact) -->
-
-                                    <td class="text-[10px] text-gray-400 font-semibold text-center" style="width:24px; padding:4px;" x-text="lineIdx + 1"></td>
-
-                                    <!-- Relation name (always visible) -->
+                                    <!-- Row number -->
+                                    <td class="text-[10px] text-gray-400 font-semibold text-center" style="width:24px;" x-text="lineIdx + 1"></td>
+                                    <!-- Relation name -->
                                     <template x-if="getRelationCol()">
-                                        <td class="lp-w-m" style="padding: 5px 8px;">
+                                        <td class="lp-w-m">
                                             <div class="lp-relation-wrap">
-                                                <!-- Pill container matching reference -->
-                                                <div :style="'display:flex; align-items:center; border-radius:8px; overflow:hidden; border:1.5px solid ' + (['rgba(67,97,238,0.25)','rgba(0,181,210,0.25)','rgba(128,93,202,0.25)','rgba(27,78,129,0.25)'][lineIdx % 4])">
-                                                    <!-- Left color accent bar -->
-                                                    <div :style="'width:4px; flex-shrink:0; align-self:stretch; background:' + (['linear-gradient(180deg,#4361ee,#7086f5)','linear-gradient(180deg,#00b5d2,#38bdf8)','linear-gradient(180deg,#805dca,#a78bfa)','linear-gradient(180deg,#1b4e81,#2563eb)'][lineIdx % 4])"></div>
-                                                    <input type="text" class="lp-input"
-                                                        :style="'background:' + (['rgba(67,97,238,0.05)','rgba(0,181,210,0.05)','rgba(128,93,202,0.05)','rgba(27,78,129,0.05)'][lineIdx % 4]) + '; font-weight:600; color:#1e293b; border:none; border-radius:0; padding:6px 10px; font-size:12px;'"
-                                                        :value="getRelationLabel(line)"
-                                                        @focus="openRelationSearch(lineIdx, getRelationCol().key)"
-                                                        @input="searchRelation(lineIdx, getRelationCol().key, $event.target.value)"
-                                                        @blur="setTimeout(() => closeRelationSearch(), 200)"
-                                                        @keydown.escape="closeRelationSearch()"
-                                                        :placeholder="getRelationCol()?.label || 'Traitement'" />
-                                                </div><!-- /pill container -->
+                                                <input type="text" class="lp-input"
+                                                    :value="getRelationLabel(line)"
+                                                    @focus="openRelationSearch(lineIdx, getRelationCol().key)"
+                                                    @input="searchRelation(lineIdx, getRelationCol().key, $event.target.value)"
+                                                    @blur="setTimeout(() => closeRelationSearch(), 200)"
+                                                    @keydown.escape="closeRelationSearch()"
+                                                    :placeholder="getRelationCol()?.label || 'Traitement'" />
                                                 <!-- Dropdown -->
                                                 <div x-show="relationSearch.lineIdx === lineIdx && relationSearch.colKey === getRelationCol().key && relationSearch.open"
                                                     class="lp-relation-dropdown"
@@ -1844,10 +1837,10 @@
                     </table>
                 </div>
 
-                <!-- ═══ Action bar — Reference pixel-perfect ═══ -->
-                <div style="display:flex; align-items:center; justify-content:center; gap:10px; padding:16px 16px 12px; border-top:1px solid #f0f0f0;">
-                    <!-- + Ajouter: Blue gradient pill — matches '+ Hadmen' in reference -->
-                    <div style="display:inline-flex; align-items:center; gap:7px; padding:8px 22px; font-size:12px; font-weight:700; color:#fff; background:linear-gradient(135deg,#4361ee 0%,#3ea9e0 100%); border-radius:30px; cursor:pointer; box-shadow:0 4px 15px rgba(67,97,238,0.35); transition:all 0.2s; user-select:none; letter-spacing:0.01em;"
+                <!-- ═══ Action bar ═══ -->
+                <div style="display:flex; align-items:center; justify-content:center; gap:8px; padding:8px 12px; border-top:1px solid #f0f0f0;">
+                    <!-- + Ajouter -->
+                    <div style="display:inline-flex; align-items:center; gap:5px; padding:5px 16px; font-size:11px; font-weight:700; color:#fff; background:linear-gradient(135deg,#4361ee 0%,#3ea9e0 100%); border-radius:20px; cursor:pointer; box-shadow:0 2px 8px rgba(67,97,238,0.3); transition:all 0.15s; user-select:none;"
                          @click.stop="addLineToSchema(schema._id)"
                          onmouseover="this.style.boxShadow='0 6px 20px rgba(67,97,238,0.5)'; this.style.transform='translateY(-1px)';"
                          onmouseout="this.style.boxShadow='0 4px 15px rgba(67,97,238,0.35)'; this.style.transform='';"
@@ -1855,8 +1848,8 @@
                         <iconify-icon icon="tabler:plus" width="14" style="pointer-events:none;"></iconify-icon>
                         <span style="pointer-events:none;">Ajouter</span>
                     </div>
-                    <!-- Catalogue: ghost pill -->
-                    <div style="display:inline-flex; align-items:center; gap:6px; padding:7px 16px; font-size:11.5px; font-weight:600; color:#94a3b8; border:1.5px solid #e5e7eb; border-radius:30px; cursor:pointer; transition:all 0.18s; user-select:none;"
+                    <!-- Catalogue -->
+                    <div style="display:inline-flex; align-items:center; gap:4px; padding:4px 12px; font-size:10.5px; font-weight:600; color:#94a3b8; border:1.5px solid #e5e7eb; border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none;"
                          @click.stop="activateAndOpenModal(schema._id)"
                          onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee';"
                          onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='#94a3b8';"
@@ -1864,9 +1857,9 @@
                         <iconify-icon icon="tabler:layout-grid" width="13"></iconify-icon>
                         <span>+ Catalogue</span>
                     </div>
-                    <!-- Valider: shown only when snapshots enabled -->
+                    <!-- Valider -->
                     <div x-show="schema.snapshotConfig?.enabled"
-                         :style="'display:inline-flex; align-items:center; gap:5px; padding:7px 16px; font-size:11.5px; font-weight:600; color:#4361ee; border:1.5px solid rgba(67,97,238,0.3); border-radius:30px; cursor:pointer; transition:all 0.18s; user-select:none; background:rgba(67,97,238,0.05);' + (snapshotSaving[schema._id] === true ? ' opacity:0.5; pointer-events:none;' : '')"
+                         :style="'display:inline-flex; align-items:center; gap:4px; padding:4px 12px; font-size:10.5px; font-weight:600; color:#4361ee; border:1.5px solid rgba(67,97,238,0.3); border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none; background:rgba(67,97,238,0.05);' + (snapshotSaving[schema._id] === true ? ' opacity:0.5; pointer-events:none;' : '')"
                          @click.stop="saveSnapshot(schema)"
                          onmouseover="this.style.background='rgba(67,97,238,0.1)'; this.style.borderColor='#4361ee';"
                          onmouseout="this.style.background='rgba(67,97,238,0.05)'; this.style.borderColor='rgba(67,97,238,0.3)';"

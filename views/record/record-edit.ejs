@@ -831,14 +831,12 @@
                                                                             style="width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 4px; border: none; cursor: pointer; background: rgba(67,97,238,0.08); color: #4361ee;">
                                                                         <iconify-icon icon="solar:settings-bold" width="10"></iconify-icon>
                                                                     </button>
-                                                                    <!-- Delete button (edit mode only) -->
-                                                                    <template x-if="ctEditMode">
+                                                                    <!-- Delete button (always visible on hover) -->
                                                                         <button type="button" @click.stop="ctRemoveBlock(activeTab, row.id, col.id, bid)"
                                                                                 title="Supprimer"
                                                                                 style="width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 4px; border: none; cursor: pointer; background: rgba(231,81,90,0.08); color: #e7515a;">
                                                                             <iconify-icon icon="solar:trash-bin-trash-bold" width="10"></iconify-icon>
                                                                         </button>
-                                                                    </template>
                                                                 </div>
                                                                 <!-- Widget Content Render -->
                                                                 <div x-data="{ block: getTabBlock(activeTab, bid) }" style="height: 100%;">
@@ -1209,7 +1207,7 @@
                                                                     </template>
                                                                     <!-- ═══ Dynamic Table Widget ═══ -->
                                                                     <template x-if="block && block.type === 'dynamic-table'">
-                                                                        <div style="height: 100%; border-radius: 12px; overflow: visible; position: relative; z-index: 50;"
+                                                                        <div style="height: 100%; border-radius: 12px; overflow: visible; position: relative;"
                                                                              :data-schema-filter="block.config?.schemaId || ''"
                                                                              :data-enable-doc-preview="block.config?.enableDocPreview ? 'true' : ''">
                                                                             <%- include('partials/record-lines') %>

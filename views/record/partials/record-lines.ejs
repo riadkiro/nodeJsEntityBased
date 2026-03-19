@@ -1597,20 +1597,21 @@
                         </thead>
                         <tbody :data-schema-id="schema._id">
                             <template x-for="(line, lineIdx) in getSchemaLines(schema._id)" :key="line._tempId || line._id || lineIdx">
-                                <tr>
+                                <tr style="border-bottom:1px solid #f0f0f0;">
                                     <!-- Drag handle -->
-                                    <td>
+                                    <td style="padding:2px 4px;">
                                         <span class="lp-drag-handle">
                                             <iconify-icon icon="tabler:grip-vertical" width="14"></iconify-icon>
                                         </span>
                                     </td>
                                     <!-- Row number -->
-                                    <td style="font-size:11px; color:#9ca3af;" x-text="lineIdx + 1"></td>
+                                    <td style="padding:2px 4px; font-size:11px; color:#9ca3af;" x-text="lineIdx + 1"></td>
                                     <!-- Relation name (always visible) -->
                                     <template x-if="getRelationCol()">
-                                        <td style="min-width:120px;">
+                                        <td style="padding:2px 6px; min-width:120px;">
                                             <div class="lp-relation-wrap">
                                                 <input type="text" class="lp-input"
+                                                    style="height:24px;padding:1px 4px;background:transparent;border:1px solid transparent;font-size:13px;line-height:22px;outline:none;box-shadow:none;border-radius:4px;width:100%;"
                                                     :value="getRelationLabel(line)"
                                                     @focus="openRelationSearch(lineIdx, getRelationCol().key)"
                                                     @input="searchRelation(lineIdx, getRelationCol().key, $event.target.value)"
@@ -1641,10 +1642,11 @@
                                     </template>
                                     <!-- Dynamic columns (excluding relation) -->
                                     <template x-for="col in getVisibleColumnsForLine(line).filter(c => c.type !== 'relation')" :key="col.key">
-                                        <td>
+                                        <td style="padding:2px 6px;">
                                             <!-- Text -->
                                             <template x-if="col.type === 'text'">
                                                 <input type="text" class="lp-input"
+                                                    style="height:24px;padding:1px 4px;background:transparent;border:1px solid transparent;font-size:13px;line-height:22px;outline:none;box-shadow:none;border-radius:4px;width:100%;"
                                                     :value="line.values[col.key] || ''"
                                                     @input="line.values[col.key] = $event.target.value; debouncedSave()"
                                                     :placeholder="col.label" />
@@ -1653,6 +1655,7 @@
                                             <!-- Textarea -->
                                             <template x-if="col.type === 'textarea'">
                                                 <input type="text" class="lp-input"
+                                                    style="height:24px;padding:1px 4px;background:transparent;border:1px solid transparent;font-size:13px;line-height:22px;outline:none;box-shadow:none;border-radius:4px;width:100%;"
                                                     :value="line.values[col.key] || ''"
                                                     @input="line.values[col.key] = $event.target.value; debouncedSave()"
                                                     :placeholder="col.label" />
@@ -1661,6 +1664,7 @@
                                             <!-- Number -->
                                             <template x-if="col.type === 'number'">
                                                 <input type="number" class="lp-input text-right"
+                                                    style="height:24px;padding:1px 4px;background:transparent;border:1px solid transparent;font-size:13px;line-height:22px;outline:none;box-shadow:none;border-radius:4px;width:100%;text-align:right;"
                                                     :value="line.values[col.key] || ''"
                                                     @input="line.values[col.key] = parseFloat($event.target.value) || 0; recomputeLine(line); debouncedSave()"
                                                     step="any" />
@@ -1669,6 +1673,7 @@
                                             <!-- Money -->
                                             <template x-if="col.type === 'money'">
                                                 <input type="number" class="lp-input text-right"
+                                                    style="height:24px;padding:1px 4px;background:transparent;border:1px solid transparent;font-size:13px;line-height:22px;outline:none;box-shadow:none;border-radius:4px;width:100%;text-align:right;"
                                                     :value="line.values[col.key] || ''"
                                                     @input="line.values[col.key] = parseFloat($event.target.value) || 0; recomputeLine(line); debouncedSave()"
                                                     step="0.01" />
@@ -1677,6 +1682,7 @@
                                             <!-- Date -->
                                             <template x-if="col.type === 'date'">
                                                 <input type="date" class="lp-input"
+                                                    style="height:24px;padding:1px 4px;background:transparent;border:1px solid transparent;font-size:13px;line-height:22px;outline:none;box-shadow:none;border-radius:4px;width:100%;"
                                                     :value="line.values[col.key] || ''"
                                                     @input="line.values[col.key] = $event.target.value; debouncedSave()" />
                                             </template>
@@ -1684,6 +1690,7 @@
                                             <!-- Select -->
                                             <template x-if="col.type === 'select'">
                                                 <select class="lp-input"
+                                                    style="height:24px;padding:1px 4px;background:transparent;border:1px solid transparent;font-size:13px;line-height:22px;outline:none;box-shadow:none;border-radius:4px;width:100%;"
                                                     :value="line.values[col.key] || ''"
                                                     @change="line.values[col.key] = $event.target.value; debouncedSave()">
                                                     <option value="">—</option>
@@ -1698,6 +1705,7 @@
                                                 <div class="tp-wrapper" style="position:relative;">
                                                     <!-- Selected tags display (trigger) -->
                                                     <div class="lp-ms-trigger"
+                                                         style="min-height:22px;padding:1px 4px;gap:2px;"
                                                          @click.stop="activeSchemaId = schema._id; openMultiselectDropdown(lineIdx, col.key, $event)">
                                                         <template x-if="(line.values[col.key] || []).length === 0">
                                                             <span class="lp-ms-placeholder">Sélectionner...</span>
@@ -1837,7 +1845,7 @@
                                         </td>
                                     </template>
                                     <!-- Actions (edit + delete) -->
-                                    <td>
+                                    <td style="padding:2px 4px;">
                                         <div class="lp-row-actions">
                                             <button type="button" class="lp-row-btn edit" @click="activeSchemaId = schema._id; openEditLine(lineIdx)" title="Modifier">
                                                 <iconify-icon icon="tabler:pencil" width="14"></iconify-icon>

@@ -4,267 +4,271 @@
     ═══════════════════════════════════════════════════════════════════ %>
 
 <style>
-    /* ── Lines Panel Styles — Vristo Clean Design ─────────── */
+    /* ═══════════════════════════════════════════════════════════
+       Dynamic Table — 2026 Premium Design
+       Palette: Vristo Blue #4361ee | Slate #1e293b | Ghost whites
+       ═══════════════════════════════════════════════════════════ */
+
+    /* ── Table Shell ── */
     .lines-panel-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 13px;
+        font-family: 'Nunito', -apple-system, sans-serif;
+    }
+
+    /* ── Column Headers ── */
+    .lines-panel-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 1;
     }
     .lines-panel-table th {
-        background: transparent;
-        padding: 10px 12px;
+        background: #fff;
+        padding: 9px 12px;
         font-size: 10px;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: #9ca3af;
-        border-bottom: 1px solid #e5e7eb;
+        letter-spacing: 0.07em;
+        color: #94a3b8;
+        border-bottom: 1.5px solid #f1f5f9;
         text-align: left;
         white-space: nowrap;
         user-select: none;
+        transition: color 0.15s;
     }
     .dark .lines-panel-table th {
-        background: transparent;
-        color: #506690;
+        background: #0e1726;
+        color: #475569;
         border-color: #1b2e4b;
     }
+
+    /* ── Table Rows ── */
     .lines-panel-table td {
-        padding: 8px 12px;
-        border-bottom: none;
+        padding: 7px 12px;
+        border-bottom: 1px solid #f8fafc;
         vertical-align: middle;
     }
     .dark .lines-panel-table td {
-        border-color: transparent;
+        border-color: rgba(255,255,255,0.03);
     }
     .lines-panel-table tbody tr {
-        transition: background 0.15s ease;
+        transition: all 0.18s ease;
+        position: relative;
     }
-    .lines-panel-table tbody tr:nth-child(even) {
-        background: #fafbff;
+    .lines-panel-table tbody tr:last-child td {
+        border-bottom: none;
     }
-    .dark .lines-panel-table tbody tr:nth-child(even) {
-        background: rgba(255, 255, 255, 0.015);
+    .lines-panel-table tbody tr:hover td {
+        background: #f8f9ff;
     }
-    .lines-panel-table tbody tr:hover {
-        background: #f0f4ff;
+    .dark .lines-panel-table tbody tr:hover td {
+        background: rgba(67, 97, 238, 0.05);
     }
-    .dark .lines-panel-table tbody tr:hover {
-        background: rgba(67, 97, 238, 0.06);
-    }
+
+    /* ── Ghost Inputs (borderless at rest, alive on focus) ── */
     .lines-panel-table .lp-input {
         width: 100%;
         border: 1.5px solid transparent;
-        border-radius: 8px;
-        padding: 6px 10px;
+        border-radius: 7px;
+        padding: 5px 10px;
         font-size: 12.5px;
+        font-weight: 500;
         background: transparent;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        color: inherit;
+        transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+        color: #1e293b;
+        font-family: inherit;
+    }
+    .dark .lines-panel-table .lp-input {
+        color: #cbd5e1;
+    }
+    .lines-panel-table .lp-input::placeholder {
+        color: #cbd5e1;
+        font-weight: 400;
+    }
+    .dark .lines-panel-table .lp-input::placeholder {
+        color: #334155;
     }
     .lines-panel-table .lp-input:hover {
-        border-color: #e0e7ff;
-        background: #f8faff;
+        border-color: #e2e8f0;
+        background: #fafbff;
     }
     .dark .lines-panel-table .lp-input:hover {
-        border-color: #253b5c;
-        background: #0e1726;
+        border-color: #1e3a5f;
+        background: rgba(67,97,238,0.04);
     }
     .lines-panel-table .lp-input:focus {
         outline: none;
         border-color: #4361ee;
         background: #fff;
-        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.08);
+        box-shadow: 0 0 0 3px rgba(67,97,238,0.09);
+        color: #0f172a;
     }
     .dark .lines-panel-table .lp-input:focus {
         background: #0e1726;
-        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+        color: #e2e8f0;
+        box-shadow: 0 0 0 3px rgba(67,97,238,0.18);
     }
     .lines-panel-table select.lp-input {
         cursor: pointer;
-        padding-right: 24px;
+        padding-right: 26px;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 9px center;
     }
-    /* Formula / computed cells */
+
+    /* ── Computed / Formula cells ── */
     .lp-computed {
-        font-weight: 600;
+        font-weight: 700;
         color: #4361ee;
-        font-size: 12.5px;
+        font-size: 13px;
         text-align: right;
-        padding: 6px 10px;
+        padding: 4px 10px;
+        background: rgba(67,97,238,0.06);
+        border-radius: 6px;
     }
     .dark .lp-computed {
-        color: #6993ff;
+        color: #818cf8;
+        background: rgba(67,97,238,0.12);
     }
-    /* Drag handle — hidden by default, revealed on row hover */
+
+    /* ── Drag handle ── */
     .lp-drag-handle {
         cursor: grab;
-        color: #d1d5db;
-        transition: all 0.2s ease;
-        padding: 2px;
+        color: #cbd5e1;
         opacity: 0;
+        transition: opacity 0.15s, color 0.15s;
+        padding: 2px;
+        display: flex;
+        align-items: center;
     }
-    .lines-panel-table tbody tr:hover .lp-drag-handle {
-        opacity: 1;
-    }
+    .lines-panel-table tbody tr:hover .lp-drag-handle { opacity: 1; }
     .lp-drag-handle:active { cursor: grabbing; }
     .lp-drag-handle:hover { color: #4361ee; }
-    .dark .lp-drag-handle { color: #3b4a5e; }
+    .dark .lp-drag-handle { color: #1e3a5f; }
     .dark .lp-drag-handle:hover { color: #818cf8; }
-    /* Row action buttons */
+
+    /* ── Row action buttons ── */
     .lp-row-actions {
-        display: flex; gap: 2px; align-items: center;
+        display: flex; gap: 1px; align-items: center;
         opacity: 0; transition: opacity 0.15s;
     }
     .lines-panel-table tbody tr:hover .lp-row-actions { opacity: 1; }
     .lp-row-btn {
-        padding: 3px; border-radius: 4px; border: none;
-        background: transparent; cursor: pointer; line-height: 1;
-        transition: background 0.12s, color 0.12s;
+        width: 26px; height: 26px; border-radius: 6px; border: none;
+        background: transparent; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.12s;
     }
-    .lp-row-btn.edit { color: #6b7280; }
-    .lp-row-btn.edit:hover { color: #4361ee; background: rgba(67, 97, 238, 0.08); }
-    .dark .lp-row-btn.edit { color: #888ea8; }
-    .dark .lp-row-btn.edit:hover { color: #6993ff; background: rgba(67, 97, 238, 0.15); }
-    .lp-row-btn.delete { color: #ef4444; }
-    .lp-row-btn.delete:hover { background: rgba(239, 68, 68, 0.08); }
-    /* Relation search dropdown */
+    .lp-row-btn.edit { color: #94a3b8; }
+    .lp-row-btn.edit:hover { color: #4361ee; background: rgba(67,97,238,0.08); }
+    .dark .lp-row-btn.edit { color: #334155; }
+    .dark .lp-row-btn.edit:hover { color: #818cf8; background: rgba(67,97,238,0.12); }
+    .lp-row-btn.delete { color: #fca5a5; }
+    .lp-row-btn.delete:hover { color: #ef4444; background: rgba(239,68,68,0.08); }
+
+    /* ── Relation dropdown ── */
     .lp-relation-wrap { position: relative; }
     .lp-relation-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        z-index: 9999;
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-        max-height: 180px;
-        overflow-y: auto;
-        margin-top: 2px;
+        position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 9999;
+        background: #fff; border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        box-shadow: 0 8px 32px rgba(15,23,42,0.10), 0 2px 8px rgba(15,23,42,0.04);
+        max-height: 200px; overflow-y: auto;
     }
-    .dark .lp-relation-dropdown {
-        background: #0e1726;
-        border-color: #253b5c;
-    }
+    .dark .lp-relation-dropdown { background: #0f1c31; border-color: #1b2e4b; }
     .lp-relation-dropdown .lp-rel-item {
-        padding: 6px 10px;
-        font-size: 12px;
-        cursor: pointer;
-        transition: background 0.1s;
+        padding: 8px 14px; font-size: 12.5px; font-weight: 500;
+        cursor: pointer; transition: background 0.1s; color: #1e293b;
     }
-    .lp-relation-dropdown .lp-rel-item:hover {
-        background: rgba(67, 97, 238, 0.08);
-    }
-    /* Totals row */
+    .dark .lp-relation-dropdown .lp-rel-item { color: #cbd5e1; }
+    .lp-relation-dropdown .lp-rel-item:hover { background: rgba(67,97,238,0.06); color: #4361ee; }
+
+    /* ── Totals bar ── */
     .lp-totals-bar {
-        display: flex;
-        justify-content: flex-end;
-        gap: 24px;
+        display: flex; justify-content: flex-end; gap: 28px;
         padding: 12px 16px;
-        background: transparent;
-        border-top: 1px solid #e5e7eb;
-        border-radius: 0 0 8px 8px;
-        font-size: 12px;
+        background: #f8fafc;
+        border-top: 1px solid #f1f5f9;
+        border-radius: 0 0 10px 10px;
     }
-    .dark .lp-totals-bar {
-        background: transparent;
-        border-color: #1b2e4b;
-    }
-    .lp-totals-bar .lp-total-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
+    .dark .lp-totals-bar { background: rgba(255,255,255,0.02); border-color: #1b2e4b; }
+    .lp-totals-bar .lp-total-item { display: flex; align-items: center; gap: 10px; }
     .lp-totals-bar .lp-total-label {
-        font-weight: 600;
-        color: #9ca3af;
-        text-transform: uppercase;
-        font-size: 10px;
-        letter-spacing: 0.05em;
+        font-weight: 700; color: #94a3b8;
+        text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.07em;
     }
-    .dark .lp-totals-bar .lp-total-label { color: #506690; }
-    .lp-totals-bar .lp-total-value {
-        font-weight: 700;
-        font-size: 14px;
-        color: #1f2937;
-    }
-    .dark .lp-totals-bar .lp-total-value { color: #e0e6ed; }
-    /* Width classes */
+    .dark .lp-totals-bar .lp-total-label { color: #475569; }
+    .lp-totals-bar .lp-total-value { font-weight: 800; font-size: 15px; color: #1e293b; }
+    .dark .lp-totals-bar .lp-total-value { color: #e2e8f0; }
+
+    /* ── Width classes ── */
     .lp-w-xs { min-width: 50px; max-width: 70px; }
-    .lp-w-s  { min-width: 70px; max-width: 100px; }
+    .lp-w-s  { min-width: 70px; max-width: 110px; }
     .lp-w-m  { min-width: 120px; }
     .lp-w-l  { min-width: 180px; }
     .lp-w-xl { min-width: 240px; }
-    /* Schema selector */
+
+    /* ── Schema tab pills ── */
     .lp-schema-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 600;
-        cursor: pointer;
-        border: 1.5px solid #e5e7eb;
-        color: #6b7280;
-        background: #fff;
-        transition: all 0.15s;
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 13px; border-radius: 20px; font-size: 11px; font-weight: 600;
+        cursor: pointer; border: 1.5px solid #e2e8f0; color: #64748b;
+        background: #fff; transition: all 0.18s;
     }
     .dark .lp-schema-pill {
-        border-color: #253b5c;
-        background: #0e1726;
-        color: #888ea8;
+        border-color: #1b2e4b; background: transparent; color: #475569;
     }
-    .lp-schema-pill:hover, .lp-schema-pill.active {
-        border-color: #4361ee;
-        color: #4361ee;
-        background: rgba(67, 97, 238, 0.06);
+    .lp-schema-pill:hover {
+        border-color: #4361ee; color: #4361ee; background: rgba(67,97,238,0.04);
     }
     .lp-schema-pill.active {
-        background: rgba(67, 97, 238, 0.1);
+        border-color: #4361ee; color: #4361ee;
+        background: rgba(67,97,238,0.08);
+        font-weight: 700;
     }
-    /* Multiselect tags */
+
+    /* ── Multiselect tags ── */
     .lp-ms-tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 3px;
-        padding: 1px 6px;
-        border-radius: 4px;
-        font-size: 10px;
-        font-weight: 600;
-        background: rgba(67, 97, 238, 0.1);
-        color: #4361ee;
-        margin: 1px;
+        display: inline-flex; align-items: center; gap: 3px;
+        padding: 2px 9px; border-radius: 20px;
+        font-size: 11px; font-weight: 600;
+        background: rgba(67,97,238,0.08); color: #4361ee; margin: 2px;
     }
+    .dark .lp-ms-tag { background: rgba(67,97,238,0.15); color: #818cf8; }
     .lp-ms-tag .lp-ms-tag-x {
-        cursor: pointer;
-        font-size: 12px;
-        line-height: 1;
-        opacity: 0.6;
+        cursor: pointer; font-size: 11px; line-height: 1;
+        opacity: 0.5; transition: opacity 0.12s; margin-left: 1px;
     }
     .lp-ms-tag .lp-ms-tag-x:hover { opacity: 1; }
-    /* Add row button area */
+
+    /* ── Add row footer ── */
     .lp-add-row-area {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 10px;
-        border-top: 1px dashed #e5e7eb;
-        cursor: pointer;
-        color: #9ca3af;
-        font-size: 11px;
-        font-weight: 500;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        gap: 6px;
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        padding: 11px; border-top: 1px dashed #e2e8f0;
+        cursor: pointer; color: #94a3b8; font-size: 11.5px; font-weight: 600;
+        transition: all 0.18s; letter-spacing: 0.01em;
     }
-    .dark .lp-add-row-area { border-color: #1b2e4b; color: #506690; }
-    .lp-add-row-area:hover {
-        background: rgba(67, 97, 238, 0.04);
-        color: #4361ee;
-    }
-    /* Sortable ghost */
+    .dark .lp-add-row-area { border-color: #1b2e4b; color: #334155; }
+    .lp-add-row-area:hover { background: rgba(67,97,238,0.03); color: #4361ee; }
+
+    /* ── Sortable ghost ── */
     .lines-panel-table .sortable-ghost { opacity: 0.25; }
-    .lines-panel-table .sortable-chosen { background: rgba(67, 97, 238, 0.06); border-radius: 6px; }
+    .lines-panel-table .sortable-chosen { background: rgba(67,97,238,0.04); }
+    .lines-panel-table th {
+        background: linear-gradient(135deg, rgba(67,97,238,0.04) 0%, rgba(67,97,238,0.01) 100%);
+        padding: 10px 14px;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #6366f1;
+        border-bottom: 2px solid rgba(67,97,238,0.12);
+        text-align: left;
+        white-space: nowrap;
+        user-select: none;
+    }
 
     /* ── Add Lines Modal ─────────────────────────────── */
     .lp-modal-overlay {
@@ -1132,24 +1136,24 @@
        ═══════════════════════════════════════════════════════════ */
     .lp-toolbar {
         display: flex; align-items: center; gap: 2px;
-        padding: 4px 12px;
-        border-bottom: 1px solid #f0f0f0;
+        padding: 5px 14px;
+        border-bottom: 1px solid #f1f5f9;
         background: transparent;
     }
     .dark .lp-toolbar { border-color: #1b2e4b; }
     .lp-toolbar-btn {
         display: inline-flex; align-items: center; gap: 4px;
-        padding: 4px 10px; border-radius: 6px;
-        font-size: 10px; font-weight: 600; color: #9ca3af;
+        padding: 4px 9px; border-radius: 6px;
+        font-size: 10.5px; font-weight: 600; color: #94a3b8;
         cursor: pointer; border: none; background: transparent;
-        transition: all 0.2s ease; white-space: nowrap;
-        position: relative;
+        transition: all 0.15s; white-space: nowrap;
+        position: relative; letter-spacing: 0.01em;
     }
-    .dark .lp-toolbar-btn { color: #506690; }
+    .dark .lp-toolbar-btn { color: #475569; }
     .lp-toolbar-btn:hover { background: rgba(67,97,238,0.06); color: #4361ee; }
-    .lp-toolbar-btn.active { background: rgba(67,97,238,0.1); color: #4361ee; font-weight: 700; }
+    .lp-toolbar-btn.active { background: rgba(67,97,238,0.08); color: #4361ee; font-weight: 700; }
     .lp-toolbar-sep {
-        width: 1px; height: 14px; background: #e5e7eb; margin: 0 4px;
+        width: 1px; height: 14px; background: #f1f5f9; margin: 0 4px;
     }
     .dark .lp-toolbar-sep { background: #1b2e4b; }
 
@@ -1331,12 +1335,12 @@
                 <div x-show="activeSchemaId === schema._id">
                     <!-- Schema Panel Header (single schema only — tab bar replaces this when multi) -->
                     <div x-show="schemas.length === 1"
-                         class="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
+                         class="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors"
                          @click="toggleSchemaOpen(schema._id)">
-                        <div class="flex items-center gap-2">
-                            <span style="width:8px; height:8px; border-radius:50%; background:#00ab55; flex-shrink:0;"></span>
-                            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400" x-text="schema.name"></span>
-                            <span x-show="getSchemaLines(schema._id).length > 0" class="text-[9px] bg-primary/10 text-primary min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1.5" x-text="getSchemaLines(schema._id).length"></span>
+                        <div class="flex items-center gap-2.5">
+                            <span style="width:8px; height:8px; border-radius:50%; background:#4361ee; flex-shrink:0; box-shadow:0 0 0 3px rgba(67,97,238,0.15);"></span>
+                            <span style="font-size:11px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#1e293b;" class="dark:text-slate-400" x-text="schema.name"></span>
+                            <span x-show="getSchemaLines(schema._id).length > 0" style="font-size:10px; font-weight:700; padding:1px 8px; border-radius:20px; background:rgba(67,97,238,0.08); color:#4361ee; letter-spacing:0.01em;" x-text="getSchemaLines(schema._id).length + ' ligne' + (getSchemaLines(schema._id).length > 1 ? 's' : '')"></span>
                         </div>
                         <div class="flex items-center gap-1">
                             <!-- Template picker button (shown when templates available) -->
@@ -1613,7 +1617,9 @@
                                         </span>
                                     </td>
                                     <!-- Row number -->
-                                    <td class="text-[11px] text-gray-400" x-text="lineIdx + 1"></td>
+                                    <td style="width:32px;">
+                                        <span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:5px; background:#f1f5f9; color:#94a3b8; font-size:10px; font-weight:700;" x-text="lineIdx + 1"></span>
+                                    </td>
                                     <!-- Relation name (always visible) -->
                                     <template x-if="getRelationCol()">
                                         <td class="lp-w-m">
@@ -1861,29 +1867,34 @@
                     </table>
                 </div>
 
-                <!-- ═══ Action bar: clean compact pills ═══ -->
-                <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:10px 16px;">
-                    <div style="display:inline-flex; align-items:center; gap:5px; padding:5px 14px; font-size:11px; font-weight:600; color:#6b7280; border:1.5px solid #e5e7eb; border-radius:8px; cursor:pointer; transition:all 0.2s; user-select:none;"
-                         @click.stop="addLineToSchema(schema._id)"
-                         onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee'; this.style.background='rgba(67,97,238,0.04)';"
-                         onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='#6b7280'; this.style.background='';">
-                        <iconify-icon icon="tabler:plus" width="13"></iconify-icon>
-                        <span>Ajouter</span>
-                    </div>
-                    <div style="display:inline-flex; align-items:center; gap:5px; padding:5px 14px; font-size:11px; font-weight:600; color:#6b7280; border:1.5px solid #e5e7eb; border-radius:8px; cursor:pointer; transition:all 0.2s; user-select:none;"
-                         @click.stop="activateAndOpenModal(schema._id)"
-                         onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee'; this.style.background='rgba(67,97,238,0.04)';"
-                         onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='#6b7280'; this.style.background='';">
-                        <iconify-icon icon="tabler:layout-grid" width="13"></iconify-icon>
-                        <span>Catalogue</span>
-                    </div>
-                    <div x-show="schema.snapshotConfig?.enabled"
-                         :style="'display:inline-flex; align-items:center; gap:5px; padding:5px 14px; font-size:11px; font-weight:600; color:white; background:#4361ee; border:1.5px solid #4361ee; border-radius:8px; cursor:pointer; transition:all 0.2s; user-select:none;' + (snapshotSaving[schema._id] === true ? ' opacity:0.5; pointer-events:none;' : '')"
-                         @click.stop="saveSnapshot(schema)"
-                         onmouseover="this.style.background='#3651d4'; this.style.borderColor='#3651d4';"
-                         onmouseout="this.style.background='#4361ee'; this.style.borderColor='#4361ee';">
-                        <iconify-icon icon="solar:check-circle-bold-duotone" width="13" style="pointer-events:none;"></iconify-icon>
-                        <span x-text="snapshotSaving[schema._id] === true ? 'Validation...' : 'Valider'" style="pointer-events:none;"></span>
+                <!-- ═══ Action bar: 2026 clean pill group ═══ -->
+                <div style="display:flex; align-items:center; justify-content:center; gap:0; padding:14px 20px;">
+                    <div style="display:inline-flex; align-items:center; border:1.5px solid #e2e8f0; border-radius:10px; overflow:hidden; background:#fff; box-shadow:0 1px 3px rgba(15,23,42,0.06);">
+                        <div style="display:inline-flex; align-items:center; gap:5px; padding:7px 16px; font-size:11.5px; font-weight:600; color:#64748b; cursor:pointer; transition:all 0.15s; letter-spacing:0.01em; user-select:none;"
+                             @click.stop="addLineToSchema(schema._id)"
+                             onmouseover="this.style.background='#f8f9ff'; this.style.color='#4361ee';"
+                             onmouseout="this.style.background=''; this.style.color='#64748b';">
+                            <iconify-icon icon="tabler:plus" width="13"></iconify-icon>
+                            <span>Ajouter</span>
+                        </div>
+                        <div style="width:1px; height:28px; background:#f1f5f9; flex-shrink:0;"></div>
+                        <div style="display:inline-flex; align-items:center; gap:5px; padding:7px 16px; font-size:11.5px; font-weight:600; color:#64748b; cursor:pointer; transition:all 0.15s; letter-spacing:0.01em; user-select:none;"
+                             @click.stop="activateAndOpenModal(schema._id)"
+                             onmouseover="this.style.background='#f8f9ff'; this.style.color='#4361ee';"
+                             onmouseout="this.style.background=''; this.style.color='#64748b';">
+                            <iconify-icon icon="tabler:layout-grid" width="13"></iconify-icon>
+                            <span>Catalogue</span>
+                        </div>
+                        <div x-show="schema.snapshotConfig?.enabled" style="display:contents;">
+                            <div style="width:1px; height:28px; background:#f1f5f9; flex-shrink:0;"></div>
+                            <div :style="'display:inline-flex; align-items:center; gap:5px; padding:7px 18px; font-size:11.5px; font-weight:700; color:#fff; background:#4361ee; cursor:pointer; transition:all 0.15s; letter-spacing:0.01em; user-select:none;' + (snapshotSaving[schema._id] === true ? ' opacity:0.6; pointer-events:none;' : '')"
+                                 @click.stop="saveSnapshot(schema)"
+                                 onmouseover="this.style.background='#3451d1';"
+                                 onmouseout="this.style.background='#4361ee';">
+                                <iconify-icon icon="solar:check-circle-bold-duotone" width="14" style="pointer-events:none; opacity:0.9;"></iconify-icon>
+                                <span x-text="snapshotSaving[schema._id] === true ? 'Sauvegarde...' : 'Valider'" style="pointer-events:none;"></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

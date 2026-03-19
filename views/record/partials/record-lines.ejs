@@ -4,255 +4,252 @@
     ═══════════════════════════════════════════════════════════════════ %>
 
 <style>
-    /* ═══════════════════════════════════════════════════
-       Dynamic Table · 2026 Premium  ·  Vristo #4361ee
-       ═══════════════════════════════════════════════════ */
-
-    /* ── Table Shell ── */
+    /* ── Lines Panel Styles ───────────────────────────────── */
     .lines-panel-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 13px;
-        font-family: 'Nunito', -apple-system, sans-serif;
-    }
-
-    /* ── Column Headers ── */
-    .lines-panel-table thead tr {
-        position: relative;
     }
     .lines-panel-table th {
-        background: #f8fafc;
-        padding: 10px 14px;
-        font-size: 9.5px;
-        font-weight: 800;
+        background: #f8f9fa;
+        padding: 6px 8px;
+        font-size: 10px;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #94a3b8;
-        border-top: 1px solid #edf0f5;
-        border-bottom: 2px solid #edf0f5;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        border-bottom: 2px solid #e5e7eb;
         text-align: left;
         white-space: nowrap;
         user-select: none;
     }
     .dark .lines-panel-table th {
-        background: #0a1628;
-        color: #3d5370;
+        background: #1b2e4b;
+        color: #888ea8;
+        border-color: #253b5c;
+    }
+    .lines-panel-table td {
+        padding: 4px 6px;
+        border-bottom: 1px solid #f0f0f0;
+        vertical-align: middle;
+    }
+    .dark .lines-panel-table td {
         border-color: #1b2e4b;
     }
-
-    /* ── Rows ── */
-    .lines-panel-table td {
-        padding: 9px 14px;
-        border-bottom: 1px solid #f1f5f9;
-        vertical-align: middle;
-        transition: background 0.15s;
+    .lines-panel-table tbody tr:hover {
+        background: rgba(67, 97, 238, 0.03);
     }
-    .dark .lines-panel-table td { border-color: rgba(255,255,255,0.04); }
-    .lines-panel-table tbody tr { position: relative; }
-    .lines-panel-table tbody tr:last-child td { border-bottom: none; }
-
-    /* Row hover: left blue accent + very subtle bg */
-    .lines-panel-table tbody tr::before {
-        content: '';
-        position: absolute;
-        left: 0; top: 2px; bottom: 2px;
-        width: 3px;
-        background: #4361ee;
-        border-radius: 0 3px 3px 0;
-        opacity: 0;
-        transition: opacity 0.18s;
+    .dark .lines-panel-table tbody tr:hover {
+        background: rgba(67, 97, 238, 0.06);
     }
-    .lines-panel-table tbody tr:hover::before { opacity: 1; }
-    .lines-panel-table tbody tr:hover td { background: #f5f7ff; }
-    .dark .lines-panel-table tbody tr:hover td { background: rgba(67,97,238,0.05); }
-    .dark .lines-panel-table tbody tr:hover::before { background: #4361ee; }
-
-    /* ── Relation name pill (first column drug name) ── */
-    .lp-relation-pill-input {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        width: 100%;
-    }
-    .lp-relation-pill-input .lp-drug-icon {
-        width: 10px; height: 10px;
-        border-radius: 3px;
-        flex-shrink: 0;
-        background: linear-gradient(135deg, #4361ee, #805dca);
-    }
-
-    /* ── Ghost Inputs ── */
     .lines-panel-table .lp-input {
         width: 100%;
-        border: 1.5px solid transparent;
-        border-radius: 8px;
-        padding: 5px 10px;
-        font-size: 12.5px;
-        font-weight: 500;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        padding: 5px 8px;
+        font-size: 12px;
         background: transparent;
         transition: all 0.15s;
-        color: #1e293b;
-        font-family: inherit;
+        color: inherit;
     }
-    .dark .lines-panel-table .lp-input { color: #cbd5e1; }
-    .lines-panel-table .lp-input::placeholder { color: #c8d0dc; font-weight: 400; }
-    .dark .lines-panel-table .lp-input::placeholder { color: #2d4263; }
     .lines-panel-table .lp-input:hover {
-        border-color: #dde3f0;
-        background: #fafbff;
+        border-color: #e5e7eb;
+        background: #fafbfc;
     }
     .dark .lines-panel-table .lp-input:hover {
-        border-color: #1e3a5f;
-        background: rgba(67,97,238,0.04);
+        border-color: #253b5c;
+        background: #0e1726;
     }
     .lines-panel-table .lp-input:focus {
         outline: none;
         border-color: #4361ee;
         background: #fff;
-        box-shadow: 0 0 0 3px rgba(67,97,238,0.10);
-        color: #0f172a;
+        box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.1);
     }
     .dark .lines-panel-table .lp-input:focus {
         background: #0e1726;
-        color: #e2e8f0;
-        box-shadow: 0 0 0 3px rgba(67,97,238,0.18);
     }
     .lines-panel-table select.lp-input {
-        cursor: pointer; padding-right: 28px; appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 10px center;
+        cursor: pointer;
+        padding-right: 20px;
     }
-
-    /* ── Computed cells ── */
+    /* Formula / computed cells */
     .lp-computed {
-        font-weight: 700; color: #4361ee; font-size: 13px;
-        text-align: right; padding: 4px 10px;
-        background: rgba(67,97,238,0.06); border-radius: 6px; display: inline-block;
+        font-weight: 600;
+        color: #4361ee;
+        font-size: 12px;
+        text-align: right;
+        padding: 5px 8px;
     }
-    .dark .lp-computed { color: #818cf8; background: rgba(67,97,238,0.12); }
-
-    /* ── Drag handle ── */
+    .dark .lp-computed {
+        color: #6993ff;
+    }
+    /* Drag handle */
     .lp-drag-handle {
-        cursor: grab; color: #dde3f0; opacity: 0;
-        transition: opacity 0.15s, color 0.15s;
-        padding: 2px; display: flex; align-items: center;
+        cursor: grab;
+        color: #d1d5db;
+        transition: color 0.15s;
+        padding: 2px;
     }
-    .lines-panel-table tbody tr:hover .lp-drag-handle { opacity: 1; }
     .lp-drag-handle:active { cursor: grabbing; }
-    .lp-drag-handle:hover { color: #4361ee; }
-    .dark .lp-drag-handle { color: #1e3a5f; }
-    .dark .lp-drag-handle:hover { color: #818cf8; }
-
-    /* ── Row action buttons ── */
+    .lp-drag-handle:hover { color: #6b7280; }
+    .dark .lp-drag-handle { color: #3b4a5e; }
+    .dark .lp-drag-handle:hover { color: #888ea8; }
+    /* Row action buttons */
     .lp-row-actions {
         display: flex; gap: 2px; align-items: center;
         opacity: 0; transition: opacity 0.15s;
     }
     .lines-panel-table tbody tr:hover .lp-row-actions { opacity: 1; }
     .lp-row-btn {
-        width: 26px; height: 26px; border-radius: 6px; border: none;
-        background: transparent; cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        transition: all 0.12s;
+        padding: 3px; border-radius: 4px; border: none;
+        background: transparent; cursor: pointer; line-height: 1;
+        transition: background 0.12s, color 0.12s;
     }
-    .lp-row-btn.edit { color: #cbd5e1; }
-    .lp-row-btn.edit:hover { color: #4361ee; background: rgba(67,97,238,0.08); }
-    .dark .lp-row-btn.edit { color: #2d4263; }
-    .dark .lp-row-btn.edit:hover { color: #818cf8; background: rgba(67,97,238,0.12); }
-    .lp-row-btn.delete { color: #fca5a5; }
-    .lp-row-btn.delete:hover { color: #ef4444; background: rgba(239,68,68,0.08); }
-
-    /* ── Relation dropdown ── */
+    .lp-row-btn.edit { color: #6b7280; }
+    .lp-row-btn.edit:hover { color: #4361ee; background: rgba(67, 97, 238, 0.08); }
+    .dark .lp-row-btn.edit { color: #888ea8; }
+    .dark .lp-row-btn.edit:hover { color: #6993ff; background: rgba(67, 97, 238, 0.15); }
+    .lp-row-btn.delete { color: #ef4444; }
+    .lp-row-btn.delete:hover { background: rgba(239, 68, 68, 0.08); }
+    /* Relation search dropdown */
     .lp-relation-wrap { position: relative; }
     .lp-relation-dropdown {
-        position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 9999;
-        background: #fff; border: 1px solid #edf0f5;
-        border-radius: 12px;
-        box-shadow: 0 12px 40px rgba(15,23,42,0.12), 0 2px 8px rgba(15,23,42,0.04);
-        max-height: 200px; overflow-y: auto;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 9999;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        max-height: 180px;
+        overflow-y: auto;
+        margin-top: 2px;
     }
-    .dark .lp-relation-dropdown { background: #0f1c31; border-color: #1b2e4b; }
+    .dark .lp-relation-dropdown {
+        background: #0e1726;
+        border-color: #253b5c;
+    }
     .lp-relation-dropdown .lp-rel-item {
-        padding: 9px 16px; font-size: 12.5px; font-weight: 500;
-        cursor: pointer; transition: background 0.1s; color: #1e293b;
-        display: flex; align-items: center; gap: 8px;
+        padding: 6px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: background 0.1s;
     }
-    .dark .lp-relation-dropdown .lp-rel-item { color: #cbd5e1; }
-    .lp-relation-dropdown .lp-rel-item:hover { background: rgba(67,97,238,0.06); color: #4361ee; }
-    .lp-relation-dropdown .lp-rel-item:hover::before {
-        content: ''; width: 8px; height: 8px; border-radius: 2px;
-        background: linear-gradient(135deg,#4361ee,#805dca);
-        flex-shrink: 0;
+    .lp-relation-dropdown .lp-rel-item:hover {
+        background: rgba(67, 97, 238, 0.08);
     }
-
-    /* ── Totals bar ── */
+    /* Totals row */
     .lp-totals-bar {
-        display: flex; justify-content: flex-end; gap: 28px;
-        padding: 12px 18px;
-        background: #f8fafc;
-        border-top: 1px solid #edf0f5;
+        display: flex;
+        justify-content: flex-end;
+        gap: 24px;
+        padding: 10px 12px;
+        background: #f8f9fa;
+        border-top: 2px solid #e5e7eb;
+        border-radius: 0 0 8px 8px;
+        font-size: 12px;
     }
-    .dark .lp-totals-bar { background: rgba(255,255,255,0.015); border-color: #1b2e4b; }
-    .lp-totals-bar .lp-total-item { display: flex; align-items: center; gap: 10px; }
+    .dark .lp-totals-bar {
+        background: #1b2e4b;
+        border-color: #253b5c;
+    }
+    .lp-totals-bar .lp-total-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
     .lp-totals-bar .lp-total-label {
-        font-weight: 700; color: #94a3b8;
-        text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.07em;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        font-size: 10px;
+        letter-spacing: 0.05em;
     }
-    .dark .lp-totals-bar .lp-total-label { color: #475569; }
-    .lp-totals-bar .lp-total-value { font-weight: 800; font-size: 15px; color: #1e293b; }
-    .dark .lp-totals-bar .lp-total-value { color: #e2e8f0; }
-
-    /* ── Width classes ── */
+    .dark .lp-totals-bar .lp-total-label { color: #888ea8; }
+    .lp-totals-bar .lp-total-value {
+        font-weight: 700;
+        font-size: 14px;
+        color: #1f2937;
+    }
+    .dark .lp-totals-bar .lp-total-value { color: #e0e6ed; }
+    /* Width classes */
     .lp-w-xs { min-width: 50px; max-width: 70px; }
-    .lp-w-s  { min-width: 70px; max-width: 110px; }
+    .lp-w-s  { min-width: 70px; max-width: 100px; }
     .lp-w-m  { min-width: 120px; }
     .lp-w-l  { min-width: 180px; }
     .lp-w-xl { min-width: 240px; }
-
-    /* ── Schema tab pills ── */
+    /* Schema selector */
     .lp-schema-pill {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 600;
-        cursor: pointer; border: 1.5px solid #e2e8f0; color: #64748b;
-        background: #fff; transition: all 0.18s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1.5px solid #e5e7eb;
+        color: #6b7280;
+        background: #fff;
+        transition: all 0.15s;
     }
-    .dark .lp-schema-pill { border-color: #1b2e4b; background: transparent; color: #475569; }
-    .lp-schema-pill:hover { border-color: #4361ee; color: #4361ee; background: rgba(67,97,238,0.04); }
+    .dark .lp-schema-pill {
+        border-color: #253b5c;
+        background: #0e1726;
+        color: #888ea8;
+    }
+    .lp-schema-pill:hover, .lp-schema-pill.active {
+        border-color: #4361ee;
+        color: #4361ee;
+        background: rgba(67, 97, 238, 0.06);
+    }
     .lp-schema-pill.active {
-        border-color: #4361ee; color: #4361ee;
-        background: rgba(67,97,238,0.08); font-weight: 700;
+        background: rgba(67, 97, 238, 0.1);
     }
-
-    /* ── Multiselect tags — colorful pills ── */
+    /* Multiselect tags */
     .lp-ms-tag {
-        display: inline-flex; align-items: center; gap: 3px;
-        padding: 2px 10px; border-radius: 20px;
-        font-size: 11px; font-weight: 600; margin: 2px;
-        background: rgba(67,97,238,0.09); color: #4361ee;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        background: rgba(67, 97, 238, 0.1);
+        color: #4361ee;
+        margin: 1px;
     }
-    .dark .lp-ms-tag { background: rgba(67,97,238,0.18); color: #818cf8; }
     .lp-ms-tag .lp-ms-tag-x {
-        cursor: pointer; font-size: 11px; line-height: 1;
-        opacity: 0.45; transition: opacity 0.12s; margin-left: 2px;
+        cursor: pointer;
+        font-size: 12px;
+        line-height: 1;
+        opacity: 0.6;
     }
     .lp-ms-tag .lp-ms-tag-x:hover { opacity: 1; }
-
-    /* ── Add row footer ── */
+    /* Add row button area */
     .lp-add-row-area {
-        display: flex; align-items: center; justify-content: center; gap: 6px;
-        padding: 12px; border-top: 1.5px dashed #edf0f5;
-        cursor: pointer; color: #c8d0dc; font-size: 11.5px; font-weight: 600;
-        transition: all 0.18s; letter-spacing: 0.01em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+        border-top: 1px dashed #e5e7eb;
+        cursor: pointer;
+        color: #9ca3af;
+        font-size: 12px;
+        transition: all 0.15s;
+        gap: 6px;
     }
-    .dark .lp-add-row-area { border-color: #1b2e4b; color: #2d4263; }
-    .lp-add-row-area:hover { background: rgba(67,97,238,0.03); color: #4361ee; }
-
-    /* ── Sortable feedback ── */
-    .lines-panel-table .sortable-ghost { opacity: 0.2; }
-    .lines-panel-table .sortable-chosen td { background: #f5f7ff !important; }
-
-
+    .dark .lp-add-row-area { border-color: #1b2e4b; color: #4a5568; }
+    .lp-add-row-area:hover {
+        background: rgba(67, 97, 238, 0.04);
+        color: #4361ee;
+    }
+    /* Sortable ghost */
+    .lines-panel-table .sortable-ghost { opacity: 0.3; }
+    .lines-panel-table .sortable-chosen { background: rgba(67, 97, 238, 0.05); }
 
     /* ── Add Lines Modal ─────────────────────────────── */
     .lp-modal-overlay {
@@ -1119,27 +1116,36 @@
        Lines Toolbar (presets, history, create-doc)
        ═══════════════════════════════════════════════════════════ */
     .lp-toolbar {
-        display: flex; align-items: center; gap: 2px;
-        padding: 5px 14px;
-        border-bottom: 1px solid #f1f5f9;
+        display: flex; align-items: center; justify-content: flex-end; gap: 2px;
+        padding: 4px 10px;
+        border-bottom: 1px solid #f0f0f0;
         background: transparent;
     }
     .dark .lp-toolbar { border-color: #1b2e4b; }
     .lp-toolbar-btn {
-        display: inline-flex; align-items: center; gap: 4px;
-        padding: 4px 9px; border-radius: 6px;
-        font-size: 10.5px; font-weight: 600; color: #94a3b8;
-        cursor: pointer; border: none; background: transparent;
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 4px 10px; border-radius: 20px;
+        font-size: 10.5px; font-weight: 600; color: #64748b;
+        cursor: pointer; border: 1.5px solid transparent; background: transparent;
         transition: all 0.15s; white-space: nowrap;
-        position: relative; letter-spacing: 0.01em;
+        position: relative;
     }
-    .dark .lp-toolbar-btn { color: #475569; }
-    .lp-toolbar-btn:hover { background: rgba(67,97,238,0.06); color: #4361ee; }
-    .lp-toolbar-btn.active { background: rgba(67,97,238,0.08); color: #4361ee; font-weight: 700; }
+    .dark .lp-toolbar-btn { color: #888ea8; }
+    .lp-toolbar-btn:hover {
+        color: #4361ee;
+        background: rgba(67,97,238,0.06);
+        border-color: rgba(67,97,238,0.2);
+    }
+    .lp-toolbar-btn.active {
+        color: #4361ee;
+        background: rgba(67,97,238,0.08);
+        border-color: rgba(67,97,238,0.25);
+        font-weight: 700;
+    }
     .lp-toolbar-sep {
-        width: 1px; height: 14px; background: #f1f5f9; margin: 0 4px;
+        width: 1px; height: 14px; background: #e5e7eb; margin: 0 4px;
     }
-    .dark .lp-toolbar-sep { background: #1b2e4b; }
+    .dark .lp-toolbar-sep { background: #253b5c; }
 
     /* Preset dropdown panel */
     .lp-preset-dropdown {
@@ -1319,12 +1325,12 @@
                 <div x-show="activeSchemaId === schema._id">
                     <!-- Schema Panel Header (single schema only — tab bar replaces this when multi) -->
                     <div x-show="schemas.length === 1"
-                         class="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors"
+                         class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
                          @click="toggleSchemaOpen(schema._id)">
-                        <div class="flex items-center gap-2.5">
-                            <span style="width:8px; height:8px; border-radius:50%; background:#4361ee; flex-shrink:0; box-shadow:0 0 0 3px rgba(67,97,238,0.15);"></span>
-                            <span style="font-size:11px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#1e293b;" class="dark:text-slate-400" x-text="schema.name"></span>
-                            <span x-show="getSchemaLines(schema._id).length > 0" style="font-size:10px; font-weight:700; padding:1px 8px; border-radius:20px; background:rgba(67,97,238,0.08); color:#4361ee; letter-spacing:0.01em;" x-text="getSchemaLines(schema._id).length + ' ligne' + (getSchemaLines(schema._id).length > 1 ? 's' : '')"></span>
+                        <div class="flex items-center gap-1.5">
+                            <iconify-icon :icon="getSchemaInputMode(schema) === 'form' ? 'solar:heart-pulse-bold-duotone' : getSchemaInputMode(schema) === 'table' ? 'solar:notebook-bold-duotone' : 'solar:document-text-bold-duotone'" width="14" class="text-success"></iconify-icon>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400" x-text="schema.name"></span>
+                            <span x-show="getSchemaLines(schema._id).length > 0" class="text-[9px] bg-success/10 text-success min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1" x-text="getSchemaLines(schema._id).length"></span>
                         </div>
                         <div class="flex items-center gap-1">
                             <!-- Template picker button (shown when templates available) -->
@@ -1351,10 +1357,11 @@
                         <button type="button" class="lp-toolbar-btn"
                                 :class="{ 'active': presetDropdown[schema._id] }"
                                 @click.stop="activeSchemaId = schema._id; togglePresetDropdown(schema._id)">
-                            <iconify-icon icon="solar:clipboard-check-bold-duotone" width="13"></iconify-icon>
+                            <iconify-icon icon="solar:bookmark-circle-bold-duotone" width="14"></iconify-icon>
                             Presets
-                            <span x-show="getTemplatesForSchema(schema._id).length > 0"
-                                  class="lp-preset-item-badge" x-text="getTemplatesForSchema(schema._id).length"></span>
+                            <span x-show="(getPresetsForSchema ? getPresetsForSchema(schema._id) : getSchemaPresets ? getSchemaPresets(schema._id) : []).length > 0"
+                                  style="background:#4361ee; color:#fff; border-radius:10px; padding:0 5px; font-size:9px; font-weight:700; line-height:16px;"
+                                  x-text="(getPresetsForSchema ? getPresetsForSchema(schema._id) : getSchemaPresets ? getSchemaPresets(schema._id) : []).length"></span>
                         </button>
                         <!-- Preset Dropdown -->
                         <template x-if="presetDropdown[schema._id]">
@@ -1427,24 +1434,6 @@
                         </template>
                     </div>
 
-                    <div class="lp-toolbar-sep"></div>
-
-                    <!-- Save preset shortcut -->
-                    <button type="button" class="lp-toolbar-btn"
-                            x-show="getSchemaLines(schema._id).length > 0"
-                            @click.stop="activeSchemaId = schema._id; openSavePresetModal(schema._id)">
-                        <iconify-icon icon="solar:diskette-bold-duotone" width="13"></iconify-icon>
-                        Sauvegarder
-                    </button>
-
-                    <!-- Template picker (existing feature, moved to toolbar) -->
-                    <button type="button" class="lp-toolbar-btn"
-                            x-show="getTemplatesForSchema(schema._id).length > 0"
-                            :class="{ 'active': templatePicker[schema._id] }"
-                            @click.stop="activeSchemaId = schema._id; templatePicker[schema._id] = !templatePicker[schema._id]">
-                        <iconify-icon icon="solar:notes-bold-duotone" width="13"></iconify-icon>
-                        Modèles
-                    </button>
                 </div>
                 <!-- ═══ Analytics Toggle Bar (for schemas with analytics) ═══ -->
                 <div x-show="schema.analyticsConfig && schema.analyticsConfig.enabled"
@@ -1574,7 +1563,7 @@
                 </div>
 
                 <!-- Table (catalog & table modes only, hidden for form mode) -->
-                <div x-show="getSchemaInputMode(schema) !== 'form'"
+                <div x-show="getSchemaInputMode(schema) !== 'form'" class="table-responsive">
                      :class="(relationSearch.open || msDropdown.open) ? '' : 'overflow-x-auto'"
                      :style="(relationSearch.open || msDropdown.open) ? 'overflow: visible' : ''">
                     <table class="lines-panel-table">
@@ -1600,27 +1589,25 @@
                                             <iconify-icon icon="tabler:grip-vertical" width="14"></iconify-icon>
                                         </span>
                                     </td>
-                                    <!-- Row number -->
-                                    <td style="width:36px; padding-left:10px;">
-                                        <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
-                                            <span :style="'display:inline-flex; align-items:center; justify-content:center; width:10px; height:10px; border-radius:3px; flex-shrink:0; background:' + (['#4361ee','#00ab55','#805dca','#e7515a','#f59f00'][lineIdx % 5])"></span>
-                                            <span style="font-size:9px; font-weight:700; color:#c8d0dc; line-height:1;" x-text="lineIdx + 1"></span>
-                                        </div>
-                                    </td>
+                                    <!-- Row number (compact) -->
+                                    <td class="text-[10px] text-gray-400 font-semibold text-center" style="width:24px; padding:4px;" x-text="lineIdx + 1"></td>
                                     <!-- Relation name (always visible) -->
                                     <template x-if="getRelationCol()">
-                                        <td class="lp-w-m">
+                                        <td class="lp-w-m" style="padding: 5px 8px;">
                                             <div class="lp-relation-wrap">
-                                                <div style="display:flex; align-items:center; gap:7px;">
-                                                    <span :style="'width:10px; height:10px; border-radius:3px; flex-shrink:0; background:' + (['linear-gradient(135deg,#4361ee,#7086f5)','linear-gradient(135deg,#00ab55,#34d399)','linear-gradient(135deg,#805dca,#b794f4)','linear-gradient(135deg,#e7515a,#fb7185)','linear-gradient(135deg,#f59f00,#fbbf24)'][lineIdx % 5])"></span>
-                                                <input type="text" class="lp-input"
-                                                    :value="getRelationLabel(line)"
-                                                    @focus="openRelationSearch(lineIdx, getRelationCol().key)"
-                                                    @input="searchRelation(lineIdx, getRelationCol().key, $event.target.value)"
-                                                    @blur="setTimeout(() => closeRelationSearch(), 200)"
-                                                    @keydown.escape="closeRelationSearch()"
-                                                    :placeholder="'🔍 ' + (getRelationCol()?.label || 'Article')" />
-                                                </div><!-- /flex wrapper -->
+                                                <!-- Pill container matching reference -->
+                                                <div :style="'display:flex; align-items:center; border-radius:8px; overflow:hidden; border:1.5px solid ' + (['rgba(67,97,238,0.25)','rgba(0,181,210,0.25)','rgba(128,93,202,0.25)','rgba(27,78,129,0.25)'][lineIdx % 4])">
+                                                    <!-- Left color accent bar -->
+                                                    <div :style="'width:4px; flex-shrink:0; align-self:stretch; background:' + (['linear-gradient(180deg,#4361ee,#7086f5)','linear-gradient(180deg,#00b5d2,#38bdf8)','linear-gradient(180deg,#805dca,#a78bfa)','linear-gradient(180deg,#1b4e81,#2563eb)'][lineIdx % 4])"></div>
+                                                    <input type="text" class="lp-input"
+                                                        :style="'background:' + (['rgba(67,97,238,0.05)','rgba(0,181,210,0.05)','rgba(128,93,202,0.05)','rgba(27,78,129,0.05)'][lineIdx % 4]) + '; font-weight:600; color:#1e293b; border:none; border-radius:0; padding:6px 10px; font-size:12px;'"
+                                                        :value="getRelationLabel(line)"
+                                                        @focus="openRelationSearch(lineIdx, getRelationCol().key)"
+                                                        @input="searchRelation(lineIdx, getRelationCol().key, $event.target.value)"
+                                                        @blur="setTimeout(() => closeRelationSearch(), 200)"
+                                                        @keydown.escape="closeRelationSearch()"
+                                                        :placeholder="getRelationCol()?.label || 'Traitement'" />
+                                                </div><!-- /pill container -->
                                                 <!-- Dropdown -->
                                                 <div x-show="relationSearch.lineIdx === lineIdx && relationSearch.colKey === getRelationCol().key && relationSearch.open"
                                                     class="lp-relation-dropdown"
@@ -1857,34 +1844,35 @@
                     </table>
                 </div>
 
-                <!-- ═══ Action bar: 2026 clean pill group ═══ -->
-                <div style="display:flex; align-items:center; justify-content:center; gap:0; padding:14px 20px;">
-                    <div style="display:inline-flex; align-items:center; border:1.5px solid #e2e8f0; border-radius:10px; overflow:hidden; background:#fff; box-shadow:0 1px 3px rgba(15,23,42,0.06);">
-                        <div style="display:inline-flex; align-items:center; gap:5px; padding:7px 16px; font-size:11.5px; font-weight:600; color:#64748b; cursor:pointer; transition:all 0.15s; letter-spacing:0.01em; user-select:none;"
-                             @click.stop="addLineToSchema(schema._id)"
-                             onmouseover="this.style.background='#f8f9ff'; this.style.color='#4361ee';"
-                             onmouseout="this.style.background=''; this.style.color='#64748b';">
-                            <iconify-icon icon="tabler:plus" width="13"></iconify-icon>
-                            <span>Ajouter</span>
-                        </div>
-                        <div style="width:1px; height:28px; background:#f1f5f9; flex-shrink:0;"></div>
-                        <div style="display:inline-flex; align-items:center; gap:5px; padding:7px 16px; font-size:11.5px; font-weight:600; color:#64748b; cursor:pointer; transition:all 0.15s; letter-spacing:0.01em; user-select:none;"
-                             @click.stop="activateAndOpenModal(schema._id)"
-                             onmouseover="this.style.background='#f8f9ff'; this.style.color='#4361ee';"
-                             onmouseout="this.style.background=''; this.style.color='#64748b';">
-                            <iconify-icon icon="tabler:layout-grid" width="13"></iconify-icon>
-                            <span>Catalogue</span>
-                        </div>
-                        <div x-show="schema.snapshotConfig?.enabled" style="display:contents;">
-                            <div style="width:1px; height:28px; background:#f1f5f9; flex-shrink:0;"></div>
-                            <div :style="'display:inline-flex; align-items:center; gap:5px; padding:7px 18px; font-size:11.5px; font-weight:700; color:#fff; background:#4361ee; cursor:pointer; transition:all 0.15s; letter-spacing:0.01em; user-select:none;' + (snapshotSaving[schema._id] === true ? ' opacity:0.6; pointer-events:none;' : '')"
-                                 @click.stop="saveSnapshot(schema)"
-                                 onmouseover="this.style.background='#3451d1';"
-                                 onmouseout="this.style.background='#4361ee';">
-                                <iconify-icon icon="solar:check-circle-bold-duotone" width="14" style="pointer-events:none; opacity:0.9;"></iconify-icon>
-                                <span x-text="snapshotSaving[schema._id] === true ? 'Sauvegarde...' : 'Valider'" style="pointer-events:none;"></span>
-                            </div>
-                        </div>
+                <!-- ═══ Action bar — Reference pixel-perfect ═══ -->
+                <div style="display:flex; align-items:center; justify-content:center; gap:10px; padding:16px 16px 12px; border-top:1px solid #f0f0f0;">
+                    <!-- + Ajouter: Blue gradient pill — matches '+ Hadmen' in reference -->
+                    <div style="display:inline-flex; align-items:center; gap:7px; padding:8px 22px; font-size:12px; font-weight:700; color:#fff; background:linear-gradient(135deg,#4361ee 0%,#3ea9e0 100%); border-radius:30px; cursor:pointer; box-shadow:0 4px 15px rgba(67,97,238,0.35); transition:all 0.2s; user-select:none; letter-spacing:0.01em;"
+                         @click.stop="addLineToSchema(schema._id)"
+                         onmouseover="this.style.boxShadow='0 6px 20px rgba(67,97,238,0.5)'; this.style.transform='translateY(-1px)';"
+                         onmouseout="this.style.boxShadow='0 4px 15px rgba(67,97,238,0.35)'; this.style.transform='';"
+                    >
+                        <iconify-icon icon="tabler:plus" width="14" style="pointer-events:none;"></iconify-icon>
+                        <span style="pointer-events:none;">Ajouter</span>
+                    </div>
+                    <!-- Catalogue: ghost pill -->
+                    <div style="display:inline-flex; align-items:center; gap:6px; padding:7px 16px; font-size:11.5px; font-weight:600; color:#94a3b8; border:1.5px solid #e5e7eb; border-radius:30px; cursor:pointer; transition:all 0.18s; user-select:none;"
+                         @click.stop="activateAndOpenModal(schema._id)"
+                         onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee';"
+                         onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='#94a3b8';"
+                    >
+                        <iconify-icon icon="tabler:layout-grid" width="13"></iconify-icon>
+                        <span>+ Catalogue</span>
+                    </div>
+                    <!-- Valider: shown only when snapshots enabled -->
+                    <div x-show="schema.snapshotConfig?.enabled"
+                         :style="'display:inline-flex; align-items:center; gap:5px; padding:7px 16px; font-size:11.5px; font-weight:600; color:#4361ee; border:1.5px solid rgba(67,97,238,0.3); border-radius:30px; cursor:pointer; transition:all 0.18s; user-select:none; background:rgba(67,97,238,0.05);' + (snapshotSaving[schema._id] === true ? ' opacity:0.5; pointer-events:none;' : '')"
+                         @click.stop="saveSnapshot(schema)"
+                         onmouseover="this.style.background='rgba(67,97,238,0.1)'; this.style.borderColor='#4361ee';"
+                         onmouseout="this.style.background='rgba(67,97,238,0.05)'; this.style.borderColor='rgba(67,97,238,0.3)';"
+                    >
+                        <iconify-icon icon="solar:check-circle-bold-duotone" width="13" style="pointer-events:none;"></iconify-icon>
+                        <span x-text="snapshotSaving[schema._id] === true ? 'Sauvegarde...' : 'Valider'" style="pointer-events:none;"></span>
                     </div>
                 </div>
 

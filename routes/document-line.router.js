@@ -7,5 +7,6 @@ router.get('/api/document-lines/:documentId', documentLineCtrl.listByDocument);
 router.post('/api/document-lines/:documentId/bulk', documentLineCtrl.bulkSave);
 router.post('/api/document-lines/:documentId/recompute', documentLineCtrl.recompute);
 router.get('/api/catalog-search', documentLineCtrl.catalogSearch);
+router.get('/api/catalog-frequent', documentLineCtrl.catalogFrequent);
 
 module.exports = router;

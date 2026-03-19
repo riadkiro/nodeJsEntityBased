@@ -1581,7 +1581,7 @@
                 <div x-show="getSchemaInputMode(schema) !== 'form'"
                      :class="(relationSearch.open || msDropdown.open) ? '' : 'overflow-x-auto'"
                      :style="(relationSearch.open || msDropdown.open) ? 'overflow: visible' : ''">
-                    <table class="lines-panel-table">
+                    <table class="">
                         <thead>
                             <tr>
                                 <th style="width: 28px;"></th>
@@ -1845,7 +1845,7 @@
                                         </td>
                                     </template>
                                     <!-- Actions (edit + delete) -->
-                                    <td style="padding:2px 4px;">
+                                    <td>
                                         <div class="lp-row-actions">
                                             <button type="button" class="lp-row-btn edit" @click="activeSchemaId = schema._id; openEditLine(lineIdx)" title="Modifier">
                                                 <iconify-icon icon="tabler:pencil" width="14"></iconify-icon>
@@ -2549,41 +2549,6 @@
                         </div>
                     </div>
 
-                    <!-- Manual Add -->
-                    <div class="lp-manual-add">
-                        <div class="lp-manual-add-label">
-                            <iconify-icon icon="tabler:pencil-plus" width="13"></iconify-icon>
-                            Ou ajouter manuellement
-                        </div>
-                        <div class="lp-manual-add-row">
-                            <input type="text" class="lp-manual-add-input"
-                                   x-model="manualAdd.input"
-                                   @input="searchManualAutocomplete()"
-                                   @keydown.enter.prevent="addManualLine()"
-                                   @click.away="manualAdd.open = false"
-                                   placeholder="Nom de l'élément..." />
-                            <button class="lp-manual-add-btn"
-                                    @click="addManualLine()"
-                                    :disabled="!manualAdd.input.trim()">
-                                <iconify-icon icon="tabler:plus" width="16"></iconify-icon>
-                            </button>
-                            <!-- Autocomplete dropdown -->
-                            <div class="lp-manual-autocomplete"
-                                 x-show="manualAdd.open && manualAdd.suggestions.length > 0"
-                                 x-transition.opacity>
-                                <template x-for="sug in manualAdd.suggestions" :key="sug._id">
-                                    <div class="lp-manual-autocomplete-item"
-                                         @click="selectManualSuggestion(sug)">
-                                        <iconify-icon icon="tabler:file-text" width="14" style="color: #9ca3af;"></iconify-icon>
-                                        <div>
-                                            <span class="lp-ac-title" x-text="sug.label || sug.title"></span>
-                                            <span class="lp-ac-desc" x-show="sug.description" x-text="sug.description"></span>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
 
                     <!-- Body: Results -->
                     <div class="lp-modal-body">
@@ -2606,10 +2571,38 @@
                             <p style="font-size: 12px;">Aucun résultat pour "<span x-text="addModal.query"></span>"</p>
                         </div>
 
-                        <!-- Initial state -->
-                        <div x-show="!addModal.loading && !addModal._noTarget && addModal.results.length === 0 && addModal.query.length === 0" class="lp-modal-empty">
-                            <iconify-icon icon="solar:magnifer-bold-duotone" width="32"></iconify-icon>
-                            <p style="font-size: 12px;">Tapez pour rechercher dans le catalogue</p>
+                        <!-- Frequent items (shown when no search query) -->
+                        <div x-show="!addModal.loading && !addModal._noTarget && addModal.results.length === 0 && addModal.query.length === 0">
+                            <!-- Loading frequent -->
+                            <div x-show="addModal._loadingFrequent" class="lp-modal-empty">
+                                <iconify-icon icon="svg-spinners:ring-resize" width="20" class="text-primary"></iconify-icon>
+                                <p style="font-size: 12px; margin-top: 8px;">Chargement...</p>
+                            </div>
+                            <!-- Frequent list -->
+                            <div x-show="!addModal._loadingFrequent && (addModal.frequent || []).length > 0">
+                                <div style="padding: 8px 14px 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af;">
+                                    <iconify-icon icon="solar:star-bold-duotone" width="12" style="color: #f59e0b; vertical-align: -1px;"></iconify-icon>
+                                    Fréquemment utilisés
+                                </div>
+                                <template x-for="item in (addModal.frequent || [])" :key="item._id">
+                                    <div class="lp-catalog-item"
+                                         :class="{ 'selected': addModal.selected.find(s => s._id === item._id) }"
+                                         @click="toggleCatalogItem(item)">
+                                        <div class="lp-catalog-check">
+                                            <iconify-icon x-show="addModal.selected.find(s => s._id === item._id)"
+                                                          icon="tabler:check" width="12" style="color: #fff;"></iconify-icon>
+                                        </div>
+                                        <div class="lp-catalog-info">
+                                            <div class="lp-catalog-title" x-text="item.label || item.title"></div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                            <!-- No frequent items -->
+                            <div x-show="!addModal._loadingFrequent && (addModal.frequent || []).length === 0" class="lp-modal-empty">
+                                <iconify-icon icon="solar:magnifer-bold-duotone" width="32"></iconify-icon>
+                                <p style="font-size: 12px;">Tapez pour rechercher dans le catalogue</p>
+                            </div>
                         </div>
 
                         <!-- Results list -->
@@ -3268,7 +3261,9 @@ document.addEventListener('alpine:init', () => {
             results: [],
             selected: [],  // { _id, label, customFields, values: {} }
             _searchTimer: null,
-            _noTarget: false
+            _noTarget: false,
+            frequent: [],
+            _loadingFrequent: false
         },
 
         // Manual add state
@@ -3599,22 +3594,40 @@ document.addEventListener('alpine:init', () => {
             this.addModal.selected = [];
             this.addModal.loading = false;
             this.addModal._noTarget = false;
-            // Reset manual add
-            this.manualAdd.input = '';
-            this.manualAdd.suggestions = [];
-            this.manualAdd.open = false;
+            this.addModal.frequent = [];
+            this.addModal._loadingFrequent = false;
             this.$nextTick(() => {
                 if (this.$refs.modalSearchInput) {
                     this.$refs.modalSearchInput.focus();
                 }
             });
+            // Load frequent items
+            this.loadFrequentItems();
         },
 
         closeAddModal() {
             this.addModal.open = false;
-            this.manualAdd.input = '';
-            this.manualAdd.suggestions = [];
-            this.manualAdd.open = false;
+        },
+
+        async loadFrequentItems() {
+            // Determine target entity from schema config
+            const sourceEntity = this.activeSchema?.sourceEntityId;
+            const relCol = (this.activeSchema?.columns || []).find(c => c.type === 'relation');
+            const targetEntity = sourceEntity || relCol?.config?.targetEntity;
+            if (!targetEntity) return;
+
+            this.addModal._loadingFrequent = true;
+            try {
+                const url = `/account/${this.accountNumber}/api/catalog-frequent?entityId=${targetEntity}`;
+                const res = await fetch(url, { credentials: 'include' });
+                const data = await res.json();
+                this.addModal.frequent = data.data || [];
+            } catch (e) {
+                console.error('[LinesPanel] Frequent items error:', e);
+                this.addModal.frequent = [];
+            } finally {
+                this.addModal._loadingFrequent = false;
+            }
         },
 
         searchCatalog() {

@@ -1,0 +1,108 @@
+[
+  {
+    "_id": "698203c651a0e3777df6200a",
+    "key": "unsplash",
+    "__v": 0,
+    "authInjection": {
+      "mode": "query",
+      "name": "client_id",
+      "format": "{{token}}"
+    },
+    "authType": "api_key",
+    "baseUrl": "https://api.unsplash.com",
+    "category": "Media",
+    "createdAt": "2026-02-03T14:18:46.006Z",
+    "defaultHeaders": {
+      "Accept-Version": "v1"
+    },
+    "logo": "https://unsplash.com/favicon-32x32.png",
+    "name": "Unsplash",
+    "status": "published",
+    "updatedAt": "2026-02-03T14:18:46.032Z",
+    "testActionId": "698203c651a0e3777df6200b"
+  },
+  {
+    "_id": "698219861e895b82ef0746aa",
+    "key": "google",
+    "name": "Google",
+    "logo": "https://developers.google.com/identity/images/g-logo.png",
+    "category": "Productivity",
+    "baseUrl": "https://www.googleapis.com",
+    "authType": "oauth2",
+    "authInjection": {
+      "mode": "header",
+      "name": "Authorization",
+      "format": "Bearer {{token}}"
+    },
+    "oauth": {
+      "authorizeUrl": "https://accounts.google.com/o/oauth2/v2/auth",
+      "tokenUrl": "https://oauth2.googleapis.com/token",
+      "scopes": [
+        "openid"
+      ],
+      "pkce": true,
+      "extraParams": {}
+    },
+    "defaultHeaders": {},
+    "status": "published",
+    "createdAt": "2026-02-03T15:51:34.342Z",
+    "updatedAt": "2026-02-03T16:05:26.553Z",
+    "__v": 0,
+    "oauthClientSecrets": {
+      "v": 1,
+      "iv": "sPMo6wcraPPxSFzD",
+      "authTag": "tpt4xoW4pmgcI3445BYdiA==",
+      "ciphertext": "mps0MACUUYuc21uHvvnmrJEJcpkpnjyJdW7Psw0wxjkHJa+5MmfNuDeSqGwb6/elUa8labYm50o4EQGBOXW2wARMbnhtqZa8IHiP8z4Omn/wgL/1Bp/FNGGtR7SpKg5FzHNO8MX5VI85lsIsAecnMaXn49fjk5E2n2GQJSoSagD4WOwiwaX89U7jnBQ="
+    },
+    "testActionId": "69821cb855fdbed1691d1ff3"
+  },
+  {
+    "_id": "6982ca8351a0e3777df6200f",
+    "key": "openai",
+    "__v": 0,
+    "authInjection": {
+      "mode": "header",
+      "name": "Authorization",
+      "format": "Bearer {{token}}"
+    },
+    "authType": "bearer",
+    "baseUrl": "https://api.openai.com/v1",
+    "category": "AI",
+    "createdAt": "2026-02-04T04:26:43.937Z",
+    "defaultHeaders": {
+      "Content-Type": "application/json"
+    },
+    "logo": "https://openai.com/favicon.ico",
+    "name": "OpenAI",
+    "oauth": {
+      "pkce": false,
+      "scopes": []
+    },
+    "status": "published",
+    "updatedAt": "2026-02-09T03:53:22.163Z",
+    "testActionId": "6982ca8351a0e3777df62010"
+  },
+  {
+    "_id": "698732d7dc0731b0e1a8eb8c",
+    "key": "app",
+    "__v": 0,
+    "authInjection": {
+      "format": "{{token}}",
+      "mode": "header",
+      "name": "Authorization"
+    },
+    "authType": "none",
+    "baseUrl": "internal://",
+    "category": "internal",
+    "createdAt": "2026-02-07T12:40:55.507Z",
+    "defaultHeaders": {},
+    "logo": "⚡",
+    "name": "App (Internal)",
+    "oauth": {
+      "pkce": false,
+      "scopes": []
+    },
+    "status": "published",
+    "updatedAt": "2026-02-07T12:40:55.507Z"
+  }
+]

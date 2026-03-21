@@ -1,0 +1,244 @@
+[
+  {
+    "_id": "6814e08c60239366ab9a9041",
+    "name": "Features",
+    "slug": "features",
+    "folder": "6814e08c60239366ab9a903f",
+    "space": "6814e08c60239366ab9a9037",
+    "type": "custom",
+    "icon": "puzzle",
+    "color": "#3B82F6",
+    "schema": {
+      "fields": [
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "options": []
+        },
+        {
+          "name": "description",
+          "type": "rich-text",
+          "required": false,
+          "options": []
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "options": [
+            "Planned",
+            "In Progress",
+            "In Review",
+            "Completed"
+          ]
+        },
+        {
+          "name": "priority",
+          "type": "select",
+          "required": true,
+          "options": [
+            "Low",
+            "Medium",
+            "High",
+            "Urgent"
+          ]
+        },
+        {
+          "name": "targetDate",
+          "type": "date",
+          "required": false,
+          "options": []
+        }
+      ]
+    },
+    "createdBy": "6814e08c60239366ab9a902d",
+    "createdAt": "2025-05-02T15:11:08.219Z",
+    "updatedAt": "2025-05-02T15:11:08.219Z",
+    "__v": 0
+  },
+  {
+    "_id": "6814e08c60239366ab9a9045",
+    "name": "Tasks",
+    "slug": "tasks",
+    "folder": "6814e08c60239366ab9a9043",
+    "space": "6814e08c60239366ab9a9037",
+    "type": "custom",
+    "icon": "check-square",
+    "color": "#6366F1",
+    "schema": {
+      "fields": [
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "options": []
+        },
+        {
+          "name": "description",
+          "type": "rich-text",
+          "required": false,
+          "options": []
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "options": [
+            "Todo",
+            "In Progress",
+            "Code Review",
+            "Testing",
+            "Done"
+          ]
+        },
+        {
+          "name": "assignee",
+          "type": "select",
+          "required": false,
+          "options": [
+            "John Doe",
+            "Jane Smith"
+          ]
+        },
+        {
+          "name": "dueDate",
+          "type": "date",
+          "required": false,
+          "options": []
+        },
+        {
+          "name": "estimatedHours",
+          "type": "number",
+          "required": false,
+          "options": []
+        }
+      ]
+    },
+    "createdBy": "6814e08c60239366ab9a902d",
+    "createdAt": "2025-05-02T15:11:08.222Z",
+    "updatedAt": "2025-05-02T15:11:08.222Z",
+    "__v": 0
+  },
+  {
+    "_id": "6814e08c60239366ab9a9049",
+    "name": "Campaign",
+    "slug": "campaign",
+    "folder": "6814e08c60239366ab9a9047",
+    "space": "6814e08c60239366ab9a9039",
+    "type": "custom",
+    "icon": "flag",
+    "color": "#10B981",
+    "schema": {
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "options": []
+        },
+        {
+          "name": "description",
+          "type": "rich-text",
+          "required": false,
+          "options": []
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "options": [
+            "Planning",
+            "Active",
+            "Completed",
+            "On Hold"
+          ]
+        },
+        {
+          "name": "startDate",
+          "type": "date",
+          "required": false,
+          "options": []
+        },
+        {
+          "name": "endDate",
+          "type": "date",
+          "required": false,
+          "options": []
+        },
+        {
+          "name": "budget",
+          "type": "number",
+          "required": false,
+          "options": []
+        }
+      ]
+    },
+    "createdBy": "6814e08c60239366ab9a902d",
+    "createdAt": "2025-05-02T15:11:08.224Z",
+    "updatedAt": "2025-05-02T15:11:08.224Z",
+    "__v": 0
+  },
+  {
+    "_id": "6814e08c60239366ab9a904d",
+    "name": "Content",
+    "slug": "content",
+    "folder": "6814e08c60239366ab9a904b",
+    "space": "6814e08c60239366ab9a9039",
+    "type": "custom",
+    "icon": "file-text",
+    "color": "#EC4899",
+    "schema": {
+      "fields": [
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "options": []
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "options": [
+            "Blog Post",
+            "Social Media",
+            "Email",
+            "Video",
+            "Podcast"
+          ]
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "options": [
+            "Draft",
+            "In Review",
+            "Scheduled",
+            "Published"
+          ]
+        },
+        {
+          "name": "publishDate",
+          "type": "date",
+          "required": false,
+          "options": []
+        },
+        {
+          "name": "author",
+          "type": "select",
+          "required": false,
+          "options": [
+            "John Doe",
+            "Jane Smith"
+          ]
+        }
+      ]
+    },
+    "createdBy": "6814e08c60239366ab9a902d",
+    "createdAt": "2025-05-02T15:11:08.226Z",
+    "updatedAt": "2025-05-02T15:11:08.226Z",
+    "__v": 0
+  }
+]

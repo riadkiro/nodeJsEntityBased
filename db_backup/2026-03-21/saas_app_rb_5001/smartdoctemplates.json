@@ -1,0 +1,422 @@
+[
+  {
+    "_id": "69990557dc5da6404d40a55b",
+    "name": "Compte-rendu de consultation",
+    "description": "Génère un compte-rendu PDF de la consultation avec diagnostic, prescription et notes.",
+    "icon": "solar:stethoscope-bold-duotone",
+    "color": "#4361ee",
+    "documentId": "69990557dc5da6404d40a551",
+    "entityId": "6997902086a58861ddebefe7",
+    "inputFields": [
+      {
+        "_id": "69990557dc5da6404d40a559",
+        "key": "medecin",
+        "label": "Nom du médecin",
+        "type": "text",
+        "required": true,
+        "placeholder": "Dr. Dupont"
+      },
+      {
+        "_id": "69990557dc5da6404d40a55a",
+        "key": "observations",
+        "label": "Observations complémentaires",
+        "type": "textarea",
+        "required": false,
+        "placeholder": "Observations supplémentaires du médecin..."
+      }
+    ],
+    "outputFormat": "pdf",
+    "outputNameTemplate": "Compte-rendu - {{recordTitle}} - {{today}}",
+    "order": 0,
+    "active": true,
+    "createdAt": "2026-02-21T01:07:35.364Z",
+    "updatedAt": "2026-02-21T01:07:35.364Z"
+  },
+  {
+    "_id": "69990557dc5da6404d40a55d",
+    "name": "Attestation de consultation",
+    "description": "Génère une attestation de consultation en 1 clic (sans champs supplémentaires).",
+    "icon": "solar:diploma-verified-bold-duotone",
+    "color": "#10b981",
+    "documentId": "69990557dc5da6404d40a55c",
+    "entityId": "6997902086a58861ddebefe7",
+    "inputFields": [],
+    "outputFormat": "pdf",
+    "outputNameTemplate": "Attestation - {{recordTitle}} - {{today}}",
+    "order": 1,
+    "active": true,
+    "createdAt": "2026-02-21T01:07:35.365Z",
+    "updatedAt": "2026-02-21T01:07:35.365Z"
+  },
+  {
+    "_id": "699a7cbdcf9c70c9fc01e69f",
+    "name": "Nouveau SmartDocCe document est un test de template avec un nom tr",
+    "icon": "solar:document-bold-duotone",
+    "color": "#4361ee",
+    "documentId": "699a7c4dcf9c70c9fc01e160",
+    "entityId": "69985b2114b503aa91f46d8b",
+    "outputFormat": "pdf",
+    "outputNameTemplate": "{{templateName}} - {{recordTitle}}",
+    "order": 0,
+    "active": true,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "inputFields": [],
+    "createdAt": "2026-02-22T03:49:17.035Z",
+    "updatedAt": "2026-02-22T03:49:17.035Z",
+    "__v": 0
+  },
+  {
+    "_id": "699a8336cd6e752b3613e07a",
+    "name": "Nouveau SmartDocMon Template Contact",
+    "icon": "solar:document-bold-duotone",
+    "color": "#4361ee",
+    "documentId": "699a82e1cd6e752b3613e036",
+    "entityId": "69985b2114b503aa91f46d8b",
+    "outputFormat": "pdf",
+    "outputNameTemplate": "{{templateName}} - {{recordTitle}}",
+    "order": 0,
+    "active": true,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "inputFields": [],
+    "createdAt": "2026-02-22T04:16:54.751Z",
+    "updatedAt": "2026-02-22T04:16:54.751Z",
+    "__v": 0
+  },
+  {
+    "_id": "699c72d4ca130a58f1757e36",
+    "name": "Nouveau SmartDocCompte rendu de consultation",
+    "icon": "solar:document-bold-duotone",
+    "color": "#4361ee",
+    "documentId": "699c72bbca130a58f1757df2",
+    "entityId": "699857ef027e29bba9654b44",
+    "outputFormat": "pdf",
+    "outputNameTemplate": "{{templateName}} - {{recordTitle}}",
+    "order": 0,
+    "active": true,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "inputFields": [],
+    "createdAt": "2026-02-23T15:31:32.953Z",
+    "updatedAt": "2026-02-23T15:31:32.953Z",
+    "__v": 0
+  },
+  {
+    "_id": "699c7953ca130a58f1758dcb",
+    "name": "Nouveau SmartDocTemplate B",
+    "icon": "solar:document-bold-duotone",
+    "color": "#4361ee",
+    "documentId": "699c7944ca130a58f1758d95",
+    "entityId": "699857ef027e29bba9654b44",
+    "outputFormat": "pdf",
+    "outputNameTemplate": "{{templateName}} - {{recordTitle}}",
+    "order": 0,
+    "active": true,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "inputFields": [],
+    "createdAt": "2026-02-23T15:59:15.157Z",
+    "updatedAt": "2026-02-23T15:59:15.157Z",
+    "__v": 0
+  },
+  {
+    "_id": "699c798dca130a58f1758e1a",
+    "name": "Nouveau SmartDocTemplate C",
+    "icon": "solar:document-bold-duotone",
+    "color": "#4361ee",
+    "documentId": "699c7972ca130a58f1758de2",
+    "entityId": "699857ef027e29bba9654b44",
+    "outputFormat": "pdf",
+    "outputNameTemplate": "{{templateName}} - {{recordTitle}}",
+    "order": 0,
+    "active": true,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "inputFields": [],
+    "createdAt": "2026-02-23T16:00:13.523Z",
+    "updatedAt": "2026-02-23T16:00:13.523Z",
+    "__v": 0
+  },
+  {
+    "_id": "699cc32cd00006cf384cf79b",
+    "name": "Nouveau SmartDocCertificat m",
+    "icon": "solar:document-bold-duotone",
+    "color": "#4361ee",
+    "documentId": "699cc30fd00006cf384cf763",
+    "entityId": "699857ef027e29bba9654a6a",
+    "outputFormat": "pdf",
+    "outputNameTemplate": "{{templateName}} - {{recordTitle}}",
+    "order": 0,
+    "active": true,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "inputFields": [],
+    "createdAt": "2026-02-23T21:14:20.958Z",
+    "updatedAt": "2026-02-23T21:14:20.958Z",
+    "__v": 0
+  },
+  {
+    "_id": "699e192a6f480b28ac38fe42",
+    "name": "Nouveau SmartDocTest Template",
+    "icon": "solar:document-bold-duotone",
+    "color": "#4361ee",
+    "documentId": "699e191e6f480b28ac38fe01",
+    "entityId": "69985bd314b503aa91f47845",
+    "outputFormat": "pdf",
+    "outputNameTemplate": "{{templateName}} - {{recordTitle}}",
+    "order": 0,
+    "active": true,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "inputFields": [],
+    "createdAt": "2026-02-24T21:33:30.032Z",
+    "updatedAt": "2026-02-24T21:33:30.032Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a124cdde03671e05ed1c28",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "entityId": "6997902086a58861ddebefe7",
+    "name": "Ordonnance",
+    "__v": 0,
+    "active": true,
+    "color": "#e2a03f",
+    "createdAt": "2026-02-27T04:59:57.475Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Ordonnance",
+    "documentId": "69a124cdde03671e05ed1c27",
+    "icon": "solar:document-medicine-bold-duotone",
+    "inputFields": [],
+    "order": 0,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-03-02T10:19:48.335Z"
+  },
+  {
+    "_id": "69a124cdde03671e05ed1c2a",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "entityId": "69976d817c876dd8d0372def",
+    "name": "Certificat médical",
+    "__v": 0,
+    "active": true,
+    "color": "#3b82f6",
+    "createdAt": "2026-02-27T04:59:57.523Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Certificat médical",
+    "documentId": "69a124cdde03671e05ed1c29",
+    "icon": "solar:diploma-verified-bold-duotone",
+    "inputFields": [
+      {
+        "key": "date",
+        "label": "Date",
+        "type": "date",
+        "required": true
+      }
+    ],
+    "order": 1,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-03-02T10:19:48.338Z"
+  },
+  {
+    "_id": "69a124cdde03671e05ed1c2c",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "entityId": "6997902086a58861ddebefe7",
+    "name": "Compte rendu consultation",
+    "__v": 0,
+    "active": true,
+    "color": "#00ab55",
+    "createdAt": "2026-02-27T04:59:57.527Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Compte rendu consultation",
+    "documentId": "69a124cdde03671e05ed1c2b",
+    "icon": "solar:clipboard-text-bold-duotone",
+    "inputFields": [],
+    "order": 2,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-03-02T10:19:48.340Z"
+  },
+  {
+    "_id": "69a124cdde03671e05ed1c2e",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "entityId": "6997902086a58861ddebefe7",
+    "name": "Lettre orientation spécialiste",
+    "__v": 0,
+    "active": true,
+    "color": "#8b5cf6",
+    "createdAt": "2026-02-27T04:59:57.529Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Lettre orientation spécialiste",
+    "documentId": "69a124cdde03671e05ed1c2d",
+    "icon": "solar:letter-bold-duotone",
+    "inputFields": [],
+    "order": 3,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-03-02T10:19:48.341Z"
+  },
+  {
+    "_id": "69a124cdde03671e05ed1c30",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "entityId": "69976d817c876dd8d0372def",
+    "name": "Demande d'examen labo",
+    "__v": 0,
+    "active": true,
+    "color": "#f97316",
+    "createdAt": "2026-02-27T04:59:57.531Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Demande d'examen labo",
+    "documentId": "69a124cdde03671e05ed1c2f",
+    "icon": "solar:test-tube-bold-duotone",
+    "inputFields": [
+      {
+        "key": "date",
+        "label": "Date",
+        "type": "date",
+        "required": true
+      }
+    ],
+    "order": 4,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-03-02T10:19:48.343Z"
+  },
+  {
+    "_id": "69a124cdde03671e05ed1c32",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "entityId": "69976d817c876dd8d0372def",
+    "name": "Arrêt de travail",
+    "__v": 0,
+    "active": true,
+    "color": "#ef4444",
+    "createdAt": "2026-02-27T04:59:57.533Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Arrêt de travail",
+    "documentId": "69a124cdde03671e05ed1c31",
+    "icon": "solar:calendar-bold-duotone",
+    "inputFields": [
+      {
+        "key": "date",
+        "label": "Date",
+        "type": "date",
+        "required": true
+      }
+    ],
+    "order": 5,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-03-02T10:19:48.344Z"
+  },
+  {
+    "_id": "69a124cdde03671e05ed1c34",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "entityId": "69976d817c876dd8d0372def",
+    "name": "Attestation de présence",
+    "__v": 0,
+    "active": true,
+    "color": "#6366f1",
+    "createdAt": "2026-02-27T04:59:57.536Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Attestation de présence",
+    "documentId": "69a124cdde03671e05ed1c33",
+    "icon": "solar:document-text-bold-duotone",
+    "inputFields": [
+      {
+        "key": "date",
+        "label": "Date",
+        "type": "date",
+        "required": true
+      }
+    ],
+    "order": 6,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-03-02T10:19:48.346Z"
+  },
+  {
+    "_id": "69a124cdde03671e05ed1c36",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "entityId": "69976d817c876dd8d0372def",
+    "name": "Fiche patient résumé",
+    "__v": 0,
+    "active": true,
+    "color": "#3b82f6",
+    "createdAt": "2026-02-27T04:59:57.538Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Fiche patient résumé",
+    "documentId": "69a124cdde03671e05ed1c35",
+    "icon": "solar:user-bold-duotone",
+    "inputFields": [
+      {
+        "key": "date",
+        "label": "Date",
+        "type": "date",
+        "required": true
+      }
+    ],
+    "order": 7,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-03-02T10:19:48.347Z"
+  },
+  {
+    "_id": "69a124cdde03671e05ed1c38",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "entityId": "699854725508dee5e627ab9f",
+    "name": "Facture PDF",
+    "__v": 0,
+    "active": true,
+    "color": "#e2a03f",
+    "createdAt": "2026-02-27T04:59:57.540Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Facture PDF",
+    "documentId": "69a124cdde03671e05ed1c37",
+    "icon": "solar:bill-list-bold-duotone",
+    "inputFields": [],
+    "order": 8,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-03-02T10:19:48.348Z"
+  },
+  {
+    "_id": "69a124cdde03671e05ed1c3a",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "entityId": "69976d817c876dd8d0372def",
+    "name": "Consentement éclairé",
+    "__v": 0,
+    "active": true,
+    "color": "#22c55e",
+    "createdAt": "2026-02-27T04:59:57.542Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "description": "Modèle Consentement éclairé",
+    "documentId": "69a124cdde03671e05ed1c39",
+    "icon": "solar:shield-check-bold-duotone",
+    "inputFields": [
+      {
+        "key": "date",
+        "label": "Date",
+        "type": "date",
+        "required": true
+      }
+    ],
+    "order": 9,
+    "outputFormat": "pdf",
+    "updatedAt": "2026-03-02T10:19:48.350Z"
+  }
+]

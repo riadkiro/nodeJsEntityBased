@@ -1,0 +1,250 @@
+[
+  {
+    "_id": "69820f2ce1a58558b2e2bfc5",
+    "workspaceId": "5001",
+    "name": "Créer personne - Unsplash search",
+    "description": "",
+    "enabled": true,
+    "trigger": {
+      "type": "record.created",
+      "entityId": "69733f6433f2b10fa6122245"
+    },
+    "steps": [
+      {
+        "id": "step1",
+        "type": "action",
+        "providerKey": "unsplash",
+        "actionId": "698203c651a0e3777df6200b"
+      }
+    ],
+    "createdAt": "2026-02-03T15:07:24.989Z",
+    "updatedAt": "2026-02-03T15:07:27.708Z",
+    "__v": 0
+  },
+  {
+    "_id": "698726639d55244a1cf7874c",
+    "workspaceId": "5756",
+    "name": "Bonjour Chatgpt",
+    "description": "",
+    "category": "automation",
+    "enabled": true,
+    "trigger": {
+      "type": "manual.button",
+      "entityId": "6985e6970d65eb6211a70817"
+    },
+    "steps": [
+      {
+        "id": "step_1",
+        "type": "action",
+        "providerKey": "openai",
+        "actionId": "6982ca8351a0e3777df62010",
+        "inputMapping": {
+          "model": "gpt-4o-mini",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Bonjour"
+            }
+          ]
+        }
+      }
+    ],
+    "settings": {
+      "idempotencyWindow": 5000,
+      "async": false,
+      "maxRetries": 0
+    },
+    "createdAt": "2026-02-07T11:47:47.486Z",
+    "updatedAt": "2026-02-07T11:48:08.043Z",
+    "__v": 0
+  },
+  {
+    "_id": "6987280a764bed56474b524e",
+    "workspaceId": "5001",
+    "name": "Bonjour GPT",
+    "description": "Dis bonjour a openAI",
+    "category": "automation",
+    "enabled": true,
+    "trigger": {
+      "type": "manual.button",
+      "entityId": "69733f6433f2b10fa6122245"
+    },
+    "steps": [
+      {
+        "id": "step_1",
+        "type": "action",
+        "providerKey": "openai",
+        "actionId": "6982ca8351a0e3777df62010",
+        "inputMapping": {
+          "model": "gpt-4o-mini",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Bonjour"
+            }
+          ]
+        },
+        "uiState": {
+          "mode": "ui",
+          "entityId": "",
+          "recordRef": {
+            "type": "trigger",
+            "value": ""
+          }
+        }
+      },
+      {
+        "id": "step_2",
+        "type": "action",
+        "providerKey": "app",
+        "actionId": "698732d7dc0731b0e1a8eb8d",
+        "inputMapping": {
+          "entityId": "6974fa513c65b095a571fb68",
+          "title": "{{steps.step_1.content}}"
+        },
+        "uiState": {
+          "mode": "ui",
+          "entityId": "6974fa513c65b095a571fb68",
+          "recordRef": {
+            "type": "trigger",
+            "value": ""
+          },
+          "fieldValues": {
+            "title": {
+              "value": "{{steps.step_1.content}}",
+              "isVariable": true
+            },
+            "description": {
+              "value": "",
+              "isVariable": false
+            }
+          }
+        }
+      }
+    ],
+    "settings": {
+      "idempotencyWindow": 5000,
+      "async": false,
+      "maxRetries": 0
+    },
+    "createdAt": "2026-02-07T11:54:50.913Z",
+    "updatedAt": "2026-02-07T13:24:28.350Z",
+    "__v": 0
+  },
+  {
+    "_id": "6988d87aae2924416ad51870",
+    "workspaceId": "5001",
+    "name": "Creer tache",
+    "description": "",
+    "category": "automation",
+    "enabled": true,
+    "trigger": {
+      "type": "manual.button",
+      "scope": "global"
+    },
+    "contextBindings": [],
+    "steps": [
+      {
+        "id": "step_1",
+        "type": "action",
+        "providerKey": "openai",
+        "actionId": "6982ca8351a0e3777df62010",
+        "inputMapping": {
+          "model": "gpt-4o-mini",
+          "messages": [
+            {
+              "role": "user",
+              "content": "donnes le nom d'une actrice américaine"
+            }
+          ],
+          "temperature": 0.7,
+          "max_tokens": 1000,
+          "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+              "name": "response",
+              "strict": true,
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nom": {
+                    "type": "string"
+                  },
+                  "prenom": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "nom",
+                  "prenom"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "uiState": {
+          "mode": "ui",
+          "entityId": "",
+          "recordRef": {
+            "type": "trigger",
+            "value": ""
+          },
+          "externalFieldValues": {
+            "model": "gpt-4o-mini",
+            "temperature": 0.7,
+            "max_tokens": 1000,
+            "response_format": "json_object",
+            "json_in_prompt": false,
+            "json_schema": "{\n  \"nom\": \"string\",\n  \"prenom\": \"string\"\n}",
+            "user_prompt": "donnes le nom d'une actrice américaine"
+          }
+        }
+      },
+      {
+        "id": "step_2",
+        "type": "action",
+        "providerKey": "app",
+        "actionId": "698732d7dc0731b0e1a8eb8d",
+        "inputMapping": {
+          "entityId": "69733f6433f2b10fa6122245",
+          "title": "{{steps.step_1.content.nom}} {{steps.step_1.content.prenom}} ",
+          "customFields": {
+            "697dad0651a0e3777df61fac": "{{steps.step_1.content.nom}} ",
+            "697dad0651a0e3777df61fad": "{{steps.step_1.content.prenom}} "
+          }
+        },
+        "uiState": {
+          "mode": "ui",
+          "entityId": "69733f6433f2b10fa6122245",
+          "recordRef": {
+            "type": "trigger",
+            "value": ""
+          },
+          "fieldValues": {
+            "title": {
+              "value": "{{steps.step_1.content.nom}} {{steps.step_1.content.prenom}} ",
+              "isVariable": true
+            },
+            "697dad0651a0e3777df61fac": {
+              "value": "{{steps.step_1.content.nom}} ",
+              "isVariable": true
+            },
+            "697dad0651a0e3777df61fad": {
+              "value": "{{steps.step_1.content.prenom}} ",
+              "isVariable": true
+            }
+          }
+        }
+      }
+    ],
+    "settings": {
+      "idempotencyWindow": 5000,
+      "async": false,
+      "maxRetries": 0
+    },
+    "createdAt": "2026-02-08T18:39:54.716Z",
+    "updatedAt": "2026-02-09T05:22:44.209Z",
+    "__v": 0
+  }
+]

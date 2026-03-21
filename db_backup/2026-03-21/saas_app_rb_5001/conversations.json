@@ -1,0 +1,84 @@
+[
+  {
+    "_id": "698ce1bbaa80872d9601551a",
+    "type": "direct",
+    "name": "",
+    "avatar": "",
+    "participants": [
+      {
+        "userId": "643c0b36fbde1ceb1bdc97bb",
+        "name": "Riad Boukirou",
+        "email": "boukirou6@hotmail.com",
+        "avatar": "",
+        "role": "admin",
+        "lastReadAt": "2026-02-14T22:20:47.578Z",
+        "unreadCount": 0,
+        "_id": "698ce1bbaa80872d9601551b",
+        "joinedAt": "2026-02-11T20:08:27.635Z"
+      },
+      {
+        "userId": "698ce1bbaa80872d96015512",
+        "name": "Sarah Martin",
+        "email": "sarah.test@demo.com",
+        "avatar": "",
+        "role": "member",
+        "lastReadAt": "2026-02-11T21:03:53.278Z",
+        "unreadCount": 0,
+        "_id": "698ce1bbaa80872d9601551c",
+        "joinedAt": "2026-02-11T20:08:27.636Z"
+      }
+    ],
+    "lastMessage": {
+      "text": "Test message 3 working!",
+      "senderId": "643c0b36fbde1ceb1bdc97bb",
+      "senderName": "Riad Boukirou",
+      "sentAt": "2026-02-11T20:49:24.475Z",
+      "type": "text"
+    },
+    "archived": false,
+    "createdAt": "2026-02-11T20:08:27.636Z",
+    "updatedAt": "2026-02-11T20:49:24.477Z",
+    "__v": 0
+  },
+  {
+    "_id": "698ce1bbaa80872d96015533",
+    "type": "direct",
+    "name": "",
+    "avatar": "",
+    "participants": [
+      {
+        "userId": "643c0b36fbde1ceb1bdc97bb",
+        "name": "Riad Boukirou",
+        "email": "boukirou6@hotmail.com",
+        "avatar": "",
+        "role": "admin",
+        "lastReadAt": "2026-02-13T11:53:27.271Z",
+        "unreadCount": 0,
+        "_id": "698ce1bbaa80872d96015534",
+        "joinedAt": "2026-02-11T20:08:27.819Z"
+      },
+      {
+        "userId": "698ce1bbaa80872d96015516",
+        "name": "Karim Benali",
+        "email": "karim.test@demo.com",
+        "avatar": "",
+        "role": "member",
+        "lastReadAt": null,
+        "unreadCount": 0,
+        "_id": "698ce1bbaa80872d96015535",
+        "joinedAt": "2026-02-11T20:08:27.819Z"
+      }
+    ],
+    "lastMessage": {
+      "text": "Parfait ! Je prépare les specs.",
+      "senderId": "698ce1bbaa80872d96015516",
+      "senderName": "Karim Benali",
+      "sentAt": "2026-02-11T19:08:27.804Z",
+      "type": "text"
+    },
+    "archived": false,
+    "createdAt": "2026-02-11T20:08:27.819Z",
+    "updatedAt": "2026-02-11T19:08:27.804Z",
+    "__v": 0
+  }
+]

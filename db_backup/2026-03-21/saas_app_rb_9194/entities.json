@@ -1,0 +1,1373 @@
+[
+  {
+    "_id": "69a82c8a49972f3d2fbbb2c4",
+    "name": "Personnels",
+    "nameSingular": "Personnel",
+    "namePlural": "Personnels",
+    "slug": "personnels",
+    "description": "",
+    "icon": "",
+    "color": "",
+    "order": 0,
+    "enabledStandardFields": [
+      "icon",
+      "attachments",
+      "image",
+      "slug",
+      "date"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "69a53cf6b494ed52e93e5df5",
+        "_id": "69a899c35d8442f256e9f730"
+      },
+      {
+        "t": "text",
+        "v": "  ",
+        "_id": "69a899c35d8442f256e9f731"
+      },
+      {
+        "t": "field",
+        "id": "69a53cfbde03671e05ed22b4",
+        "_id": "69a899c35d8442f256e9f732"
+      }
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [
+      "69a53cf6b494ed52e93e5df5",
+      "69a53cfbde03671e05ed22b4",
+      "69a53cf6b494ed52e93e5dfe",
+      "69a82cc949972f3d2fbbb5f5",
+      "69a82cf849972f3d2fbbb7a8",
+      "69a82d0749972f3d2fbbb94f",
+      "69a82d5049972f3d2fbbbb1e"
+    ],
+    "statusClassification": null,
+    "classifications": [],
+    "relations": [
+      {
+        "key": "ec3bbb74-df03-40e0-887e-6450a79dd714",
+        "targetEntity": "69a830f549972f3d2fbbf6de",
+        "label": "EPI",
+        "inverseLabel": "",
+        "cardinality": "many-to-many",
+        "inputMode": "autocomplete",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": false,
+        "_id": "69a831fb49972f3d2fbc1bb4"
+      }
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "headerConfig": {
+      "showIcon": true,
+      "avatarSource": {
+        "type": "entity-icon"
+      },
+      "showTitle": true,
+      "titleSource": {
+        "type": "entity"
+      },
+      "showClassifications": true,
+      "shownClassifications": [],
+      "showAttachments": true,
+      "shownRelations": [
+        "ec3bbb74-df03-40e0-887e-6450a79dd714",
+        "inv_b3298737-b158-4dd2-a3cd-87f8817a7f65"
+      ],
+      "heroFields": [
+        {
+          "fieldId": "69a82cc949972f3d2fbbb5f5",
+          "entitySource": "self",
+          "maxChars": 20
+        },
+        {
+          "fieldId": "69a82cf849972f3d2fbbb7a8",
+          "entitySource": "self",
+          "maxChars": 20
+        },
+        {
+          "fieldId": "69a82d0749972f3d2fbbb94f",
+          "entitySource": "self",
+          "maxChars": 20
+        },
+        {
+          "fieldId": "69a53cf6b494ed52e93e5dfe",
+          "entitySource": "self",
+          "maxChars": 20
+        }
+      ],
+      "metaFields": [],
+      "subtitleRelation": {
+        "displayFields": []
+      },
+      "showDuration": false
+    },
+    "enableAttachments": true,
+    "layout": [],
+    "gridSchemas": [],
+    "createdAt": "2026-03-04T12:58:50.668Z",
+    "updatedAt": "2026-03-08T17:11:04.990Z",
+    "__v": 35,
+    "sidebarWidgets": [
+      {
+        "_id": "69a874049945ab1233f44c5f",
+        "type": "link",
+        "label": "Lien",
+        "icon": "solar:link-round-bold-duotone",
+        "color": "#3b82f6",
+        "order": 0,
+        "visible": true,
+        "config": {
+          "url": "",
+          "description": "",
+          "newTab": true
+        }
+      },
+      {
+        "_id": "69a88c1e9945ab1233f46add",
+        "type": "note",
+        "label": "Note",
+        "icon": "solar:notes-bold-duotone",
+        "color": "#6366f1",
+        "order": 1,
+        "visible": true,
+        "config": {
+          "content": "M3asseb\n"
+        }
+      },
+      {
+        "_id": "69a8911b5d8442f256e9e4e6",
+        "type": "tasks",
+        "label": "Tasks",
+        "icon": "solar:checklist-bold-duotone",
+        "color": "#ec4899",
+        "order": 2,
+        "visible": true,
+        "config": {
+          "tasks": [
+            {
+              "label": "Check stock levels",
+              "done": true
+            },
+            {
+              "label": "Prepare report",
+              "done": true
+            },
+            {
+              "label": "Livrer la commande",
+              "done": false
+            },
+            {
+              "label": "Test",
+              "done": true
+            },
+            {
+              "label": "Appel dmaina 15h",
+              "done": false
+            }
+          ]
+        }
+      },
+      {
+        "_id": "69a898ba5d8442f256e9f02a",
+        "type": "link",
+        "label": "Lien 2",
+        "icon": "solar:link-round-bold-duotone",
+        "color": "#10b981",
+        "order": 3,
+        "visible": true,
+        "config": {
+          "url": "",
+          "description": "",
+          "newTab": true
+        }
+      }
+    ]
+  },
+  {
+    "_id": "69a830f549972f3d2fbbf6de",
+    "name": "EPI",
+    "nameSingular": "EPI",
+    "namePlural": "EPIs",
+    "slug": "epi",
+    "description": "",
+    "icon": "solar:alt-arrow-up-bold-duotone",
+    "color": "",
+    "order": 0,
+    "enabledStandardFields": [
+      "description",
+      "icon",
+      "attachments",
+      "image",
+      "slug",
+      "date"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "69a830f549972f3d2fbbf6df"
+      }
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [
+      "69a53cf6b494ed52e93e5e04",
+      "69a53cf6b494ed52e93e5e05"
+    ],
+    "statusClassification": null,
+    "classifications": [],
+    "relations": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "headerConfig": {
+      "showIcon": true,
+      "avatarSource": {
+        "type": "entity-icon"
+      },
+      "showTitle": true,
+      "titleSource": {
+        "type": "entity"
+      },
+      "showClassifications": true,
+      "shownClassifications": [],
+      "showAttachments": true,
+      "shownRelations": [],
+      "subtitleRelation": {
+        "displayFields": []
+      },
+      "showDuration": false,
+      "heroFields": [],
+      "metaFields": []
+    },
+    "enableAttachments": true,
+    "layout": [],
+    "gridSchemas": [],
+    "createdAt": "2026-03-04T13:17:41.627Z",
+    "updatedAt": "2026-03-04T13:17:41.627Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a832d249972f3d2fbc2e14",
+    "name": "Commandes",
+    "nameSingular": "Commande",
+    "namePlural": "Commandes",
+    "slug": "commandes",
+    "description": "",
+    "icon": "",
+    "color": "",
+    "order": 0,
+    "enabledStandardFields": [
+      "description",
+      "icon",
+      "attachments",
+      "image",
+      "slug",
+      "date"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "text",
+        "v": "Commande - ",
+        "_id": "69a8357f49972f3d2fbc788a"
+      },
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "69a8357f49972f3d2fbc788b"
+      }
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [],
+    "statusClassification": null,
+    "classifications": [],
+    "relations": [
+      {
+        "key": "b3298737-b158-4dd2-a3cd-87f8817a7f65",
+        "targetEntity": "69a82c8a49972f3d2fbbb2c4",
+        "label": "Personnels",
+        "inverseLabel": "",
+        "cardinality": "one-to-one",
+        "inputMode": "autocomplete",
+        "storage": "on-target",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": false,
+        "required": false,
+        "_id": "69a832d249972f3d2fbc2e16"
+      },
+      {
+        "key": "2c14499b-1a56-4a74-b23b-10135222c0f5",
+        "targetEntity": "69a830f549972f3d2fbbf6de",
+        "label": "EPI",
+        "inverseLabel": "",
+        "cardinality": "one-to-many",
+        "inputMode": "autocomplete",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": false,
+        "required": false,
+        "_id": "69a832d249972f3d2fbc2e17"
+      }
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "headerConfig": {
+      "showIcon": true,
+      "avatarSource": {
+        "type": "entity-icon"
+      },
+      "showTitle": true,
+      "titleSource": {
+        "type": "entity"
+      },
+      "showClassifications": true,
+      "shownClassifications": [],
+      "showAttachments": true,
+      "shownRelations": [],
+      "heroFields": [],
+      "metaFields": [],
+      "subtitleRelation": {
+        "displayFields": []
+      },
+      "showDuration": false
+    },
+    "enableAttachments": true,
+    "layout": [],
+    "gridSchemas": [],
+    "createdAt": "2026-03-04T13:25:38.803Z",
+    "updatedAt": "2026-03-04T13:37:03.477Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1c8",
+    "slug": "patients",
+    "__v": 0,
+    "classifications": [
+      "69b911479bb20cc26f24d1c6"
+    ],
+    "color": "#3b82f6",
+    "createdAt": "2026-03-17T08:31:03.661Z",
+    "customFields": [
+      "69b911479bb20cc26f24d186",
+      "69b911479bb20cc26f24d187",
+      "69b911479bb20cc26f24d188",
+      "69b911479bb20cc26f24d189",
+      "69b911479bb20cc26f24d18a",
+      "69b911479bb20cc26f24d18b",
+      "69b911479bb20cc26f24d18c",
+      "69b911479bb20cc26f24d18d",
+      "69b911479bb20cc26f24d18e",
+      "69b911479bb20cc26f24d18f",
+      "69b911479bb20cc26f24d190",
+      "69b911479bb20cc26f24d191",
+      "69b911479bb20cc26f24d192",
+      "69b911479bb20cc26f24d1bd"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:user-heart-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Patient",
+    "namePlural": "Patients",
+    "nameSingular": "Patient",
+    "order": 0,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "69b911479bb20cc26f24d187"
+      },
+      {
+        "t": "text",
+        "v": " "
+      },
+      {
+        "t": "field",
+        "id": "69b911479bb20cc26f24d186"
+      }
+    ],
+    "relations": [],
+    "sidebarWidgets": [
+      {
+        "type": "note",
+        "label": "Notes patient",
+        "icon": "solar:notes-bold-duotone",
+        "color": "#3b82f6",
+        "order": 0,
+        "visible": true,
+        "config": {
+          "content": ""
+        }
+      },
+      {
+        "type": "tasks",
+        "label": "Suivi",
+        "icon": "solar:checklist-bold-duotone",
+        "color": "#22c55e",
+        "order": 1,
+        "visible": true,
+        "config": {
+          "tasks": [
+            {
+              "label": "Vérifier vaccinations",
+              "done": false
+            },
+            {
+              "label": "Contrôle tension",
+              "done": false
+            },
+            {
+              "label": "Bilan sanguin annuel",
+              "done": false
+            }
+          ]
+        }
+      }
+    ],
+    "spaces": [],
+    "updatedAt": "2026-03-17T08:31:03.661Z"
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1c9",
+    "slug": "rendez-vous",
+    "__v": 0,
+    "classifications": [],
+    "color": "#8b5cf6",
+    "createdAt": "2026-03-17T08:31:03.664Z",
+    "customFields": [
+      "69b911479bb20cc26f24d1b1",
+      "69b911479bb20cc26f24d1b2",
+      "69b911479bb20cc26f24d1b3",
+      "69b911479bb20cc26f24d1b0"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:calendar-mark-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Rendez-vous",
+    "namePlural": "Rendez-vous",
+    "nameSingular": "Rendez-vous",
+    "order": 1,
+    "relations": [
+      {
+        "key": "e5c1176a-e2bf-408b-8f94-647cbda6b557",
+        "targetEntity": "69b911479bb20cc26f24d1c8",
+        "label": "Patient",
+        "inverseLabel": "Rendez-vous",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "spaces": [],
+    "statusClassification": "69b911479bb20cc26f24d1c1",
+    "updatedAt": "2026-03-17T08:31:03.702Z",
+    "referenceTitleTokens": [
+      {
+        "t": "text",
+        "v": "RDV - "
+      },
+      {
+        "t": "field",
+        "id": "rel:e5c1176a-e2bf-408b-8f94-647cbda6b557.title"
+      }
+    ]
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1ca",
+    "slug": "consultations",
+    "__v": 0,
+    "classifications": [
+      "69b911479bb20cc26f24d1c2"
+    ],
+    "color": "#00ab55",
+    "createdAt": "2026-03-17T08:31:03.666Z",
+    "customFields": [
+      "69b911479bb20cc26f24d193",
+      "69b911479bb20cc26f24d194",
+      "69b911479bb20cc26f24d196",
+      "69b911479bb20cc26f24d195",
+      "69b911479bb20cc26f24d197",
+      "69b911479bb20cc26f24d198",
+      "69b911479bb20cc26f24d199",
+      "69b911479bb20cc26f24d19a",
+      "69b911479bb20cc26f24d19b",
+      "69b911479bb20cc26f24d19c",
+      "69b911479bb20cc26f24d1b0",
+      "69b911479bb20cc26f24d1be"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:stethoscope-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Consultation",
+    "namePlural": "Consultations",
+    "nameSingular": "Consultation",
+    "order": 2,
+    "relations": [
+      {
+        "key": "09096dae-e504-4444-b7e3-a8b5390b0c07",
+        "targetEntity": "69b911479bb20cc26f24d1c8",
+        "label": "Patient",
+        "inverseLabel": "Consultations",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      },
+      {
+        "key": "80aa260a-b29e-44af-9e57-00567d3365b4",
+        "targetEntity": "69b911479bb20cc26f24d1c9",
+        "label": "Rendez-vous",
+        "inverseLabel": "Consultation",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      },
+      {
+        "key": "83c325af-025b-4b0a-a76a-a4c4b1d7fda6",
+        "targetEntity": "69b911479bb20cc26f24d1d5",
+        "label": "Symptômes",
+        "inverseLabel": "Consultations",
+        "cardinality": "many-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "sidebarWidgets": [
+      {
+        "type": "note",
+        "label": "Observations",
+        "icon": "solar:clipboard-text-bold-duotone",
+        "color": "#00ab55",
+        "order": 0,
+        "visible": true,
+        "config": {
+          "content": ""
+        }
+      }
+    ],
+    "spaces": [],
+    "updatedAt": "2026-03-17T08:31:03.702Z",
+    "referenceTitleTokens": [
+      {
+        "t": "text",
+        "v": "Consult. "
+      },
+      {
+        "t": "field",
+        "id": "rel:09096dae-e504-4444-b7e3-a8b5390b0c07.title"
+      },
+      {
+        "t": "text",
+        "v": " - "
+      },
+      {
+        "t": "field",
+        "id": "69b911479bb20cc26f24d193"
+      }
+    ]
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1cb",
+    "slug": "prescriptions",
+    "__v": 0,
+    "classifications": [],
+    "color": "#e2a03f",
+    "createdAt": "2026-03-17T08:31:03.667Z",
+    "customFields": [
+      "69b911479bb20cc26f24d19d",
+      "69b911479bb20cc26f24d19e",
+      "69b911479bb20cc26f24d19f"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:document-medicine-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Prescription",
+    "namePlural": "Prescriptions",
+    "nameSingular": "Prescription",
+    "order": 3,
+    "relations": [
+      {
+        "key": "22afb2e3-52c0-4d52-bf58-3d688836403e",
+        "targetEntity": "69b911479bb20cc26f24d1c8",
+        "label": "Patient",
+        "inverseLabel": "Prescriptions",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      },
+      {
+        "key": "33c8c990-6688-4adf-b290-1bc3d8e80f9d",
+        "targetEntity": "69b911479bb20cc26f24d1ca",
+        "label": "Consultation",
+        "inverseLabel": "Prescriptions",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      },
+      {
+        "key": "01565c38-e209-41eb-9f20-eb921484d6a9",
+        "targetEntity": "69b911479bb20cc26f24d1cc",
+        "label": "Médicament",
+        "inverseLabel": "Prescriptions",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "sidebarWidgets": [
+      {
+        "type": "note",
+        "label": "Note pharmacien",
+        "icon": "solar:notes-bold-duotone",
+        "color": "#e2a03f",
+        "order": 0,
+        "visible": true,
+        "config": {
+          "content": ""
+        }
+      }
+    ],
+    "spaces": [],
+    "updatedAt": "2026-03-17T08:31:03.804Z",
+    "referenceTitleTokens": [
+      {
+        "t": "text",
+        "v": "Ordonnance "
+      },
+      {
+        "t": "field",
+        "id": "rel:22afb2e3-52c0-4d52-bf58-3d688836403e.title"
+      }
+    ],
+    "gridSchemas": [
+      {
+        "schemaId": "69b911479bb20cc26f24d1ec",
+        "position": "main",
+        "order": 0,
+        "label": "Traitements"
+      }
+    ]
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1cc",
+    "slug": "medicaments",
+    "__v": 0,
+    "classifications": [],
+    "color": "#ef4444",
+    "createdAt": "2026-03-17T08:31:03.669Z",
+    "customFields": [
+      "69b911479bb20cc26f24d1a0",
+      "69b911479bb20cc26f24d1a1",
+      "69b911479bb20cc26f24d1a2",
+      "69b911479bb20cc26f24d1a3",
+      "69b911479bb20cc26f24d1a4",
+      "69b911479bb20cc26f24d1b0"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:pills-3-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Médicament",
+    "namePlural": "Médicaments",
+    "nameSingular": "Médicament",
+    "order": 4,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title"
+      }
+    ],
+    "relations": [],
+    "spaces": [],
+    "updatedAt": "2026-03-17T08:31:03.669Z"
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1cd",
+    "slug": "factures",
+    "__v": 0,
+    "classifications": [],
+    "color": "#e2a03f",
+    "createdAt": "2026-03-17T08:31:03.670Z",
+    "customFields": [
+      "69b911479bb20cc26f24d1a5",
+      "69b911479bb20cc26f24d1a6",
+      "69b911479bb20cc26f24d1a7",
+      "69b911479bb20cc26f24d1b0",
+      "69b911479bb20cc26f24d1bf"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:bill-list-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Facture",
+    "namePlural": "Factures",
+    "nameSingular": "Facture",
+    "order": 5,
+    "relations": [
+      {
+        "key": "5573a44a-ad20-4784-bc64-7e2ca6c7ee86",
+        "targetEntity": "69b911479bb20cc26f24d1ca",
+        "label": "Consultation",
+        "inverseLabel": "Factures",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      },
+      {
+        "key": "961c949b-fe2d-4146-a77f-8a8edddfe30c",
+        "targetEntity": "69b911479bb20cc26f24d1c8",
+        "label": "Patient",
+        "inverseLabel": "Factures",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "sidebarWidgets": [
+      {
+        "type": "tasks",
+        "label": "Suivi paiement",
+        "icon": "solar:checklist-bold-duotone",
+        "color": "#e2a03f",
+        "order": 0,
+        "visible": true,
+        "config": {
+          "tasks": [
+            {
+              "label": "Facture envoyée",
+              "done": false
+            },
+            {
+              "label": "Relance effectuée",
+              "done": false
+            },
+            {
+              "label": "Paiement reçu",
+              "done": false
+            },
+            {
+              "label": "Comptabilisée",
+              "done": false
+            }
+          ]
+        }
+      },
+      {
+        "type": "note",
+        "label": "Remarques",
+        "icon": "solar:notes-bold-duotone",
+        "color": "#94a3b8",
+        "order": 1,
+        "visible": true,
+        "config": {
+          "content": ""
+        }
+      }
+    ],
+    "spaces": [],
+    "statusClassification": "69b911479bb20cc26f24d1c3",
+    "updatedAt": "2026-03-17T08:31:03.805Z",
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title"
+      },
+      {
+        "t": "text",
+        "v": " - "
+      },
+      {
+        "t": "field",
+        "id": "rel:961c949b-fe2d-4146-a77f-8a8edddfe30c.title"
+      }
+    ],
+    "gridSchemas": [
+      {
+        "schemaId": "69b911479bb20cc26f24d1ed",
+        "position": "main",
+        "order": 0,
+        "label": "Lignes de facturation"
+      }
+    ]
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1ce",
+    "slug": "paiements",
+    "__v": 0,
+    "classifications": [],
+    "color": "#22c55e",
+    "createdAt": "2026-03-17T08:31:03.672Z",
+    "customFields": [
+      "69b911479bb20cc26f24d1a5",
+      "69b911479bb20cc26f24d1a8",
+      "69b911479bb20cc26f24d1a9",
+      "69b911479bb20cc26f24d1b0"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:wallet-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Paiement",
+    "namePlural": "Paiements",
+    "nameSingular": "Paiement",
+    "order": 6,
+    "relations": [
+      {
+        "key": "6337db0a-99c1-4056-807c-e23d0c431ecc",
+        "targetEntity": "69b911479bb20cc26f24d1cd",
+        "label": "Facture",
+        "inverseLabel": "Paiements",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "spaces": [],
+    "statusClassification": "69b911479bb20cc26f24d1c4",
+    "updatedAt": "2026-03-17T08:31:03.705Z",
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title"
+      },
+      {
+        "t": "text",
+        "v": " - "
+      },
+      {
+        "t": "field",
+        "id": "rel:6337db0a-99c1-4056-807c-e23d0c431ecc.title"
+      }
+    ]
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1cf",
+    "slug": "assurances",
+    "__v": 0,
+    "classifications": [],
+    "color": "#3b82f6",
+    "createdAt": "2026-03-17T08:31:03.674Z",
+    "customFields": [
+      "69b911479bb20cc26f24d1b5",
+      "69b911479bb20cc26f24d1b4",
+      "69b911479bb20cc26f24d1b6",
+      "69b911479bb20cc26f24d18a",
+      "69b911479bb20cc26f24d18b",
+      "69b911479bb20cc26f24d1b0"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:shield-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Assurance",
+    "namePlural": "Assurances",
+    "nameSingular": "Assurance",
+    "order": 7,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "69b911479bb20cc26f24d1b5"
+      },
+      {
+        "t": "text",
+        "v": " - "
+      },
+      {
+        "t": "field",
+        "id": "69b911479bb20cc26f24d1b4"
+      }
+    ],
+    "relations": [],
+    "spaces": [],
+    "updatedAt": "2026-03-17T08:31:03.674Z"
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1d0",
+    "slug": "resultats-labo",
+    "__v": 0,
+    "classifications": [
+      "69b911479bb20cc26f24d1c7"
+    ],
+    "color": "#f97316",
+    "createdAt": "2026-03-17T08:31:03.675Z",
+    "customFields": [
+      "69b911479bb20cc26f24d1aa",
+      "69b911479bb20cc26f24d1ab",
+      "69b911479bb20cc26f24d1ac",
+      "69b911479bb20cc26f24d1ad",
+      "69b911479bb20cc26f24d1b0"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:test-tube-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Résultat Labo",
+    "namePlural": "Résultats Labo",
+    "nameSingular": "Résultat Labo",
+    "order": 8,
+    "relations": [
+      {
+        "key": "c3f5fa5b-4dd2-4ddc-bdec-d47914a19e53",
+        "targetEntity": "69b911479bb20cc26f24d1c8",
+        "label": "Patient",
+        "inverseLabel": "Résultats labo",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "spaces": [],
+    "updatedAt": "2026-03-17T08:31:03.706Z",
+    "referenceTitleTokens": [
+      {
+        "t": "text",
+        "v": "Analyse "
+      },
+      {
+        "t": "field",
+        "id": "rel:c3f5fa5b-4dd2-4ddc-bdec-d47914a19e53.title"
+      },
+      {
+        "t": "text",
+        "v": " - "
+      },
+      {
+        "t": "field",
+        "id": "69b911479bb20cc26f24d1aa"
+      }
+    ]
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1d1",
+    "slug": "documents-medicaux",
+    "__v": 0,
+    "classifications": [],
+    "color": "#6366f1",
+    "createdAt": "2026-03-17T08:31:03.677Z",
+    "customFields": [
+      "69b911479bb20cc26f24d1b7",
+      "69b911479bb20cc26f24d1b0"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:file-text-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Document Médical",
+    "namePlural": "Documents Médicaux",
+    "nameSingular": "Document Médical",
+    "order": 9,
+    "relations": [
+      {
+        "key": "cb541503-a831-44e8-9d83-a081bfc1776f",
+        "targetEntity": "69b911479bb20cc26f24d1c8",
+        "label": "Patient",
+        "inverseLabel": "Documents",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "spaces": [],
+    "updatedAt": "2026-03-17T08:31:03.706Z",
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "69b911479bb20cc26f24d1b7"
+      },
+      {
+        "t": "text",
+        "v": " - "
+      },
+      {
+        "t": "field",
+        "id": "rel:cb541503-a831-44e8-9d83-a081bfc1776f.title"
+      }
+    ]
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1d2",
+    "slug": "plans-traitement",
+    "__v": 0,
+    "classifications": [],
+    "color": "#0ea5e9",
+    "createdAt": "2026-03-17T08:31:03.678Z",
+    "customFields": [
+      "69b911479bb20cc26f24d1b8",
+      "69b911479bb20cc26f24d1b9",
+      "69b911479bb20cc26f24d19e",
+      "69b911479bb20cc26f24d1b0"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:clipboard-list-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Plan de Traitement",
+    "namePlural": "Plans de Traitement",
+    "nameSingular": "Plan de Traitement",
+    "order": 10,
+    "relations": [
+      {
+        "key": "598e1b58-1123-4246-96e5-bffa4be40f49",
+        "targetEntity": "69b911479bb20cc26f24d1c8",
+        "label": "Patient",
+        "inverseLabel": "Plans de traitement",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "spaces": [],
+    "updatedAt": "2026-03-17T08:31:03.707Z",
+    "referenceTitleTokens": [
+      {
+        "t": "text",
+        "v": "Plan "
+      },
+      {
+        "t": "field",
+        "id": "rel:598e1b58-1123-4246-96e5-bffa4be40f49.title"
+      }
+    ]
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1d3",
+    "slug": "personnel",
+    "__v": 0,
+    "classifications": [
+      "69b911479bb20cc26f24d1c5"
+    ],
+    "color": "#4361ee",
+    "createdAt": "2026-03-17T08:31:03.679Z",
+    "customFields": [
+      "69b911479bb20cc26f24d186",
+      "69b911479bb20cc26f24d187",
+      "69b911479bb20cc26f24d1ae",
+      "69b911479bb20cc26f24d1af",
+      "69b911479bb20cc26f24d18a",
+      "69b911479bb20cc26f24d18b"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Personnel",
+    "namePlural": "Personnel",
+    "nameSingular": "Membre du Personnel",
+    "order": 11,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "69b911479bb20cc26f24d187"
+      },
+      {
+        "t": "text",
+        "v": " "
+      },
+      {
+        "t": "field",
+        "id": "69b911479bb20cc26f24d186"
+      }
+    ],
+    "relations": [],
+    "sidebarWidgets": [
+      {
+        "type": "links-group",
+        "label": "Outils",
+        "icon": "solar:link-round-bold-duotone",
+        "color": "#4361ee",
+        "order": 0,
+        "visible": true,
+        "config": {
+          "links": [
+            {
+              "label": "Annuaire RPPS",
+              "url": "https://annuaire.sante.fr",
+              "icon": "solar:magnifer-bold-duotone",
+              "target": "_blank"
+            },
+            {
+              "label": "Ameli Pro",
+              "url": "https://espacepro.ameli.fr",
+              "icon": "solar:shield-check-bold-duotone",
+              "target": "_blank"
+            }
+          ]
+        }
+      },
+      {
+        "type": "note",
+        "label": "Notes RH",
+        "icon": "solar:notes-bold-duotone",
+        "color": "#64748b",
+        "order": 1,
+        "visible": true,
+        "config": {
+          "content": ""
+        }
+      }
+    ],
+    "spaces": [],
+    "updatedAt": "2026-03-17T08:31:03.679Z"
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1d4",
+    "slug": "stock",
+    "__v": 0,
+    "classifications": [],
+    "color": "#94a3b8",
+    "createdAt": "2026-03-17T08:31:03.682Z",
+    "customFields": [
+      "69b911479bb20cc26f24d1ba",
+      "69b911479bb20cc26f24d1bb",
+      "69b911479bb20cc26f24d1bc",
+      "69b911479bb20cc26f24d1a2",
+      "69b911479bb20cc26f24d1a4",
+      "69b911479bb20cc26f24d1a3",
+      "69b911479bb20cc26f24d1b0",
+      "69b911479bb20cc26f24d1c0"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:box-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Stock",
+    "namePlural": "Stock",
+    "nameSingular": "Article Stock",
+    "order": 12,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title"
+      }
+    ],
+    "relations": [],
+    "sidebarWidgets": [
+      {
+        "type": "tasks",
+        "label": "Réappro",
+        "icon": "solar:checklist-bold-duotone",
+        "color": "#f97316",
+        "order": 0,
+        "visible": true,
+        "config": {
+          "tasks": [
+            {
+              "label": "Vérifier stock minimum",
+              "done": false
+            },
+            {
+              "label": "Passer commande fournisseur",
+              "done": false
+            },
+            {
+              "label": "Réception marchandise",
+              "done": false
+            }
+          ]
+        }
+      }
+    ],
+    "spaces": [],
+    "updatedAt": "2026-03-17T08:31:03.682Z"
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1d5",
+    "slug": "symptomes",
+    "__v": 0,
+    "classifications": [],
+    "color": "#ec4899",
+    "createdAt": "2026-03-17T08:31:03.683Z",
+    "customFields": [],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:heart-pulse-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Symptôme",
+    "namePlural": "Symptômes",
+    "nameSingular": "Symptôme",
+    "order": 13,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title"
+      }
+    ],
+    "relations": [],
+    "spaces": [],
+    "updatedAt": "2026-03-17T08:31:03.683Z"
+  }
+]

@@ -1,0 +1,245 @@
+[
+  {
+    "_id": "698af83ddc0731b0e1a8ebab",
+    "slug": "doctor-dashboard",
+    "__v": 0,
+    "blocks": {
+      "kpi_today": {
+        "type": "kpi-cards",
+        "title": "Aujourd'hui",
+        "props": {
+          "dataSource": "/api/analytics/today",
+          "mapping": {
+            "items": [
+              {
+                "key": "today.total",
+                "label": "Patients",
+                "color": "primary"
+              },
+              {
+                "key": "today.seen",
+                "label": "Vus",
+                "color": "success"
+              },
+              {
+                "key": "today.remaining",
+                "label": "Restants",
+                "color": "warning"
+              },
+              {
+                "key": "today.urgent",
+                "label": "Urgents",
+                "color": "danger"
+              }
+            ]
+          }
+        }
+      },
+      "urgency_radar": {
+        "type": "urgency-radar",
+        "title": "Radar Urgences",
+        "props": {
+          "dataSource": "/api/analytics/today",
+          "mapping": {
+            "items": "urgencies"
+          }
+        }
+      },
+      "focus_next": {
+        "type": "focus-card",
+        "title": "Prochain Patient",
+        "props": {
+          "dataSource": "/api/records",
+          "query": {
+            "entitySlug": "consultation",
+            "filters": {
+              "status": "en_salle_attente"
+            },
+            "sort": "rdv_at",
+            "limit": 1
+          }
+        }
+      },
+      "waiting_room": {
+        "type": "work-queue",
+        "title": "Salle d'Attente",
+        "props": {
+          "height": 450,
+          "dataSource": "/api/records",
+          "query": {
+            "entitySlug": "consultation",
+            "filters": {
+              "status__in": [
+                "en_salle_attente",
+                "en_cours"
+              ]
+            },
+            "sort": "rdv_at"
+          }
+        }
+      },
+      "comms_dock": {
+        "type": "comms-dock",
+        "title": "Coordination — Secrétariat",
+        "props": {
+          "height": 450,
+          "tier": "static"
+        }
+      },
+      "consultation_stats": {
+        "type": "kpi-cards",
+        "title": "Consultations",
+        "props": {
+          "dataSource": "/api/analytics/today",
+          "mapping": {
+            "items": "byStatus"
+          }
+        }
+      },
+      "quick_insights": {
+        "type": "statistics",
+        "title": "Statistiques Rapides",
+        "props": {
+          "tier": "static"
+        }
+      },
+      "tasks_alerts": {
+        "type": "progress-list",
+        "title": "Tâches & Alertes",
+        "props": {
+          "dataSource": "/api/records",
+          "query": {
+            "entitySlug": "tache",
+            "filters": {
+              "task_status__ne": "termine"
+            },
+            "sort": "-task_priority"
+          }
+        }
+      },
+      "top_meds": {
+        "type": "progress-list",
+        "title": "Top Médicaments Prescrits",
+        "props": {
+          "dataSource": "/api/analytics/today",
+          "mapping": {
+            "items": "topMedications"
+          }
+        }
+      },
+      "planning_jour": {
+        "type": "work-queue",
+        "title": "Planning du Jour",
+        "props": {
+          "height": 350,
+          "dataSource": "/api/records",
+          "query": {
+            "entitySlug": "consultation",
+            "filters": {
+              "rdv_at__today": true
+            },
+            "sort": "rdv_at"
+          }
+        }
+      }
+    },
+    "createdAt": "2026-02-10T09:19:57.021Z",
+    "layout": {
+      "default": [
+        {
+          "id": "row-1",
+          "equalHeight": true,
+          "columns": [
+            {
+              "width": 4,
+              "blocks": [
+                "kpi_today"
+              ]
+            },
+            {
+              "width": 4,
+              "blocks": [
+                "urgency_radar"
+              ]
+            },
+            {
+              "width": 4,
+              "blocks": [
+                "focus_next"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "row-2",
+          "equalHeight": true,
+          "columns": [
+            {
+              "width": 6,
+              "blocks": [
+                "waiting_room"
+              ]
+            },
+            {
+              "width": 6,
+              "blocks": [
+                "comms_dock"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "row-3",
+          "equalHeight": true,
+          "columns": [
+            {
+              "width": 4,
+              "blocks": [
+                "consultation_stats"
+              ]
+            },
+            {
+              "width": 4,
+              "blocks": [
+                "quick_insights"
+              ]
+            },
+            {
+              "width": 4,
+              "blocks": [
+                "tasks_alerts"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "row-4",
+          "columns": [
+            {
+              "width": 5,
+              "blocks": [
+                "top_meds"
+              ]
+            },
+            {
+              "width": 7,
+              "blocks": [
+                "planning_jour"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Doctor Dashboard",
+    "status": "published",
+    "tabs": [
+      {
+        "id": "default",
+        "label": "Dashboard"
+      }
+    ],
+    "type": "cockpit",
+    "updatedAt": "2026-02-10T09:27:38.738Z"
+  }
+]

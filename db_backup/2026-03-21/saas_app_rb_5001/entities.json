@@ -1,0 +1,4203 @@
+[
+  {
+    "_id": "69733e9633f2b10fa6121cc6",
+    "name": "Opportunité",
+    "slug": "opportunité-1769160342637",
+    "enabledStandardFields": [],
+    "spaces": [],
+    "folders": [],
+    "customFields": [
+      "69727b3fccf73a414a783c23",
+      "69714b8e58eca3a765e10aa7",
+      "697340e433f2b10fa6123480"
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "layout": [
+      {
+        "fieldId": "69727b3fccf73a414a783c23",
+        "width": 12,
+        "id": "f_1769160825916"
+      },
+      {
+        "fieldId": "69714b8e58eca3a765e10aa7",
+        "width": 12,
+        "id": "f_1769160838256"
+      },
+      {
+        "fieldId": "697340e433f2b10fa6123480",
+        "width": 12,
+        "id": "f_1769160943341"
+      }
+    ],
+    "createdAt": "2026-01-23T09:25:42.642Z",
+    "updatedAt": "2026-01-29T18:53:49.284Z",
+    "__v": 0,
+    "order": 2,
+    "enableAttachments": true
+  },
+  {
+    "_id": "69733f6433f2b10fa6122245",
+    "name": "Personne",
+    "slug": "personne",
+    "enabledStandardFields": [
+      "date"
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [
+      "697dad0651a0e3777df61faf",
+      "697dad0651a0e3777df61fb1",
+      "697dad0651a0e3777df61fac",
+      "697dad0651a0e3777df61fad",
+      "697dad0651a0e3777df61fb5",
+      "697dad0651a0e3777df61fb0",
+      "697dad0651a0e3777df61fb3",
+      "697dad0651a0e3777df61fb6",
+      "697dad0651a0e3777df61fb2",
+      "697dad0651a0e3777df61fb4"
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "layout": [
+      {
+        "fieldId": "69727b3fccf73a414a783c23",
+        "width": 6,
+        "id": "f_1769160578064"
+      },
+      {
+        "fieldId": "6874aa37444c189ff59f2a13",
+        "width": 6,
+        "id": "f_1769160574840"
+      },
+      {
+        "fieldId": "6878745fd372aa750c638183",
+        "width": 12,
+        "id": "f_1769160581372"
+      }
+    ],
+    "createdAt": "2026-01-23T09:29:08.803Z",
+    "updatedAt": "2026-02-10T06:13:27.726Z",
+    "__v": 2,
+    "color": "#6B7280",
+    "description": "",
+    "icon": "solar:user-broken",
+    "classifications": [],
+    "order": 5,
+    "statusClassification": "697468b45ac39a116401a925",
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "697dad0651a0e3777df61fb5",
+        "_id": "698acc87196264463b576b2d"
+      }
+    ],
+    "relations": [],
+    "enableAttachments": true
+  },
+  {
+    "_id": "69733f7033f2b10fa6122257",
+    "name": "Société",
+    "slug": "societe",
+    "enabledStandardFields": [
+      "title"
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "layout": {
+      "tabs": [
+        {
+          "id": "default",
+          "title": "Général",
+          "icon": "solar:widget-linear"
+        },
+        {
+          "id": "t_1769268769549",
+          "title": "Nouvel Onglet",
+          "icon": "tabler:apps"
+        }
+      ],
+      "fields": [
+        {
+          "fieldId": "69727b3fccf73a414a783c23",
+          "width": 3,
+          "id": "f_1769160692040",
+          "tabId": "default"
+        },
+        {
+          "fieldId": "6874aa37444c189ff59f2a13",
+          "width": 3,
+          "id": "f_1769160695224",
+          "tabId": "default"
+        },
+        {
+          "fieldId": "6878745fd372aa750c638183",
+          "width": 3,
+          "id": "f_1769160697480",
+          "tabId": "default"
+        },
+        {
+          "fieldId": "697282d8748e38af9d969427",
+          "width": 3,
+          "id": "f_1769160701696",
+          "tabId": "default"
+        }
+      ]
+    },
+    "createdAt": "2026-01-23T09:29:20.243Z",
+    "updatedAt": "2026-02-10T06:12:42.321Z",
+    "__v": 6,
+    "color": "#000000",
+    "description": "",
+    "icon": "",
+    "statusClassification": "697471470614a2055d9b2a73",
+    "classifications": [
+      "697468b45ac39a116401a925",
+      "69746e2c6e3db7bd9f348583",
+      "697471470614a2055d9b2a73"
+    ],
+    "order": 6,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "698acc5a196264463b576766"
+      }
+    ],
+    "relations": [],
+    "enableAttachments": true
+  },
+  {
+    "_id": "69743fac97b4bb5a398f61b1",
+    "name": "Bon de commande",
+    "slug": "bon-de-commande",
+    "enabledStandardFields": [
+      "title"
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "layout": [
+      {
+        "fieldId": "69727b3fccf73a414a783c23",
+        "width": 12,
+        "id": "f_1769226204150"
+      },
+      {
+        "fieldId": "69714b8e58eca3a765e10aa7",
+        "width": 12,
+        "id": "f_1769226209910"
+      }
+    ],
+    "createdAt": "2026-01-24T03:42:36.411Z",
+    "updatedAt": "2026-02-12T21:21:24.189Z",
+    "__v": 2,
+    "color": "#10B981",
+    "description": "",
+    "icon": "",
+    "statusClassification": "697468b45ac39a116401a925",
+    "classifications": [],
+    "order": 4,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "698e4454fd10bde513e6b3cd"
+      }
+    ],
+    "relations": [],
+    "enableAttachments": true
+  },
+  {
+    "_id": "6974f9533c65b095a571f656",
+    "name": "Projet",
+    "slug": "projet",
+    "enabledStandardFields": [
+      "title"
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [],
+    "classifications": [
+      "697468b45ac39a116401a925"
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "layout": [],
+    "createdAt": "2026-01-24T16:54:43.207Z",
+    "updatedAt": "2026-02-10T06:09:24.686Z",
+    "__v": 0,
+    "color": "#07c7ca",
+    "description": "",
+    "icon": "",
+    "statusClassification": null,
+    "order": 3,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "698acb941c4b24a92e11f338"
+      }
+    ],
+    "relations": [],
+    "enableAttachments": true
+  },
+  {
+    "_id": "6974fa513c65b095a571fb68",
+    "name": "Tâche",
+    "slug": "tache",
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "icon",
+      "attachments",
+      "image",
+      "date"
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [
+      "697dad0651a0e3777df61fe2",
+      "697dad0651a0e3777df61fdf",
+      "697dad0651a0e3777df61fe5",
+      "697dad0651a0e3777df61fe3"
+    ],
+    "classifications": [
+      "697e0010000000000000010b",
+      "698af7f4f2100f0facaafa8e",
+      "698af7f4f2100f0facaafa88"
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "layout": {
+      "tabs": [
+        {
+          "id": "default",
+          "title": "Attributs",
+          "icon": "tabler:apps"
+        }
+      ],
+      "fields": []
+    },
+    "createdAt": "2026-01-24T16:58:57.936Z",
+    "updatedAt": "2026-02-10T06:13:01.598Z",
+    "__v": 8,
+    "color": "#000000",
+    "description": "",
+    "icon": "",
+    "statusClassification": "697e0010000000000000010a",
+    "order": 7,
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "698acc6d196264463b5768a6"
+      }
+    ],
+    "relations": [],
+    "enableAttachments": true
+  },
+  {
+    "_id": "69760b16f10b78bb9df415e6",
+    "name": "Document",
+    "slug": "document",
+    "description": "",
+    "icon": "",
+    "color": "#664b0f",
+    "enabledStandardFields": [
+      "title",
+      "slug",
+      "date"
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [],
+    "classifications": [],
+    "layout": [],
+    "createdAt": "2026-01-25T12:22:46.712Z",
+    "updatedAt": "2026-01-29T18:53:49.284Z",
+    "__v": 0,
+    "order": 1,
+    "enableAttachments": true
+  },
+  {
+    "_id": "697b9a6cf5dc76d6124d98b5",
+    "name": "Produit",
+    "slug": "produit",
+    "description": "",
+    "icon": "solar:box-line-duotone",
+    "color": "",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "spaces": [],
+    "folders": [
+      "697b972f3241bfbc672cb409"
+    ],
+    "customFields": [],
+    "classifications": [],
+    "layout": [],
+    "createdAt": "2026-01-29T17:35:40.799Z",
+    "updatedAt": "2026-01-29T17:35:40.799Z",
+    "__v": 0,
+    "enableAttachments": true
+  },
+  {
+    "_id": "697c20264b70c78bbe2e8670",
+    "name": "Patient",
+    "slug": "patient-1769742374803",
+    "order": 0,
+    "enabledStandardFields": [],
+    "spaces": [],
+    "folders": [],
+    "customFields": [
+      "697dad0651a0e3777df61fac",
+      "697dad0651a0e3777df61fad",
+      "697dad0651a0e3777df61fb3",
+      "697dad0651a0e3777df61fb6",
+      "697dad0651a0e3777df61fb1",
+      "697dad0651a0e3777df61fb0",
+      "698984a0b45d6e7391187e49"
+    ],
+    "classifications": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "layout": {
+      "tabs": [
+        {
+          "id": "default",
+          "title": "Attributs",
+          "icon": "tabler:apps"
+        }
+      ],
+      "fields": [
+        {
+          "fieldId": "6874aa37444c189ff59f2a13",
+          "width": 12,
+          "id": "f_1769743272814",
+          "tabId": "default"
+        },
+        {
+          "fieldId": "6878745fd372aa750c638183",
+          "width": 12,
+          "id": "f_1769743276458",
+          "tabId": "default"
+        }
+      ]
+    },
+    "createdAt": "2026-01-30T03:06:14.804Z",
+    "updatedAt": "2026-02-10T08:41:34.279Z",
+    "__v": 0,
+    "color": "",
+    "description": "",
+    "icon": "solar:user-broken",
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "697dad0651a0e3777df61fad",
+        "_id": "698aef3ea3ea355b4e6fb235"
+      },
+      {
+        "t": "text",
+        "v": " - ",
+        "_id": "698aef3ea3ea355b4e6fb236"
+      },
+      {
+        "t": "field",
+        "id": "697dad0651a0e3777df61fac",
+        "_id": "698aef3ea3ea355b4e6fb237"
+      }
+    ],
+    "statusClassification": null,
+    "relations": [],
+    "enableAttachments": true
+  },
+  {
+    "_id": "697c20e04b70c78bbe2e8702",
+    "name": "Consultation",
+    "slug": "consultation",
+    "order": 0,
+    "enabledStandardFields": [
+      "title",
+      "description"
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [
+      "698c870eb28dbfa3cc8be832"
+    ],
+    "classifications": [
+      "698af7f4f2100f0facaafa82",
+      "6989923bcf4f1191d69f8b29"
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "layout": [],
+    "createdAt": "2026-01-30T03:09:20.701Z",
+    "updatedAt": "2026-02-21T00:56:43.952Z",
+    "__v": 0,
+    "color": "#31e0e3",
+    "description": "",
+    "icon": "solar:stethoscope-bold-duotone",
+    "statusClassification": "6989923bcf4f1191d69f8b29",
+    "referenceTitleTokens": [
+      {
+        "t": "text",
+        "v": "Consultation ",
+        "_id": "699902cb89cd63ea3da58a66"
+      },
+      {
+        "t": "field",
+        "id": "rel:1ce30e77-8534-4295-9330-353e85cfba3e.697dad0651a0e3777df61fac",
+        "_id": "699902cb89cd63ea3da58a67"
+      },
+      {
+        "t": "text",
+        "v": " ",
+        "_id": "699902cb89cd63ea3da58a68"
+      },
+      {
+        "t": "field",
+        "id": "rel:1ce30e77-8534-4295-9330-353e85cfba3e.697dad0651a0e3777df61fad",
+        "_id": "699902cb89cd63ea3da58a69"
+      },
+      {
+        "t": "text",
+        "v": " - ",
+        "_id": "699902cb89cd63ea3da58a6a"
+      },
+      {
+        "t": "field",
+        "id": "698c870eb28dbfa3cc8be832",
+        "_id": "699902cb89cd63ea3da58a6b"
+      }
+    ],
+    "relations": [
+      {
+        "key": "1ce30e77-8534-4295-9330-353e85cfba3e",
+        "targetEntity": "698af83c968b728b701b071a",
+        "label": "Patient",
+        "inverseLabel": "Consultations",
+        "cardinality": "one-to-one",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": true,
+        "_id": "69898e69cf4f1191d69f7bea"
+      },
+      {
+        "key": "055fb973-3d29-4d90-a953-dda7c3bc5314",
+        "targetEntity": "697c21c44b70c78bbe2e8800",
+        "label": "Ordonnance",
+        "inverseLabel": "",
+        "cardinality": "one-to-one",
+        "inputMode": "select",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": false,
+        "required": false,
+        "_id": "698990e9cf4f1191d69f8420"
+      }
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": [
+        {
+          "id": "row_1770626960649",
+          "columns": [
+            {
+              "width": 12,
+              "fields": [
+                {
+                  "id": "f_1770626962290_y3262",
+                  "type": "standard",
+                  "fieldId": "title",
+                  "label": "",
+                  "required": false,
+                  "placeholder": "",
+                  "helpText": ""
+                },
+                {
+                  "id": "f_1770626963705_i1lsh",
+                  "type": "standard",
+                  "fieldId": "description",
+                  "label": "",
+                  "required": false,
+                  "placeholder": "",
+                  "helpText": ""
+                },
+                {
+                  "id": "f_1770626966913_2cry0",
+                  "type": "relation",
+                  "fieldId": "1ce30e77-8534-4295-9330-353e85cfba3e",
+                  "label": "",
+                  "required": false,
+                  "placeholder": "",
+                  "helpText": ""
+                },
+                {
+                  "id": "f_1770626969090_20rvv",
+                  "type": "relation",
+                  "fieldId": "055fb973-3d29-4d90-a953-dda7c3bc5314",
+                  "label": "",
+                  "required": false,
+                  "placeholder": "",
+                  "helpText": ""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "formLayoutStatus": "published",
+    "enableAttachments": true
+  },
+  {
+    "_id": "697c21c44b70c78bbe2e8800",
+    "name": "Ordonnance",
+    "slug": "ordonnance-1769742788323",
+    "order": 0,
+    "enabledStandardFields": [
+      "title",
+      "description"
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [],
+    "classifications": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "layout": {
+      "tabs": [
+        {
+          "id": "default",
+          "title": "Attributs",
+          "icon": "tabler:apps"
+        }
+      ],
+      "fields": [
+        {
+          "fieldId": "697c24cf4b70c78bbe2e8ef2",
+          "width": 12,
+          "id": "f_1769743628502",
+          "tabId": "default"
+        }
+      ]
+    },
+    "createdAt": "2026-01-30T03:13:08.323Z",
+    "updatedAt": "2026-02-09T10:47:00.633Z",
+    "__v": 0,
+    "color": "",
+    "description": "",
+    "icon": "",
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6989bb1bf862176dfdfe4162"
+      },
+      {
+        "t": "text",
+        "v": " ",
+        "_id": "6989bb1bf862176dfdfe4163"
+      },
+      {
+        "t": "field",
+        "id": "description",
+        "_id": "6989bb1bf862176dfdfe4164"
+      }
+    ],
+    "relations": [],
+    "statusClassification": null,
+    "enableAttachments": true
+  },
+  {
+    "_id": "697c9b2e17b1ed43070055f3",
+    "name": "Note",
+    "slug": "note",
+    "description": "",
+    "icon": "",
+    "color": "#fef1b4",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [
+      "69715c09bf66610dfb4f311f"
+    ],
+    "classifications": [],
+    "layout": [
+      {
+        "fieldId": "69715c09bf66610dfb4f311f",
+        "width": 12,
+        "id": "f_1769773895561_72"
+      }
+    ],
+    "createdAt": "2026-01-30T11:51:10.753Z",
+    "updatedAt": "2026-01-30T12:00:11.088Z",
+    "__v": 0,
+    "statusClassification": null,
+    "enableAttachments": true
+  },
+  {
+    "_id": "697cc194c202fdaf7ada6eff",
+    "name": "Facture",
+    "slug": "facture",
+    "description": "",
+    "icon": "solar:document-bold-duotone",
+    "color": "#06B6D4",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [
+      "697cbb16090e84c1f060592a",
+      "697cbb16090e84c1f06058fa",
+      "697cbb16090e84c1f06058f7",
+      "697cbb16090e84c1f060590f",
+      "697cbb16090e84c1f0605918"
+    ],
+    "classifications": [],
+    "fieldOverrides": {},
+    "layout": [],
+    "createdAt": "2026-01-30T14:35:00.638Z",
+    "updatedAt": "2026-01-30T14:35:00.638Z",
+    "__v": 0,
+    "enableAttachments": true
+  },
+  {
+    "_id": "697f031bba5fb843f1d05799",
+    "name": "Tâches",
+    "slug": "taches",
+    "description": "",
+    "icon": "",
+    "color": "",
+    "order": 0,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "icon",
+      "slug",
+      "date"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "697f031bba5fb843f1d0579a"
+      }
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [
+      "697dad0651a0e3777df61fb2"
+    ],
+    "statusClassification": "697468b45ac39a116401a925",
+    "classifications": [
+      "697c9b7a17b1ed4307005858"
+    ],
+    "fieldOverrides": {},
+    "layout": [],
+    "createdAt": "2026-02-01T07:39:07.607Z",
+    "updatedAt": "2026-02-01T07:39:07.607Z",
+    "__v": 0,
+    "enableAttachments": true
+  },
+  {
+    "_id": "698abc0e9c0808e18cbde9aa",
+    "name": "Traitement",
+    "slug": "traitement",
+    "description": "Catalogue de traitements médicaux",
+    "icon": "solar:pill-bold-duotone",
+    "color": "#22c55e",
+    "order": 0,
+    "enabledStandardFields": [
+      "title",
+      "description"
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [
+      "698abc0edc0731b0e1a8eb92",
+      "698abc0edc0731b0e1a8eb93",
+      "698abc0edc0731b0e1a8eb94"
+    ],
+    "classifications": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "referenceTitleTokens": [
+      {
+        "_id": "698abc0e9c0808e18cbde9ab",
+        "t": "field",
+        "id": "title"
+      }
+    ],
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-10T05:03:10.451Z",
+    "updatedAt": "2026-02-10T05:03:10.463Z",
+    "__v": 1,
+    "enableAttachments": true
+  },
+  {
+    "_id": "698af83c968b728b701b071a",
+    "name": "Patient",
+    "slug": "patient",
+    "description": "Patients du cabinet médical",
+    "icon": "solar:user-bold",
+    "color": "#4361ee",
+    "order": 0,
+    "enabledStandardFields": [],
+    "spaces": [
+      "698af83c968b728b701b0708"
+    ],
+    "folders": [
+      "698af83c968b728b701b070b"
+    ],
+    "customFields": [
+      "697dad0651a0e3777df61fac",
+      "697dad0651a0e3777df61fad",
+      "697dad0651a0e3777df61fc4",
+      "697dad0651a0e3777df61fb0",
+      "697dad0651a0e3777df61faf",
+      "697dad0651a0e3777df61fb2",
+      "698af7f4f2100f0facaafa9a",
+      "698af7f4f2100f0facaafa9d",
+      "698af7f4f2100f0facaafaa0",
+      "698af7f4f2100f0facaafaa3"
+    ],
+    "statusClassification": "698af7f4f2100f0facaafa7c",
+    "classifications": [
+      "698af7f4f2100f0facaafa82"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "referenceTitleTokens": [
+      {
+        "_id": "698af83c968b728b701b071b",
+        "t": "field",
+        "id": "title"
+      }
+    ],
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-10T09:19:56.905Z",
+    "updatedAt": "2026-03-01T17:36:33.901Z",
+    "__v": 0,
+    "enableAttachments": true,
+    "gridSchemas": [
+      {
+        "schemaId": "69a47921de03671e05ed22aa",
+        "position": "main",
+        "order": 0,
+        "label": "Suivi Biologique",
+        "_id": "69a479210c12ac5b292535ed"
+      },
+      {
+        "schemaId": "69a47921de03671e05ed22ac",
+        "position": "main",
+        "order": 1,
+        "label": "Suivi Pédiatrique",
+        "_id": "69a479210c12ac5b292535ee"
+      },
+      {
+        "schemaId": "69a47921de03671e05ed22ab",
+        "position": "main",
+        "order": 2,
+        "label": "Bilan Sanguin",
+        "_id": "69a479210c12ac5b292535ef"
+      }
+    ]
+  },
+  {
+    "_id": "698af83c968b728b701b0722",
+    "name": "Dossier Médical",
+    "slug": "dossier-medical",
+    "description": "Dossiers médicaux des patients",
+    "icon": "solar:folder-with-files-bold",
+    "color": "#10b981",
+    "order": 0,
+    "enabledStandardFields": [],
+    "spaces": [
+      "698af83c968b728b701b0708"
+    ],
+    "folders": [
+      "698af83c968b728b701b0711"
+    ],
+    "customFields": [
+      "698af7f4f2100f0facaafad0",
+      "698af7f4f2100f0facaafad3",
+      "698af7f4f2100f0facaafad6",
+      "698af7f4f2100f0facaafad9",
+      "698af7f4f2100f0facaafadc"
+    ],
+    "classifications": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "referenceTitleTokens": [
+      {
+        "_id": "698af83c968b728b701b0723",
+        "t": "field",
+        "id": "title"
+      }
+    ],
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-10T09:19:56.908Z",
+    "updatedAt": "2026-02-10T09:19:56.908Z",
+    "__v": 0,
+    "enableAttachments": true
+  },
+  {
+    "_id": "698af83c968b728b701b0726",
+    "name": "Membre Équipe",
+    "slug": "membre-equipe",
+    "description": "Membres de l'équipe médicale",
+    "icon": "solar:users-group-two-rounded-bold",
+    "color": "#4361ee",
+    "order": 0,
+    "enabledStandardFields": [],
+    "spaces": [
+      "698af83c968b728b701b0708"
+    ],
+    "folders": [
+      "698af83c968b728b701b0714"
+    ],
+    "customFields": [
+      "697dad0651a0e3777df61fae",
+      "698af7f4f2100f0facaafaef",
+      "698af7f4f2100f0facaafaf2",
+      "698af7f4f2100f0facaafaf5",
+      "698af7f4f2100f0facaafaf8",
+      "698af7f4f2100f0facaafafb"
+    ],
+    "classifications": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "referenceTitleTokens": [
+      {
+        "_id": "698af83c968b728b701b0727",
+        "t": "field",
+        "id": "title"
+      }
+    ],
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-10T09:19:56.909Z",
+    "updatedAt": "2026-02-10T09:19:56.909Z",
+    "__v": 0,
+    "enableAttachments": true
+  },
+  {
+    "_id": "69961a8b9327a240d2eb5ec1",
+    "name": "Contacts",
+    "slug": "contacts",
+    "description": "Gérez vos contacts, prospects et clients avec un suivi complet des interactions et des informations de contact.",
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#4361ee",
+    "order": 0,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "icon",
+      "attachments",
+      "image"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "69961a8b9327a240d2eb5ec2"
+      }
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [
+      "697dad0651a0e3777df61faf",
+      "697dad0651a0e3777df61fb0",
+      "69961a499327a240d2eb5883",
+      "69961a499327a240d2eb5894",
+      "697dad0651a0e3777df61fb2",
+      "697dad0651a0e3777df61fbb",
+      "697dad0651a0e3777df61fe1",
+      "69961a499327a240d2eb589d",
+      "697dad0651a0e3777df61fe8"
+    ],
+    "statusClassification": "69961a819327a240d2eb5e89",
+    "classifications": [
+      "69961a819327a240d2eb5ea0",
+      "69961a819327a240d2eb5ead"
+    ],
+    "relations": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "layout": [],
+    "createdAt": "2026-02-18T20:01:15.901Z",
+    "updatedAt": "2026-02-18T20:01:15.901Z",
+    "__v": 0,
+    "enableAttachments": true
+  },
+  {
+    "_id": "69976d817c876dd8d0372def",
+    "name": "Patient",
+    "slug": "patients",
+    "icon": "solar:user-heart-bold-duotone",
+    "color": "#3b82f6",
+    "order": 0,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "69a124ccde03671e05ed1b43"
+      },
+      {
+        "t": "text",
+        "v": " "
+      },
+      {
+        "t": "field",
+        "id": "69a124ccde03671e05ed1b42"
+      }
+    ],
+    "spaces": [],
+    "folders": [],
+    "customFields": [
+      "69a124ccde03671e05ed1b42",
+      "69a124ccde03671e05ed1b43",
+      "69a124ccde03671e05ed1b44",
+      "69a124ccde03671e05ed1b45",
+      "69a124ccde03671e05ed1b46",
+      "69a124ccde03671e05ed1b47",
+      "69a124ccde03671e05ed1b48",
+      "69a124ccde03671e05ed1b49",
+      "69a124ccde03671e05ed1b4a",
+      "69a124ccde03671e05ed1b4b",
+      "69a124ccde03671e05ed1b4c",
+      "69a124ccde03671e05ed1b4d",
+      "69a124ccde03671e05ed1b4e",
+      "69a56444de03671e05ed23b7"
+    ],
+    "classifications": [
+      "69a124ccde03671e05ed1b7e"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-19T20:07:29.602Z",
+    "updatedAt": "2026-03-02T10:19:48.156Z",
+    "__v": 0,
+    "enableAttachments": true,
+    "description": "",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "namePlural": "Patients",
+    "nameSingular": "Patient"
+  },
+  {
+    "_id": "69977f9d00987de174139eb5",
+    "name": "Contacts",
+    "slug": "contacts-2",
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28654"
+      }
+    ],
+    "spaces": [
+      "69977f9d00987de174139eaf"
+    ],
+    "folders": [],
+    "customFields": [
+      "69977f9d00987de174139eb7",
+      "69977f9d00987de174139eb9",
+      "69977f9d00987de174139ebb",
+      "69977f9d00987de174139ebd",
+      "69977f9d00987de174139ebf",
+      "69977f9d00987de174139ec1"
+    ],
+    "classifications": [
+      "69977f9d00987de174139ec4",
+      "69977f9d00987de174139ecc"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-19T21:24:45.105Z",
+    "updatedAt": "2026-02-19T21:24:45.120Z",
+    "__v": 2,
+    "statusClassification": "69977f9d00987de174139ec4",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69977f9d00987de174139f2c",
+    "name": "Opportunités",
+    "slug": "opportunites",
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28663"
+      }
+    ],
+    "spaces": [
+      "69977f9d00987de174139eaf"
+    ],
+    "folders": [],
+    "customFields": [
+      "69977f9d00987de174139f2e",
+      "69977f9d00987de174139f30",
+      "69977f9d00987de174139f32",
+      "69977f9d00987de174139f34"
+    ],
+    "classifications": [
+      "69977f9d00987de174139f37"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-19T21:24:45.160Z",
+    "updatedAt": "2026-02-19T21:24:45.162Z",
+    "__v": 1,
+    "statusClassification": "69977f9d00987de174139f37",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69978d1363be0bad8535e088",
+    "name": "Tâches",
+    "slug": "taches-2",
+    "icon": "solar:checklist-bold-duotone",
+    "color": "#e7515a",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca2869c"
+      }
+    ],
+    "spaces": [
+      "69978d1363be0bad8535e082"
+    ],
+    "folders": [],
+    "customFields": [
+      "69978d1363be0bad8535e08a",
+      "69978d1363be0bad8535e08c",
+      "69978d1363be0bad8535e08e",
+      "69978d1363be0bad8535e090"
+    ],
+    "classifications": [
+      "69978d1363be0bad8535e093",
+      "69978d1363be0bad8535e09b"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-19T22:22:11.345Z",
+    "updatedAt": "2026-02-19T22:22:11.351Z",
+    "__v": 2,
+    "statusClassification": "69978d1363be0bad8535e093",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69978d1363be0bad8535e0eb",
+    "name": "Jalons",
+    "slug": "jalons",
+    "icon": "solar:flag-bold-duotone",
+    "color": "#8b5cf6",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286a8"
+      }
+    ],
+    "spaces": [
+      "69978d1363be0bad8535e082"
+    ],
+    "folders": [],
+    "customFields": [
+      "69978d1363be0bad8535e0ed",
+      "69978d1363be0bad8535e0ef",
+      "69978d1363be0bad8535e0f1"
+    ],
+    "classifications": [
+      "69978d1363be0bad8535e0f4"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-19T22:22:11.368Z",
+    "updatedAt": "2026-02-19T22:22:11.369Z",
+    "__v": 1,
+    "statusClassification": "69978d1363be0bad8535e0f4",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69978def37ff690e137fd838",
+    "name": "Tâches",
+    "slug": "taches-3",
+    "icon": "solar:checklist-bold-duotone",
+    "color": "#e7515a",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca2869c"
+      }
+    ],
+    "spaces": [
+      "69978def37ff690e137fd830"
+    ],
+    "folders": [],
+    "customFields": [
+      "69978def37ff690e137fd83a",
+      "69978def37ff690e137fd83c",
+      "69978def37ff690e137fd83e",
+      "69978def37ff690e137fd840"
+    ],
+    "classifications": [
+      "69978def37ff690e137fd843",
+      "69978def37ff690e137fd84b"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-19T22:25:51.559Z",
+    "updatedAt": "2026-02-19T22:25:51.564Z",
+    "__v": 2,
+    "statusClassification": "69978def37ff690e137fd843",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69978def37ff690e137fd89e",
+    "name": "Jalons",
+    "slug": "jalons-2",
+    "icon": "solar:flag-bold-duotone",
+    "color": "#8b5cf6",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286a8"
+      }
+    ],
+    "spaces": [
+      "69978def37ff690e137fd830"
+    ],
+    "folders": [],
+    "customFields": [
+      "69978def37ff690e137fd8a0",
+      "69978def37ff690e137fd8a2",
+      "69978def37ff690e137fd8a4"
+    ],
+    "classifications": [
+      "69978def37ff690e137fd8a7"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-19T22:25:51.582Z",
+    "updatedAt": "2026-02-19T22:25:51.584Z",
+    "__v": 1,
+    "statusClassification": "69978def37ff690e137fd8a7",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69978f7b153840f8eed2194d",
+    "name": "Projets",
+    "slug": "projets",
+    "icon": "solar:folder-bold-duotone",
+    "color": "#8b5cf6",
+    "order": 0,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date",
+      "icon",
+      "image",
+      "attachments"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "titre",
+        "_id": "69978f7b153840f8eed2194e"
+      }
+    ],
+    "spaces": [
+      "69978f7b153840f8eed21949"
+    ],
+    "folders": [],
+    "customFields": [
+      "69978f7b153840f8eed2194f",
+      "69978f7b153840f8eed21951",
+      "69978f7b153840f8eed21953",
+      "69978f7b153840f8eed21955",
+      "69978f7b153840f8eed21957",
+      "69978f7b153840f8eed21959",
+      "69978f7b153840f8eed2195b",
+      "69978f7b153840f8eed2195d"
+    ],
+    "classifications": [
+      "69978f7b153840f8eed21960",
+      "69978f7b153840f8eed21969",
+      "69978f7b153840f8eed21970"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-19T22:32:27.122Z",
+    "updatedAt": "2026-02-19T22:32:27.128Z",
+    "__v": 3,
+    "statusClassification": "69978f7b153840f8eed21960",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69978f7b153840f8eed21982",
+    "name": "Tâches",
+    "slug": "taches-4",
+    "icon": "solar:checklist-minimalistic-bold-duotone",
+    "color": "#10b981",
+    "order": 0,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date",
+      "attachments"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "titre_tache",
+        "_id": "69978f7b153840f8eed21983"
+      }
+    ],
+    "spaces": [
+      "69978f7b153840f8eed21949"
+    ],
+    "folders": [],
+    "customFields": [
+      "69978f7b153840f8eed21984",
+      "69978f7b153840f8eed21986",
+      "69978f7b153840f8eed21988",
+      "69978f7b153840f8eed2198a",
+      "69978f7b153840f8eed2198c"
+    ],
+    "classifications": [
+      "69978f7b153840f8eed2198f",
+      "69978f7b153840f8eed21997",
+      "69978f7b153840f8eed2199e"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-19T22:32:27.139Z",
+    "updatedAt": "2026-02-19T22:32:27.144Z",
+    "__v": 3,
+    "statusClassification": "69978f7b153840f8eed2198f",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69978f7b153840f8eed219ae",
+    "name": "Documents",
+    "slug": "documents",
+    "icon": "solar:document-text-bold-duotone",
+    "color": "#06b6d4",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "titre",
+        "_id": "69978f7b153840f8eed219af"
+      }
+    ],
+    "spaces": [
+      "69978f7b153840f8eed21949"
+    ],
+    "folders": [],
+    "customFields": [
+      "69978f7b153840f8eed219b0",
+      "69978f7b153840f8eed219b2",
+      "69978f7b153840f8eed219b4",
+      "69978f7b153840f8eed219b6",
+      "69978f7b153840f8eed219b8",
+      "69978f7b153840f8eed219ba"
+    ],
+    "classifications": [
+      "69978f7b153840f8eed219bd",
+      "69978f7b153840f8eed219c5"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-19T22:32:27.153Z",
+    "updatedAt": "2026-02-19T22:32:27.156Z",
+    "__v": 2,
+    "statusClassification": "69978f7b153840f8eed219bd",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69978f7b153840f8eed219d1",
+    "name": "Notes",
+    "slug": "notes",
+    "icon": "solar:notes-bold-duotone",
+    "color": "#fbbf24",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "titre",
+        "_id": "69978f7b153840f8eed219d2"
+      }
+    ],
+    "spaces": [
+      "69978f7b153840f8eed21949"
+    ],
+    "folders": [],
+    "customFields": [
+      "69978f7b153840f8eed219d3",
+      "69978f7b153840f8eed219d5",
+      "69978f7b153840f8eed219d7",
+      "69978f7b153840f8eed219d9"
+    ],
+    "classifications": [
+      "69978f7b153840f8eed219dc"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-19T22:32:27.162Z",
+    "updatedAt": "2026-02-19T22:32:27.164Z",
+    "__v": 1,
+    "statusClassification": "69978f7b153840f8eed219dc",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69978f7b153840f8eed219ed",
+    "name": "Jalons",
+    "slug": "jalons-3",
+    "icon": "solar:calendar-bold-duotone",
+    "color": "#f59e0b",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "titre",
+        "_id": "69978f7b153840f8eed219ee"
+      }
+    ],
+    "spaces": [
+      "69978f7b153840f8eed21949"
+    ],
+    "folders": [],
+    "customFields": [
+      "69978f7b153840f8eed219ef",
+      "69978f7b153840f8eed219f1",
+      "69978f7b153840f8eed219f3",
+      "69978f7b153840f8eed219f5",
+      "69978f7b153840f8eed219f7",
+      "69978f7b153840f8eed219f9",
+      "69978f7b153840f8eed219fb",
+      "69978f7b153840f8eed219fd",
+      "69978f7b153840f8eed219ff"
+    ],
+    "classifications": [
+      "69978f7b153840f8eed21a02",
+      "69978f7b153840f8eed21a0a"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-19T22:32:27.175Z",
+    "updatedAt": "2026-02-19T22:32:27.179Z",
+    "__v": 2,
+    "statusClassification": "69978f7b153840f8eed21a02",
+    "enableAttachments": true
+  },
+  {
+    "_id": "6997902086a58861ddebef95",
+    "name": "Patients",
+    "slug": "patients-2",
+    "icon": "solar:user-heart-bold-duotone",
+    "color": "#2196f3",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286dc"
+      }
+    ],
+    "spaces": [
+      "6997902086a58861ddebef8f"
+    ],
+    "folders": [],
+    "customFields": [
+      "6997902086a58861ddebef97",
+      "6997902086a58861ddebef99",
+      "6997902086a58861ddebef9b",
+      "6997902086a58861ddebef9d",
+      "6997902086a58861ddebef9f",
+      "6997902086a58861ddebefa1",
+      "6997902086a58861ddebefa3"
+    ],
+    "classifications": [
+      "6997902086a58861ddebefa6"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-19T22:35:12.144Z",
+    "updatedAt": "2026-02-19T22:35:12.148Z",
+    "__v": 1,
+    "statusClassification": "6997902086a58861ddebefa6",
+    "enableAttachments": true
+  },
+  {
+    "_id": "6997902086a58861ddebefe7",
+    "name": "Consultation",
+    "slug": "consultations",
+    "icon": "solar:stethoscope-bold-duotone",
+    "color": "#00ab55",
+    "order": 2,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "text",
+        "v": "Consult. "
+      },
+      {
+        "t": "field",
+        "id": "rel:0d9b3a4c-9765-4f47-9926-9194d4985851.title"
+      },
+      {
+        "t": "text",
+        "v": " - "
+      },
+      {
+        "t": "field",
+        "id": "69a124ccde03671e05ed1b4f"
+      }
+    ],
+    "spaces": [
+      "6997902086a58861ddebef8f"
+    ],
+    "folders": [],
+    "customFields": [
+      "69a124ccde03671e05ed1b4f",
+      "69a124ccde03671e05ed1b50",
+      "69a124ccde03671e05ed1b52",
+      "69a124ccde03671e05ed1b51",
+      "69a124ccde03671e05ed1b53",
+      "69a124ccde03671e05ed1b54",
+      "69a124ccde03671e05ed1b55",
+      "69a124ccde03671e05ed1b56",
+      "69a124ccde03671e05ed1b57",
+      "69a124ccde03671e05ed1b58",
+      "69a124ccde03671e05ed1b6c",
+      "69a56444de03671e05ed23b8"
+    ],
+    "classifications": [
+      "69a124ccde03671e05ed1b7a"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [
+      {
+        "key": "0d9b3a4c-9765-4f47-9926-9194d4985851",
+        "targetEntity": "69976d817c876dd8d0372def",
+        "label": "Patient",
+        "inverseLabel": "Consultations",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      },
+      {
+        "key": "919ff2e0-c8af-4fdd-8cde-4ba960f0135e",
+        "targetEntity": "69a124ccde03671e05ed1b80",
+        "label": "Rendez-vous",
+        "inverseLabel": "Consultation",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "layout": {
+      "tabs": [
+        {
+          "id": "default",
+          "title": "Attributs",
+          "icon": "tabler:apps"
+        }
+      ],
+      "fields": [
+        {
+          "fieldId": "6997902086a58861ddebefe9",
+          "width": 6,
+          "id": "auto_6997902086a58861ddebefe9",
+          "tabId": "default"
+        },
+        {
+          "fieldId": "6997902086a58861ddebefef",
+          "width": 6,
+          "id": "auto_6997902086a58861ddebefef",
+          "tabId": "default"
+        },
+        {
+          "fieldId": "6997902086a58861ddebefeb",
+          "width": 6,
+          "id": "auto_6997902086a58861ddebefeb",
+          "tabId": "default"
+        },
+        {
+          "fieldId": "6997902086a58861ddebefed",
+          "width": 6,
+          "id": "auto_6997902086a58861ddebefed",
+          "tabId": "default"
+        }
+      ]
+    },
+    "createdAt": "2026-02-19T22:35:12.166Z",
+    "updatedAt": "2026-03-02T10:19:48.178Z",
+    "__v": 1,
+    "enableAttachments": true,
+    "description": "",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "namePlural": "Consultations",
+    "nameSingular": "Consultation"
+  },
+  {
+    "_id": "69983cfba2bb882ecc535722",
+    "name": "Contacts",
+    "slug": "contacts-3",
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28654"
+      }
+    ],
+    "spaces": [
+      "69983cfba2bb882ecc53571a"
+    ],
+    "folders": [],
+    "customFields": [
+      "69983cfba2bb882ecc535724",
+      "69983cfba2bb882ecc535726",
+      "69983cfba2bb882ecc535728",
+      "69983cfba2bb882ecc53572a",
+      "69983cfba2bb882ecc53572c",
+      "69983cfba2bb882ecc53572e"
+    ],
+    "classifications": [
+      "69983cfba2bb882ecc535731",
+      "69983cfba2bb882ecc535739"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T10:52:43.210Z",
+    "updatedAt": "2026-02-20T10:52:43.222Z",
+    "__v": 2,
+    "statusClassification": "69983cfba2bb882ecc535731",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69983cfba2bb882ecc5357e2",
+    "name": "Opportunités",
+    "slug": "opportunites-2",
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28663"
+      }
+    ],
+    "spaces": [
+      "69983cfba2bb882ecc53571a"
+    ],
+    "folders": [],
+    "customFields": [
+      "69983cfba2bb882ecc5357e4",
+      "69983cfba2bb882ecc5357e6",
+      "69983cfba2bb882ecc5357e8",
+      "69983cfba2bb882ecc5357ea"
+    ],
+    "classifications": [
+      "69983cfba2bb882ecc5357ed"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T10:52:43.269Z",
+    "updatedAt": "2026-02-20T10:52:43.271Z",
+    "__v": 1,
+    "statusClassification": "69983cfba2bb882ecc5357ed",
+    "enableAttachments": true
+  },
+  {
+    "_id": "6998434952eabd5f96e678e1",
+    "name": "Contacts",
+    "slug": "contacts-4",
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28654"
+      }
+    ],
+    "spaces": [
+      "6998434952eabd5f96e678d7"
+    ],
+    "folders": [],
+    "customFields": [
+      "6998434952eabd5f96e678e3",
+      "6998434952eabd5f96e678e5",
+      "6998434952eabd5f96e678e7",
+      "6998434952eabd5f96e678e9",
+      "6998434952eabd5f96e678eb",
+      "6998434952eabd5f96e678ed"
+    ],
+    "classifications": [
+      "6998434952eabd5f96e678f0",
+      "6998434952eabd5f96e678f8"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T11:19:37.105Z",
+    "updatedAt": "2026-02-20T11:19:37.112Z",
+    "__v": 2,
+    "statusClassification": "6998434952eabd5f96e678f0",
+    "enableAttachments": true
+  },
+  {
+    "_id": "6998434952eabd5f96e67a08",
+    "name": "Opportunités",
+    "slug": "opportunites-3",
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28663"
+      }
+    ],
+    "spaces": [
+      "6998434952eabd5f96e678d7"
+    ],
+    "folders": [],
+    "customFields": [
+      "6998434952eabd5f96e67a0a",
+      "6998434952eabd5f96e67a0c",
+      "6998434952eabd5f96e67a0e",
+      "6998434952eabd5f96e67a10"
+    ],
+    "classifications": [
+      "6998434952eabd5f96e67a13"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T11:19:37.179Z",
+    "updatedAt": "2026-02-20T11:19:37.182Z",
+    "__v": 1,
+    "statusClassification": "6998434952eabd5f96e67a13",
+    "enableAttachments": true
+  },
+  {
+    "_id": "6998478152eabd5f96e687f8",
+    "name": "Contacts",
+    "slug": "contacts-5",
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28654"
+      }
+    ],
+    "spaces": [
+      "6998478152eabd5f96e687ec"
+    ],
+    "folders": [],
+    "customFields": [
+      "6998478152eabd5f96e687fa",
+      "6998478152eabd5f96e687fc",
+      "6998478152eabd5f96e687fe",
+      "6998478152eabd5f96e68800",
+      "6998478152eabd5f96e68802",
+      "6998478152eabd5f96e68804"
+    ],
+    "classifications": [
+      "6998478152eabd5f96e68807",
+      "6998478152eabd5f96e6880f"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T11:37:37.332Z",
+    "updatedAt": "2026-02-20T11:37:37.335Z",
+    "__v": 2,
+    "statusClassification": "6998478152eabd5f96e68807",
+    "enableAttachments": true
+  },
+  {
+    "_id": "6998478152eabd5f96e6891f",
+    "name": "Opportunités",
+    "slug": "opportunites-4",
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28663"
+      }
+    ],
+    "spaces": [
+      "6998478152eabd5f96e687ec"
+    ],
+    "folders": [],
+    "customFields": [
+      "6998478152eabd5f96e68921",
+      "6998478152eabd5f96e68923",
+      "6998478152eabd5f96e68925",
+      "6998478152eabd5f96e68927"
+    ],
+    "classifications": [
+      "6998478152eabd5f96e6892a"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T11:37:37.372Z",
+    "updatedAt": "2026-02-20T11:37:37.374Z",
+    "__v": 1,
+    "statusClassification": "6998478152eabd5f96e6892a",
+    "enableAttachments": true
+  },
+  {
+    "_id": "699853975508dee5e62793a1",
+    "name": "Patients",
+    "slug": "patients-3",
+    "icon": "solar:user-heart-bold-duotone",
+    "color": "#2196f3",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286dc"
+      }
+    ],
+    "spaces": [
+      "699853975508dee5e6279399"
+    ],
+    "folders": [],
+    "customFields": [
+      "699853975508dee5e62793a3",
+      "699853975508dee5e62793a5",
+      "699853975508dee5e62793a7",
+      "699853975508dee5e62793a9",
+      "699853975508dee5e62793ab",
+      "699853975508dee5e62793ad",
+      "699853975508dee5e62793af"
+    ],
+    "classifications": [
+      "699853975508dee5e62793b2"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T12:29:11.495Z",
+    "updatedAt": "2026-02-20T12:29:11.498Z",
+    "__v": 1,
+    "statusClassification": "699853975508dee5e62793b2",
+    "enableAttachments": true
+  },
+  {
+    "_id": "699853975508dee5e6279475",
+    "name": "Consultations",
+    "slug": "consultations-2",
+    "icon": "solar:stethoscope-bold-duotone",
+    "color": "#14b8a6",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286e9"
+      }
+    ],
+    "spaces": [
+      "699853975508dee5e6279399"
+    ],
+    "folders": [],
+    "customFields": [
+      "699853975508dee5e6279477",
+      "699853975508dee5e6279479",
+      "699853975508dee5e627947b",
+      "699853975508dee5e627947d"
+    ],
+    "classifications": [
+      "699853975508dee5e6279480"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T12:29:11.541Z",
+    "updatedAt": "2026-02-20T12:29:11.544Z",
+    "__v": 1,
+    "enableAttachments": true
+  },
+  {
+    "_id": "699854725508dee5e627ab9f",
+    "name": "Facture",
+    "slug": "factures",
+    "icon": "solar:bill-list-bold-duotone",
+    "color": "#e2a03f",
+    "order": 5,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title"
+      },
+      {
+        "t": "text",
+        "v": " - "
+      },
+      {
+        "t": "field",
+        "id": "rel:040c2a7a-edf1-43b0-af3e-1c8ce16c38ad.title"
+      }
+    ],
+    "spaces": [
+      "699854725508dee5e627ab9b"
+    ],
+    "folders": [],
+    "customFields": [
+      "69a124ccde03671e05ed1b61",
+      "69a124ccde03671e05ed1b62",
+      "69a124ccde03671e05ed1b63",
+      "69a124ccde03671e05ed1b6c",
+      "69a56444de03671e05ed23b9"
+    ],
+    "classifications": [],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [
+      {
+        "key": "8d0d3b18-5b0e-4905-a7b6-3e03b5f1ed3c",
+        "targetEntity": "6997902086a58861ddebefe7",
+        "label": "Consultation",
+        "inverseLabel": "Factures",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      },
+      {
+        "key": "040c2a7a-edf1-43b0-af3e-1c8ce16c38ad",
+        "targetEntity": "69976d817c876dd8d0372def",
+        "label": "Patient",
+        "inverseLabel": "Factures",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "layout": [],
+    "createdAt": "2026-02-20T12:32:50.552Z",
+    "updatedAt": "2026-03-02T10:19:48.179Z",
+    "__v": 2,
+    "statusClassification": "69a124ccde03671e05ed1b7b",
+    "enableAttachments": true,
+    "description": "",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "namePlural": "Factures",
+    "nameSingular": "Facture"
+  },
+  {
+    "_id": "699854725508dee5e627ac90",
+    "name": "Dépenses",
+    "slug": "depenses",
+    "icon": "solar:card-recive-bold-duotone",
+    "color": "#ef4444",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28689"
+      }
+    ],
+    "spaces": [
+      "699854725508dee5e627ab9b"
+    ],
+    "folders": [],
+    "customFields": [
+      "699854725508dee5e627ac92",
+      "699854725508dee5e627ac94",
+      "699854725508dee5e627ac96",
+      "699854725508dee5e627ac98",
+      "699854725508dee5e627ac9a"
+    ],
+    "classifications": [
+      "699854725508dee5e627ac9d"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T12:32:50.597Z",
+    "updatedAt": "2026-02-20T12:32:50.602Z",
+    "__v": 1,
+    "enableAttachments": true
+  },
+  {
+    "_id": "6998550d5508dee5e627b9e1",
+    "name": "Tâches",
+    "slug": "taches-5",
+    "icon": "solar:checklist-minimalistic-bold-duotone",
+    "color": "#10b981",
+    "order": 0,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date",
+      "attachments"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "titre_tache",
+        "_id": "6998550d5508dee5e627b9e2"
+      }
+    ],
+    "spaces": [
+      "6998550d5508dee5e627b9d5"
+    ],
+    "folders": [],
+    "customFields": [
+      "6998550d5508dee5e627b9e3",
+      "6998550d5508dee5e627b9e5",
+      "6998550d5508dee5e627b9e7",
+      "6998550d5508dee5e627b9e9",
+      "6998550d5508dee5e627b9eb"
+    ],
+    "classifications": [
+      "6998550d5508dee5e627b9ee",
+      "6998550d5508dee5e627b9f6",
+      "6998550d5508dee5e627b9fd"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T12:35:25.837Z",
+    "updatedAt": "2026-02-20T12:35:25.843Z",
+    "__v": 3,
+    "statusClassification": "6998550d5508dee5e627b9ee",
+    "enableAttachments": true
+  },
+  {
+    "_id": "6998550d5508dee5e627ba10",
+    "name": "Notes",
+    "slug": "notes-2",
+    "icon": "solar:notes-bold-duotone",
+    "color": "#fbbf24",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "titre",
+        "_id": "6998550d5508dee5e627ba11"
+      }
+    ],
+    "spaces": [
+      "6998550d5508dee5e627b9d5"
+    ],
+    "folders": [],
+    "customFields": [
+      "6998550d5508dee5e627ba12",
+      "6998550d5508dee5e627ba14",
+      "6998550d5508dee5e627ba16",
+      "6998550d5508dee5e627ba18"
+    ],
+    "classifications": [
+      "6998550d5508dee5e627ba1b"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T12:35:25.852Z",
+    "updatedAt": "2026-02-20T12:35:25.853Z",
+    "__v": 1,
+    "statusClassification": "6998550d5508dee5e627ba1b",
+    "enableAttachments": true
+  },
+  {
+    "_id": "6998550d5508dee5e627ba29",
+    "name": "Calendrier",
+    "slug": "calendrier",
+    "icon": "solar:calendar-bold-duotone",
+    "color": "#f59e0b",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "titre",
+        "_id": "6998550d5508dee5e627ba2a"
+      }
+    ],
+    "spaces": [
+      "6998550d5508dee5e627b9d5"
+    ],
+    "folders": [],
+    "customFields": [
+      "6998550d5508dee5e627ba2b",
+      "6998550d5508dee5e627ba2d",
+      "6998550d5508dee5e627ba2f",
+      "6998550d5508dee5e627ba31",
+      "6998550d5508dee5e627ba33",
+      "6998550d5508dee5e627ba35",
+      "6998550d5508dee5e627ba37",
+      "6998550d5508dee5e627ba39",
+      "6998550d5508dee5e627ba3b"
+    ],
+    "classifications": [
+      "6998550d5508dee5e627ba3e",
+      "6998550d5508dee5e627ba46"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T12:35:25.861Z",
+    "updatedAt": "2026-02-20T12:35:25.865Z",
+    "__v": 2,
+    "statusClassification": "6998550d5508dee5e627ba3e",
+    "enableAttachments": true
+  },
+  {
+    "_id": "6998550d5508dee5e627ba54",
+    "name": "Documents",
+    "slug": "documents-2",
+    "icon": "solar:document-text-bold-duotone",
+    "color": "#06b6d4",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "titre",
+        "_id": "6998550d5508dee5e627ba55"
+      }
+    ],
+    "spaces": [
+      "6998550d5508dee5e627b9d5"
+    ],
+    "folders": [],
+    "customFields": [
+      "6998550d5508dee5e627ba56",
+      "6998550d5508dee5e627ba58",
+      "6998550d5508dee5e627ba5a",
+      "6998550d5508dee5e627ba5c",
+      "6998550d5508dee5e627ba5e",
+      "6998550d5508dee5e627ba60"
+    ],
+    "classifications": [
+      "6998550d5508dee5e627ba63",
+      "6998550d5508dee5e627ba6b"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T12:35:25.874Z",
+    "updatedAt": "2026-02-20T12:35:25.877Z",
+    "__v": 2,
+    "statusClassification": "6998550d5508dee5e627ba63",
+    "enableAttachments": true
+  },
+  {
+    "_id": "699855145508dee5e627bad6",
+    "name": "Tickets",
+    "slug": "tickets",
+    "icon": "solar:checklist-minimalistic-bold-duotone",
+    "color": "#10b981",
+    "order": 0,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date",
+      "attachments"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "titre_tache",
+        "_id": "699855145508dee5e627bad7"
+      }
+    ],
+    "spaces": [
+      "699855145508dee5e627bad2"
+    ],
+    "folders": [],
+    "customFields": [
+      "699855145508dee5e627bad8",
+      "699855145508dee5e627bada",
+      "699855145508dee5e627badc",
+      "699855145508dee5e627bade",
+      "699855145508dee5e627bae0"
+    ],
+    "classifications": [
+      "699855145508dee5e627bae3",
+      "699855145508dee5e627baeb",
+      "699855145508dee5e627baf2"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T12:35:32.927Z",
+    "updatedAt": "2026-02-20T12:35:32.933Z",
+    "__v": 3,
+    "statusClassification": "699855145508dee5e627bae3",
+    "enableAttachments": true
+  },
+  {
+    "_id": "699857ef027e29bba9654a6a",
+    "name": "Patients",
+    "slug": "patients-4",
+    "icon": "solar:user-heart-bold-duotone",
+    "color": "#2196f3",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286dc"
+      }
+    ],
+    "spaces": [
+      "699857ef027e29bba9654a60"
+    ],
+    "folders": [],
+    "customFields": [
+      "699857ef027e29bba9654a6c",
+      "699857ef027e29bba9654a6e",
+      "699857ef027e29bba9654a70",
+      "699857ef027e29bba9654a72",
+      "699857ef027e29bba9654a74",
+      "699857ef027e29bba9654a76",
+      "699857ef027e29bba9654a78"
+    ],
+    "classifications": [
+      "699857ef027e29bba9654a7b"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T12:47:43.255Z",
+    "updatedAt": "2026-02-20T12:47:43.259Z",
+    "__v": 1,
+    "statusClassification": "699857ef027e29bba9654a7b",
+    "enableAttachments": true
+  },
+  {
+    "_id": "699857ef027e29bba9654b44",
+    "name": "Consultations",
+    "slug": "consultations-3",
+    "icon": "solar:stethoscope-bold-duotone",
+    "color": "#14b8a6",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286e9"
+      }
+    ],
+    "spaces": [
+      "699857ef027e29bba9654a60"
+    ],
+    "folders": [],
+    "customFields": [
+      "699857ef027e29bba9654b46",
+      "699857ef027e29bba9654b48",
+      "699857ef027e29bba9654b4a",
+      "699857ef027e29bba9654b4c"
+    ],
+    "classifications": [
+      "699857ef027e29bba9654b4f"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T12:47:43.312Z",
+    "updatedAt": "2026-02-20T12:47:43.314Z",
+    "__v": 1,
+    "enableAttachments": true
+  },
+  {
+    "_id": "6998584b14b503aa91f46359",
+    "name": "Factures",
+    "slug": "factures-2",
+    "icon": "solar:bill-list-bold-duotone",
+    "color": "#e2a03f",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28679"
+      }
+    ],
+    "spaces": [
+      "6998584b14b503aa91f46353"
+    ],
+    "folders": [],
+    "customFields": [
+      "6998584b14b503aa91f4635b",
+      "6998584b14b503aa91f4635d",
+      "6998584b14b503aa91f4635f",
+      "6998584b14b503aa91f46361",
+      "6998584b14b503aa91f46363",
+      "6998584b14b503aa91f46365",
+      "6998584b14b503aa91f46367"
+    ],
+    "classifications": [
+      "6998584b14b503aa91f4636a",
+      "6998584b14b503aa91f46372"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T12:49:15.668Z",
+    "updatedAt": "2026-02-20T12:49:15.679Z",
+    "__v": 2,
+    "statusClassification": "6998584b14b503aa91f4636a",
+    "enableAttachments": true
+  },
+  {
+    "_id": "6998584b14b503aa91f4644d",
+    "name": "Dépenses",
+    "slug": "depenses-2",
+    "icon": "solar:card-recive-bold-duotone",
+    "color": "#ef4444",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28689"
+      }
+    ],
+    "spaces": [
+      "6998584b14b503aa91f46353"
+    ],
+    "folders": [],
+    "customFields": [
+      "6998584b14b503aa91f4644f",
+      "6998584b14b503aa91f46451",
+      "6998584b14b503aa91f46453",
+      "6998584b14b503aa91f46455",
+      "6998584b14b503aa91f46457"
+    ],
+    "classifications": [
+      "6998584b14b503aa91f4645a"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T12:49:15.729Z",
+    "updatedAt": "2026-02-20T12:49:15.732Z",
+    "__v": 1,
+    "enableAttachments": true
+  },
+  {
+    "_id": "69985b2114b503aa91f46d8b",
+    "name": "Contacts",
+    "slug": "contacts-6",
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28654"
+      }
+    ],
+    "spaces": [
+      "69985b2114b503aa91f46d7d"
+    ],
+    "folders": [],
+    "customFields": [
+      "69985b2114b503aa91f46d8d",
+      "69985b2114b503aa91f46d8f",
+      "69985b2114b503aa91f46d91",
+      "69985b2114b503aa91f46d93",
+      "69985b2114b503aa91f46d95",
+      "69985b2114b503aa91f46d97"
+    ],
+    "classifications": [
+      "69985b2114b503aa91f46d9a",
+      "69985b2114b503aa91f46da2"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T13:01:21.429Z",
+    "updatedAt": "2026-02-20T13:01:21.433Z",
+    "__v": 2,
+    "statusClassification": "69985b2114b503aa91f46d9a",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69985b2114b503aa91f46eb5",
+    "name": "Opportunités",
+    "slug": "opportunites-5",
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28663"
+      }
+    ],
+    "spaces": [
+      "69985b2114b503aa91f46d7d"
+    ],
+    "folders": [],
+    "customFields": [
+      "69985b2114b503aa91f46eb7",
+      "69985b2114b503aa91f46eb9",
+      "69985b2114b503aa91f46ebb",
+      "69985b2114b503aa91f46ebd"
+    ],
+    "classifications": [
+      "69985b2114b503aa91f46ec0"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T13:01:21.474Z",
+    "updatedAt": "2026-02-20T13:01:21.476Z",
+    "__v": 1,
+    "statusClassification": "69985b2114b503aa91f46ec0",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69985bcd14b503aa91f47536",
+    "name": "Contacts",
+    "slug": "contacts-7",
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28654"
+      }
+    ],
+    "spaces": [
+      "69985bcd14b503aa91f47526"
+    ],
+    "folders": [],
+    "customFields": [
+      "69985bcd14b503aa91f47538",
+      "69985bcd14b503aa91f4753a",
+      "69985bcd14b503aa91f4753c",
+      "69985bcd14b503aa91f4753e",
+      "69985bcd14b503aa91f47540",
+      "69985bcd14b503aa91f47542"
+    ],
+    "classifications": [
+      "69985bcd14b503aa91f47545",
+      "69985bcd14b503aa91f4754d"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T13:04:13.846Z",
+    "updatedAt": "2026-02-20T13:04:13.852Z",
+    "__v": 2,
+    "statusClassification": "69985bcd14b503aa91f47545",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69985bcd14b503aa91f47663",
+    "name": "Opportunités",
+    "slug": "opportunites-6",
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28663"
+      }
+    ],
+    "spaces": [
+      "69985bcd14b503aa91f47526"
+    ],
+    "folders": [],
+    "customFields": [
+      "69985bcd14b503aa91f47665",
+      "69985bcd14b503aa91f47667",
+      "69985bcd14b503aa91f47669",
+      "69985bcd14b503aa91f4766b"
+    ],
+    "classifications": [
+      "69985bcd14b503aa91f4766e"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T13:04:13.912Z",
+    "updatedAt": "2026-02-20T13:04:13.915Z",
+    "__v": 1,
+    "statusClassification": "69985bcd14b503aa91f4766e",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69985bd314b503aa91f4776b",
+    "name": "Patients",
+    "slug": "patients-5",
+    "icon": "solar:user-heart-bold-duotone",
+    "color": "#2196f3",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286dc"
+      }
+    ],
+    "spaces": [
+      "69985bd314b503aa91f4775f"
+    ],
+    "folders": [],
+    "customFields": [
+      "69985bd314b503aa91f4776d",
+      "69985bd314b503aa91f4776f",
+      "69985bd314b503aa91f47771",
+      "69985bd314b503aa91f47773",
+      "69985bd314b503aa91f47775",
+      "69985bd314b503aa91f47777",
+      "69985bd314b503aa91f47779"
+    ],
+    "classifications": [
+      "69985bd314b503aa91f4777c"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T13:04:19.769Z",
+    "updatedAt": "2026-02-20T13:04:19.771Z",
+    "__v": 1,
+    "statusClassification": "69985bd314b503aa91f4777c",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69985bd314b503aa91f47845",
+    "name": "Consultations",
+    "slug": "consultations-4",
+    "icon": "solar:stethoscope-bold-duotone",
+    "color": "#14b8a6",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286e9"
+      }
+    ],
+    "spaces": [
+      "69985bd314b503aa91f4775f"
+    ],
+    "folders": [],
+    "customFields": [
+      "69985bd314b503aa91f47847",
+      "69985bd314b503aa91f47849",
+      "69985bd314b503aa91f4784b",
+      "69985bd314b503aa91f4784d"
+    ],
+    "classifications": [
+      "69985bd314b503aa91f47850"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T13:04:19.807Z",
+    "updatedAt": "2026-02-20T13:04:19.809Z",
+    "__v": 1,
+    "enableAttachments": true
+  },
+  {
+    "_id": "69985bf214b503aa91f48403",
+    "name": "Tâches",
+    "slug": "taches-6",
+    "icon": "solar:checklist-bold-duotone",
+    "color": "#e7515a",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca2869c"
+      }
+    ],
+    "spaces": [
+      "69985bf214b503aa91f483f5"
+    ],
+    "folders": [],
+    "customFields": [
+      "69985bf214b503aa91f48405",
+      "69985bf214b503aa91f48407",
+      "69985bf214b503aa91f48409",
+      "69985bf214b503aa91f4840b"
+    ],
+    "classifications": [
+      "69985bf214b503aa91f4840e",
+      "69985bf214b503aa91f48416"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T13:04:50.241Z",
+    "updatedAt": "2026-02-20T13:04:50.245Z",
+    "__v": 2,
+    "statusClassification": "69985bf214b503aa91f4840e",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69985bf214b503aa91f484f5",
+    "name": "Jalons",
+    "slug": "jalons-4",
+    "icon": "solar:flag-bold-duotone",
+    "color": "#8b5cf6",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286a8"
+      }
+    ],
+    "spaces": [
+      "69985bf214b503aa91f483f5"
+    ],
+    "folders": [],
+    "customFields": [
+      "69985bf214b503aa91f484f7",
+      "69985bf214b503aa91f484f9",
+      "69985bf214b503aa91f484fb"
+    ],
+    "classifications": [
+      "69985bf214b503aa91f484fe"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T13:04:50.286Z",
+    "updatedAt": "2026-02-20T13:04:50.288Z",
+    "__v": 1,
+    "statusClassification": "69985bf214b503aa91f484fe",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69985bf914b503aa91f4859a",
+    "name": "Employés",
+    "slug": "employes",
+    "icon": "solar:user-id-bold-duotone",
+    "color": "#805dca",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286bc"
+      }
+    ],
+    "spaces": [
+      "69985bf914b503aa91f48596"
+    ],
+    "folders": [],
+    "customFields": [
+      "69985bf914b503aa91f4859c",
+      "69985bf914b503aa91f4859e",
+      "69985bf914b503aa91f485a0",
+      "69985bf914b503aa91f485a2",
+      "69985bf914b503aa91f485a4",
+      "69985bf914b503aa91f485a6"
+    ],
+    "classifications": [
+      "69985bf914b503aa91f485a9",
+      "69985bf914b503aa91f485b0"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T13:04:57.349Z",
+    "updatedAt": "2026-02-20T13:04:57.353Z",
+    "__v": 2,
+    "statusClassification": "69985bf914b503aa91f485a9",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69985bf914b503aa91f48685",
+    "name": "Congés",
+    "slug": "conges",
+    "icon": "solar:calendar-search-bold-duotone",
+    "color": "#06b6d4",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286cd"
+      }
+    ],
+    "spaces": [
+      "69985bf914b503aa91f48596"
+    ],
+    "folders": [],
+    "customFields": [
+      "69985bf914b503aa91f48687",
+      "69985bf914b503aa91f48689",
+      "69985bf914b503aa91f4868b",
+      "69985bf914b503aa91f4868d"
+    ],
+    "classifications": [
+      "69985bf914b503aa91f48690",
+      "69985bf914b503aa91f48696"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T13:04:57.385Z",
+    "updatedAt": "2026-02-20T13:04:57.387Z",
+    "__v": 2,
+    "statusClassification": "69985bf914b503aa91f48690",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69985f13fe8b5c53e465b64a",
+    "name": "Contacts",
+    "slug": "contacts-8",
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28654"
+      }
+    ],
+    "spaces": [
+      "69985f13fe8b5c53e465b638"
+    ],
+    "folders": [],
+    "customFields": [
+      "69985f13fe8b5c53e465b64c",
+      "69985f13fe8b5c53e465b64e",
+      "69985f13fe8b5c53e465b650",
+      "69985f13fe8b5c53e465b652",
+      "69985f13fe8b5c53e465b654",
+      "69985f13fe8b5c53e465b656"
+    ],
+    "classifications": [
+      "69985f13fe8b5c53e465b659",
+      "69985f13fe8b5c53e465b661"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T13:18:11.450Z",
+    "updatedAt": "2026-02-20T13:18:11.462Z",
+    "__v": 2,
+    "statusClassification": "69985f13fe8b5c53e465b659",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69985f13fe8b5c53e465b77d",
+    "name": "Opportunités",
+    "slug": "opportunites-7",
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28663"
+      }
+    ],
+    "spaces": [
+      "69985f13fe8b5c53e465b638"
+    ],
+    "folders": [],
+    "customFields": [
+      "69985f13fe8b5c53e465b77f",
+      "69985f13fe8b5c53e465b781",
+      "69985f13fe8b5c53e465b783",
+      "69985f13fe8b5c53e465b785"
+    ],
+    "classifications": [
+      "69985f13fe8b5c53e465b788"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [
+      {
+        "key": "a6c5feeb-4b71-41b6-8139-689178c257cf",
+        "targetEntity": "69985f13fe8b5c53e465b64a",
+        "label": "Contact",
+        "inverseLabel": "",
+        "cardinality": "one-to-many",
+        "inputMode": "autocomplete",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": false,
+        "_id": "69985f13fe8b5c53e465b827"
+      }
+    ],
+    "layout": [],
+    "createdAt": "2026-02-20T13:18:11.537Z",
+    "updatedAt": "2026-02-20T13:18:11.584Z",
+    "__v": 1,
+    "statusClassification": "69985f13fe8b5c53e465b788",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69985fc5fe8b5c53e465baf9",
+    "name": "Contacts",
+    "slug": "contacts-9",
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28654"
+      }
+    ],
+    "spaces": [
+      "69985fc5fe8b5c53e465bae5"
+    ],
+    "folders": [],
+    "customFields": [
+      "69985fc5fe8b5c53e465bafb",
+      "69985fc5fe8b5c53e465bafd",
+      "69985fc5fe8b5c53e465baff",
+      "69985fc5fe8b5c53e465bb01",
+      "69985fc5fe8b5c53e465bb03",
+      "69985fc5fe8b5c53e465bb05"
+    ],
+    "classifications": [
+      "69985fc5fe8b5c53e465bb08",
+      "69985fc5fe8b5c53e465bb10"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-20T13:21:09.522Z",
+    "updatedAt": "2026-02-20T13:21:09.531Z",
+    "__v": 2,
+    "statusClassification": "69985fc5fe8b5c53e465bb08",
+    "enableAttachments": true
+  },
+  {
+    "_id": "69985fc5fe8b5c53e465bc2d",
+    "name": "Opportunités",
+    "slug": "opportunites-8",
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca28663"
+      }
+    ],
+    "spaces": [
+      "69985fc5fe8b5c53e465bae5"
+    ],
+    "folders": [],
+    "customFields": [
+      "69985fc5fe8b5c53e465bc2f",
+      "69985fc5fe8b5c53e465bc31",
+      "69985fc5fe8b5c53e465bc33",
+      "69985fc5fe8b5c53e465bc35"
+    ],
+    "classifications": [
+      "69985fc5fe8b5c53e465bc38"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [
+      {
+        "key": "56423eab-31e5-413b-a87f-1463441954d1",
+        "targetEntity": "69985fc5fe8b5c53e465baf9",
+        "label": "Contact",
+        "inverseLabel": "",
+        "cardinality": "one-to-many",
+        "inputMode": "autocomplete",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": false,
+        "_id": "69985fc5fe8b5c53e465bcd8"
+      }
+    ],
+    "layout": [],
+    "createdAt": "2026-02-20T13:21:09.597Z",
+    "updatedAt": "2026-02-20T13:21:09.639Z",
+    "__v": 1,
+    "statusClassification": "69985fc5fe8b5c53e465bc38",
+    "enableAttachments": true
+  },
+  {
+    "_id": "699900bc89cd63ea3da5482b",
+    "name": "Employés",
+    "slug": "employes-2",
+    "icon": "solar:user-id-bold-duotone",
+    "color": "#805dca",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286bc"
+      }
+    ],
+    "spaces": [
+      "699900bc89cd63ea3da54825"
+    ],
+    "folders": [],
+    "customFields": [
+      "699900bc89cd63ea3da5482d",
+      "699900bc89cd63ea3da5482f",
+      "699900bc89cd63ea3da54831",
+      "699900bc89cd63ea3da54833",
+      "699900bc89cd63ea3da54835",
+      "699900bc89cd63ea3da54837"
+    ],
+    "classifications": [
+      "699900bc89cd63ea3da5483a",
+      "699900bc89cd63ea3da54841"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "enableAttachments": true,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-21T00:47:56.830Z",
+    "updatedAt": "2026-02-21T00:47:56.835Z",
+    "__v": 2,
+    "statusClassification": "699900bc89cd63ea3da5483a"
+  },
+  {
+    "_id": "699900bc89cd63ea3da54919",
+    "name": "Congés",
+    "slug": "conges-2",
+    "icon": "solar:calendar-search-bold-duotone",
+    "color": "#06b6d4",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286cd"
+      }
+    ],
+    "spaces": [
+      "699900bc89cd63ea3da54825"
+    ],
+    "folders": [],
+    "customFields": [
+      "699900bc89cd63ea3da5491b",
+      "699900bc89cd63ea3da5491d",
+      "699900bc89cd63ea3da5491f",
+      "699900bc89cd63ea3da54921"
+    ],
+    "classifications": [
+      "699900bc89cd63ea3da54924",
+      "699900bc89cd63ea3da5492a"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "enableAttachments": true,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [
+      {
+        "key": "31f2d43c-2b2d-41ed-ae15-9d00d6311648",
+        "targetEntity": "699900bc89cd63ea3da5482b",
+        "label": "Employé",
+        "inverseLabel": "",
+        "cardinality": "one-to-many",
+        "inputMode": "autocomplete",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": false,
+        "_id": "699900bc89cd63ea3da549ae"
+      }
+    ],
+    "layout": [],
+    "createdAt": "2026-02-21T00:47:56.882Z",
+    "updatedAt": "2026-02-21T00:47:56.910Z",
+    "__v": 2,
+    "statusClassification": "699900bc89cd63ea3da54924"
+  },
+  {
+    "_id": "699900e789cd63ea3da550f0",
+    "name": "Patients",
+    "slug": "patients-6",
+    "icon": "solar:user-heart-bold-duotone",
+    "color": "#2196f3",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6997693e7181bfedeca286dc"
+      }
+    ],
+    "spaces": [
+      "699900e789cd63ea3da550e2"
+    ],
+    "folders": [],
+    "customFields": [
+      "699900e789cd63ea3da550f2",
+      "699900e789cd63ea3da550f4",
+      "699900e789cd63ea3da550f6",
+      "699900e789cd63ea3da550f8",
+      "699900e789cd63ea3da550fa",
+      "699900e789cd63ea3da550fc",
+      "699900e789cd63ea3da550fe"
+    ],
+    "classifications": [
+      "699900e789cd63ea3da55101"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "enableAttachments": true,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [],
+    "layout": [],
+    "createdAt": "2026-02-21T00:48:39.481Z",
+    "updatedAt": "2026-02-21T00:48:39.484Z",
+    "__v": 1,
+    "statusClassification": "699900e789cd63ea3da55101"
+  },
+  {
+    "_id": "699900e789cd63ea3da55213",
+    "name": "Consultations",
+    "slug": "consultations-5",
+    "icon": "solar:stethoscope-bold-duotone",
+    "color": "#14b8a6",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "69a125f589de556d53f8c83e"
+      }
+    ],
+    "spaces": [
+      "699900e789cd63ea3da550e2"
+    ],
+    "folders": [],
+    "customFields": [
+      "699900e789cd63ea3da55217",
+      "699900e789cd63ea3da5521b",
+      "699900e789cd63ea3da55219",
+      "699900e789cd63ea3da55215"
+    ],
+    "classifications": [
+      "699900e789cd63ea3da5521e"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "enableAttachments": true,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [
+      {
+        "key": "76181b16-b409-4d7f-bcf4-17e9a2a8c79a",
+        "targetEntity": "699900e789cd63ea3da550f0",
+        "label": "Patient",
+        "inverseLabel": "",
+        "cardinality": "one-to-many",
+        "inputMode": "autocomplete",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": false,
+        "_id": "699900e789cd63ea3da553ab"
+      }
+    ],
+    "layout": [],
+    "createdAt": "2026-02-21T00:48:39.537Z",
+    "updatedAt": "2026-02-27T05:04:53.036Z",
+    "__v": 1,
+    "description": "",
+    "statusClassification": null
+  },
+  {
+    "_id": "699900e789cd63ea3da552ec",
+    "name": "Traitements",
+    "slug": "traitements",
+    "icon": "solar:pills-3-bold-duotone",
+    "color": "#8b5cf6",
+    "order": 0,
+    "enabledStandardFields": [
+      "title"
+    ],
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title",
+        "_id": "6998908b4a21c28ce42f56a5"
+      }
+    ],
+    "spaces": [
+      "699900e789cd63ea3da550e2"
+    ],
+    "folders": [],
+    "customFields": [
+      "699900e789cd63ea3da552ee",
+      "699900e789cd63ea3da552f0",
+      "699900e789cd63ea3da552f2",
+      "699900e789cd63ea3da552f4",
+      "699900e789cd63ea3da552f6",
+      "699900e789cd63ea3da552f8",
+      "699900e789cd63ea3da552fa"
+    ],
+    "classifications": [
+      "699900e789cd63ea3da552fd",
+      "699900e789cd63ea3da55304"
+    ],
+    "formLayout": {
+      "version": 1,
+      "rows": []
+    },
+    "formLayoutStatus": "draft",
+    "fieldOverrides": {},
+    "enableAttachments": true,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "relations": [
+      {
+        "key": "9c7d2a6d-b1e2-44a5-ae94-72ac1bf2093a",
+        "targetEntity": "699900e789cd63ea3da550f0",
+        "label": "Patient",
+        "inverseLabel": "",
+        "cardinality": "one-to-one",
+        "inputMode": "autocomplete",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": false,
+        "_id": "699900e789cd63ea3da55426"
+      },
+      {
+        "key": "167ee143-9fbe-4fc7-b2a3-c22904dc4fff",
+        "targetEntity": "699900e789cd63ea3da55213",
+        "label": "Consultation",
+        "inverseLabel": "",
+        "cardinality": "one-to-one",
+        "inputMode": "autocomplete",
+        "storage": "on-source",
+        "searchFields": [],
+        "displayFields": [],
+        "bidirectional": true,
+        "required": false,
+        "_id": "699900e789cd63ea3da554d3"
+      }
+    ],
+    "layout": [],
+    "createdAt": "2026-02-21T00:48:39.587Z",
+    "updatedAt": "2026-02-21T00:48:39.653Z",
+    "__v": 2,
+    "statusClassification": "699900e789cd63ea3da552fd"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b80",
+    "slug": "rendez-vous",
+    "__v": 0,
+    "classifications": [],
+    "color": "#8b5cf6",
+    "createdAt": "2026-02-27T04:59:56.782Z",
+    "customFields": [
+      "69a124ccde03671e05ed1b6d",
+      "69a124ccde03671e05ed1b6e",
+      "69a124ccde03671e05ed1b6f",
+      "69a124ccde03671e05ed1b6c"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:calendar-mark-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Rendez-vous",
+    "order": 1,
+    "relations": [
+      {
+        "key": "044f7a31-6b5f-4845-bcec-e5ce1255f98c",
+        "targetEntity": "69976d817c876dd8d0372def",
+        "label": "Patient",
+        "inverseLabel": "Rendez-vous",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "spaces": [],
+    "statusClassification": "69a124ccde03671e05ed1b79",
+    "updatedAt": "2026-03-02T10:19:48.177Z",
+    "namePlural": "Rendez-vous",
+    "nameSingular": "Rendez-vous",
+    "referenceTitleTokens": [
+      {
+        "t": "text",
+        "v": "RDV - "
+      },
+      {
+        "t": "field",
+        "id": "rel:044f7a31-6b5f-4845-bcec-e5ce1255f98c.title"
+      }
+    ]
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b81",
+    "slug": "prescriptions",
+    "__v": 0,
+    "classifications": [],
+    "color": "#e2a03f",
+    "createdAt": "2026-02-27T04:59:56.799Z",
+    "customFields": [
+      "69a124ccde03671e05ed1b59",
+      "69a124ccde03671e05ed1b5a",
+      "69a124ccde03671e05ed1b5b"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:document-medicine-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Prescription",
+    "order": 3,
+    "relations": [
+      {
+        "key": "338e79e6-7f15-43f2-81f3-4f11a3ef3295",
+        "targetEntity": "69976d817c876dd8d0372def",
+        "label": "Patient",
+        "inverseLabel": "Prescriptions",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      },
+      {
+        "key": "12e02e83-7c10-4afc-8da0-bd858e0b3c26",
+        "targetEntity": "6997902086a58861ddebefe7",
+        "label": "Consultation",
+        "inverseLabel": "Prescriptions",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      },
+      {
+        "key": "0a37a4b4-b84d-4daf-b94b-632fe19cb788",
+        "targetEntity": "69a124ccde03671e05ed1b82",
+        "label": "Médicament",
+        "inverseLabel": "Prescriptions",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "spaces": [],
+    "updatedAt": "2026-03-02T10:19:48.179Z",
+    "namePlural": "Prescriptions",
+    "nameSingular": "Prescription",
+    "referenceTitleTokens": [
+      {
+        "t": "text",
+        "v": "Ordonnance "
+      },
+      {
+        "t": "field",
+        "id": "rel:338e79e6-7f15-43f2-81f3-4f11a3ef3295.title"
+      }
+    ]
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b82",
+    "slug": "medicaments",
+    "__v": 0,
+    "classifications": [],
+    "color": "#ef4444",
+    "createdAt": "2026-02-27T04:59:56.800Z",
+    "customFields": [
+      "69a124ccde03671e05ed1b5c",
+      "69a124ccde03671e05ed1b5d",
+      "69a124ccde03671e05ed1b5e",
+      "69a124ccde03671e05ed1b5f",
+      "69a124ccde03671e05ed1b60",
+      "69a124ccde03671e05ed1b6c"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:pills-3-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Médicament",
+    "order": 4,
+    "relations": [],
+    "spaces": [],
+    "updatedAt": "2026-03-02T10:19:48.161Z",
+    "namePlural": "Médicaments",
+    "nameSingular": "Médicament",
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title"
+      }
+    ]
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b83",
+    "slug": "paiements",
+    "__v": 0,
+    "classifications": [],
+    "color": "#22c55e",
+    "createdAt": "2026-02-27T04:59:56.802Z",
+    "customFields": [
+      "69a124ccde03671e05ed1b61",
+      "69a124ccde03671e05ed1b64",
+      "69a124ccde03671e05ed1b65",
+      "69a124ccde03671e05ed1b6c"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:wallet-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Paiement",
+    "order": 6,
+    "relations": [
+      {
+        "key": "81d8e29d-9640-45d9-9071-323d1c58743c",
+        "targetEntity": "699854725508dee5e627ab9f",
+        "label": "Facture",
+        "inverseLabel": "Paiements",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "spaces": [],
+    "statusClassification": "69a124ccde03671e05ed1b7c",
+    "updatedAt": "2026-03-02T10:19:48.180Z",
+    "namePlural": "Paiements",
+    "nameSingular": "Paiement",
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title"
+      },
+      {
+        "t": "text",
+        "v": " - "
+      },
+      {
+        "t": "field",
+        "id": "rel:81d8e29d-9640-45d9-9071-323d1c58743c.title"
+      }
+    ]
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b84",
+    "slug": "assurances",
+    "__v": 0,
+    "classifications": [],
+    "color": "#3b82f6",
+    "createdAt": "2026-02-27T04:59:56.803Z",
+    "customFields": [
+      "69a124ccde03671e05ed1b71",
+      "69a124ccde03671e05ed1b70",
+      "69a124ccde03671e05ed1b72",
+      "69a124ccde03671e05ed1b46",
+      "69a124ccde03671e05ed1b47",
+      "69a124ccde03671e05ed1b6c"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:shield-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Assurance",
+    "order": 7,
+    "relations": [],
+    "spaces": [],
+    "updatedAt": "2026-03-02T10:19:48.164Z",
+    "namePlural": "Assurances",
+    "nameSingular": "Assurance",
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "69a124ccde03671e05ed1b71"
+      },
+      {
+        "t": "text",
+        "v": " - "
+      },
+      {
+        "t": "field",
+        "id": "69a124ccde03671e05ed1b70"
+      }
+    ]
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b85",
+    "slug": "resultats-labo",
+    "__v": 0,
+    "classifications": [
+      "69a124ccde03671e05ed1b7f"
+    ],
+    "color": "#f97316",
+    "createdAt": "2026-02-27T04:59:56.804Z",
+    "customFields": [
+      "69a124ccde03671e05ed1b66",
+      "69a124ccde03671e05ed1b67",
+      "69a124ccde03671e05ed1b68",
+      "69a124ccde03671e05ed1b69",
+      "69a124ccde03671e05ed1b6c"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:test-tube-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Résultat Labo",
+    "order": 8,
+    "relations": [
+      {
+        "key": "c13a79e1-68cb-4f42-a061-2bd2de0030c7",
+        "targetEntity": "69976d817c876dd8d0372def",
+        "label": "Patient",
+        "inverseLabel": "Résultats labo",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "spaces": [],
+    "updatedAt": "2026-03-02T10:19:48.181Z",
+    "namePlural": "Résultats Labo",
+    "nameSingular": "Résultat Labo",
+    "referenceTitleTokens": [
+      {
+        "t": "text",
+        "v": "Analyse "
+      },
+      {
+        "t": "field",
+        "id": "rel:c13a79e1-68cb-4f42-a061-2bd2de0030c7.title"
+      },
+      {
+        "t": "text",
+        "v": " - "
+      },
+      {
+        "t": "field",
+        "id": "69a124ccde03671e05ed1b66"
+      }
+    ]
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b86",
+    "slug": "documents-medicaux",
+    "__v": 0,
+    "classifications": [],
+    "color": "#6366f1",
+    "createdAt": "2026-02-27T04:59:56.805Z",
+    "customFields": [
+      "69a124ccde03671e05ed1b73",
+      "69a124ccde03671e05ed1b6c"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:file-text-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Document Médical",
+    "order": 9,
+    "relations": [
+      {
+        "key": "8994be4c-3339-4c3d-8fac-1c58f01f4919",
+        "targetEntity": "69976d817c876dd8d0372def",
+        "label": "Patient",
+        "inverseLabel": "Documents",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "spaces": [],
+    "updatedAt": "2026-03-02T10:19:48.181Z",
+    "namePlural": "Documents Médicaux",
+    "nameSingular": "Document Médical",
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "69a124ccde03671e05ed1b73"
+      },
+      {
+        "t": "text",
+        "v": " - "
+      },
+      {
+        "t": "field",
+        "id": "rel:8994be4c-3339-4c3d-8fac-1c58f01f4919.title"
+      }
+    ]
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b87",
+    "slug": "plans-traitement",
+    "__v": 0,
+    "classifications": [],
+    "color": "#0ea5e9",
+    "createdAt": "2026-02-27T04:59:56.807Z",
+    "customFields": [
+      "69a124ccde03671e05ed1b74",
+      "69a124ccde03671e05ed1b75",
+      "69a124ccde03671e05ed1b5a",
+      "69a124ccde03671e05ed1b6c"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:clipboard-list-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Plan de Traitement",
+    "order": 10,
+    "relations": [
+      {
+        "key": "0beab742-3c06-4025-90d1-8a7f39a154bc",
+        "targetEntity": "69976d817c876dd8d0372def",
+        "label": "Patient",
+        "inverseLabel": "Plans de traitement",
+        "cardinality": "one-to-many",
+        "inputMode": "modal-picker",
+        "storage": "on-source",
+        "bidirectional": true,
+        "required": false
+      }
+    ],
+    "spaces": [],
+    "updatedAt": "2026-03-02T10:19:48.182Z",
+    "namePlural": "Plans de Traitement",
+    "nameSingular": "Plan de Traitement",
+    "referenceTitleTokens": [
+      {
+        "t": "text",
+        "v": "Plan "
+      },
+      {
+        "t": "field",
+        "id": "rel:0beab742-3c06-4025-90d1-8a7f39a154bc.title"
+      }
+    ]
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b88",
+    "slug": "personnel",
+    "__v": 0,
+    "classifications": [
+      "69a124ccde03671e05ed1b7d"
+    ],
+    "color": "#4361ee",
+    "createdAt": "2026-02-27T04:59:56.809Z",
+    "customFields": [
+      "69a124ccde03671e05ed1b42",
+      "69a124ccde03671e05ed1b43",
+      "69a124ccde03671e05ed1b6a",
+      "69a124ccde03671e05ed1b6b",
+      "69a124ccde03671e05ed1b46",
+      "69a124ccde03671e05ed1b47"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Personnel",
+    "order": 11,
+    "relations": [],
+    "spaces": [],
+    "updatedAt": "2026-03-02T10:19:48.168Z",
+    "namePlural": "Personnel",
+    "nameSingular": "Membre du Personnel",
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "69a124ccde03671e05ed1b43"
+      },
+      {
+        "t": "text",
+        "v": " "
+      },
+      {
+        "t": "field",
+        "id": "69a124ccde03671e05ed1b42"
+      }
+    ]
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b89",
+    "slug": "stock",
+    "__v": 0,
+    "classifications": [],
+    "color": "#94a3b8",
+    "createdAt": "2026-02-27T04:59:56.810Z",
+    "customFields": [
+      "69a124ccde03671e05ed1b76",
+      "69a124ccde03671e05ed1b77",
+      "69a124ccde03671e05ed1b78",
+      "69a124ccde03671e05ed1b5e",
+      "69a124ccde03671e05ed1b60",
+      "69a124ccde03671e05ed1b5f",
+      "69a124ccde03671e05ed1b6c",
+      "69a56444de03671e05ed23ba"
+    ],
+    "description": "",
+    "enableAttachments": true,
+    "enabledStandardFields": [
+      "title",
+      "description",
+      "date"
+    ],
+    "folders": [],
+    "icon": "solar:box-bold-duotone",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "name": "Stock",
+    "order": 12,
+    "relations": [],
+    "spaces": [],
+    "updatedAt": "2026-03-02T10:19:48.168Z",
+    "namePlural": "Stock",
+    "nameSingular": "Article Stock",
+    "referenceTitleTokens": [
+      {
+        "t": "field",
+        "id": "title"
+      }
+    ]
+  }
+]

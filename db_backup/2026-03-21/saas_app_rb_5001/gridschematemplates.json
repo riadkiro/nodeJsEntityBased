@@ -1,0 +1,495 @@
+[
+  {
+    "_id": "69a47921de03671e05ed22ad",
+    "slug": "suivi_thyroide",
+    "__v": 0,
+    "color": "#4361ee",
+    "createdAt": "2026-03-01T17:36:33.883Z",
+    "description": "TSH, T4L, T3L — suivi de la fonction thyroïdienne",
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": [
+        "date",
+        "tsh",
+        "t4l",
+        "poids",
+        "bpm",
+        "notes"
+      ]
+    },
+    "icon": "solar:test-tube-bold-duotone",
+    "name": "Suivi Thyroïde",
+    "presetRows": [
+      {
+        "lineType": "default",
+        "values": {
+          "date": "",
+          "tsh": "",
+          "t4l": "",
+          "poids": "",
+          "notes": "Bilan initial"
+        },
+        "order": 0,
+        "_id": "69a479210c12ac5b292535c7"
+      }
+    ],
+    "schemaId": "69a47921de03671e05ed22aa",
+    "scope": "global",
+    "tags": [
+      "médical",
+      "endocrinologie",
+      "thyroïde"
+    ],
+    "updatedAt": "2026-03-01T17:36:33.883Z"
+  },
+  {
+    "_id": "69a47921de03671e05ed22ae",
+    "slug": "suivi_grossesse",
+    "__v": 0,
+    "color": "#e7515a",
+    "createdAt": "2026-03-01T17:36:33.889Z",
+    "description": "Poids, tension, BPM bébé — suivi prénatal complet",
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": [
+        "date",
+        "poids",
+        "tension_sys",
+        "tension_dia",
+        "bpm",
+        "notes"
+      ]
+    },
+    "icon": "solar:heart-pulse-bold-duotone",
+    "name": "Suivi Grossesse",
+    "presetRows": [
+      {
+        "lineType": "default",
+        "values": {
+          "date": "",
+          "poids": "",
+          "tension_sys": "",
+          "tension_dia": "",
+          "bpm": "",
+          "notes": "Première consultation"
+        },
+        "order": 0,
+        "_id": "69a479210c12ac5b292535ca"
+      }
+    ],
+    "schemaId": "69a47921de03671e05ed22aa",
+    "scope": "global",
+    "tags": [
+      "médical",
+      "gynécologie",
+      "grossesse"
+    ],
+    "updatedAt": "2026-03-01T17:36:33.889Z"
+  },
+  {
+    "_id": "69a47921de03671e05ed22af",
+    "slug": "suivi_diabete",
+    "__v": 0,
+    "color": "#00ab55",
+    "createdAt": "2026-03-01T17:36:33.890Z",
+    "description": "Glycémie, HbA1c, poids — suivi du diabète",
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": [
+        "date",
+        "poids",
+        "tension_sys",
+        "tension_dia",
+        "notes"
+      ]
+    },
+    "icon": "solar:test-tube-minimalistic-bold-duotone",
+    "name": "Suivi Diabète",
+    "presetRows": [
+      {
+        "lineType": "default",
+        "values": {
+          "date": "",
+          "poids": "",
+          "notes": "Bilan initial diabète"
+        },
+        "order": 0,
+        "_id": "69a479210c12ac5b292535cd"
+      }
+    ],
+    "schemaId": "69a47921de03671e05ed22aa",
+    "scope": "global",
+    "tags": [
+      "médical",
+      "endocrinologie",
+      "diabète"
+    ],
+    "updatedAt": "2026-03-01T17:36:33.890Z"
+  },
+  {
+    "_id": "69a47921de03671e05ed22b0",
+    "slug": "croissance_0_3",
+    "__v": 0,
+    "color": "#e2a03f",
+    "createdAt": "2026-03-01T17:36:33.892Z",
+    "description": "Poids, taille, périmètre crânien — première enfance",
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": [
+        "date",
+        "poids",
+        "taille",
+        "pc",
+        "imc",
+        "notes"
+      ]
+    },
+    "icon": "solar:baby-bold-duotone",
+    "name": "Croissance 0-3 ans",
+    "presetRows": [
+      {
+        "lineType": "default",
+        "values": {
+          "date": "",
+          "poids": "",
+          "taille": "",
+          "pc": "",
+          "notes": "Naissance"
+        },
+        "order": 0,
+        "_id": "69a479210c12ac5b292535d0"
+      }
+    ],
+    "schemaId": "69a47921de03671e05ed22ac",
+    "scope": "global",
+    "tags": [
+      "médical",
+      "pédiatrie",
+      "croissance"
+    ],
+    "updatedAt": "2026-03-01T17:36:33.892Z"
+  },
+  {
+    "_id": "69a47921de03671e05ed22b1",
+    "slug": "bilan_sanguin_complet",
+    "__v": 0,
+    "color": "#805dca",
+    "createdAt": "2026-03-01T17:36:33.894Z",
+    "description": "NFS, VS, CRP, Créatinine, Glycémie, Bilan hépatique",
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": []
+    },
+    "icon": "solar:test-tube-bold-duotone",
+    "name": "Bilan Sanguin Complet",
+    "presetRows": [
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "Globules rouges",
+          "resultat": "",
+          "unite": "T/L",
+          "norme": "4.0 - 5.5",
+          "interpretation": ""
+        },
+        "order": 0,
+        "_id": "69a479210c12ac5b292535d4"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "Hémoglobine",
+          "resultat": "",
+          "unite": "g/dL",
+          "norme": "12 - 16",
+          "interpretation": ""
+        },
+        "order": 1,
+        "_id": "69a479210c12ac5b292535d5"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "Globules blancs",
+          "resultat": "",
+          "unite": "G/L",
+          "norme": "4.0 - 10.0",
+          "interpretation": ""
+        },
+        "order": 2,
+        "_id": "69a479210c12ac5b292535d6"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "Plaquettes",
+          "resultat": "",
+          "unite": "G/L",
+          "norme": "150 - 400",
+          "interpretation": ""
+        },
+        "order": 3,
+        "_id": "69a479210c12ac5b292535d7"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "VS",
+          "resultat": "",
+          "unite": "mm/h",
+          "norme": "< 20",
+          "interpretation": ""
+        },
+        "order": 4,
+        "_id": "69a479210c12ac5b292535d8"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "CRP",
+          "resultat": "",
+          "unite": "mg/L",
+          "norme": "< 5",
+          "interpretation": ""
+        },
+        "order": 5,
+        "_id": "69a479210c12ac5b292535d9"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "Glycémie",
+          "resultat": "",
+          "unite": "g/L",
+          "norme": "0.70 - 1.10",
+          "interpretation": ""
+        },
+        "order": 6,
+        "_id": "69a479210c12ac5b292535da"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "Créatinine",
+          "resultat": "",
+          "unite": "mg/L",
+          "norme": "6 - 13",
+          "interpretation": ""
+        },
+        "order": 7,
+        "_id": "69a479210c12ac5b292535db"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "ASAT",
+          "resultat": "",
+          "unite": "UI/L",
+          "norme": "< 35",
+          "interpretation": ""
+        },
+        "order": 8,
+        "_id": "69a479210c12ac5b292535dc"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "ALAT",
+          "resultat": "",
+          "unite": "UI/L",
+          "norme": "< 45",
+          "interpretation": ""
+        },
+        "order": 9,
+        "_id": "69a479210c12ac5b292535dd"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "TSH",
+          "resultat": "",
+          "unite": "mUI/L",
+          "norme": "0.4 - 4.0",
+          "interpretation": ""
+        },
+        "order": 10,
+        "_id": "69a479210c12ac5b292535de"
+      }
+    ],
+    "schemaId": "69a47921de03671e05ed22ab",
+    "scope": "global",
+    "tags": [
+      "médical",
+      "laboratoire",
+      "bilan"
+    ],
+    "updatedAt": "2026-03-01T17:36:33.894Z"
+  },
+  {
+    "_id": "69b72f29e0a137379221d84e",
+    "name": "Bilan Standard",
+    "slug": "bilan_standard",
+    "description": "Preset saved from record",
+    "icon": "solar:clipboard-check-bold-duotone",
+    "color": "#4361ee",
+    "schemaId": "69a47921de03671e05ed22ab",
+    "presetRows": [
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "Globules rouges",
+          "resultat": "",
+          "unite": "T/L",
+          "norme": "4.0 - 5.5",
+          "interpretation": "critique"
+        },
+        "order": 0,
+        "_id": "69b72f29e0a137379221d84f"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "Hémoglobine",
+          "resultat": "",
+          "unite": "g/dL",
+          "norme": "12 - 16",
+          "interpretation": ""
+        },
+        "order": 1,
+        "_id": "69b72f29e0a137379221d850"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "Globules blancs",
+          "resultat": "",
+          "unite": "G/L",
+          "norme": "4.0 - 10.0",
+          "interpretation": ""
+        },
+        "order": 2,
+        "_id": "69b72f29e0a137379221d851"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "Plaquettes",
+          "resultat": "",
+          "unite": "G/L",
+          "norme": "150 - 400",
+          "interpretation": ""
+        },
+        "order": 3,
+        "_id": "69b72f29e0a137379221d852"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "VS",
+          "resultat": "",
+          "unite": "mm/h",
+          "norme": "< 20",
+          "interpretation": ""
+        },
+        "order": 4,
+        "_id": "69b72f29e0a137379221d853"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "CRP",
+          "resultat": "",
+          "unite": "mg/L",
+          "norme": "< 5",
+          "interpretation": ""
+        },
+        "order": 5,
+        "_id": "69b72f29e0a137379221d854"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "Glycémie",
+          "resultat": "",
+          "unite": "g/L",
+          "norme": "0.70 - 1.10",
+          "interpretation": ""
+        },
+        "order": 6,
+        "_id": "69b72f29e0a137379221d855"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "Créatinine",
+          "resultat": "",
+          "unite": "mg/L",
+          "norme": "6 - 13",
+          "interpretation": ""
+        },
+        "order": 7,
+        "_id": "69b72f29e0a137379221d856"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "ASAT",
+          "resultat": "",
+          "unite": "UI/L",
+          "norme": "< 35",
+          "interpretation": ""
+        },
+        "order": 8,
+        "_id": "69b72f29e0a137379221d857"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "ALAT",
+          "resultat": 1,
+          "unite": "UI/L",
+          "norme": "< 45",
+          "interpretation": ""
+        },
+        "order": 9,
+        "_id": "69b72f29e0a137379221d858"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "TSH",
+          "resultat": "",
+          "unite": "mUI/L",
+          "norme": "0.4 - 4.0",
+          "interpretation": ""
+        },
+        "order": 10,
+        "_id": "69b72f29e0a137379221d859"
+      },
+      {
+        "lineType": "default",
+        "values": {
+          "parametre": "GGT",
+          "resultat": 25,
+          "unite": "UI/L",
+          "norme": "",
+          "interpretation": ""
+        },
+        "order": 11,
+        "_id": "69b72f29e0a137379221d85a"
+      }
+    ],
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": []
+    },
+    "scope": "workspace",
+    "recordId": null,
+    "recordLabel": "",
+    "tags": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-15T22:14:01.085Z",
+    "updatedAt": "2026-03-15T22:14:01.085Z",
+    "__v": 0
+  }
+]

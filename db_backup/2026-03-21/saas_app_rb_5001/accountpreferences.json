@@ -1,0 +1,89 @@
+[
+  {
+    "_id": "69a965dc27ce2a0d068394d9",
+    "accountId": "5001",
+    "viewId": "record_panels_69985b2114b503aa91f46d8b",
+    "__v": 0,
+    "createdAt": "2026-03-05T11:15:40.821Z",
+    "preferences": {
+      "columnWidths": [
+        {
+          "id": "main",
+          "width": 6
+        },
+        {
+          "id": "sidebar",
+          "width": 6
+        }
+      ],
+      "extraColumns": []
+    },
+    "updatedAt": "2026-03-05T11:15:40.821Z"
+  },
+  {
+    "_id": "69b0ba0cc79fe48d5fc2f727",
+    "accountId": "5001",
+    "viewId": "record_tabs_699857ef027e29bba9654a6a",
+    "__v": 0,
+    "createdAt": "2026-03-11T00:40:44.762Z",
+    "preferences": {
+      "customTabLayouts": {
+        "custom_1773189644746": {
+          "rows": [
+            {
+              "id": "row_mmlbcae5grotu",
+              "columns": [
+                {
+                  "id": "col_mmlbcae5auy6a",
+                  "width": 12,
+                  "blockIds": [
+                    "block_mmlbcnaiabpuz",
+                    "block_mmlbdt143b2z4",
+                    "block_mmlshurzef6eq"
+                  ]
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmlbcnaiabpuz": {
+              "type": "chart",
+              "title": "Graphique",
+              "config": {
+                "advancedFilters": [],
+                "advancedFiltersLogic": "and",
+                "period": "day",
+                "defaultRange": "all"
+              }
+            },
+            "block_mmlbdt143b2z4": {
+              "type": "timeline",
+              "title": "Timeline"
+            },
+            "block_mmlshurzef6eq": {
+              "type": "chart",
+              "title": "Graphique"
+            }
+          }
+        }
+      },
+      "customTabs": [
+        {
+          "key": "custom_1773189644746",
+          "label": "Suivi",
+          "icon": "solar:widget-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": ""
+        }
+      ],
+      "fieldAssignments": {},
+      "relationTabs": [],
+      "tabLayouts": {},
+      "tabOrder": [
+        "custom_1773189644746"
+      ]
+    },
+    "updatedAt": "2026-03-15T21:48:05.035Z"
+  }
+]

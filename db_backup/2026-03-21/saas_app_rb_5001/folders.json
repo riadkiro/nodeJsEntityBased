@@ -1,0 +1,213 @@
+[
+  {
+    "_id": "697b96943241bfbc672cb250",
+    "name": "Marketing",
+    "slug": "marketing-1769707156701",
+    "type": "folder",
+    "spaces": [
+      "697b93635b293c680fadc880"
+    ],
+    "parentFolders": [],
+    "isShared": false,
+    "icon": "tabler:speakerphone",
+    "color": "#00ab55",
+    "order": 1,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-01-29T17:19:16.703Z",
+    "updatedAt": "2026-01-29T17:20:31.827Z",
+    "__v": 0
+  },
+  {
+    "_id": "697b96ac3241bfbc672cb279",
+    "name": "Pipeline",
+    "slug": "pipeline-1769707180583",
+    "type": "folder",
+    "spaces": [
+      "697b93635b293c680fadc880"
+    ],
+    "parentFolders": [],
+    "isShared": false,
+    "icon": "solar:filter-broken",
+    "color": "#00ab55",
+    "order": 2,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-01-29T17:19:40.584Z",
+    "updatedAt": "2026-01-29T17:20:31.827Z",
+    "__v": 0
+  },
+  {
+    "_id": "697b96cd3241bfbc672cb299",
+    "name": "Contacts DB",
+    "slug": "contact-database-1769707213817",
+    "type": "folder",
+    "spaces": [
+      "697b93635b293c680fadc880"
+    ],
+    "parentFolders": [],
+    "isShared": false,
+    "icon": "solar:database-broken",
+    "color": "#00ab55",
+    "order": 0,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-01-29T17:20:13.818Z",
+    "updatedAt": "2026-01-30T02:54:32.693Z",
+    "__v": 0
+  },
+  {
+    "_id": "697b972f3241bfbc672cb409",
+    "name": "E-commerce",
+    "slug": "e-commerce",
+    "type": "database",
+    "description": "",
+    "spaces": [],
+    "parentFolders": [],
+    "isShared": false,
+    "icon": "solar:shop-2-broken",
+    "color": "#F59E0B",
+    "createdAt": "2026-01-29T17:21:51.821Z",
+    "updatedAt": "2026-01-29T17:21:51.821Z",
+    "__v": 0
+  },
+  {
+    "_id": "697c1c944b70c78bbe2e82e9",
+    "name": "Brute",
+    "slug": "bdd-1769741460637",
+    "type": "folder",
+    "spaces": [],
+    "parentFolders": [
+      "697b96cd3241bfbc672cb299"
+    ],
+    "isShared": false,
+    "icon": "solar:database-broken",
+    "order": 1,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-01-30T02:51:00.642Z",
+    "updatedAt": "2026-01-31T12:31:24.125Z",
+    "__v": 0,
+    "color": ""
+  },
+  {
+    "_id": "697c1dee4b70c78bbe2e8357",
+    "name": "Segmentation",
+    "slug": "segmentation-1769741806071",
+    "type": "folder",
+    "spaces": [],
+    "parentFolders": [
+      "697b96cd3241bfbc672cb299"
+    ],
+    "isShared": false,
+    "icon": "solar:filters-broken",
+    "order": 2,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-01-30T02:56:46.072Z",
+    "updatedAt": "2026-01-31T12:31:24.125Z",
+    "__v": 0
+  },
+  {
+    "_id": "697f6d244df9b481719e43da",
+    "name": "Hot list",
+    "slug": "hot-list-1769958692086",
+    "type": "folder",
+    "spaces": [
+      "697b93635b293c680fadc880"
+    ],
+    "parentFolders": [],
+    "isShared": false,
+    "icon": "solar:target-broken",
+    "color": "#00ab55",
+    "order": 0,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-01T15:11:32.091Z",
+    "updatedAt": "2026-02-01T15:11:32.091Z",
+    "__v": 0
+  },
+  {
+    "_id": "69804a83159f11d2c79e9de8",
+    "name": "CSA",
+    "slug": "csa-1770015363580",
+    "type": "folder",
+    "spaces": [
+      "69804a5f159f11d2c79e9db5"
+    ],
+    "parentFolders": [],
+    "isShared": false,
+    "icon": "solar:folder-2-line-duotone",
+    "color": "#e2a03f",
+    "order": 0,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-02T06:56:03.582Z",
+    "updatedAt": "2026-02-02T06:56:03.582Z",
+    "__v": 0
+  },
+  {
+    "_id": "69804abd159f11d2c79e9e1a",
+    "name": "Devis",
+    "slug": "devis-1770015421976",
+    "type": "folder",
+    "spaces": [],
+    "parentFolders": [
+      "69804a83159f11d2c79e9de8"
+    ],
+    "isShared": false,
+    "icon": "solar:folder-2-line-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-02T06:57:01.977Z",
+    "updatedAt": "2026-02-02T06:57:01.977Z",
+    "__v": 0
+  },
+  {
+    "_id": "698101d523a601ed38146db9",
+    "name": "Test",
+    "slug": "test-1770062293208",
+    "type": "folder",
+    "spaces": [],
+    "parentFolders": [
+      "697b96cd3241bfbc672cb299"
+    ],
+    "isShared": false,
+    "icon": "solar:folder-2-line-duotone",
+    "color": "#e2a03f",
+    "order": 0,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-02T19:58:13.214Z",
+    "updatedAt": "2026-02-02T19:58:13.214Z",
+    "__v": 0
+  },
+  {
+    "_id": "6994ed1d54f4b780c2841b28",
+    "name": "Renamed Folder",
+    "slug": "test-folder",
+    "type": "folder",
+    "spaces": [
+      "698af83c968b728b701b0708"
+    ],
+    "parentFolders": [],
+    "isShared": false,
+    "icon": "solar:folder-2-line-duotone",
+    "order": 0,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-17T22:35:09.387Z",
+    "updatedAt": "2026-02-17T22:36:06.532Z",
+    "__v": 0,
+    "color": ""
+  },
+  {
+    "_id": "6994ee1454f4b780c2841d0f",
+    "name": "Test Folder",
+    "slug": "test-folder-2",
+    "type": "folder",
+    "spaces": [
+      "698af83c968b728b701b0708"
+    ],
+    "parentFolders": [],
+    "isShared": false,
+    "icon": "solar:folder-2-line-duotone",
+    "order": 0,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-17T22:39:16.760Z",
+    "updatedAt": "2026-02-17T22:39:16.760Z",
+    "__v": 0
+  }
+]

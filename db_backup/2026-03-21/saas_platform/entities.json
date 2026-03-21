@@ -1,0 +1,110 @@
+[
+  {
+    "_id": "6814cad0411c4703d0a9d0f5",
+    "name": "Task",
+    "slug": "task",
+    "moduleId": "6814cad0411c4703d0a9d0ef",
+    "workspaceId": "6814cad0411c4703d0a9d0e9",
+    "schema": {
+      "fields": [
+        {
+          "name": "title",
+          "type": "string",
+          "required": true,
+          "label": "Task Title"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "label": "Description"
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "label": "Status",
+          "options": [
+            "To Do",
+            "In Progress",
+            "Done"
+          ],
+          "default": "To Do"
+        },
+        {
+          "name": "dueDate",
+          "type": "date",
+          "required": false,
+          "label": "Due Date"
+        },
+        {
+          "name": "priority",
+          "type": "select",
+          "required": false,
+          "label": "Priority",
+          "options": [
+            "Low",
+            "Medium",
+            "High"
+          ],
+          "default": "Medium"
+        }
+      ]
+    },
+    "createdBy": "6814cad0411c4703d0a9d0e7",
+    "createdAt": "2025-05-02T13:38:24.087Z",
+    "__v": 0
+  },
+  {
+    "_id": "6814cb332d0285fa7c21c410",
+    "name": "Target list",
+    "slug": "rappel",
+    "moduleId": "6814cad0411c4703d0a9d0f1",
+    "workspaceId": "6814cad0411c4703d0a9d0e9",
+    "schema": {
+      "fields": [
+        {
+          "name": "nom",
+          "label": "Nom",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "phone",
+          "label": "Phone",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    "createdBy": "6814cad0411c4703d0a9d0e7",
+    "createdAt": "2025-05-02T13:40:03.238Z",
+    "__v": 0
+  },
+  {
+    "_id": "6814cfe32d0285fa7c21c853",
+    "name": "Target list",
+    "slug": "target-list",
+    "moduleId": "6814cec72d0285fa7c21c653",
+    "workspaceId": "6814cec72d0285fa7c21c64b",
+    "schema": {
+      "fields": [
+        {
+          "name": "title",
+          "label": "Nom",
+          "type": "string",
+          "required": false
+        }
+      ]
+    },
+    "createdBy": "6814cad0411c4703d0a9d0e7",
+    "createdAt": "2025-05-02T14:00:03.827Z",
+    "__v": 0
+  }
+]

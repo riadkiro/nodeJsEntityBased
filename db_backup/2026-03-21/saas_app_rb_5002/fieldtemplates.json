@@ -1,0 +1,622 @@
+[
+  {
+    "_id": "6999042d89cd63ea3da5acf1",
+    "name": "birth_date",
+    "label": "Date de naissance",
+    "description": "",
+    "type": "date",
+    "subtype": "",
+    "required": true,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "date",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals",
+      "before",
+      "after",
+      "between"
+    ],
+    "createdAt": "2026-02-21T01:02:37.489Z",
+    "updatedAt": "2026-02-21T01:02:37.489Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5acf3",
+    "name": "phone",
+    "label": "Téléphone",
+    "description": "",
+    "type": "string",
+    "subtype": "tel",
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "text",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals",
+      "contains",
+      "startsWith"
+    ],
+    "createdAt": "2026-02-21T01:02:37.532Z",
+    "updatedAt": "2026-02-21T01:02:37.532Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5acf5",
+    "name": "email",
+    "label": "Email",
+    "description": "",
+    "type": "string",
+    "subtype": "email",
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "text",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals",
+      "contains",
+      "startsWith"
+    ],
+    "createdAt": "2026-02-21T01:02:37.534Z",
+    "updatedAt": "2026-02-21T01:02:37.534Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5acf7",
+    "name": "address",
+    "label": "Adresse",
+    "description": "",
+    "type": "string",
+    "subtype": "",
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "text",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals",
+      "contains",
+      "startsWith"
+    ],
+    "createdAt": "2026-02-21T01:02:37.535Z",
+    "updatedAt": "2026-02-21T01:02:37.535Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5acf9",
+    "name": "blood_type",
+    "label": "Groupe sanguin",
+    "description": "",
+    "type": "string",
+    "subtype": "",
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "text",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals",
+      "contains",
+      "startsWith"
+    ],
+    "createdAt": "2026-02-21T01:02:37.536Z",
+    "updatedAt": "2026-02-21T01:02:37.536Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5acfb",
+    "name": "allergies",
+    "label": "Allergies",
+    "description": "",
+    "type": "text",
+    "subtype": "",
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "text",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "createdAt": "2026-02-21T01:02:37.537Z",
+    "updatedAt": "2026-02-21T01:02:37.537Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5acfd",
+    "name": "medical_notes",
+    "label": "Notes médicales",
+    "description": "",
+    "type": "text",
+    "subtype": "",
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "text",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "createdAt": "2026-02-21T01:02:37.538Z",
+    "updatedAt": "2026-02-21T01:02:37.538Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5ae0b",
+    "name": "date",
+    "label": "Date",
+    "description": "",
+    "type": "date",
+    "subtype": "",
+    "required": true,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "date",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals",
+      "before",
+      "after",
+      "between"
+    ],
+    "createdAt": "2026-02-21T01:02:37.648Z",
+    "updatedAt": "2026-02-21T01:02:37.648Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5ae0d",
+    "name": "diagnosis",
+    "label": "Diagnostic",
+    "description": "",
+    "type": "text",
+    "subtype": "",
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "text",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "createdAt": "2026-02-21T01:02:37.649Z",
+    "updatedAt": "2026-02-21T01:02:37.649Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5ae0f",
+    "name": "prescription",
+    "label": "Prescription",
+    "description": "",
+    "type": "text",
+    "subtype": "",
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "text",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "createdAt": "2026-02-21T01:02:37.650Z",
+    "updatedAt": "2026-02-21T01:02:37.650Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5ae11",
+    "name": "notes",
+    "label": "Notes",
+    "description": "",
+    "type": "text",
+    "subtype": "",
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "text",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "createdAt": "2026-02-21T01:02:37.651Z",
+    "updatedAt": "2026-02-21T01:02:37.651Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5aee0",
+    "name": "medication",
+    "label": "Médicament",
+    "description": "",
+    "type": "string",
+    "subtype": "",
+    "required": true,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "text",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals",
+      "contains",
+      "startsWith"
+    ],
+    "createdAt": "2026-02-21T01:02:37.696Z",
+    "updatedAt": "2026-02-21T01:02:37.696Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5aee2",
+    "name": "dosage",
+    "label": "Posologie",
+    "description": "",
+    "type": "string",
+    "subtype": "",
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "text",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals",
+      "contains",
+      "startsWith"
+    ],
+    "createdAt": "2026-02-21T01:02:37.697Z",
+    "updatedAt": "2026-02-21T01:02:37.697Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5aee4",
+    "name": "start_date",
+    "label": "Date de début",
+    "description": "",
+    "type": "date",
+    "subtype": "",
+    "required": true,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "date",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals",
+      "before",
+      "after",
+      "between"
+    ],
+    "createdAt": "2026-02-21T01:02:37.698Z",
+    "updatedAt": "2026-02-21T01:02:37.698Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5aee6",
+    "name": "end_date",
+    "label": "Date de fin",
+    "description": "",
+    "type": "date",
+    "subtype": "",
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "date",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals",
+      "before",
+      "after",
+      "between"
+    ],
+    "createdAt": "2026-02-21T01:02:37.699Z",
+    "updatedAt": "2026-02-21T01:02:37.699Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5aee8",
+    "name": "frequency",
+    "label": "Fréquence",
+    "description": "",
+    "type": "string",
+    "subtype": "",
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "text",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals",
+      "contains",
+      "startsWith"
+    ],
+    "createdAt": "2026-02-21T01:02:37.700Z",
+    "updatedAt": "2026-02-21T01:02:37.700Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5aeea",
+    "name": "side_effects",
+    "label": "Effets secondaires",
+    "description": "",
+    "type": "text",
+    "subtype": "",
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "text",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "createdAt": "2026-02-21T01:02:37.701Z",
+    "updatedAt": "2026-02-21T01:02:37.701Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999042d89cd63ea3da5aeec",
+    "name": "notes",
+    "label": "Notes",
+    "description": "",
+    "type": "text",
+    "subtype": "",
+    "required": false,
+    "unique": false,
+    "formula": {
+      "dependsOn": []
+    },
+    "ui": {
+      "width": "full",
+      "order": 0,
+      "readonly": false,
+      "visible": true,
+      "searchable": false,
+      "autocomplete": false
+    },
+    "filterable": true,
+    "entities": [],
+    "isCustom": true,
+    "isSystem": false,
+    "category": "text",
+    "visibilityConditions": [],
+    "filter_operators": [
+      "equals"
+    ],
+    "createdAt": "2026-02-21T01:02:37.702Z",
+    "updatedAt": "2026-02-21T01:02:37.702Z",
+    "__v": 0
+  }
+]

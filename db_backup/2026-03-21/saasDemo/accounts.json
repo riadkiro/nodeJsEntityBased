@@ -1,0 +1,54 @@
+[
+  {
+    "_id": "698050c151a0e3777df62009",
+    "account_number": "5001",
+    "__v": 0,
+    "created_on": "2026-02-02T07:22:41.170Z",
+    "name": "Actirama 2",
+    "permissions": [],
+    "status": "active",
+    "users": [
+      "boukirou6@hotmail.com"
+    ],
+    "icon": "solar:buildings-bold-duotone"
+  },
+  {
+    "_id": "6985e4b4b82e51bdb9bfd1a1",
+    "name": "Cabinet Docteur Dupont",
+    "icon": "solar:settings-bold-duotone",
+    "users": [
+      "643c0b36fbde1ceb1bdc97bb"
+    ],
+    "account_number": "5756",
+    "status": "active",
+    "permissions": [],
+    "created_on": "2026-02-06T12:55:16.571Z",
+    "__v": 0
+  },
+  {
+    "_id": "6994826487fd5dee265da62b",
+    "name": "Actirama",
+    "icon": "solar:star-broken",
+    "ownerId": "643c0b36fbde1ceb1bdc97bb",
+    "users": [
+      {
+        "userId": "643c0b36fbde1ceb1bdc97bb",
+        "email": "boukirou6@hotmail.com",
+        "role": "owner",
+        "status": "active",
+        "_id": "6994826487fd5dee265da62c",
+        "joinedAt": "2026-02-17T14:59:48.402Z"
+      }
+    ],
+    "account_number": "9194",
+    "status": "active",
+    "sharing": {
+      "enabled": false,
+      "sharedSpaces": []
+    },
+    "permissions": [],
+    "created_on": "2026-02-17T14:59:48.401Z",
+    "invitations": [],
+    "__v": 0
+  }
+]

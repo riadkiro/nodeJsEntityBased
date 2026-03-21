@@ -1,0 +1,166 @@
+[
+  {
+    "_id": "699700a79e00d7a934550b80",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "69733f6433f2b10fa6122245",
+    "name": "En Cours",
+    "color": "#4361ee",
+    "icon": null,
+    "filters": {
+      "697468b45ac39a116401a925": [
+        "697468f35ac39a116401aa1b"
+      ]
+    },
+    "fieldFilters": [],
+    "order": 1,
+    "pinned": true,
+    "createdAt": "2026-02-19T12:23:03.471Z",
+    "updatedAt": "2026-02-19T12:23:03.471Z",
+    "__v": 0
+  },
+  {
+    "_id": "699701629e00d7a934551256",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "6974fa513c65b095a571fb68",
+    "name": "Urgents",
+    "color": "#e7515a",
+    "icon": null,
+    "filters": {
+      "697e0010000000000000010b": [
+        "697e0002000000000000002d",
+        "697e0002000000000000002b",
+        "697e0002000000000000002c"
+      ]
+    },
+    "fieldFilters": [],
+    "order": 1,
+    "pinned": true,
+    "createdAt": "2026-02-19T12:26:10.428Z",
+    "updatedAt": "2026-02-19T16:58:26.593Z",
+    "__v": 0
+  },
+  {
+    "_id": "699701779e00d7a93455127d",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "6974fa513c65b095a571fb68",
+    "name": "Moyen",
+    "color": "#f59e0b",
+    "icon": null,
+    "filters": {},
+    "fieldFilters": [],
+    "order": 2,
+    "pinned": true,
+    "createdAt": "2026-02-19T12:26:31.716Z",
+    "updatedAt": "2026-02-19T16:06:02.080Z",
+    "__v": 0
+  },
+  {
+    "_id": "699729fb89271ed341236b47",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "6974fa513c65b095a571fb68",
+    "name": "Urgent",
+    "color": "#e7515a",
+    "icon": null,
+    "fieldFilters": [],
+    "order": 4,
+    "pinned": true,
+    "createdAt": "2026-02-19T15:19:23.101Z",
+    "updatedAt": "2026-02-19T17:42:43.333Z",
+    "__v": 0,
+    "filters": {}
+  },
+  {
+    "_id": "69972ab089271ed341237185",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "697c20e04b70c78bbe2e8702",
+    "name": "Nadia",
+    "color": "#4361ee",
+    "icon": null,
+    "fieldFilters": [
+      {
+        "fieldId": "rel:1ce30e77-8534-4295-9330-353e85cfba3e",
+        "operator": "contains",
+        "value": "Nadia",
+        "_id": "69972ab089271ed341237186"
+      }
+    ],
+    "order": 1,
+    "pinned": true,
+    "createdAt": "2026-02-19T15:22:24.154Z",
+    "updatedAt": "2026-02-19T15:22:24.154Z",
+    "__v": 0
+  },
+  {
+    "_id": "69972ad189271ed341237196",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "697c20e04b70c78bbe2e8702",
+    "name": "Urgent",
+    "color": "#e7515a",
+    "icon": null,
+    "fieldFilters": [
+      {
+        "fieldId": "classif:698af7f4f2100f0facaafa82",
+        "operator": "equals",
+        "value": "Urgent",
+        "_id": "69972ad189271ed341237197"
+      }
+    ],
+    "order": 2,
+    "pinned": true,
+    "createdAt": "2026-02-19T15:22:57.183Z",
+    "updatedAt": "2026-02-19T15:23:06.604Z",
+    "__v": 0,
+    "filters": {}
+  },
+  {
+    "_id": "69972c9789271ed34123740e",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "6974fa513c65b095a571fb68",
+    "name": "Test Update View",
+    "color": "#4361ee",
+    "icon": null,
+    "filters": {},
+    "fieldFilters": [],
+    "order": 5,
+    "pinned": true,
+    "createdAt": "2026-02-19T15:30:31.241Z",
+    "updatedAt": "2026-02-19T16:26:14.301Z",
+    "__v": 0
+  },
+  {
+    "_id": "699732d289271ed341237944",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "6974fa513c65b095a571fb68",
+    "name": "DEBUG",
+    "color": "#4361ee",
+    "icon": null,
+    "filters": {},
+    "fieldFilters": [],
+    "order": 6,
+    "pinned": true,
+    "createdAt": "2026-02-19T15:57:06.531Z",
+    "updatedAt": "2026-02-19T16:05:40.656Z",
+    "__v": 0
+  },
+  {
+    "_id": "69975c7b1a7150301f361da4",
+    "userId": "643c0b36fbde1ceb1bdc97bb",
+    "entityId": "697c20e04b70c78bbe2e8702",
+    "name": "Test",
+    "color": "#4361ee",
+    "icon": null,
+    "fieldFilters": [
+      {
+        "fieldId": "rel:1ce30e77-8534-4295-9330-353e85cfba3e",
+        "operator": "contains",
+        "value": "Nadia",
+        "_id": "69975c7b1a7150301f361da5"
+      }
+    ],
+    "order": 3,
+    "pinned": true,
+    "createdAt": "2026-02-19T18:54:51.226Z",
+    "updatedAt": "2026-02-19T18:54:51.226Z",
+    "__v": 0
+  }
+]

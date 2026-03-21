@@ -1,0 +1,2795 @@
+[
+  {
+    "_id": "6996f425d06979e863f9028d",
+    "name": "nom",
+    "label": "Nom",
+    "category": "popular",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "required": true,
+    "ui": {
+      "width": "half",
+      "icon": "solar:user-bold",
+      "placeholder": "Nom de famille"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.597Z",
+    "createdAt": "2026-02-19T11:29:41.054Z"
+  },
+  {
+    "_id": "6996f425d06979e863f9028e",
+    "name": "prenom",
+    "label": "Prénom",
+    "category": "popular",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:user-bold",
+      "placeholder": "Prénom"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.598Z",
+    "createdAt": "2026-02-19T11:29:41.058Z"
+  },
+  {
+    "_id": "6996f425d06979e863f9028f",
+    "name": "nom_complet",
+    "label": "Nom complet",
+    "category": "popular",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full",
+      "icon": "solar:user-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.599Z",
+    "createdAt": "2026-02-19T11:29:41.059Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90290",
+    "name": "email",
+    "label": "Email",
+    "category": "popular",
+    "type": "string",
+    "subtype": "email",
+    "render": {
+      "input": "email",
+      "display": {
+        "table": "link"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:letter-bold",
+      "placeholder": "email@exemple.com"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.600Z",
+    "createdAt": "2026-02-19T11:29:41.060Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90291",
+    "name": "telephone",
+    "label": "Téléphone",
+    "category": "popular",
+    "type": "string",
+    "subtype": "tel",
+    "render": {
+      "input": "tel",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:phone-bold",
+      "placeholder": "+33 6 00 00 00 00"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.602Z",
+    "createdAt": "2026-02-19T11:29:41.061Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90292",
+    "name": "mobile",
+    "label": "Mobile",
+    "category": "popular",
+    "type": "string",
+    "subtype": "tel",
+    "render": {
+      "input": "tel",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:smartphone-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.603Z",
+    "createdAt": "2026-02-19T11:29:41.062Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90293",
+    "name": "adresse",
+    "label": "Adresse",
+    "category": "popular",
+    "type": "string",
+    "render": {
+      "input": "textarea",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full",
+      "icon": "solar:map-point-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.603Z",
+    "createdAt": "2026-02-19T11:29:41.063Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90294",
+    "name": "code_postal",
+    "label": "Code postal",
+    "category": "popular",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "third",
+      "icon": "solar:map-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.604Z",
+    "createdAt": "2026-02-19T11:29:41.063Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90295",
+    "name": "ville",
+    "label": "Ville",
+    "category": "popular",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "third",
+      "icon": "solar:city-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.605Z",
+    "createdAt": "2026-02-19T11:29:41.064Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90296",
+    "name": "pays",
+    "label": "Pays",
+    "category": "popular",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "third",
+      "icon": "solar:globe-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.606Z",
+    "createdAt": "2026-02-19T11:29:41.064Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90297",
+    "name": "genre",
+    "label": "Genre",
+    "category": "popular",
+    "type": "select",
+    "type_config": {
+      "options": [
+        "Homme",
+        "Femme",
+        "Autre"
+      ]
+    },
+    "render": {
+      "input": "select",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.606Z",
+    "createdAt": "2026-02-19T11:29:41.065Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90298",
+    "name": "titre",
+    "label": "Titre",
+    "category": "content",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "required": true,
+    "ui": {
+      "width": "full",
+      "icon": "solar:text-bold",
+      "placeholder": "Titre..."
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.607Z",
+    "createdAt": "2026-02-19T11:29:41.065Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90299",
+    "name": "description",
+    "label": "Description",
+    "category": "content",
+    "type": "string",
+    "render": {
+      "input": "textarea",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full",
+      "icon": "solar:document-text-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.608Z",
+    "createdAt": "2026-02-19T11:29:41.066Z"
+  },
+  {
+    "_id": "6996f425d06979e863f9029a",
+    "name": "contenu",
+    "label": "Contenu",
+    "category": "content",
+    "type": "string",
+    "render": {
+      "input": "richtext",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.608Z",
+    "createdAt": "2026-02-19T11:29:41.066Z"
+  },
+  {
+    "_id": "6996f425d06979e863f9029b",
+    "name": "notes",
+    "label": "Notes",
+    "category": "content",
+    "type": "string",
+    "render": {
+      "input": "textarea",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full",
+      "icon": "solar:notes-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.609Z",
+    "createdAt": "2026-02-19T11:29:41.067Z"
+  },
+  {
+    "_id": "6996f425d06979e863f9029c",
+    "name": "commentaire",
+    "label": "Commentaire",
+    "category": "content",
+    "type": "string",
+    "render": {
+      "input": "textarea",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.609Z",
+    "createdAt": "2026-02-19T11:29:41.067Z"
+  },
+  {
+    "_id": "6996f425d06979e863f9029d",
+    "name": "objet",
+    "label": "Objet",
+    "category": "content",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full",
+      "placeholder": "Objet du message..."
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.610Z",
+    "createdAt": "2026-02-19T11:29:41.068Z"
+  },
+  {
+    "_id": "6996f425d06979e863f9029e",
+    "name": "conditions",
+    "label": "Conditions",
+    "category": "content",
+    "type": "string",
+    "render": {
+      "input": "textarea",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.610Z",
+    "createdAt": "2026-02-19T11:29:41.068Z"
+  },
+  {
+    "_id": "6996f425d06979e863f9029f",
+    "name": "clause",
+    "label": "Clause particulière",
+    "category": "content",
+    "type": "string",
+    "render": {
+      "input": "textarea",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.611Z",
+    "createdAt": "2026-02-19T11:29:41.069Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902a0",
+    "name": "date_debut",
+    "label": "Date de début",
+    "category": "dates",
+    "type": "date",
+    "render": {
+      "input": "date",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:calendar-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.611Z",
+    "createdAt": "2026-02-19T11:29:41.069Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902a1",
+    "name": "date_fin",
+    "label": "Date de fin",
+    "category": "dates",
+    "type": "date",
+    "render": {
+      "input": "date",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:calendar-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.611Z",
+    "createdAt": "2026-02-19T11:29:41.069Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902a2",
+    "name": "date_creation",
+    "label": "Date de création",
+    "category": "dates",
+    "type": "date",
+    "render": {
+      "input": "date",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:calendar-add-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.612Z",
+    "createdAt": "2026-02-19T11:29:41.070Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902a3",
+    "name": "date_naissance",
+    "label": "Date de naissance",
+    "category": "dates",
+    "type": "date",
+    "render": {
+      "input": "date",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:calendar-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.612Z",
+    "createdAt": "2026-02-19T11:29:41.071Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902a4",
+    "name": "date_signature",
+    "label": "Date de signature",
+    "category": "dates",
+    "type": "date",
+    "render": {
+      "input": "date",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.613Z",
+    "createdAt": "2026-02-19T11:29:41.071Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902a5",
+    "name": "date_paiement",
+    "label": "Date de paiement",
+    "category": "dates",
+    "type": "date",
+    "render": {
+      "input": "date",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.613Z",
+    "createdAt": "2026-02-19T11:29:41.072Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902a6",
+    "name": "date_livraison",
+    "label": "Date de livraison",
+    "category": "dates",
+    "type": "date",
+    "render": {
+      "input": "date",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.614Z",
+    "createdAt": "2026-02-19T11:29:41.072Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902a7",
+    "name": "echeance",
+    "label": "Échéance",
+    "category": "dates",
+    "type": "date",
+    "render": {
+      "input": "datetime-local",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:alarm-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.614Z",
+    "createdAt": "2026-02-19T11:29:41.072Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902a8",
+    "name": "due_at",
+    "label": "Échéance",
+    "category": "dates",
+    "type": "date",
+    "render": {
+      "input": "datetime-local",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:alarm-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.615Z",
+    "createdAt": "2026-02-19T11:29:41.073Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902a9",
+    "name": "rdv_at",
+    "label": "Date & Heure RDV",
+    "category": "dates",
+    "type": "date",
+    "render": {
+      "input": "datetime-local",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:clock-circle-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.615Z",
+    "createdAt": "2026-02-19T11:29:41.073Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902aa",
+    "name": "dernier_contact",
+    "label": "Dernier contact",
+    "category": "dates",
+    "type": "date",
+    "render": {
+      "input": "date",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.616Z",
+    "createdAt": "2026-02-19T11:29:41.073Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902ab",
+    "name": "prochain_rdv",
+    "label": "Prochain RDV",
+    "category": "dates",
+    "type": "date",
+    "render": {
+      "input": "datetime-local",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.616Z",
+    "createdAt": "2026-02-19T11:29:41.074Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902ac",
+    "name": "rappel",
+    "label": "Rappel",
+    "category": "dates",
+    "type": "date",
+    "render": {
+      "input": "datetime-local",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:bell-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.617Z",
+    "createdAt": "2026-02-19T11:29:41.075Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902ad",
+    "name": "date_creation_dossier",
+    "label": "Date Création",
+    "category": "dates",
+    "type": "date",
+    "render": {
+      "input": "date",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.617Z",
+    "createdAt": "2026-02-19T11:29:41.075Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902ae",
+    "name": "montant",
+    "label": "Montant",
+    "category": "finance",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "currency"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:wallet-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.618Z",
+    "createdAt": "2026-02-19T11:29:41.075Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902af",
+    "name": "prix_unitaire",
+    "label": "Prix unitaire HT",
+    "category": "finance",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "currency"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.618Z",
+    "createdAt": "2026-02-19T11:29:41.076Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902b0",
+    "name": "prix_ttc",
+    "label": "Prix TTC",
+    "category": "finance",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "currency"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.618Z",
+    "createdAt": "2026-02-19T11:29:41.076Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902b1",
+    "name": "total_ht",
+    "label": "Total HT",
+    "category": "finance",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "currency"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.619Z",
+    "createdAt": "2026-02-19T11:29:41.077Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902b2",
+    "name": "total_ttc",
+    "label": "Total TTC",
+    "category": "finance",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "currency"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.619Z",
+    "createdAt": "2026-02-19T11:29:41.077Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902b3",
+    "name": "tva",
+    "label": "TVA (%)",
+    "category": "finance",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "third"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.620Z",
+    "createdAt": "2026-02-19T11:29:41.078Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902b4",
+    "name": "quantite",
+    "label": "Quantité",
+    "category": "finance",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "third"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.620Z",
+    "createdAt": "2026-02-19T11:29:41.078Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902b5",
+    "name": "remise_pourcent",
+    "label": "Remise (%)",
+    "category": "finance",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "third"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.621Z",
+    "createdAt": "2026-02-19T11:29:41.079Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902b6",
+    "name": "remise_montant",
+    "label": "Remise (€)",
+    "category": "finance",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "currency"
+      }
+    },
+    "ui": {
+      "width": "third"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.622Z",
+    "createdAt": "2026-02-19T11:29:41.079Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902b7",
+    "name": "budget",
+    "label": "Budget",
+    "category": "finance",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "currency"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:chart-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.623Z",
+    "createdAt": "2026-02-19T11:29:41.080Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902b8",
+    "name": "solde",
+    "label": "Solde",
+    "category": "finance",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "currency"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.623Z",
+    "createdAt": "2026-02-19T11:29:41.081Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902b9",
+    "name": "commission",
+    "label": "Commission (%)",
+    "category": "finance",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "third"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.624Z",
+    "createdAt": "2026-02-19T11:29:41.081Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902ba",
+    "name": "marge",
+    "label": "Marge (%)",
+    "category": "finance",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "third"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.624Z",
+    "createdAt": "2026-02-19T11:29:41.081Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902bb",
+    "name": "mode_paiement",
+    "label": "Mode de paiement",
+    "category": "finance",
+    "type": "select",
+    "type_config": {
+      "options": [
+        "Virement",
+        "Carte bancaire",
+        "Chèque",
+        "Espèces",
+        "PayPal",
+        "Prélèvement"
+      ]
+    },
+    "render": {
+      "input": "select",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.625Z",
+    "createdAt": "2026-02-19T11:29:41.082Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902bc",
+    "name": "entreprise",
+    "label": "Entreprise",
+    "category": "pro",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:buildings-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.625Z",
+    "createdAt": "2026-02-19T11:29:41.082Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902bd",
+    "name": "raison_sociale",
+    "label": "Raison sociale",
+    "category": "pro",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.626Z",
+    "createdAt": "2026-02-19T11:29:41.082Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902be",
+    "name": "poste",
+    "label": "Poste / Fonction",
+    "category": "pro",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:case-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.626Z",
+    "createdAt": "2026-02-19T11:29:41.083Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902bf",
+    "name": "departement",
+    "label": "Département / Service",
+    "category": "pro",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.627Z",
+    "createdAt": "2026-02-19T11:29:41.083Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902c0",
+    "name": "secteur_activite",
+    "label": "Secteur d'activité",
+    "category": "pro",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.627Z",
+    "createdAt": "2026-02-19T11:29:41.084Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902c1",
+    "name": "site_web",
+    "label": "Site web",
+    "category": "pro",
+    "type": "string",
+    "subtype": "url",
+    "render": {
+      "input": "url",
+      "display": {
+        "table": "link"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:global-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.628Z",
+    "createdAt": "2026-02-19T11:29:41.084Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902c2",
+    "name": "linkedin",
+    "label": "LinkedIn",
+    "category": "pro",
+    "type": "string",
+    "subtype": "url",
+    "render": {
+      "input": "url",
+      "display": {
+        "table": "link"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "mdi:linkedin"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.628Z",
+    "createdAt": "2026-02-19T11:29:41.084Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902c3",
+    "name": "twitter",
+    "label": "Twitter / X",
+    "category": "pro",
+    "type": "string",
+    "subtype": "url",
+    "render": {
+      "input": "url",
+      "display": {
+        "table": "link"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.629Z",
+    "createdAt": "2026-02-19T11:29:41.085Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902c4",
+    "name": "siret",
+    "label": "SIRET",
+    "category": "pro",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.629Z",
+    "createdAt": "2026-02-19T11:29:41.085Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902c5",
+    "name": "siren",
+    "label": "SIREN",
+    "category": "pro",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.630Z",
+    "createdAt": "2026-02-19T11:29:41.086Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902c6",
+    "name": "tva_intra",
+    "label": "N° TVA Intracommunautaire",
+    "category": "pro",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.630Z",
+    "createdAt": "2026-02-19T11:29:41.086Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902c7",
+    "name": "capital",
+    "label": "Capital social",
+    "category": "pro",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "currency"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.631Z",
+    "createdAt": "2026-02-19T11:29:41.087Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902c8",
+    "name": "effectif",
+    "label": "Effectif",
+    "category": "pro",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.631Z",
+    "createdAt": "2026-02-19T11:29:41.087Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902c9",
+    "name": "statut",
+    "label": "Statut",
+    "category": "workflow",
+    "type": "select",
+    "render": {
+      "input": "select",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:flag-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.632Z",
+    "createdAt": "2026-02-19T11:29:41.087Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902ca",
+    "name": "priorite",
+    "label": "Priorité",
+    "category": "workflow",
+    "type": "select",
+    "type_config": {
+      "options": [
+        "Basse",
+        "Normale",
+        "Haute",
+        "Urgente"
+      ]
+    },
+    "render": {
+      "input": "select",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.632Z",
+    "createdAt": "2026-02-19T11:29:41.088Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902cb",
+    "name": "progression",
+    "label": "Progression (%)",
+    "category": "workflow",
+    "type": "number",
+    "render": {
+      "input": "range",
+      "display": {
+        "table": "text"
+      }
+    },
+    "type_config": {
+      "min": 0,
+      "max": 100
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.632Z",
+    "createdAt": "2026-02-19T11:29:41.088Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902cc",
+    "name": "assignee",
+    "label": "Assigné à",
+    "category": "workflow",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:user-check-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.633Z",
+    "createdAt": "2026-02-19T11:29:41.089Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902cd",
+    "name": "responsable",
+    "label": "Responsable",
+    "category": "workflow",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:user-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.633Z",
+    "createdAt": "2026-02-19T11:29:41.089Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902ce",
+    "name": "source",
+    "label": "Source",
+    "category": "workflow",
+    "type": "select",
+    "type_config": {
+      "options": [
+        "Web",
+        "Email",
+        "Téléphone",
+        "Recommandation",
+        "Réseaux sociaux",
+        "Salon",
+        "Autre"
+      ]
+    },
+    "render": {
+      "input": "select",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.634Z",
+    "createdAt": "2026-02-19T11:29:41.089Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902cf",
+    "name": "tags",
+    "label": "Tags",
+    "category": "workflow",
+    "type": "string",
+    "render": {
+      "input": "tags",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full",
+      "icon": "solar:tag-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.634Z",
+    "createdAt": "2026-02-19T11:29:41.090Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902d0",
+    "name": "type_contact",
+    "label": "Type de contact",
+    "category": "workflow",
+    "type": "select",
+    "type_config": {
+      "options": [
+        "Prospect",
+        "Client",
+        "Partenaire",
+        "Fournisseur"
+      ]
+    },
+    "render": {
+      "input": "select",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.635Z",
+    "createdAt": "2026-02-19T11:29:41.091Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902d1",
+    "name": "statut_commercial",
+    "label": "Statut commercial",
+    "category": "workflow",
+    "type": "select",
+    "type_config": {
+      "options": [
+        "Nouveau",
+        "Contacté",
+        "Qualifié",
+        "Négociation",
+        "Gagné",
+        "Perdu"
+      ]
+    },
+    "render": {
+      "input": "select",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.635Z",
+    "createdAt": "2026-02-19T11:29:41.091Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902d2",
+    "name": "avatar",
+    "label": "Avatar",
+    "category": "media",
+    "type": "file",
+    "render": {
+      "input": "file",
+      "display": {
+        "table": "avatar"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:gallery-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.636Z",
+    "createdAt": "2026-02-19T11:29:41.092Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902d3",
+    "name": "photo",
+    "label": "Photo",
+    "category": "media",
+    "type": "file",
+    "render": {
+      "input": "file",
+      "display": {
+        "table": "avatar"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.636Z",
+    "createdAt": "2026-02-19T11:29:41.092Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902d4",
+    "name": "logo",
+    "label": "Logo",
+    "category": "media",
+    "type": "file",
+    "render": {
+      "input": "file",
+      "display": {
+        "table": "avatar"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.637Z",
+    "createdAt": "2026-02-19T11:29:41.093Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902d5",
+    "name": "couverture",
+    "label": "Image de couverture",
+    "category": "media",
+    "type": "file",
+    "render": {
+      "input": "file",
+      "display": {
+        "table": "avatar"
+      }
+    },
+    "ui": {
+      "width": "full"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.637Z",
+    "createdAt": "2026-02-19T11:29:41.093Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902d6",
+    "name": "document",
+    "label": "Document",
+    "category": "media",
+    "type": "file",
+    "render": {
+      "input": "file",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full",
+      "icon": "solar:document-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.637Z",
+    "createdAt": "2026-02-19T11:29:41.094Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902d7",
+    "name": "pieces_jointes",
+    "label": "Pièces jointes",
+    "category": "media",
+    "type": "file",
+    "render": {
+      "input": "file",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full",
+      "icon": "solar:paperclip-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.638Z",
+    "createdAt": "2026-02-19T11:29:41.094Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902d8",
+    "name": "facture",
+    "label": "Facture (PDF)",
+    "category": "media",
+    "type": "file",
+    "render": {
+      "input": "file",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.638Z",
+    "createdAt": "2026-02-19T11:29:41.094Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902d9",
+    "name": "devis",
+    "label": "Devis (PDF)",
+    "category": "media",
+    "type": "file",
+    "render": {
+      "input": "file",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.639Z",
+    "createdAt": "2026-02-19T11:29:41.095Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902da",
+    "name": "contrat",
+    "label": "Contrat",
+    "category": "media",
+    "type": "file",
+    "render": {
+      "input": "file",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.639Z",
+    "createdAt": "2026-02-19T11:29:41.095Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902db",
+    "name": "bon_commande",
+    "label": "Bon de commande",
+    "category": "media",
+    "type": "file",
+    "render": {
+      "input": "file",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.640Z",
+    "createdAt": "2026-02-19T11:29:41.096Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902dc",
+    "name": "signature",
+    "label": "Signature",
+    "category": "media",
+    "type": "file",
+    "render": {
+      "input": "file",
+      "display": {
+        "table": "avatar"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.640Z",
+    "createdAt": "2026-02-19T11:29:41.096Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902dd",
+    "name": "duree_minutes",
+    "label": "Durée (min)",
+    "category": "numeric",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:clock-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.641Z",
+    "createdAt": "2026-02-19T11:29:41.097Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902de",
+    "name": "revenue",
+    "label": "Chiffre d'affaires",
+    "category": "numeric",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "currency"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.641Z",
+    "createdAt": "2026-02-19T11:29:41.097Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902df",
+    "name": "note_evaluation",
+    "label": "Note / Évaluation",
+    "category": "numeric",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "text"
+      }
+    },
+    "type_config": {
+      "min": 0,
+      "max": 5
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:star-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.642Z",
+    "createdAt": "2026-02-19T11:29:41.098Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902e0",
+    "name": "salle",
+    "label": "Salle",
+    "category": "choice",
+    "type": "select",
+    "render": {
+      "input": "select",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.642Z",
+    "createdAt": "2026-02-19T11:29:41.098Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902e1",
+    "name": "type_visite",
+    "label": "Type de visite",
+    "category": "choice",
+    "type": "select",
+    "type_config": {
+      "options": [
+        "Consultation",
+        "Urgence",
+        "Suivi",
+        "Contrôle"
+      ]
+    },
+    "render": {
+      "input": "select",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.643Z",
+    "createdAt": "2026-02-19T11:29:41.098Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902e2",
+    "name": "groupe_sanguin",
+    "label": "Groupe Sanguin",
+    "category": "choice",
+    "type": "select",
+    "type_config": {
+      "options": [
+        "A+",
+        "A-",
+        "B+",
+        "B-",
+        "AB+",
+        "AB-",
+        "O+",
+        "O-"
+      ]
+    },
+    "render": {
+      "input": "select",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.643Z",
+    "createdAt": "2026-02-19T11:29:41.099Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902e3",
+    "name": "role_equipe",
+    "label": "Rôle",
+    "category": "choice",
+    "type": "select",
+    "type_config": {
+      "options": [
+        "Manager",
+        "Développeur",
+        "Designer",
+        "Commercial",
+        "Support",
+        "Admin"
+      ]
+    },
+    "render": {
+      "input": "select",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.644Z",
+    "createdAt": "2026-02-19T11:29:41.099Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902e4",
+    "name": "en_ligne",
+    "label": "En ligne",
+    "category": "choice",
+    "type": "boolean",
+    "render": {
+      "input": "toggle",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.644Z",
+    "createdAt": "2026-02-19T11:29:41.100Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902e5",
+    "name": "frequences",
+    "label": "Fréquences",
+    "category": "choice",
+    "type": "select",
+    "type_config": {
+      "options": [
+        "Quotidien",
+        "Hebdomadaire",
+        "Mensuel",
+        "Trimestriel",
+        "Annuel"
+      ]
+    },
+    "render": {
+      "input": "select",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.645Z",
+    "createdAt": "2026-02-19T11:29:41.100Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902e6",
+    "name": "consultation_patient",
+    "label": "Patient",
+    "category": "relation",
+    "type": "relation",
+    "render": {
+      "input": "relation",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.645Z",
+    "createdAt": "2026-02-19T11:29:41.101Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902e7",
+    "name": "tache_assignee",
+    "label": "Assigné à",
+    "category": "relation",
+    "type": "relation",
+    "render": {
+      "input": "relation",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.645Z",
+    "createdAt": "2026-02-19T11:29:41.101Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902e8",
+    "name": "tache_patient",
+    "label": "Patient",
+    "category": "relation",
+    "type": "relation",
+    "render": {
+      "input": "relation",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.646Z",
+    "createdAt": "2026-02-19T11:29:41.102Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902e9",
+    "name": "reference",
+    "label": "Référence",
+    "category": "other",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half",
+      "icon": "solar:hashtag-bold"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.647Z",
+    "createdAt": "2026-02-19T11:29:41.102Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902ea",
+    "name": "code_client",
+    "label": "Code client",
+    "category": "other",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.647Z",
+    "createdAt": "2026-02-19T11:29:41.103Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902eb",
+    "name": "code_produit",
+    "label": "Code produit",
+    "category": "other",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.648Z",
+    "createdAt": "2026-02-19T11:29:41.103Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902ec",
+    "name": "code_barre",
+    "label": "Code-barres / EAN",
+    "category": "other",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.648Z",
+    "createdAt": "2026-02-19T11:29:41.104Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902ed",
+    "name": "sku",
+    "label": "SKU",
+    "category": "other",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.649Z",
+    "createdAt": "2026-02-19T11:29:41.104Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902ee",
+    "name": "numero_facture",
+    "label": "N° Facture",
+    "category": "other",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.649Z",
+    "createdAt": "2026-02-19T11:29:41.105Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902ef",
+    "name": "numero_devis",
+    "label": "N° Devis",
+    "category": "other",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.650Z",
+    "createdAt": "2026-02-19T11:29:41.105Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902f0",
+    "name": "numero_commande",
+    "label": "N° Commande",
+    "category": "other",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.650Z",
+    "createdAt": "2026-02-19T11:29:41.105Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902f1",
+    "name": "ordre",
+    "label": "Ordre d'affichage",
+    "category": "other",
+    "type": "number",
+    "render": {
+      "input": "number",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.651Z",
+    "createdAt": "2026-02-19T11:29:41.106Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902f2",
+    "name": "actif",
+    "label": "Actif",
+    "category": "other",
+    "type": "boolean",
+    "render": {
+      "input": "toggle",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.651Z",
+    "createdAt": "2026-02-19T11:29:41.106Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902f3",
+    "name": "publie",
+    "label": "Publié",
+    "category": "other",
+    "type": "boolean",
+    "render": {
+      "input": "toggle",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.652Z",
+    "createdAt": "2026-02-19T11:29:41.107Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902f4",
+    "name": "medications",
+    "label": "Médicaments",
+    "category": "advanced",
+    "type": "json",
+    "render": {
+      "input": "json",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.652Z",
+    "createdAt": "2026-02-19T11:29:41.107Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902f5",
+    "name": "allergies_patient",
+    "label": "Allergies",
+    "category": "advanced",
+    "type": "string",
+    "render": {
+      "input": "tags",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.652Z",
+    "createdAt": "2026-02-19T11:29:41.108Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902f6",
+    "name": "unites_dosage",
+    "label": "Unités de dosage",
+    "category": "advanced",
+    "type": "select",
+    "type_config": {
+      "options": [
+        "mg",
+        "g",
+        "ml",
+        "L",
+        "UI",
+        "µg"
+      ]
+    },
+    "render": {
+      "input": "select",
+      "display": {
+        "table": "badge"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.653Z",
+    "createdAt": "2026-02-19T11:29:41.108Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902f7",
+    "name": "moments_prise",
+    "label": "Moments de prise",
+    "category": "advanced",
+    "type": "select",
+    "type_config": {
+      "options": [
+        "Matin",
+        "Midi",
+        "Soir",
+        "Au coucher",
+        "Avant repas",
+        "Après repas"
+      ]
+    },
+    "render": {
+      "input": "multiselect",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.653Z",
+    "createdAt": "2026-02-19T11:29:41.109Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902f8",
+    "name": "motif",
+    "label": "Motif",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.654Z",
+    "createdAt": "2026-02-19T11:29:41.109Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902f9",
+    "name": "diagnostic",
+    "label": "Diagnostic",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "textarea",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.654Z",
+    "createdAt": "2026-02-19T11:29:41.110Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902fa",
+    "name": "prescription",
+    "label": "Prescription",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "textarea",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.655Z",
+    "createdAt": "2026-02-19T11:29:41.110Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902fb",
+    "name": "antecedents",
+    "label": "Antécédents",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "textarea",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.655Z",
+    "createdAt": "2026-02-19T11:29:41.111Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902fc",
+    "name": "suivi",
+    "label": "Suivi recommandé",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "textarea",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.656Z",
+    "createdAt": "2026-02-19T11:29:41.111Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902fd",
+    "name": "assurance",
+    "label": "Assurance",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.657Z",
+    "createdAt": "2026-02-19T11:29:41.112Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902fe",
+    "name": "numero_assure",
+    "label": "N° Assuré",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.657Z",
+    "createdAt": "2026-02-19T11:29:41.112Z"
+  },
+  {
+    "_id": "6996f425d06979e863f902ff",
+    "name": "numero_dossier",
+    "label": "N° Dossier",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.658Z",
+    "createdAt": "2026-02-19T11:29:41.112Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90300",
+    "name": "cin",
+    "label": "CIN",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.658Z",
+    "createdAt": "2026-02-19T11:29:41.113Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90301",
+    "name": "company",
+    "label": "Société",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.659Z",
+    "createdAt": "2026-02-19T11:29:41.113Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90302",
+    "name": "position",
+    "label": "Poste",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.659Z",
+    "createdAt": "2026-02-19T11:29:41.114Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90303",
+    "name": "specialite",
+    "label": "Spécialité",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.660Z",
+    "createdAt": "2026-02-19T11:29:41.114Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90304",
+    "name": "poids",
+    "label": "Poids",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "third"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.660Z",
+    "createdAt": "2026-02-19T11:29:41.114Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90305",
+    "name": "temperature",
+    "label": "Température",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "third"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.661Z",
+    "createdAt": "2026-02-19T11:29:41.115Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90306",
+    "name": "tension",
+    "label": "Tension",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "third"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.662Z",
+    "createdAt": "2026-02-19T11:29:41.115Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90307",
+    "name": "couleur_avatar",
+    "label": "Couleur avatar",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "color",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.662Z",
+    "createdAt": "2026-02-19T11:29:41.116Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90308",
+    "name": "clinique",
+    "label": "Clinique",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.663Z",
+    "createdAt": "2026-02-19T11:29:41.116Z"
+  },
+  {
+    "_id": "6996f425d06979e863f90309",
+    "name": "medecin_traitant",
+    "label": "Médecin Traitant",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.663Z",
+    "createdAt": "2026-02-19T11:29:41.117Z"
+  },
+  {
+    "_id": "6996f425d06979e863f9030a",
+    "name": "notes_medicales",
+    "label": "Notes Médicales",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "textarea",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.664Z",
+    "createdAt": "2026-02-19T11:29:41.117Z"
+  },
+  {
+    "_id": "6996f425d06979e863f9030b",
+    "name": "frequence_du_traitement",
+    "label": "Fréquence du traitement",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.664Z",
+    "createdAt": "2026-02-19T11:29:41.118Z"
+  },
+  {
+    "_id": "6996f425d06979e863f9030c",
+    "name": "titre_tache",
+    "label": "Titre",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "text",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.664Z",
+    "createdAt": "2026-02-19T11:29:41.118Z"
+  },
+  {
+    "_id": "6996f425d06979e863f9030d",
+    "name": "description_tache",
+    "label": "Description",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "textarea",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "full"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.665Z",
+    "createdAt": "2026-02-19T11:29:41.118Z"
+  },
+  {
+    "_id": "6996f425d06979e863f9030e",
+    "name": "date_consultation",
+    "label": "Date consultation",
+    "category": "text",
+    "type": "string",
+    "render": {
+      "input": "date",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.665Z",
+    "createdAt": "2026-02-19T11:29:41.119Z"
+  },
+  {
+    "_id": "6996f425d06979e863f9030f",
+    "name": "telephone_equipe",
+    "label": "Téléphone",
+    "category": "text",
+    "type": "string",
+    "subtype": "tel",
+    "render": {
+      "input": "tel",
+      "display": {
+        "table": "text"
+      }
+    },
+    "ui": {
+      "width": "half"
+    },
+    "isSystem": true,
+    "isCustom": false,
+    "updatedAt": "2026-02-19T11:32:15.666Z",
+    "createdAt": "2026-02-19T11:29:41.119Z"
+  }
+]

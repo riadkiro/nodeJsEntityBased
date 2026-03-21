@@ -1,0 +1,203 @@
+[
+  {
+    "_id": "69873142dc0731b0e1a8eb88",
+    "providerKey": "app",
+    "actionKey": "create-record",
+    "__v": 0,
+    "createdAt": "2026-02-07T12:34:10.279Z",
+    "description": "Créer un nouveau record dans une entity",
+    "http": {
+      "method": "POST",
+      "path": "/internal/create-record"
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "entityId": {
+          "type": "string",
+          "label": "Entity ID",
+          "required": true,
+          "description": "ID de l'entity cible"
+        },
+        "title": {
+          "type": "string",
+          "label": "Titre",
+          "description": "Titre du record"
+        },
+        "description": {
+          "type": "string",
+          "label": "Description"
+        },
+        "status": {
+          "type": "string",
+          "label": "Statut",
+          "default": "draft"
+        },
+        "customFields": {
+          "type": "object",
+          "label": "Champs personnalisés",
+          "description": "Objet { field_id: value }"
+        }
+      },
+      "required": [
+        "entityId"
+      ]
+    },
+    "isPublished": true,
+    "name": "Create Record",
+    "requestTemplate": {
+      "body": {}
+    },
+    "responseMapping": {
+      "recordId": "recordId",
+      "title": "title",
+      "createdAt": "createdAt"
+    },
+    "testPayload": {},
+    "updatedAt": "2026-02-07T12:34:10.279Z"
+  },
+  {
+    "_id": "69873142dc0731b0e1a8eb89",
+    "providerKey": "app",
+    "actionKey": "update-record",
+    "__v": 0,
+    "createdAt": "2026-02-07T12:34:10.315Z",
+    "description": "Modifier un record existant",
+    "http": {
+      "method": "PUT",
+      "path": "/internal/update-record"
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "recordId": {
+          "type": "string",
+          "label": "Record ID",
+          "required": true,
+          "description": "ID du record à modifier"
+        },
+        "title": {
+          "type": "string",
+          "label": "Titre"
+        },
+        "description": {
+          "type": "string",
+          "label": "Description"
+        },
+        "status": {
+          "type": "string",
+          "label": "Statut"
+        },
+        "customFields": {
+          "type": "object",
+          "label": "Champs personnalisés",
+          "description": "Objet { field_id: value }"
+        }
+      },
+      "required": [
+        "recordId"
+      ]
+    },
+    "isPublished": true,
+    "name": "Update Record",
+    "requestTemplate": {
+      "body": {}
+    },
+    "responseMapping": {
+      "recordId": "recordId",
+      "title": "title",
+      "updatedAt": "updatedAt"
+    },
+    "testPayload": {},
+    "updatedAt": "2026-02-07T12:34:10.315Z"
+  },
+  {
+    "_id": "69873142dc0731b0e1a8eb8a",
+    "providerKey": "app",
+    "actionKey": "delete-record",
+    "__v": 0,
+    "createdAt": "2026-02-07T12:34:10.317Z",
+    "description": "Supprimer un record",
+    "http": {
+      "method": "DELETE",
+      "path": "/internal/delete-record"
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "recordId": {
+          "type": "string",
+          "label": "Record ID",
+          "required": true,
+          "description": "ID du record à supprimer"
+        }
+      },
+      "required": [
+        "recordId"
+      ]
+    },
+    "isPublished": true,
+    "name": "Delete Record",
+    "requestTemplate": {
+      "body": {}
+    },
+    "responseMapping": {
+      "recordId": "recordId",
+      "deleted": "deleted"
+    },
+    "testPayload": {},
+    "updatedAt": "2026-02-07T12:34:10.317Z"
+  },
+  {
+    "_id": "69873142dc0731b0e1a8eb8b",
+    "providerKey": "app",
+    "actionKey": "set-status",
+    "__v": 0,
+    "createdAt": "2026-02-07T12:34:10.320Z",
+    "description": "Changer le statut/classification d'un record",
+    "http": {
+      "method": "PUT",
+      "path": "/internal/set-status"
+    },
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "recordId": {
+          "type": "string",
+          "label": "Record ID",
+          "required": true
+        },
+        "classificationId": {
+          "type": "string",
+          "label": "Classification ID",
+          "required": true,
+          "description": "ID de la classification (ex: statusClassification)"
+        },
+        "optionId": {
+          "type": "string",
+          "label": "Option ID",
+          "required": true,
+          "description": "ID de l'option cible"
+        }
+      },
+      "required": [
+        "recordId",
+        "classificationId",
+        "optionId"
+      ]
+    },
+    "isPublished": true,
+    "name": "Set Status",
+    "requestTemplate": {
+      "body": {}
+    },
+    "responseMapping": {
+      "recordId": "recordId",
+      "classificationId": "classificationId",
+      "optionId": "optionId",
+      "optionLabel": "optionLabel"
+    },
+    "testPayload": {},
+    "updatedAt": "2026-02-07T12:34:10.320Z"
+  }
+]

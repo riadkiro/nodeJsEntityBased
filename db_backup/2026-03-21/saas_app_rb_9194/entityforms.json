@@ -1,0 +1,193 @@
+[
+  {
+    "_id": "69a0837b84ac99aceda34fac",
+    "entityId": "69a042bcde03671e05ed198a",
+    "name": "Formulaire principal",
+    "icon": "solar:document-text-bold-duotone",
+    "layout": {
+      "version": 1,
+      "rows": [
+        {
+          "columns": [
+            {
+              "width": 6,
+              "fields": [
+                {
+                  "id": "cf_69a042bcde03671e05ed1957",
+                  "fieldId": "69a042bcde03671e05ed1957",
+                  "type": "custom",
+                  "label": "Motif de consultation"
+                }
+              ]
+            },
+            {
+              "width": 6,
+              "fields": [
+                {
+                  "id": "cf_69a042bcde03671e05ed1958",
+                  "fieldId": "69a042bcde03671e05ed1958",
+                  "type": "custom",
+                  "label": "Symptômes"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "columns": [
+            {
+              "width": 6,
+              "fields": [
+                {
+                  "id": "cf_69a042bcde03671e05ed1959",
+                  "fieldId": "69a042bcde03671e05ed1959",
+                  "type": "custom",
+                  "label": "Diagnostic"
+                }
+              ]
+            },
+            {
+              "width": 6,
+              "fields": [
+                {
+                  "id": "cf_69a042bcde03671e05ed195a",
+                  "fieldId": "69a042bcde03671e05ed195a",
+                  "type": "custom",
+                  "label": "Examen clinique"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "columns": [
+            {
+              "width": 6,
+              "fields": [
+                {
+                  "id": "cf_69a042bcde03671e05ed195b",
+                  "fieldId": "69a042bcde03671e05ed195b",
+                  "type": "custom",
+                  "label": "Plan de traitement"
+                }
+              ]
+            },
+            {
+              "width": 6,
+              "fields": [
+                {
+                  "id": "cf_69a042bcde03671e05ed195c",
+                  "fieldId": "69a042bcde03671e05ed195c",
+                  "type": "custom",
+                  "label": "Poids (kg)"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "columns": [
+            {
+              "width": 6,
+              "fields": [
+                {
+                  "id": "cf_69a042bcde03671e05ed195d",
+                  "fieldId": "69a042bcde03671e05ed195d",
+                  "type": "custom",
+                  "label": "Taille (cm)"
+                }
+              ]
+            },
+            {
+              "width": 6,
+              "fields": [
+                {
+                  "id": "cf_69a042bcde03671e05ed195e",
+                  "fieldId": "69a042bcde03671e05ed195e",
+                  "type": "custom",
+                  "label": "Tension artérielle"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "columns": [
+            {
+              "width": 6,
+              "fields": [
+                {
+                  "id": "cf_69a042bcde03671e05ed195f",
+                  "fieldId": "69a042bcde03671e05ed195f",
+                  "type": "custom",
+                  "label": "Température (°C)"
+                }
+              ]
+            },
+            {
+              "width": 6,
+              "fields": [
+                {
+                  "id": "cf_69a042bcde03671e05ed1960",
+                  "fieldId": "69a042bcde03671e05ed1960",
+                  "type": "custom",
+                  "label": "Fréquence cardiaque"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "columns": [
+            {
+              "width": 6,
+              "fields": [
+                {
+                  "id": "cf_69a042bcde03671e05ed1974",
+                  "fieldId": "69a042bcde03671e05ed1974",
+                  "type": "custom",
+                  "label": "Notes"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "columns": [
+            {
+              "width": 6,
+              "fields": [
+                {
+                  "id": "rel_03985f13-4244-4c57-ba7f-1594e2b60de3",
+                  "fieldId": "03985f13-4244-4c57-ba7f-1594e2b60de3",
+                  "type": "relation",
+                  "label": "Patient"
+                }
+              ]
+            },
+            {
+              "width": 6,
+              "fields": [
+                {
+                  "id": "rel_953ada59-5b62-4ef2-8b3b-5f5fc5f1b4bc",
+                  "fieldId": "953ada59-5b62-4ef2-8b3b-5f5fc5f1b4bc",
+                  "type": "relation",
+                  "label": "Rendez-vous"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "showRightSidebar": true
+      }
+    },
+    "status": "published",
+    "isDefault": true,
+    "order": 0,
+    "createdAt": "2026-02-26T17:31:39.886Z",
+    "updatedAt": "2026-02-26T17:31:39.886Z",
+    "__v": 0
+  }
+]

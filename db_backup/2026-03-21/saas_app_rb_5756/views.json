@@ -1,0 +1,126 @@
+[
+  {
+    "_id": "6985e6f9a6cd77f7618b3f13",
+    "name": "Patients",
+    "slug": "patient-1770383097192",
+    "entity": "6985e6970d65eb6211a70817",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [
+      "6985e6970d65eb6211a7080f"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-06T13:04:57.196Z",
+    "updatedAt": "2026-02-06T13:05:04.148Z",
+    "__v": 0
+  },
+  {
+    "_id": "6985e70ca6cd77f7618b3f3b",
+    "name": "Consultations",
+    "slug": "consultation-1770383116841",
+    "entity": "6985e6970d65eb6211a7081a",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [
+      "6985e6970d65eb6211a7080f"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-06T13:05:16.842Z",
+    "updatedAt": "2026-02-06T13:05:23.756Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999b3e9ad468d8b4a03d7f6",
+    "name": "Patients",
+    "slug": "patients",
+    "entity": "6999b3e9ad468d8b4a03d7de",
+    "cockpitId": null,
+    "icon": "solar:user-heart-bold-duotone",
+    "color": "#2196f3",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "6999b3e9ad468d8b4a03d7da"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-21T13:32:25.977Z",
+    "updatedAt": "2026-02-21T13:32:25.977Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999b3eaad468d8b4a03d908",
+    "name": "Consultations",
+    "slug": "consultations",
+    "entity": "6999b3eaad468d8b4a03d8f5",
+    "cockpitId": null,
+    "icon": "solar:stethoscope-bold-duotone",
+    "color": "#14b8a6",
+    "order": 1,
+    "viewType": "table",
+    "spaces": [
+      "6999b3e9ad468d8b4a03d7da"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-21T13:32:26.030Z",
+    "updatedAt": "2026-02-21T13:32:26.030Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999b3eaad468d8b4a03d9eb",
+    "name": "Traitements",
+    "slug": "traitements",
+    "entity": "6999b3eaad468d8b4a03d9ca",
+    "cockpitId": null,
+    "icon": "solar:pills-3-bold-duotone",
+    "color": "#8b5cf6",
+    "order": 2,
+    "viewType": "kanban",
+    "spaces": [
+      "6999b3e9ad468d8b4a03d7da"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-21T13:32:26.062Z",
+    "updatedAt": "2026-02-21T13:32:26.062Z",
+    "__v": 0
+  }
+]

@@ -1,0 +1,464 @@
+[
+  {
+    "_id": "69a1b51237f01b50be6864a6",
+    "name": "Carte Test React 01",
+    "entityId": "69a124ccde03671e05ed1b80",
+    "context": "kanban",
+    "isDefault": false,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [],
+          "_id": "69a1b51237f01b50be6864a7"
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-27T15:15:30.126Z",
+    "updatedAt": "2026-02-27T15:21:18.786Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a1bb8afa35f4caa4c2fdf2",
+    "name": "Nouvelle carte",
+    "entityId": "69a124ccde03671e05ed1b80",
+    "context": "kanban",
+    "isDefault": false,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [],
+          "_id": "69a1bb8afa35f4caa4c2fdf3"
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-27T15:43:06.346Z",
+    "updatedAt": "2026-02-27T15:43:06.346Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a1bcaac2897e7e8220f20b",
+    "name": "Nouvelle carte",
+    "entityId": "69a124ccde03671e05ed1b80",
+    "context": "kanban",
+    "isDefault": false,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "title",
+              "format": "text",
+              "maxLines": 2,
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "status",
+              "format": "badge",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-27T15:47:54.908Z",
+    "updatedAt": "2026-02-27T15:52:38.676Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a209804692fe90df00fcea",
+    "name": "Kanban Minimal",
+    "entityId": "69733e9633f2b10fa6121cc6",
+    "context": "kanban",
+    "isDefault": true,
+    "presetSlug": "kanban-minimal",
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "title",
+              "format": "text",
+              "maxLines": 2,
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "status",
+              "format": "badge",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "between",
+          "borderTop": true,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "date",
+              "fieldId": "__createdAt__",
+              "icon": "solar:calendar-linear",
+              "format": "date",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "actions",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [
+                "edit",
+                "view"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-27T21:15:44.506Z",
+    "updatedAt": "2026-02-27T21:15:44.506Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a209804692fe90df00fcef",
+    "name": "Calendar RDV",
+    "entityId": "69733e9633f2b10fa6121cc6",
+    "context": "calendar",
+    "isDefault": true,
+    "presetSlug": "calendar-rdv",
+    "layout": {
+      "accentPosition": "top",
+      "accentSource": "status",
+      "borderRadius": 12,
+      "shadow": "lg",
+      "zones": [
+        {
+          "id": "header",
+          "direction": "column",
+          "gap": 4,
+          "padding": "16px 20px 8px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "title",
+              "format": "text",
+              "maxLines": 1,
+              "fontSize": "base",
+              "fontWeight": "bold",
+              "visible": true,
+              "items": []
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "0 20px 12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "icon-value",
+              "fieldId": "__time__",
+              "icon": "solar:clock-circle-linear",
+              "format": "time-range",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "icon-value",
+              "fieldId": "__date__",
+              "icon": "solar:calendar-linear",
+              "format": "date-long",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "status",
+              "format": "pill",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 0,
+          "padding": "0",
+          "align": "stretch",
+          "borderTop": true,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "actions",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [
+                "open",
+                "close"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-27T21:15:44.527Z",
+    "updatedAt": "2026-02-27T21:15:44.527Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a56444de03671e05ed23bb",
+    "context": "kanban",
+    "entityId": "69a124ccde03671e05ed1b80",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-03-02T10:19:48.182Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "maxLines": 2,
+              "visible": true
+            },
+            {
+              "type": "field",
+              "fieldId": "__description__",
+              "fontSize": "xs",
+              "maxLines": 2,
+              "color": "#6b7280",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "badge",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "between",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "date",
+              "fieldId": "__createdAt__",
+              "icon": "solar:calendar-linear",
+              "format": "date",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "actions",
+              "items": [
+                "edit",
+                "view"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Kanban RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-03-02T10:19:48.182Z"
+  },
+  {
+    "_id": "69a56444de03671e05ed23bc",
+    "context": "calendar",
+    "entityId": "69a124ccde03671e05ed1b80",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-03-02T10:19:48.184Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "top",
+      "accentSource": "status",
+      "borderRadius": 14,
+      "shadow": "lg",
+      "zones": [
+        {
+          "id": "header",
+          "direction": "column",
+          "gap": 4,
+          "padding": "16px 20px 8px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "base",
+              "fontWeight": "bold",
+              "maxLines": 1,
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "0 20px 12px",
+          "elements": [
+            {
+              "type": "icon-value",
+              "fieldId": "__time__",
+              "icon": "solar:clock-circle-linear",
+              "format": "time-range",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "icon-value",
+              "fieldId": "__date__",
+              "icon": "solar:calendar-linear",
+              "format": "date-long",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "pill",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 0,
+          "padding": "0",
+          "align": "stretch",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "actions",
+              "items": [
+                "open",
+                "close"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Calendar RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-03-02T10:19:48.184Z"
+  }
+]

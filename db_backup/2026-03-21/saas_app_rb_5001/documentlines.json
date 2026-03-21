@@ -1,0 +1,321 @@
+[
+  {
+    "_id": "699d59b11c73aecfa406fa85",
+    "documentId": "69985b2114b503aa91f46ea1",
+    "lineType": "product",
+    "computed": {
+      "lineTotal": 0,
+      "lineVat": 0
+    },
+    "order": 0,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-24T07:56:33.144Z",
+    "updatedAt": "2026-02-24T09:28:11.719Z",
+    "values": {}
+  },
+  {
+    "_id": "699d6f2b1c73aecfa4072226",
+    "documentId": "69985b2114b503aa91f46ea1",
+    "lineType": "product",
+    "values": {
+      "item": "69985b2114b503aa91f46df7",
+      "item_label": "Alexandre Leroy"
+    },
+    "computed": {
+      "lineTotal": 0,
+      "lineVat": 0
+    },
+    "order": 1,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-24T09:28:11.720Z",
+    "updatedAt": "2026-02-24T09:28:11.720Z"
+  },
+  {
+    "_id": "699d9dfad0d108b786fec1f2",
+    "documentId": "699857ef027e29bba9654be1",
+    "lineType": "treatment",
+    "values": {
+      "treatment": "699d95d4d758888793e329fb",
+      "treatment_label": "Paracétamol 1g",
+      "frequency": "as_needed",
+      "dosage": {
+        "unit": "g",
+        "value": 12
+      },
+      "moment": []
+    },
+    "order": 0,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-24T12:47:54.032Z",
+    "updatedAt": "2026-02-24T14:29:25.007Z",
+    "computed": {
+      "lineTotal": 0,
+      "lineVat": 0
+    }
+  },
+  {
+    "_id": "699ee71dc3ee8ddf1ab8ec42",
+    "documentId": "6998584b14b503aa91f4643f",
+    "lineType": "product",
+    "values": {
+      "description": "Custom Item",
+      "item_label": "Custom Item",
+      "qty": 1
+    },
+    "computed": {
+      "lineTotal": 0,
+      "lineVat": 0
+    },
+    "order": 0,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-25T12:12:13.003Z",
+    "updatedAt": "2026-02-25T12:12:13.003Z"
+  },
+  {
+    "_id": "69a47bed2efc8e3f37af23d4",
+    "documentId": "699857ef027e29bba9654b34",
+    "schemaId": "69a47921de03671e05ed22aa",
+    "lineType": "default",
+    "values": {
+      "date": "2026-03-01",
+      "tsh": 2.5,
+      "t4l": 15,
+      "poids": 75,
+      "tension_sys": "",
+      "tension_dia": "",
+      "bpm": "",
+      "notes": ""
+    },
+    "order": 0,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-01T17:48:29.453Z",
+    "updatedAt": "2026-03-01T17:48:29.453Z"
+  },
+  {
+    "_id": "69a4832d2efc8e3f37af63b0",
+    "documentId": "699857ef027e29bba9654b34",
+    "schemaId": "69a47921de03671e05ed22ab",
+    "lineType": "default",
+    "values": {
+      "parametre": "Globules rouges",
+      "resultat": "",
+      "unite": "T/L",
+      "norme": "4.0 - 5.5",
+      "interpretation": "critique"
+    },
+    "order": 0,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-01T18:19:25.407Z",
+    "updatedAt": "2026-03-01T21:01:09.642Z",
+    "__v": 0,
+    "computed": {}
+  },
+  {
+    "_id": "69a4832d2efc8e3f37af63b2",
+    "documentId": "699857ef027e29bba9654b34",
+    "schemaId": "69a47921de03671e05ed22ab",
+    "lineType": "default",
+    "values": {
+      "parametre": "Hémoglobine",
+      "resultat": "",
+      "unite": "g/dL",
+      "norme": "12 - 16",
+      "interpretation": ""
+    },
+    "order": 1,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-01T18:19:25.408Z",
+    "updatedAt": "2026-03-01T21:01:09.642Z",
+    "__v": 0,
+    "computed": {}
+  },
+  {
+    "_id": "69a4832d2efc8e3f37af63b4",
+    "documentId": "699857ef027e29bba9654b34",
+    "schemaId": "69a47921de03671e05ed22ab",
+    "lineType": "default",
+    "values": {
+      "parametre": "Globules blancs",
+      "resultat": "",
+      "unite": "G/L",
+      "norme": "4.0 - 10.0",
+      "interpretation": ""
+    },
+    "order": 2,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-01T18:19:25.408Z",
+    "updatedAt": "2026-03-01T21:01:09.642Z",
+    "__v": 0,
+    "computed": {}
+  },
+  {
+    "_id": "69a4832d2efc8e3f37af63b6",
+    "documentId": "699857ef027e29bba9654b34",
+    "schemaId": "69a47921de03671e05ed22ab",
+    "lineType": "default",
+    "values": {
+      "parametre": "Plaquettes",
+      "resultat": "",
+      "unite": "G/L",
+      "norme": "150 - 400",
+      "interpretation": ""
+    },
+    "order": 3,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-01T18:19:25.409Z",
+    "updatedAt": "2026-03-01T21:01:09.642Z",
+    "__v": 0,
+    "computed": {}
+  },
+  {
+    "_id": "69a4832d2efc8e3f37af63b8",
+    "documentId": "699857ef027e29bba9654b34",
+    "schemaId": "69a47921de03671e05ed22ab",
+    "lineType": "default",
+    "values": {
+      "parametre": "VS",
+      "resultat": "",
+      "unite": "mm/h",
+      "norme": "< 20",
+      "interpretation": ""
+    },
+    "order": 4,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-01T18:19:25.409Z",
+    "updatedAt": "2026-03-01T21:01:09.642Z",
+    "__v": 0,
+    "computed": {}
+  },
+  {
+    "_id": "69a4832d2efc8e3f37af63ba",
+    "documentId": "699857ef027e29bba9654b34",
+    "schemaId": "69a47921de03671e05ed22ab",
+    "lineType": "default",
+    "values": {
+      "parametre": "CRP",
+      "resultat": "",
+      "unite": "mg/L",
+      "norme": "< 5",
+      "interpretation": ""
+    },
+    "order": 5,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-01T18:19:25.410Z",
+    "updatedAt": "2026-03-01T21:01:09.642Z",
+    "__v": 0,
+    "computed": {}
+  },
+  {
+    "_id": "69a4832d2efc8e3f37af63bc",
+    "documentId": "699857ef027e29bba9654b34",
+    "schemaId": "69a47921de03671e05ed22ab",
+    "lineType": "default",
+    "values": {
+      "parametre": "Glycémie",
+      "resultat": "",
+      "unite": "g/L",
+      "norme": "0.70 - 1.10",
+      "interpretation": ""
+    },
+    "order": 6,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-01T18:19:25.410Z",
+    "updatedAt": "2026-03-01T21:01:09.642Z",
+    "__v": 0,
+    "computed": {}
+  },
+  {
+    "_id": "69a4832d2efc8e3f37af63be",
+    "documentId": "699857ef027e29bba9654b34",
+    "schemaId": "69a47921de03671e05ed22ab",
+    "lineType": "default",
+    "values": {
+      "parametre": "Créatinine",
+      "resultat": "",
+      "unite": "mg/L",
+      "norme": "6 - 13",
+      "interpretation": ""
+    },
+    "order": 7,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-01T18:19:25.411Z",
+    "updatedAt": "2026-03-01T21:01:09.642Z",
+    "__v": 0,
+    "computed": {}
+  },
+  {
+    "_id": "69a4832d2efc8e3f37af63c0",
+    "documentId": "699857ef027e29bba9654b34",
+    "schemaId": "69a47921de03671e05ed22ab",
+    "lineType": "default",
+    "values": {
+      "parametre": "ASAT",
+      "resultat": "",
+      "unite": "UI/L",
+      "norme": "< 35",
+      "interpretation": ""
+    },
+    "order": 8,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-01T18:19:25.411Z",
+    "updatedAt": "2026-03-01T21:01:09.642Z",
+    "__v": 0,
+    "computed": {}
+  },
+  {
+    "_id": "69a4832d2efc8e3f37af63c2",
+    "documentId": "699857ef027e29bba9654b34",
+    "schemaId": "69a47921de03671e05ed22ab",
+    "lineType": "default",
+    "values": {
+      "parametre": "ALAT",
+      "resultat": 1,
+      "unite": "UI/L",
+      "norme": "< 45",
+      "interpretation": ""
+    },
+    "order": 9,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-01T18:19:25.412Z",
+    "updatedAt": "2026-03-01T21:01:09.642Z",
+    "__v": 0,
+    "computed": {}
+  },
+  {
+    "_id": "69a4832d2efc8e3f37af63c4",
+    "documentId": "699857ef027e29bba9654b34",
+    "schemaId": "69a47921de03671e05ed22ab",
+    "lineType": "default",
+    "values": {
+      "parametre": "TSH",
+      "resultat": "",
+      "unite": "mUI/L",
+      "norme": "0.4 - 4.0",
+      "interpretation": ""
+    },
+    "order": 10,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-01T18:19:25.412Z",
+    "updatedAt": "2026-03-01T21:01:09.642Z",
+    "__v": 0,
+    "computed": {}
+  },
+  {
+    "_id": "69a4857e2efc8e3f37af6e85",
+    "documentId": "699857ef027e29bba9654b34",
+    "schemaId": "69a47921de03671e05ed22ab",
+    "lineType": "default",
+    "values": {
+      "parametre": "GGT",
+      "resultat": 25,
+      "unite": "UI/L",
+      "norme": "",
+      "interpretation": ""
+    },
+    "order": 11,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-01T18:29:18.604Z",
+    "updatedAt": "2026-03-01T21:01:09.642Z",
+    "computed": {}
+  }
+]

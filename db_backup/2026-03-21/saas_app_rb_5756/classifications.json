@@ -1,0 +1,879 @@
+[
+  {
+    "_id": "6985e6970d65eb6211a707cd",
+    "name": "Statut Consultation",
+    "key": "consultation_status",
+    "description": "Statut des consultations médicales",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Programmée",
+        "color": "#3b82f6",
+        "icon": "solar:calendar-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6985e6970d65eb6211a707ce"
+      },
+      {
+        "label": "En salle d'attente",
+        "color": "#f59e0b",
+        "icon": "solar:clock-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6985e6970d65eb6211a707cf"
+      },
+      {
+        "label": "En cours",
+        "color": "#8b5cf6",
+        "icon": "solar:stethoscope-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6985e6970d65eb6211a707d0"
+      },
+      {
+        "label": "Terminée",
+        "color": "#10b981",
+        "icon": "solar:check-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "6985e6970d65eb6211a707d1"
+      },
+      {
+        "label": "Annulée",
+        "color": "#ef4444",
+        "icon": "solar:close-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "6985e6970d65eb6211a707d2"
+      }
+    ],
+    "createdAt": "2026-02-06T13:03:19.254Z",
+    "updatedAt": "2026-02-06T13:03:19.254Z",
+    "__v": 0
+  },
+  {
+    "_id": "6985e6970d65eb6211a707d7",
+    "name": "Type Patient",
+    "key": "patient_type",
+    "description": "Type de patient",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Nouveau",
+        "color": "#3b82f6",
+        "icon": "solar:user-plus-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "6985e6970d65eb6211a707d8"
+      },
+      {
+        "label": "Régulier",
+        "color": "#10b981",
+        "icon": "solar:user-check-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "6985e6970d65eb6211a707d9"
+      },
+      {
+        "label": "VIP",
+        "color": "#f59e0b",
+        "icon": "solar:star-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "6985e6970d65eb6211a707da"
+      }
+    ],
+    "createdAt": "2026-02-06T13:03:19.317Z",
+    "updatedAt": "2026-02-06T13:03:19.317Z",
+    "__v": 0
+  },
+  {
+    "_id": "6985e6970d65eb6211a707dc",
+    "name": "Niveau Urgence",
+    "key": "urgency_level",
+    "description": "Niveau d'urgence",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Normal",
+        "color": "#10b981",
+        "icon": "solar:check-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "6985e6970d65eb6211a707dd"
+      },
+      {
+        "label": "Prioritaire",
+        "color": "#f59e0b",
+        "icon": "solar:alarm-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "6985e6970d65eb6211a707de"
+      },
+      {
+        "label": "Urgent",
+        "color": "#ef4444",
+        "icon": "solar:danger-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "6985e6970d65eb6211a707df"
+      }
+    ],
+    "createdAt": "2026-02-06T13:03:19.318Z",
+    "updatedAt": "2026-02-06T13:03:19.318Z",
+    "__v": 0
+  },
+  {
+    "_id": "699616cdecbd2e65975eb396",
+    "name": "Statut Contact",
+    "key": "statut-contact-yyth",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Nouveau",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "699616cdecbd2e65975eb397"
+      },
+      {
+        "label": "Contacté",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "699616cdecbd2e65975eb398"
+      },
+      {
+        "label": "Qualifié",
+        "color": "#805dca",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "699616cdecbd2e65975eb399"
+      },
+      {
+        "label": "Négociation",
+        "color": "#e2a03f",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "699616cdecbd2e65975eb39a"
+      },
+      {
+        "label": "Gagné",
+        "color": "#00ab55",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 4,
+        "_id": "699616cdecbd2e65975eb39b"
+      },
+      {
+        "label": "Perdu",
+        "color": "#e7515a",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 5,
+        "_id": "699616cdecbd2e65975eb39c"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-18T19:45:17.766Z",
+    "updatedAt": "2026-02-18T19:45:17.766Z",
+    "__v": 0
+  },
+  {
+    "_id": "699616cdecbd2e65975eb3ad",
+    "name": "Type de contact",
+    "key": "type-contact-yyua",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": true,
+    "options": [
+      {
+        "label": "Prospect",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "699616cdecbd2e65975eb3ae"
+      },
+      {
+        "label": "Client",
+        "color": "#00ab55",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "699616cdecbd2e65975eb3af"
+      },
+      {
+        "label": "Partenaire",
+        "color": "#805dca",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "699616cdecbd2e65975eb3b0"
+      },
+      {
+        "label": "Fournisseur",
+        "color": "#e2a03f",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "699616cdecbd2e65975eb3b1"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-18T19:45:17.795Z",
+    "updatedAt": "2026-02-18T19:45:17.795Z",
+    "__v": 0
+  },
+  {
+    "_id": "699616cdecbd2e65975eb3ba",
+    "name": "Priorité",
+    "key": "priorite-contact-yyug",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Basse",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "699616cdecbd2e65975eb3bb"
+      },
+      {
+        "label": "Moyenne",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "699616cdecbd2e65975eb3bc"
+      },
+      {
+        "label": "Haute",
+        "color": "#e2a03f",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "699616cdecbd2e65975eb3bd"
+      },
+      {
+        "label": "Urgente",
+        "color": "#e7515a",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "699616cdecbd2e65975eb3be"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-18T19:45:17.801Z",
+    "updatedAt": "2026-02-18T19:45:17.801Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999b3e9ad468d8b4a03d7ef",
+    "name": "Statut",
+    "key": "6999b3e9ad468d8b4a03d7de_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6999b3e9ad468d8b4a03d7de"
+    ],
+    "options": [
+      {
+        "label": "Actif",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999b3e9ad468d8b4a03d7f0"
+      },
+      {
+        "label": "En traitement",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6999b3e9ad468d8b4a03d7f1"
+      },
+      {
+        "label": "Archivé",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 2,
+        "_id": "6999b3e9ad468d8b4a03d7f2"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T13:32:25.963Z",
+    "updatedAt": "2026-02-21T13:32:25.963Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999b3eaad468d8b4a03d900",
+    "name": "Type",
+    "key": "6999b3eaad468d8b4a03d8f5_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6999b3eaad468d8b4a03d8f5"
+    ],
+    "options": [
+      {
+        "label": "Consultation",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999b3eaad468d8b4a03d901"
+      },
+      {
+        "label": "Suivi",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999b3eaad468d8b4a03d902"
+      },
+      {
+        "label": "Urgence",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999b3eaad468d8b4a03d903"
+      },
+      {
+        "label": "Contrôle",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999b3eaad468d8b4a03d904"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T13:32:26.028Z",
+    "updatedAt": "2026-02-21T13:32:26.028Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999b3eaad468d8b4a03d9db",
+    "name": "Statut",
+    "key": "6999b3eaad468d8b4a03d9ca_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6999b3eaad468d8b4a03d9ca"
+    ],
+    "options": [
+      {
+        "label": "En cours",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999b3eaad468d8b4a03d9dc"
+      },
+      {
+        "label": "Terminé",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6999b3eaad468d8b4a03d9dd"
+      },
+      {
+        "label": "Suspendu",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6999b3eaad468d8b4a03d9de"
+      },
+      {
+        "label": "Annulé",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "6999b3eaad468d8b4a03d9df"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T13:32:26.059Z",
+    "updatedAt": "2026-02-21T13:32:26.059Z",
+    "__v": 0
+  },
+  {
+    "_id": "6999b3eaad468d8b4a03d9e2",
+    "name": "Type",
+    "key": "6999b3eaad468d8b4a03d9ca_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6999b3eaad468d8b4a03d9ca"
+    ],
+    "options": [
+      {
+        "label": "Médicament",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999b3eaad468d8b4a03d9e3"
+      },
+      {
+        "label": "Kinésithérapie",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999b3eaad468d8b4a03d9e4"
+      },
+      {
+        "label": "Chirurgie",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999b3eaad468d8b4a03d9e5"
+      },
+      {
+        "label": "Immunothérapie",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999b3eaad468d8b4a03d9e6"
+      },
+      {
+        "label": "Autre",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "6999b3eaad468d8b4a03d9e7"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T13:32:26.060Z",
+    "updatedAt": "2026-02-21T13:32:26.060Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a26a4ade03671e05ed1f6e",
+    "key": "rdv_status",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-28T04:08:42.218Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Statut RDV",
+    "options": [
+      {
+        "label": "Planifié",
+        "color": "#3b82f6",
+        "type": "start",
+        "order": 0,
+        "_id": "69a26a4a2664779a2d708b80"
+      },
+      {
+        "label": "Confirmé",
+        "color": "#8b5cf6",
+        "type": "active",
+        "order": 1,
+        "_id": "69a26a4a2664779a2d708b81"
+      },
+      {
+        "label": "Terminé",
+        "color": "#22c55e",
+        "type": "completed",
+        "order": 2,
+        "_id": "69a26a4a2664779a2d708b82"
+      },
+      {
+        "label": "Annulé",
+        "color": "#ef4444",
+        "type": "normal",
+        "order": 3,
+        "_id": "69a26a4a2664779a2d708b83"
+      },
+      {
+        "label": "Non présenté",
+        "color": "#f97316",
+        "type": "normal",
+        "order": 4,
+        "_id": "69a26a4a2664779a2d708b84"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-02-28T04:08:42.218Z"
+  },
+  {
+    "_id": "69a26a4ade03671e05ed1f6f",
+    "key": "consult_type",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-28T04:08:42.226Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Type de consultation",
+    "options": [
+      {
+        "label": "Générale",
+        "color": "#3b82f6",
+        "order": 0,
+        "_id": "69a26a4a2664779a2d708b8b"
+      },
+      {
+        "label": "Urgence",
+        "color": "#ef4444",
+        "order": 1,
+        "_id": "69a26a4a2664779a2d708b8c"
+      },
+      {
+        "label": "Suivi",
+        "color": "#22c55e",
+        "order": 2,
+        "_id": "69a26a4a2664779a2d708b8d"
+      },
+      {
+        "label": "Contrôle",
+        "color": "#8b5cf6",
+        "order": 3,
+        "_id": "69a26a4a2664779a2d708b8e"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-02-28T04:08:42.226Z"
+  },
+  {
+    "_id": "69a26a4ade03671e05ed1f70",
+    "key": "invoice_status",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-28T04:08:42.227Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Statut facture",
+    "options": [
+      {
+        "label": "Brouillon",
+        "color": "#94a3b8",
+        "type": "start",
+        "order": 0,
+        "_id": "69a26a4a2664779a2d708b94"
+      },
+      {
+        "label": "Envoyée",
+        "color": "#3b82f6",
+        "type": "active",
+        "order": 1,
+        "_id": "69a26a4a2664779a2d708b95"
+      },
+      {
+        "label": "Payée",
+        "color": "#22c55e",
+        "type": "completed",
+        "order": 2,
+        "_id": "69a26a4a2664779a2d708b96"
+      },
+      {
+        "label": "En retard",
+        "color": "#ef4444",
+        "type": "normal",
+        "order": 3,
+        "_id": "69a26a4a2664779a2d708b97"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-02-28T04:08:42.227Z"
+  },
+  {
+    "_id": "69a26a4ade03671e05ed1f71",
+    "key": "payment_method",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-28T04:08:42.228Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Mode de paiement",
+    "options": [
+      {
+        "label": "Espèces",
+        "color": "#22c55e",
+        "order": 0,
+        "_id": "69a26a4a2664779a2d708b9d"
+      },
+      {
+        "label": "Carte bancaire",
+        "color": "#3b82f6",
+        "order": 1,
+        "_id": "69a26a4a2664779a2d708b9e"
+      },
+      {
+        "label": "Virement",
+        "color": "#8b5cf6",
+        "order": 2,
+        "_id": "69a26a4a2664779a2d708b9f"
+      },
+      {
+        "label": "Assurance",
+        "color": "#f59e0b",
+        "order": 3,
+        "_id": "69a26a4a2664779a2d708ba0"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-02-28T04:08:42.228Z"
+  },
+  {
+    "_id": "69a26a4ade03671e05ed1f72",
+    "key": "staff_role",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-28T04:08:42.228Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Rôle personnel",
+    "options": [
+      {
+        "label": "Médecin",
+        "color": "#3b82f6",
+        "order": 0,
+        "_id": "69a26a4a2664779a2d708ba6"
+      },
+      {
+        "label": "Infirmier(e)",
+        "color": "#22c55e",
+        "order": 1,
+        "_id": "69a26a4a2664779a2d708ba7"
+      },
+      {
+        "label": "Secrétaire",
+        "color": "#8b5cf6",
+        "order": 2,
+        "_id": "69a26a4a2664779a2d708ba8"
+      },
+      {
+        "label": "Administrateur",
+        "color": "#f59e0b",
+        "order": 3,
+        "_id": "69a26a4a2664779a2d708ba9"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-02-28T04:08:42.228Z"
+  },
+  {
+    "_id": "69a26a4ade03671e05ed1f73",
+    "key": "patient_tags",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "allowMultiple": true,
+    "createdAt": "2026-02-28T04:08:42.229Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Tags patient",
+    "options": [
+      {
+        "label": "VIP",
+        "color": "#f59e0b",
+        "icon": "solar:star-bold",
+        "order": 0,
+        "_id": "69a26a4a2664779a2d708baf"
+      },
+      {
+        "label": "Chronique",
+        "color": "#ef4444",
+        "order": 1,
+        "_id": "69a26a4a2664779a2d708bb0"
+      },
+      {
+        "label": "Risque allergie",
+        "color": "#f97316",
+        "order": 2,
+        "_id": "69a26a4a2664779a2d708bb1"
+      },
+      {
+        "label": "Nouveau",
+        "color": "#3b82f6",
+        "order": 3,
+        "_id": "69a26a4a2664779a2d708bb2"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-02-28T04:08:42.229Z"
+  },
+  {
+    "_id": "69a26a4ade03671e05ed1f74",
+    "key": "lab_type",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-28T04:08:42.230Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Type analyse labo",
+    "options": [
+      {
+        "label": "Sang",
+        "color": "#ef4444",
+        "order": 0,
+        "_id": "69a26a4a2664779a2d708bb8"
+      },
+      {
+        "label": "Urine",
+        "color": "#f59e0b",
+        "order": 1,
+        "_id": "69a26a4a2664779a2d708bb9"
+      },
+      {
+        "label": "Imagerie",
+        "color": "#3b82f6",
+        "order": 2,
+        "_id": "69a26a4a2664779a2d708bba"
+      },
+      {
+        "label": "Autre",
+        "color": "#94a3b8",
+        "order": 3,
+        "_id": "69a26a4a2664779a2d708bbb"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-02-28T04:08:42.230Z"
+  }
+]

@@ -1,0 +1,45 @@
+[
+  {
+    "_id": "6814cad0411c4703d0a9d0e9",
+    "name": "Demo Workspace",
+    "owner": "6814cad0411c4703d0a9d0e7",
+    "members": [
+      {
+        "user": "6814cad0411c4703d0a9d0e7",
+        "role": "owner",
+        "_id": "6814cad0411c4703d0a9d0ea"
+      }
+    ],
+    "settings": {
+      "theme": "light",
+      "defaultModules": [
+        "tasks"
+      ]
+    },
+    "createdAt": "2025-05-02T13:38:24.079Z",
+    "slug": "demo-workspace",
+    "__v": 0
+  },
+  {
+    "_id": "6814cec72d0285fa7c21c64b",
+    "name": "Actirama",
+    "owner": "6814cad0411c4703d0a9d0e7",
+    "members": [
+      {
+        "user": "6814cad0411c4703d0a9d0e7",
+        "role": "owner",
+        "_id": "6814cec72d0285fa7c21c64c"
+      }
+    ],
+    "settings": {
+      "theme": "light",
+      "defaultModules": [
+        "tasks"
+      ],
+      "integrations": {}
+    },
+    "createdAt": "2025-05-02T13:55:19.232Z",
+    "slug": "actirama",
+    "__v": 0
+  }
+]

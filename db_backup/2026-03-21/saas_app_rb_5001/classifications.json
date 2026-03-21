@@ -1,0 +1,7171 @@
+[
+  {
+    "_id": "697468b45ac39a116401a925",
+    "name": "Statut",
+    "key": "entity_status",
+    "description": "",
+    "isShared": true,
+    "options": [
+      {
+        "label": "En cours",
+        "color": "#30cf7d",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697468f35ac39a116401aa1b"
+      },
+      {
+        "label": "Terminé",
+        "color": "#dfc201",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "697468f35ac39a116401aa1c"
+      },
+      {
+        "label": "Backlog",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "697468b45ac39a116401a926"
+      },
+      {
+        "label": "Révision",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "697495ed51389ef4074ada1d"
+      },
+      {
+        "label": "test",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 4,
+        "_id": "697495fa51389ef4074adad6"
+      },
+      {
+        "label": "Validé",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 5,
+        "_id": "69749e4a354c85fdedad5452"
+      },
+      {
+        "label": "Validé",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 6,
+        "_id": "69749e51354c85fdedad5596"
+      },
+      {
+        "label": "Test 2",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 7,
+        "_id": "6974f7a13c65b095a571f0c6"
+      }
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-01-24T06:37:40.865Z",
+    "updatedAt": "2026-01-24T16:47:29.463Z",
+    "__v": 7,
+    "allowMultiple": false,
+    "type": "simple"
+  },
+  {
+    "_id": "69746e2c6e3db7bd9f348583",
+    "name": "Secteur",
+    "key": "societe_secteur",
+    "description": "",
+    "isShared": true,
+    "options": [
+      {
+        "label": "Hôtel",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "69746e406e3db7bd9f348677"
+      },
+      {
+        "label": "Digital",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "697495ca51389ef4074ad805"
+      },
+      {
+        "label": "HORECA",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "6974989100cc9ec04fcdb224"
+      },
+      {
+        "label": "Nettoyage",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "69749e41354c85fdedad53f7"
+      },
+      {
+        "label": "Construction",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 4,
+        "_id": "6974f80e3c65b095a571f1ae"
+      }
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-01-24T07:01:00.803Z",
+    "updatedAt": "2026-01-24T16:49:18.150Z",
+    "__v": 9,
+    "allowMultiple": true,
+    "type": "simple"
+  },
+  {
+    "_id": "697471470614a2055d9b2a73",
+    "name": "Catégorie",
+    "key": "categorie",
+    "description": "",
+    "isShared": true,
+    "type": "hierarchical",
+    "allowMultiple": true,
+    "options": [
+      {
+        "label": "Cat 01",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": "697471d50614a2055d9b3042",
+        "order": 0,
+        "_id": "697471470614a2055d9b2a74"
+      },
+      {
+        "label": "Cat 02",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "697471470614a2055d9b2a75"
+      },
+      {
+        "label": "Cat 01.1",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697471d50614a2055d9b3042"
+      },
+      {
+        "label": "cat 03",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "69747a57f58cf69884f16b87"
+      },
+      {
+        "label": "Cat 04",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "69747c9b5717426c7375a25a"
+      },
+      {
+        "label": "Cat 03.1",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": "69747a57f58cf69884f16b87",
+        "order": 0,
+        "_id": "69747cdb5717426c7375a704"
+      },
+      {
+        "label": "Cat 05",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 4,
+        "_id": "697496f1288c92d0105a6594"
+      },
+      {
+        "label": "Cat 04.1",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": "69747c9b5717426c7375a25a",
+        "order": 0,
+        "_id": "697497e700cc9ec04fcda628"
+      },
+      {
+        "label": "Cat 06",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": "697496f1288c92d0105a6594",
+        "order": 0,
+        "_id": "6974982f00cc9ec04fcdacc5"
+      },
+      {
+        "label": "Cat 05.1",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": "697496f1288c92d0105a6594",
+        "order": 1,
+        "_id": "69749e00354c85fdedad53da"
+      }
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-01-24T07:14:15.258Z",
+    "updatedAt": "2026-01-24T15:59:41.360Z",
+    "__v": 8
+  },
+  {
+    "_id": "697bbacfdda975e3a6a73cf4",
+    "name": "Qualifications",
+    "key": "qualifications",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Engagé ",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697bbc2bdda975e3a6a73e3f"
+      },
+      {
+        "label": "Premier contact",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "697bbc2bdda975e3a6a73e3e"
+      },
+      {
+        "label": "Qualifié ",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "697bbc2bdda975e3a6a73e40"
+      }
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-01-29T19:53:51.194Z",
+    "updatedAt": "2026-01-29T20:00:36.979Z",
+    "__v": 0
+  },
+  {
+    "_id": "697c9b7a17b1ed4307005858",
+    "name": "Tags",
+    "key": "tags",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": true,
+    "options": [
+      {
+        "label": "Important",
+        "color": "#f73b3b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697c9c9e17b1ed4307005a54"
+      },
+      {
+        "label": "ASAP",
+        "color": "#3bf76a",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "697c9c9e17b1ed4307005a55"
+      },
+      {
+        "label": "Personel",
+        "color": "#ce8f22",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "697df24ba7804248b75205bd"
+      }
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-01-30T11:52:26.121Z",
+    "updatedAt": "2026-01-31T12:15:07.867Z",
+    "__v": 0
+  },
+  {
+    "_id": "697e0010000000000000010a",
+    "__v": 0,
+    "allowMultiple": false,
+    "createdAt": "2026-02-01T09:23:09.131Z",
+    "description": "Statut de progression de la tâche",
+    "isShared": true,
+    "name": "Progression",
+    "options": [
+      {
+        "label": "À faire",
+        "color": "#9ca3af",
+        "icon": "tabler:circle",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0001000000000000001a"
+      },
+      {
+        "label": "En cours",
+        "color": "#3b82f6",
+        "icon": "tabler:progress",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "697e0001000000000000001b"
+      },
+      {
+        "label": "En revue",
+        "color": "#f59e0b",
+        "icon": "tabler:eye",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "697e0001000000000000001c"
+      },
+      {
+        "label": "Terminé",
+        "color": "#22c55e",
+        "icon": "tabler:check",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "697e0001000000000000001d"
+      },
+      {
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "icon": "tabler:alert-circle",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 4,
+        "_id": "697e0001000000000000001e"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-02-13T05:48:07.784Z",
+    "key": "tache_progression",
+    "defaultOptionId": null
+  },
+  {
+    "_id": "697e0010000000000000010b",
+    "__v": 0,
+    "allowMultiple": false,
+    "createdAt": "2026-02-01T09:23:50.518Z",
+    "description": "Niveau de priorité",
+    "isShared": true,
+    "key": "tache_priority",
+    "name": "Priorité",
+    "options": [
+      {
+        "label": "Basse",
+        "color": "#6b7280",
+        "icon": "tabler:arrow-down",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002a"
+      },
+      {
+        "label": "Moyenne",
+        "color": "#f59e0b",
+        "icon": "tabler:minus",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002b"
+      },
+      {
+        "label": "Haute",
+        "color": "#ef4444",
+        "icon": "tabler:arrow-up",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002c"
+      },
+      {
+        "label": "Urgent",
+        "color": "#dc2626",
+        "icon": "tabler:alert-triangle",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0002000000000000002d"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-02-01T09:51:19.151Z"
+  },
+  {
+    "_id": "697e0010000000000000010c",
+    "__v": 0,
+    "allowMultiple": true,
+    "createdAt": "2026-02-01T09:23:50.520Z",
+    "description": "Tags de catégorisation",
+    "isShared": true,
+    "key": "tache_tags",
+    "name": "Tags",
+    "options": [
+      {
+        "label": "Backend",
+        "color": "#8b5cf6",
+        "icon": "tabler:server",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003a"
+      },
+      {
+        "label": "Frontend",
+        "color": "#06b6d4",
+        "icon": "tabler:layout",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003b"
+      },
+      {
+        "label": "Design",
+        "color": "#ec4899",
+        "icon": "tabler:palette",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003c"
+      },
+      {
+        "label": "DevOps",
+        "color": "#f97316",
+        "icon": "tabler:cloud",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003d"
+      },
+      {
+        "label": "Docs",
+        "color": "#14b8a6",
+        "icon": "tabler:file-text",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003e"
+      },
+      {
+        "label": "Meeting",
+        "color": "#6366f1",
+        "icon": "tabler:users",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e0003000000000000003f"
+      },
+      {
+        "label": "Bug",
+        "color": "#ef4444",
+        "icon": "tabler:bug",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "697e00030000000000000040"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-02-01T09:51:19.152Z"
+  },
+  {
+    "_id": "6989923bcf4f1191d69f8b29",
+    "name": "Progression consultation",
+    "key": "progression-consultation",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Salle d'attente",
+        "color": "#fde386",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "6989923bcf4f1191d69f8b2a"
+      },
+      {
+        "label": "Patient suivant",
+        "color": "#7ff0d4",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "6989923bcf4f1191d69f8b2b"
+      },
+      {
+        "label": "En cours",
+        "color": "#56f5f3",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "6989923bcf4f1191d69f8b2c"
+      },
+      {
+        "label": "Terminé",
+        "color": "#25b12f",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "6989923bcf4f1191d69f8b2d"
+      },
+      {
+        "label": "Absent",
+        "color": "#f74e3b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 4,
+        "_id": "6989923bcf4f1191d69f8b2e"
+      }
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-09T07:52:27.763Z",
+    "updatedAt": "2026-02-11T16:30:17.704Z",
+    "__v": 0,
+    "defaultOptionId": "6989923bcf4f1191d69f8b2a"
+  },
+  {
+    "_id": "6989d38a693390acea4724f8",
+    "name": "Durée de traitement",
+    "key": "duree-traitement",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": true,
+    "options": [
+      {
+        "label": "1 semaine",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "6989d38a693390acea4724f9"
+      },
+      {
+        "label": "3 jours",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "6989d38a693390acea4724fa"
+      },
+      {
+        "label": "1 seule prise",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "6989d38a693390acea4724fb"
+      },
+      {
+        "label": "3 mois",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "6989d38a693390acea4724fc"
+      },
+      {
+        "label": "1 mois",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 4,
+        "_id": "6989d38a693390acea4724fd"
+      },
+      {
+        "label": "6 mois",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 5,
+        "_id": "6989d38a693390acea4724fe"
+      },
+      {
+        "label": "10 jours",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 6,
+        "_id": "6989d38a693390acea4724ff"
+      },
+      {
+        "label": "15 jours",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 7,
+        "_id": "6989d38a693390acea472500"
+      }
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-09T12:31:06.084Z",
+    "updatedAt": "2026-02-09T12:31:06.084Z",
+    "__v": 0
+  },
+  {
+    "_id": "698af7f4f2100f0facaafa7c",
+    "name": "Type Patient",
+    "key": "patient_type",
+    "description": "Type de patient",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Nouveau",
+        "color": "#3b82f6",
+        "icon": "solar:user-plus-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "698af7f4f2100f0facaafa7d"
+      },
+      {
+        "label": "Régulier",
+        "color": "#10b981",
+        "icon": "solar:user-check-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "698af7f4f2100f0facaafa7e"
+      },
+      {
+        "label": "VIP",
+        "color": "#f59e0b",
+        "icon": "solar:star-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "698af7f4f2100f0facaafa7f"
+      }
+    ],
+    "createdAt": "2026-02-10T09:18:44.325Z",
+    "updatedAt": "2026-02-10T09:18:44.325Z",
+    "__v": 0
+  },
+  {
+    "_id": "698af7f4f2100f0facaafa82",
+    "name": "Niveau Urgence",
+    "key": "urgency_level",
+    "description": "Niveau d'urgence",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Normal",
+        "color": "#10b981",
+        "icon": "solar:check-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "698af7f4f2100f0facaafa83"
+      },
+      {
+        "label": "Prioritaire",
+        "color": "#f59e0b",
+        "icon": "solar:alarm-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "698af7f4f2100f0facaafa84"
+      },
+      {
+        "label": "Urgent",
+        "color": "#ef4444",
+        "icon": "solar:danger-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "698af7f4f2100f0facaafa85"
+      }
+    ],
+    "createdAt": "2026-02-10T09:18:44.327Z",
+    "updatedAt": "2026-02-11T16:35:10.349Z",
+    "__v": 0,
+    "defaultOptionId": "698af7f4f2100f0facaafa83"
+  },
+  {
+    "_id": "698af7f4f2100f0facaafa88",
+    "name": "Priorité Tâche",
+    "key": "task_priority",
+    "description": "Niveau de priorité des tâches",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Normal",
+        "color": "#10b981",
+        "icon": "solar:check-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "698af7f4f2100f0facaafa89"
+      },
+      {
+        "label": "Important",
+        "color": "#f59e0b",
+        "icon": "solar:alarm-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "698af7f4f2100f0facaafa8a"
+      },
+      {
+        "label": "Urgent",
+        "color": "#ef4444",
+        "icon": "solar:danger-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "698af7f4f2100f0facaafa8b"
+      }
+    ],
+    "createdAt": "2026-02-10T09:18:44.329Z",
+    "updatedAt": "2026-02-10T09:18:44.329Z",
+    "__v": 0
+  },
+  {
+    "_id": "698af7f4f2100f0facaafa8e",
+    "name": "Statut Tâche",
+    "key": "task_status",
+    "description": "Statut des tâches",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "À faire",
+        "color": "#3b82f6",
+        "icon": "solar:clipboard-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "698af7f4f2100f0facaafa8f"
+      },
+      {
+        "label": "En cours",
+        "color": "#f59e0b",
+        "icon": "solar:play-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "698af7f4f2100f0facaafa90"
+      },
+      {
+        "label": "Terminé",
+        "color": "#10b981",
+        "icon": "solar:check-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "698af7f4f2100f0facaafa91"
+      }
+    ],
+    "createdAt": "2026-02-10T09:18:44.330Z",
+    "updatedAt": "2026-02-10T09:18:44.330Z",
+    "__v": 0
+  },
+  {
+    "_id": "699614fbecbd2e65975ea730",
+    "name": "Statut Projet",
+    "key": "statut-projet-oz13",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Planifié",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "699614fbecbd2e65975ea731"
+      },
+      {
+        "label": "En cours",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "699614fbecbd2e65975ea732"
+      },
+      {
+        "label": "En revue",
+        "color": "#805dca",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "699614fbecbd2e65975ea733"
+      },
+      {
+        "label": "En pause",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "699614fbecbd2e65975ea734"
+      },
+      {
+        "label": "Terminé",
+        "color": "#00ab55",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 4,
+        "_id": "699614fbecbd2e65975ea735"
+      },
+      {
+        "label": "Annulé",
+        "color": "#e7515a",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 5,
+        "_id": "699614fbecbd2e65975ea736"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-18T19:37:31.481Z",
+    "updatedAt": "2026-02-18T19:37:31.481Z",
+    "__v": 0
+  },
+  {
+    "_id": "699614fbecbd2e65975ea747",
+    "name": "Priorité Projet",
+    "key": "priorite-projet-oz2g",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Basse",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "699614fbecbd2e65975ea748"
+      },
+      {
+        "label": "Normale",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "699614fbecbd2e65975ea749"
+      },
+      {
+        "label": "Haute",
+        "color": "#e2a03f",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "699614fbecbd2e65975ea74a"
+      },
+      {
+        "label": "Critique",
+        "color": "#e7515a",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "699614fbecbd2e65975ea74b"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-18T19:37:31.529Z",
+    "updatedAt": "2026-02-18T19:37:31.529Z",
+    "__v": 0
+  },
+  {
+    "_id": "699614fbecbd2e65975ea754",
+    "name": "Type Projet",
+    "key": "type-projet-oz2p",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": true,
+    "options": [
+      {
+        "label": "Interne",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "699614fbecbd2e65975ea755"
+      },
+      {
+        "label": "Client",
+        "color": "#00ab55",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "699614fbecbd2e65975ea756"
+      },
+      {
+        "label": "R&D",
+        "color": "#805dca",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "699614fbecbd2e65975ea757"
+      },
+      {
+        "label": "Maintenance",
+        "color": "#e2a03f",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "699614fbecbd2e65975ea758"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-18T19:37:31.538Z",
+    "updatedAt": "2026-02-18T19:37:31.538Z",
+    "__v": 0
+  },
+  {
+    "_id": "69961559ecbd2e65975eab79",
+    "name": "Statut Projet",
+    "key": "statut-projet-qzdd",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Planifié",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "69961559ecbd2e65975eab7a"
+      },
+      {
+        "label": "En cours",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "69961559ecbd2e65975eab7b"
+      },
+      {
+        "label": "En revue",
+        "color": "#805dca",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "69961559ecbd2e65975eab7c"
+      },
+      {
+        "label": "En pause",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "69961559ecbd2e65975eab7d"
+      },
+      {
+        "label": "Terminé",
+        "color": "#00ab55",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 4,
+        "_id": "69961559ecbd2e65975eab7e"
+      },
+      {
+        "label": "Annulé",
+        "color": "#e7515a",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 5,
+        "_id": "69961559ecbd2e65975eab7f"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-18T19:39:05.235Z",
+    "updatedAt": "2026-02-18T19:39:05.235Z",
+    "__v": 0
+  },
+  {
+    "_id": "69961559ecbd2e65975eab8d",
+    "name": "Priorité Projet",
+    "key": "priorite-projet-qze5",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Basse",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "69961559ecbd2e65975eab8e"
+      },
+      {
+        "label": "Normale",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "69961559ecbd2e65975eab8f"
+      },
+      {
+        "label": "Haute",
+        "color": "#e2a03f",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "69961559ecbd2e65975eab90"
+      },
+      {
+        "label": "Critique",
+        "color": "#e7515a",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "69961559ecbd2e65975eab91"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-18T19:39:05.262Z",
+    "updatedAt": "2026-02-18T19:39:05.262Z",
+    "__v": 0
+  },
+  {
+    "_id": "69961559ecbd2e65975eab9d",
+    "name": "Type Projet",
+    "key": "type-projet-qzeu",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": true,
+    "options": [
+      {
+        "label": "Interne",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "69961559ecbd2e65975eab9e"
+      },
+      {
+        "label": "Client",
+        "color": "#00ab55",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "69961559ecbd2e65975eab9f"
+      },
+      {
+        "label": "R&D",
+        "color": "#805dca",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "69961559ecbd2e65975eaba0"
+      },
+      {
+        "label": "Maintenance",
+        "color": "#e2a03f",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "69961559ecbd2e65975eaba1"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-18T19:39:05.287Z",
+    "updatedAt": "2026-02-18T19:39:05.287Z",
+    "__v": 0
+  },
+  {
+    "_id": "69961a499327a240d2eb58a6",
+    "name": "Statut Contact",
+    "key": "statut-contact-i2tx",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Nouveau",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "69961a499327a240d2eb58a7"
+      },
+      {
+        "label": "Contacté",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "69961a499327a240d2eb58a8"
+      },
+      {
+        "label": "Qualifié",
+        "color": "#805dca",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "69961a499327a240d2eb58a9"
+      },
+      {
+        "label": "Négociation",
+        "color": "#e2a03f",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "69961a499327a240d2eb58aa"
+      },
+      {
+        "label": "Gagné",
+        "color": "#00ab55",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 4,
+        "_id": "69961a499327a240d2eb58ab"
+      },
+      {
+        "label": "Perdu",
+        "color": "#e7515a",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 5,
+        "_id": "69961a499327a240d2eb58ac"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-18T20:00:09.431Z",
+    "updatedAt": "2026-02-18T20:00:09.431Z",
+    "__v": 0
+  },
+  {
+    "_id": "69961a499327a240d2eb58b5",
+    "name": "Type de contact",
+    "key": "type-contact-i2u5",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": true,
+    "options": [
+      {
+        "label": "Prospect",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "69961a499327a240d2eb58b6"
+      },
+      {
+        "label": "Client",
+        "color": "#00ab55",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "69961a499327a240d2eb58b7"
+      },
+      {
+        "label": "Partenaire",
+        "color": "#805dca",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "69961a499327a240d2eb58b8"
+      },
+      {
+        "label": "Fournisseur",
+        "color": "#e2a03f",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "69961a499327a240d2eb58b9"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-18T20:00:09.437Z",
+    "updatedAt": "2026-02-18T20:00:09.437Z",
+    "__v": 0
+  },
+  {
+    "_id": "69961a499327a240d2eb58c2",
+    "name": "Priorité",
+    "key": "priorite-contact-i2ua",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Basse",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "69961a499327a240d2eb58c3"
+      },
+      {
+        "label": "Moyenne",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "69961a499327a240d2eb58c4"
+      },
+      {
+        "label": "Haute",
+        "color": "#e2a03f",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "69961a499327a240d2eb58c5"
+      },
+      {
+        "label": "Urgente",
+        "color": "#e7515a",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "69961a499327a240d2eb58c6"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-18T20:00:09.443Z",
+    "updatedAt": "2026-02-18T20:00:09.443Z",
+    "__v": 0
+  },
+  {
+    "_id": "69961a819327a240d2eb5e89",
+    "name": "Statut Contact",
+    "key": "statut-contact-j9sa",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Nouveau",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "69961a819327a240d2eb5e8a"
+      },
+      {
+        "label": "Contacté",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "69961a819327a240d2eb5e8b"
+      },
+      {
+        "label": "Qualifié",
+        "color": "#805dca",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "69961a819327a240d2eb5e8c"
+      },
+      {
+        "label": "Négociation",
+        "color": "#e2a03f",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "69961a819327a240d2eb5e8d"
+      },
+      {
+        "label": "Gagné",
+        "color": "#00ab55",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 4,
+        "_id": "69961a819327a240d2eb5e8e"
+      },
+      {
+        "label": "Perdu",
+        "color": "#e7515a",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 5,
+        "_id": "69961a819327a240d2eb5e8f"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-18T20:01:05.099Z",
+    "updatedAt": "2026-02-18T20:01:05.099Z",
+    "__v": 0
+  },
+  {
+    "_id": "69961a819327a240d2eb5ea0",
+    "name": "Type de contact",
+    "key": "type-contact-j9tb",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": true,
+    "options": [
+      {
+        "label": "Prospect",
+        "color": "#4361ee",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "69961a819327a240d2eb5ea1"
+      },
+      {
+        "label": "Client",
+        "color": "#00ab55",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "69961a819327a240d2eb5ea2"
+      },
+      {
+        "label": "Partenaire",
+        "color": "#805dca",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "69961a819327a240d2eb5ea3"
+      },
+      {
+        "label": "Fournisseur",
+        "color": "#e2a03f",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "69961a819327a240d2eb5ea4"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-18T20:01:05.136Z",
+    "updatedAt": "2026-02-18T20:01:05.136Z",
+    "__v": 0
+  },
+  {
+    "_id": "69961a819327a240d2eb5ead",
+    "name": "Priorité",
+    "key": "priorite-contact-j9tr",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "options": [
+      {
+        "label": "Basse",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 0,
+        "_id": "69961a819327a240d2eb5eae"
+      },
+      {
+        "label": "Moyenne",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 1,
+        "_id": "69961a819327a240d2eb5eaf"
+      },
+      {
+        "label": "Haute",
+        "color": "#e2a03f",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 2,
+        "_id": "69961a819327a240d2eb5eb0"
+      },
+      {
+        "label": "Urgente",
+        "color": "#e7515a",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "normal",
+        "parentId": null,
+        "order": 3,
+        "_id": "69961a819327a240d2eb5eb1"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-18T20:01:05.152Z",
+    "updatedAt": "2026-02-18T20:01:05.152Z",
+    "__v": 0
+  },
+  {
+    "_id": "69977f9d00987de174139ec4",
+    "name": "Statut",
+    "key": "69977f9d00987de174139eb5_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69977f9d00987de174139eb5"
+    ],
+    "options": [
+      {
+        "label": "Nouveau",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69977f9d00987de174139ec5"
+      },
+      {
+        "label": "Contacté",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69977f9d00987de174139ec6"
+      },
+      {
+        "label": "Qualifié",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69977f9d00987de174139ec7"
+      },
+      {
+        "label": "Client",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69977f9d00987de174139ec8"
+      },
+      {
+        "label": "Inactif",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "69977f9d00987de174139ec9"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T21:24:45.106Z",
+    "updatedAt": "2026-02-19T21:24:45.106Z",
+    "__v": 0
+  },
+  {
+    "_id": "69977f9d00987de174139ecc",
+    "name": "Source",
+    "key": "69977f9d00987de174139eb5_source",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69977f9d00987de174139eb5"
+    ],
+    "options": [
+      {
+        "label": "Site web",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69977f9d00987de174139ecd"
+      },
+      {
+        "label": "Recommandation",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69977f9d00987de174139ece"
+      },
+      {
+        "label": "Réseaux sociaux",
+        "color": "#ec4899",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69977f9d00987de174139ecf"
+      },
+      {
+        "label": "Salon",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "69977f9d00987de174139ed0"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T21:24:45.119Z",
+    "updatedAt": "2026-02-19T21:24:45.119Z",
+    "__v": 0
+  },
+  {
+    "_id": "69977f9d00987de174139f37",
+    "name": "Pipeline",
+    "key": "69977f9d00987de174139f2c_pipeline",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69977f9d00987de174139f2c"
+    ],
+    "options": [
+      {
+        "label": "Prospection",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69977f9d00987de174139f38"
+      },
+      {
+        "label": "Qualification",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69977f9d00987de174139f39"
+      },
+      {
+        "label": "Proposition",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69977f9d00987de174139f3a"
+      },
+      {
+        "label": "Négociation",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69977f9d00987de174139f3b"
+      },
+      {
+        "label": "Gagné",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 4,
+        "_id": "69977f9d00987de174139f3c"
+      },
+      {
+        "label": "Perdu",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 5,
+        "_id": "69977f9d00987de174139f3d"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T21:24:45.161Z",
+    "updatedAt": "2026-02-19T21:24:45.161Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978d1363be0bad8535e093",
+    "name": "Statut",
+    "key": "69978d1363be0bad8535e088_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978d1363be0bad8535e088"
+    ],
+    "options": [
+      {
+        "label": "À faire",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978d1363be0bad8535e094"
+      },
+      {
+        "label": "En cours",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69978d1363be0bad8535e095"
+      },
+      {
+        "label": "En revue",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69978d1363be0bad8535e096"
+      },
+      {
+        "label": "Terminé",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69978d1363be0bad8535e097"
+      },
+      {
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "69978d1363be0bad8535e098"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:22:11.347Z",
+    "updatedAt": "2026-02-19T22:22:11.347Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978d1363be0bad8535e09b",
+    "name": "Priorité",
+    "key": "69978d1363be0bad8535e088_priority",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978d1363be0bad8535e088"
+    ],
+    "options": [
+      {
+        "label": "Critique",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978d1363be0bad8535e09c"
+      },
+      {
+        "label": "Haute",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978d1363be0bad8535e09d"
+      },
+      {
+        "label": "Normale",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978d1363be0bad8535e09e"
+      },
+      {
+        "label": "Basse",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978d1363be0bad8535e09f"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:22:11.349Z",
+    "updatedAt": "2026-02-19T22:22:11.349Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978d1363be0bad8535e0f4",
+    "name": "Statut",
+    "key": "69978d1363be0bad8535e0eb_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978d1363be0bad8535e0eb"
+    ],
+    "options": [
+      {
+        "label": "Planifié",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978d1363be0bad8535e0f5"
+      },
+      {
+        "label": "En cours",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69978d1363be0bad8535e0f6"
+      },
+      {
+        "label": "Atteint",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69978d1363be0bad8535e0f7"
+      },
+      {
+        "label": "En retard",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "69978d1363be0bad8535e0f8"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:22:11.369Z",
+    "updatedAt": "2026-02-19T22:22:11.369Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978def37ff690e137fd843",
+    "name": "Statut",
+    "key": "69978def37ff690e137fd838_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978def37ff690e137fd838"
+    ],
+    "options": [
+      {
+        "label": "À faire",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978def37ff690e137fd844"
+      },
+      {
+        "label": "En cours",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69978def37ff690e137fd845"
+      },
+      {
+        "label": "En revue",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69978def37ff690e137fd846"
+      },
+      {
+        "label": "Terminé",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69978def37ff690e137fd847"
+      },
+      {
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "69978def37ff690e137fd848"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:25:51.560Z",
+    "updatedAt": "2026-02-19T22:25:51.560Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978def37ff690e137fd84b",
+    "name": "Priorité",
+    "key": "69978def37ff690e137fd838_priority",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978def37ff690e137fd838"
+    ],
+    "options": [
+      {
+        "label": "Critique",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978def37ff690e137fd84c"
+      },
+      {
+        "label": "Haute",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978def37ff690e137fd84d"
+      },
+      {
+        "label": "Normale",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978def37ff690e137fd84e"
+      },
+      {
+        "label": "Basse",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978def37ff690e137fd84f"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:25:51.563Z",
+    "updatedAt": "2026-02-19T22:25:51.563Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978def37ff690e137fd8a7",
+    "name": "Statut",
+    "key": "69978def37ff690e137fd89e_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978def37ff690e137fd89e"
+    ],
+    "options": [
+      {
+        "label": "Planifié",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978def37ff690e137fd8a8"
+      },
+      {
+        "label": "En cours",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69978def37ff690e137fd8a9"
+      },
+      {
+        "label": "Atteint",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69978def37ff690e137fd8aa"
+      },
+      {
+        "label": "En retard",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "69978def37ff690e137fd8ab"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:25:51.583Z",
+    "updatedAt": "2026-02-19T22:25:51.583Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed21960",
+    "name": "Statut Projet",
+    "key": "69978f7b153840f8eed2194d_statut-projet",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978f7b153840f8eed2194d"
+    ],
+    "options": [
+      {
+        "label": "Planifié",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978f7b153840f8eed21961"
+      },
+      {
+        "label": "En cours",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69978f7b153840f8eed21962"
+      },
+      {
+        "label": "En revue",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69978f7b153840f8eed21963"
+      },
+      {
+        "label": "En pause",
+        "color": "#a855f7",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69978f7b153840f8eed21964"
+      },
+      {
+        "label": "Terminé",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 4,
+        "_id": "69978f7b153840f8eed21965"
+      },
+      {
+        "label": "Annulé",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 5,
+        "_id": "69978f7b153840f8eed21966"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:32:27.123Z",
+    "updatedAt": "2026-02-19T22:32:27.123Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed21969",
+    "name": "Priorité Projet",
+    "key": "69978f7b153840f8eed2194d_priorite-projet",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978f7b153840f8eed2194d"
+    ],
+    "options": [
+      {
+        "label": "Basse",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978f7b153840f8eed2196a"
+      },
+      {
+        "label": "Normale",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69978f7b153840f8eed2196b"
+      },
+      {
+        "label": "Haute",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69978f7b153840f8eed2196c"
+      },
+      {
+        "label": "Critique",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "69978f7b153840f8eed2196d"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:32:27.126Z",
+    "updatedAt": "2026-02-19T22:32:27.126Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed21970",
+    "name": "Type Projet",
+    "key": "69978f7b153840f8eed2194d_type-projet",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978f7b153840f8eed2194d"
+    ],
+    "options": [
+      {
+        "label": "Interne",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978f7b153840f8eed21971"
+      },
+      {
+        "label": "Client",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69978f7b153840f8eed21972"
+      },
+      {
+        "label": "R&D",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69978f7b153840f8eed21973"
+      },
+      {
+        "label": "Maintenance",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "69978f7b153840f8eed21974"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:32:27.128Z",
+    "updatedAt": "2026-02-19T22:32:27.128Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed2198f",
+    "name": "Statut Tâche",
+    "key": "69978f7b153840f8eed21982_statut-tache",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978f7b153840f8eed21982"
+    ],
+    "options": [
+      {
+        "label": "À faire",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978f7b153840f8eed21990"
+      },
+      {
+        "label": "En cours",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69978f7b153840f8eed21991"
+      },
+      {
+        "label": "En revue",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69978f7b153840f8eed21992"
+      },
+      {
+        "label": "Terminé",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69978f7b153840f8eed21993"
+      },
+      {
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "69978f7b153840f8eed21994"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:32:27.140Z",
+    "updatedAt": "2026-02-19T22:32:27.140Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed21997",
+    "name": "Priorité Tâche",
+    "key": "69978f7b153840f8eed21982_priorite-tache",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978f7b153840f8eed21982"
+    ],
+    "options": [
+      {
+        "label": "Basse",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978f7b153840f8eed21998"
+      },
+      {
+        "label": "Normale",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69978f7b153840f8eed21999"
+      },
+      {
+        "label": "Haute",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69978f7b153840f8eed2199a"
+      },
+      {
+        "label": "Urgente",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "69978f7b153840f8eed2199b"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:32:27.142Z",
+    "updatedAt": "2026-02-19T22:32:27.142Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed2199e",
+    "name": "Tags Tâche",
+    "key": "69978f7b153840f8eed21982_tags-tache",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978f7b153840f8eed21982"
+    ],
+    "options": [
+      {
+        "label": "Backend",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978f7b153840f8eed2199f"
+      },
+      {
+        "label": "Frontend",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69978f7b153840f8eed219a0"
+      },
+      {
+        "label": "Design",
+        "color": "#ec4899",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69978f7b153840f8eed219a1"
+      },
+      {
+        "label": "DevOps",
+        "color": "#06b6d4",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69978f7b153840f8eed219a2"
+      },
+      {
+        "label": "Bug",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 4,
+        "_id": "69978f7b153840f8eed219a3"
+      },
+      {
+        "label": "Feature",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 5,
+        "_id": "69978f7b153840f8eed219a4"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:32:27.143Z",
+    "updatedAt": "2026-02-19T22:32:27.143Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed219bd",
+    "name": "Type Document",
+    "key": "69978f7b153840f8eed219ae_type-document",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978f7b153840f8eed219ae"
+    ],
+    "options": [
+      {
+        "label": "Contrat",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978f7b153840f8eed219be"
+      },
+      {
+        "label": "Facture",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69978f7b153840f8eed219bf"
+      },
+      {
+        "label": "Devis",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69978f7b153840f8eed219c0"
+      },
+      {
+        "label": "Rapport",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69978f7b153840f8eed219c1"
+      },
+      {
+        "label": "Autre",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "69978f7b153840f8eed219c2"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:32:27.154Z",
+    "updatedAt": "2026-02-19T22:32:27.154Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed219c5",
+    "name": "Statut Document",
+    "key": "69978f7b153840f8eed219ae_statut-document",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978f7b153840f8eed219ae"
+    ],
+    "options": [
+      {
+        "label": "Brouillon",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978f7b153840f8eed219c6"
+      },
+      {
+        "label": "En attente",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69978f7b153840f8eed219c7"
+      },
+      {
+        "label": "Validé",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69978f7b153840f8eed219c8"
+      },
+      {
+        "label": "Archivé",
+        "color": "#9ca3af",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "69978f7b153840f8eed219c9"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:32:27.155Z",
+    "updatedAt": "2026-02-19T22:32:27.155Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed219dc",
+    "name": "Type Note",
+    "key": "69978f7b153840f8eed219d1_type-note",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978f7b153840f8eed219d1"
+    ],
+    "options": [
+      {
+        "label": "Idée",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978f7b153840f8eed219dd"
+      },
+      {
+        "label": "Mémo",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69978f7b153840f8eed219de"
+      },
+      {
+        "label": "Réunion",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69978f7b153840f8eed219df"
+      },
+      {
+        "label": "Personnel",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69978f7b153840f8eed219e0"
+      },
+      {
+        "label": "Brouillon",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "69978f7b153840f8eed219e1"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:32:27.163Z",
+    "updatedAt": "2026-02-19T22:32:27.163Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed21a02",
+    "name": "Type Événement",
+    "key": "69978f7b153840f8eed219ed_type-evenement",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978f7b153840f8eed219ed"
+    ],
+    "options": [
+      {
+        "label": "Réunion",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978f7b153840f8eed21a03"
+      },
+      {
+        "label": "Rendez-vous",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69978f7b153840f8eed21a04"
+      },
+      {
+        "label": "Formation",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69978f7b153840f8eed21a05"
+      },
+      {
+        "label": "Conférence",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69978f7b153840f8eed21a06"
+      },
+      {
+        "label": "Autre",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "69978f7b153840f8eed21a07"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:32:27.176Z",
+    "updatedAt": "2026-02-19T22:32:27.176Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed21a0a",
+    "name": "Statut Événement",
+    "key": "69978f7b153840f8eed219ed_statut-evenement",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69978f7b153840f8eed219ed"
+    ],
+    "options": [
+      {
+        "label": "Planifié",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69978f7b153840f8eed21a0b"
+      },
+      {
+        "label": "Confirmé",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69978f7b153840f8eed21a0c"
+      },
+      {
+        "label": "Annulé",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69978f7b153840f8eed21a0d"
+      },
+      {
+        "label": "Terminé",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "69978f7b153840f8eed21a0e"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:32:27.178Z",
+    "updatedAt": "2026-02-19T22:32:27.178Z",
+    "__v": 0
+  },
+  {
+    "_id": "6997902086a58861ddebefa6",
+    "name": "Statut",
+    "key": "6997902086a58861ddebef95_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6997902086a58861ddebef95"
+    ],
+    "options": [
+      {
+        "label": "Actif",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6997902086a58861ddebefa7"
+      },
+      {
+        "label": "En traitement",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6997902086a58861ddebefa8"
+      },
+      {
+        "label": "Archivé",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 2,
+        "_id": "6997902086a58861ddebefa9"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:35:12.146Z",
+    "updatedAt": "2026-02-19T22:35:12.146Z",
+    "__v": 0
+  },
+  {
+    "_id": "6997902086a58861ddebeff2",
+    "name": "Type",
+    "key": "6997902086a58861ddebefe7_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6997902086a58861ddebefe7"
+    ],
+    "options": [
+      {
+        "label": "Consultation",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6997902086a58861ddebeff3"
+      },
+      {
+        "label": "Suivi",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6997902086a58861ddebeff4"
+      },
+      {
+        "label": "Urgence",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6997902086a58861ddebeff5"
+      },
+      {
+        "label": "Contrôle",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "6997902086a58861ddebeff6"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-19T22:35:12.167Z",
+    "updatedAt": "2026-02-19T22:35:12.167Z",
+    "__v": 0
+  },
+  {
+    "_id": "69983cfba2bb882ecc535731",
+    "name": "Statut",
+    "key": "69983cfba2bb882ecc535722_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69983cfba2bb882ecc535722"
+    ],
+    "options": [
+      {
+        "label": "Nouveau",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69983cfba2bb882ecc535732"
+      },
+      {
+        "label": "Contacté",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69983cfba2bb882ecc535733"
+      },
+      {
+        "label": "Qualifié",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69983cfba2bb882ecc535734"
+      },
+      {
+        "label": "Client",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69983cfba2bb882ecc535735"
+      },
+      {
+        "label": "Inactif",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "69983cfba2bb882ecc535736"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T10:52:43.212Z",
+    "updatedAt": "2026-02-20T10:52:43.212Z",
+    "__v": 0
+  },
+  {
+    "_id": "69983cfba2bb882ecc535739",
+    "name": "Source",
+    "key": "69983cfba2bb882ecc535722_source",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69983cfba2bb882ecc535722"
+    ],
+    "options": [
+      {
+        "label": "Site web",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69983cfba2bb882ecc53573a"
+      },
+      {
+        "label": "Recommandation",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69983cfba2bb882ecc53573b"
+      },
+      {
+        "label": "Réseaux sociaux",
+        "color": "#ec4899",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69983cfba2bb882ecc53573c"
+      },
+      {
+        "label": "Salon",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "69983cfba2bb882ecc53573d"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T10:52:43.221Z",
+    "updatedAt": "2026-02-20T10:52:43.221Z",
+    "__v": 0
+  },
+  {
+    "_id": "69983cfba2bb882ecc5357ed",
+    "name": "Pipeline",
+    "key": "69983cfba2bb882ecc5357e2_pipeline",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69983cfba2bb882ecc5357e2"
+    ],
+    "options": [
+      {
+        "label": "Prospection",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69983cfba2bb882ecc5357ee"
+      },
+      {
+        "label": "Qualification",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69983cfba2bb882ecc5357ef"
+      },
+      {
+        "label": "Proposition",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69983cfba2bb882ecc5357f0"
+      },
+      {
+        "label": "Négociation",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69983cfba2bb882ecc5357f1"
+      },
+      {
+        "label": "Gagné",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 4,
+        "_id": "69983cfba2bb882ecc5357f2"
+      },
+      {
+        "label": "Perdu",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 5,
+        "_id": "69983cfba2bb882ecc5357f3"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T10:52:43.270Z",
+    "updatedAt": "2026-02-20T10:52:43.270Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998434952eabd5f96e678f0",
+    "name": "Statut",
+    "key": "6998434952eabd5f96e678e1_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998434952eabd5f96e678e1"
+    ],
+    "options": [
+      {
+        "label": "Nouveau",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998434952eabd5f96e678f1"
+      },
+      {
+        "label": "Contacté",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6998434952eabd5f96e678f2"
+      },
+      {
+        "label": "Qualifié",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6998434952eabd5f96e678f3"
+      },
+      {
+        "label": "Client",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "6998434952eabd5f96e678f4"
+      },
+      {
+        "label": "Inactif",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "6998434952eabd5f96e678f5"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T11:19:37.107Z",
+    "updatedAt": "2026-02-20T11:19:37.107Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998434952eabd5f96e678f8",
+    "name": "Source",
+    "key": "6998434952eabd5f96e678e1_source",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998434952eabd5f96e678e1"
+    ],
+    "options": [
+      {
+        "label": "Site web",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998434952eabd5f96e678f9"
+      },
+      {
+        "label": "Recommandation",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998434952eabd5f96e678fa"
+      },
+      {
+        "label": "Réseaux sociaux",
+        "color": "#ec4899",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998434952eabd5f96e678fb"
+      },
+      {
+        "label": "Salon",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998434952eabd5f96e678fc"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T11:19:37.111Z",
+    "updatedAt": "2026-02-20T11:19:37.111Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998434952eabd5f96e67a13",
+    "name": "Pipeline",
+    "key": "6998434952eabd5f96e67a08_pipeline",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998434952eabd5f96e67a08"
+    ],
+    "options": [
+      {
+        "label": "Prospection",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998434952eabd5f96e67a14"
+      },
+      {
+        "label": "Qualification",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6998434952eabd5f96e67a15"
+      },
+      {
+        "label": "Proposition",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6998434952eabd5f96e67a16"
+      },
+      {
+        "label": "Négociation",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "6998434952eabd5f96e67a17"
+      },
+      {
+        "label": "Gagné",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 4,
+        "_id": "6998434952eabd5f96e67a18"
+      },
+      {
+        "label": "Perdu",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 5,
+        "_id": "6998434952eabd5f96e67a19"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T11:19:37.181Z",
+    "updatedAt": "2026-02-20T11:19:37.181Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998478152eabd5f96e68807",
+    "name": "Statut",
+    "key": "6998478152eabd5f96e687f8_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998478152eabd5f96e687f8"
+    ],
+    "options": [
+      {
+        "label": "Nouveau",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998478152eabd5f96e68808"
+      },
+      {
+        "label": "Contacté",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6998478152eabd5f96e68809"
+      },
+      {
+        "label": "Qualifié",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6998478152eabd5f96e6880a"
+      },
+      {
+        "label": "Client",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "6998478152eabd5f96e6880b"
+      },
+      {
+        "label": "Inactif",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "6998478152eabd5f96e6880c"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T11:37:37.333Z",
+    "updatedAt": "2026-02-20T11:37:37.333Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998478152eabd5f96e6880f",
+    "name": "Source",
+    "key": "6998478152eabd5f96e687f8_source",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998478152eabd5f96e687f8"
+    ],
+    "options": [
+      {
+        "label": "Site web",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998478152eabd5f96e68810"
+      },
+      {
+        "label": "Recommandation",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998478152eabd5f96e68811"
+      },
+      {
+        "label": "Réseaux sociaux",
+        "color": "#ec4899",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998478152eabd5f96e68812"
+      },
+      {
+        "label": "Salon",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998478152eabd5f96e68813"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T11:37:37.335Z",
+    "updatedAt": "2026-02-20T11:37:37.335Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998478152eabd5f96e6892a",
+    "name": "Pipeline",
+    "key": "6998478152eabd5f96e6891f_pipeline",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998478152eabd5f96e6891f"
+    ],
+    "options": [
+      {
+        "label": "Prospection",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998478152eabd5f96e6892b"
+      },
+      {
+        "label": "Qualification",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6998478152eabd5f96e6892c"
+      },
+      {
+        "label": "Proposition",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6998478152eabd5f96e6892d"
+      },
+      {
+        "label": "Négociation",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "6998478152eabd5f96e6892e"
+      },
+      {
+        "label": "Gagné",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 4,
+        "_id": "6998478152eabd5f96e6892f"
+      },
+      {
+        "label": "Perdu",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 5,
+        "_id": "6998478152eabd5f96e68930"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T11:37:37.373Z",
+    "updatedAt": "2026-02-20T11:37:37.373Z",
+    "__v": 0
+  },
+  {
+    "_id": "699853975508dee5e62793b2",
+    "name": "Statut",
+    "key": "699853975508dee5e62793a1_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699853975508dee5e62793a1"
+    ],
+    "options": [
+      {
+        "label": "Actif",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699853975508dee5e62793b3"
+      },
+      {
+        "label": "En traitement",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "699853975508dee5e62793b4"
+      },
+      {
+        "label": "Archivé",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 2,
+        "_id": "699853975508dee5e62793b5"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:29:11.497Z",
+    "updatedAt": "2026-02-20T12:29:11.497Z",
+    "__v": 0
+  },
+  {
+    "_id": "699853975508dee5e6279480",
+    "name": "Type",
+    "key": "699853975508dee5e6279475_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699853975508dee5e6279475"
+    ],
+    "options": [
+      {
+        "label": "Consultation",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699853975508dee5e6279481"
+      },
+      {
+        "label": "Suivi",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699853975508dee5e6279482"
+      },
+      {
+        "label": "Urgence",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699853975508dee5e6279483"
+      },
+      {
+        "label": "Contrôle",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "699853975508dee5e6279484"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:29:11.543Z",
+    "updatedAt": "2026-02-20T12:29:11.543Z",
+    "__v": 0
+  },
+  {
+    "_id": "699854725508dee5e627abb0",
+    "name": "Statut",
+    "key": "699854725508dee5e627ab9f_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699854725508dee5e627ab9f"
+    ],
+    "options": [
+      {
+        "label": "Brouillon",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699854725508dee5e627abb1"
+      },
+      {
+        "label": "Envoyée",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "699854725508dee5e627abb2"
+      },
+      {
+        "label": "En retard",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "699854725508dee5e627abb3"
+      },
+      {
+        "label": "Payée",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "699854725508dee5e627abb4"
+      },
+      {
+        "label": "Annulée",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "699854725508dee5e627abb5"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:32:50.554Z",
+    "updatedAt": "2026-02-20T12:32:50.554Z",
+    "__v": 0
+  },
+  {
+    "_id": "699854725508dee5e627abb8",
+    "name": "Type",
+    "key": "699854725508dee5e627ab9f_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699854725508dee5e627ab9f"
+    ],
+    "options": [
+      {
+        "label": "Facture",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699854725508dee5e627abb9"
+      },
+      {
+        "label": "Devis",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699854725508dee5e627abba"
+      },
+      {
+        "label": "Avoir",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699854725508dee5e627abbb"
+      },
+      {
+        "label": "Acompte",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "699854725508dee5e627abbc"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:32:50.557Z",
+    "updatedAt": "2026-02-20T12:32:50.557Z",
+    "__v": 0
+  },
+  {
+    "_id": "699854725508dee5e627ac9d",
+    "name": "Catégorie",
+    "key": "699854725508dee5e627ac90_category",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699854725508dee5e627ac90"
+    ],
+    "options": [
+      {
+        "label": "Fournitures",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699854725508dee5e627ac9e"
+      },
+      {
+        "label": "Transport",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699854725508dee5e627ac9f"
+      },
+      {
+        "label": "Repas",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699854725508dee5e627aca0"
+      },
+      {
+        "label": "Loyer",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699854725508dee5e627aca1"
+      },
+      {
+        "label": "Télécom",
+        "color": "#06b6d4",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699854725508dee5e627aca2"
+      },
+      {
+        "label": "Autre",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "699854725508dee5e627aca3"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:32:50.600Z",
+    "updatedAt": "2026-02-20T12:32:50.600Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998550d5508dee5e627b9ee",
+    "name": "Statut Tâche",
+    "key": "6998550d5508dee5e627b9e1_statut-tache",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998550d5508dee5e627b9e1"
+    ],
+    "options": [
+      {
+        "label": "À faire",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998550d5508dee5e627b9ef"
+      },
+      {
+        "label": "En cours",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6998550d5508dee5e627b9f0"
+      },
+      {
+        "label": "En revue",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6998550d5508dee5e627b9f1"
+      },
+      {
+        "label": "Terminé",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "6998550d5508dee5e627b9f2"
+      },
+      {
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "6998550d5508dee5e627b9f3"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:35:25.838Z",
+    "updatedAt": "2026-02-20T12:35:25.838Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998550d5508dee5e627b9f6",
+    "name": "Priorité Tâche",
+    "key": "6998550d5508dee5e627b9e1_priorite-tache",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998550d5508dee5e627b9e1"
+    ],
+    "options": [
+      {
+        "label": "Basse",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998550d5508dee5e627b9f7"
+      },
+      {
+        "label": "Normale",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6998550d5508dee5e627b9f8"
+      },
+      {
+        "label": "Haute",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6998550d5508dee5e627b9f9"
+      },
+      {
+        "label": "Urgente",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "6998550d5508dee5e627b9fa"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:35:25.840Z",
+    "updatedAt": "2026-02-20T12:35:25.840Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998550d5508dee5e627b9fd",
+    "name": "Tags Tâche",
+    "key": "6998550d5508dee5e627b9e1_tags-tache",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998550d5508dee5e627b9e1"
+    ],
+    "options": [
+      {
+        "label": "Backend",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998550d5508dee5e627b9fe"
+      },
+      {
+        "label": "Frontend",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6998550d5508dee5e627b9ff"
+      },
+      {
+        "label": "Design",
+        "color": "#ec4899",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6998550d5508dee5e627ba00"
+      },
+      {
+        "label": "DevOps",
+        "color": "#06b6d4",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "6998550d5508dee5e627ba01"
+      },
+      {
+        "label": "Bug",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 4,
+        "_id": "6998550d5508dee5e627ba02"
+      },
+      {
+        "label": "Feature",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 5,
+        "_id": "6998550d5508dee5e627ba03"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:35:25.842Z",
+    "updatedAt": "2026-02-20T12:35:25.842Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998550d5508dee5e627ba1b",
+    "name": "Type Note",
+    "key": "6998550d5508dee5e627ba10_type-note",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998550d5508dee5e627ba10"
+    ],
+    "options": [
+      {
+        "label": "Idée",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998550d5508dee5e627ba1c"
+      },
+      {
+        "label": "Mémo",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6998550d5508dee5e627ba1d"
+      },
+      {
+        "label": "Réunion",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6998550d5508dee5e627ba1e"
+      },
+      {
+        "label": "Personnel",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "6998550d5508dee5e627ba1f"
+      },
+      {
+        "label": "Brouillon",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "6998550d5508dee5e627ba20"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:35:25.852Z",
+    "updatedAt": "2026-02-20T12:35:25.852Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998550d5508dee5e627ba3e",
+    "name": "Type Événement",
+    "key": "6998550d5508dee5e627ba29_type-evenement",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998550d5508dee5e627ba29"
+    ],
+    "options": [
+      {
+        "label": "Réunion",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998550d5508dee5e627ba3f"
+      },
+      {
+        "label": "Rendez-vous",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6998550d5508dee5e627ba40"
+      },
+      {
+        "label": "Formation",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6998550d5508dee5e627ba41"
+      },
+      {
+        "label": "Conférence",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "6998550d5508dee5e627ba42"
+      },
+      {
+        "label": "Autre",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "6998550d5508dee5e627ba43"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:35:25.862Z",
+    "updatedAt": "2026-02-20T12:35:25.862Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998550d5508dee5e627ba46",
+    "name": "Statut Événement",
+    "key": "6998550d5508dee5e627ba29_statut-evenement",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998550d5508dee5e627ba29"
+    ],
+    "options": [
+      {
+        "label": "Planifié",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998550d5508dee5e627ba47"
+      },
+      {
+        "label": "Confirmé",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6998550d5508dee5e627ba48"
+      },
+      {
+        "label": "Annulé",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6998550d5508dee5e627ba49"
+      },
+      {
+        "label": "Terminé",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "6998550d5508dee5e627ba4a"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:35:25.864Z",
+    "updatedAt": "2026-02-20T12:35:25.864Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998550d5508dee5e627ba63",
+    "name": "Type Document",
+    "key": "6998550d5508dee5e627ba54_type-document",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998550d5508dee5e627ba54"
+    ],
+    "options": [
+      {
+        "label": "Contrat",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998550d5508dee5e627ba64"
+      },
+      {
+        "label": "Facture",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6998550d5508dee5e627ba65"
+      },
+      {
+        "label": "Devis",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6998550d5508dee5e627ba66"
+      },
+      {
+        "label": "Rapport",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "6998550d5508dee5e627ba67"
+      },
+      {
+        "label": "Autre",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "6998550d5508dee5e627ba68"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:35:25.875Z",
+    "updatedAt": "2026-02-20T12:35:25.875Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998550d5508dee5e627ba6b",
+    "name": "Statut Document",
+    "key": "6998550d5508dee5e627ba54_statut-document",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998550d5508dee5e627ba54"
+    ],
+    "options": [
+      {
+        "label": "Brouillon",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998550d5508dee5e627ba6c"
+      },
+      {
+        "label": "En attente",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6998550d5508dee5e627ba6d"
+      },
+      {
+        "label": "Validé",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6998550d5508dee5e627ba6e"
+      },
+      {
+        "label": "Archivé",
+        "color": "#9ca3af",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "6998550d5508dee5e627ba6f"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:35:25.876Z",
+    "updatedAt": "2026-02-20T12:35:25.876Z",
+    "__v": 0
+  },
+  {
+    "_id": "699855145508dee5e627bae3",
+    "name": "Statut Tâche",
+    "key": "699855145508dee5e627bad6_statut-tache",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699855145508dee5e627bad6"
+    ],
+    "options": [
+      {
+        "label": "À faire",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699855145508dee5e627bae4"
+      },
+      {
+        "label": "En cours",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "699855145508dee5e627bae5"
+      },
+      {
+        "label": "En revue",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "699855145508dee5e627bae6"
+      },
+      {
+        "label": "Terminé",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "699855145508dee5e627bae7"
+      },
+      {
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "699855145508dee5e627bae8"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:35:32.928Z",
+    "updatedAt": "2026-02-20T12:35:32.928Z",
+    "__v": 0
+  },
+  {
+    "_id": "699855145508dee5e627baeb",
+    "name": "Priorité Tâche",
+    "key": "699855145508dee5e627bad6_priorite-tache",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699855145508dee5e627bad6"
+    ],
+    "options": [
+      {
+        "label": "Basse",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699855145508dee5e627baec"
+      },
+      {
+        "label": "Normale",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "699855145508dee5e627baed"
+      },
+      {
+        "label": "Haute",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "699855145508dee5e627baee"
+      },
+      {
+        "label": "Urgente",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "699855145508dee5e627baef"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:35:32.930Z",
+    "updatedAt": "2026-02-20T12:35:32.930Z",
+    "__v": 0
+  },
+  {
+    "_id": "699855145508dee5e627baf2",
+    "name": "Tags Tâche",
+    "key": "699855145508dee5e627bad6_tags-tache",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699855145508dee5e627bad6"
+    ],
+    "options": [
+      {
+        "label": "Backend",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699855145508dee5e627baf3"
+      },
+      {
+        "label": "Frontend",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "699855145508dee5e627baf4"
+      },
+      {
+        "label": "Design",
+        "color": "#ec4899",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "699855145508dee5e627baf5"
+      },
+      {
+        "label": "DevOps",
+        "color": "#06b6d4",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "699855145508dee5e627baf6"
+      },
+      {
+        "label": "Bug",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 4,
+        "_id": "699855145508dee5e627baf7"
+      },
+      {
+        "label": "Feature",
+        "color": "#10b981",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 5,
+        "_id": "699855145508dee5e627baf8"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:35:32.932Z",
+    "updatedAt": "2026-02-20T12:35:32.932Z",
+    "__v": 0
+  },
+  {
+    "_id": "699857ef027e29bba9654a7b",
+    "name": "Statut",
+    "key": "699857ef027e29bba9654a6a_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699857ef027e29bba9654a6a"
+    ],
+    "options": [
+      {
+        "label": "Actif",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699857ef027e29bba9654a7c"
+      },
+      {
+        "label": "En traitement",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "699857ef027e29bba9654a7d"
+      },
+      {
+        "label": "Archivé",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 2,
+        "_id": "699857ef027e29bba9654a7e"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:47:43.257Z",
+    "updatedAt": "2026-02-20T12:47:43.257Z",
+    "__v": 0
+  },
+  {
+    "_id": "699857ef027e29bba9654b4f",
+    "name": "Type",
+    "key": "699857ef027e29bba9654b44_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699857ef027e29bba9654b44"
+    ],
+    "options": [
+      {
+        "label": "Consultation",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699857ef027e29bba9654b50"
+      },
+      {
+        "label": "Suivi",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699857ef027e29bba9654b51"
+      },
+      {
+        "label": "Urgence",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699857ef027e29bba9654b52"
+      },
+      {
+        "label": "Contrôle",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "699857ef027e29bba9654b53"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:47:43.313Z",
+    "updatedAt": "2026-02-20T12:47:43.313Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998584b14b503aa91f4636a",
+    "name": "Statut",
+    "key": "6998584b14b503aa91f46359_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998584b14b503aa91f46359"
+    ],
+    "options": [
+      {
+        "label": "Brouillon",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998584b14b503aa91f4636b"
+      },
+      {
+        "label": "Envoyée",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "6998584b14b503aa91f4636c"
+      },
+      {
+        "label": "En retard",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "6998584b14b503aa91f4636d"
+      },
+      {
+        "label": "Payée",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "6998584b14b503aa91f4636e"
+      },
+      {
+        "label": "Annulée",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "6998584b14b503aa91f4636f"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:49:15.671Z",
+    "updatedAt": "2026-02-20T12:49:15.671Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998584b14b503aa91f46372",
+    "name": "Type",
+    "key": "6998584b14b503aa91f46359_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998584b14b503aa91f46359"
+    ],
+    "options": [
+      {
+        "label": "Facture",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998584b14b503aa91f46373"
+      },
+      {
+        "label": "Devis",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998584b14b503aa91f46374"
+      },
+      {
+        "label": "Avoir",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998584b14b503aa91f46375"
+      },
+      {
+        "label": "Acompte",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998584b14b503aa91f46376"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:49:15.678Z",
+    "updatedAt": "2026-02-20T12:49:15.678Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998584b14b503aa91f4645a",
+    "name": "Catégorie",
+    "key": "6998584b14b503aa91f4644d_category",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "6998584b14b503aa91f4644d"
+    ],
+    "options": [
+      {
+        "label": "Fournitures",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998584b14b503aa91f4645b"
+      },
+      {
+        "label": "Transport",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998584b14b503aa91f4645c"
+      },
+      {
+        "label": "Repas",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998584b14b503aa91f4645d"
+      },
+      {
+        "label": "Loyer",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998584b14b503aa91f4645e"
+      },
+      {
+        "label": "Télécom",
+        "color": "#06b6d4",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998584b14b503aa91f4645f"
+      },
+      {
+        "label": "Autre",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "6998584b14b503aa91f46460"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T12:49:15.731Z",
+    "updatedAt": "2026-02-20T12:49:15.731Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985b2114b503aa91f46d9a",
+    "name": "Statut",
+    "key": "69985b2114b503aa91f46d8b_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985b2114b503aa91f46d8b"
+    ],
+    "options": [
+      {
+        "label": "Nouveau",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985b2114b503aa91f46d9b"
+      },
+      {
+        "label": "Contacté",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69985b2114b503aa91f46d9c"
+      },
+      {
+        "label": "Qualifié",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69985b2114b503aa91f46d9d"
+      },
+      {
+        "label": "Client",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69985b2114b503aa91f46d9e"
+      },
+      {
+        "label": "Inactif",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "69985b2114b503aa91f46d9f"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:01:21.430Z",
+    "updatedAt": "2026-02-20T13:01:21.430Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985b2114b503aa91f46da2",
+    "name": "Source",
+    "key": "69985b2114b503aa91f46d8b_source",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985b2114b503aa91f46d8b"
+    ],
+    "options": [
+      {
+        "label": "Site web",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985b2114b503aa91f46da3"
+      },
+      {
+        "label": "Recommandation",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985b2114b503aa91f46da4"
+      },
+      {
+        "label": "Réseaux sociaux",
+        "color": "#ec4899",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985b2114b503aa91f46da5"
+      },
+      {
+        "label": "Salon",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985b2114b503aa91f46da6"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:01:21.432Z",
+    "updatedAt": "2026-02-20T13:01:21.432Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985b2114b503aa91f46ec0",
+    "name": "Pipeline",
+    "key": "69985b2114b503aa91f46eb5_pipeline",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985b2114b503aa91f46eb5"
+    ],
+    "options": [
+      {
+        "label": "Prospection",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985b2114b503aa91f46ec1"
+      },
+      {
+        "label": "Qualification",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69985b2114b503aa91f46ec2"
+      },
+      {
+        "label": "Proposition",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69985b2114b503aa91f46ec3"
+      },
+      {
+        "label": "Négociation",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69985b2114b503aa91f46ec4"
+      },
+      {
+        "label": "Gagné",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 4,
+        "_id": "69985b2114b503aa91f46ec5"
+      },
+      {
+        "label": "Perdu",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 5,
+        "_id": "69985b2114b503aa91f46ec6"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:01:21.475Z",
+    "updatedAt": "2026-02-20T13:01:21.475Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bcd14b503aa91f47545",
+    "name": "Statut",
+    "key": "69985bcd14b503aa91f47536_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985bcd14b503aa91f47536"
+    ],
+    "options": [
+      {
+        "label": "Nouveau",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bcd14b503aa91f47546"
+      },
+      {
+        "label": "Contacté",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69985bcd14b503aa91f47547"
+      },
+      {
+        "label": "Qualifié",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69985bcd14b503aa91f47548"
+      },
+      {
+        "label": "Client",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69985bcd14b503aa91f47549"
+      },
+      {
+        "label": "Inactif",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "69985bcd14b503aa91f4754a"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:04:13.848Z",
+    "updatedAt": "2026-02-20T13:04:13.848Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bcd14b503aa91f4754d",
+    "name": "Source",
+    "key": "69985bcd14b503aa91f47536_source",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985bcd14b503aa91f47536"
+    ],
+    "options": [
+      {
+        "label": "Site web",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bcd14b503aa91f4754e"
+      },
+      {
+        "label": "Recommandation",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bcd14b503aa91f4754f"
+      },
+      {
+        "label": "Réseaux sociaux",
+        "color": "#ec4899",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bcd14b503aa91f47550"
+      },
+      {
+        "label": "Salon",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bcd14b503aa91f47551"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:04:13.850Z",
+    "updatedAt": "2026-02-20T13:04:13.850Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bcd14b503aa91f4766e",
+    "name": "Pipeline",
+    "key": "69985bcd14b503aa91f47663_pipeline",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985bcd14b503aa91f47663"
+    ],
+    "options": [
+      {
+        "label": "Prospection",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bcd14b503aa91f4766f"
+      },
+      {
+        "label": "Qualification",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69985bcd14b503aa91f47670"
+      },
+      {
+        "label": "Proposition",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69985bcd14b503aa91f47671"
+      },
+      {
+        "label": "Négociation",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69985bcd14b503aa91f47672"
+      },
+      {
+        "label": "Gagné",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 4,
+        "_id": "69985bcd14b503aa91f47673"
+      },
+      {
+        "label": "Perdu",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 5,
+        "_id": "69985bcd14b503aa91f47674"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:04:13.914Z",
+    "updatedAt": "2026-02-20T13:04:13.914Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bd314b503aa91f4777c",
+    "name": "Statut",
+    "key": "69985bd314b503aa91f4776b_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985bd314b503aa91f4776b"
+    ],
+    "options": [
+      {
+        "label": "Actif",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bd314b503aa91f4777d"
+      },
+      {
+        "label": "En traitement",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69985bd314b503aa91f4777e"
+      },
+      {
+        "label": "Archivé",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 2,
+        "_id": "69985bd314b503aa91f4777f"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:04:19.770Z",
+    "updatedAt": "2026-02-20T13:04:19.770Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bd314b503aa91f47850",
+    "name": "Type",
+    "key": "69985bd314b503aa91f47845_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985bd314b503aa91f47845"
+    ],
+    "options": [
+      {
+        "label": "Consultation",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bd314b503aa91f47851"
+      },
+      {
+        "label": "Suivi",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bd314b503aa91f47852"
+      },
+      {
+        "label": "Urgence",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bd314b503aa91f47853"
+      },
+      {
+        "label": "Contrôle",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bd314b503aa91f47854"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:04:19.808Z",
+    "updatedAt": "2026-02-20T13:04:19.808Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bf214b503aa91f4840e",
+    "name": "Statut",
+    "key": "69985bf214b503aa91f48403_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985bf214b503aa91f48403"
+    ],
+    "options": [
+      {
+        "label": "À faire",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf214b503aa91f4840f"
+      },
+      {
+        "label": "En cours",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69985bf214b503aa91f48410"
+      },
+      {
+        "label": "En revue",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69985bf214b503aa91f48411"
+      },
+      {
+        "label": "Terminé",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69985bf214b503aa91f48412"
+      },
+      {
+        "label": "Bloqué",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "69985bf214b503aa91f48413"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:04:50.242Z",
+    "updatedAt": "2026-02-20T13:04:50.242Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bf214b503aa91f48416",
+    "name": "Priorité",
+    "key": "69985bf214b503aa91f48403_priority",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985bf214b503aa91f48403"
+    ],
+    "options": [
+      {
+        "label": "Critique",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf214b503aa91f48417"
+      },
+      {
+        "label": "Haute",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf214b503aa91f48418"
+      },
+      {
+        "label": "Normale",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf214b503aa91f48419"
+      },
+      {
+        "label": "Basse",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf214b503aa91f4841a"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:04:50.244Z",
+    "updatedAt": "2026-02-20T13:04:50.244Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bf214b503aa91f484fe",
+    "name": "Statut",
+    "key": "69985bf214b503aa91f484f5_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985bf214b503aa91f484f5"
+    ],
+    "options": [
+      {
+        "label": "Planifié",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf214b503aa91f484ff"
+      },
+      {
+        "label": "En cours",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69985bf214b503aa91f48500"
+      },
+      {
+        "label": "Atteint",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69985bf214b503aa91f48501"
+      },
+      {
+        "label": "En retard",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "69985bf214b503aa91f48502"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:04:50.287Z",
+    "updatedAt": "2026-02-20T13:04:50.287Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bf914b503aa91f485a9",
+    "name": "Statut",
+    "key": "69985bf914b503aa91f4859a_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985bf914b503aa91f4859a"
+    ],
+    "options": [
+      {
+        "label": "Actif",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf914b503aa91f485aa"
+      },
+      {
+        "label": "En congé",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69985bf914b503aa91f485ab"
+      },
+      {
+        "label": "Période d'essai",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69985bf914b503aa91f485ac"
+      },
+      {
+        "label": "Fin de contrat",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "69985bf914b503aa91f485ad"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:04:57.351Z",
+    "updatedAt": "2026-02-20T13:04:57.351Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bf914b503aa91f485b0",
+    "name": "Type de contrat",
+    "key": "69985bf914b503aa91f4859a_contract_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985bf914b503aa91f4859a"
+    ],
+    "options": [
+      {
+        "label": "CDI",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf914b503aa91f485b1"
+      },
+      {
+        "label": "CDD",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf914b503aa91f485b2"
+      },
+      {
+        "label": "Stage",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf914b503aa91f485b3"
+      },
+      {
+        "label": "Freelance",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf914b503aa91f485b4"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:04:57.353Z",
+    "updatedAt": "2026-02-20T13:04:57.353Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bf914b503aa91f48690",
+    "name": "Statut",
+    "key": "69985bf914b503aa91f48685_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985bf914b503aa91f48685"
+    ],
+    "options": [
+      {
+        "label": "En attente",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf914b503aa91f48691"
+      },
+      {
+        "label": "Approuvé",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69985bf914b503aa91f48692"
+      },
+      {
+        "label": "Refusé",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 2,
+        "_id": "69985bf914b503aa91f48693"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:04:57.385Z",
+    "updatedAt": "2026-02-20T13:04:57.385Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bf914b503aa91f48696",
+    "name": "Type de congé",
+    "key": "69985bf914b503aa91f48685_leave_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985bf914b503aa91f48685"
+    ],
+    "options": [
+      {
+        "label": "Congé payé",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf914b503aa91f48697"
+      },
+      {
+        "label": "Maladie",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf914b503aa91f48698"
+      },
+      {
+        "label": "Sans solde",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf914b503aa91f48699"
+      },
+      {
+        "label": "Exceptionnel",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985bf914b503aa91f4869a"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:04:57.387Z",
+    "updatedAt": "2026-02-20T13:04:57.387Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985f13fe8b5c53e465b659",
+    "name": "Statut",
+    "key": "69985f13fe8b5c53e465b64a_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985f13fe8b5c53e465b64a"
+    ],
+    "options": [
+      {
+        "label": "Nouveau",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985f13fe8b5c53e465b65a"
+      },
+      {
+        "label": "Contacté",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69985f13fe8b5c53e465b65b"
+      },
+      {
+        "label": "Qualifié",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69985f13fe8b5c53e465b65c"
+      },
+      {
+        "label": "Client",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69985f13fe8b5c53e465b65d"
+      },
+      {
+        "label": "Inactif",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "69985f13fe8b5c53e465b65e"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:18:11.455Z",
+    "updatedAt": "2026-02-20T13:18:11.455Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985f13fe8b5c53e465b661",
+    "name": "Source",
+    "key": "69985f13fe8b5c53e465b64a_source",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985f13fe8b5c53e465b64a"
+    ],
+    "options": [
+      {
+        "label": "Site web",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985f13fe8b5c53e465b662"
+      },
+      {
+        "label": "Recommandation",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985f13fe8b5c53e465b663"
+      },
+      {
+        "label": "Réseaux sociaux",
+        "color": "#ec4899",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985f13fe8b5c53e465b664"
+      },
+      {
+        "label": "Salon",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985f13fe8b5c53e465b665"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:18:11.460Z",
+    "updatedAt": "2026-02-20T13:18:11.460Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985f13fe8b5c53e465b788",
+    "name": "Pipeline",
+    "key": "69985f13fe8b5c53e465b77d_pipeline",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985f13fe8b5c53e465b77d"
+    ],
+    "options": [
+      {
+        "label": "Prospection",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985f13fe8b5c53e465b789"
+      },
+      {
+        "label": "Qualification",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69985f13fe8b5c53e465b78a"
+      },
+      {
+        "label": "Proposition",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69985f13fe8b5c53e465b78b"
+      },
+      {
+        "label": "Négociation",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69985f13fe8b5c53e465b78c"
+      },
+      {
+        "label": "Gagné",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 4,
+        "_id": "69985f13fe8b5c53e465b78d"
+      },
+      {
+        "label": "Perdu",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 5,
+        "_id": "69985f13fe8b5c53e465b78e"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:18:11.540Z",
+    "updatedAt": "2026-02-20T13:18:11.540Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985fc5fe8b5c53e465bb08",
+    "name": "Statut",
+    "key": "69985fc5fe8b5c53e465baf9_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985fc5fe8b5c53e465baf9"
+    ],
+    "options": [
+      {
+        "label": "Nouveau",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985fc5fe8b5c53e465bb09"
+      },
+      {
+        "label": "Contacté",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69985fc5fe8b5c53e465bb0a"
+      },
+      {
+        "label": "Qualifié",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69985fc5fe8b5c53e465bb0b"
+      },
+      {
+        "label": "Client",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69985fc5fe8b5c53e465bb0c"
+      },
+      {
+        "label": "Inactif",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 4,
+        "_id": "69985fc5fe8b5c53e465bb0d"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:21:09.525Z",
+    "updatedAt": "2026-02-20T13:21:09.525Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985fc5fe8b5c53e465bb10",
+    "name": "Source",
+    "key": "69985fc5fe8b5c53e465baf9_source",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985fc5fe8b5c53e465baf9"
+    ],
+    "options": [
+      {
+        "label": "Site web",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985fc5fe8b5c53e465bb11"
+      },
+      {
+        "label": "Recommandation",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985fc5fe8b5c53e465bb12"
+      },
+      {
+        "label": "Réseaux sociaux",
+        "color": "#ec4899",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985fc5fe8b5c53e465bb13"
+      },
+      {
+        "label": "Salon",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985fc5fe8b5c53e465bb14"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:21:09.530Z",
+    "updatedAt": "2026-02-20T13:21:09.530Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985fc5fe8b5c53e465bc38",
+    "name": "Pipeline",
+    "key": "69985fc5fe8b5c53e465bc2d_pipeline",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "69985fc5fe8b5c53e465bc2d"
+    ],
+    "options": [
+      {
+        "label": "Prospection",
+        "color": "#94a3b8",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "69985fc5fe8b5c53e465bc39"
+      },
+      {
+        "label": "Qualification",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "69985fc5fe8b5c53e465bc3a"
+      },
+      {
+        "label": "Proposition",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "69985fc5fe8b5c53e465bc3b"
+      },
+      {
+        "label": "Négociation",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 3,
+        "_id": "69985fc5fe8b5c53e465bc3c"
+      },
+      {
+        "label": "Gagné",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 4,
+        "_id": "69985fc5fe8b5c53e465bc3d"
+      },
+      {
+        "label": "Perdu",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 5,
+        "_id": "69985fc5fe8b5c53e465bc3e"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-20T13:21:09.599Z",
+    "updatedAt": "2026-02-20T13:21:09.599Z",
+    "__v": 0
+  },
+  {
+    "_id": "699900bc89cd63ea3da5483a",
+    "name": "Statut",
+    "key": "699900bc89cd63ea3da5482b_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699900bc89cd63ea3da5482b"
+    ],
+    "options": [
+      {
+        "label": "Actif",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900bc89cd63ea3da5483b"
+      },
+      {
+        "label": "En congé",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "699900bc89cd63ea3da5483c"
+      },
+      {
+        "label": "Période d'essai",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "699900bc89cd63ea3da5483d"
+      },
+      {
+        "label": "Fin de contrat",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "699900bc89cd63ea3da5483e"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T00:47:56.831Z",
+    "updatedAt": "2026-02-21T00:47:56.831Z",
+    "__v": 0
+  },
+  {
+    "_id": "699900bc89cd63ea3da54841",
+    "name": "Type de contrat",
+    "key": "699900bc89cd63ea3da5482b_contract_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699900bc89cd63ea3da5482b"
+    ],
+    "options": [
+      {
+        "label": "CDI",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900bc89cd63ea3da54842"
+      },
+      {
+        "label": "CDD",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900bc89cd63ea3da54843"
+      },
+      {
+        "label": "Stage",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900bc89cd63ea3da54844"
+      },
+      {
+        "label": "Freelance",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900bc89cd63ea3da54845"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T00:47:56.834Z",
+    "updatedAt": "2026-02-21T00:47:56.834Z",
+    "__v": 0
+  },
+  {
+    "_id": "699900bc89cd63ea3da54924",
+    "name": "Statut",
+    "key": "699900bc89cd63ea3da54919_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699900bc89cd63ea3da54919"
+    ],
+    "options": [
+      {
+        "label": "En attente",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900bc89cd63ea3da54925"
+      },
+      {
+        "label": "Approuvé",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "699900bc89cd63ea3da54926"
+      },
+      {
+        "label": "Refusé",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 2,
+        "_id": "699900bc89cd63ea3da54927"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T00:47:56.883Z",
+    "updatedAt": "2026-02-21T00:47:56.883Z",
+    "__v": 0
+  },
+  {
+    "_id": "699900bc89cd63ea3da5492a",
+    "name": "Type de congé",
+    "key": "699900bc89cd63ea3da54919_leave_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699900bc89cd63ea3da54919"
+    ],
+    "options": [
+      {
+        "label": "Congé payé",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900bc89cd63ea3da5492b"
+      },
+      {
+        "label": "Maladie",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900bc89cd63ea3da5492c"
+      },
+      {
+        "label": "Sans solde",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900bc89cd63ea3da5492d"
+      },
+      {
+        "label": "Exceptionnel",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900bc89cd63ea3da5492e"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T00:47:56.886Z",
+    "updatedAt": "2026-02-21T00:47:56.886Z",
+    "__v": 0
+  },
+  {
+    "_id": "699900e789cd63ea3da55101",
+    "name": "Statut",
+    "key": "699900e789cd63ea3da550f0_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699900e789cd63ea3da550f0"
+    ],
+    "options": [
+      {
+        "label": "Actif",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900e789cd63ea3da55102"
+      },
+      {
+        "label": "En traitement",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "699900e789cd63ea3da55103"
+      },
+      {
+        "label": "Archivé",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 2,
+        "_id": "699900e789cd63ea3da55104"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T00:48:39.482Z",
+    "updatedAt": "2026-02-21T00:48:39.482Z",
+    "__v": 0
+  },
+  {
+    "_id": "699900e789cd63ea3da5521e",
+    "name": "Type",
+    "key": "699900e789cd63ea3da55213_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699900e789cd63ea3da55213"
+    ],
+    "options": [
+      {
+        "label": "Consultation",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900e789cd63ea3da5521f"
+      },
+      {
+        "label": "Suivi",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900e789cd63ea3da55220"
+      },
+      {
+        "label": "Urgence",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900e789cd63ea3da55221"
+      },
+      {
+        "label": "Contrôle",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900e789cd63ea3da55222"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T00:48:39.538Z",
+    "updatedAt": "2026-02-21T00:48:39.538Z",
+    "__v": 0
+  },
+  {
+    "_id": "699900e789cd63ea3da552fd",
+    "name": "Statut",
+    "key": "699900e789cd63ea3da552ec_status",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699900e789cd63ea3da552ec"
+    ],
+    "options": [
+      {
+        "label": "En cours",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900e789cd63ea3da552fe"
+      },
+      {
+        "label": "Terminé",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 1,
+        "_id": "699900e789cd63ea3da552ff"
+      },
+      {
+        "label": "Suspendu",
+        "color": "#f59e0b",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 2,
+        "_id": "699900e789cd63ea3da55300"
+      },
+      {
+        "label": "Annulé",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 3,
+        "_id": "699900e789cd63ea3da55301"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T00:48:39.589Z",
+    "updatedAt": "2026-02-21T00:48:39.589Z",
+    "__v": 0
+  },
+  {
+    "_id": "699900e789cd63ea3da55304",
+    "name": "Type",
+    "key": "699900e789cd63ea3da552ec_type",
+    "description": "",
+    "isShared": true,
+    "type": "simple",
+    "allowMultiple": false,
+    "entities": [
+      "699900e789cd63ea3da552ec"
+    ],
+    "options": [
+      {
+        "label": "Médicament",
+        "color": "#3b82f6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "start",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900e789cd63ea3da55305"
+      },
+      {
+        "label": "Kinésithérapie",
+        "color": "#22c55e",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900e789cd63ea3da55306"
+      },
+      {
+        "label": "Chirurgie",
+        "color": "#ef4444",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900e789cd63ea3da55307"
+      },
+      {
+        "label": "Immunothérapie",
+        "color": "#8b5cf6",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "active",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900e789cd63ea3da55308"
+      },
+      {
+        "label": "Autre",
+        "color": "#6b7280",
+        "icon": "solar:info-circle-bold",
+        "badgeStyle": "dot",
+        "type": "completed",
+        "parentId": null,
+        "order": 0,
+        "_id": "699900e789cd63ea3da55309"
+      }
+    ],
+    "defaultOptionId": null,
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-21T00:48:39.591Z",
+    "updatedAt": "2026-02-21T00:48:39.591Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b79",
+    "key": "rdv_status",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-27T04:59:56.728Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Statut RDV",
+    "options": [
+      {
+        "label": "Planifié",
+        "color": "#3b82f6",
+        "type": "start",
+        "order": 0,
+        "_id": "69a564445128ca1fcd1b0221"
+      },
+      {
+        "label": "Confirmé",
+        "color": "#8b5cf6",
+        "type": "active",
+        "order": 1,
+        "_id": "69a564445128ca1fcd1b0222"
+      },
+      {
+        "label": "Terminé",
+        "color": "#22c55e",
+        "type": "completed",
+        "order": 2,
+        "_id": "69a564445128ca1fcd1b0223"
+      },
+      {
+        "label": "Annulé",
+        "color": "#ef4444",
+        "type": "normal",
+        "order": 3,
+        "_id": "69a564445128ca1fcd1b0224"
+      },
+      {
+        "label": "Non présenté",
+        "color": "#f97316",
+        "type": "normal",
+        "order": 4,
+        "_id": "69a564445128ca1fcd1b0225"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-03-02T10:19:48.145Z"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b7a",
+    "key": "consult_type",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-27T04:59:56.771Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Type de consultation",
+    "options": [
+      {
+        "label": "Générale",
+        "color": "#3b82f6",
+        "order": 0,
+        "_id": "69a564445128ca1fcd1b022c"
+      },
+      {
+        "label": "Urgence",
+        "color": "#ef4444",
+        "order": 1,
+        "_id": "69a564445128ca1fcd1b022d"
+      },
+      {
+        "label": "Suivi",
+        "color": "#22c55e",
+        "order": 2,
+        "_id": "69a564445128ca1fcd1b022e"
+      },
+      {
+        "label": "Contrôle",
+        "color": "#8b5cf6",
+        "order": 3,
+        "_id": "69a564445128ca1fcd1b022f"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-03-02T10:19:48.149Z"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b7b",
+    "key": "invoice_status",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-27T04:59:56.773Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Statut facture",
+    "options": [
+      {
+        "label": "Brouillon",
+        "color": "#94a3b8",
+        "type": "start",
+        "order": 0,
+        "_id": "69a564445128ca1fcd1b0235"
+      },
+      {
+        "label": "Envoyée",
+        "color": "#3b82f6",
+        "type": "active",
+        "order": 1,
+        "_id": "69a564445128ca1fcd1b0236"
+      },
+      {
+        "label": "Payée",
+        "color": "#22c55e",
+        "type": "completed",
+        "order": 2,
+        "_id": "69a564445128ca1fcd1b0237"
+      },
+      {
+        "label": "En retard",
+        "color": "#ef4444",
+        "type": "normal",
+        "order": 3,
+        "_id": "69a564445128ca1fcd1b0238"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-03-02T10:19:48.151Z"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b7c",
+    "key": "payment_method",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-27T04:59:56.775Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Mode de paiement",
+    "options": [
+      {
+        "label": "Espèces",
+        "color": "#22c55e",
+        "order": 0,
+        "_id": "69a564445128ca1fcd1b023e"
+      },
+      {
+        "label": "Carte bancaire",
+        "color": "#3b82f6",
+        "order": 1,
+        "_id": "69a564445128ca1fcd1b023f"
+      },
+      {
+        "label": "Virement",
+        "color": "#8b5cf6",
+        "order": 2,
+        "_id": "69a564445128ca1fcd1b0240"
+      },
+      {
+        "label": "Assurance",
+        "color": "#f59e0b",
+        "order": 3,
+        "_id": "69a564445128ca1fcd1b0241"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-03-02T10:19:48.152Z"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b7d",
+    "key": "staff_role",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-27T04:59:56.776Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Rôle personnel",
+    "options": [
+      {
+        "label": "Médecin",
+        "color": "#3b82f6",
+        "order": 0,
+        "_id": "69a564445128ca1fcd1b0247"
+      },
+      {
+        "label": "Infirmier(e)",
+        "color": "#22c55e",
+        "order": 1,
+        "_id": "69a564445128ca1fcd1b0248"
+      },
+      {
+        "label": "Secrétaire",
+        "color": "#8b5cf6",
+        "order": 2,
+        "_id": "69a564445128ca1fcd1b0249"
+      },
+      {
+        "label": "Administrateur",
+        "color": "#f59e0b",
+        "order": 3,
+        "_id": "69a564445128ca1fcd1b024a"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-03-02T10:19:48.153Z"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b7e",
+    "key": "patient_tags",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "allowMultiple": true,
+    "createdAt": "2026-02-27T04:59:56.777Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Tags patient",
+    "options": [
+      {
+        "label": "VIP",
+        "color": "#f59e0b",
+        "icon": "solar:star-bold",
+        "order": 0,
+        "_id": "69a564445128ca1fcd1b0250"
+      },
+      {
+        "label": "Chronique",
+        "color": "#ef4444",
+        "order": 1,
+        "_id": "69a564445128ca1fcd1b0251"
+      },
+      {
+        "label": "Risque allergie",
+        "color": "#f97316",
+        "order": 2,
+        "_id": "69a564445128ca1fcd1b0252"
+      },
+      {
+        "label": "Nouveau",
+        "color": "#3b82f6",
+        "order": 3,
+        "_id": "69a564445128ca1fcd1b0253"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-03-02T10:19:48.154Z"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b7f",
+    "key": "lab_type",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-27T04:59:56.779Z",
+    "entities": [],
+    "isShared": true,
+    "name": "Type analyse labo",
+    "options": [
+      {
+        "label": "Sang",
+        "color": "#ef4444",
+        "order": 0,
+        "_id": "69a564445128ca1fcd1b0259"
+      },
+      {
+        "label": "Urine",
+        "color": "#f59e0b",
+        "order": 1,
+        "_id": "69a564445128ca1fcd1b025a"
+      },
+      {
+        "label": "Imagerie",
+        "color": "#3b82f6",
+        "order": 2,
+        "_id": "69a564445128ca1fcd1b025b"
+      },
+      {
+        "label": "Autre",
+        "color": "#94a3b8",
+        "order": 3,
+        "_id": "69a564445128ca1fcd1b025c"
+      }
+    ],
+    "type": "simple",
+    "updatedAt": "2026-03-02T10:19:48.155Z"
+  }
+]

@@ -1,0 +1,939 @@
+[
+  {
+    "_id": "698a4648ed4d210c492b6870",
+    "name": "Facture Standard",
+    "slug": "invoice_v1",
+    "description": "Schéma de lignes pour factures et devis",
+    "appliesTo": {
+      "documentType": "invoice",
+      "entityIds": []
+    },
+    "lineTypes": [
+      "product",
+      "service",
+      "note"
+    ],
+    "columns": [
+      {
+        "key": "item",
+        "label": "Article",
+        "type": "relation",
+        "required": true,
+        "visible": true,
+        "width": "L",
+        "order": 0,
+        "showWhen": {
+          "lineType": [
+            "product",
+            "service"
+          ]
+        },
+        "config": {
+          "targetEntity": null,
+          "searchFields": [
+            "title"
+          ],
+          "displayFields": [
+            "title"
+          ],
+          "applyDefaults": {
+            "unitPrice": "cf.price",
+            "vatRate": "cf.vatRate",
+            "description": "title"
+          }
+        },
+        "_id": "698a4648ed4d210c492b6871"
+      },
+      {
+        "key": "description",
+        "label": "Description",
+        "type": "text",
+        "required": false,
+        "visible": true,
+        "width": "L",
+        "order": 1,
+        "showWhen": {
+          "lineType": []
+        },
+        "_id": "698a4648ed4d210c492b6872"
+      },
+      {
+        "key": "qty",
+        "label": "Qté",
+        "type": "number",
+        "required": true,
+        "visible": true,
+        "width": "XS",
+        "order": 2,
+        "showWhen": {
+          "lineType": [
+            "product",
+            "service"
+          ]
+        },
+        "_id": "698a4648ed4d210c492b6873"
+      },
+      {
+        "key": "unitPrice",
+        "label": "P.U. HT",
+        "type": "money",
+        "required": true,
+        "visible": true,
+        "width": "S",
+        "order": 3,
+        "showWhen": {
+          "lineType": [
+            "product",
+            "service"
+          ]
+        },
+        "config": {
+          "currency": "MAD",
+          "decimals": 2
+        },
+        "_id": "698a4648ed4d210c492b6874"
+      },
+      {
+        "key": "discount",
+        "label": "Remise %",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "XS",
+        "order": 4,
+        "showWhen": {
+          "lineType": [
+            "product",
+            "service"
+          ]
+        },
+        "_id": "698a4648ed4d210c492b6875"
+      },
+      {
+        "key": "vatRate",
+        "label": "TVA %",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "XS",
+        "order": 5,
+        "showWhen": {
+          "lineType": [
+            "product",
+            "service"
+          ]
+        },
+        "_id": "698a4648ed4d210c492b6876"
+      },
+      {
+        "key": "lineTotal",
+        "label": "Total HT",
+        "type": "formula",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 6,
+        "showWhen": {
+          "lineType": [
+            "product",
+            "service"
+          ]
+        },
+        "config": {
+          "expression": "qty * unitPrice * (1 - discount / 100)",
+          "dependencies": [
+            "qty",
+            "unitPrice",
+            "discount"
+          ]
+        },
+        "_id": "698a4648ed4d210c492b6877"
+      },
+      {
+        "key": "lineVat",
+        "label": "TVA",
+        "type": "formula",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 7,
+        "showWhen": {
+          "lineType": [
+            "product",
+            "service"
+          ]
+        },
+        "config": {
+          "expression": "lineTotal * vatRate / 100",
+          "dependencies": [
+            "lineTotal",
+            "vatRate"
+          ]
+        },
+        "_id": "698a4648ed4d210c492b6878"
+      },
+      {
+        "key": "note",
+        "label": "Note",
+        "type": "textarea",
+        "required": false,
+        "visible": true,
+        "width": "XL",
+        "order": 8,
+        "showWhen": {
+          "lineType": [
+            "note"
+          ]
+        },
+        "_id": "698a4648ed4d210c492b6879"
+      }
+    ],
+    "totals": {
+      "subtotalKey": "lineTotal",
+      "vatKey": "lineVat",
+      "totalFormula": "subtotal + vat"
+    },
+    "defaultLineType": "product",
+    "createdAt": "2026-02-09T20:40:40.158Z",
+    "updatedAt": "2026-02-24T10:37:10.123Z",
+    "__v": 1
+  },
+  {
+    "_id": "698a4648ed4d210c492b687b",
+    "name": "Ordonnance Traitement",
+    "slug": "prescription_v1",
+    "description": "Schéma de lignes pour ordonnances médicales",
+    "appliesTo": {
+      "entityIds": [
+        "699857ef027e29bba9654b44",
+        "697c20e04b70c78bbe2e8702"
+      ],
+      "documentType": "prescription"
+    },
+    "lineTypes": [
+      "treatment",
+      "note"
+    ],
+    "columns": [
+      {
+        "key": "treatment",
+        "label": "Traitement",
+        "type": "relation",
+        "required": true,
+        "visible": true,
+        "width": "L",
+        "order": 0,
+        "showWhen": {
+          "lineType": [
+            "treatment"
+          ]
+        },
+        "config": {
+          "targetEntity": "698abc0e9c0808e18cbde9aa",
+          "searchFields": [
+            "title"
+          ],
+          "displayFields": [
+            "title"
+          ],
+          "applyDefaults": {
+            "description": "title"
+          },
+          "_dynamicFilterConfig": {
+            "dosage": "698abc0edc0731b0e1a8eb92",
+            "frequency": "698abc0edc0731b0e1a8eb93",
+            "moment": "698abc0edc0731b0e1a8eb94"
+          }
+        },
+        "_id": "698a4648ed4d210c492b687c"
+      },
+      {
+        "key": "dosage",
+        "label": "Dosage",
+        "type": "dosage",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 1,
+        "showWhen": {
+          "lineType": [
+            "treatment"
+          ]
+        },
+        "config": {
+          "units": [
+            "mg",
+            "ml",
+            "g",
+            "cp",
+            "gouttes"
+          ]
+        },
+        "_id": "698a4648ed4d210c492b687d"
+      },
+      {
+        "key": "frequency",
+        "label": "Fréquence",
+        "type": "select",
+        "required": false,
+        "visible": true,
+        "width": "M",
+        "order": 2,
+        "showWhen": {
+          "lineType": [
+            "treatment"
+          ]
+        },
+        "config": {
+          "source": "manual",
+          "options": [
+            {
+              "value": "1x_day",
+              "label": "1x / jour"
+            },
+            {
+              "value": "2x_day",
+              "label": "2x / jour"
+            },
+            {
+              "value": "3x_day",
+              "label": "3x / jour"
+            },
+            {
+              "value": "4x_day",
+              "label": "4x / jour"
+            },
+            {
+              "value": "every_6h",
+              "label": "Toutes les 6h"
+            },
+            {
+              "value": "every_8h",
+              "label": "Toutes les 8h"
+            },
+            {
+              "value": "every_12h",
+              "label": "Toutes les 12h"
+            },
+            {
+              "value": "weekly",
+              "label": "1x / semaine"
+            },
+            {
+              "value": "as_needed",
+              "label": "Si besoin"
+            }
+          ]
+        },
+        "_id": "698a4648ed4d210c492b687e"
+      },
+      {
+        "key": "moment",
+        "label": "Moment",
+        "type": "multiselect",
+        "required": false,
+        "visible": true,
+        "width": "M",
+        "order": 3,
+        "showWhen": {
+          "lineType": [
+            "treatment"
+          ]
+        },
+        "config": {
+          "source": "manual",
+          "options": [
+            {
+              "value": "morning",
+              "label": "Matin"
+            },
+            {
+              "value": "noon",
+              "label": "Midi"
+            },
+            {
+              "value": "evening",
+              "label": "Soir"
+            },
+            {
+              "value": "bedtime",
+              "label": "Au coucher"
+            },
+            {
+              "value": "before_meal",
+              "label": "Avant repas"
+            },
+            {
+              "value": "after_meal",
+              "label": "Après repas"
+            },
+            {
+              "value": "fasting",
+              "label": "À jeun"
+            }
+          ]
+        },
+        "_id": "698a4648ed4d210c492b687f"
+      },
+      {
+        "key": "duration",
+        "label": "Durée",
+        "type": "duration",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 4,
+        "showWhen": {
+          "lineType": [
+            "treatment"
+          ]
+        },
+        "config": {
+          "units": [
+            "day",
+            "week",
+            "month"
+          ]
+        },
+        "_id": "698a4648ed4d210c492b6880"
+      },
+      {
+        "key": "instructions",
+        "label": "Instructions",
+        "type": "textarea",
+        "required": false,
+        "visible": true,
+        "width": "L",
+        "order": 5,
+        "showWhen": {
+          "lineType": []
+        },
+        "_id": "698a4648ed4d210c492b6881"
+      }
+    ],
+    "defaultLineType": "treatment",
+    "createdAt": "2026-02-09T20:40:40.162Z",
+    "updatedAt": "2026-02-24T11:11:46.100Z",
+    "__v": 4,
+    "totals": {},
+    "sourceEntityId": "698abc0e9c0808e18cbde9aa"
+  },
+  {
+    "_id": "69a47921de03671e05ed22aa",
+    "slug": "suivi_biologique_v1",
+    "__v": 0,
+    "analyticsConfig": {
+      "enabled": true,
+      "defaultView": "data",
+      "views": [
+        {
+          "id": "stats",
+          "type": "stat",
+          "label": "Résumé",
+          "icon": "solar:chart-square-bold-duotone",
+          "config": {
+            "cards": [
+              {
+                "column": "tsh",
+                "aggregation": "last",
+                "label": "Dernier TSH",
+                "unit": "mUI/L"
+              },
+              {
+                "column": "poids",
+                "aggregation": "delta",
+                "label": "Variation poids",
+                "unit": "kg"
+              },
+              {
+                "column": "bpm",
+                "aggregation": "avg",
+                "label": "FC moyenne",
+                "unit": "bpm"
+              },
+              {
+                "column": "tension_sys",
+                "aggregation": "last",
+                "label": "Dernière tension",
+                "unit": "mmHg"
+              }
+            ]
+          },
+          "_id": "69a479210c12ac5b29253599"
+        },
+        {
+          "id": "timeline",
+          "type": "timeline",
+          "label": "Historique",
+          "icon": "solar:clock-circle-bold-duotone",
+          "config": {
+            "dateColumn": "date"
+          },
+          "_id": "69a479210c12ac5b2925359a"
+        }
+      ]
+    },
+    "appliesTo": {
+      "entityIds": []
+    },
+    "columns": [
+      {
+        "key": "date",
+        "label": "Date",
+        "type": "date",
+        "required": true,
+        "visible": true,
+        "width": "M",
+        "order": 0,
+        "showWhen": {
+          "lineType": []
+        },
+        "_id": "69a479210c12ac5b29253591"
+      },
+      {
+        "key": "tsh",
+        "label": "TSH",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 1,
+        "showWhen": {
+          "lineType": []
+        },
+        "config": {
+          "unit": "mUI/L",
+          "normalRange": {
+            "min": 0.4,
+            "max": 4
+          },
+          "decimals": 2
+        },
+        "_id": "69a479210c12ac5b29253592"
+      },
+      {
+        "key": "t4l",
+        "label": "T4L",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 2,
+        "showWhen": {
+          "lineType": []
+        },
+        "config": {
+          "unit": "pmol/L",
+          "normalRange": {
+            "min": 12,
+            "max": 22
+          },
+          "decimals": 1
+        },
+        "_id": "69a479210c12ac5b29253593"
+      },
+      {
+        "key": "poids",
+        "label": "Poids",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 3,
+        "showWhen": {
+          "lineType": []
+        },
+        "config": {
+          "unit": "kg",
+          "decimals": 1
+        },
+        "_id": "69a479210c12ac5b29253594"
+      },
+      {
+        "key": "tension_sys",
+        "label": "Tension Sys.",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 4,
+        "showWhen": {
+          "lineType": []
+        },
+        "config": {
+          "unit": "mmHg",
+          "normalRange": {
+            "min": 90,
+            "max": 140
+          }
+        },
+        "_id": "69a479210c12ac5b29253595"
+      },
+      {
+        "key": "tension_dia",
+        "label": "Tension Dia.",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 5,
+        "showWhen": {
+          "lineType": []
+        },
+        "config": {
+          "unit": "mmHg",
+          "normalRange": {
+            "min": 60,
+            "max": 90
+          }
+        },
+        "_id": "69a479210c12ac5b29253596"
+      },
+      {
+        "key": "bpm",
+        "label": "FC",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 6,
+        "showWhen": {
+          "lineType": []
+        },
+        "config": {
+          "unit": "bpm",
+          "normalRange": {
+            "min": 60,
+            "max": 100
+          }
+        },
+        "_id": "69a479210c12ac5b29253597"
+      },
+      {
+        "key": "notes",
+        "label": "Notes",
+        "type": "textarea",
+        "required": false,
+        "visible": true,
+        "width": "L",
+        "order": 7,
+        "showWhen": {
+          "lineType": []
+        },
+        "_id": "69a479210c12ac5b29253598"
+      }
+    ],
+    "createdAt": "2026-03-01T17:36:33.801Z",
+    "dataMode": "timeseries",
+    "defaultLineType": "default",
+    "description": "Suivi de métriques biologiques (analyses sanguines, constantes, etc.)",
+    "inputMode": "form",
+    "lineTypes": [
+      "default"
+    ],
+    "name": "Suivi Biologique",
+    "timeseriesConfig": {
+      "dateColumn": "date",
+      "autoDate": true,
+      "sortDirection": "desc",
+      "displayAs": "cards"
+    },
+    "totals": {},
+    "updatedAt": "2026-03-01T17:36:33.801Z"
+  },
+  {
+    "_id": "69a47921de03671e05ed22ab",
+    "slug": "bilan_sanguin_v1",
+    "__v": 0,
+    "analyticsConfig": {
+      "enabled": false,
+      "views": []
+    },
+    "appliesTo": {
+      "entityIds": [
+        "69733e9633f2b10fa6121cc6",
+        "69733f6433f2b10fa6122245"
+      ],
+      "documentType": "prescription"
+    },
+    "columns": [
+      {
+        "key": "parametre",
+        "label": "Paramètre",
+        "type": "text",
+        "required": true,
+        "visible": true,
+        "width": "M",
+        "order": 0,
+        "showWhen": {
+          "lineType": []
+        },
+        "_id": "69a479210c12ac5b292535ab"
+      },
+      {
+        "key": "resultat",
+        "label": "Résultat",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 1,
+        "showWhen": {
+          "lineType": []
+        },
+        "config": {
+          "decimals": 2
+        },
+        "_id": "69a479210c12ac5b292535ac"
+      },
+      {
+        "key": "unite",
+        "label": "Unité",
+        "type": "text",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 2,
+        "showWhen": {
+          "lineType": []
+        },
+        "_id": "69a479210c12ac5b292535ad"
+      },
+      {
+        "key": "norme",
+        "label": "Norme",
+        "type": "text",
+        "required": false,
+        "visible": true,
+        "width": "M",
+        "order": 3,
+        "showWhen": {
+          "lineType": []
+        },
+        "_id": "69a479210c12ac5b292535ae"
+      },
+      {
+        "key": "interpretation",
+        "label": "Interprétation",
+        "type": "select",
+        "required": false,
+        "visible": true,
+        "width": "M",
+        "order": 4,
+        "showWhen": {
+          "lineType": []
+        },
+        "config": {
+          "source": "manual",
+          "options": [
+            {
+              "value": "normal",
+              "label": "✅ Normal"
+            },
+            {
+              "value": "haut",
+              "label": "⬆️ Élevé"
+            },
+            {
+              "value": "bas",
+              "label": "⬇️ Bas"
+            },
+            {
+              "value": "critique",
+              "label": "🔴 Critique"
+            }
+          ]
+        },
+        "_id": "69a479210c12ac5b292535af"
+      }
+    ],
+    "createdAt": "2026-03-01T17:36:33.877Z",
+    "dataMode": "items",
+    "defaultLineType": "default",
+    "description": "Résultats d'analyses de laboratoire",
+    "inputMode": "table",
+    "lineTypes": [
+      "default"
+    ],
+    "name": "Bilan Sanguin",
+    "timeseriesConfig": {
+      "autoDate": true,
+      "displayAs": "cards",
+      "sortDirection": "desc"
+    },
+    "totals": {},
+    "updatedAt": "2026-03-02T07:23:12.702Z",
+    "sourceEntityId": null
+  },
+  {
+    "_id": "69a47921de03671e05ed22ac",
+    "slug": "suivi_pediatrique_v1",
+    "__v": 0,
+    "analyticsConfig": {
+      "enabled": true,
+      "defaultView": "data",
+      "views": [
+        {
+          "id": "stats",
+          "type": "stat",
+          "label": "Résumé",
+          "icon": "solar:chart-square-bold-duotone",
+          "config": {
+            "cards": [
+              {
+                "column": "poids",
+                "aggregation": "last",
+                "label": "Dernier poids",
+                "unit": "kg"
+              },
+              {
+                "column": "taille",
+                "aggregation": "last",
+                "label": "Dernière taille",
+                "unit": "cm"
+              },
+              {
+                "column": "pc",
+                "aggregation": "last",
+                "label": "Dernier PC",
+                "unit": "cm"
+              },
+              {
+                "column": "poids",
+                "aggregation": "delta",
+                "label": "Δ Poids",
+                "unit": "kg"
+              }
+            ]
+          },
+          "_id": "69a479210c12ac5b292535bc"
+        },
+        {
+          "id": "timeline",
+          "type": "timeline",
+          "label": "Historique",
+          "icon": "solar:clock-circle-bold-duotone",
+          "config": {
+            "dateColumn": "date"
+          },
+          "_id": "69a479210c12ac5b292535bd"
+        }
+      ]
+    },
+    "appliesTo": {
+      "entityIds": []
+    },
+    "columns": [
+      {
+        "key": "date",
+        "label": "Date",
+        "type": "date",
+        "required": true,
+        "visible": true,
+        "width": "M",
+        "order": 0,
+        "showWhen": {
+          "lineType": []
+        },
+        "_id": "69a479210c12ac5b292535b6"
+      },
+      {
+        "key": "poids",
+        "label": "Poids",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 1,
+        "showWhen": {
+          "lineType": []
+        },
+        "config": {
+          "unit": "kg",
+          "decimals": 1
+        },
+        "_id": "69a479210c12ac5b292535b7"
+      },
+      {
+        "key": "taille",
+        "label": "Taille",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 2,
+        "showWhen": {
+          "lineType": []
+        },
+        "config": {
+          "unit": "cm",
+          "decimals": 0
+        },
+        "_id": "69a479210c12ac5b292535b8"
+      },
+      {
+        "key": "pc",
+        "label": "Périm. crânien",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 3,
+        "showWhen": {
+          "lineType": []
+        },
+        "config": {
+          "unit": "cm",
+          "decimals": 1
+        },
+        "_id": "69a479210c12ac5b292535b9"
+      },
+      {
+        "key": "imc",
+        "label": "IMC",
+        "type": "number",
+        "required": false,
+        "visible": true,
+        "width": "S",
+        "order": 4,
+        "showWhen": {
+          "lineType": []
+        },
+        "config": {
+          "decimals": 1
+        },
+        "_id": "69a479210c12ac5b292535ba"
+      },
+      {
+        "key": "notes",
+        "label": "Notes",
+        "type": "textarea",
+        "required": false,
+        "visible": true,
+        "width": "L",
+        "order": 5,
+        "showWhen": {
+          "lineType": []
+        },
+        "_id": "69a479210c12ac5b292535bb"
+      }
+    ],
+    "createdAt": "2026-03-01T17:36:33.881Z",
+    "dataMode": "timeseries",
+    "defaultLineType": "default",
+    "description": "Suivi de croissance et développement de l'enfant",
+    "inputMode": "form",
+    "lineTypes": [
+      "default"
+    ],
+    "name": "Suivi Pédiatrique",
+    "timeseriesConfig": {
+      "dateColumn": "date",
+      "autoDate": true,
+      "sortDirection": "desc",
+      "displayAs": "cards"
+    },
+    "totals": {},
+    "updatedAt": "2026-03-01T17:36:33.881Z"
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "_id": "6814e08c60239366ab9a902d",
+    "name": "John Doe 2",
+    "email": "demo@example.com",
+    "accounts": [
+      {
+        "account": "6814e08c60239366ab9a9031",
+        "role": "owner",
+        "_id": "6814e08c60239366ab9a9033"
+      },
+      {
+        "account": "6814e1a6a931635689efba7d",
+        "role": "owner",
+        "_id": "6814e1a6a931635689efba7f"
+      }
+    ],
+    "createdAt": "2025-05-02T15:11:08.106Z",
+    "updatedAt": "2025-05-02T16:34:47.789Z",
+    "passwordHash": "$2a$10$PIzC3BaxxDvkByD835Wi7.ZqIsghMcw9aofUFpun410XUQwmylCtm",
+    "__v": 2,
+    "currentAccount": "6814e1a6a931635689efba7d",
+    "currentSpace": "6814e08c60239366ab9a9039"
+  },
+  {
+    "_id": "6814e08c60239366ab9a902f",
+    "name": "Jane Smith",
+    "email": "jane@example.com",
+    "accounts": [
+      {
+        "account": "6814e08c60239366ab9a9031",
+        "role": "editor",
+        "_id": "6814e08c60239366ab9a9035"
+      }
+    ],
+    "createdAt": "2025-05-02T15:11:08.161Z",
+    "updatedAt": "2025-05-02T15:11:08.212Z",
+    "passwordHash": "$2a$10$G3uOjUKzL/GLO60X4CTkHer3/La25Ieb44jCSAEVh.zggsO7xqErO",
+    "__v": 1,
+    "currentAccount": "6814e08c60239366ab9a9031"
+  }
+]

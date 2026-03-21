@@ -1,0 +1,302 @@
+[
+  {
+    "_id": "6989772c7e62846c3bee6fcd",
+    "accountId": "5001",
+    "schemaVersion": "1.0",
+    "name": "New Cockpit",
+    "type": "cockpit",
+    "entityRef": null,
+    "parentId": "69897075ee3accb790fb86a1",
+    "parentType": "folder",
+    "status": "published",
+    "version": 1,
+    "theme": {
+      "spacing": "normal",
+      "radius": "md",
+      "fontScale": 1,
+      "accentColor": "#4361ee"
+    },
+    "dataPlan": {
+      "prefetch": [],
+      "lazy": [],
+      "cacheTTL": 300
+    },
+    "header": {
+      "title": "",
+      "breadcrumb": true,
+      "actions": []
+    },
+    "tabs": [],
+    "layout": {
+      "default": [
+        {
+          "id": "row_default_1",
+          "equalHeight": true,
+          "columns": [
+            {
+              "width": 6,
+              "blocks": [
+                "text_1770616618711",
+                "expense-tracker_1770616858467"
+              ]
+            },
+            {
+              "width": 6,
+              "blocks": [
+                "progress-list_1770616851242"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "blocks": {
+      "text_1770616618711": {
+        "type": "text",
+        "meta": {
+          "category": "default",
+          "locked": false
+        },
+        "title": "Text",
+        "content": "Double-click to edit"
+      },
+      "progress-list_1770616851242": {
+        "type": "progress-list",
+        "meta": {
+          "category": "default",
+          "locked": false
+        },
+        "title": "Visitors by Browser",
+        "items": [
+          {
+            "label": "Chrome",
+            "value": 65,
+            "color": "primary",
+            "icon": "chrome"
+          },
+          {
+            "label": "Safari",
+            "value": 40,
+            "color": "danger",
+            "icon": "safari"
+          },
+          {
+            "label": "Others",
+            "value": 25,
+            "color": "warning",
+            "icon": "global"
+          }
+        ]
+      },
+      "expense-tracker_1770616858467": {
+        "type": "expense-tracker",
+        "meta": {
+          "category": "default",
+          "locked": false
+        },
+        "title": "Expenses",
+        "value": 45141,
+        "currency": "$",
+        "period": "this week",
+        "progress": 65,
+        "trend": "up"
+      }
+    },
+    "createdAt": "2026-02-09T05:57:00.111Z",
+    "updatedAt": "2026-02-09T06:10:07.803Z",
+    "__v": 0
+  },
+  {
+    "_id": "69897a559cb6956c958b1098",
+    "accountId": "5001",
+    "schemaVersion": "1.0",
+    "name": "New Cockpit",
+    "type": "cockpit",
+    "entityRef": null,
+    "parentId": "69897075ee3accb790fb86a1",
+    "parentType": "folder",
+    "status": "published",
+    "version": 1,
+    "theme": {
+      "spacing": "normal",
+      "radius": "md",
+      "fontScale": 1,
+      "accentColor": "#4361ee"
+    },
+    "dataPlan": {
+      "prefetch": [],
+      "lazy": [],
+      "cacheTTL": 300
+    },
+    "header": {
+      "title": "",
+      "breadcrumb": true,
+      "actions": []
+    },
+    "tabs": [],
+    "layout": {
+      "default": [
+        {
+          "id": "row_default_1",
+          "equalHeight": true,
+          "columns": [
+            {
+              "width": 6,
+              "blocks": [
+                "work-queue_1770617427860"
+              ]
+            },
+            {
+              "width": 3,
+              "blocks": [
+                "urgency-radar_1770617680887",
+                "statistics_1770617471939"
+              ]
+            },
+            {
+              "width": 3,
+              "blocks": [
+                "focus-card_1770617685464",
+                "progress-list_1770618310340"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "blocks": {
+      "work-queue_1770617427860": {
+        "type": "work-queue",
+        "meta": {
+          "category": "default",
+          "locked": false
+        },
+        "title": "Salle d'attente",
+        "props": {
+          "compact": false,
+          "showIcons": true,
+          "showBadges": true
+        },
+        "data": {
+          "source": "consultations",
+          "query": "",
+          "sort": "scheduled_at:asc",
+          "limit": 20
+        },
+        "actions": {
+          "header": [
+            "refresh"
+          ],
+          "row": [
+            "call",
+            "done",
+            "urgent"
+          ]
+        }
+      },
+      "statistics_1770617471939": {
+        "type": "statistics",
+        "meta": {
+          "category": "default",
+          "locked": false
+        },
+        "title": "Statistics",
+        "stats": [
+          {
+            "label": "Total Visits",
+            "value": "423,964"
+          },
+          {
+            "label": "Paid Visits",
+            "value": "7,929"
+          }
+        ]
+      },
+      "urgency-radar_1770617680887": {
+        "type": "urgency-radar",
+        "meta": {
+          "category": "default",
+          "locked": false
+        },
+        "title": "Urgences",
+        "props": {
+          "compact": false,
+          "showIcons": true,
+          "showBadges": true
+        },
+        "data": {
+          "source": "consultations",
+          "query": "priority:urgent",
+          "sort": "createdAt:desc",
+          "limit": 10
+        },
+        "actions": {
+          "header": [
+            "refresh"
+          ],
+          "row": [
+            "call",
+            "done"
+          ]
+        }
+      },
+      "focus-card_1770617685464": {
+        "type": "focus-card",
+        "meta": {
+          "category": "default",
+          "locked": false
+        },
+        "title": "Prochain Patient",
+        "props": {
+          "compact": false,
+          "showIcons": true,
+          "showBadges": true
+        },
+        "data": {
+          "source": "consultations",
+          "query": "status:waiting",
+          "sort": "scheduled_at:asc",
+          "limit": 1
+        },
+        "actions": {
+          "header": [],
+          "row": [
+            "call",
+            "view"
+          ]
+        }
+      },
+      "progress-list_1770618310340": {
+        "type": "progress-list",
+        "meta": {
+          "category": "default",
+          "locked": false
+        },
+        "title": "Visitors by Browser",
+        "items": [
+          {
+            "label": "Chrome",
+            "value": 65,
+            "color": "primary",
+            "icon": "chrome"
+          },
+          {
+            "label": "Safari",
+            "value": 40,
+            "color": "danger",
+            "icon": "safari"
+          },
+          {
+            "label": "Others",
+            "value": 25,
+            "color": "warning",
+            "icon": "global"
+          }
+        ]
+      }
+    },
+    "createdAt": "2026-02-09T06:10:29.439Z",
+    "updatedAt": "2026-02-10T07:45:50.330Z",
+    "__v": 0
+  }
+]

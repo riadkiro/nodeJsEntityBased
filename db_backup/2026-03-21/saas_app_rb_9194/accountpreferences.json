@@ -1,0 +1,914 @@
+[
+  {
+    "_id": "69a970082233fefa8c87b603",
+    "accountId": "9194",
+    "viewId": "record_tabs_69a53cfbde03671e05ed22f3",
+    "__v": 0,
+    "createdAt": "2026-03-05T11:59:04.815Z",
+    "preferences": {
+      "customTabs": [
+        {
+          "key": "custom_1772887568750",
+          "label": "Diagnostic",
+          "icon": "solar:widget-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": "<p><b>Diagnostic principal :</b> Eczema atopique (L20.0)</p><p><b>Diagnostic secondaire :</b> Dermatite de contact allergique</p><p><b>Severite :</b> Moderee</p><p><b>Localisation :</b> Membres superieurs, tronc</p>"
+        },
+        {
+          "key": "custom_1772991211447",
+          "label": "Suivie",
+          "icon": "solar:clipboard-list-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": "<div><b><br></b></div>"
+        },
+        {
+          "key": "custom_1773001545552",
+          "label": "Riad",
+          "icon": "solar:widget-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": ""
+        }
+      ],
+      "relationTabs": [
+        {
+          "key": "f77eec4b-23cb-4b96-b39f-e085b7409c4a",
+          "visible": true
+        },
+        {
+          "key": "a5cd21e5-a2e1-4e7a-ad3e-48a291f178d7",
+          "visible": true
+        },
+        {
+          "key": "inv_8e90cee2-97ff-4007-be46-2fea5766695c",
+          "visible": true
+        },
+        {
+          "key": "inv_17b6f05d-9016-43ea-ac04-9c794e52b19e",
+          "visible": true
+        }
+      ],
+      "tabOrder": [
+        "f77eec4b-23cb-4b96-b39f-e085b7409c4a",
+        "a5cd21e5-a2e1-4e7a-ad3e-48a291f178d7",
+        "inv_8e90cee2-97ff-4007-be46-2fea5766695c",
+        "inv_17b6f05d-9016-43ea-ac04-9c794e52b19e",
+        "custom_1772887568750",
+        "custom_1772991211447",
+        "custom_1773001545552"
+      ],
+      "fieldAssignments": {
+        "text_69a53cfbde03671e05ed22c0": "custom_notes_1772720910752",
+        "text_69a53cfbde03671e05ed22c3": "custom_notes_1772720910752",
+        "text_69a53cfbde03671e05ed22c2": "custom_notes_1772720910752",
+        "number_69a53cfbde03671e05ed22c9": "custom_1772878543461",
+        "text_69a53cfbde03671e05ed22c1": "custom_1772878543461",
+        "number_69a53cfbde03671e05ed22c5": "custom_1772878543461"
+      },
+      "tabLayouts": {
+        "custom_notes_1772720910752": "side-notes-fields",
+        "custom_1772878543461": "stacked",
+        "custom_1772887476096": "side-fields-notes",
+        "custom_1772887568750": "side-fields-notes",
+        "custom_1772991125507": "stacked"
+      },
+      "customTabLayouts": {
+        "custom_1772991211447": {
+          "rows": [
+            {
+              "id": "row_mmi1qk1xpilt2",
+              "columns": [
+                {
+                  "id": "col_mmkv2wfrgz1ke",
+                  "width": 6,
+                  "blockIds": [
+                    "block_mmjnite27omv9"
+                  ]
+                },
+                {
+                  "id": "col_mmkv2wfrh9lhr",
+                  "width": 6,
+                  "blockIds": [
+                    "block_mmkv2kr4mh9ca",
+                    "block_mmkv3dbjeil8e"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "row_mmi1xd2n0kzav",
+              "columns": [
+                {
+                  "id": "col_mmi1yt3z1tc36",
+                  "width": 8,
+                  "blockIds": [
+                    "block_mml6mfz4eqxsw"
+                  ]
+                },
+                {
+                  "id": "col_mmi63z28s5g1r",
+                  "width": 0,
+                  "blockIds": []
+                },
+                {
+                  "id": "col_mml6vj6jpnq1g",
+                  "width": 1,
+                  "blockIds": []
+                }
+              ]
+            },
+            {
+              "id": "row_mmjczno4rk0wl",
+              "columns": [
+                {
+                  "id": "col_mmjczno49nzhb",
+                  "width": 12,
+                  "blockIds": [
+                    "block_mmjd0i726c76b"
+                  ]
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmjd0i726c76b": {
+              "type": "chart",
+              "title": "Graphique",
+              "config": {
+                "defaultRange": "all"
+              }
+            },
+            "block_mmjnite27omv9": {
+              "type": "timeline",
+              "title": "Timeline"
+            },
+            "block_mmkv2kr4mh9ca": {
+              "type": "notes",
+              "title": "Notes",
+              "content": ""
+            },
+            "block_mmkv3dbjeil8e": {
+              "type": "chart",
+              "title": "Graphique",
+              "config": {
+                "advancedFilters": [],
+                "advancedFiltersLogic": "and",
+                "chartType": "line",
+                "defaultRange": "all"
+              }
+            },
+            "block_mml6mfz4eqxsw": {
+              "type": "tasks",
+              "title": "Tâches",
+              "tasks": [
+                {
+                  "text": "Task 1",
+                  "done": false
+                },
+                {
+                  "text": "Task 2",
+                  "done": false
+                },
+                {
+                  "text": "Task 3",
+                  "done": false
+                },
+                {
+                  "text": "Task 4",
+                  "done": false
+                },
+                {
+                  "text": "Task 5",
+                  "done": false
+                },
+                {
+                  "text": "Task 6",
+                  "done": false
+                },
+                {
+                  "text": "Task 7",
+                  "done": false
+                },
+                {
+                  "text": "Task 8",
+                  "done": false
+                },
+                {
+                  "text": "Task 9",
+                  "done": false
+                },
+                {
+                  "text": "Task 10",
+                  "done": false
+                },
+                {
+                  "text": "Task 11",
+                  "done": false
+                },
+                {
+                  "text": "Task 12",
+                  "done": false
+                },
+                {
+                  "text": "Task 13",
+                  "done": false
+                },
+                {
+                  "text": "Task 14",
+                  "done": false
+                },
+                {
+                  "text": "Task 15",
+                  "done": false
+                }
+              ]
+            }
+          }
+        },
+        "custom_1772992582154": {
+          "rows": [
+            {
+              "id": "row_mmi209d7w0586",
+              "columns": [
+                {
+                  "id": "col_mmi20hj7ngxtn",
+                  "blockId": "block_mmi20f4rbyd16",
+                  "width": null
+                },
+                {
+                  "id": "col_mmi20hj7svxp7",
+                  "blockId": null,
+                  "width": null
+                },
+                {
+                  "id": "col_mmi20hj7t83b0",
+                  "blockId": null
+                }
+              ]
+            },
+            {
+              "id": "row_mmi20amjqf924",
+              "columns": [
+                {
+                  "id": "col_mmi20dcy161c8",
+                  "blockId": null,
+                  "width": -2
+                },
+                {
+                  "id": "col_mmi20dcyysze7",
+                  "blockId": null,
+                  "width": 1
+                },
+                {
+                  "id": "col_mmi79mw3wp22k",
+                  "width": 0,
+                  "blockId": null
+                },
+                {
+                  "id": "col_mmi79r2wpxye6",
+                  "width": 1,
+                  "blockId": null
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmi20f4rbyd16": {
+              "type": "tasks",
+              "title": "Tâches",
+              "tasks": []
+            }
+          }
+        },
+        "custom_1773001545552": {
+          "rows": [
+            {
+              "id": "row_mmi7cihkf6mcz",
+              "columns": [
+                {
+                  "id": "col_mmkqce2cf9x3e",
+                  "width": 6,
+                  "blockIds": [
+                    "block_mmi7i51w50hsb",
+                    "block_mmnb4hayhiqok"
+                  ]
+                },
+                {
+                  "id": "col_mmkqce2cvwtai",
+                  "width": 6,
+                  "blockIds": [
+                    "block_mmltr63qx623x",
+                    "block_mmi7ht601gtx5"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "row_mmicwcsc3d8sj",
+              "columns": [
+                {
+                  "id": "col_mmicwcsc0nyrv",
+                  "width": 12,
+                  "blockIds": []
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmi7ht601gtx5": {
+              "type": "chart",
+              "title": "Graphique",
+              "config": {
+                "dataSource": "entity:69a53cfbde03671e05ed22f3",
+                "xField": "69a53cfbde03671e05ed22c5",
+                "relationFilterKey": "",
+                "relationFilterValue": "",
+                "classificationFilterId": "",
+                "classificationFilterOption": "",
+                "advancedFilters": [],
+                "advancedFiltersLogic": "and",
+                "yField": "count",
+                "yAgg": "sum",
+                "period": "day",
+                "defaultRange": "1m",
+                "chartType": "line",
+                "colorScheme": "purple"
+              }
+            },
+            "block_mmi7i51w50hsb": {
+              "type": "timeline",
+              "title": "Timeline",
+              "config": {
+                "source": "current",
+                "color": "#4361ee",
+                "relationFilterKey": "f77eec4b-23cb-4b96-b39f-e085b7409c4a",
+                "relationFilterValue": "69a53cfbde03671e05ed231d",
+                "relationFilterLabel": "Nadia Bouzid",
+                "advancedFilters": [],
+                "advancedFiltersLogic": "and"
+              }
+            },
+            "block_mmltr63qx623x": {
+              "type": "timeline",
+              "title": "Timeline",
+              "config": {
+                "advancedFilters": [],
+                "advancedFiltersLogic": "and",
+                "dataSource": "entity:69a53cfbde03671e05ed22f1",
+                "relationFilterKey": "",
+                "relationFilterValue": "",
+                "classificationFilterId": "",
+                "classificationFilterOption": "",
+                "maxItems": 5
+              }
+            },
+            "block_mmnb4hayhiqok": {
+              "type": "kpi",
+              "title": "KPI",
+              "config": {
+                "color": "#e2a03f"
+              }
+            }
+          }
+        },
+        "custom_1772887476096": {
+          "rows": [
+            {
+              "id": "row_mmicj5g9vddn5",
+              "columns": [
+                {
+                  "id": "col_mmicj5g9xhij5",
+                  "width": 6,
+                  "blockId": "block_mmicjpsesy2d7"
+                },
+                {
+                  "id": "col_mmj0dfolur0ei",
+                  "width": 6,
+                  "blockId": null
+                }
+              ]
+            },
+            {
+              "id": "row_mmicokdn3m3cv",
+              "columns": [
+                {
+                  "id": "col_mmicokdnend4c",
+                  "width": 12,
+                  "blockId": "block_mmicp7v4jb5kq"
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmicjpsesy2d7": {
+              "type": "chart",
+              "title": "Graphique",
+              "config": {}
+            },
+            "block_mmicp7v4jb5kq": {
+              "type": "fields",
+              "title": "Champs",
+              "fields": []
+            }
+          }
+        }
+      }
+    },
+    "updatedAt": "2026-03-15T13:41:33.376Z"
+  },
+  {
+    "_id": "69a972e12233fefa8c87b604",
+    "viewId": "record_panels_69a53cfbde03671e05ed22f3",
+    "accountId": "9194",
+    "__v": 0,
+    "createdAt": "2026-03-05T12:11:13.732Z",
+    "preferences": {
+      "columnWidths": [
+        {
+          "id": "main",
+          "width": 9
+        },
+        {
+          "id": "sidebar",
+          "width": 3
+        }
+      ],
+      "extraColumns": [],
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "lines"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "card-widget-f77eec4b-23cb-4b96-b39f-e085b7409c4a-0",
+          "smartdoc",
+          "attachments",
+          "classifications",
+          "relations-fields"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-03-15T12:32:59.444Z"
+  },
+  {
+    "_id": "69adad2fc79fe48d5fc2f725",
+    "accountId": "9194",
+    "viewId": "record_panels_69a82c8a49972f3d2fbbb2c4",
+    "__v": 0,
+    "createdAt": "2026-03-08T17:09:03.872Z",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "relations-fields"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "sw-69a8911b5d8442f256e9e4e6",
+          "inv-relation-inv_b3298737-b158-4dd2-a3cd-87f8817a7f65",
+          "sw-69a88c1e9945ab1233f46add",
+          "classifications",
+          "attachments",
+          "smartdoc",
+          "lines",
+          "sw-69a874049945ab1233f44c5f",
+          "sw-69a898ba5d8442f256e9f02a"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-03-08T17:09:43.769Z"
+  },
+  {
+    "_id": "69adfea2c79fe48d5fc2f726",
+    "accountId": "9194",
+    "viewId": "record_tabs_69a53cfbde03671e05ed22f1",
+    "__v": 0,
+    "createdAt": "2026-03-08T22:56:34.598Z",
+    "preferences": {
+      "customTabLayouts": {
+        "custom_1773010594593": {
+          "rows": [
+            {
+              "id": "row_mmicqcknl515b",
+              "columns": [
+                {
+                  "id": "col_mmicqckncgise",
+                  "width": 12,
+                  "blockId": "block_mmicqnm00yvxh"
+                }
+              ]
+            },
+            {
+              "id": "row_mmido5tukp26l",
+              "columns": [
+                {
+                  "id": "col_mmido5tueyy5d",
+                  "width": 12,
+                  "blockId": "block_mmido7t90odw7"
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmicqnm00yvxh": {
+              "type": "chart",
+              "title": "Graphique",
+              "config": {
+                "xField": "date"
+              }
+            },
+            "block_mmido7t90odw7": {
+              "type": "timeline",
+              "title": "Timeline",
+              "config": {
+                "source": "current"
+              }
+            }
+          }
+        }
+      },
+      "customTabs": [
+        {
+          "key": "custom_1773010594593",
+          "label": "RB",
+          "icon": "solar:widget-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": ""
+        }
+      ],
+      "fieldAssignments": {},
+      "relationTabs": [
+        {
+          "key": "inv_d624e86c-6530-407b-8b21-a49f1ac008b0",
+          "visible": true
+        },
+        {
+          "key": "inv_f77eec4b-23cb-4b96-b39f-e085b7409c4a",
+          "visible": true
+        },
+        {
+          "key": "inv_3039ade5-ac0b-4a78-b78b-38352b06a833",
+          "visible": true
+        },
+        {
+          "key": "inv_a562f8ef-3bab-41ba-b09a-ea04294d3f5d",
+          "visible": true
+        },
+        {
+          "key": "inv_24a56f9e-25fb-432e-8ef5-11d33911cf89",
+          "visible": true
+        },
+        {
+          "key": "inv_f53fd2eb-6b1b-440b-b71e-3707581390d2",
+          "visible": true
+        },
+        {
+          "key": "inv_fb41a9fa-c833-4a73-9345-aa5695e56f97",
+          "visible": true
+        }
+      ],
+      "tabLayouts": {},
+      "tabOrder": [
+        "inv_d624e86c-6530-407b-8b21-a49f1ac008b0",
+        "inv_f77eec4b-23cb-4b96-b39f-e085b7409c4a",
+        "inv_3039ade5-ac0b-4a78-b78b-38352b06a833",
+        "inv_a562f8ef-3bab-41ba-b09a-ea04294d3f5d",
+        "inv_24a56f9e-25fb-432e-8ef5-11d33911cf89",
+        "inv_f53fd2eb-6b1b-440b-b71e-3707581390d2",
+        "inv_fb41a9fa-c833-4a73-9345-aa5695e56f97",
+        "custom_1773010594593"
+      ]
+    },
+    "updatedAt": "2026-03-08T23:23:13.995Z"
+  },
+  {
+    "_id": "69b29533f861fd6bc6cb9ca8",
+    "accountId": "9194",
+    "viewId": "record_panels_69a53cfbde03671e05ed22f1",
+    "__v": 0,
+    "createdAt": "2026-03-12T10:28:03.583Z",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "lines"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "attachments",
+          "smartdoc",
+          "classifications",
+          "inv-relation-inv_d624e86c-6530-407b-8b21-a49f1ac008b0",
+          "inv-relation-inv_f77eec4b-23cb-4b96-b39f-e085b7409c4a"
+        ],
+        "extra": {}
+      }
+    },
+    "updatedAt": "2026-03-16T05:06:33.842Z"
+  },
+  {
+    "_id": "69b915029bb20cc26f24d2a0",
+    "viewId": "record_panels_69b911479bb20cc26f24d1ca",
+    "accountId": "9194",
+    "__v": 0,
+    "createdAt": "2026-03-17T08:46:58.828Z",
+    "preferences": {
+      "panelLayout": {
+        "main": [
+          "attributs",
+          "lines"
+        ],
+        "sidebar": [
+          "sidebar-content"
+        ],
+        "sidebarInner": [
+          "inv-relation-inv_33c8c990-6688-4adf-b290-1bc3d8e80f9d",
+          "inv-relation-inv_5573a44a-ad20-4784-bc64-7e2ca6c7ee86",
+          "sw-69bae4770d46c949d64fbd1a",
+          "classifications",
+          "attachments",
+          "smartdoc",
+          "relations-fields",
+          "relation-83c325af-025b-4b0a-a76a-a4c4b1d7fda6",
+          "card-widget-09096dae-e504-4444-b7e3-a8b5390b0c07-0"
+        ],
+        "extra": {}
+      },
+      "columnWidths": [
+        {
+          "id": "main",
+          "width": 8
+        },
+        {
+          "id": "sidebar",
+          "width": 4
+        }
+      ],
+      "extraColumns": []
+    },
+    "updatedAt": "2026-03-18T17:48:33.055Z"
+  },
+  {
+    "_id": "69b929099bb20cc26f24d2a2",
+    "viewId": "record_tabs_69b911479bb20cc26f24d1ca",
+    "accountId": "9194",
+    "__v": 0,
+    "createdAt": "2026-03-17T10:12:25.293Z",
+    "preferences": {
+      "customTabLayouts": {
+        "custom_1773786006489": {
+          "rows": [
+            {
+              "id": "row_mmwkjigi22fd9",
+              "columns": [
+                {
+                  "id": "col_mmwkjigiuevyr",
+                  "width": 12,
+                  "blockIds": [
+                    "block_mmwmhs0s1pj99"
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "row_mmxh58l5nvjkt",
+              "columns": [
+                {
+                  "id": "col_mmxh58l5vyqgc",
+                  "width": 12,
+                  "blockIds": [
+                    "block_mmxp42o4s3utp"
+                  ]
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmwmhs0s1pj99": {
+              "type": "dynamic-table",
+              "title": "dynamic-table",
+              "config": {
+                "displayMode": "table",
+                "enableCatalog": true,
+                "enableAdd": true,
+                "enableSnapshots": true,
+                "schemaId": "699d883142e48edd2430b395",
+                "schemaName": "Traitement",
+                "source": "direct",
+                "relationPath": [],
+                "entityName": "Consultation",
+                "relationLabel": "",
+                "columns": [
+                  {
+                    "key": "treatment",
+                    "label": "Traitement",
+                    "type": "relation"
+                  },
+                  {
+                    "key": "frequency",
+                    "label": "Fréquence",
+                    "type": "multiselect"
+                  },
+                  {
+                    "key": "moment",
+                    "label": "Moment",
+                    "type": "multiselect"
+                  }
+                ]
+              }
+            },
+            "block_mmxp42o4s3utp": {
+              "type": "dynamic-table",
+              "title": "dynamic-table",
+              "config": {
+                "displayMode": "table",
+                "enableCatalog": true,
+                "enableAdd": true,
+                "enableSnapshots": true,
+                "schemaId": "69a8c6fb066f2e812a7a1ba8",
+                "schemaName": "Facture",
+                "source": "direct",
+                "relationPath": [],
+                "entityName": "Consultation",
+                "relationLabel": "",
+                "columns": [
+                  {
+                    "key": "Desc",
+                    "label": "Description",
+                    "type": "text"
+                  },
+                  {
+                    "key": "P.U",
+                    "label": "P.U",
+                    "type": "text"
+                  },
+                  {
+                    "key": "TVA",
+                    "label": "TVA",
+                    "type": "text"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "customTabs": [
+        {
+          "key": "custom_1773786006489",
+          "label": "Traitement",
+          "icon": "solar:widget-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": ""
+        }
+      ],
+      "fieldAssignments": {},
+      "relationTabs": [
+        {
+          "key": "inv_5573a44a-ad20-4784-bc64-7e2ca6c7ee86",
+          "visible": true
+        },
+        {
+          "key": "09096dae-e504-4444-b7e3-a8b5390b0c07",
+          "visible": true
+        },
+        {
+          "key": "80aa260a-b29e-44af-9e57-00567d3365b4",
+          "visible": true
+        },
+        {
+          "key": "83c325af-025b-4b0a-a76a-a4c4b1d7fda6",
+          "visible": true
+        },
+        {
+          "key": "inv_33c8c990-6688-4adf-b290-1bc3d8e80f9d",
+          "visible": true
+        }
+      ],
+      "tabLayouts": {},
+      "tabOrder": [
+        "custom_1773786006489",
+        "inv_5573a44a-ad20-4784-bc64-7e2ca6c7ee86",
+        "09096dae-e504-4444-b7e3-a8b5390b0c07",
+        "80aa260a-b29e-44af-9e57-00567d3365b4",
+        "83c325af-025b-4b0a-a76a-a4c4b1d7fda6",
+        "inv_33c8c990-6688-4adf-b290-1bc3d8e80f9d"
+      ]
+    },
+    "updatedAt": "2026-03-19T16:40:05.851Z"
+  },
+  {
+    "_id": "69b9c42d9bb20cc26f24d2a3",
+    "accountId": "9194",
+    "viewId": "record_tabs_69b911479bb20cc26f24d1cb",
+    "__v": 0,
+    "createdAt": "2026-03-17T21:14:21.025Z",
+    "preferences": {
+      "customTabLayouts": {
+        "custom_1773782061019": {
+          "rows": [
+            {
+              "id": "row_mmv41mjnsoxxi",
+              "columns": [
+                {
+                  "id": "col_mmv41mjnh4vmt",
+                  "width": 12,
+                  "blockIds": []
+                }
+              ]
+            }
+          ],
+          "blocks": {}
+        },
+        "custom_1773786222863": {
+          "rows": [
+            {
+              "id": "row_mmv6iv1ticvqj",
+              "columns": [
+                {
+                  "id": "col_mmv6iv1tt7rb7",
+                  "width": 12,
+                  "blockIds": [
+                    "block_mmv6lwn2sbd7o",
+                    "block_mmv6mdhdwaaxi",
+                    "block_mmv6mzhfzf4h2",
+                    "block_mmv6ng0yrwt5t",
+                    "block_mmv6nyfh4u8lu"
+                  ]
+                }
+              ]
+            }
+          ],
+          "blocks": {
+            "block_mmv6lwn2sbd7o": {
+              "type": "lines-history",
+              "title": "lines-history"
+            },
+            "block_mmv6mdhdwaaxi": {
+              "type": "lines-history",
+              "title": "lines-history"
+            },
+            "block_mmv6mzhfzf4h2": {
+              "type": "lines-history",
+              "title": "lines-history"
+            },
+            "block_mmv6ng0yrwt5t": {
+              "type": "lines-history",
+              "title": "lines-history"
+            },
+            "block_mmv6nyfh4u8lu": {
+              "type": "lines-history",
+              "title": "lines-history"
+            }
+          }
+        }
+      },
+      "customTabs": [
+        {
+          "key": "custom_1773786222863",
+          "label": "Traitement",
+          "icon": "solar:widget-bold-duotone",
+          "color": "#4361ee",
+          "visible": true,
+          "content": ""
+        }
+      ],
+      "fieldAssignments": {},
+      "relationTabs": [
+        {
+          "key": "22afb2e3-52c0-4d52-bf58-3d688836403e",
+          "visible": true
+        },
+        {
+          "key": "33c8c990-6688-4adf-b290-1bc3d8e80f9d",
+          "visible": true
+        },
+        {
+          "key": "01565c38-e209-41eb-9f20-eb921484d6a9",
+          "visible": true
+        }
+      ],
+      "tabLayouts": {},
+      "tabOrder": [
+        "22afb2e3-52c0-4d52-bf58-3d688836403e",
+        "33c8c990-6688-4adf-b290-1bc3d8e80f9d",
+        "01565c38-e209-41eb-9f20-eb921484d6a9",
+        "custom_1773786222863"
+      ]
+    },
+    "updatedAt": "2026-03-17T22:27:48.369Z"
+  }
+]

@@ -1,0 +1,3846 @@
+[
+  {
+    "_id": "69a1b75069c0a920766bcdd8",
+    "name": "Nouvelle carte",
+    "entityId": "69a152bede03671e05ed1e71",
+    "context": "kanban",
+    "isDefault": false,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [],
+          "_id": "69a1b75069c0a920766bcdd9"
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-02-27T15:25:04.209Z",
+    "updatedAt": "2026-02-27T15:25:04.209Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a29436de03671e05ed1f81",
+    "entityId": "69a152bede03671e05ed1e70",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "context": "kanban",
+    "__v": 0,
+    "createdAt": "2026-02-28T07:07:34.215Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "maxLines": 2,
+              "visible": true
+            },
+            {
+              "type": "field",
+              "fieldId": "__description__",
+              "fontSize": "xs",
+              "maxLines": 2,
+              "color": "#6b7280",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "badge",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "between",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "date",
+              "fieldId": "__createdAt__",
+              "icon": "solar:calendar-linear",
+              "format": "date",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "actions",
+              "items": [
+                "edit",
+                "view"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Kanban RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-02-28T07:07:34.215Z"
+  },
+  {
+    "_id": "69a29436de03671e05ed1f82",
+    "entityId": "69a152bede03671e05ed1e70",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "context": "calendar",
+    "__v": 0,
+    "createdAt": "2026-02-28T07:07:34.217Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "top",
+      "accentSource": "status",
+      "borderRadius": 14,
+      "shadow": "lg",
+      "zones": [
+        {
+          "id": "header",
+          "direction": "column",
+          "gap": 4,
+          "padding": "16px 20px 8px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "base",
+              "fontWeight": "bold",
+              "maxLines": 1,
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "0 20px 12px",
+          "elements": [
+            {
+              "type": "icon-value",
+              "fieldId": "__time__",
+              "icon": "solar:clock-circle-linear",
+              "format": "time-range",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "icon-value",
+              "fieldId": "__date__",
+              "icon": "solar:calendar-linear",
+              "format": "date-long",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "pill",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 0,
+          "padding": "0",
+          "align": "stretch",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "actions",
+              "items": [
+                "open",
+                "close"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Calendar RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-02-28T07:07:34.217Z"
+  },
+  {
+    "_id": "69a29a94de03671e05ed1fce",
+    "context": "kanban",
+    "entityId": "69a29a94de03671e05ed1fc2",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-28T07:34:44.984Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "maxLines": 2,
+              "visible": true
+            },
+            {
+              "type": "field",
+              "fieldId": "__description__",
+              "fontSize": "xs",
+              "maxLines": 2,
+              "color": "#6b7280",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "badge",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "between",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "date",
+              "fieldId": "__createdAt__",
+              "icon": "solar:calendar-linear",
+              "format": "date",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "actions",
+              "items": [
+                "edit",
+                "view"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Kanban RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-02-28T08:19:22.822Z"
+  },
+  {
+    "_id": "69a29a94de03671e05ed1fcf",
+    "context": "calendar",
+    "entityId": "69a29a94de03671e05ed1fc2",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-28T07:34:44.985Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "top",
+      "accentSource": "status",
+      "borderRadius": 14,
+      "shadow": "lg",
+      "zones": [
+        {
+          "id": "header",
+          "direction": "column",
+          "gap": 4,
+          "padding": "16px 20px 8px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "base",
+              "fontWeight": "bold",
+              "maxLines": 1,
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "0 20px 12px",
+          "elements": [
+            {
+              "type": "icon-value",
+              "fieldId": "__time__",
+              "icon": "solar:clock-circle-linear",
+              "format": "time-range",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "icon-value",
+              "fieldId": "__date__",
+              "icon": "solar:calendar-linear",
+              "format": "date-long",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "pill",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 0,
+          "padding": "0",
+          "align": "stretch",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "actions",
+              "items": [
+                "open",
+                "close"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Calendar RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-02-28T08:19:22.823Z"
+  },
+  {
+    "_id": "69a2acabde03671e05ed20eb",
+    "context": "kanban",
+    "entityId": "69a2acabde03671e05ed20df",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-28T08:51:55.368Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "maxLines": 2,
+              "visible": true
+            },
+            {
+              "type": "field",
+              "fieldId": "__description__",
+              "fontSize": "xs",
+              "maxLines": 2,
+              "color": "#6b7280",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "badge",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "between",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "date",
+              "fieldId": "__createdAt__",
+              "icon": "solar:calendar-linear",
+              "format": "date",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "actions",
+              "items": [
+                "edit",
+                "view"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Kanban RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-02-28T08:51:55.368Z"
+  },
+  {
+    "_id": "69a2acabde03671e05ed20ec",
+    "context": "calendar",
+    "entityId": "69a2acabde03671e05ed20df",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-02-28T08:51:55.369Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "top",
+      "accentSource": "status",
+      "borderRadius": 14,
+      "shadow": "lg",
+      "zones": [
+        {
+          "id": "header",
+          "direction": "column",
+          "gap": 4,
+          "padding": "16px 20px 8px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "base",
+              "fontWeight": "bold",
+              "maxLines": 1,
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "0 20px 12px",
+          "elements": [
+            {
+              "type": "icon-value",
+              "fieldId": "__time__",
+              "icon": "solar:clock-circle-linear",
+              "format": "time-range",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "icon-value",
+              "fieldId": "__date__",
+              "icon": "solar:calendar-linear",
+              "format": "date-long",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "pill",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 0,
+          "padding": "0",
+          "align": "stretch",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "actions",
+              "items": [
+                "open",
+                "close"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Calendar RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-02-28T08:51:55.369Z"
+  },
+  {
+    "_id": "69a2bed4de03671e05ed21eb",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "context": "kanban",
+    "entityId": "69a2bed4de03671e05ed21df",
+    "__v": 0,
+    "createdAt": "2026-02-28T10:09:24.898Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "maxLines": 2,
+              "visible": true
+            },
+            {
+              "type": "field",
+              "fieldId": "__description__",
+              "fontSize": "xs",
+              "maxLines": 2,
+              "color": "#6b7280",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "badge",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "between",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "date",
+              "fieldId": "__createdAt__",
+              "icon": "solar:calendar-linear",
+              "format": "date",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "actions",
+              "items": [
+                "edit",
+                "view"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Kanban RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-02-28T10:09:24.898Z"
+  },
+  {
+    "_id": "69a2bed4de03671e05ed21ec",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "context": "calendar",
+    "entityId": "69a2bed4de03671e05ed21df",
+    "__v": 0,
+    "createdAt": "2026-02-28T10:09:24.899Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "top",
+      "accentSource": "status",
+      "borderRadius": 14,
+      "shadow": "lg",
+      "zones": [
+        {
+          "id": "header",
+          "direction": "column",
+          "gap": 4,
+          "padding": "16px 20px 8px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "base",
+              "fontWeight": "bold",
+              "maxLines": 1,
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "0 20px 12px",
+          "elements": [
+            {
+              "type": "icon-value",
+              "fieldId": "__time__",
+              "icon": "solar:clock-circle-linear",
+              "format": "time-range",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "icon-value",
+              "fieldId": "__date__",
+              "icon": "solar:calendar-linear",
+              "format": "date-long",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "pill",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 0,
+          "padding": "0",
+          "align": "stretch",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "actions",
+              "items": [
+                "open",
+                "close"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Calendar RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-02-28T10:09:24.899Z"
+  },
+  {
+    "_id": "69a53cfbde03671e05ed22fe",
+    "context": "kanban",
+    "entityId": "69a53cfbde03671e05ed22f2",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-03-02T07:32:11.940Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "maxLines": 2,
+              "visible": true
+            },
+            {
+              "type": "field",
+              "fieldId": "__description__",
+              "fontSize": "xs",
+              "maxLines": 2,
+              "color": "#6b7280",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "badge",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "between",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "date",
+              "fieldId": "__createdAt__",
+              "icon": "solar:calendar-linear",
+              "format": "date",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "actions",
+              "items": [
+                "edit",
+                "view"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Kanban RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-03-03T11:04:46.114Z"
+  },
+  {
+    "_id": "69a53cfbde03671e05ed22ff",
+    "context": "calendar",
+    "entityId": "69a53cfbde03671e05ed22f2",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "__v": 0,
+    "createdAt": "2026-03-02T07:32:11.942Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "top",
+      "accentSource": "status",
+      "borderRadius": 14,
+      "shadow": "lg",
+      "zones": [
+        {
+          "id": "header",
+          "direction": "column",
+          "gap": 4,
+          "padding": "16px 20px 8px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "base",
+              "fontWeight": "bold",
+              "maxLines": 1,
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "0 20px 12px",
+          "elements": [
+            {
+              "type": "icon-value",
+              "fieldId": "__time__",
+              "icon": "solar:clock-circle-linear",
+              "format": "time-range",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "icon-value",
+              "fieldId": "__date__",
+              "icon": "solar:calendar-linear",
+              "format": "date-long",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "pill",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 0,
+          "padding": "0",
+          "align": "stretch",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "actions",
+              "items": [
+                "open",
+                "close"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Calendar RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-03-03T11:04:46.115Z"
+  },
+  {
+    "_id": "69a571837aa4922f7d509309",
+    "name": "Kanban Minimal",
+    "entityId": "69a53cfbde03671e05ed22f1",
+    "context": "kanban",
+    "isDefault": true,
+    "presetSlug": "kanban-minimal",
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "title",
+              "format": "text",
+              "maxLines": 2,
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "status",
+              "format": "badge",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "between",
+          "borderTop": true,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "date",
+              "fieldId": "__createdAt__",
+              "icon": "solar:calendar-linear",
+              "format": "date",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "actions",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [
+                "edit",
+                "view"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-02T11:16:19.592Z",
+    "updatedAt": "2026-03-02T11:16:19.592Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a571837aa4922f7d509312",
+    "name": "Calendar RDV",
+    "entityId": "69a53cfbde03671e05ed22f1",
+    "context": "calendar",
+    "isDefault": true,
+    "presetSlug": "calendar-rdv",
+    "layout": {
+      "accentPosition": "top",
+      "accentSource": "status",
+      "borderRadius": 12,
+      "shadow": "lg",
+      "zones": [
+        {
+          "id": "header",
+          "direction": "column",
+          "gap": 4,
+          "padding": "16px 20px 8px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "title",
+              "format": "text",
+              "maxLines": 1,
+              "fontSize": "base",
+              "fontWeight": "bold",
+              "visible": true,
+              "items": []
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "0 20px 12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "icon-value",
+              "fieldId": "__time__",
+              "icon": "solar:clock-circle-linear",
+              "format": "time-range",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "icon-value",
+              "fieldId": "__date__",
+              "icon": "solar:calendar-linear",
+              "format": "date-long",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "status",
+              "format": "pill",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 0,
+          "padding": "0",
+          "align": "stretch",
+          "borderTop": true,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "actions",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [
+                "open",
+                "close"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-02T11:16:19.602Z",
+    "updatedAt": "2026-03-02T11:16:19.602Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a73088f944ad0b36d05e22",
+    "name": "Kanban Minimal",
+    "entityId": "69a53cfbde03671e05ed22f3",
+    "context": "kanban",
+    "isDefault": true,
+    "presetSlug": "kanban-minimal",
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "title",
+              "format": "text",
+              "maxLines": 2,
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "status",
+              "format": "badge",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "between",
+          "borderTop": true,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "date",
+              "fieldId": "__createdAt__",
+              "icon": "solar:calendar-linear",
+              "format": "date",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "actions",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [
+                "edit",
+                "view"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-03T19:03:36.745Z",
+    "updatedAt": "2026-03-03T19:03:36.745Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a73088f944ad0b36d05e65",
+    "name": "Calendar RDV",
+    "entityId": "69a53cfbde03671e05ed22f3",
+    "context": "calendar",
+    "isDefault": true,
+    "presetSlug": "calendar-rdv",
+    "layout": {
+      "accentPosition": "top",
+      "accentSource": "status",
+      "borderRadius": 12,
+      "shadow": "lg",
+      "zones": [
+        {
+          "id": "header",
+          "direction": "column",
+          "gap": 4,
+          "padding": "16px 20px 8px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "title",
+              "format": "text",
+              "maxLines": 1,
+              "fontSize": "base",
+              "fontWeight": "bold",
+              "visible": true,
+              "items": []
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "0 20px 12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "icon-value",
+              "fieldId": "__time__",
+              "icon": "solar:clock-circle-linear",
+              "format": "time-range",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "icon-value",
+              "fieldId": "__date__",
+              "icon": "solar:calendar-linear",
+              "format": "date-long",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "status",
+              "format": "pill",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 0,
+          "padding": "0",
+          "align": "stretch",
+          "borderTop": true,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "actions",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [
+                "open",
+                "close"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-03T19:03:36.794Z",
+    "updatedAt": "2026-03-03T19:03:36.794Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a74cae7012183f9f480d43",
+    "name": "Kanban Minimal",
+    "entityId": "69a53cfbde03671e05ed22ef",
+    "context": "kanban",
+    "isDefault": true,
+    "presetSlug": "kanban-minimal",
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "title",
+              "format": "text",
+              "maxLines": 2,
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "status",
+              "format": "badge",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "between",
+          "borderTop": true,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "date",
+              "fieldId": "__createdAt__",
+              "icon": "solar:calendar-linear",
+              "format": "date",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "actions",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [
+                "edit",
+                "view"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-03T21:03:42.294Z",
+    "updatedAt": "2026-03-03T21:03:42.294Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a74cae7012183f9f480d45",
+    "name": "Calendar RDV",
+    "entityId": "69a53cfbde03671e05ed22ef",
+    "context": "calendar",
+    "isDefault": true,
+    "presetSlug": "calendar-rdv",
+    "layout": {
+      "accentPosition": "top",
+      "accentSource": "status",
+      "borderRadius": 12,
+      "shadow": "lg",
+      "zones": [
+        {
+          "id": "header",
+          "direction": "column",
+          "gap": 4,
+          "padding": "16px 20px 8px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "title",
+              "format": "text",
+              "maxLines": 1,
+              "fontSize": "base",
+              "fontWeight": "bold",
+              "visible": true,
+              "items": []
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "0 20px 12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "icon-value",
+              "fieldId": "__time__",
+              "icon": "solar:clock-circle-linear",
+              "format": "time-range",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "icon-value",
+              "fieldId": "__date__",
+              "icon": "solar:calendar-linear",
+              "format": "date-long",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "status",
+              "format": "pill",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 0,
+          "padding": "0",
+          "align": "stretch",
+          "borderTop": true,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "actions",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [
+                "open",
+                "close"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-03T21:03:42.298Z",
+    "updatedAt": "2026-03-03T21:03:42.298Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a77c0106a18581ede4679c",
+    "name": "Fiche Patient",
+    "entityId": "69a53cfbde03671e05ed22f1",
+    "context": "sidebar",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 0,
+      "shadow": "none",
+      "zones": [
+        {
+          "id": "zone_1772620099615",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "relations",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-only",
+              "enabledRelations": [
+                "inv_d624e86c-6530-407b-8b21-a49f1ac008b0",
+                "inv_f77eec4b-23cb-4b96-b39f-e085b7409c4a",
+                "inv_3039ade5-ac0b-4a78-b78b-38352b06a833",
+                "inv_a562f8ef-3bab-41ba-b09a-ea04294d3f5d"
+              ],
+              "source": "self"
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "stretch",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22b9",
+              "label": "Adresse",
+              "icon": "solar:map-point-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22b8",
+              "label": "Email",
+              "icon": "solar:letter-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22b5",
+              "label": "Date de naissance",
+              "icon": "solar:calendar-bold-duotone",
+              "format": "date",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22ba",
+              "label": "N° Sécurité Sociale",
+              "icon": "solar:shield-check-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22bf",
+              "label": "Mutuelle",
+              "icon": "solar:shield-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "separator",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22bb",
+              "label": "Groupe sanguin",
+              "icon": "solar:dropper-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22bc",
+              "label": "Allergies",
+              "icon": "solar:danger-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22bd",
+              "label": "Antécédents médicaux",
+              "icon": "solar:clipboard-text-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22be",
+              "label": "Médecin traitant",
+              "icon": "solar:stethoscope-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "html",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "htmlContent": "Test",
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-04T00:25:37.755Z",
+    "updatedAt": "2026-03-04T12:16:23.382Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a7e05862098798e04872ed",
+    "name": "Fiche Prescription",
+    "entityId": "69a53cfbde03671e05ed22f4",
+    "context": "sidebar",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 0,
+      "shadow": "none",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "stretch",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22ca",
+              "label": "Posologie",
+              "icon": "solar:pills-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22cb",
+              "label": "Durée du traitement",
+              "icon": "solar:clock-circle-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22cc",
+              "label": "Notes",
+              "icon": "solar:notes-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-04T07:33:44.533Z",
+    "updatedAt": "2026-03-04T07:33:44.533Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a7e05862098798e04872f5",
+    "name": "Fiche Facture",
+    "entityId": "69a53cfbde03671e05ed22f6",
+    "context": "sidebar",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 0,
+      "shadow": "none",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "stretch",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22d2",
+              "label": "Montant total",
+              "icon": "solar:dollar-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22d3",
+              "label": "Montant payé",
+              "icon": "solar:wallet-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22d4",
+              "label": "Date d'échéance",
+              "icon": "solar:alarm-bold-duotone",
+              "format": "date",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22dd",
+              "label": "Notes",
+              "icon": "solar:notes-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a5600dde03671e05ed23b5",
+              "label": "Reste à payer",
+              "icon": "solar:wallet-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-04T07:33:44.543Z",
+    "updatedAt": "2026-03-04T07:33:44.543Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a7f578debbef2443fe1288",
+    "name": "Fiche Rendez-vous",
+    "entityId": "69a53cfbde03671e05ed22f2",
+    "context": "sidebar",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 0,
+      "shadow": "none",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "stretch",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22de",
+              "label": "Date du rendez-vous",
+              "icon": "solar:calendar-bold-duotone",
+              "format": "date",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22df",
+              "label": "Durée (min)",
+              "icon": "solar:clock-circle-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22e0",
+              "label": "Objet",
+              "icon": "solar:chat-round-dots-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22dd",
+              "label": "Notes",
+              "icon": "solar:notes-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-04T09:03:52.508Z",
+    "updatedAt": "2026-03-04T09:03:52.508Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a7f578debbef2443fe1290",
+    "name": "Fiche Consultation",
+    "entityId": "69a53cfbde03671e05ed22f3",
+    "context": "sidebar",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 0,
+      "shadow": "none",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "stretch",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22c2",
+              "label": "Diagnostic",
+              "icon": "solar:clipboard-check-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22c3",
+              "label": "Examen clinique",
+              "icon": "solar:magnifer-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22c9",
+              "label": "Fréquence cardiaque",
+              "icon": "solar:heart-pulse-2-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22c0",
+              "label": "Motif de consultation",
+              "icon": "solar:chat-round-dots-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22dd",
+              "label": "Notes",
+              "icon": "solar:notes-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22c4",
+              "label": "Plan de traitement",
+              "icon": "solar:document-text-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22c5",
+              "label": "Poids (kg)",
+              "icon": "solar:weights-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22c1",
+              "label": "Symptômes",
+              "icon": "solar:heart-pulse-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22c6",
+              "label": "Taille (cm)",
+              "icon": "solar:ruler-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22c8",
+              "label": "Température (°C)",
+              "icon": "solar:temperature-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22c7",
+              "label": "Tension artérielle",
+              "icon": "solar:heart-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            },
+            {
+              "type": "field",
+              "fieldId": "69a5600dde03671e05ed23b4",
+              "label": "IMC",
+              "icon": "solar:heart-pulse-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": []
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-04T09:03:52.519Z",
+    "updatedAt": "2026-03-04T09:03:52.519Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a82fcc49972f3d2fbbec22",
+    "name": "Kanban Minimal",
+    "entityId": "69a82c8a49972f3d2fbbb2c4",
+    "context": "kanban",
+    "isDefault": true,
+    "presetSlug": "kanban-minimal",
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "title",
+              "format": "text",
+              "maxLines": 2,
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "status",
+              "format": "badge",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "between",
+          "borderTop": true,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "date",
+              "fieldId": "__createdAt__",
+              "icon": "solar:calendar-linear",
+              "format": "date",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "actions",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [
+                "edit",
+                "view"
+              ],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-04T13:12:44.804Z",
+    "updatedAt": "2026-03-04T13:12:44.804Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a82fcc49972f3d2fbbec28",
+    "name": "Calendar RDV",
+    "entityId": "69a82c8a49972f3d2fbbb2c4",
+    "context": "calendar",
+    "isDefault": true,
+    "presetSlug": "calendar-rdv",
+    "layout": {
+      "accentPosition": "top",
+      "accentSource": "status",
+      "borderRadius": 12,
+      "shadow": "lg",
+      "zones": [
+        {
+          "id": "header",
+          "direction": "column",
+          "gap": 4,
+          "padding": "16px 20px 8px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "title",
+              "format": "text",
+              "maxLines": 1,
+              "fontSize": "base",
+              "fontWeight": "bold",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "0 20px 12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "icon-value",
+              "fieldId": "__time__",
+              "icon": "solar:clock-circle-linear",
+              "format": "time-range",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "icon-value",
+              "fieldId": "__date__",
+              "icon": "solar:calendar-linear",
+              "format": "date-long",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "status",
+              "format": "pill",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 0,
+          "padding": "0",
+          "align": "stretch",
+          "borderTop": true,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "actions",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [
+                "open",
+                "close"
+              ],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-04T13:12:44.811Z",
+    "updatedAt": "2026-03-04T13:12:44.811Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a82fcf49972f3d2fbbec69",
+    "name": "Fiche personnel",
+    "entityId": "69a82c8a49972f3d2fbbb2c4",
+    "context": "sidebar",
+    "isDefault": false,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "relations",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [
+                "ec3bbb74-df03-40e0-887e-6450a79dd714"
+              ],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "title",
+              "label": "Nom",
+              "icon": "",
+              "format": "text",
+              "maxLines": 2,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "color": "#6b7280",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cf6b494ed52e93e5dfe",
+              "label": "Poste / Fonction",
+              "icon": "",
+              "format": "text",
+              "maxLines": 2,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "color": "#6b7280",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a82d0749972f3d2fbbb94f",
+              "label": "Etagère",
+              "icon": "",
+              "format": "text",
+              "maxLines": 2,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "color": "#6b7280",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a82d5049972f3d2fbbbb1e",
+              "label": "Taille",
+              "icon": "",
+              "format": "text",
+              "maxLines": 2,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "color": "#6b7280",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a82cf849972f3d2fbbb7a8",
+              "label": "Casier",
+              "icon": "solar:box-bold-duotone",
+              "format": "text",
+              "maxLines": 2,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "color": "#6b7280",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a82cc949972f3d2fbbb5f5",
+              "label": "Badge",
+              "icon": "solar:bookmark-bold-duotone",
+              "format": "text",
+              "maxLines": 2,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "color": "#6b7280",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-04T13:12:47.621Z",
+    "updatedAt": "2026-03-04T13:31:13.870Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a8338649972f3d2fbc39f9",
+    "name": "Fiche EPI",
+    "entityId": "69a830f549972f3d2fbbf6de",
+    "context": "sidebar",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 0,
+      "shadow": "none",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "stretch",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "field",
+              "fieldId": "69a53cf6b494ed52e93e5e04",
+              "label": "Date de début",
+              "icon": "",
+              "format": "date",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cf6b494ed52e93e5e05",
+              "label": "Date de fin",
+              "icon": "",
+              "format": "date",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-04T13:28:38.846Z",
+    "updatedAt": "2026-03-04T13:28:38.846Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a834b149972f3d2fbc6a7b",
+    "name": "Kanban Minimal",
+    "entityId": "69a832d249972f3d2fbc2e14",
+    "context": "kanban",
+    "isDefault": true,
+    "presetSlug": "kanban-minimal",
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "title",
+              "format": "text",
+              "maxLines": 2,
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "status",
+              "format": "badge",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "between",
+          "borderTop": true,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "date",
+              "fieldId": "__createdAt__",
+              "icon": "solar:calendar-linear",
+              "format": "date",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "actions",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [
+                "edit",
+                "view"
+              ],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-04T13:33:37.347Z",
+    "updatedAt": "2026-03-04T13:33:37.347Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a834b149972f3d2fbc6a80",
+    "name": "Calendar RDV",
+    "entityId": "69a832d249972f3d2fbc2e14",
+    "context": "calendar",
+    "isDefault": true,
+    "presetSlug": "calendar-rdv",
+    "layout": {
+      "accentPosition": "top",
+      "accentSource": "status",
+      "borderRadius": 12,
+      "shadow": "lg",
+      "zones": [
+        {
+          "id": "header",
+          "direction": "column",
+          "gap": 4,
+          "padding": "16px 20px 8px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "title",
+              "format": "text",
+              "maxLines": 1,
+              "fontSize": "base",
+              "fontWeight": "bold",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "0 20px 12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "icon-value",
+              "fieldId": "__time__",
+              "icon": "solar:clock-circle-linear",
+              "format": "time-range",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "icon-value",
+              "fieldId": "__date__",
+              "icon": "solar:calendar-linear",
+              "format": "date-long",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "status",
+              "format": "pill",
+              "maxLines": 0,
+              "fontSize": "xs",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 0,
+          "padding": "0",
+          "align": "stretch",
+          "borderTop": true,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "actions",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [
+                "open",
+                "close"
+              ],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-04T13:33:37.352Z",
+    "updatedAt": "2026-03-04T13:33:37.352Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a834bf49972f3d2fbc6ac4",
+    "name": "Nouvelle carte",
+    "entityId": "69a832d249972f3d2fbc2e14",
+    "context": "sidebar",
+    "isDefault": false,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "align": "start",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "relations",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [
+                "b3298737-b158-4dd2-a3cd-87f8817a7f65",
+                "2c14499b-1a56-4a74-b23b-10135222c0f5"
+              ],
+              "source": "self"
+            },
+            {
+              "type": "title",
+              "format": "text",
+              "maxLines": 2,
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "title",
+              "icon": "",
+              "format": "text",
+              "maxLines": 2,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "color": "#6b7280",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-04T13:33:51.091Z",
+    "updatedAt": "2026-03-04T13:35:32.578Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a8c642066f2e812a7a0e37",
+    "name": "Fiche Médicament",
+    "entityId": "69a53cfbde03671e05ed22f5",
+    "context": "sidebar",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 0,
+      "shadow": "none",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "stretch",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22cd",
+              "label": "Forme",
+              "icon": "solar:pills-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22ce",
+              "label": "Dosage",
+              "icon": "solar:test-tube-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22cf",
+              "label": "Prix de vente",
+              "icon": "solar:dollar-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22d0",
+              "label": "Stock minimum",
+              "icon": "solar:box-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22d1",
+              "label": "Stock actuel",
+              "icon": "solar:box-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69a53cfbde03671e05ed22dd",
+              "label": "Notes",
+              "icon": "solar:notes-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-04T23:54:42.194Z",
+    "updatedAt": "2026-03-04T23:54:42.194Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1d6",
+    "context": "kanban",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "entityId": "69b911479bb20cc26f24d1c9",
+    "__v": 0,
+    "createdAt": "2026-03-17T08:31:03.708Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 8,
+      "shadow": "sm",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "12px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "sm",
+              "fontWeight": "semibold",
+              "maxLines": 2,
+              "visible": true
+            },
+            {
+              "type": "field",
+              "fieldId": "__description__",
+              "fontSize": "xs",
+              "maxLines": 2,
+              "color": "#6b7280",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "badge",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "between",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "date",
+              "fieldId": "__createdAt__",
+              "icon": "solar:calendar-linear",
+              "format": "date",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "actions",
+              "items": [
+                "edit",
+                "view"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Kanban RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-03-17T08:31:03.708Z"
+  },
+  {
+    "_id": "69b911479bb20cc26f24d1d7",
+    "context": "calendar",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "entityId": "69b911479bb20cc26f24d1c9",
+    "__v": 0,
+    "createdAt": "2026-03-17T08:31:03.743Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "top",
+      "accentSource": "status",
+      "borderRadius": 14,
+      "shadow": "lg",
+      "zones": [
+        {
+          "id": "header",
+          "direction": "column",
+          "gap": 4,
+          "padding": "16px 20px 8px",
+          "elements": [
+            {
+              "type": "title",
+              "fontSize": "base",
+              "fontWeight": "bold",
+              "maxLines": 1,
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 6,
+          "padding": "0 20px 12px",
+          "elements": [
+            {
+              "type": "icon-value",
+              "fieldId": "__time__",
+              "icon": "solar:clock-circle-linear",
+              "format": "time-range",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "icon-value",
+              "fieldId": "__date__",
+              "icon": "solar:calendar-linear",
+              "format": "date-long",
+              "fontSize": "xs",
+              "visible": true
+            },
+            {
+              "type": "status",
+              "format": "pill",
+              "fontSize": "xs",
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "footer",
+          "direction": "row",
+          "gap": 0,
+          "padding": "0",
+          "align": "stretch",
+          "borderTop": true,
+          "elements": [
+            {
+              "type": "actions",
+              "items": [
+                "open",
+                "close"
+              ],
+              "visible": true
+            }
+          ]
+        }
+      ]
+    },
+    "name": "Calendar RDV",
+    "presetSlug": "cabinet-medical",
+    "updatedAt": "2026-03-17T08:31:03.743Z"
+  },
+  {
+    "_id": "69b914e30dd94c39e02e3089",
+    "name": "Fiche Patient",
+    "entityId": "69b911479bb20cc26f24d1c8",
+    "context": "sidebar",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 0,
+      "shadow": "none",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "stretch",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d186",
+              "label": "Nom",
+              "icon": "solar:user-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d187",
+              "label": "Prénom",
+              "icon": "solar:user-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d188",
+              "label": "Date de naissance",
+              "icon": "solar:calendar-bold-duotone",
+              "format": "date",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d189",
+              "label": "Sexe",
+              "icon": "solar:user-id-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d18a",
+              "label": "Téléphone",
+              "icon": "solar:phone-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d18b",
+              "label": "Email",
+              "icon": "solar:letter-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d18c",
+              "label": "Adresse",
+              "icon": "solar:map-point-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d18d",
+              "label": "N° Sécurité Sociale",
+              "icon": "solar:shield-check-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d18e",
+              "label": "Groupe sanguin",
+              "icon": "solar:dropper-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d18f",
+              "label": "Allergies",
+              "icon": "solar:danger-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d190",
+              "label": "Antécédents médicaux",
+              "icon": "solar:clipboard-text-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d191",
+              "label": "Médecin traitant",
+              "icon": "solar:stethoscope-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-17T08:46:27.835Z",
+    "updatedAt": "2026-03-17T08:46:27.835Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b918620dd94c39e02e44ad",
+    "name": "Fiche Prescription",
+    "entityId": "69b911479bb20cc26f24d1cb",
+    "context": "sidebar",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 0,
+      "shadow": "none",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "stretch",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d19d",
+              "label": "Posologie",
+              "icon": "solar:pills-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d19e",
+              "label": "Durée du traitement",
+              "icon": "solar:clock-circle-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d19f",
+              "label": "Notes",
+              "icon": "solar:notes-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-17T09:01:22.579Z",
+    "updatedAt": "2026-03-17T09:01:22.579Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b918620dd94c39e02e44b7",
+    "name": "Fiche Facture",
+    "entityId": "69b911479bb20cc26f24d1cd",
+    "context": "sidebar",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 0,
+      "shadow": "none",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "stretch",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d1a5",
+              "label": "Montant total",
+              "icon": "solar:dollar-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d1a6",
+              "label": "Montant payé",
+              "icon": "solar:wallet-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d1a7",
+              "label": "Date d'échéance",
+              "icon": "solar:alarm-bold-duotone",
+              "format": "date",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d1b0",
+              "label": "Notes",
+              "icon": "solar:notes-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d1bf",
+              "label": "Reste à payer",
+              "icon": "solar:wallet-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-17T09:01:22.589Z",
+    "updatedAt": "2026-03-17T09:01:22.589Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b9c419fb5e533e03132187",
+    "name": "Fiche Consultation",
+    "entityId": "69b911479bb20cc26f24d1ca",
+    "context": "sidebar",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 0,
+      "shadow": "none",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "stretch",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d193",
+              "label": "Motif de consultation",
+              "icon": "solar:chat-round-dots-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d194",
+              "label": "Symptômes",
+              "icon": "solar:heart-pulse-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d196",
+              "label": "Examen clinique",
+              "icon": "solar:magnifer-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d195",
+              "label": "Diagnostic",
+              "icon": "solar:clipboard-check-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d197",
+              "label": "Plan de traitement",
+              "icon": "solar:document-text-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d198",
+              "label": "Poids (kg)",
+              "icon": "solar:weights-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d199",
+              "label": "Taille (cm)",
+              "icon": "solar:ruler-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d19a",
+              "label": "Tension artérielle",
+              "icon": "solar:heart-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d19b",
+              "label": "Température (°C)",
+              "icon": "solar:temperature-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d19c",
+              "label": "Fréquence cardiaque",
+              "icon": "solar:heart-pulse-2-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d1b0",
+              "label": "Notes",
+              "icon": "solar:notes-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d1be",
+              "label": "IMC",
+              "icon": "solar:heart-pulse-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-17T21:14:01.905Z",
+    "updatedAt": "2026-03-17T21:14:01.905Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b9d40afb5e533e03134c00",
+    "name": "Fiche Médicament",
+    "entityId": "69b911479bb20cc26f24d1cc",
+    "context": "sidebar",
+    "isDefault": true,
+    "layout": {
+      "accentPosition": "none",
+      "accentSource": "none",
+      "borderRadius": 0,
+      "shadow": "none",
+      "zones": [
+        {
+          "id": "body",
+          "direction": "column",
+          "gap": 4,
+          "padding": "8px 12px",
+          "align": "stretch",
+          "borderTop": false,
+          "borderBottom": false,
+          "elements": [
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d1a0",
+              "label": "Forme",
+              "icon": "solar:pills-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d1a1",
+              "label": "Dosage",
+              "icon": "solar:test-tube-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d1a2",
+              "label": "Prix de vente",
+              "icon": "solar:dollar-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d1a3",
+              "label": "Stock minimum",
+              "icon": "solar:box-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d1a4",
+              "label": "Stock actuel",
+              "icon": "solar:box-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            },
+            {
+              "type": "field",
+              "fieldId": "69b911479bb20cc26f24d1b0",
+              "label": "Notes",
+              "icon": "solar:notes-bold-duotone",
+              "format": "text",
+              "maxLines": 0,
+              "fontSize": "sm",
+              "fontWeight": "normal",
+              "visible": true,
+              "items": [],
+              "linkTarget": "_self",
+              "displayMode": "icon-title",
+              "enabledRelations": [],
+              "source": "self"
+            }
+          ]
+        }
+      ]
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-17T22:22:02.928Z",
+    "updatedAt": "2026-03-17T22:22:02.928Z",
+    "__v": 0
+  }
+]

@@ -1,0 +1,23 @@
+[
+  {
+    "_id": "6814cad0411c4703d0a9d0e7",
+    "name": "Admin User",
+    "email": "admin@example.com",
+    "passwordHash": "$2a$10$7d4Pu/2bteYYlr8bO92KmuKp9.luri2fW8WwxRaIjKpuV.1zC534C",
+    "workspaces": [
+      {
+        "workspace": "6814cad0411c4703d0a9d0e9",
+        "role": "owner",
+        "_id": "6814cad0411c4703d0a9d0ed"
+      },
+      {
+        "workspace": "6814cec72d0285fa7c21c64b",
+        "role": "owner",
+        "_id": "6814cec72d0285fa7c21c64f"
+      }
+    ],
+    "createdAt": "2025-05-02T13:38:24.074Z",
+    "__v": 2,
+    "currentWorkspace": "6814cec72d0285fa7c21c64b"
+  }
+]

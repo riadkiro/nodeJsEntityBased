@@ -1,0 +1,44 @@
+[
+  {
+    "_id": "69a029dbaca552fba7a9476c",
+    "slug": "cabinet-medical",
+    "__v": 0,
+    "category": "Santé",
+    "color": "#00ab55",
+    "createdAt": "2026-02-26T11:09:15.090Z",
+    "description": "Configuration complète pour un cabinet médical : patients, consultations, prescriptions, facturation, planning, stock et documents.",
+    "features": [
+      "13 entités métier (Patient, Consultation, Prescription...)",
+      "10+ modèles de documents (Ordonnance, Certificat...)",
+      "Données de démonstration réalistes",
+      "Navigation structurée par activité",
+      "Classifications métier (Statuts, Types...)",
+      "Lignes de prescription & facturation"
+    ],
+    "icon": "solar:stethoscope-bold-duotone",
+    "isComplete": true,
+    "name": "Cabinet Médical",
+    "seedModule": "./seed-cabinet-medical",
+    "updatedAt": "2026-02-26T12:55:24.435Z"
+  },
+  {
+    "_id": "69a029dbaca552fba7a9476d",
+    "slug": "notaire",
+    "__v": 0,
+    "category": "Juridique",
+    "color": "#805dca",
+    "createdAt": "2026-02-26T11:09:15.170Z",
+    "description": "Configuration de base pour une étude notariale : clients, dossiers, actes, rendez-vous et facturation.",
+    "features": [
+      "7 entités métier (Client, Dossier, Acte...)",
+      "Navigation par activité",
+      "Données de démonstration légères",
+      "Classifications de base"
+    ],
+    "icon": "solar:diploma-verified-bold-duotone",
+    "isComplete": false,
+    "name": "Étude Notariale",
+    "seedModule": "./seed-notaire",
+    "updatedAt": "2026-02-26T12:55:24.466Z"
+  }
+]

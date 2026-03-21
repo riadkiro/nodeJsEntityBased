@@ -1,0 +1,575 @@
+[
+  {
+    "_id": "69b72c1b00d04aa8a03aca67",
+    "name": "Protocole Grippe",
+    "slug": "protocole_grippe",
+    "description": "Traitement standard de la grippe — 3 médicaments",
+    "icon": "solar:virus-bold-duotone",
+    "color": "#e74c3c",
+    "schemaId": "69b72c1b00d04aa8a03aca4f",
+    "presetRows": [
+      {
+        "lineType": "treatment",
+        "values": {
+          "treatment_label": "Paracétamol 1000mg",
+          "dosage": {
+            "value": 1000,
+            "unit": "mg"
+          },
+          "frequency": "3x_day",
+          "moment": [
+            "morning",
+            "noon",
+            "evening"
+          ],
+          "duration": {
+            "value": 5,
+            "unit": "day"
+          },
+          "instructions": "Prendre pendant les repas. Ne pas dépasser 4g/jour."
+        },
+        "order": 0,
+        "_id": "69b72c1b00d04aa8a03aca68"
+      },
+      {
+        "lineType": "treatment",
+        "values": {
+          "treatment_label": "Ibuprofène 400mg",
+          "dosage": {
+            "value": 400,
+            "unit": "mg"
+          },
+          "frequency": "2x_day",
+          "moment": [
+            "morning",
+            "evening"
+          ],
+          "duration": {
+            "value": 3,
+            "unit": "day"
+          },
+          "instructions": "En alternative au paracétamol si fièvre persistante."
+        },
+        "order": 1,
+        "_id": "69b72c1b00d04aa8a03aca69"
+      },
+      {
+        "lineType": "treatment",
+        "values": {
+          "treatment_label": "Amoxicilline 1g",
+          "dosage": {
+            "value": 1,
+            "unit": "g"
+          },
+          "frequency": "2x_day",
+          "moment": [
+            "morning",
+            "evening"
+          ],
+          "duration": {
+            "value": 7,
+            "unit": "day"
+          },
+          "instructions": "Si surinfection bactérienne suspectée."
+        },
+        "order": 2,
+        "_id": "69b72c1b00d04aa8a03aca6a"
+      }
+    ],
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": []
+    },
+    "scope": "workspace",
+    "recordId": null,
+    "recordLabel": "",
+    "tags": [
+      "medical",
+      "grippe",
+      "protocol"
+    ],
+    "createdAt": "2026-03-15T22:00:59.988Z",
+    "updatedAt": "2026-03-15T22:00:59.988Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b72c1c00d04aa8a03aca6c",
+    "name": "Traitement Hypertension",
+    "slug": "traitement_hypertension",
+    "description": "Traitement chronique HTA — triple thérapie",
+    "icon": "solar:heart-bold-duotone",
+    "color": "#e91e63",
+    "schemaId": "69b72c1b00d04aa8a03aca4f",
+    "presetRows": [
+      {
+        "lineType": "treatment",
+        "values": {
+          "treatment_label": "Amlodipine 5mg (Exforge)",
+          "dosage": {
+            "value": 5,
+            "unit": "mg"
+          },
+          "frequency": "1x_day",
+          "moment": [
+            "morning"
+          ],
+          "duration": {
+            "value": 3,
+            "unit": "month"
+          },
+          "instructions": "Traitement au long cours. Contrôle tension régulier."
+        },
+        "order": 0,
+        "_id": "69b72c1c00d04aa8a03aca6d"
+      },
+      {
+        "lineType": "treatment",
+        "values": {
+          "treatment_label": "Rivaroxaban 20mg (Rexaban)",
+          "dosage": {
+            "value": 20,
+            "unit": "mg"
+          },
+          "frequency": "1x_day",
+          "moment": [
+            "evening"
+          ],
+          "duration": {
+            "value": 3,
+            "unit": "month"
+          },
+          "instructions": "Prendre au cours du repas. Surveillance INR."
+        },
+        "order": 1,
+        "_id": "69b72c1c00d04aa8a03aca6e"
+      },
+      {
+        "lineType": "treatment",
+        "values": {
+          "treatment_label": "Aténolol 100mg (Atenor)",
+          "dosage": {
+            "value": 100,
+            "unit": "mg"
+          },
+          "frequency": "1x_day",
+          "moment": [
+            "morning"
+          ],
+          "duration": {
+            "value": 3,
+            "unit": "month"
+          },
+          "instructions": "Ne pas arrêter brutalement. Contrôle rythme cardiaque."
+        },
+        "order": 2,
+        "_id": "69b72c1c00d04aa8a03aca6f"
+      }
+    ],
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": []
+    },
+    "scope": "workspace",
+    "recordId": null,
+    "recordLabel": "",
+    "tags": [
+      "medical",
+      "chronique",
+      "hta"
+    ],
+    "createdAt": "2026-03-15T22:01:00.022Z",
+    "updatedAt": "2026-03-15T22:01:00.022Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b72c1c00d04aa8a03aca71",
+    "name": "Traitement Douleur",
+    "slug": "traitement_douleur",
+    "description": "Traitement antalgique palier 1-2",
+    "icon": "solar:health-bold-duotone",
+    "color": "#ff9800",
+    "schemaId": "69b72c1b00d04aa8a03aca4f",
+    "presetRows": [
+      {
+        "lineType": "treatment",
+        "values": {
+          "treatment_label": "Paracétamol 1000mg",
+          "dosage": {
+            "value": 1000,
+            "unit": "mg"
+          },
+          "frequency": "3x_day",
+          "moment": [
+            "morning",
+            "noon",
+            "evening"
+          ],
+          "duration": {
+            "value": 7,
+            "unit": "day"
+          },
+          "instructions": "Systématique. Maximum 4g/jour."
+        },
+        "order": 0,
+        "_id": "69b72c1c00d04aa8a03aca72"
+      },
+      {
+        "lineType": "treatment",
+        "values": {
+          "treatment_label": "Tramadol 50mg",
+          "dosage": {
+            "value": 50,
+            "unit": "mg"
+          },
+          "frequency": "as_needed",
+          "moment": [],
+          "duration": {
+            "value": 5,
+            "unit": "day"
+          },
+          "instructions": "Si douleur non contrôlée par le paracétamol seul. Max 400mg/jour."
+        },
+        "order": 1,
+        "_id": "69b72c1c00d04aa8a03aca73"
+      }
+    ],
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": []
+    },
+    "scope": "workspace",
+    "recordId": null,
+    "recordLabel": "",
+    "tags": [
+      "medical",
+      "douleur"
+    ],
+    "createdAt": "2026-03-15T22:01:00.024Z",
+    "updatedAt": "2026-03-15T22:01:00.024Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b72c1c00d04aa8a03aca75",
+    "name": "Suivi Thyroïde",
+    "slug": "suivi_thyroide",
+    "description": "Bilan thyroïdien standard — TSH, T3, T4",
+    "icon": "solar:test-tube-bold-duotone",
+    "color": "#9c27b0",
+    "schemaId": "69b72c1b00d04aa8a03aca57",
+    "presetRows": [
+      {
+        "lineType": "default",
+        "values": {
+          "date": "2026-03-15",
+          "type_analyse": "thyroide",
+          "tsh": "",
+          "t3_libre": "",
+          "t4_libre": "",
+          "commentaire": "Contrôle thyroïdien"
+        },
+        "order": 0,
+        "_id": "69b72c1c00d04aa8a03aca76"
+      }
+    ],
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": []
+    },
+    "scope": "workspace",
+    "recordId": null,
+    "recordLabel": "",
+    "tags": [
+      "labo",
+      "thyroide",
+      "endocrinologie"
+    ],
+    "createdAt": "2026-03-15T22:01:00.075Z",
+    "updatedAt": "2026-03-15T22:01:00.075Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b72c1c00d04aa8a03aca78",
+    "name": "Bilan Lipidique",
+    "slug": "bilan_lipidique",
+    "description": "Bilan lipidique complet — Cholestérol, HDL, LDL, Triglycérides",
+    "icon": "solar:heart-pulse-bold-duotone",
+    "color": "#2196f3",
+    "schemaId": "69b72c1b00d04aa8a03aca57",
+    "presetRows": [
+      {
+        "lineType": "default",
+        "values": {
+          "date": "2026-03-15",
+          "type_analyse": "lipides",
+          "cholesterol": "",
+          "hdl": "",
+          "ldl": "",
+          "triglycerides": "",
+          "commentaire": "Bilan lipidique de contrôle"
+        },
+        "order": 0,
+        "_id": "69b72c1c00d04aa8a03aca79"
+      }
+    ],
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": []
+    },
+    "scope": "workspace",
+    "recordId": null,
+    "recordLabel": "",
+    "tags": [
+      "labo",
+      "lipides",
+      "cardio"
+    ],
+    "createdAt": "2026-03-15T22:01:00.077Z",
+    "updatedAt": "2026-03-15T22:01:00.077Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b72c1c00d04aa8a03aca7b",
+    "name": "Bilan Rénal",
+    "slug": "bilan_renal",
+    "description": "Bilan rénal — Créatinine, Glycémie",
+    "icon": "solar:bones-bold-duotone",
+    "color": "#00bcd4",
+    "schemaId": "69b72c1b00d04aa8a03aca57",
+    "presetRows": [
+      {
+        "lineType": "default",
+        "values": {
+          "date": "2026-03-15",
+          "type_analyse": "renal",
+          "glycemie": "",
+          "creatinine": "",
+          "commentaire": "Bilan rénal de contrôle"
+        },
+        "order": 0,
+        "_id": "69b72c1c00d04aa8a03aca7c"
+      }
+    ],
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": []
+    },
+    "scope": "workspace",
+    "recordId": null,
+    "recordLabel": "",
+    "tags": [
+      "labo",
+      "renal"
+    ],
+    "createdAt": "2026-03-15T22:01:00.079Z",
+    "updatedAt": "2026-03-15T22:01:00.079Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b78e80e689f0bfc44b4c07",
+    "name": "Traitement habituel 2",
+    "slug": "traitement_habituel_2",
+    "description": "Preset saved from record",
+    "icon": "solar:clipboard-check-bold-duotone",
+    "color": "#4361ee",
+    "schemaId": "699d883142e48edd2430b395",
+    "presetRows": [
+      {
+        "lineType": "product",
+        "values": {
+          "treatment": "69a53cfbde03671e05ed2322",
+          "frequency": [
+            "m"
+          ],
+          "moment": "",
+          "treatment_label": "Amoxicilline 500mg"
+        },
+        "order": 0,
+        "_id": "69b78e80e689f0bfc44b4c08"
+      },
+      {
+        "lineType": "product",
+        "values": {
+          "treatment": "69a53cfbde03671e05ed2333",
+          "frequency": [
+            "md",
+            "m"
+          ],
+          "moment": [
+            "3w/j"
+          ],
+          "treatment_label": "Smecta"
+        },
+        "order": 1,
+        "_id": "69b78e80e689f0bfc44b4c09"
+      },
+      {
+        "lineType": "product",
+        "values": {
+          "treatment": "69a53cfcde03671e05ed2335",
+          "frequency": [
+            "s"
+          ],
+          "moment": [
+            "3w/j"
+          ],
+          "treatment_label": "Bisoprolol 5mg"
+        },
+        "order": 2,
+        "_id": "69b78e80e689f0bfc44b4c0a"
+      }
+    ],
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": []
+    },
+    "scope": "record",
+    "recordId": "69a53cfbde03671e05ed231d",
+    "recordLabel": "Patient: Nadia Bouzid",
+    "tags": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-16T05:00:48.960Z",
+    "updatedAt": "2026-03-16T05:00:48.960Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b79005e689f0bfc44b6219",
+    "name": "Acidité gastrique",
+    "slug": "acidit_gastrique",
+    "description": "Preset saved from record",
+    "icon": "solar:clipboard-check-bold-duotone",
+    "color": "#4361ee",
+    "schemaId": "699d883142e48edd2430b395",
+    "presetRows": [
+      {
+        "lineType": "product",
+        "values": {
+          "frequency": [
+            "md",
+            "s"
+          ],
+          "moment": [
+            "3w/j"
+          ],
+          "treatment": "69a53cfbde03671e05ed2327",
+          "treatment_label": "Oméprazole 20mg"
+        },
+        "order": 0,
+        "_id": "69b79005e689f0bfc44b621a"
+      },
+      {
+        "lineType": "product",
+        "values": {
+          "frequency": [
+            "m"
+          ],
+          "moment": [
+            "3w/j"
+          ],
+          "treatment": "69a53cfbde03671e05ed2331",
+          "treatment_label": "Gaviscon"
+        },
+        "order": 1,
+        "_id": "69b79005e689f0bfc44b621b"
+      }
+    ],
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": []
+    },
+    "scope": "record",
+    "recordId": "69a53cfbde03671e05ed231d",
+    "recordLabel": "Cyberbox - DA Group",
+    "tags": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-16T05:07:17.618Z",
+    "updatedAt": "2026-03-16T05:07:17.618Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b904f1b0874d20a03ee874",
+    "name": "Traitement acidité",
+    "slug": "traitement_acidit",
+    "description": "Preset saved from record",
+    "icon": "solar:clipboard-check-bold-duotone",
+    "color": "#4361ee",
+    "schemaId": "699d883142e48edd2430b395",
+    "presetRows": [
+      {
+        "lineType": "product",
+        "values": {
+          "frequency": [
+            "md",
+            "s"
+          ],
+          "moment": [
+            "3w/j"
+          ],
+          "treatment": "69a53cfbde03671e05ed2327",
+          "treatment_label": "Oméprazole 20mg"
+        },
+        "order": 0,
+        "_id": "69b904f1b0874d20a03ee875"
+      },
+      {
+        "lineType": "product",
+        "values": {
+          "frequency": [
+            "m"
+          ],
+          "moment": [
+            "3w/j"
+          ],
+          "treatment": "69a53cfbde03671e05ed2331",
+          "treatment_label": "Gaviscon"
+        },
+        "order": 1,
+        "_id": "69b904f1b0874d20a03ee876"
+      }
+    ],
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": []
+    },
+    "scope": "workspace",
+    "recordId": null,
+    "recordLabel": "",
+    "tags": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-17T07:38:25.996Z",
+    "updatedAt": "2026-03-17T07:38:25.996Z",
+    "__v": 0
+  },
+  {
+    "_id": "69ba50d0fb5e533e0313851f",
+    "name": "Consultation",
+    "slug": "consultation",
+    "description": "Preset saved from record",
+    "icon": "solar:clipboard-check-bold-duotone",
+    "color": "#4361ee",
+    "schemaId": "69a8c6fb066f2e812a7a1ba8",
+    "presetRows": [
+      {
+        "lineType": "product",
+        "values": {
+          "Desc": "Consultation",
+          "P.U": "250",
+          "TVA": "20"
+        },
+        "order": 0,
+        "_id": "69ba50d0fb5e533e03138520"
+      }
+    ],
+    "formLayout": {
+      "columns": 3,
+      "fieldOrder": []
+    },
+    "scope": "workspace",
+    "recordId": null,
+    "recordLabel": "",
+    "tags": [],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-03-18T07:14:24.230Z",
+    "updatedAt": "2026-03-18T07:14:24.230Z",
+    "__v": 0
+  }
+]

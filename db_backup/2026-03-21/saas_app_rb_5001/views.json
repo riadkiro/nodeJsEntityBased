@@ -1,0 +1,3539 @@
+[
+  {
+    "_id": "69733e9633f2b10fa6121cc8",
+    "name": "Opportunités",
+    "slug": "opportunité-1769160342637",
+    "entity": "69733e9633f2b10fa6121cc6",
+    "spaces": [],
+    "folders": [
+      "69733384aed0fdd12b310435"
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-01-23T09:25:42.646Z",
+    "updatedAt": "2026-01-23T09:25:56.814Z",
+    "__v": 0
+  },
+  {
+    "_id": "69733f0d33f2b10fa6121f53",
+    "name": "Marchés publiques",
+    "slug": "opportunité-1769160461370",
+    "entity": "69733e9633f2b10fa6121cc6",
+    "spaces": [],
+    "folders": [
+      "69733f0233f2b10fa6121f42"
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-01-23T09:27:41.371Z",
+    "updatedAt": "2026-01-26T11:24:56.786Z",
+    "__v": 0,
+    "viewType": "kanban",
+    "order": 1
+  },
+  {
+    "_id": "69733f6433f2b10fa6122247",
+    "name": "Personnes",
+    "slug": "personne-1769160548802",
+    "entity": "69733f6433f2b10fa6122245",
+    "spaces": [
+      "697314f49224efb19e74c8d4"
+    ],
+    "folders": [
+      "6973279055e5bc162bd1d44b"
+    ],
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "createdAt": "2026-01-23T09:29:08.804Z",
+    "updatedAt": "2026-01-26T13:10:06.880Z",
+    "__v": 0,
+    "viewType": "kanban",
+    "color": "",
+    "icon": "solar:user-bold-duotone",
+    "order": 1
+  },
+  {
+    "_id": "69743fac97b4bb5a398f61b3",
+    "name": "En cours",
+    "slug": "bon-de-commande-1769226156411",
+    "entity": "69743fac97b4bb5a398f61b1",
+    "viewType": "kanban",
+    "spaces": [],
+    "folders": [
+      "69743f7197b4bb5a398f61a1"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-24T03:42:36.413Z",
+    "updatedAt": "2026-01-24T04:51:35.235Z",
+    "__v": 0
+  },
+  {
+    "_id": "6974421597b4bb5a398f6810",
+    "name": "Clôturés",
+    "slug": "bon-de-commande-1769226773321",
+    "entity": "69743fac97b4bb5a398f61b1",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "69743f7197b4bb5a398f61a1"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-24T03:52:53.323Z",
+    "updatedAt": "2026-01-24T03:53:17.702Z",
+    "__v": 0
+  },
+  {
+    "_id": "69744a9b23fe494e2160fe07",
+    "name": "Société",
+    "slug": "société-1769228955803",
+    "entity": "69733f7033f2b10fa6122257",
+    "viewType": "table",
+    "spaces": [],
+    "folders": [
+      "69743f7197b4bb5a398f61a1"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-24T04:29:15.810Z",
+    "updatedAt": "2026-01-24T04:29:55.703Z",
+    "__v": 0
+  },
+  {
+    "_id": "69744ccd487b045544464446",
+    "name": "Sociétés",
+    "slug": "société-1769229517537",
+    "entity": "69733f7033f2b10fa6122257",
+    "viewType": "kanban",
+    "spaces": [
+      "697314f49224efb19e74c8d4"
+    ],
+    "folders": [
+      "6973279055e5bc162bd1d44b"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-24T04:38:37.544Z",
+    "updatedAt": "2026-01-26T13:10:06.880Z",
+    "__v": 0,
+    "color": "",
+    "icon": "solar:server-bold-duotone",
+    "order": 2
+  },
+  {
+    "_id": "69766d8de9dad065cb753594",
+    "name": "Société",
+    "slug": "société-1769368973747",
+    "entity": "69733f7033f2b10fa6122257",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T19:22:53.754Z",
+    "updatedAt": "2026-01-25T19:22:53.754Z",
+    "__v": 0
+  },
+  {
+    "_id": "69766daae9dad065cb75363f",
+    "name": "Personne",
+    "slug": "personne-1769369002835",
+    "entity": "69733f6433f2b10fa6122245",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T19:23:22.835Z",
+    "updatedAt": "2026-01-25T19:23:22.835Z",
+    "__v": 0
+  },
+  {
+    "_id": "69766db3e9dad065cb753650",
+    "name": "Société",
+    "slug": "société-1769369011821",
+    "entity": "69733f7033f2b10fa6122257",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T19:23:31.822Z",
+    "updatedAt": "2026-01-25T19:23:31.822Z",
+    "__v": 0
+  },
+  {
+    "_id": "69766dcbe9dad065cb753676",
+    "name": "Société",
+    "slug": "société-1769369035741",
+    "entity": "69733f7033f2b10fa6122257",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "69760b83f10b78bb9df4171c"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T19:23:55.742Z",
+    "updatedAt": "2026-01-25T19:23:55.742Z",
+    "__v": 0
+  },
+  {
+    "_id": "69766dd1e9dad065cb753687",
+    "name": "Opportunité",
+    "slug": "opportunité-1769369041654",
+    "entity": "69733e9633f2b10fa6121cc6",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "69760b83f10b78bb9df4171c"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T19:24:01.655Z",
+    "updatedAt": "2026-01-25T19:24:01.655Z",
+    "__v": 0
+  },
+  {
+    "_id": "69766ddae9dad065cb753698",
+    "name": "Opportunité",
+    "slug": "opportunité-1769369050630",
+    "entity": "69733e9633f2b10fa6121cc6",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T19:24:10.631Z",
+    "updatedAt": "2026-01-25T19:24:10.631Z",
+    "__v": 0
+  },
+  {
+    "_id": "69766e10e9dad065cb7536a9",
+    "name": "Société",
+    "slug": "société-1769369104370",
+    "entity": "69733f7033f2b10fa6122257",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T19:25:04.370Z",
+    "updatedAt": "2026-01-25T19:25:04.370Z",
+    "__v": 0
+  },
+  {
+    "_id": "69766e7ae9dad065cb75376b",
+    "name": "Société",
+    "slug": "société-1769369210582",
+    "entity": "69733f7033f2b10fa6122257",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T19:26:50.583Z",
+    "updatedAt": "2026-01-25T19:26:50.583Z",
+    "__v": 0
+  },
+  {
+    "_id": "69766e8be9dad065cb753811",
+    "name": "Personne",
+    "slug": "personne-1769369227765",
+    "entity": "69733f6433f2b10fa6122245",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T19:27:07.766Z",
+    "updatedAt": "2026-01-25T19:27:07.766Z",
+    "__v": 0
+  },
+  {
+    "_id": "69766e94e9dad065cb753822",
+    "name": "Société",
+    "slug": "société-1769369236279",
+    "entity": "69733f7033f2b10fa6122257",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T19:27:16.279Z",
+    "updatedAt": "2026-01-25T19:27:16.279Z",
+    "__v": 0
+  },
+  {
+    "_id": "69766ecd825c8e37a444d319",
+    "name": "Personne",
+    "slug": "personne-1769369293789",
+    "entity": "69733f6433f2b10fa6122245",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "69766becb7dc53f9e22b67cb"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T19:28:13.795Z",
+    "updatedAt": "2026-01-25T19:28:13.795Z",
+    "__v": 0
+  },
+  {
+    "_id": "69766eeb825c8e37a444d32a",
+    "name": "Société",
+    "slug": "société-1769369323519",
+    "entity": "69733f7033f2b10fa6122257",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "69766becb7dc53f9e22b67cb"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T19:28:43.521Z",
+    "updatedAt": "2026-01-25T19:28:43.521Z",
+    "__v": 0
+  },
+  {
+    "_id": "69766f97825c8e37a444d45e",
+    "name": "Projet",
+    "slug": "projet-1769369495608",
+    "entity": "6974f9533c65b095a571f656",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "69766becb7dc53f9e22b67cb"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T19:31:35.609Z",
+    "updatedAt": "2026-01-25T19:31:35.609Z",
+    "__v": 0
+  },
+  {
+    "_id": "6976763824a8369eb746fa9e",
+    "name": "Projet",
+    "slug": "projet-1769371192807",
+    "entity": "6974f9533c65b095a571f656",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6976760f24a8369eb746fa7d"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T19:59:52.808Z",
+    "updatedAt": "2026-01-25T19:59:52.808Z",
+    "__v": 0
+  },
+  {
+    "_id": "6976763e24a8369eb746faaf",
+    "name": "Document",
+    "slug": "document-1769371198300",
+    "entity": "69760b16f10b78bb9df415e6",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6976760f24a8369eb746fa7d"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T19:59:58.301Z",
+    "updatedAt": "2026-01-25T19:59:58.301Z",
+    "__v": 0
+  },
+  {
+    "_id": "697678cd24a8369eb746fc38",
+    "name": "Personne",
+    "slug": "personne-1769371853159",
+    "entity": "69733f6433f2b10fa6122245",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "697678bd24a8369eb746fc27"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T20:10:53.161Z",
+    "updatedAt": "2026-01-25T20:10:53.161Z",
+    "__v": 0
+  },
+  {
+    "_id": "6976797924a8369eb746fe39",
+    "name": "Projet",
+    "slug": "projet-1769372025320",
+    "entity": "6974f9533c65b095a571f656",
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "697678bd24a8369eb746fc27"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T20:13:45.321Z",
+    "updatedAt": "2026-01-25T20:13:45.321Z",
+    "__v": 0
+  },
+  {
+    "_id": "6976961843b68025253b2acc",
+    "name": "Lead",
+    "slug": "société-1769379352036",
+    "entity": "69733f7033f2b10fa6122257",
+    "order": 2,
+    "viewType": "list",
+    "spaces": [
+      "697314f49224efb19e74c8d4"
+    ],
+    "folders": [
+      "6973279055e5bc162bd1d44b"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T22:15:52.042Z",
+    "updatedAt": "2026-01-26T13:10:11.594Z",
+    "__v": 0,
+    "color": "#818181",
+    "icon": "solar:target-broken"
+  },
+  {
+    "_id": "697697c143b68025253b2d78",
+    "name": "Vente",
+    "slug": "document-1769379777334",
+    "entity": "69760b16f10b78bb9df415e6",
+    "order": 2,
+    "viewType": "list",
+    "spaces": [
+      "6973158a9224efb19e74c97f"
+    ],
+    "folders": [
+      "697327b555e5bc162bd1d460"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T22:22:57.336Z",
+    "updatedAt": "2026-01-26T11:37:50.042Z",
+    "__v": 0,
+    "color": "",
+    "icon": "solar:documents-outline"
+  },
+  {
+    "_id": "697697d743b68025253b2e0a",
+    "name": "Achat",
+    "slug": "document-1769379799406",
+    "entity": "69760b16f10b78bb9df415e6",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [
+      "6973158a9224efb19e74c97f"
+    ],
+    "folders": [
+      "697327b555e5bc162bd1d460"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T22:23:19.408Z",
+    "updatedAt": "2026-01-26T13:15:10.147Z",
+    "__v": 0,
+    "color": "",
+    "icon": "solar:documents-outline"
+  },
+  {
+    "_id": "6976987343b68025253b2f53",
+    "name": "Fournisseurs",
+    "slug": "société-1769379955123",
+    "entity": "69733f7033f2b10fa6122257",
+    "order": 4,
+    "viewType": "list",
+    "spaces": [
+      "6973158a9224efb19e74c97f"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T22:25:55.124Z",
+    "updatedAt": "2026-01-26T13:15:10.147Z",
+    "__v": 0,
+    "color": "",
+    "icon": "solar:database-broken"
+  },
+  {
+    "_id": "697698b943b68025253b2f99",
+    "name": "Clients",
+    "slug": "société-1769380025606",
+    "entity": "69733f7033f2b10fa6122257",
+    "order": 2,
+    "viewType": "list",
+    "spaces": [
+      "6973158a9224efb19e74c97f"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-25T22:27:05.607Z",
+    "updatedAt": "2026-01-26T13:15:10.147Z",
+    "__v": 0,
+    "color": "",
+    "icon": "solar:database-broken"
+  },
+  {
+    "_id": "69773ee28ec298f087c07840",
+    "name": "Projet",
+    "slug": "projet-1769422562871",
+    "entity": "6974f9533c65b095a571f656",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T10:16:02.872Z",
+    "updatedAt": "2026-01-26T10:16:02.872Z",
+    "__v": 0
+  },
+  {
+    "_id": "69774a7064816b7d79b5268e",
+    "name": "Société",
+    "slug": "société-1769425520330",
+    "entity": "69733f7033f2b10fa6122257",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [
+      "6977492264816b7d79b52479"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T11:05:20.331Z",
+    "updatedAt": "2026-01-26T11:25:12.056Z",
+    "__v": 0
+  },
+  {
+    "_id": "69774ba631e2104125cdef15",
+    "name": "Personne",
+    "slug": "personne-1769425830031",
+    "entity": "69733f6433f2b10fa6122245",
+    "order": 3,
+    "viewType": "list",
+    "spaces": [
+      "6977492264816b7d79b52479"
+    ],
+    "folders": [
+      "69774a2264816b7d79b52564"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T11:10:30.037Z",
+    "updatedAt": "2026-01-26T11:25:12.056Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977538bdbd1bf5f46d6af55",
+    "name": "Personne",
+    "slug": "personne-1769427851625",
+    "entity": "69733f6433f2b10fa6122245",
+    "order": 7,
+    "viewType": "list",
+    "spaces": [
+      "69743f5e97b4bb5a398f6198"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T11:44:11.627Z",
+    "updatedAt": "2026-01-26T13:08:28.693Z",
+    "__v": 0
+  },
+  {
+    "_id": "69775391dbd1bf5f46d6af66",
+    "name": "Société",
+    "slug": "société-1769427857446",
+    "entity": "69733f7033f2b10fa6122257",
+    "order": 3,
+    "viewType": "list",
+    "spaces": [
+      "69743f5e97b4bb5a398f6198"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T11:44:17.446Z",
+    "updatedAt": "2026-01-26T13:09:18.470Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977566f354bdbfc94fc1ccf",
+    "name": "Personne",
+    "slug": "personne-1769428591203",
+    "entity": "69733f6433f2b10fa6122245",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [
+      "69743f5e97b4bb5a398f6198"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T11:56:31.209Z",
+    "updatedAt": "2026-01-26T13:09:01.490Z",
+    "__v": 0
+  },
+  {
+    "_id": "69775b002a2131efec48d8bd",
+    "name": "Société",
+    "slug": "société-1769429760706",
+    "entity": "69733f7033f2b10fa6122257",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [
+      "69775aae2a2131efec48d867"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T12:16:00.707Z",
+    "updatedAt": "2026-01-26T13:01:19.108Z",
+    "__v": 0
+  },
+  {
+    "_id": "697767cfc2d840fe662c66d6",
+    "name": "Projet",
+    "slug": "projet-1769433039460",
+    "entity": "6974f9533c65b095a571f656",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [
+      "697767bdc2d840fe662c66b9"
+    ],
+    "folders": [
+      "697767c7c2d840fe662c66c5"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T13:10:39.460Z",
+    "updatedAt": "2026-01-26T13:10:48.461Z",
+    "__v": 0
+  },
+  {
+    "_id": "697768fe72988db673634878",
+    "name": "Achat",
+    "slug": "document-1769433342056",
+    "entity": "69760b16f10b78bb9df415e6",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [
+      "697768f572988db673634867",
+      "697768ed72988db67363485b"
+    ],
+    "folders": [
+      "697768f572988db673634867"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T13:15:42.057Z",
+    "updatedAt": "2026-01-26T18:20:41.953Z",
+    "__v": 0,
+    "color": "",
+    "icon": "solar:file-text-broken"
+  },
+  {
+    "_id": "69776f481307ba60bd9b820f",
+    "name": "Opportunité",
+    "slug": "opportunité-1769434952621",
+    "entity": "69733e9633f2b10fa6121cc6",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977a1824c865e7aa2c72e4f"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T13:42:32.622Z",
+    "updatedAt": "2026-01-26T17:28:12.927Z",
+    "__v": 0
+  },
+  {
+    "_id": "697773634c865e7aa2c7272c",
+    "name": "Société",
+    "slug": "société-1769436003143",
+    "entity": "69733f7033f2b10fa6122257",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977694d72988db673634a99"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T14:00:03.144Z",
+    "updatedAt": "2026-01-26T17:16:07.153Z",
+    "__v": 0
+  },
+  {
+    "_id": "697773694c865e7aa2c7273d",
+    "name": "Personne",
+    "slug": "personne-1769436009067",
+    "entity": "69733f6433f2b10fa6122245",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977694d72988db673634a99"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T14:00:09.068Z",
+    "updatedAt": "2026-01-26T17:16:16.085Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977a4824c865e7aa2c731d5",
+    "name": "Société",
+    "slug": "société-1769448578316",
+    "entity": "69733f7033f2b10fa6122257",
+    "order": 2,
+    "viewType": "list",
+    "spaces": [
+      "6977a4ca4c865e7aa2c732ac",
+      "69776f231307ba60bd9b81e9",
+      "6977a4704c865e7aa2c731bb"
+    ],
+    "folders": [
+      "6977a4ca4c865e7aa2c732ac"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T17:29:38.317Z",
+    "updatedAt": "2026-01-26T18:21:19.306Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977a4a34c865e7aa2c73283",
+    "name": "Personne",
+    "slug": "personne-1769448611260",
+    "entity": "69733f6433f2b10fa6122245",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [
+      "6977a4ca4c865e7aa2c732ac",
+      "6977a4704c865e7aa2c731bb",
+      "69776f231307ba60bd9b81e9"
+    ],
+    "folders": [
+      "6977a4ca4c865e7aa2c732ac"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T17:30:11.261Z",
+    "updatedAt": "2026-01-26T18:21:19.306Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977ac469ce5d9f6e6552243",
+    "name": "Bon de commande",
+    "slug": "bon-de-commande-1769450566183",
+    "entity": "69743fac97b4bb5a398f61b1",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [
+      "69776f231307ba60bd9b81e9",
+      "6977a4ca4c865e7aa2c732ac",
+      "6977a4704c865e7aa2c731bb"
+    ],
+    "folders": [
+      "6977a4704c865e7aa2c731bb"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T18:02:46.184Z",
+    "updatedAt": "2026-01-26T18:21:57.540Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977b1bd9ce5d9f6e655307c",
+    "name": "Document",
+    "slug": "document-1769451965562",
+    "entity": "69760b16f10b78bb9df415e6",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [
+      "6977b1b69ce5d9f6e655306b",
+      "697768ed72988db67363485b"
+    ],
+    "folders": [
+      "6977b1b69ce5d9f6e655306b"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T18:26:05.562Z",
+    "updatedAt": "2026-01-26T18:26:53.781Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977b1d09ce5d9f6e65531a3",
+    "name": "Personne",
+    "slug": "personne-1769451984577",
+    "entity": "69733f6433f2b10fa6122245",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977b1b69ce5d9f6e655306b"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T18:26:24.578Z",
+    "updatedAt": "2026-01-26T18:26:53.781Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977b3f79ce5d9f6e6553c62",
+    "name": "Personne",
+    "slug": "personne-1769452535433",
+    "entity": "69733f6433f2b10fa6122245",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [
+      "6977b43d9ce5d9f6e6553d7f"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T18:35:35.434Z",
+    "updatedAt": "2026-01-26T18:37:00.155Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977b4519ce5d9f6e6553db6",
+    "name": "Société",
+    "slug": "société-1769452625545",
+    "entity": "69733f7033f2b10fa6122257",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977b43d9ce5d9f6e6553d7f"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T18:37:05.546Z",
+    "updatedAt": "2026-01-26T18:37:05.546Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977b46a9ce5d9f6e6553e64",
+    "name": "Société",
+    "slug": "société-1769452650096",
+    "entity": "69733f7033f2b10fa6122257",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977b3db9ce5d9f6e6553b18"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T18:37:30.097Z",
+    "updatedAt": "2026-01-26T18:37:30.097Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977b502881b72191a68cddb",
+    "name": "Personne",
+    "slug": "personne-1769452802094",
+    "entity": "69733f6433f2b10fa6122245",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T18:40:02.095Z",
+    "updatedAt": "2026-01-26T18:41:38.220Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977b511881b72191a68cdf3",
+    "name": "Société",
+    "slug": "société-1769452817076",
+    "entity": "69733f7033f2b10fa6122257",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T18:40:17.077Z",
+    "updatedAt": "2026-01-26T18:41:38.220Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977b575881b72191a68ced5",
+    "name": "Document",
+    "slug": "document-1769452917169",
+    "entity": "69760b16f10b78bb9df415e6",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977b4449ce5d9f6e6553d92"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T18:41:57.169Z",
+    "updatedAt": "2026-01-26T18:41:57.169Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977b595881b72191a68cf7e",
+    "name": "Personne",
+    "slug": "personne-1769452949481",
+    "entity": "69733f6433f2b10fa6122245",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T18:42:29.482Z",
+    "updatedAt": "2026-01-26T18:45:18.331Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977b646881b72191a68d0ee",
+    "name": "Achat",
+    "slug": "document-1769453126912",
+    "entity": "69760b16f10b78bb9df415e6",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977b62e881b72191a68d0c1"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T18:45:26.913Z",
+    "updatedAt": "2026-01-26T18:46:02.838Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977b658881b72191a68d197",
+    "name": "Projet",
+    "slug": "projet-1769453144940",
+    "entity": "6974f9533c65b095a571f656",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977b639881b72191a68d0d4"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T18:45:44.941Z",
+    "updatedAt": "2026-01-26T18:45:44.941Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977b675881b72191a68d245",
+    "name": "Vente",
+    "slug": "document-1769453173260",
+    "entity": "69760b16f10b78bb9df415e6",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977b62e881b72191a68d0c1"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T18:46:13.261Z",
+    "updatedAt": "2026-01-26T18:46:24.172Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977b6da881b72191a68d3f3",
+    "name": "Document",
+    "slug": "document-1769453274928",
+    "entity": "69760b16f10b78bb9df415e6",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977b6c2881b72191a68d3ca"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T18:47:54.929Z",
+    "updatedAt": "2026-01-26T18:47:54.929Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977b73c7c8b4440b390b2c4",
+    "name": "Banque populaire",
+    "slug": "société-1769453372816",
+    "entity": "69733f7033f2b10fa6122257",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977b69b881b72191a68d2fd"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T18:49:32.817Z",
+    "updatedAt": "2026-01-26T20:09:56.887Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977ba567c8b4440b390ba1a",
+    "name": "Note de frais",
+    "slug": "document-1769454166515",
+    "entity": "69760b16f10b78bb9df415e6",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977b6b2881b72191a68d319"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T19:02:46.517Z",
+    "updatedAt": "2026-01-26T20:10:06.283Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977ba6c7c8b4440b390ba30",
+    "name": "Marché publique",
+    "slug": "société-1769454188425",
+    "entity": "69733f7033f2b10fa6122257",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977b76a7c8b4440b390b389"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T19:03:08.426Z",
+    "updatedAt": "2026-01-28T08:58:35.878Z",
+    "__v": 0,
+    "color": "#805dca",
+    "icon": "solar:database-broken"
+  },
+  {
+    "_id": "6977ba967c8b4440b390ba5c",
+    "name": "CIH",
+    "slug": "société-1769454230933",
+    "entity": "69733f7033f2b10fa6122257",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977b69b881b72191a68d2fd"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T19:03:50.933Z",
+    "updatedAt": "2026-01-27T04:34:41.882Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977befb969a031118143533",
+    "name": "Achat",
+    "slug": "document-1769455355144",
+    "entity": "69760b16f10b78bb9df415e6",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977b70e7c8b4440b390b287"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T19:22:35.147Z",
+    "updatedAt": "2026-01-26T20:05:55.518Z",
+    "__v": 0
+  },
+  {
+    "_id": "6977bf04969a03111814354d",
+    "name": "Vente",
+    "slug": "document-1769455364772",
+    "entity": "69760b16f10b78bb9df415e6",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "6977b70e7c8b4440b390b287"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-26T19:22:44.773Z",
+    "updatedAt": "2026-01-26T20:05:55.518Z",
+    "__v": 0
+  },
+  {
+    "_id": "69784b7a9bfeae7e722534a2",
+    "name": "Clients",
+    "slug": "société-1769491322444",
+    "entity": "69733f7033f2b10fa6122257",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "697849e49bfeae7e72253372"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-27T05:22:02.445Z",
+    "updatedAt": "2026-01-27T05:23:29.129Z",
+    "__v": 0,
+    "color": "#4361ee",
+    "icon": "solar:buildings-3-broken"
+  },
+  {
+    "_id": "697bb61876c4f5b129aa7cf4",
+    "name": "Leads",
+    "slug": "personne-1769715224215",
+    "entity": "69733f6433f2b10fa6122245",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [],
+    "folders": [
+      "697b96ac3241bfbc672cb279"
+    ],
+    "settings": {
+      "kanbanField": "697bbacfdda975e3a6a73cf4"
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-29T19:33:44.217Z",
+    "updatedAt": "2026-01-31T04:49:41.137Z",
+    "__v": 0,
+    "color": "",
+    "icon": "solar:user-broken"
+  },
+  {
+    "_id": "697bb69e76c4f5b129aa7f15",
+    "name": "Prospets",
+    "slug": "personne-1769715358774",
+    "entity": "69733f6433f2b10fa6122245",
+    "order": 0,
+    "viewType": "kanban",
+    "spaces": [],
+    "folders": [
+      "697b96ac3241bfbc672cb279"
+    ],
+    "settings": {
+      "kanbanField": "697bbacfdda975e3a6a73cf4"
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-29T19:35:58.776Z",
+    "updatedAt": "2026-01-29T20:03:37.075Z",
+    "__v": 0,
+    "color": "",
+    "icon": "solar:user-check-broken"
+  },
+  {
+    "_id": "697c20264b70c78bbe2e8672",
+    "name": "Mes patients",
+    "slug": "patient-1769742374803",
+    "entity": "697c20264b70c78bbe2e8670",
+    "icon": "solar:user-broken",
+    "color": "",
+    "order": 2,
+    "viewType": "checklist",
+    "spaces": [
+      "697c1eb84b70c78bbe2e84ee"
+    ],
+    "folders": [],
+    "settings": {
+      "kanbanField": "status"
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-30T03:06:14.806Z",
+    "updatedAt": "2026-02-10T08:41:12.943Z",
+    "__v": 0
+  },
+  {
+    "_id": "697c20e04b70c78bbe2e8704",
+    "name": "Consultations",
+    "slug": "consultation-1769742560700",
+    "entity": "697c20e04b70c78bbe2e8702",
+    "icon": "solar:case-minimalistic-broken",
+    "color": "",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [
+      "697c1eb84b70c78bbe2e84ee"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-30T03:09:20.703Z",
+    "updatedAt": "2026-02-10T06:54:39.498Z",
+    "__v": 0
+  },
+  {
+    "_id": "697c21c44b70c78bbe2e8802",
+    "name": "Ordonnances",
+    "slug": "ordonnance-1769742788323",
+    "entity": "697c21c44b70c78bbe2e8800",
+    "icon": "solar:file-broken",
+    "color": "",
+    "order": 4,
+    "viewType": "list",
+    "spaces": [
+      "697c1eb84b70c78bbe2e84ee"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-30T03:13:08.326Z",
+    "updatedAt": "2026-02-10T06:54:39.498Z",
+    "__v": 0
+  },
+  {
+    "_id": "697cc1dfc202fdaf7ada715c",
+    "name": "Facture",
+    "slug": "facture-1769783775048",
+    "entity": "697cc194c202fdaf7ada6eff",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [
+      "697b936b5b293c680fadc886"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-30T14:36:15.050Z",
+    "updatedAt": "2026-01-30T16:02:01.465Z",
+    "__v": 0
+  },
+  {
+    "_id": "697def1fa7804248b751faa0",
+    "name": "Personne",
+    "slug": "personne-1769860895633",
+    "entity": "69733f6433f2b10fa6122245",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [],
+    "folders": [
+      "697b96cd3241bfbc672cb299"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-01-31T12:01:35.642Z",
+    "updatedAt": "2026-01-31T12:45:27.783Z",
+    "__v": 0
+  },
+  {
+    "_id": "697f17edf2ab2bcd4de05362",
+    "name": "Tâches",
+    "slug": "tâche-1769936877286",
+    "entity": "6974fa513c65b095a571fb68",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "697b96cd3241bfbc672cb299"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-01T09:07:57.287Z",
+    "updatedAt": "2026-02-01T09:08:18.397Z",
+    "__v": 0,
+    "color": "",
+    "icon": "solar:checklist-bold"
+  },
+  {
+    "_id": "69804086942ebe95b8fbffe6",
+    "name": "Opportunité",
+    "slug": "opportunité-1770012806409",
+    "entity": "69733e9633f2b10fa6121cc6",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "697c1c944b70c78bbe2e82e9"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-02T06:13:26.417Z",
+    "updatedAt": "2026-02-02T06:13:26.417Z",
+    "__v": 0
+  },
+  {
+    "_id": "69895800baa31b4c001894f0",
+    "name": "Tâches",
+    "slug": "tâches-1770608640439",
+    "entity": "697f031bba5fb843f1d05799",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [],
+    "folders": [
+      "697b96cd3241bfbc672cb299"
+    ],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-09T03:44:00.441Z",
+    "updatedAt": "2026-02-09T03:44:00.441Z",
+    "__v": 0
+  },
+  {
+    "_id": "69897a559cb6956c958b109e",
+    "name": "Démarrer",
+    "slug": "cockpit-1770617429445",
+    "entity": null,
+    "cockpitId": "69897a559cb6956c958b1098",
+    "order": 0,
+    "viewType": "cockpit",
+    "spaces": [
+      "697c1eb84b70c78bbe2e84ee"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-09T06:10:29.446Z",
+    "updatedAt": "2026-02-10T06:54:39.498Z",
+    "__v": 0
+  },
+  {
+    "_id": "698abcf52774ea450ad56fb1",
+    "name": "Traitements",
+    "slug": "traitement-1770700021631",
+    "entity": "698abc0e9c0808e18cbde9aa",
+    "cockpitId": null,
+    "order": 3,
+    "viewType": "list",
+    "spaces": [
+      "697c1eb84b70c78bbe2e84ee"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-10T05:07:01.636Z",
+    "updatedAt": "2026-02-10T08:01:04.521Z",
+    "__v": 0
+  },
+  {
+    "_id": "698afa0acca06e6fc8afbc55",
+    "name": "Doctor Dashboard",
+    "slug": "view-doctor-dashboard",
+    "entity": null,
+    "cockpitId": "698af83ddc0731b0e1a8ebab",
+    "icon": "solar:monitor-smartphone-bold-duotone",
+    "color": "#4361ee",
+    "order": 1,
+    "viewType": "cockpit",
+    "spaces": [
+      "698af83c968b728b701b0708"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "filters": [],
+    "createdAt": "2026-02-10T09:27:38.741Z",
+    "updatedAt": "2026-02-13T11:52:28.158Z",
+    "__v": 0
+  },
+  {
+    "_id": "698afa0acca06e6fc8afbc58",
+    "name": "Patients",
+    "slug": "view-patients",
+    "entity": "698af83c968b728b701b071a",
+    "cockpitId": null,
+    "icon": "solar:user-bold",
+    "color": "#4361ee",
+    "order": 4,
+    "viewType": "list",
+    "spaces": [
+      "698af83c968b728b701b0708"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "filters": [],
+    "createdAt": "2026-02-10T09:27:38.742Z",
+    "updatedAt": "2026-02-13T11:52:28.158Z",
+    "__v": 0
+  },
+  {
+    "_id": "698afa0acca06e6fc8afbc5b",
+    "name": "Consultations",
+    "slug": "view-consultations",
+    "entity": "697c20e04b70c78bbe2e8702",
+    "cockpitId": null,
+    "icon": "solar:stethoscope-bold",
+    "color": "#f59e0b",
+    "order": 3,
+    "viewType": "list",
+    "spaces": [
+      "698af83c968b728b701b0708"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "filters": [],
+    "createdAt": "2026-02-10T09:27:38.743Z",
+    "updatedAt": "2026-02-13T11:52:28.158Z",
+    "__v": 0
+  },
+  {
+    "_id": "698afa0acca06e6fc8afbc5e",
+    "name": "Dossiers Médicaux",
+    "slug": "view-dossiers",
+    "entity": "698af83c968b728b701b0722",
+    "cockpitId": null,
+    "icon": "solar:folder-with-files-bold",
+    "color": "#10b981",
+    "order": 0,
+    "viewType": "list",
+    "spaces": [
+      "698af83c968b728b701b0708"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "filters": [],
+    "createdAt": "2026-02-10T09:27:38.744Z",
+    "updatedAt": "2026-02-13T11:52:28.158Z",
+    "__v": 0
+  },
+  {
+    "_id": "698afa0acca06e6fc8afbc61",
+    "name": "Membres Équipe",
+    "slug": "view-equipe",
+    "entity": "698af83c968b728b701b0726",
+    "cockpitId": null,
+    "icon": "solar:users-group-two-rounded-bold",
+    "color": "#4361ee",
+    "order": 6,
+    "viewType": "list",
+    "spaces": [
+      "698af83c968b728b701b0708"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "filters": [],
+    "createdAt": "2026-02-10T09:27:38.745Z",
+    "updatedAt": "2026-02-13T11:52:28.158Z",
+    "__v": 0
+  },
+  {
+    "_id": "698afa0acca06e6fc8afbc64",
+    "name": "Tâches",
+    "slug": "view-taches",
+    "entity": "6974fa513c65b095a571fb68",
+    "cockpitId": null,
+    "icon": "solar:checklist-bold",
+    "color": "#ef4444",
+    "order": 5,
+    "viewType": "list",
+    "spaces": [
+      "698af83c968b728b701b0708"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "filters": [],
+    "createdAt": "2026-02-10T09:27:38.746Z",
+    "updatedAt": "2026-02-13T11:52:28.158Z",
+    "__v": 0
+  },
+  {
+    "_id": "698d02ed9f0d2693c35c7ac5",
+    "name": "Note",
+    "slug": "note",
+    "entity": "697c9b2e17b1ed43070055f3",
+    "cockpitId": null,
+    "order": 2,
+    "viewType": "list",
+    "spaces": [
+      "698af83c968b728b701b0708"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-11T22:30:05.209Z",
+    "updatedAt": "2026-02-13T11:52:28.158Z",
+    "__v": 0
+  },
+  {
+    "_id": "69977f9d00987de174139ed4",
+    "name": "Contacts",
+    "slug": "contacts",
+    "entity": "69977f9d00987de174139eb5",
+    "cockpitId": null,
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "69977f9d00987de174139eaf"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-19T21:24:45.121Z",
+    "updatedAt": "2026-02-19T21:24:45.121Z",
+    "__v": 0
+  },
+  {
+    "_id": "69977f9d00987de174139f41",
+    "name": "Opportunités",
+    "slug": "opportunites",
+    "entity": "69977f9d00987de174139f2c",
+    "cockpitId": null,
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 1,
+    "viewType": "kanban",
+    "spaces": [
+      "69977f9d00987de174139eaf"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-19T21:24:45.164Z",
+    "updatedAt": "2026-02-19T21:24:45.164Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978d1363be0bad8535e0a3",
+    "name": "Tâches",
+    "slug": "taches",
+    "entity": "69978d1363be0bad8535e088",
+    "cockpitId": null,
+    "icon": "solar:checklist-bold-duotone",
+    "color": "#e7515a",
+    "order": 0,
+    "viewType": "kanban",
+    "spaces": [
+      "69978d1363be0bad8535e082"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-19T22:22:11.352Z",
+    "updatedAt": "2026-02-19T22:22:11.352Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978d1363be0bad8535e0fc",
+    "name": "Jalons",
+    "slug": "jalons",
+    "entity": "69978d1363be0bad8535e0eb",
+    "cockpitId": null,
+    "icon": "solar:flag-bold-duotone",
+    "color": "#8b5cf6",
+    "order": 1,
+    "viewType": "table",
+    "spaces": [
+      "69978d1363be0bad8535e082"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-19T22:22:11.371Z",
+    "updatedAt": "2026-02-19T22:22:11.371Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978def37ff690e137fd854",
+    "name": "Tâches",
+    "slug": "taches-2",
+    "entity": "69978def37ff690e137fd838",
+    "cockpitId": null,
+    "icon": "solar:checklist-bold-duotone",
+    "color": "#e7515a",
+    "order": 0,
+    "viewType": "kanban",
+    "spaces": [
+      "69978def37ff690e137fd830"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-19T22:25:51.566Z",
+    "updatedAt": "2026-02-19T22:25:51.566Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978def37ff690e137fd8b0",
+    "name": "Jalons",
+    "slug": "jalons-2",
+    "entity": "69978def37ff690e137fd89e",
+    "cockpitId": null,
+    "icon": "solar:flag-bold-duotone",
+    "color": "#8b5cf6",
+    "order": 1,
+    "viewType": "table",
+    "spaces": [
+      "69978def37ff690e137fd830"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-19T22:25:51.586Z",
+    "updatedAt": "2026-02-19T22:25:51.586Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed21978",
+    "name": "Projets",
+    "slug": "projets",
+    "entity": "69978f7b153840f8eed2194d",
+    "cockpitId": null,
+    "icon": "solar:folder-bold-duotone",
+    "color": "#8b5cf6",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "69978f7b153840f8eed21949"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-19T22:32:27.130Z",
+    "updatedAt": "2026-02-19T22:32:27.130Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed219aa",
+    "name": "Tâches",
+    "slug": "taches-3",
+    "entity": "69978f7b153840f8eed21982",
+    "cockpitId": null,
+    "icon": "solar:checklist-minimalistic-bold-duotone",
+    "color": "#10b981",
+    "order": 1,
+    "viewType": "kanban",
+    "spaces": [
+      "69978f7b153840f8eed21949"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-19T22:32:27.147Z",
+    "updatedAt": "2026-02-19T22:32:27.147Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed219cd",
+    "name": "Documents",
+    "slug": "documents",
+    "entity": "69978f7b153840f8eed219ae",
+    "cockpitId": null,
+    "icon": "solar:document-text-bold-duotone",
+    "color": "#06b6d4",
+    "order": 2,
+    "viewType": "table",
+    "spaces": [
+      "69978f7b153840f8eed21949"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-19T22:32:27.157Z",
+    "updatedAt": "2026-02-19T22:32:27.157Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed219e5",
+    "name": "Notes",
+    "slug": "notes",
+    "entity": "69978f7b153840f8eed219d1",
+    "cockpitId": null,
+    "icon": "solar:notes-bold-duotone",
+    "color": "#fbbf24",
+    "order": 3,
+    "viewType": "table",
+    "spaces": [
+      "69978f7b153840f8eed21949"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-19T22:32:27.165Z",
+    "updatedAt": "2026-02-19T22:32:27.165Z",
+    "__v": 0
+  },
+  {
+    "_id": "69978f7b153840f8eed21a14",
+    "name": "Jalons",
+    "slug": "jalons-3",
+    "entity": "69978f7b153840f8eed219ed",
+    "cockpitId": null,
+    "icon": "solar:calendar-bold-duotone",
+    "color": "#f59e0b",
+    "order": 4,
+    "viewType": "calendar",
+    "spaces": [
+      "69978f7b153840f8eed21949"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-19T22:32:27.181Z",
+    "updatedAt": "2026-02-19T22:32:27.181Z",
+    "__v": 0
+  },
+  {
+    "_id": "6997902086a58861ddebefad",
+    "name": "Patients",
+    "slug": "patients",
+    "entity": "6997902086a58861ddebef95",
+    "cockpitId": null,
+    "icon": "solar:user-heart-bold-duotone",
+    "color": "#2196f3",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "6997902086a58861ddebef8f"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-19T22:35:12.150Z",
+    "updatedAt": "2026-02-19T22:35:12.150Z",
+    "__v": 0
+  },
+  {
+    "_id": "6997902086a58861ddebeffa",
+    "name": "Consultations",
+    "slug": "consultations",
+    "entity": "6997902086a58861ddebefe7",
+    "cockpitId": null,
+    "icon": "solar:stethoscope-bold-duotone",
+    "color": "#14b8a6",
+    "order": 1,
+    "viewType": "table",
+    "spaces": [
+      "6997902086a58861ddebef8f"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-19T22:35:12.169Z",
+    "updatedAt": "2026-02-19T22:35:12.169Z",
+    "__v": 0
+  },
+  {
+    "_id": "69983cfba2bb882ecc535742",
+    "name": "Contacts",
+    "slug": "contacts-2",
+    "entity": "69983cfba2bb882ecc535722",
+    "cockpitId": null,
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "69983cfba2bb882ecc53571a"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T10:52:43.224Z",
+    "updatedAt": "2026-02-20T10:52:43.224Z",
+    "__v": 0
+  },
+  {
+    "_id": "69983cfba2bb882ecc5357f8",
+    "name": "Opportunités",
+    "slug": "opportunites-2",
+    "entity": "69983cfba2bb882ecc5357e2",
+    "cockpitId": null,
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 1,
+    "viewType": "kanban",
+    "spaces": [
+      "69983cfba2bb882ecc53571a"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T10:52:43.272Z",
+    "updatedAt": "2026-02-20T10:52:43.272Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998434952eabd5f96e67902",
+    "name": "Contacts",
+    "slug": "contacts-3",
+    "entity": "6998434952eabd5f96e678e1",
+    "cockpitId": null,
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "6998434952eabd5f96e678d7"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T11:19:37.115Z",
+    "updatedAt": "2026-02-20T11:19:37.115Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998434952eabd5f96e67a1f",
+    "name": "Opportunités",
+    "slug": "opportunites-3",
+    "entity": "6998434952eabd5f96e67a08",
+    "cockpitId": null,
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 1,
+    "viewType": "kanban",
+    "spaces": [
+      "6998434952eabd5f96e678d7"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T11:19:37.186Z",
+    "updatedAt": "2026-02-20T11:19:37.186Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998478152eabd5f96e6881a",
+    "name": "Contacts",
+    "slug": "contacts-4",
+    "entity": "6998478152eabd5f96e687f8",
+    "cockpitId": null,
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "6998478152eabd5f96e687ec"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T11:37:37.338Z",
+    "updatedAt": "2026-02-20T11:37:37.338Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998478152eabd5f96e68937",
+    "name": "Opportunités",
+    "slug": "opportunites-4",
+    "entity": "6998478152eabd5f96e6891f",
+    "cockpitId": null,
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 1,
+    "viewType": "kanban",
+    "spaces": [
+      "6998478152eabd5f96e687ec"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T11:37:37.377Z",
+    "updatedAt": "2026-02-20T11:37:37.377Z",
+    "__v": 0
+  },
+  {
+    "_id": "699853975508dee5e62793ba",
+    "name": "Patients",
+    "slug": "patients-2",
+    "entity": "699853975508dee5e62793a1",
+    "cockpitId": null,
+    "icon": "solar:user-heart-bold-duotone",
+    "color": "#2196f3",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "699853975508dee5e6279399"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T12:29:11.501Z",
+    "updatedAt": "2026-02-20T12:29:11.501Z",
+    "__v": 0
+  },
+  {
+    "_id": "699853975508dee5e6279489",
+    "name": "Consultations",
+    "slug": "consultations-2",
+    "entity": "699853975508dee5e6279475",
+    "cockpitId": null,
+    "icon": "solar:stethoscope-bold-duotone",
+    "color": "#14b8a6",
+    "order": 1,
+    "viewType": "table",
+    "spaces": [
+      "699853975508dee5e6279399"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T12:29:11.546Z",
+    "updatedAt": "2026-02-20T12:29:11.546Z",
+    "__v": 0
+  },
+  {
+    "_id": "699854725508dee5e627abc0",
+    "name": "Factures",
+    "slug": "factures",
+    "entity": "699854725508dee5e627ab9f",
+    "cockpitId": null,
+    "icon": "solar:bill-list-bold-duotone",
+    "color": "#e2a03f",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "699854725508dee5e627ab9b"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T12:32:50.560Z",
+    "updatedAt": "2026-02-20T12:32:50.560Z",
+    "__v": 0
+  },
+  {
+    "_id": "699854725508dee5e627aca7",
+    "name": "Dépenses",
+    "slug": "depenses",
+    "entity": "699854725508dee5e627ac90",
+    "cockpitId": null,
+    "icon": "solar:card-recive-bold-duotone",
+    "color": "#ef4444",
+    "order": 1,
+    "viewType": "table",
+    "spaces": [
+      "699854725508dee5e627ab9b"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T12:32:50.603Z",
+    "updatedAt": "2026-02-20T12:32:50.603Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998550d5508dee5e627ba0a",
+    "name": "Tâches",
+    "slug": "taches-4",
+    "entity": "6998550d5508dee5e627b9e1",
+    "cockpitId": null,
+    "icon": "solar:checklist-minimalistic-bold-duotone",
+    "color": "#10b981",
+    "order": 0,
+    "viewType": "kanban",
+    "spaces": [
+      "6998550d5508dee5e627b9d5"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T12:35:25.846Z",
+    "updatedAt": "2026-02-20T12:35:25.846Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998550d5508dee5e627ba25",
+    "name": "Notes",
+    "slug": "notes-2",
+    "entity": "6998550d5508dee5e627ba10",
+    "cockpitId": null,
+    "icon": "solar:notes-bold-duotone",
+    "color": "#fbbf24",
+    "order": 1,
+    "viewType": "list",
+    "spaces": [
+      "6998550d5508dee5e627b9d5"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T12:35:25.854Z",
+    "updatedAt": "2026-02-20T12:35:25.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998550d5508dee5e627ba4e",
+    "name": "Calendrier",
+    "slug": "calendrier",
+    "entity": "6998550d5508dee5e627ba29",
+    "cockpitId": null,
+    "icon": "solar:calendar-bold-duotone",
+    "color": "#f59e0b",
+    "order": 2,
+    "viewType": "calendar",
+    "spaces": [
+      "6998550d5508dee5e627b9d5"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T12:35:25.866Z",
+    "updatedAt": "2026-02-20T12:35:25.866Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998550d5508dee5e627ba74",
+    "name": "Documents",
+    "slug": "documents-2",
+    "entity": "6998550d5508dee5e627ba54",
+    "cockpitId": null,
+    "icon": "solar:document-text-bold-duotone",
+    "color": "#06b6d4",
+    "order": 3,
+    "viewType": "table",
+    "spaces": [
+      "6998550d5508dee5e627b9d5"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T12:35:25.881Z",
+    "updatedAt": "2026-02-20T12:35:25.881Z",
+    "__v": 0
+  },
+  {
+    "_id": "699855145508dee5e627bafc",
+    "name": "Tickets",
+    "slug": "tickets",
+    "entity": "699855145508dee5e627bad6",
+    "cockpitId": null,
+    "icon": "solar:checklist-minimalistic-bold-duotone",
+    "color": "#10b981",
+    "order": 0,
+    "viewType": "kanban",
+    "spaces": [
+      "699855145508dee5e627bad2"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T12:35:32.935Z",
+    "updatedAt": "2026-02-20T12:35:32.935Z",
+    "__v": 0
+  },
+  {
+    "_id": "699857ef027e29bba9654a84",
+    "name": "Patients",
+    "slug": "patients-3",
+    "entity": "699857ef027e29bba9654a6a",
+    "cockpitId": null,
+    "icon": "solar:user-heart-bold-duotone",
+    "color": "#2196f3",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "699857ef027e29bba9654a60"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T12:47:43.263Z",
+    "updatedAt": "2026-02-20T12:47:43.263Z",
+    "__v": 0
+  },
+  {
+    "_id": "699857ef027e29bba9654b59",
+    "name": "Consultations",
+    "slug": "consultations-3",
+    "entity": "699857ef027e29bba9654b44",
+    "cockpitId": null,
+    "icon": "solar:stethoscope-bold-duotone",
+    "color": "#14b8a6",
+    "order": 1,
+    "viewType": "table",
+    "spaces": [
+      "699857ef027e29bba9654a60"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T12:47:43.319Z",
+    "updatedAt": "2026-02-20T12:47:43.319Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998584b14b503aa91f4637b",
+    "name": "Factures",
+    "slug": "factures-2",
+    "entity": "6998584b14b503aa91f46359",
+    "cockpitId": null,
+    "icon": "solar:bill-list-bold-duotone",
+    "color": "#e2a03f",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "6998584b14b503aa91f46353"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T12:49:15.683Z",
+    "updatedAt": "2026-02-20T12:49:15.683Z",
+    "__v": 0
+  },
+  {
+    "_id": "6998584b14b503aa91f46465",
+    "name": "Dépenses",
+    "slug": "depenses-2",
+    "entity": "6998584b14b503aa91f4644d",
+    "cockpitId": null,
+    "icon": "solar:card-recive-bold-duotone",
+    "color": "#ef4444",
+    "order": 1,
+    "viewType": "table",
+    "spaces": [
+      "6998584b14b503aa91f46353"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T12:49:15.735Z",
+    "updatedAt": "2026-02-20T12:49:15.735Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985b2114b503aa91f46dae",
+    "name": "Contacts",
+    "slug": "contacts-5",
+    "entity": "69985b2114b503aa91f46d8b",
+    "cockpitId": null,
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "69985b2114b503aa91f46d7d"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T13:01:21.437Z",
+    "updatedAt": "2026-02-20T13:01:21.437Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985b2114b503aa91f46ece",
+    "name": "Opportunités",
+    "slug": "opportunites-5",
+    "entity": "69985b2114b503aa91f46eb5",
+    "cockpitId": null,
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 1,
+    "viewType": "kanban",
+    "spaces": [
+      "69985b2114b503aa91f46d7d"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T13:01:21.479Z",
+    "updatedAt": "2026-02-20T13:01:21.479Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bcd14b503aa91f4755a",
+    "name": "Contacts",
+    "slug": "contacts-6",
+    "entity": "69985bcd14b503aa91f47536",
+    "cockpitId": null,
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "69985bcd14b503aa91f47526"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T13:04:13.858Z",
+    "updatedAt": "2026-02-20T13:04:13.858Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bcd14b503aa91f4767d",
+    "name": "Opportunités",
+    "slug": "opportunites-6",
+    "entity": "69985bcd14b503aa91f47663",
+    "cockpitId": null,
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 1,
+    "viewType": "kanban",
+    "spaces": [
+      "69985bcd14b503aa91f47526"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T13:04:13.920Z",
+    "updatedAt": "2026-02-20T13:04:13.920Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bd314b503aa91f47786",
+    "name": "Patients",
+    "slug": "patients-4",
+    "entity": "69985bd314b503aa91f4776b",
+    "cockpitId": null,
+    "icon": "solar:user-heart-bold-duotone",
+    "color": "#2196f3",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "69985bd314b503aa91f4775f"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T13:04:19.774Z",
+    "updatedAt": "2026-02-20T13:04:19.774Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bd314b503aa91f4785b",
+    "name": "Consultations",
+    "slug": "consultations-4",
+    "entity": "69985bd314b503aa91f47845",
+    "cockpitId": null,
+    "icon": "solar:stethoscope-bold-duotone",
+    "color": "#14b8a6",
+    "order": 1,
+    "viewType": "table",
+    "spaces": [
+      "69985bd314b503aa91f4775f"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T13:04:19.811Z",
+    "updatedAt": "2026-02-20T13:04:19.811Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bf214b503aa91f48422",
+    "name": "Tâches",
+    "slug": "taches-5",
+    "entity": "69985bf214b503aa91f48403",
+    "cockpitId": null,
+    "icon": "solar:checklist-bold-duotone",
+    "color": "#e7515a",
+    "order": 0,
+    "viewType": "kanban",
+    "spaces": [
+      "69985bf214b503aa91f483f5"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T13:04:50.249Z",
+    "updatedAt": "2026-02-20T13:04:50.249Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bf214b503aa91f48509",
+    "name": "Jalons",
+    "slug": "jalons-4",
+    "entity": "69985bf214b503aa91f484f5",
+    "cockpitId": null,
+    "icon": "solar:flag-bold-duotone",
+    "color": "#8b5cf6",
+    "order": 1,
+    "viewType": "table",
+    "spaces": [
+      "69985bf214b503aa91f483f5"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T13:04:50.291Z",
+    "updatedAt": "2026-02-20T13:04:50.291Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bf914b503aa91f485b8",
+    "name": "Employés",
+    "slug": "employes",
+    "entity": "69985bf914b503aa91f4859a",
+    "cockpitId": null,
+    "icon": "solar:user-id-bold-duotone",
+    "color": "#805dca",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "69985bf914b503aa91f48596"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T13:04:57.355Z",
+    "updatedAt": "2026-02-20T13:04:57.355Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985bf914b503aa91f4869e",
+    "name": "Congés",
+    "slug": "conges",
+    "entity": "69985bf914b503aa91f48685",
+    "cockpitId": null,
+    "icon": "solar:calendar-search-bold-duotone",
+    "color": "#06b6d4",
+    "order": 1,
+    "viewType": "kanban",
+    "spaces": [
+      "69985bf914b503aa91f48596"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T13:04:57.388Z",
+    "updatedAt": "2026-02-20T13:04:57.388Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985f13fe8b5c53e465b66f",
+    "name": "Contacts",
+    "slug": "contacts-7",
+    "entity": "69985f13fe8b5c53e465b64a",
+    "cockpitId": null,
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "69985f13fe8b5c53e465b638"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T13:18:11.469Z",
+    "updatedAt": "2026-02-20T13:18:11.469Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985f13fe8b5c53e465b798",
+    "name": "Opportunités",
+    "slug": "opportunites-7",
+    "entity": "69985f13fe8b5c53e465b77d",
+    "cockpitId": null,
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 1,
+    "viewType": "kanban",
+    "spaces": [
+      "69985f13fe8b5c53e465b638"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T13:18:11.548Z",
+    "updatedAt": "2026-02-20T13:18:11.548Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985fc5fe8b5c53e465bb1f",
+    "name": "Contacts",
+    "slug": "contacts-8",
+    "entity": "69985fc5fe8b5c53e465baf9",
+    "cockpitId": null,
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "color": "#00ab55",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "69985fc5fe8b5c53e465bae5"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T13:21:09.538Z",
+    "updatedAt": "2026-02-20T13:21:09.538Z",
+    "__v": 0
+  },
+  {
+    "_id": "69985fc5fe8b5c53e465bc49",
+    "name": "Opportunités",
+    "slug": "opportunites-8",
+    "entity": "69985fc5fe8b5c53e465bc2d",
+    "cockpitId": null,
+    "icon": "solar:money-bag-bold-duotone",
+    "color": "#e2a03f",
+    "order": 1,
+    "viewType": "kanban",
+    "spaces": [
+      "69985fc5fe8b5c53e465bae5"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-20T13:21:09.607Z",
+    "updatedAt": "2026-02-20T13:21:09.607Z",
+    "__v": 0
+  },
+  {
+    "_id": "699900bc89cd63ea3da5484a",
+    "name": "Employés",
+    "slug": "employes-2",
+    "entity": "699900bc89cd63ea3da5482b",
+    "cockpitId": null,
+    "icon": "solar:user-id-bold-duotone",
+    "color": "#805dca",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "699900bc89cd63ea3da54825"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-21T00:47:56.838Z",
+    "updatedAt": "2026-02-21T00:47:56.838Z",
+    "__v": 0
+  },
+  {
+    "_id": "699900bc89cd63ea3da54933",
+    "name": "Congés",
+    "slug": "conges-2",
+    "entity": "699900bc89cd63ea3da54919",
+    "cockpitId": null,
+    "icon": "solar:calendar-search-bold-duotone",
+    "color": "#06b6d4",
+    "order": 1,
+    "viewType": "kanban",
+    "spaces": [
+      "699900bc89cd63ea3da54825"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-21T00:47:56.889Z",
+    "updatedAt": "2026-02-21T00:47:56.889Z",
+    "__v": 0
+  },
+  {
+    "_id": "699900e789cd63ea3da5510c",
+    "name": "Patients",
+    "slug": "patients-5",
+    "entity": "699900e789cd63ea3da550f0",
+    "cockpitId": null,
+    "icon": "solar:user-heart-bold-duotone",
+    "color": "#2196f3",
+    "order": 0,
+    "viewType": "table",
+    "spaces": [
+      "699900e789cd63ea3da550e2"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-21T00:48:39.488Z",
+    "updatedAt": "2026-02-21T00:48:39.488Z",
+    "__v": 0
+  },
+  {
+    "_id": "699900e789cd63ea3da5522a",
+    "name": "Consultations",
+    "slug": "consultations-5",
+    "entity": "699900e789cd63ea3da55213",
+    "cockpitId": null,
+    "icon": "solar:stethoscope-bold-duotone",
+    "color": "#14b8a6",
+    "order": 1,
+    "viewType": "table",
+    "spaces": [
+      "699900e789cd63ea3da550e2"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-21T00:48:39.543Z",
+    "updatedAt": "2026-02-21T00:48:39.543Z",
+    "__v": 0
+  },
+  {
+    "_id": "699900e789cd63ea3da5530d",
+    "name": "Traitements",
+    "slug": "traitements",
+    "entity": "699900e789cd63ea3da552ec",
+    "cockpitId": null,
+    "icon": "solar:pills-3-bold-duotone",
+    "color": "#8b5cf6",
+    "order": 2,
+    "viewType": "kanban",
+    "spaces": [
+      "699900e789cd63ea3da550e2"
+    ],
+    "folders": [],
+    "settings": {
+      "sortBy": {
+        "direction": "asc"
+      },
+      "hiddenFields": []
+    },
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "filters": [],
+    "createdAt": "2026-02-21T00:48:39.593Z",
+    "updatedAt": "2026-02-21T00:48:39.593Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b8c",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "slug": "view-patients-ed1b8b-0",
+    "__v": 0,
+    "color": "#3b82f6",
+    "createdAt": "2026-02-27T04:59:56.885Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69976d817c876dd8d0372def",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:user-heart-bold-duotone",
+    "name": "Patients",
+    "order": 0,
+    "spaces": [
+      "69a124ccde03671e05ed1b8b"
+    ],
+    "updatedAt": "2026-03-02T10:19:48.186Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b8d",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "slug": "view-rendez-vous-ed1b8b-1",
+    "__v": 0,
+    "color": "#8b5cf6",
+    "createdAt": "2026-02-27T04:59:56.907Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69a124ccde03671e05ed1b80",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:calendar-mark-bold-duotone",
+    "name": "Rendez-vous",
+    "order": 1,
+    "spaces": [
+      "69a124ccde03671e05ed1b8b"
+    ],
+    "updatedAt": "2026-03-02T10:19:48.187Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b8e",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "slug": "view-consultations-ed1b8b-2",
+    "__v": 0,
+    "color": "#00ab55",
+    "createdAt": "2026-02-27T04:59:56.909Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "6997902086a58861ddebefe7",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:stethoscope-bold-duotone",
+    "name": "Consultations",
+    "order": 2,
+    "spaces": [
+      "69a124ccde03671e05ed1b8b"
+    ],
+    "updatedAt": "2026-03-02T10:19:48.187Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b8f",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "slug": "view-prescriptions-ed1b8b-3",
+    "__v": 0,
+    "color": "#e2a03f",
+    "createdAt": "2026-02-27T04:59:56.910Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69a124ccde03671e05ed1b81",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:document-medicine-bold-duotone",
+    "name": "Ordonnances",
+    "order": 3,
+    "spaces": [
+      "69a124ccde03671e05ed1b8b"
+    ],
+    "updatedAt": "2026-03-02T10:19:48.188Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b90",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "slug": "view-resultats-labo-ed1b8b-4",
+    "__v": 0,
+    "color": "#f97316",
+    "createdAt": "2026-02-27T04:59:56.911Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69a124ccde03671e05ed1b85",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:test-tube-bold-duotone",
+    "name": "Examens",
+    "order": 4,
+    "spaces": [
+      "69a124ccde03671e05ed1b8b"
+    ],
+    "updatedAt": "2026-03-02T10:19:48.189Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b92",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "slug": "view-documents-medicaux-ed1b91-0",
+    "__v": 0,
+    "color": "#6366f1",
+    "createdAt": "2026-02-27T04:59:56.913Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69a124ccde03671e05ed1b86",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:folder-open-bold-duotone",
+    "name": "Documents patients",
+    "order": 0,
+    "spaces": [
+      "69a124ccde03671e05ed1b91"
+    ],
+    "updatedAt": "2026-03-02T10:19:48.190Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b93",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "slug": "view-plans-traitement-ed1b91-1",
+    "__v": 0,
+    "color": "#0ea5e9",
+    "createdAt": "2026-02-27T04:59:56.914Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69a124ccde03671e05ed1b87",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:clipboard-list-bold-duotone",
+    "name": "Plans de traitement",
+    "order": 1,
+    "spaces": [
+      "69a124ccde03671e05ed1b91"
+    ],
+    "updatedAt": "2026-03-02T10:19:48.191Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b95",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "slug": "view-factures-ed1b94-0",
+    "__v": 0,
+    "color": "#e2a03f",
+    "createdAt": "2026-02-27T04:59:56.916Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "699854725508dee5e627ab9f",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:bill-list-bold-duotone",
+    "name": "Factures",
+    "order": 0,
+    "spaces": [
+      "69a124ccde03671e05ed1b94"
+    ],
+    "updatedAt": "2026-03-02T10:19:48.192Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b96",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "slug": "view-paiements-ed1b94-1",
+    "__v": 0,
+    "color": "#22c55e",
+    "createdAt": "2026-02-27T04:59:56.917Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69a124ccde03671e05ed1b83",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:wallet-bold-duotone",
+    "name": "Paiements",
+    "order": 1,
+    "spaces": [
+      "69a124ccde03671e05ed1b94"
+    ],
+    "updatedAt": "2026-03-02T10:19:48.192Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b97",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "slug": "view-assurances-ed1b94-2",
+    "__v": 0,
+    "color": "#3b82f6",
+    "createdAt": "2026-02-27T04:59:56.918Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69a124ccde03671e05ed1b84",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:shield-bold-duotone",
+    "name": "Assurances",
+    "order": 2,
+    "spaces": [
+      "69a124ccde03671e05ed1b94"
+    ],
+    "updatedAt": "2026-03-02T10:19:48.193Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b99",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "slug": "view-personnel-ed1b98-0",
+    "__v": 0,
+    "color": "#4361ee",
+    "createdAt": "2026-02-27T04:59:56.920Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69a124ccde03671e05ed1b88",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:users-group-rounded-bold-duotone",
+    "name": "Personnel",
+    "order": 0,
+    "spaces": [
+      "69a124ccde03671e05ed1b98"
+    ],
+    "updatedAt": "2026-03-02T10:19:48.194Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b9b",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "slug": "view-medicaments-ed1b9a-0",
+    "__v": 0,
+    "color": "#ef4444",
+    "createdAt": "2026-02-27T04:59:56.922Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69a124ccde03671e05ed1b82",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:pills-3-bold-duotone",
+    "name": "Médicaments",
+    "order": 0,
+    "spaces": [
+      "69a124ccde03671e05ed1b9a"
+    ],
+    "updatedAt": "2026-03-02T10:19:48.195Z",
+    "viewType": "list"
+  },
+  {
+    "_id": "69a124ccde03671e05ed1b9c",
+    "meta": {
+      "createdByPreset": "cabinet-medical",
+      "isDemo": true
+    },
+    "slug": "view-stock-ed1b9a-1",
+    "__v": 0,
+    "color": "#94a3b8",
+    "createdAt": "2026-02-27T04:59:56.923Z",
+    "createdBy": "643c0b36fbde1ceb1bdc97bb",
+    "entity": "69a124ccde03671e05ed1b89",
+    "filters": [],
+    "folders": [],
+    "icon": "solar:box-bold-duotone",
+    "name": "Consommables",
+    "order": 1,
+    "spaces": [
+      "69a124ccde03671e05ed1b9a"
+    ],
+    "updatedAt": "2026-03-02T10:19:48.196Z",
+    "viewType": "list"
+  }
+]

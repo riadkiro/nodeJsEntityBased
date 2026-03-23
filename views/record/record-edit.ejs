@@ -24,12 +24,13 @@
             const allClassifications = (entity.classifications || []).map(c => (typeof c.toObject === 'function') ? c.toObject() : c);
             
             let _statusCls = entity.statusClassification || {};
-            // If it's unpopulated (just an ID string), find it in the classifications list
-            if (typeof _statusCls === 'string' || (typeof _statusCls === 'object' && _statusCls._bsontype === 'ObjectID')) {
-                _statusCls = allClassifications.find(c => c._id.toString() === _statusCls.toString()) || {};
-            } else if (typeof _statusCls.toObject === 'function') {
-                _statusCls = _statusCls.toObject();
+            // Handle unpopulated ID strings or ObjectID objects
+            const _statusClsId = (_statusCls?._id || _statusCls || '').toString();
+            if (_statusClsId && _statusClsId.length === 24) {
+                const found = allClassifications.find(c => c._id.toString() === _statusClsId);
+                if (found) _statusCls = found;
             }
+            if (typeof _statusCls.toObject === 'function') _statusCls = _statusCls.toObject();
 
             let _statusLabel = '', _statusColor = '#9ca3af', _statusSelectedIds = [];
             const _clsTags = [];
@@ -37,30 +38,30 @@
 
             if (record.classificationValues && record.classificationValues.length > 0) {
                 record.classificationValues.forEach(cv => {
+                    const cvClsId = (cv.classificationId?._id || cv.classificationId || '').toString();
+
                     // Status Classification
-                    if (_statusCls && _statusCls._id && cv.classificationId &&
-                        cv.classificationId.toString() === _statusCls._id.toString()) {
+                    if (_statusCls && _statusCls._id && cvClsId === _statusCls._id.toString()) {
                         const opt = (_statusCls.options || []).find(o => o._id?.toString() === cv.optionId?.toString());
                         if (opt) { 
                             _statusLabel = opt.label; 
                             _statusColor = opt.color || '#9ca3af';
-                            _statusSelectedIds.push(cv.optionId.toString());
+                            if (cv.optionId) _statusSelectedIds.push(cv.optionId.toString());
                         }
                     }
                     
                     // Other Classifications
                     allClassifications.forEach(cls => {
-                        if (cls._id && cv.classificationId &&
-                            cv.classificationId.toString() === cls._id.toString() &&
-                            (!_statusCls || !_statusCls._id || cls._id.toString() !== _statusCls._id.toString())) {
-                            if (_shownCls.length === 0 || _shownCls.includes(cls._id.toString())) {
+                        const clsId = (cls._id || '').toString();
+                        if (clsId && cvClsId === clsId &&
+                            (!_statusCls || !_statusCls._id || clsId !== _statusCls._id.toString())) {
+                            if (_shownCls.length === 0 || _shownCls.includes(clsId)) {
                                 const opt = (cls.options || []).find(o => o._id?.toString() === cv.optionId?.toString());
                                 if (opt) {
-                                    // Check if this classification is already in _clsTags to handle multi-select display
-                                    let existing = _clsTags.find(t => t.clsId === cls._id.toString());
+                                    let existing = _clsTags.find(t => t.clsId === clsId);
                                     if (!existing) {
                                         _clsTags.push({ 
-                                            clsId: cls._id.toString(),
+                                            clsId: clsId,
                                             clsName: cls.name,
                                             allowMultiple: !!cls.allowMultiple,
                                             options: (cls.options || []).map(o => ({ _id: o._id.toString(), label: o.label, color: o.color })),
@@ -82,12 +83,13 @@
             // Also add empty classifications that are explicitly shown in header
             if (_shownCls.length > 0) {
                 _shownCls.forEach(clsId => {
-                    if (_statusCls && _statusCls._id && _statusCls._id.toString() === clsId) return;
-                    if (_clsTags.find(t => t.clsId === clsId)) return;
-                    const cls = allClassifications.find(c => c._id.toString() === clsId);
+                    const sId = clsId.toString();
+                    if (_statusCls && _statusCls._id && _statusCls._id.toString() === sId) return;
+                    if (_clsTags.find(t => t.clsId === sId)) return;
+                    const cls = allClassifications.find(c => c._id.toString() === sId);
                     if (cls) {
                         _clsTags.push({
-                            clsId: cls._id.toString(),
+                            clsId: sId,
                             clsName: cls.name,
                             allowMultiple: !!cls.allowMultiple,
                             options: (cls.options || []).map(o => ({ _id: o._id.toString(), label: o.label, color: o.color })),

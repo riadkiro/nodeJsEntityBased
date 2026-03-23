@@ -1,7 +1,7 @@
 <!-- Field Manager Modal -->
 <div x-show="openModal" x-cloak
-     class="fixed inset-0 z-[1000] flex items-center justify-center"
-     style="background: rgba(0,0,0,0.35); backdrop-filter: blur(4px);"
+     class="fixed inset-0 flex items-center justify-center bg-black/40"
+     style="z-index: 9999 !important; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);"
      @click.self="openModal = false">
 
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-gray-100"

@@ -628,7 +628,8 @@ window.__syncClsInputs = function(clsId, ids) {
             </div>
             <!-- Delete confirmation overlay -->
             <div x-show="showDeleteConfirm" x-transition
-                 class="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100] flex items-center justify-center" @click.self="showDeleteConfirm = false">
+                 style="z-index: 9999 !important; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);"
+                 class="fixed inset-0 bg-black/20 flex items-center justify-center" @click.self="showDeleteConfirm = false">
                 <div class="bg-white dark:bg-[#1b2e4b] rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 p-6 w-[320px]">
                     <div class="flex items-center gap-3 mb-4">
                         <div class="w-10 h-10 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
@@ -4868,8 +4869,8 @@ window.__syncClsInputs = function(clsId, ids) {
 
                                                                     <!-- Modal Overlay -->
                                                                     <div x-ref="modalOverlay"
-                                                                         style="display: none; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);"
-                                                                         class="fixed inset-0 z-[999] flex items-center justify-center bg-black/30"
+                                                                         style="display: none; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 9999 !important;"
+                                                                         class="fixed inset-0 flex items-center justify-center bg-black/30"
                                                                          @click.self="closeModal()">
                                                                             <div class="bg-white dark:bg-[#0e1726] rounded-xl shadow-2xl w-full max-w-3xl mx-4 flex flex-col"
                                                                                  style="max-height: 80vh;" @click.stop>
@@ -5488,7 +5489,9 @@ window.__syncClsInputs = function(clsId, ids) {
 
     <!-- Modal for adding fields -->
     <template x-if="designMode">
-        <%- include('../entity/components/entity-modal') %>
+        <template x-teleport="body">
+            <%- include('../entity/components/entity-modal') %>
+        </template>
     </template>
 </div>
 

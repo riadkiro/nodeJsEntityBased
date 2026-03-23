@@ -554,7 +554,7 @@ module.exports = {
 
             // 🛠️ Robust Body Parsing for Multipart/Form-Data (Multer doesn't nest objects)
             const classificationsObj2 = {};
-            const data = { standard: {}, custom: {}, classifications: classificationsObj2, classification: classificationsObj2 };
+            const data = { standard: {}, custom: {}, relation: {}, classifications: classificationsObj2, classification: classificationsObj2 };
 
             Object.keys(req.body).forEach(key => {
                 const match = key.match(/^(\w+)\[([^\]]+)\]/);
@@ -568,7 +568,7 @@ module.exports = {
                         }
                         data[group][field] = val;
                     }
-                } else if (key === 'standard' || key === 'custom' || key === 'classifications' || key === 'classification') {
+                } else if (key === 'standard' || key === 'custom' || key === 'relation' || key === 'classifications' || key === 'classification') {
                     if (typeof req.body[key] === 'object') {
                         const targetKey = key === 'classification' ? 'classifications' : key;
                         data[targetKey] = { ...data[targetKey], ...req.body[key] };
@@ -576,7 +576,7 @@ module.exports = {
                 }
             });
 
-            const { standard, custom, classifications } = data;
+            const { standard, custom, relation, classifications } = data;
 
             // Fix boolean for published - use the already parsed 'standard.published'
             standard.published = (standard.published === 'on' || standard.published === true);
@@ -603,8 +603,25 @@ module.exports = {
                         }
                         customFieldsArray.push({ field_id: fieldId, value: parsedValue });
                     } else if (fieldId && value) {
-                        // Relation field (UUID key)
-                        relationsArray.push({ relationKey: fieldId, value });
+                        // Relation field (UUID key) from custom[] inputs
+                        if (value !== null && value !== undefined && value !== "") {
+                            relationsArray.push({ relationKey: fieldId, value });
+                        }
+                    }
+                }
+            }
+            // Also process relation[] inputs (from inline entity relation fields)
+            if (relation) {
+                for (const [fieldId, value] of Object.entries(relation)) {
+                    if (fieldId && value && value !== "" && (!Array.isArray(value) || value.length > 0)) {
+                        // Prefer value from relation[] over custom[] - so replace if already exists
+                        const idx = relationsArray.findIndex(r => r.relationKey === fieldId);
+                        const finalValue = Array.isArray(value) ? [...new Set(value.filter(v => v !== ""))] : value;
+                        if (idx !== -1) {
+                            relationsArray[idx].value = finalValue;
+                        } else {
+                            relationsArray.push({ relationKey: fieldId, value: finalValue });
+                        }
                     }
                 }
             }
@@ -1448,7 +1465,7 @@ module.exports = {
 
             // 🛠️ Robust Body Parsing
             const classificationsObj = {};
-            const data = { standard: {}, custom: {}, classifications: classificationsObj, classification: classificationsObj };
+            const data = { standard: {}, custom: {}, relation: {}, classifications: classificationsObj, classification: classificationsObj };
 
             Object.keys(req.body).forEach(key => {
                 const match = key.match(/^(\w+)\[([^\]]+)\]/);
@@ -1461,7 +1478,7 @@ module.exports = {
                         }
                         data[group][field] = val;
                     }
-                } else if (key === 'standard' || key === 'custom' || key === 'classifications' || key === 'classification') {
+                } else if (key === 'standard' || key === 'custom' || key === 'relation' || key === 'classifications' || key === 'classification') {
                     if (typeof req.body[key] === 'object') {
                         const targetKey = key === 'classification' ? 'classifications' : key;
                         data[targetKey] = { ...data[targetKey], ...req.body[key] };
@@ -1469,7 +1486,7 @@ module.exports = {
                 }
             });
 
-            const { standard, custom, classifications } = data;
+            const { standard, custom, relation, classifications } = data;
 
             // Fix boolean for published - use the already parsed 'standard.published'
             standard.published = (standard.published === 'on' || standard.published === true);
@@ -1491,8 +1508,25 @@ module.exports = {
                         }
                         customFieldsArray.push({ field_id: fieldId, value: parsedValue });
                     } else if (fieldId && value) {
-                        // Relation field (UUID key)
-                        relationsArray.push({ relationKey: fieldId, value });
+                        // Relation field (UUID key) from custom[] inputs
+                        if (value !== null && value !== undefined && value !== "") {
+                            relationsArray.push({ relationKey: fieldId, value });
+                        }
+                    }
+                }
+            }
+            // Also process relation[] inputs (from inline entity relation fields)
+            if (relation) {
+                for (const [fieldId, value] of Object.entries(relation)) {
+                    if (fieldId && value && value !== "" && (!Array.isArray(value) || value.length > 0)) {
+                        // Prefer value from relation[] over custom[] - so replace if already exists
+                        const idx = relationsArray.findIndex(r => r.relationKey === fieldId);
+                        const finalValue = Array.isArray(value) ? [...new Set(value.filter(v => v !== ""))] : value;
+                        if (idx !== -1) {
+                            relationsArray[idx].value = finalValue;
+                        } else {
+                            relationsArray.push({ relationKey: fieldId, value: finalValue });
+                        }
                     }
                 }
             }

@@ -5114,10 +5114,11 @@
                                             fieldId: relField.field._id, 
                                             refEntity: relField.field.type_config.refEntity, 
                                             multiple: relField.field.type_config.multiple, 
+                                            isEntityRelation: true,
                                             initialValue: valuesMap[relField.field._id] || (relField.field.type_config.multiple ? [] : '') 
                                         })" class="tp-wrapper" @click.away="showResults = false">
                                             
-                                            <!-- Trigger: inline tag pills (like Classification) -->
+                                            <!-- Trigger: inline tag pills -->
                                             <div class="tp-trigger"
                                                  :class="showResults ? 'tp-trigger--active' : ''"
                                                  @click="$refs.searchInput.focus(); openDropdown()">
@@ -5189,8 +5190,8 @@
                                                 <div class="tp-create-option" 
                                                      @click="showResults = false; 
                                                         if (window.relationTabsApp) { 
-                                                            const tab = window.relationTabsApp.allTabs.find(t => t.key === fieldId); 
-                                                            if (tab) window.relationTabsApp.openQuickCreate(tab); 
+                                                             const tab = window.relationTabsApp.allTabs.find(t => t.key === fieldId); 
+                                                             if (tab) window.relationTabsApp.openQuickCreate(tab); 
                                                         }">
                                                     <iconify-icon icon="tabler:plus" width="14" style="color: #6b7280;"></iconify-icon>
                                                     <span class="tp-create-label">Créer</span>
@@ -5201,13 +5202,13 @@
                                             <!-- Hidden inputs for persistence -->
                                             <template x-if="multiple">
                                                 <div>
-                                                  <template x-for="item in selectedItems" :key="item.id">
-                                                      <input type="hidden" :name="'custom[' + fieldId + '][]'" :value="item.id">
-                                                  </template>
+                                                <template x-for="item in selectedItems" :key="item.id">
+                                                    <input type="hidden" :name="isEntityRelation ? ('relation[' + fieldId + '][]') : ('custom[' + fieldId + '][]')" :value="item.id">
+                                                </template>
                                                 </div>
                                             </template>
                                             <template x-if="!multiple">
-                                                <input type="hidden" :name="'custom[' + fieldId + ']'" :value="selectedItems[0]?.id || ''">
+                                                <input type="hidden" :name="isEntityRelation ? ('relation[' + fieldId + ']') : ('custom[' + fieldId + ']')" :value="selectedItems[0]?.id || ''">
                                             </template>
                                         </div>
                                     </div>
@@ -6979,11 +6980,11 @@
                 },
 
                 getRelationFields() {
-                    // Only return entity relations NOT shown in form (showInForm:false)
+                    // Return ALL entity relations for the relations panel
                     return this.layout
                         .filter(item => {
                             const field = this.fieldsById[item.fieldId];
-                            return field && field.type === 'relation' && field._isEntityRelation && !field.showInForm;
+                            return field && field.type === 'relation' && field._isEntityRelation;
                         })
                         .map(item => ({
                             item: item,
@@ -7649,6 +7650,7 @@
             multiple: config.multiple,
             persistKey: config.persistKey || config.fieldId,
             isEntityRelation: config.isEntityRelation || false,
+            skipHiddenInputs: config.skipHiddenInputs || false,
             searchQuery: '',
             results: [],
             selectedItems: [],
@@ -7658,6 +7660,13 @@
             loading: false,
 
             async init() {
+                // Listen for sync events between multiple instances of the same relation field (e.g., inline vs side panel)
+                window.addEventListener('relation-field-sync', (e) => {
+                    if (e.detail.fieldId === this.fieldId && e.detail.source !== this) {
+                        this.selectedItems = JSON.parse(JSON.stringify(e.detail.items));
+                    }
+                });
+
                 // Read initialValue from data-initval attribute to avoid double-quote conflicts in x-data
                 const rawInitVal = this.$root.dataset.initval;
                 const parsedInitVal = rawInitVal ? JSON.parse(rawInitVal) : (config.initialValue || null);
@@ -7733,6 +7742,12 @@
                 this.fetchSuggestions(true);
             },
 
+            sync() {
+                window.dispatchEvent(new CustomEvent('relation-field-sync', {
+                    detail: { fieldId: this.fieldId, items: this.selectedItems, source: this }
+                }));
+            },
+
             selectItem(result) {
                 if (this.multiple) {
                     if (!this.selectedItems.find(i => i.id === result.id)) {
@@ -7745,10 +7760,12 @@
                 this.searchQuery = '';
                 this.results = [];
                 this.showResults = false;
+                this.sync();
             },
 
             removeItem(id) {
                 this.selectedItems = this.selectedItems.filter(i => i.id !== id);
+                this.sync();
             },
 
             async quickCreate() {

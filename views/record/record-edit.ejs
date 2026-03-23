@@ -338,8 +338,8 @@ window.__syncClsInputs = function(clsId, ids) {
                             <button type="button" @click="toggleDropdown()"
                                     class="inline-flex items-center gap-1 text-xs font-semibold hover:opacity-80 transition-opacity cursor-pointer p-0.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
                                 <span class="w-2 h-2 rounded-full" 
-                                      :style="'background:' + (selectedOptions[0]?.color || '#94a3b8')"></span>
-                                <span :style="'color:' + (selectedOptions[0]?.color || '#94a3b8')"
+                                      :style="'background:' + (selectedOptions[0]?.color || '#9ca3af')"></span>
+                                <span :style="'color:' + (selectedOptions[0]?.color || '#9ca3af')"
                                       x-text="selectedOptions[0]?.label || 'Définir statut...'"></span>
                                 <iconify-icon icon="solar:alt-arrow-down-linear" width="10" class="text-gray-300"></iconify-icon>
                             </button>
@@ -365,9 +365,10 @@ window.__syncClsInputs = function(clsId, ids) {
                             <button type="button" @click="toggleDropdown()"
                                     class="inline-flex items-center gap-1 text-xs font-semibold hover:opacity-80 transition-opacity cursor-pointer p-0.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
                                 <span class="w-1.5 h-1.5 rounded-full" 
-                                      :style="'background:' + (selectedOptions[0]?.color || '<%= tag.color %>')"></span>
-                                <span :style="'color:' + (selectedOptions[0]?.color || '<%= tag.color %>')"
+                                      :style="'background:' + (selectedOptions[0]?.color || '#9ca3af')"></span>
+                                <span :style="'color:' + (selectedOptions.length > 0 ? selectedOptions[0]?.color : '#9ca3af')"
                                       x-text="selectedOptions.length > 0 ? selectedOptions.map(o => o.label).join(', ') : 'Sélectionner...'"></span>
+                                <iconify-icon icon="solar:alt-arrow-down-linear" width="10" class="text-gray-300"></iconify-icon>
                             </button>
 
                             <template x-for="id in selectedIds" :key="id">
@@ -8321,6 +8322,8 @@ window.__syncClsInputs = function(clsId, ids) {
         }
     });
 </script>
+
+
 
 
 

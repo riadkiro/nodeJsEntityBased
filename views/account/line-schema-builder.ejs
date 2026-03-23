@@ -21,12 +21,12 @@
         </div>
     </div>
 
-    <!-- ═══ Mode Bar: inputMode + dataMode ═══ -->
+    <!-- ═══ Mode Bar: inputMode + dataMode + Validation ═══ -->
     <div class="lsb-mode-bar">
         <div class="lsb-mode-group">
             <span class="lsb-mode-label">Saisie</span>
             <div class="lsb-mode-pills">
-                <template x-for="m in [{v:'catalog',l:'Catalogue',i:'solar:document-text-bold-duotone'},{v:'form',l:'Formulaire',i:'solar:clipboard-list-bold-duotone'},{v:'table',l:'Tableur',i:'solar:notebook-bold-duotone'}]" :key="m.v">
+                <template x-for="m in [{v:'form',l:'Formulaire',i:'solar:clipboard-list-bold-duotone'},{v:'table',l:'Tableur',i:'solar:notebook-bold-duotone'}]" :key="m.v">
                     <button class="lsb-mode-pill" :class="{'active': schema.inputMode === m.v}" @click="schema.inputMode = m.v">
                         <iconify-icon :icon="m.i" width="13"></iconify-icon>
                         <span x-text="m.l"></span>
@@ -45,11 +45,40 @@
                 </button>
             </div>
         </div>
+        <div style="width:1px; height:24px; background:#e5e7eb; margin:0 4px;"></div>
+        <div class="lsb-mode-group">
+            <span class="lsb-mode-label">Multiples</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; font-weight:600; color:#374151; user-select:none;">
+                    <input type="checkbox" x-model="schema.snapshotConfig.enabled" class="form-checkbox" style="width:16px; height:16px;" />
+                    <iconify-icon icon="solar:check-circle-bold-duotone" width="14" :style="schema.snapshotConfig.enabled ? 'color:#00ab55' : 'color:#d1d5db'"></iconify-icon>
+                    <span x-text="schema.snapshotConfig.enabled ? 'Actif' : 'Inactif'" :style="schema.snapshotConfig.enabled ? 'color:#00ab55' : 'color:#9ca3af'"></span>
+                </label>
+                <template x-if="schema.snapshotConfig.enabled">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <div style="width:1px; height:18px; background:#e5e7eb;"></div>
+                        <select x-model="schema.snapshotConfig.targetType" style="padding:3px 8px; border:1px solid #e5e7eb; border-radius:6px; font-size:11px; font-weight:500; color:#374151; outline:none; cursor:pointer; background:white;">
+                            <option value="self">Record en cours</option>
+                            <option value="relation">Record lié</option>
+                        </select>
+                        <template x-if="schema.snapshotConfig.targetType === 'relation'">
+                            <select x-model="schema.snapshotConfig.targetEntityId" style="padding:3px 8px; border:1px solid #e5e7eb; border-radius:6px; font-size:11px; font-weight:500; color:#374151; outline:none; cursor:pointer; background:white;">
+                                <option value="">Entité…</option>
+                                <% (entities || []).forEach(function(ent) { %>
+                                    <option value="<%= ent._id %>"><%= ent.name %></option>
+                                <% }) %>
+                            </select>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </div>
     </div>
 
     <div class="grid gap-5 xl:grid-cols-5">
-        <!-- ═══ LEFT: Columns (3/5) ═══ -->
+        <!-- ═══ LEFT: Columns + Paramètres (3/5) ═══ -->
         <div class="xl:col-span-3 space-y-5">
+            <!-- Columns panel -->
             <div class="panel !p-0 overflow-hidden">
                 <div class="flex items-center justify-between px-4 py-3" style="border-bottom: 1px solid #e5e7eb;">
                     <h5 class="text-sm font-bold dark:text-white-light flex items-center gap-2">
@@ -125,16 +154,102 @@
                 </div>
             </div>
 
+            <!-- ═══ Paramètres panel (below columns) ═══ -->
+            <div class="panel !p-0 overflow-hidden">
+                <div class="flex items-center justify-between px-4 py-3 cursor-pointer" style="border-bottom: 1px solid #e5e7eb;" @click="parametersOpen = !parametersOpen">
+                    <h5 class="text-sm font-bold dark:text-white-light flex items-center gap-2">
+                        <iconify-icon icon="solar:settings-bold-duotone" width="16" class="text-primary"></iconify-icon>
+                        Paramètres
+                    </h5>
+                    <iconify-icon icon="solar:alt-arrow-down-bold" width="14" :class="parametersOpen ? '' : '-rotate-90'" class="transition-transform text-gray-400"></iconify-icon>
+                </div>
+                <div x-show="parametersOpen" x-collapse>
+                    <div class="px-4 py-4 space-y-5">
+
+                        <!-- Description -->
+                        <div>
+                            <label class="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-gray-400">Description</label>
+                            <input type="text" x-model="schema.description" class="form-input form-input-sm" placeholder="Description optionnelle" />
+                        </div>
+
+                        <!-- Afficher sur (entités) -->
+                        <div>
+                            <label class="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-gray-400">Afficher sur (entités)</label>
+                            <div class="flex flex-wrap gap-1 mb-1">
+                                <template x-for="entId in schema.appliesTo.entityIds" :key="entId">
+                                    <span class="lsb-entity-chip">
+                                        <span x-text="getEntityName(entId)"></span>
+                                        <button @click="toggleEntityId(entId)">×</button>
+                                    </span>
+                                </template>
+                                <span x-show="(schema.appliesTo.entityIds || []).length === 0" style="font-size:10px; color:#9ca3af;">Global (toutes les entités)</span>
+                            </div>
+                            <div class="relative" x-data="{ open: false }">
+                                <input type="text" x-model="entitySearch" @focus="open = true" @click="open = true" class="form-input form-input-sm" placeholder="Rechercher…" />
+                                <div x-show="open" x-cloak @click.outside="open = false" class="absolute z-50 mt-1 w-full bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                                    <template x-for="ent in filteredEntities" :key="ent._id">
+                                        <button type="button" @click="toggleEntityId(ent._id); entitySearch = ''" class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-white/5" :class="(schema.appliesTo.entityIds || []).includes(ent._id) ? 'text-primary font-semibold' : 'text-gray-600 dark:text-gray-300'">
+                                            <iconify-icon :icon="ent.icon || 'solar:box-bold-duotone'" width="12" :style="ent.color ? 'color:'+ent.color : ''"></iconify-icon>
+                                            <span x-text="ent.name"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Type document -->
+                        <div>
+                            <label class="mb-1.5 block text-xs font-semibold text-gray-500 dark:text-gray-400">Type document</label>
+                            <select x-model="schema.appliesTo.documentType" class="form-select form-select-sm">
+                                <option value="">— Aucun —</option>
+                                <option value="invoice">Facture</option><option value="quote">Devis</option>
+                                <option value="prescription">Ordonnance</option><option value="purchase_order">Bon de commande</option>
+                            </select>
+                        </div>
+
+
+
+                        <!-- Timeseries config (shown when dataMode=timeseries) -->
+                        <template x-if="schema.dataMode === 'timeseries'">
+                            <div>
+                                <div style="border-top: 1px dashed #e5e7eb; margin: 0 -16px 16px; padding: 0;"></div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <iconify-icon icon="solar:chart-bold-duotone" width="14" class="text-primary"></iconify-icon>
+                                    <span class="text-xs font-bold text-gray-700 dark:text-gray-200">Config Chronologique</span>
+                                </div>
+                                <div class="space-y-2">
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">Colonne date</label>
+                                        <select x-model="schema.timeseriesConfig.dateColumn" class="form-select form-select-sm">
+                                            <template x-for="col in schema.columns.filter(c => c.type === 'date')" :key="col.key">
+                                                <option :value="col.key" x-text="col.label || col.key"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">Tri</label>
+                                        <select x-model="schema.timeseriesConfig.sortDirection" class="form-select form-select-sm">
+                                            <option value="desc">Plus récent en premier</option><option value="asc">Plus ancien en premier</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                    </div>
+                </div>
+            </div>
+
         </div>
 
-        <!-- ═══ RIGHT: Settings + Preview (2/5) ═══ -->
+        <!-- ═══ RIGHT: Preview (2/5) ═══ -->
         <div class="xl:col-span-2 space-y-5">
 
             <!-- Live Preview -->
             <div class="lsb-preview-panel">
                 <div class="lsb-preview-header">
                     <span><iconify-icon icon="solar:eye-bold-duotone" width="13" style="margin-right:4px;"></iconify-icon> Aperçu</span>
-                    <span style="font-size:10px; font-weight:500; color:#9ca3af;" x-text="schema.inputMode === 'form' ? 'Mode Formulaire' : schema.inputMode === 'table' ? 'Mode Tableur' : 'Mode Catalogue'"></span>
+                    <span style="font-size:10px; font-weight:500; color:#9ca3af;" x-text="schema.inputMode === 'form' ? 'Mode Formulaire' : 'Mode Tableur'"></span>
                 </div>
 
                 <!-- Form/Timeseries preview -->
@@ -168,7 +283,7 @@
                     </div>
                 </template>
 
-                <!-- Table/Catalog preview -->
+                <!-- Table preview -->
                 <template x-if="schema.inputMode !== 'form'">
                     <div>
                         <div style="overflow-x:auto;">
@@ -200,157 +315,6 @@
                     </div>
                 </template>
             </div>
-
-            <!-- Settings panel (collapsible) -->
-            <div class="panel">
-                <div class="lsb-section-toggle" @click="settingsOpen = !settingsOpen">
-                    <h6><iconify-icon icon="solar:settings-bold-duotone" width="14" class="text-primary"></iconify-icon> Paramètres</h6>
-                    <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="settingsOpen ? '' : '-rotate-90'" class="transition-transform text-gray-400"></iconify-icon>
-                </div>
-                <div x-show="settingsOpen" x-collapse class="px-3 pb-3 space-y-3">
-                    <div>
-                        <label class="mb-1 block text-xs font-semibold text-gray-500 dark:text-gray-400">Description</label>
-                        <input type="text" x-model="schema.description" class="form-input form-input-sm" placeholder="Description optionnelle" />
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-semibold text-gray-500 dark:text-gray-400">Type document</label>
-                        <select x-model="schema.appliesTo.documentType" class="form-select form-select-sm">
-                            <option value="">— Aucun —</option>
-                            <option value="invoice">Facture</option><option value="quote">Devis</option>
-                            <option value="prescription">Ordonnance</option><option value="purchase_order">Bon de commande</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-semibold text-gray-500 dark:text-gray-400">Afficher sur (entités)</label>
-                        <div class="flex flex-wrap gap-1 mb-1">
-                            <template x-for="entId in schema.appliesTo.entityIds" :key="entId">
-                                <span class="lsb-entity-chip">
-                                    <span x-text="getEntityName(entId)"></span>
-                                    <button @click="toggleEntityId(entId)">×</button>
-                                </span>
-                            </template>
-                            <span x-show="(schema.appliesTo.entityIds || []).length === 0" style="font-size:10px; color:#9ca3af;">Global (toutes les entités)</span>
-                        </div>
-                        <div class="relative" x-data="{ open: false }">
-                            <input type="text" x-model="entitySearch" @focus="open = true" @click="open = true" class="form-input form-input-sm" placeholder="Rechercher…" />
-                            <div x-show="open" x-cloak @click.outside="open = false" class="absolute z-50 mt-1 w-full bg-white dark:bg-[#0e1726] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                                <template x-for="ent in filteredEntities" :key="ent._id">
-                                    <button type="button" @click="toggleEntityId(ent._id); entitySearch = ''" class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-gray-50 dark:hover:bg-white/5" :class="(schema.appliesTo.entityIds || []).includes(ent._id) ? 'text-primary font-semibold' : 'text-gray-600 dark:text-gray-300'">
-                                        <iconify-icon :icon="ent.icon || 'solar:box-bold-duotone'" width="12" :style="ent.color ? 'color:'+ent.color : ''"></iconify-icon>
-                                        <span x-text="ent.name"></span>
-                                    </button>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Line Types panel -->
-            <div class="panel">
-                <div class="lsb-section-toggle" @click="lineTypesOpen = !lineTypesOpen">
-                    <h6><iconify-icon icon="solar:tag-bold-duotone" width="14" class="text-primary"></iconify-icon> Types de lignes</h6>
-                    <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="lineTypesOpen ? '' : '-rotate-90'" class="transition-transform text-gray-400"></iconify-icon>
-                </div>
-                <div x-show="lineTypesOpen" x-collapse class="px-3 pb-3">
-                    <div class="flex flex-wrap gap-1.5 mb-2">
-                        <template x-for="(lt, i) in schema.lineTypes" :key="i">
-                            <span class="lsb-entity-chip" style="background:rgba(0,171,85,0.08); color:#00ab55;">
-                                <span x-text="lt"></span>
-                                <button @click="schema.lineTypes.splice(i, 1)">×</button>
-                            </span>
-                        </template>
-                    </div>
-                    <div class="flex gap-2">
-                        <input type="text" x-model="newLineType" @keydown.enter="addLineType()" class="form-input form-input-sm" style="max-width:140px;" placeholder="Ajouter…" />
-                        <button @click="addLineType()" class="btn btn-sm btn-outline-primary" style="font-size:10px; padding:3px 8px;">+</button>
-                    </div>
-                    <div class="mt-2 flex items-center gap-2">
-                        <span class="text-[10px] text-gray-400 font-semibold">Par défaut:</span>
-                        <select x-model="schema.defaultLineType" class="form-select form-select-sm" style="width:auto; max-width:120px;">
-                            <template x-for="lt in schema.lineTypes" :key="lt"><option :value="lt" x-text="lt"></option></template>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Timeseries config (shown when dataMode=timeseries) -->
-            <template x-if="schema.dataMode === 'timeseries'">
-                <div class="panel">
-                    <div class="lsb-section-toggle" @click="tsOpen = !tsOpen">
-                        <h6><iconify-icon icon="solar:chart-bold-duotone" width="14" class="text-primary"></iconify-icon> Config Chronologique</h6>
-                        <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="tsOpen ? '' : '-rotate-90'" class="transition-transform text-gray-400"></iconify-icon>
-                    </div>
-                    <div x-show="tsOpen" x-collapse class="px-3 pb-3 space-y-3">
-                        <div>
-                            <label class="mb-1 block text-xs font-semibold text-gray-500">Colonne date</label>
-                            <select x-model="schema.timeseriesConfig.dateColumn" class="form-select form-select-sm">
-                                <template x-for="col in schema.columns.filter(c => c.type === 'date')" :key="col.key">
-                                    <option :value="col.key" x-text="col.label || col.key"></option>
-                                </template>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-semibold text-gray-500">Tri</label>
-                            <select x-model="schema.timeseriesConfig.sortDirection" class="form-select form-select-sm">
-                                <option value="desc">Plus récent en premier</option><option value="asc">Plus ancien en premier</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </template>
-
-            <!-- Snapshot / Enregistrement config -->
-            <div class="panel">
-                <div class="lsb-section-toggle" @click="snapshotOpen = !snapshotOpen">
-                    <h6><iconify-icon icon="solar:diskette-bold-duotone" width="14" class="text-primary"></iconify-icon> Enregistrement (Snapshot)</h6>
-                    <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="snapshotOpen ? '' : '-rotate-90'" class="transition-transform text-gray-400"></iconify-icon>
-                </div>
-                <div x-show="snapshotOpen" x-collapse class="px-3 pb-3 space-y-3">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" x-model="schema.snapshotConfig.enabled" class="form-checkbox" />
-                        <span class="text-xs font-semibold text-gray-600 dark:text-gray-300">Activer le bouton Enregistrer</span>
-                    </label>
-                    <div x-show="schema.snapshotConfig.enabled">
-                        <label class="mb-1 block text-xs font-semibold text-gray-500">Lier les enregistrements à</label>
-                        <select x-model="schema.snapshotConfig.targetType" class="form-select form-select-sm">
-                            <option value="self">Le record en cours</option>
-                            <option value="relation">Un record lié (relation)</option>
-                        </select>
-                    </div>
-                    <div x-show="schema.snapshotConfig.enabled && schema.snapshotConfig.targetType === 'relation'">
-                        <label class="mb-1 block text-xs font-semibold text-gray-500">Entité cible</label>
-                        <select x-model="schema.snapshotConfig.targetEntityId" class="form-select form-select-sm">
-                            <option value="">Choisir…</option>
-                            <% (entities || []).forEach(function(ent) { %>
-                                <option value="<%= ent._id %>"><%= ent.name %></option>
-                            <% }) %>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Totals config -->
-            <div class="panel">
-                <div class="lsb-section-toggle" @click="totalsOpen = !totalsOpen">
-                    <h6><iconify-icon icon="solar:calculator-bold-duotone" width="14" class="text-primary"></iconify-icon> Totaux</h6>
-                    <iconify-icon icon="solar:alt-arrow-down-bold" width="12" :class="totalsOpen ? '' : '-rotate-90'" class="transition-transform text-gray-400"></iconify-icon>
-                </div>
-                <div x-show="totalsOpen" x-collapse class="px-3 pb-3 space-y-2">
-                    <div>
-                        <label class="mb-1 block text-xs font-semibold text-gray-500">Clé sous-total</label>
-                        <input type="text" x-model="schema.totals.subtotalKey" class="form-input form-input-sm" placeholder="lineTotal" />
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-semibold text-gray-500">Clé TVA</label>
-                        <input type="text" x-model="schema.totals.vatKey" class="form-input form-input-sm" placeholder="lineVat" />
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-semibold text-gray-500">Formule total</label>
-                        <input type="text" x-model="schema.totals.totalFormula" class="form-input form-input-sm" placeholder="subtotal + vat" />
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -365,17 +329,6 @@
                         <span class="lsb-type-badge" style="background:rgba(0,171,85,0.1); color:#00ab55;" x-text="schema.columns[expandedCol].type"></span>
                     </h6>
                     <button @click="expandedCol = null" class="lsb-row-btn" style="padding:6px;"><iconify-icon icon="tabler:x" width="18"></iconify-icon></button>
-                </div>
-
-                <!-- ShowWhen -->
-                <div class="lsb-config-grid" style="margin-bottom: 12px;">
-                    <div class="lsb-config-field">
-                        <label>Visible pour type de ligne</label>
-                        <select x-model="schema.columns[expandedCol]._showWhenStr" @change="parseShowWhen(schema.columns[expandedCol])" class="form-select form-select-sm">
-                            <option value="">Toujours visible</option>
-                            <template x-for="lt in schema.lineTypes" :key="lt"><option :value="lt" x-text="lt"></option></template>
-                        </select>
-                    </div>
                 </div>
 
                 <!-- Number config -->
@@ -508,8 +461,8 @@ function lineSchemaBuilder() {
     return {
         schema: existingSchema ? {
             ...existingSchema,
-            inputMode: existingSchema.inputMode || 'catalog',
-            dataMode: existingSchema.dataMode || 'items',
+            inputMode: existingSchema.inputMode || 'table',
+            dataMode: existingSchema.dataMode || 'timeseries',
             timeseriesConfig: existingSchema.timeseriesConfig || { dateColumn: 'date', sortDirection: 'desc' },
             analyticsConfig: existingSchema.analyticsConfig || { enabled: false, views: [] },
             appliesTo: {
@@ -521,7 +474,7 @@ function lineSchemaBuilder() {
                 })(),
                 documentType: existingSchema.appliesTo?.documentType || ''
             },
-            lineTypes: existingSchema.lineTypes || ['product'],
+            lineTypes: existingSchema.lineTypes || ['default'],
             columns: (existingSchema.columns || []).map((col, i) => ({
                 ...col,
                 config: {
@@ -537,22 +490,22 @@ function lineSchemaBuilder() {
                 _showWhenStr: (col.showWhen?.lineType?.[0]) || ''
             })),
             totals: existingSchema.totals || {},
-            snapshotConfig: existingSchema.snapshotConfig || { enabled: false, targetType: 'self', targetRelationKey: '', targetEntityId: '' }
+            snapshotConfig: existingSchema.snapshotConfig || { enabled: true, targetType: 'self', targetRelationKey: '', targetEntityId: '' }
         } : {
             name: '', slug: '', description: '',
-            inputMode: 'catalog', dataMode: 'items',
+            inputMode: 'table', dataMode: 'timeseries',
             timeseriesConfig: { dateColumn: 'date', sortDirection: 'desc' },
             analyticsConfig: { enabled: false, views: [] },
             appliesTo: { entityIds: [], documentType: '' },
-            lineTypes: ['product'], columns: [],
-            totals: { subtotalKey: '', vatKey: '', totalFormula: '' },
-            snapshotConfig: { enabled: false, targetType: 'self', targetRelationKey: '', targetEntityId: '' },
-            defaultLineType: 'product'
+            lineTypes: ['default'], columns: [],
+            totals: {},
+            snapshotConfig: { enabled: true, targetType: 'self', targetRelationKey: '', targetEntityId: '' },
+            defaultLineType: 'default'
         },
 
         saving: false, expandedCol: null,
-        settingsOpen: true, lineTypesOpen: false, tsOpen: true, totalsOpen: false, snapshotOpen: false,
-        newLineType: '', entitySearch: '',
+        parametersOpen: true,
+        entitySearch: '',
         allEntities: allEntitiesData,
 
         get visibleColumns() { return this.schema.columns.filter(c => c.visible !== false); },
@@ -596,15 +549,6 @@ function lineSchemaBuilder() {
             else this.schema.appliesTo.entityIds.push(entityId);
         },
 
-        addLineType() {
-            const lt = this.newLineType.trim().toLowerCase();
-            if (lt && !this.schema.lineTypes.includes(lt)) {
-                this.schema.lineTypes.push(lt);
-                if (!this.schema.defaultLineType) this.schema.defaultLineType = lt;
-            }
-            this.newLineType = '';
-        },
-
         addColumn() {
             const col = {
                 key: '', label: '', type: 'text', required: false, visible: true, width: 'M',
@@ -640,10 +584,6 @@ function lineSchemaBuilder() {
             if (col.type === 'money') { if (!col.config.currency) col.config.currency = 'EUR'; if (col.config.decimals === undefined) col.config.decimals = 2; }
             if ((col.type === 'duration' || col.type === 'dosage') && !col.config.units) col.config.units = [];
             this.expandedCol = idx;
-        },
-
-        parseShowWhen(col) {
-            col.showWhen = col._showWhenStr ? { lineType: [col._showWhenStr] } : {};
         },
 
         addSelectOption() {

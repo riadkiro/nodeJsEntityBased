@@ -2,6 +2,11 @@
 trigger: always_on
 ---
 
+# Shell Commands Rule (CRITICAL)
+**NEVER** use `Select-String`, `node -e`, or any inline one-liner commands in PowerShell.
+**ALWAYS** write a script file (in `scripts/` or `/tmp/`) and execute it with `node scripts/my-script.js`.
+This applies to all search, debug, and data manipulation tasks.
+
 When you create controllers always remeber this structure for multi-tenant, this is a saas plateform
 const Entity = await tenantCollection(req, "Entity");
 const Record = await tenantCollection(req, "Record");

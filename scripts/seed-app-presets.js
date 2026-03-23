@@ -83,45 +83,65 @@ async function seedAppPresets() {
     console.log('[AppPresets] Presets seeded in global DB');
 }
 
-// ============================================
-// Factory Reset: clean + re-seed
-// ============================================
-
-// Collections to clean (tenant-scoped, tagged with meta.createdByPreset)
-const CLEANABLE_COLLECTIONS = [
-    'records',
-    'entities',
-    'fieldtemplates',
-    'classifications',
-    'spaces',
-    'folders',
-    'environments',
-    'documents',
-    'smartdoctemplates',
-    'lineschemas',
-    'entityforms',
-    'views'
+// Collections to PRESERVE during factory reset (user data, auth, profiles)
+const PRESERVED_COLLECTIONS = [
+    'users',
+    'accounts',
+    'sessions',
+    'userpreferences',
+    'user-preferences',
+    'accountpreferences',
+    'account-preferences',
+    'apppresets',
+    'system.indexes',
+    'system.views'
 ];
 
 /**
- * Wipe all docs tagged with meta.createdByPreset == presetSlug
+ * Factory Reset: wipe ALL tenant collections except user/profile data
+ * This is a true reset — drops every collection that isn't in the preserved list
  */
-async function cleanPresetData(tenantConn, presetSlug) {
-    console.log(`\n🧹 Cleaning data for preset: ${presetSlug}`);
+async function factoryReset(tenantConn) {
+    console.log(`\n🧹 ═══ FACTORY RESET — Wiping all tenant data ═══`);
 
-    for (const collName of CLEANABLE_COLLECTIONS) {
-        try {
-            const coll = tenantConn.db.collection(collName);
-            const result = await coll.deleteMany({ 'meta.createdByPreset': presetSlug });
-            if (result.deletedCount > 0) {
-                console.log(`   🗑️  ${collName}: ${result.deletedCount} docs deleted`);
+    try {
+        // Get all collection names in the tenant DB
+        const collections = await tenantConn.db.listCollections().toArray();
+        const collectionNames = collections.map(c => c.name);
+
+        console.log(`   Found ${collectionNames.length} collections in tenant DB`);
+
+        let droppedCount = 0;
+        for (const collName of collectionNames) {
+            // Skip preserved collections
+            const normalized = collName.toLowerCase().replace(/[-_]/g, '');
+            const isPreserved = PRESERVED_COLLECTIONS.some(p => {
+                const pNormalized = p.toLowerCase().replace(/[-_]/g, '');
+                return normalized === pNormalized || normalized.startsWith('system.');
+            });
+
+            if (isPreserved) {
+                console.log(`   🔒 PRESERVED: ${collName}`);
+                continue;
             }
-        } catch (e) {
-            // Collection may not exist yet, that's fine
-        }
-    }
 
-    console.log('✅ Cleanup done\n');
+            try {
+                const coll = tenantConn.db.collection(collName);
+                const count = await coll.countDocuments();
+                await coll.drop();
+                droppedCount++;
+                console.log(`   🗑️  DROPPED: ${collName} (${count} docs)`);
+            } catch (e) {
+                console.log(`   ⚠️  Could not drop ${collName}: ${e.message}`);
+            }
+        }
+
+        console.log(`\n✅ Factory reset complete: ${droppedCount} collections dropped`);
+        console.log(`   Preserved: ${collectionNames.length - droppedCount} collections\n`);
+    } catch (err) {
+        console.error('❌ Factory reset error:', err);
+        throw err;
+    }
 }
 
 /**
@@ -148,12 +168,14 @@ async function installPreset({ tenantDbName, presetSlug, userId, mode = 'factory
     console.log(`Connected to tenant DB: ${tenantDbName}`);
 
     try {
-        // Step 1: Clean existing preset data
+        // Step 1: Full factory reset — wipe all data except users/profiles
         if (mode === 'factoryReset') {
-            await cleanPresetData(tenantConn, presetSlug);
+            await factoryReset(tenantConn);
         }
 
-        // Step 2: Run the seed module
+        // Step 2: Run the seed module (clear require cache to pick up latest code)
+        const seedModulePath = require.resolve(preset.seedModule);
+        delete require.cache[seedModulePath];
         const seedFn = require(preset.seedModule);
         await seedFn.install(tenantConn, userId, presetSlug);
 

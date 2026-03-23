@@ -73,6 +73,13 @@ module.exports = {
 
             const { name, slug, description, appliesTo, sourceEntityId, lineTypes, columns, totals, defaultLineType, inputMode, dataMode, timeseriesConfig, analyticsConfig, snapshotConfig } = req.body;
 
+            // Sanitize snapshotConfig: empty strings → null for ObjectId fields
+            const cleanSnapshot = snapshotConfig ? {
+                ...snapshotConfig,
+                targetEntityId: snapshotConfig.targetEntityId || null,
+                targetRelationKey: snapshotConfig.targetRelationKey || null
+            } : undefined;
+
             const schema = new LineSchema({
                 name,
                 slug,
@@ -89,7 +96,7 @@ module.exports = {
                     order: col.order ?? i
                 })),
                 totals: totals || {},
-                snapshotConfig: snapshotConfig || undefined,
+                snapshotConfig: cleanSnapshot,
                 defaultLineType: defaultLineType || (lineTypes && lineTypes[0]) || 'product',
                 createdBy: req.user?._id
             });
@@ -119,7 +126,7 @@ module.exports = {
             if (timeseriesConfig !== undefined) updateData.timeseriesConfig = timeseriesConfig;
             if (analyticsConfig !== undefined) updateData.analyticsConfig = analyticsConfig;
             if (appliesTo !== undefined) updateData.appliesTo = appliesTo;
-            if (sourceEntityId !== undefined) updateData.sourceEntityId = sourceEntityId;
+            if (sourceEntityId !== undefined) updateData.sourceEntityId = sourceEntityId || null;
             if (lineTypes !== undefined) updateData.lineTypes = lineTypes;
             if (columns !== undefined) {
                 updateData.columns = columns.map((col, i) => ({
@@ -128,7 +135,13 @@ module.exports = {
                 }));
             }
             if (totals !== undefined) updateData.totals = totals;
-            if (snapshotConfig !== undefined) updateData.snapshotConfig = snapshotConfig;
+            if (snapshotConfig !== undefined) {
+                updateData.snapshotConfig = {
+                    ...snapshotConfig,
+                    targetEntityId: snapshotConfig.targetEntityId || null,
+                    targetRelationKey: snapshotConfig.targetRelationKey || null
+                };
+            }
             if (defaultLineType !== undefined) updateData.defaultLineType = defaultLineType;
 
             const schema = await LineSchema.findByIdAndUpdate(

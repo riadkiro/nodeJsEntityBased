@@ -1870,13 +1870,6 @@
                         <iconify-icon icon="tabler:plus" width="13"></iconify-icon>
                         <span>Ajouter</span>
                     </div>
-                    <div style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; font-size:11px; font-weight:500; color:#6b7280; border:1px solid #e5e7eb; border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none;"
-                         @click.stop="activateAndOpenModal(schema._id)"
-                         onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee'; this.style.background='rgba(67,97,238,0.04)';"
-                         onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='#6b7280'; this.style.background='';">
-                        <iconify-icon icon="tabler:layout-grid" width="13"></iconify-icon>
-                        <span>Catalogue</span>
-                    </div>
                     <div x-show="schema.snapshotConfig?.enabled"
                          :style="'display:inline-flex; align-items:center; gap:5px; padding:5px 12px; font-size:11px; font-weight:500; color:#6b7280; border:1px solid #e5e7eb; border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none;' + (snapshotSaving[schema._id] === true ? ' opacity:0.5; pointer-events:none;' : '')"
                          @click.stop="saveSnapshot(schema)"

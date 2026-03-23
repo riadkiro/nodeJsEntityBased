@@ -1,7 +1,7 @@
     <div class="space-y-3 sticky top-20" x-data="recordSidebar" id="sidebar-inner-sortable">
 
-        <!-- ═══ Panel Manager Header ═══ -->
-        <div class="flex items-center justify-between" style="padding: 0 2px;">
+        <!-- ═══ Panel Manager Header (hidden by default, shown in designMode or via "..." menu) ═══ -->
+        <div class="flex items-center justify-between" style="padding: 0 2px;" x-show="designMode || sidebarConfigOpen" x-cloak>
             <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Sidebar</span>
             <div class="flex items-center gap-1">
                 <!-- Add Widget Button -->
@@ -13,6 +13,7 @@
                 <!-- Settings Button -->
                 <div class="relative" x-data="{ pmOpen: false }" @click.away="pmOpen = false">
                     <button type="button" @click="pmOpen = !pmOpen"
+                        data-sidebar-pm-toggle
                         class="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
                         :class="pmOpen ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'"
                         title="Gérer les panels">
@@ -1277,11 +1278,13 @@
                                 <% if (hasCardWidget) return; %>
                                 <% const relRecords = locals.relatedRecordsData && locals.relatedRecordsData[rel.key]; %>
                                 <% if (relRecords && relRecords.length > 0) { %>
-                                    <% relRecords.forEach(function(relRec) { %>
-                                        <% const relIcon = (rel.targetEntity && rel.targetEntity.icon) || 'solar:user-bold-duotone'; %>
-                                        <% const relColor = (rel.targetEntity && rel.targetEntity.color) || '#4361ee'; %>
-                                        <% const relEntityName = (rel.targetEntity && rel.targetEntity.name) || rel.label || 'Relation'; %>
-                                        <% const relEntitySlug = (rel.targetEntity && rel.targetEntity.slug) || ''; %>
+                                    <% const relIcon = (rel.targetEntity && rel.targetEntity.icon) || 'solar:user-bold-duotone'; %>
+                                    <% const relColor = (rel.targetEntity && rel.targetEntity.color) || '#4361ee'; %>
+                                    <% const relEntityName = (rel.targetEntity && rel.targetEntity.name) || rel.label || 'Relation'; %>
+                                    <% const relEntitySlug = (rel.targetEntity && rel.targetEntity.slug) || ''; %>
+                                    <% if (relRecords.length === 1) { %>
+                                        <% /* Single record — show detailed panel like before */ %>
+                                        <% const relRec = relRecords[0]; %>
                                         <div class="panel-sortable-item" data-panel-id="relation-<%= rel.key %>" x-show="isPanelVisible('rel_<%= rel.key %>')" x-collapse.duration.200ms>
                                             <template x-if="designMode">
                                                 <div class="panel-drag-handle">
@@ -1316,53 +1319,28 @@
                                             </div>
                                             <div x-show="open" x-collapse class="px-3 py-2">
                                                 <div class="grid grid-cols-1 gap-y-2">
-                                                    <% if (relRec.slug) { %>
-                                                        <div>
-                                                            <div class="flex items-center" style="gap:3px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99)">
-                                                                <span>Identifiant</span>
-                                                                <span class="text-xs font-normal" style="letter-spacing:normal;text-transform:none;color:rgb(55,65,81);margin-left:4px"><%= relRec.slug %></span>
-                                                            </div>
-                                                        </div>
-                                                    <% } %>
-                                                    <% if (relRec.date) { %>
-                                                        <div>
-                                                            <div class="flex items-center" style="gap:3px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99)">
-                                                                <span>Date</span>
-                                                                <span class="text-xs font-normal" style="letter-spacing:normal;text-transform:none;color:rgb(55,65,81);margin-left:4px"><%= new Date(relRec.date).toLocaleDateString('fr-FR') %></span>
-                                                            </div>
-                                                        </div>
-                                                    <% } %>
                                                     <% (relRec.customFields || []).forEach(function(cf) { %>
                                                         <% if (cf.value && cf.field_id && cf.field_id.label) { %>
                                                             <%
                                                                 const cfIcon = (cf.field_id.ui && cf.field_id.ui.icon) || '';
                                                                 const cfType = cf.field_id.type || 'string';
                                                                 const cfName = cf.field_id.name || '';
-                                                                const cfFormula = cf.field_id.formula || null;
                                                                 let cfDisplayValue = '';
                                                                 let cfIsDate = (cfType === 'date' || cfName.includes('date'));
-                                                                let cfIsAllergy = (cfName === 'allergies');
-                                                                let cfIsAntecedent = (cfName === 'antecedents');
                                                                 let cfShowAge = (cfName === 'date_naissance');
                                                                 let cfAge = '';
+                                                                let cfIsAllergy = (cfName === 'allergies');
+                                                                let cfIsAntecedent = (cfName === 'antecedents');
 
-                                                                // Format value
                                                                 if (cfIsDate || cfShowAge) {
                                                                     try {
                                                                         const rawVal = typeof cf.value === 'string' ? cf.value.replace(/^"|"$/g, '') : cf.value;
                                                                         const d = new Date(rawVal);
                                                                         if (!isNaN(d.getTime())) {
                                                                             cfDisplayValue = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                                                                            if (cfShowAge) {
-                                                                                const today = new Date();
-                                                                                cfAge = Math.floor((today - d) / 31557600000);
-                                                                            }
-                                                                        } else {
-                                                                            cfDisplayValue = String(cf.value);
-                                                                        }
-                                                                    } catch(e) {
-                                                                        cfDisplayValue = String(cf.value);
-                                                                    }
+                                                                            if (cfShowAge) cfAge = Math.floor((new Date() - d) / 31557600000);
+                                                                        } else cfDisplayValue = String(cf.value);
+                                                                    } catch(e) { cfDisplayValue = String(cf.value); }
                                                                 } else if (typeof cf.value === 'object' && cf.value !== null) {
                                                                     cfDisplayValue = JSON.stringify(cf.value);
                                                                 } else {
@@ -1370,31 +1348,23 @@
                                                                 }
                                                             %>
                                                             <% if (cfShowAge && cfAge) { %>
-                                                                <!-- Age display (like image-47: "Âge  45 ans") -->
                                                                 <div class="flex items-center" style="gap:3px;padding:4px 0">
-                                                                    <% if (cfIcon) { %>
-                                                                        <iconify-icon icon="<%= cfIcon %>" width="14" class="flex-none" style="color:rgb(156,163,175)"></iconify-icon>
-                                                                    <% } %>
+                                                                    <% if (cfIcon) { %><iconify-icon icon="<%= cfIcon %>" width="14" class="flex-none" style="color:rgb(156,163,175)"></iconify-icon><% } %>
                                                                     <span style="font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99)">Âge</span>
-                                                                    <span class="font-semibold text-gray-700 dark:text-gray-200" style="font-size:12px;margin-left:4px;text-transform:none;letter-spacing:normal"><%= cfAge %> ans</span>
+                                                                    <span class="font-semibold text-gray-700 dark:text-gray-200" style="font-size:12px;margin-left:4px"><%= cfAge %> ans</span>
                                                                 </div>
                                                             <% } else if (cfIsAllergy) { %>
-                                                                <!-- Allergy badge (red warning like image-47) -->
                                                                 <div class="py-1.5">
                                                                     <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-900/10">
                                                                         <iconify-icon icon="solar:danger-triangle-bold" width="13" style="color:#ef4444"></iconify-icon>
                                                                         <span class="text-[11px] font-semibold" style="color:#ef4444">Allergies</span>
-                                                                        <span class="text-[10px] font-medium text-red-400 dark:text-red-300">△</span>
                                                                     </div>
                                                                     <div class="mt-1 text-[11px] text-gray-600 dark:text-gray-300 pl-1"><%= cfDisplayValue %></div>
                                                                 </div>
                                                             <% } else if (cfIsAntecedent) { %>
-                                                                <!-- Antecedents with colored icons -->
                                                                 <div class="py-1.5">
                                                                     <div class="flex items-center" style="gap:3px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99);margin-bottom:4px">
-                                                                        <% if (cfIcon) { %>
-                                                                            <iconify-icon icon="<%= cfIcon %>" width="14" class="flex-none" style="color:rgb(156,163,175)"></iconify-icon>
-                                                                        <% } %>
+                                                                        <% if (cfIcon) { %><iconify-icon icon="<%= cfIcon %>" width="14" class="flex-none" style="color:rgb(156,163,175)"></iconify-icon><% } %>
                                                                         Antécédents
                                                                     </div>
                                                                     <div class="space-y-0.5 pl-1">
@@ -1407,12 +1377,9 @@
                                                                     </div>
                                                                 </div>
                                                             <% } else { %>
-                                                                <!-- Standard field with icon -->
                                                                 <div>
                                                                     <div class="flex items-center" style="gap:3px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99)">
-                                                                        <% if (cfIcon) { %>
-                                                                            <iconify-icon icon="<%= cfIcon %>" width="14" class="flex-none" style="color:rgb(156,163,175)"></iconify-icon>
-                                                                        <% } %>
+                                                                        <% if (cfIcon) { %><iconify-icon icon="<%= cfIcon %>" width="14" class="flex-none" style="color:rgb(156,163,175)"></iconify-icon><% } %>
                                                                         <span><%= cf.field_id.label %></span>
                                                                         <span class="text-xs font-normal" style="letter-spacing:normal;text-transform:none;color:rgb(55,65,81);margin-left:4px"><%= cfDisplayValue %><%= String(cf.value).length > 120 ? '...' : '' %></span>
                                                                     </div>
@@ -1423,8 +1390,61 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        </div><!-- end panel-sortable-item relation -->
-                                    <% }) %>
+                                        </div><!-- end panel-sortable-item single relation -->
+                                    <% } else { %>
+                                        <% /* Multiple records — grouped panel (like inverse relations) */ %>
+                                        <div class="panel-sortable-item" data-panel-id="relation-<%= rel.key %>" x-show="isPanelVisible('rel_<%= rel.key %>')" x-collapse.duration.200ms>
+                                            <template x-if="designMode">
+                                                <div class="panel-drag-handle">
+                                                    <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
+                                                    <span><%= rel.label || relEntityName %></span>
+                                                </div>
+                                            </template>
+                                        <div class="panel !p-0 overflow-hidden" x-data="{ open: true }">
+                                            <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-700/30 cursor-pointer" @click="open = !open">
+                                                <div class="flex items-center gap-2 flex-1">
+                                                    <div class="w-6 h-6 rounded-lg flex items-center justify-center flex-none" style="background: <%= relColor %>15;">
+                                                        <iconify-icon icon="<%= relIcon %>" width="12" style="color: <%= relColor %>"></iconify-icon>
+                                                    </div>
+                                                    <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500"><%= rel.label || relEntityName %></span>
+                                                    <span class="text-[9px] bg-primary/10 text-primary min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1"><%= relRecords.length %></span>
+                                                </div>
+                                                <div class="flex items-center gap-1 flex-none">
+                                                    <iconify-icon :icon="open ? 'solar:alt-arrow-up-linear' : 'solar:alt-arrow-down-linear'" width="12" class="text-gray-400"></iconify-icon>
+                                                </div>
+                                            </div>
+                                            <div x-show="open" x-collapse>
+                                                <div class="px-1.5 pb-1.5">
+                                                    <% relRecords.forEach(function(relRec) { %>
+                                                        <div class="group/rel flex items-center gap-2 px-2 py-[5px] rounded-md transition-all hover:bg-gray-50 dark:hover:bg-gray-800/40">
+                                                            <div class="w-[22px] h-[22px] rounded flex items-center justify-center shrink-0"
+                                                                style="background: <%= relColor %>18; color: <%= relColor %>">
+                                                                <iconify-icon icon="<%= relIcon %>" width="11"></iconify-icon>
+                                                            </div>
+                                                            <% if (relEntitySlug) { %>
+                                                                <a href="/account/<%= account_number %>/record/<%= relEntitySlug %>/edit/<%= relRec._id %>"
+                                                                    class="flex-1 min-w-0 text-[11px] font-medium text-gray-600 dark:text-gray-300 truncate hover:text-primary transition-colors">
+                                                                    <%= relRec.title || relRec.computedTitle || 'Sans titre' %>
+                                                                </a>
+                                                            <% } else { %>
+                                                                <span class="flex-1 min-w-0 text-[11px] font-medium text-gray-600 dark:text-gray-300 truncate">
+                                                                    <%= relRec.title || relRec.computedTitle || 'Sans titre' %>
+                                                                </span>
+                                                            <% } %>
+                                                            <% if (relEntitySlug) { %>
+                                                                <a href="/account/<%= account_number %>/record/<%= relEntitySlug %>/edit/<%= relRec._id %>"
+                                                                    class="shrink-0 w-[20px] h-[20px] flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-primary/5 transition-all"
+                                                                    title="Ouvrir" target="_blank">
+                                                                    <iconify-icon icon="solar:arrow-right-up-linear" width="11"></iconify-icon>
+                                                                </a>
+                                                            <% } %>
+                                                        </div>
+                                                    <% }); %>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        </div><!-- end panel-sortable-item grouped relation -->
+                                    <% } %>
                                 <% } %>
                             <% }) %>
 
@@ -1731,6 +1751,7 @@
         document.addEventListener("alpine:init", () => {
             Alpine.data("recordSidebar", () => ({
                 classificationsOpen: true,
+                sidebarConfigOpen: false,
                 // Panel visibility preferences (all visible by default)
                 panelVisibility: JSON.parse('<%= JSON.stringify((locals.user && locals.user.preferences && locals.user.preferences.sidebar_panels) || {}) %>'),
 
@@ -1738,6 +1759,18 @@
                     // Drag & drop is handled by panelLayout.initPanelSortables() in record-edit.ejs
                     window.addEventListener('save-pref', (e) => {
                         this.savePreference(e.detail.key, e.detail.value);
+                    });
+                    // Listen for open-sidebar-config from "..." menu
+                    window.addEventListener('open-sidebar-config', () => {
+                        // Temporarily show the sidebar header (normally hidden unless designMode)
+                        this.sidebarConfigOpen = true;
+                        const sidebarEl = document.getElementById('sidebar-inner-sortable');
+                        if (sidebarEl) sidebarEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // Open the panel manager dropdown after a short delay for scroll + render
+                        setTimeout(() => {
+                            const pmBtn = sidebarEl?.querySelector('[data-sidebar-pm-toggle]');
+                            if (pmBtn) pmBtn.click();
+                        }, 400);
                     });
                     // Load panel visibility preferences from server
                     this.loadPanelVisibility();

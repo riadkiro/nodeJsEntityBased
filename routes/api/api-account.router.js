@@ -60,6 +60,8 @@ router.get('/hierarchy/all-entities', hierarchyController.listAllEntities);
 router.get('/hierarchy/entity/:entityId/fields', hierarchyController.getEntityFields);
 router.post('/hierarchy/link-entity', hierarchyController.linkEntity);
 router.post('/hierarchy/link-cockpit', hierarchyController.linkCockpit);
+router.post('/hierarchy/promote-space-to-environment', hierarchyController.promoteSpaceToEnvironment);
+router.post('/hierarchy/promote-folder-to-environment', hierarchyController.promoteFolderToEnvironment);
 
 router.get('/hierarchy/icon-libraries', hierarchyController.getIconLibraries);
 router.get('/hierarchy/icons', hierarchyController.getIcons);

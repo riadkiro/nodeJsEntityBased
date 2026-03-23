@@ -117,6 +117,8 @@ async function install(conn, userId, presetSlug) {
         { name: 'mutuelle', label: 'Mutuelle', type: 'string', ui: { icon: 'solar:shield-bold-duotone', width: 'half' } },
         // Consultation fields
         { name: 'motif', label: 'Motif de consultation', type: 'text', ui: { icon: 'solar:chat-round-dots-bold-duotone', width: 'full', rows: 1 } },
+        { name: 'note_medecin', label: 'Note médecin', type: 'text', ui: { icon: 'solar:document-text-bold-duotone', width: 'full', rows: 1 } },
+        { name: 'symptomes_rel', label: 'Symptômes', type: 'relation', type_config: { refEntity: '__symptomes__', multiple: true }, ui: { icon: 'solar:heart-pulse-bold-duotone', width: 'full' } },
         { name: 'symptomes', label: 'Symptômes', type: 'text', ui: { icon: 'solar:heart-pulse-bold-duotone', width: 'full', rows: 3 } },
         { name: 'diagnostic', label: 'Diagnostic', type: 'text', ui: { icon: 'solar:clipboard-check-bold-duotone', width: 'full', rows: 1 } },
         { name: 'examen_clinique', label: 'Examen clinique', type: 'text', ui: { icon: 'solar:magnifer-bold-duotone', width: 'full', rows: 3 } },
@@ -308,7 +310,7 @@ async function install(conn, userId, presetSlug) {
             referenceTitleTokens: null
         }, // set after relations
         {
-            name: 'Consultation', nameSingular: 'Consultation', namePlural: 'Consultations', slug: 'consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', fields: ['motif', 'symptomes', 'examen_clinique', 'diagnostic', 'plan_traitement', 'poids', 'taille_cm', 'tension', 'temperature', 'frequence_cardiaque', 'notes_generales', 'imc'], statusClassification: null, classifications: ['consult_type'],
+            name: 'Consultation', nameSingular: 'Consultation', namePlural: 'Consultations', slug: 'consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', fields: ['motif', 'note_medecin', 'symptomes_rel'], statusClassification: null, classifications: ['consult_type'], stdFields: ['title', 'date'],
             referenceTitleTokens: null,
             sidebarWidgets: [
                 { type: 'note', label: 'Observations', icon: 'solar:clipboard-text-bold-duotone', color: '#00ab55', order: 0, visible: true, config: { content: '' } }
@@ -396,6 +398,14 @@ async function install(conn, userId, presetSlug) {
             name: 'Symptôme', nameSingular: 'Symptôme', namePlural: 'Symptômes', slug: 'symptomes', icon: 'solar:heart-pulse-bold-duotone', color: '#ec4899', fields: [], statusClassification: null, classifications: [],
             referenceTitleTokens: [{ t: 'field', id: 'title' }]
         },
+        {
+            name: 'Pathologie', nameSingular: 'Pathologie', namePlural: 'Pathologies', slug: 'pathologies', icon: 'solar:virus-bold-duotone', color: '#dc2626', fields: [], statusClassification: null, classifications: [],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }]
+        },
+        {
+            name: 'Traitement', nameSingular: 'Traitement', namePlural: 'Traitements', slug: 'traitements', icon: 'solar:pills-bold-duotone', color: '#0891b2', fields: [], statusClassification: null, classifications: [],
+            referenceTitleTokens: [{ t: 'field', id: 'title' }]
+        },
     ];
 
     ids.entities = {};
@@ -418,7 +428,7 @@ async function install(conn, userId, presetSlug) {
         const entityData = {
             name: e.name, nameSingular: e.nameSingular, namePlural: e.namePlural,
             slug: e.slug, description: '', icon: e.icon, color: e.color, order: i,
-            enabledStandardFields: ['title', 'description', 'date'],
+            enabledStandardFields: e.stdFields || ['title', 'description', 'date'],
             customFields: customFieldIds,
             statusClassification: statusCls,
             classifications: classIds,
@@ -432,6 +442,14 @@ async function install(conn, userId, presetSlug) {
         ids.entities[e.slug] = doc._id;
     }
     console.log(`   ✅ ${Object.keys(ids.entities).length} entities`);
+
+    // ── Resolve relation field references (replace entity placeholders with actual IDs) ──
+    if (ids.fields.symptomes_rel && ids.entities['symptomes']) {
+        await db.FieldTemplate.findByIdAndUpdate(ids.fields.symptomes_rel, {
+            $set: { 'type_config.refEntity': ids.entities['symptomes'].toString() }
+        });
+        console.log('   ✅ Resolved symptomes_rel refEntity →', ids.entities['symptomes']);
+    }
 
     // =========== 4. RELATIONS ===========
     console.log('\n🔗 Adding relations...');
@@ -450,14 +468,16 @@ async function install(conn, userId, presetSlug) {
         { src: 'resultats-labo', target: 'patients', label: 'Patient', inverse: 'Résultats labo', card: 'one-to-many' },
         { src: 'documents-medicaux', target: 'patients', label: 'Patient', inverse: 'Documents', card: 'one-to-many' },
         { src: 'plans-traitement', target: 'patients', label: 'Patient', inverse: 'Plans de traitement', card: 'one-to-many' },
-        { src: 'consultations', target: 'symptomes', label: 'Symptômes', inverse: 'Consultations', card: 'many-to-many' },
+        { src: 'consultations', target: 'symptomes', label: 'Symptômes', inverse: 'Consultations', card: 'many-to-many', mode: 'autocomplete' },
+        { src: 'pathologies', target: 'patients', label: 'Patient', inverse: 'Pathologies', card: 'one-to-many' },
+        { src: 'traitements', target: 'patients', label: 'Patient', inverse: 'Traitements', card: 'one-to-many' },
     ];
 
     for (const r of relationDefs) {
         const key = uuidv4();
         ids.relationKeys[`${r.src}__${r.target}`] = key;
         await db.Entity.findByIdAndUpdate(E[r.src], {
-            $push: { relations: { key, targetEntity: E[r.target], label: r.label, inverseLabel: r.inverse, cardinality: r.card, inputMode: 'modal-picker', storage: 'on-source', bidirectional: true, required: false } }
+            $push: { relations: { key, targetEntity: E[r.target], label: r.label, inverseLabel: r.inverse, cardinality: r.card, inputMode: r.mode || 'modal-picker', storage: 'on-source', bidirectional: true, required: false } }
         });
     }
     console.log(`   ✅ ${relationDefs.length} relations`);
@@ -612,6 +632,8 @@ async function install(conn, userId, presetSlug) {
                 { entitySlug: 'prescriptions', name: 'Ordonnances', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f' },
                 { entitySlug: 'resultats-labo', name: 'Examens', icon: 'solar:test-tube-bold-duotone', color: '#f97316' },
                 { entitySlug: 'symptomes', name: 'Symptômes', icon: 'solar:heart-pulse-bold-duotone', color: '#ec4899' },
+                { entitySlug: 'pathologies', name: 'Pathologies', icon: 'solar:virus-bold-duotone', color: '#dc2626' },
+                { entitySlug: 'traitements', name: 'Traitements', icon: 'solar:pills-bold-duotone', color: '#0891b2' },
             ]
         },
         {
@@ -671,33 +693,16 @@ async function install(conn, userId, presetSlug) {
         name: 'Ordonnance Traitement', slug: 'prescription_v1',
         description: 'Lignes de traitement pour ordonnances médicales',
         appliesTo: { entityIds: [E['prescriptions']], documentType: 'prescription' },
-        sourceEntityId: E['medicaments'],
+        sourceEntityId: E['traitements'],
         lineTypes: ['treatment', 'note'], defaultLineType: 'treatment',
         columns: [
             {
                 key: 'treatment', label: 'Traitement', type: 'relation', required: true, visible: true, width: 'L', order: 0,
                 showWhen: { lineType: ['treatment'] },
-                config: { targetEntity: E['medicaments'], searchFields: ['title'], displayFields: ['title'], applyDefaults: { description: 'title' } }
+                config: { targetEntity: E['traitements'], searchFields: ['title'], displayFields: ['title'], applyDefaults: { description: 'title' } }
             },
             {
-                key: 'dosage', label: 'Dosage', type: 'dosage', required: false, visible: true, width: 'S', order: 1,
-                showWhen: { lineType: ['treatment'] },
-                config: { units: ['mg', 'ml', 'g', 'cp', 'gouttes'] }
-            },
-            {
-                key: 'frequency', label: 'Fréquence', type: 'select', required: false, visible: true, width: 'M', order: 2,
-                showWhen: { lineType: ['treatment'] },
-                config: {
-                    source: 'manual', options: [
-                        { value: '1x_day', label: '1x / jour' }, { value: '2x_day', label: '2x / jour' },
-                        { value: '3x_day', label: '3x / jour' }, { value: 'every_8h', label: 'Toutes les 8h' },
-                        { value: 'every_12h', label: 'Toutes les 12h' }, { value: 'weekly', label: '1x / semaine' },
-                        { value: 'as_needed', label: 'Si besoin' }
-                    ]
-                }
-            },
-            {
-                key: 'moment', label: 'Moment', type: 'multiselect', required: false, visible: true, width: 'M', order: 3,
+                key: 'moment', label: 'Moment', type: 'multiselect', required: false, visible: true, width: 'M', order: 1,
                 showWhen: { lineType: ['treatment'] },
                 config: {
                     source: 'manual', options: [
@@ -709,13 +714,40 @@ async function install(conn, userId, presetSlug) {
                 }
             },
             {
-                key: 'duration', label: 'Durée', type: 'duration', required: false, visible: true, width: 'S', order: 4,
+                key: 'frequency', label: 'Fréquence', type: 'multiselect', required: false, visible: true, width: 'M', order: 2,
                 showWhen: { lineType: ['treatment'] },
-                config: { units: ['day', 'week', 'month'] }
+                config: {
+                    source: 'manual', options: [
+                        { value: '1x_day', label: '1x / jour' }, { value: '2x_day', label: '2x / jour' },
+                        { value: '3x_day', label: '3x / jour' }, { value: 'every_8h', label: 'Toutes les 8h' },
+                        { value: 'every_12h', label: 'Toutes les 12h' }, { value: 'weekly', label: '1x / semaine' },
+                        { value: 'as_needed', label: 'Si besoin' }
+                    ]
+                }
             },
-            { key: 'instructions', label: 'Instructions', type: 'textarea', required: false, visible: true, width: 'L', order: 5, config: {} }
+            {
+                key: 'duration', label: 'Durée', type: 'multiselect', required: false, visible: true, width: 'S', order: 3,
+                showWhen: { lineType: ['treatment'] },
+                config: {
+                    source: 'manual', options: [
+                        { value: '1_day', label: '1 jour' }, { value: '3_days', label: '3 jours' },
+                        { value: '5_days', label: '5 jours' }, { value: '7_days', label: '7 jours' },
+                        { value: '10_days', label: '10 jours' }, { value: '14_days', label: '14 jours' },
+                        { value: '21_days', label: '21 jours' }, { value: '30_days', label: '30 jours' },
+                        { value: '3_months', label: '3 mois' }, { value: '6_months', label: '6 mois' },
+                        { value: 'permanent', label: 'Permanent' }
+                    ]
+                }
+            },
+            { key: 'instructions', label: 'Instructions', type: 'textarea', required: false, visible: true, width: 'L', order: 4, config: {} }
         ],
-        totals: {}
+        totals: {},
+        snapshotConfig: {
+            enabled: true,
+            targetType: 'relation',
+            targetRelationKey: rk['prescriptions__patients'],
+            targetEntityId: E['patients']
+        }
     });
     console.log(`   ✅ LineSchema: Ordonnance Traitement (${prescriptionLineSchema._id})`);
 
@@ -896,6 +928,52 @@ async function createDemoRecords(db, ids, userId) {
     const symIdx = {};
     symptoms.forEach((s, i) => { symIdx[symptomNames[i]] = s; });
 
+    // -- Traitements (25) - principalement médicaments + quelques soins --
+    const traitements = [];
+    const traitementNames = [
+        'Amoxicilline 500mg', 'Doliprane 1000mg', 'Ibuprofène 400mg', 'Ventoline 100µg',
+        'Augmentin 1g', 'Oméprazole 20mg', 'Metformine 850mg', 'Amlodipine 5mg',
+        'Levothyrox 75µg', 'Clopidogrel 75mg', 'Prednisolone 20mg', 'Tramadol 50mg',
+        'Voltarène Gel 1%', 'Aerius 5mg', 'Gaviscon', 'Spasfon 80mg',
+        'Bisoprolol 5mg', 'Atorvastatine 10mg', 'Ramipril 5mg', 'Alprazolam 0.25mg',
+        'Séance kinésithérapie', 'Séance ostéopathie', 'Acupuncture',
+        'Rééducation respiratoire', 'Drainage lymphatique'
+    ];
+    for (let i = 0; i < traitementNames.length; i++) {
+        const p = patients[i % patients.length];
+        const doc = await rec('traitements', traitementNames[i], {}, {
+            relations: [{ relationKey: rk['traitements__patients'], value: p._id }]
+        });
+        traitements.push(doc);
+    }
+
+    // -- Pathologies (15) - liées aux patients --
+    const pathologies = [];
+    const pathologieData = [
+        { t: 'Hypertension artérielle', pIdx: 2 },
+        { t: 'Diabète type 2', pIdx: 2 },
+        { t: 'Asthme', pIdx: 0 },
+        { t: 'Hypothyroïdie', pIdx: 6 },
+        { t: 'Lombalgie chronique', pIdx: 7 },
+        { t: 'Migraine chronique', pIdx: 3 },
+        { t: 'BPCO', pIdx: 9 },
+        { t: 'Insuffisance cardiaque', pIdx: 9 },
+        { t: 'Eczéma atopique', pIdx: 10 },
+        { t: 'Rhinite allergique', pIdx: 10 },
+        { t: 'Anxiété généralisée', pIdx: 6 },
+        { t: 'Goutte', pIdx: 13 },
+        { t: 'Anémie ferriprive', pIdx: 12 },
+        { t: 'Hernie discale L4-L5', pIdx: 7 },
+        { t: 'Hypercholestérolémie', pIdx: 4 },
+    ];
+    for (const pd of pathologieData) {
+        const p = patients[pd.pIdx];
+        const doc = await rec('pathologies', pd.t, {}, {
+            relations: [{ relationKey: rk['pathologies__patients'], value: p._id }]
+        });
+        pathologies.push(doc);
+    }
+
     // Map each consultation to relevant symptoms
     const consultSymptoms = [
         /* 0 SAOS */['Douleur thoracique', 'Dyspnée', 'Fatigue'],
@@ -931,18 +1009,18 @@ async function createDemoRecords(db, ids, userId) {
     // -- Consultations (12) --
     const consults = [];
     const consultData = [
-        { diag: 'SAOS sous PPC', motif: 'Douleur thoracique', symptomes: 'Douleur rétrosternale constrictive, irradiant vers le bras gauche. Dyspnée d\'effort. Fatigue inhabituelle.', examen: 'Auscultation : souffle systolique léger. ECG : rythme sinusal. TA : 14/9. SpO2 : 97%.', poids: 82, taille: 175 },
-        { diag: 'Rhinopharyngite', motif: 'Toux persistante', symptomes: 'Toux sèche depuis 5 jours, rhinorrhée claire, pharyngite. Légère fébricule.', examen: 'Gorge rouge. Tympans normaux. Pas d\'adénopathie. Auscultation pulmonaire: claire.', poids: 58, taille: 165 },
-        { diag: 'Lombalgie aiguë', motif: 'Mal de dos', symptomes: 'Lombalgie aiguë après effort de soulèvement. Raideur matinale. Douleur irradiant vers la fesse droite.', examen: 'Contracture paravertébrale lombaire. Lasègue négatif bilatéral. ROT normaux. Mobilité limitée en flexion.', poids: 88, taille: 178 },
-        { diag: 'HTA essentielle', motif: 'Contrôle tension', symptomes: 'Céphalées occipitales intermittentes. Vertiges positionnels. Acouphènes légers.', examen: 'TA bras droit : 16/10, bras gauche : 15/9. Fond d\'œil : stade I. Auscultation cardiaque : régulier, pas de souffle.', poids: 72, taille: 162 },
-        { diag: 'Diabète type 2 équilibré', motif: 'Suivi diabète', symptomes: 'Suivi trimestriel. Pas de plainte particulière. Glycémies à jeun entre 1.10 et 1.30 g/L.', examen: 'Examen des pieds : sensibilité conservée, pas de lésion. IMC : 28.4. Tour de taille : 96 cm. HbA1c : 6.8%.', poids: 85, taille: 173 },
-        { diag: 'Bronchite aiguë', motif: 'Fièvre', symptomes: 'Fièvre à 38.5°C depuis 3 jours. Toux grasse productive avec crachats jaunâtres. Courbatures.', examen: 'Auscultation : râles bronchiques bilatéraux. Pas de foyer de condensation. FR : 18/min.', poids: 65, taille: 170 },
-        { diag: 'Entorse cheville', motif: 'Chute', symptomes: 'Chute lors d\'une activité sportive. Douleur et gonflement de la cheville gauche. Impotence fonctionnelle.', examen: 'Œdème péri-malléolaire externe. Ecchymose en œuf de pigeon. Tiroir antérieur négatif. Pas de douleur malléolaire postérieure.', poids: 70, taille: 168 },
-        { diag: 'Migraine', motif: 'Céphalées', symptomes: 'Céphalées pulsatiles hémi-crâniennes droites. Photophobie, phonophobie. Nausées sans vomissements. Aura visuelle.', examen: 'Examen neurologique normal. Nuque souple. Paires crâniennes intactes. Pas de déficit moteur ni sensitif.', poids: 55, taille: 160 },
-        { diag: 'Gastrite', motif: 'Brûlures estomac', symptomes: 'Épigastralgies postprandiales. Pyrosis nocturne. Régurgitations acides. Ballonnements.', examen: 'Abdomen souple, sensibilité épigastrique sans défense. Pas d\'hépatosplénomégalie. Transit conservé.', poids: 78, taille: 182 },
-        { diag: 'Infection urinaire', motif: 'Brûlures miction', symptomes: 'Dysurie avec brûlures mictionnelles. Pollakiurie. Urines troubles et malodorantes. Pas de fièvre.', examen: 'Abdomen souple. Pas de douleur lombaire. BU : leucocytes +++, nitrites +.', poids: 62, taille: 158 },
-        { diag: 'Eczéma', motif: 'Démangeaisons', symptomes: 'Prurit intense au niveau des plis des coudes et creux poplités. Plaques érythémateuses suintantes. Troubles du sommeil.', examen: 'Plaques érythémato-squameuses bien délimitées aux plis. Lésions de grattage. Xérose cutanée diffuse. Pas de surinfection.', poids: 57, taille: 163 },
-        { diag: 'Angine streptococcique', motif: 'Mal de gorge', symptomes: 'Odynophagie intense depuis 48h. Fièvre à 39°C. Adénopathies cervicales sensibles. Pas de toux.', examen: 'Amygdales hypertrophiées, exsudat blanchâtre. Adénopathies sous-angulo-maxillaires. TDR streptococcique : positif.', poids: 68, taille: 172 },
+        { diag: 'SAOS sous PPC', motif: 'Douleur thoracique', notes: 'Auscultation : souffle systolique léger. ECG : rythme sinusal. TA : 14/9. SpO2 : 97%. SAOS sous PPC diagnostiqué.' },
+        { diag: 'Rhinopharyngite', motif: 'Toux persistante', notes: 'Gorge rouge. Tympans normaux. Pas d\'adénopathie. Auscultation pulmonaire claire. Rhinopharyngite d\'origine virale.' },
+        { diag: 'Lombalgie aiguë', motif: 'Mal de dos', notes: 'Contracture paravertébrale lombaire. Lasègue négatif bilatéral. ROT normaux. Repos + AINS + kiné recommandés.' },
+        { diag: 'HTA essentielle', motif: 'Contrôle tension', notes: 'TA bras droit : 16/10, bras gauche : 15/9. Fond d\'œil : stade I. Ajustement traitement antihypertenseur.' },
+        { diag: 'Diabète type 2 équilibré', motif: 'Suivi diabète', notes: 'Examen des pieds : sensibilité conservée. HbA1c : 6.8%. Bon équilibre. Continuer Metformine.' },
+        { diag: 'Bronchite aiguë', motif: 'Fièvre', notes: 'Auscultation : râles bronchiques bilatéraux. Pas de foyer de condensation. FR : 18/min. Traitement symptomatique.' },
+        { diag: 'Entorse cheville', motif: 'Chute', notes: 'Œdème péri-malléolaire externe. Tiroir antérieur négatif. Protocole RICE prescrit. Contrôle à J+7.' },
+        { diag: 'Migraine', motif: 'Céphalées', notes: 'Examen neurologique normal. Nuque souple. Paires crâniennes intactes. Triptan prescrit en crise.' },
+        { diag: 'Gastrite', motif: 'Brûlures estomac', notes: 'Abdomen souple, sensibilité épigastrique sans défense. IPP prescrit pour 4 semaines. RDV gastro si persistance.' },
+        { diag: 'Infection urinaire', motif: 'Brûlures miction', notes: 'BU : leucocytes +++, nitrites +. Antibiothérapie probabiliste prescrite. ECBU demandé.' },
+        { diag: 'Eczéma', motif: 'Démangeaisons', notes: 'Plaques érythémato-squameuses aux plis. Lésions de grattage. Dermocorticoïdes + émollient prescrits.' },
+        { diag: 'Angine streptococcique', motif: 'Mal de gorge', notes: 'TDR streptococcique : positif. Amoxicilline 6j prescrite. Repos recommandé.' },
     ];
     for (let i = 0; i < 12; i++) {
         const p = patients[i % patients.length];
@@ -951,13 +1029,7 @@ async function createDemoRecords(db, ids, userId) {
         const cd = consultData[i];
         const doc = await rec('consultations', `Consult. ${p.title} - ${cd.diag}`, {
             motif: cd.motif,
-            diagnostic: cd.diag,
-            symptomes: cd.symptomes,
-            examen_clinique: cd.examen,
-            poids: cd.poids,
-            taille_cm: cd.taille,
-            tension: `${12 + Math.floor(Math.random() * 4)}/${7 + Math.floor(Math.random() * 3)}`,
-            temperature: (36.5 + Math.random() * 1.5).toFixed(1),
+            notes_generales: cd.notes,
         }, {
             relations: [
                 { relationKey: rk['consultations__patients'], value: p._id },

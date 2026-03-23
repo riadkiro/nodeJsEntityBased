@@ -430,8 +430,10 @@ module.exports = {
                         const cfId = (cf._id || cf).toString();
                         const type = cf.type || 'string';
                         const subtype = cf.subtype || '';
+                        const uiRows = cf.ui?.rows || 1;
+                        const uiWidth = cf.ui?.width || 'half';
                         let width = 6;
-                        if (['textarea', 'richtext'].includes(type) || ['textarea', 'richtext'].includes(subtype)) {
+                        if (['textarea', 'richtext', 'relation'].includes(type) || ['textarea', 'richtext'].includes(subtype) || (type === 'text' && uiRows > 1) || uiWidth === 'full') {
                             width = 12;
                         }
                         return { fieldId: cfId, width, id: `auto_${cfId}`, tabId: 'default' };
@@ -984,8 +986,10 @@ module.exports = {
                         const cfId = (cf._id || cf).toString();
                         const type = cf.type || 'string';
                         const subtype = cf.subtype || '';
+                        const uiRows = cf.ui?.rows || 1;
+                        const uiWidth = cf.ui?.width || 'half';
                         let width = 6;
-                        if (['textarea', 'richtext'].includes(type) || ['textarea', 'richtext'].includes(subtype)) {
+                        if (['textarea', 'richtext', 'relation'].includes(type) || ['textarea', 'richtext'].includes(subtype) || (type === 'text' && uiRows > 1) || uiWidth === 'full') {
                             width = 12;
                         }
                         return {

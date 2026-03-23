@@ -27,11 +27,11 @@
             <div class="flex items-start gap-3">
                 <iconify-icon icon="solar:danger-triangle-bold-duotone" width="24" height="24" class="text-warning mt-0.5 shrink-0"></iconify-icon>
                 <div>
-                    <h6 class="font-semibold text-warning">Attention — Factory Reset</h6>
+                    <h6 class="font-semibold text-warning">Attention — Factory Reset complet</h6>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        L'installation d'un modèle <strong>supprime toutes les données métier existantes</strong> créées par ce même modèle
-                        (entités, champs, classifications, records de démo, navigation, documents).
-                        Les comptes utilisateurs et les données personnelles ne sont <strong>jamais</strong> affectés.
+                        L'installation d'un modèle effectue un <strong>reset complet</strong> : toutes les données métier sont supprimées
+                        (entités, records, champs, classifications, vues, dossiers, espaces, environnements, documents, etc.).
+                        <strong>Seuls les comptes utilisateurs et profils sont préservés.</strong>
                     </p>
                 </div>
             </div>
@@ -135,12 +135,12 @@ document.addEventListener('alpine:init', () => {
                 title: `Installer "${name}" ?`,
                 html: `<p class="text-sm text-gray-500 mt-2">Cette opération va :</p>
                     <ul class="text-sm text-left mt-3 space-y-1">
-                        <li>🗑️ Supprimer les données créées par ce modèle</li>
+                        <li>🗑️ <strong>Supprimer TOUTES les données métier</strong> (entités, records, champs, classifications, vues, navigation, documents...)</li>
                         <li>🔄 Recréer les entités, champs et navigation</li>
                         <li>📊 Insérer les données de démonstration</li>
                         <li>📄 Créer les modèles de documents</li>
                     </ul>
-                    <p class="text-xs text-warning mt-3">⚠️ Les comptes et données personnelles ne sont pas affectés.</p>`,
+                    <p class="text-xs text-warning mt-3">⚠️ Seuls les comptes utilisateurs et profils sont préservés.</p>`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#4361ee',

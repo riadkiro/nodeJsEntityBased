@@ -428,6 +428,12 @@
                             <iconify-icon icon="solar:widget-6-bold-duotone" width="15" class="text-purple-400"></iconify-icon>
                             <span>Configurer l'en-tête</span>
                         </button>
+                        <!-- Sidebar Config -->
+                        <button type="button" @click="$dispatch('open-sidebar-config'); showMoreMenu = false"
+                            class="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <iconify-icon icon="solar:sidebar-minimalistic-bold-duotone" width="15" class="text-teal-400"></iconify-icon>
+                            <span>Configurer la sidebar</span>
+                        </button>
                         <div class="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
                         <!-- Delete -->
                         <button type="button" @click="showDeleteConfirm = true; showMoreMenu = false"
@@ -540,8 +546,8 @@
                                     <iconify-icon icon="tabler:plus" width="12"></iconify-icon>
                                 </button>
                             </template>
-                            <!-- Remove button for custom tabs -->
-                            <template x-if="tab.isCustom">
+                            <!-- Remove button for custom tabs (only in designMode) -->
+                            <template x-if="tab.isCustom && designMode">
                                 <button type="button"
                                         @click.stop="removeCustomTab(tab.key)"
                                         class="w-5 h-5 rounded flex items-center justify-center ml-0.5 text-gray-300 dark:text-gray-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all shrink-0 no-drag cursor-pointer"
@@ -552,15 +558,18 @@
                         </div>
                     </template>
 
-                    <!-- Add Custom Tab Button -->
+                    <!-- Add Custom Tab Button (hidden unless designMode) -->
+                    <template x-if="designMode">
                     <button type="button" @click="openCustomTabModal()"
                             class="flex items-center justify-center w-7 h-7 rounded-lg text-gray-400 hover:text-primary hover:bg-primary/10 transition-all shrink-0 no-drag"
                             title="Ajouter un onglet personnalisé">
                         <iconify-icon icon="solar:add-square-bold-duotone" width="15"></iconify-icon>
                     </button>
+                    </template>
                 </div>
 
-                <!-- Config Button -->
+                <!-- Config Button (hidden unless designMode) -->
+                <template x-if="designMode">
                 <div class="flex items-center gap-1 pr-2 pl-1 border-l dark:border-gray-700/50">
                     <button type="button" @click="showConfig = !showConfig"
                             class="flex items-center justify-center w-7 h-7 rounded-lg transition-all"
@@ -569,6 +578,7 @@
                         <iconify-icon icon="solar:settings-bold-duotone" width="15"></iconify-icon>
                     </button>
                 </div>
+                </template>
             </div>
 
             <!-- Config Panel (dropdown) -->
@@ -2264,7 +2274,7 @@
                                                          cfgBlock.config.columns = schema.columns || [];
                                                      }
                                                  }"
-                                                 x-init="if(!cfgBlock.config) cfgBlock.config = { displayMode: 'table', enableCatalog: true, enableAdd: true, enableSnapshots: true }; loadSchemas()">
+                                                 x-init="if(!cfgBlock.config) cfgBlock.config = { displayMode: 'table', enableAdd: true, enableSnapshots: true }; loadSchemas()">
                                                 <div>
                                                     <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Tableau dynamique à utiliser</label>
                                                     <template x-if="_dtLoading">
@@ -2321,7 +2331,7 @@
                                                         </div>
                                                         <div style="display: flex; flex-direction: column; gap: 4px;">
                                                             <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 2px;">Options</label>
-                                                            <template x-for="opt in [{k:'enableAdd',l:'Ajouter des lignes'},{k:'enableCatalog',l:'Catalogue'},{k:'enableSnapshots',l:'Snapshots / Validation'}]" :key="opt.k">
+                                                            <template x-for="opt in [{k:'enableAdd',l:'Ajouter des lignes'},{k:'enableSnapshots',l:'Snapshots / Validation'}]" :key="opt.k">
                                                                 <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 0;">
                                                                     <span style="font-size: 12px; color: #4b5563;" x-text="opt.l"></span>
                                                                     <label style="position: relative; width: 36px; height: 20px; display: inline-block;">
@@ -5303,10 +5313,8 @@
 <style>
     /* â•â•â• Ghost Fields: border-on-hover, full styling on focus â•â•â• */
     [data-panel-id="attributs"] .form-input,
-    [data-panel-id="attributs"] .form-textarea:not([name="standard[description]"]),
     [data-panel-id="attributs"] .form-select,
     [data-panel-id="attributs"] input.form-input,
-    [data-panel-id="attributs"] textarea.form-textarea:not([name="standard[description]"]),
     [data-panel-id="attributs"] select.form-select {
         background: transparent !important;
         border-color: transparent !important;
@@ -5316,6 +5324,16 @@
         box-shadow: none !important;
         transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
         padding: 8px 10px;
+    }
+    /* Textarea: keep visible bg/border (not ghost) for better UX */
+    [data-panel-id="attributs"] .form-textarea,
+    [data-panel-id="attributs"] textarea.form-textarea {
+        background: #f9fafb !important;
+        border: 1px solid transparent !important;
+        border-radius: 8px !important;
+        box-shadow: none !important;
+        transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+        padding: 8px 12px;
     }
     [data-panel-id="attributs"] .form-input:hover,
     [data-panel-id="attributs"] .form-textarea:hover,
@@ -5495,7 +5513,15 @@
     <%- JSON.stringify(locals.fields || []).replace(/</g, '\\u003C') %>
 </script>
 <script type="application/json" id="record-values">
-    <%- JSON.stringify([...(record.customFields || []), ...((record.relations || []).map(r => ({ field_id: r.relationKey, value: r.value })))]).replace(/</g, '\\u003C') %>
+    <%
+        // Group relation values by relationKey into arrays
+        const _relMap = {};
+        (record.relations || []).forEach(r => {
+            if (!_relMap[r.relationKey]) _relMap[r.relationKey] = [];
+            if (r.value) _relMap[r.relationKey].push(r.value);
+        });
+        const _relValues = Object.keys(_relMap).map(key => ({ field_id: key, value: _relMap[key] }));
+    %><%- JSON.stringify([...(record.customFields || []), ..._relValues]).replace(/</g, '\\u003C') %>
 </script>
 <script type="application/json" id="entity-relations">
     <%- JSON.stringify((entity.relations || []).map(r => ({
@@ -5503,6 +5529,8 @@
         type: 'relation',
         label: r.label || 'Relation',
         name: r.label || 'Relation',
+        showInForm: r.showInForm || false,
+        relationKey: r.key,
         type_config: {
             refEntity: (r.targetEntity && r.targetEntity._id ? r.targetEntity._id.toString() : (r.targetEntity || '')),
             multiple: (r.cardinality === 'one-to-many' || r.cardinality === 'many-to-many')
@@ -6885,7 +6913,7 @@
 
             // Inject entity relations as pseudo-fields in fieldsMap
             const entityRelations = JSON.parse(document.getElementById("entity-relations").textContent);
-            entityRelations.forEach(r => { if (!fieldsMap[r._id]) fieldsMap[r._id] = r; });
+            entityRelations.forEach(r => { r._isEntityRelation = true; if (!fieldsMap[r._id]) fieldsMap[r._id] = r; });
 
             const valuesMap = {};
             recordValues.forEach(cv => { valuesMap[cv.field_id] = cv.value; });
@@ -6931,9 +6959,9 @@
                 renderAllFields() {
                     const currentTabFields = this.layout.filter(item => {
                         if (item.tabId !== this.activeTab) return false;
-                        // Exclude relation fields - they have their own panel
+                        // Include entity relations that have showInForm:true (inline), exclude others
                         const field = this.fieldsById[item.fieldId];
-                        if (field && field.type === 'relation') return false;
+                        if (field && field._isEntityRelation && !field.showInForm) return false;
                         return true;
                     });
                     if (currentTabFields.length === 0 && this.designMode) {
@@ -6951,10 +6979,11 @@
                 },
 
                 getRelationFields() {
+                    // Only return entity relations NOT shown in form (showInForm:false)
                     return this.layout
                         .filter(item => {
                             const field = this.fieldsById[item.fieldId];
-                            return field && field.type === 'relation';
+                            return field && field.type === 'relation' && field._isEntityRelation && !field.showInForm;
                         })
                         .map(item => ({
                             item: item,
@@ -7106,12 +7135,12 @@
                             ? `<label class="flex items-center mb-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300" style="display:flex;align-items:center;gap:4px"><iconify-icon icon="${fieldIcon}" width="14" class="text-gray-400" style="flex-shrink:0"></iconify-icon>${field.label || field.name}</label>`
                             : `<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">${field.label || field.name}</label>`;
                         
-                        if (type === 'textarea' || type === 'richtext' || subtype === 'textarea' || subtype === 'richtext') {
+                        if (type === 'textarea' || type === 'richtext' || subtype === 'textarea' || subtype === 'richtext' || (type === 'text' && (field.ui?.rows || 1) > 1)) {
                             const fieldRows = field.ui?.rows || 3;
                             if (fieldRows <= 1) {
                                 template = `${labelHtml}<input type="text" name="${fieldName}" class="form-input text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" placeholder="${placeholder}" value="{{value}}" />`;
                             } else {
-                                template = `${labelHtml}<textarea name="${fieldName}" class="form-textarea text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" rows="${fieldRows}" placeholder="${placeholder}">{{value}}</textarea>`;
+                                template = `${labelHtml}<textarea name="${fieldName}" class="text-sm dark:bg-[#121e32] dark:border-[#17263c] dark:text-gray-300" rows="${fieldRows}" placeholder="${placeholder}">{{value}}</textarea>`;
                             }
                         } else if (type === 'boolean' || subtype === 'boolean' || subtype === 'checkbox') {
                             template = `<label class="flex items-center gap-3 cursor-pointer"><span class="text-sm font-semibold text-gray-700 dark:text-gray-300">${field.label || field.name}</span><label class="w-12 h-6 relative mb-0"><input type="checkbox" name="${fieldName}" class="custom_switch absolute w-full h-full opacity-0 z-10 cursor-pointer peer" value="on" {{checked}} /><span class="bg-[#ebedf2] dark:bg-dark block h-full rounded-full before:absolute before:left-1 before:bg-white dark:before:bg-white-dark dark:peer-checked:before:bg-white before:bottom-1 before:w-4 before:h-4 before:rounded-full peer-checked:before:left-7 peer-checked:bg-primary before:transition-all before:duration-300"></span></label></label>`;
@@ -7138,82 +7167,96 @@
                         }
                     }
                     if (!template && field.type === 'relation') {
+                        const fieldIcon = field.ui?.icon || 'solar:share-bold-duotone';
+                        const relLabel = field.label || field.name || 'Relation';
+                        const relLabelHtml = `<label class="flex items-center mb-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300" style="display:flex;align-items:center;gap:4px"><iconify-icon icon="${fieldIcon}" width="14" class="text-gray-400" style="flex-shrink:0"></iconify-icon>${relLabel}</label>`;
+                        const isEntityRel = !!field._isEntityRelation;
+                        const refEntity = field.type_config?.refEntity || '';
+                        const isMultiple = field.type_config?.multiple ?? false;
+                        const initialValue = JSON.stringify(this.valuesMap[field._id] || (isMultiple ? [] : ''));
+                        const safeInitialValue = initialValue.replace(/"/g, '&quot;');
                         template = `
 <div x-data="relationField({ 
-    fieldId: '{{_id}}', 
-    refEntity: '{{type_config.refEntity}}', 
-    multiple: {{type_config.multiple}}, 
-    initialValue: {{value_json}} 
-})" class="relative">
-    {{label}}
+    fieldId: '${field._id}', 
+    refEntity: '${refEntity}', 
+    multiple: ${isMultiple}, 
+    persistKey: '${field.relationKey || field._id}',
+    isEntityRelation: ${isEntityRel}
+})" data-initval="${safeInitialValue}" class="tp-wrapper" @click.away="showResults = false">
+    ${relLabelHtml}
     
-    <!-- Search Input -->
-    <div class="relative group" @click.away="showResults = false">
-        <input 
-            x-ref="searchInput"
-            type="text" 
-            class="form-input pr-10" 
-            placeholder="{{ui.placeholder}}" 
-            x-model="searchQuery"
-            @input.debounce.300ms="search"
-            @focus="openDropdown"
-        />
-        <div @click="$refs.searchInput.focus(); openDropdown()" class="text-gray-400 cursor-pointer flex items-center" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 10;">
-             <iconify-icon icon="tabler:chevron-down" width="16"></iconify-icon>
+    <div class="tp-trigger" style="padding:3px 8px;min-height:32px;gap:4px" :class="showResults ? 'tp-trigger--active' : ''" @click="$refs.searchInput.focus(); openDropdown()"><template x-for="item in selectedItems" :key="item.id"><span class="tp-tag" style="background:#dbeafe;color:#2563eb;padding:1px 8px;font-size:12px;line-height:20px;border-radius:4px"><span x-text="item.label"></span><button type="button" class="tp-tag-remove" @click.stop="removeItem(item.id)"><iconify-icon icon="tabler:x" width="10"></iconify-icon></button></span></template><template x-if="selectedItems.length === 0"><span class="tp-placeholder">Sélectionner...</span></template></div>
+
+    <!-- Dropdown -->
+    <div class="tp-dropdown" x-show="showResults" x-cloak
+         style="max-width: 100%;"
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0 translate-y-1"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @click.stop>
+        <!-- Search -->
+        <div class="tp-search-wrap">
+            <input type="text" class="tp-search-input"
+                   placeholder="Rechercher ou créer..."
+                   x-model="searchQuery"
+                   x-ref="searchInput"
+                   @input.debounce.300ms="search"
+                   @focus="openDropdown"
+                   @click="openDropdown" />
         </div>
-        
-        <!-- Results Dropdown -->
-        <div x-show="showResults" 
-             style="display: none;"
-             class="absolute z-50 w-full mt-1 bg-white border border-border rounded-md shadow-xl max-h-60 overflow-y-auto overflow-x-hidden">
-             
+
+        <div class="tp-divider"></div>
+
+        <!-- Results list -->
+        <div class="tp-options">
             <template x-if="loading && page === 1">
-                <div class="px-4 py-2 text-sm text-secondary">Loading...</div>
+                <div style="padding: 8px 12px; text-align: center; color: #9ca3af; font-size: 12px;">Chargement...</div>
             </template>
 
             <template x-for="result in results" :key="result.id">
-                <div @click="selectItem(result)" 
-                     class="px-4 py-2 hover:bg-primary/5 cursor-pointer flex justify-between items-center border-b border-border last:border-0">
-                    <span x-text="result.label" class="truncate"></span>
-                    <iconify-icon icon="tabler:plus" class="text-primary/50" width="16"></iconify-icon>
+                <div class="tp-option" @click="selectItem(result)">
+                    <div class="tp-option-icon" style="background: #dbeafe;">
+                        <iconify-icon x-show="selectedItems.some(i => i.id === result.id)" icon="tabler:check" width="12" style="color: #2563eb;"></iconify-icon>
+                    </div>
+                    <span class="tp-option-label" x-text="result.label"></span>
                 </div>
             </template>
-            
-            <template x-if="!loading && results.length === 0">
-                 <div class="px-4 py-2 text-sm text-secondary">No results found</div>
-            </template>
 
-            <template x-if="hasMore">
-                <button type="button" @click.stop="loadMore" :disabled="loading" style="width: 100%; padding: 8px 16px; font-size: 13px; color: #4361ee; background: #f8f9ff; border: none; border-top: 1px solid #e0e6ed; cursor: pointer; text-align: center; white-space: nowrap; position: sticky; bottom: 0;">
-                    <span x-show="!loading">Charger plus...</span>
-                    <span x-show="loading" style="display: none;">Chargement...</span>
-                </button>
+            <template x-if="!loading && results.length === 0">
+                <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 12px;">Aucun résultat</div>
             </template>
         </div>
-    </div>
 
-    <!-- Selected Items (Below Input) -->
-    <div class="flex flex-wrap gap-1 mt-2">
-        <template x-for="item in selectedItems" :key="item.id">
-            <span class="inline-flex items-center gap-1 px-1.5 h-6 bg-primary/10 text-primary rounded text-xs border border-primary/20">
-                <span x-text="item.label"></span>
-                <button type="button" @click="removeItem(item.id)" class="hover:text-danger flex items-center transition-colors">
-                    <iconify-icon icon="tabler:x" width="11"></iconify-icon>
-                </button>
-            </span>
+        <template x-if="hasMore">
+            <button type="button" @click.stop="loadMore" :disabled="loading" 
+                style="width: 100%; padding: 6px 10px; font-size: 12px; color: #4361ee; background: #f8f9ff; border: none; border-top: 1px solid #f3f4f6; cursor: pointer; text-align: center;">
+                <span x-show="!loading">Charger plus...</span>
+                <span x-show="loading" style="display: none;">Chargement...</span>
+            </button>
         </template>
+
+        <!-- Quick Create button -->
+        <div class="tp-create-option" 
+             @click="quickCreate()">
+            <iconify-icon icon="tabler:plus" width="14" style="color: #6b7280;"></iconify-icon>
+            <span class="tp-create-label">Créer</span>
+            <span class="tp-create-tag">${relLabel}</span>
+        </div>
     </div>
 
     <!-- Hidden inputs for persistence -->
     <template x-if="multiple">
         <div>
           <template x-for="item in selectedItems" :key="item.id">
-              <input type="hidden" :name="'custom[' + fieldId + '][]'" :value="item.id">
+              <input type="hidden" :name="isEntityRelation ? ('relation[' + fieldId + '][]') : ('custom[' + fieldId + '][]')" :value="item.id">
           </template>
         </div>
     </template>
     <template x-if="!multiple">
-        <input type="hidden" :name="'custom[' + fieldId + ']'" :value="selectedItems[0]?.id || ''">
+        <input type="hidden" :name="isEntityRelation ? ('relation[' + fieldId + ']') : ('custom[' + fieldId + ']')" :value="selectedItems[0]?.id || ''">
     </template>
 </div>`;
                     }
@@ -7604,6 +7647,8 @@
             fieldId: config.fieldId,
             refEntity: config.refEntity,
             multiple: config.multiple,
+            persistKey: config.persistKey || config.fieldId,
+            isEntityRelation: config.isEntityRelation || false,
             searchQuery: '',
             results: [],
             selectedItems: [],
@@ -7613,8 +7658,11 @@
             loading: false,
 
             async init() {
-                if (config.initialValue) {
-                    const idsRaw = config.initialValue;
+                // Read initialValue from data-initval attribute to avoid double-quote conflicts in x-data
+                const rawInitVal = this.$root.dataset.initval;
+                const parsedInitVal = rawInitVal ? JSON.parse(rawInitVal) : (config.initialValue || null);
+                if (parsedInitVal) {
+                    const idsRaw = parsedInitVal;
                     let ids = [];
                     if (Array.isArray(idsRaw)) {
                         ids = idsRaw.filter(i => i && i !== '');
@@ -7701,6 +7749,36 @@
 
             removeItem(id) {
                 this.selectedItems = this.selectedItems.filter(i => i.id !== id);
+            },
+
+            async quickCreate() {
+                this.showResults = false;
+                // Try using the existing relation tabs quick create
+                if (this.isEntityRelation && window.relationTabsApp) {
+                    const tab = window.relationTabsApp.allTabs.find(t => t.key === this.fieldId);
+                    if (tab) {
+                        window.relationTabsApp.openQuickCreate(tab);
+                        return;
+                    }
+                }
+                // Fallback: create via API with the search query as title
+                const title = this.searchQuery || prompt('Nom du nouvel élément :');
+                if (!title) return;
+                try {
+                    const acc = '<%= account_number %>';
+                    const res = await fetch(`/account/${acc}/record/api/quick-create`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ entityId: this.refEntity, title: title })
+                    });
+                    const data = await res.json();
+                    if (data.success && data.record) {
+                        const newItem = { id: data.record._id, label: data.record.title || title };
+                        this.selectItem(newItem);
+                    }
+                } catch (e) {
+                    console.error('Quick create failed:', e);
+                }
             }
         }));
 
@@ -7880,17 +7958,23 @@
     }
 
     .form-input:focus,
+    .form-textarea:focus,
+    textarea:focus,
     select:focus {
         border-color: #4361ee !important;
         background-color: #fff !important;
-        box-shadow: 0 0 0 1px rgba(67, 97, 238, 0.1) !important;
+        box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.12) !important;
+        outline: none !important;
     }
 
     .dark .form-input:focus,
+    .dark .form-textarea:focus,
+    .dark textarea:focus,
     .dark select:focus {
         border-color: #22bce9 !important;
         background-color: #1b2e4b !important;
-        box-shadow: 0 0 0 1px rgba(34, 188, 233, 0.1) !important;
+        box-shadow: 0 0 0 2px rgba(34, 188, 233, 0.15) !important;
+        outline: none !important;
     }
 
     textarea,
@@ -7940,7 +8024,7 @@
     }
 
     /* Force button height and center label - Fixed Shift */
-    .builder-preview button {
+    .builder-preview button:not(.tp-tag-remove) {
         height: 38px !important;
         display: inline-flex !important;
         align-items: center !important;
@@ -7952,14 +8036,14 @@
         width: 12px;
     }
 
-    .builder-preview button * {
+    .builder-preview button:not(.tp-tag-remove) * {
         margin: 0 !important;
         padding: 0 !important;
         pointer-events: none !important;
     }
 
     /* Force tightening on ANY template injected tags */
-    .builder-preview *:not(input[type="file"]):not(label):not(button) {
+    .builder-preview *:not(input[type="file"]):not(label):not(button):not(textarea):not(.tp-trigger):not(.tp-tag):not(.tp-placeholder):not(.tp-wrapper):not(.tp-dropdown):not(.tp-search-wrap):not(.tp-search-input):not(.tp-options):not(.tp-option):not(.tp-divider):not(.tp-create-option) {
         margin-top: 0 !important;
         margin-bottom: 0 !important;
         padding-top: 0 !important;

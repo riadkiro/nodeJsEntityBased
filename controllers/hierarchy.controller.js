@@ -1296,5 +1296,148 @@ module.exports = {
             }
             res.status(500).json({ error: "Failed to apply template" });
         }
+    },
+
+    /**
+     * Promote a Space to an Environment.
+     * POST /api/hierarchy/promote-space-to-environment
+     * Body: { spaceId }
+     * 
+     * Simple approach:
+     * 1. Creates a new Environment with the Space's name, icon, color
+     * 2. Moves the EXISTING Space into the new Environment (just updates environmentId)
+     * 
+     * The Space keeps ALL its children (folders, views) intact — zero migration needed.
+     */
+    promoteSpaceToEnvironment: async (req, res) => {
+        try {
+            const { spaceId } = req.body;
+            if (!spaceId) return res.status(400).json({ error: "spaceId is required" });
+
+            const EnvironmentModel = await tenantCollection(req, "Environment");
+            const SpaceModel = await tenantCollection(req, "Space");
+
+            // 1. Find the original space
+            const originalSpace = await SpaceModel.findById(spaceId);
+            if (!originalSpace) return res.status(404).json({ error: "Space not found" });
+
+            // 2. Create new Environment from the space data
+            const envCount = await EnvironmentModel.countDocuments();
+            const envSlug = await uniqueSlug(EnvironmentModel, originalSpace.name);
+            const newEnv = new EnvironmentModel({
+                name: originalSpace.name,
+                slug: envSlug,
+                icon: originalSpace.icon || 'solar:planet-3-bold-duotone',
+                color: originalSpace.color || '#6366f1',
+                order: envCount,
+                createdBy: req.user._id
+            });
+            await newEnv.save();
+
+            // 3. Move the existing Space into the new Environment
+            //    This preserves ALL children (folders, views) — no migration needed
+            originalSpace.environmentId = newEnv._id;
+            await originalSpace.save();
+
+            console.log(`[Hierarchy] Promoted space "${originalSpace.name}" to environment "${newEnv.name}"`);
+
+            res.json({
+                success: true,
+                environment: {
+                    id: newEnv._id.toString(),
+                    name: newEnv.name,
+                    slug: newEnv.slug,
+                    icon: newEnv.icon,
+                    color: newEnv.color,
+                    image: newEnv.image || '',
+                    order: newEnv.order
+                }
+            });
+        } catch (error) {
+            console.error("[Hierarchy] promoteSpaceToEnvironment Error:", error);
+            res.status(500).json({ error: "Failed to promote space to environment" });
+        }
+    },
+
+    /**
+     * Promote a Folder → Environment
+     * 1. Create a new Environment with the folder's name/icon
+     * 2. Create a new Space inside the environment
+     * 3. Move all folder children (sub-folders, views) into the new Space
+     * 4. Delete the original folder
+     */
+    promoteFolderToEnvironment: async (req, res) => {
+        try {
+            const { folderId } = req.body;
+            if (!folderId) return res.status(400).json({ error: "folderId is required" });
+
+            const EnvironmentModel = await tenantCollection(req, "Environment");
+            const SpaceModel = await tenantCollection(req, "Space");
+            const FolderModel = await tenantCollection(req, "Folder");
+            const ViewModel = await tenantCollection(req, "View");
+
+            // 1. Find the original folder
+            const originalFolder = await FolderModel.findById(folderId);
+            if (!originalFolder) return res.status(404).json({ error: "Folder not found" });
+
+            // 2. Create new Environment
+            const envCount = await EnvironmentModel.countDocuments();
+            const envSlug = await uniqueSlug(EnvironmentModel, originalFolder.name);
+            const newEnv = new EnvironmentModel({
+                name: originalFolder.name,
+                slug: envSlug,
+                icon: originalFolder.icon || 'solar:planet-3-bold-duotone',
+                color: originalFolder.color || '#6366f1',
+                order: envCount,
+                createdBy: req.user._id
+            });
+            await newEnv.save();
+
+            // 3. Create a Space inside the new environment
+            const spaceSlug = await uniqueSlug(SpaceModel, originalFolder.name);
+            const newSpace = new SpaceModel({
+                name: originalFolder.name,
+                slug: spaceSlug,
+                icon: originalFolder.icon || 'solar:planet-3-bold-duotone',
+                color: originalFolder.color || '#6366f1',
+                environmentId: newEnv._id,
+                order: 0,
+                owner: req.user._id
+            });
+            await newSpace.save();
+
+            // 4. Move children: sub-folders that had this folder as parent → now belong to the Space
+            await FolderModel.updateMany(
+                { parentFolders: folderId },
+                { $pull: { parentFolders: folderId }, $addToSet: { spaces: newSpace._id } }
+            );
+
+            // 5. Move children: views that had this folder → now belong to the Space
+            await ViewModel.updateMany(
+                { folders: folderId },
+                { $pull: { folders: folderId }, $addToSet: { spaces: newSpace._id } }
+            );
+
+            // 6. Delete the original folder
+            await FolderModel.findByIdAndDelete(folderId);
+
+            console.log(`[Hierarchy] Promoted folder "${originalFolder.name}" to environment "${newEnv.name}"`);
+
+            res.json({
+                success: true,
+                environment: {
+                    id: newEnv._id.toString(),
+                    name: newEnv.name,
+                    slug: newEnv.slug,
+                    icon: newEnv.icon,
+                    color: newEnv.color,
+                    image: newEnv.image || '',
+                    order: newEnv.order
+                }
+            });
+        } catch (error) {
+            console.error("[Hierarchy] promoteFolderToEnvironment Error:", error);
+            res.status(500).json({ error: "Failed to promote folder to environment" });
+        }
     }
 };

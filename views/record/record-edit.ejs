@@ -1,9 +1,22 @@
 <%- include('../components/tag-picker') %>
+<style>
+    /* Fix z-index collisions in header hero bar and related dropdowns */
+    .hb-icon-item { position: relative !important; transition: z-index 0s !important; }
+    .hb-icon-item:hover, .hb-icon-item:focus-within { z-index: 50 !important; }
+    .hb-dropdown { position: absolute !important; z-index: 9999 !important; }
+    
+    /* Ensure header bar itself is above main content if any z-index issues occur */
+    .header-hero-bar { position: relative; z-index: 40; }
+    
+    /* Tag picker wrappers in header */
+    .relative:has(.tp-dropdown) { transition: z-index 0s !important; }
+    .relative:has(.tp-dropdown):hover, .relative:has(.tp-dropdown):focus-within { z-index: 100 !important; }
+</style>
 <div x-data="recordForm()" class="space-y-4">
     <form action="/account/<%= account_number %>/record/<%= entity.slug %>/update/<%= record._id %>" method="POST"
         enctype="multipart/form-data" id="main-record-form">
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HERO IDENTITY BAR (Mission 1) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════ HERO IDENTITY BAR (Mission 1) ═══════════════════ -->
         <%
             const _hc = entity.headerConfig || {};
 
@@ -259,8 +272,8 @@ window.__syncClsInputs = function(clsId, ids) {
     }
 };
 </script>
-        <div class="flex items-center justify-between px-5 py-3 bg-white dark:bg-[#1b2e4b] rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm mb-4"
-            x-data="headerBar()">
+        <div class="header-hero-bar flex items-center justify-between px-5 py-3 bg-white dark:bg-[#1b2e4b] rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm mb-4"
+               x-data="headerBar()">
             <!-- Left: Avatar + Identity -->
             <div class="flex items-center gap-4 min-w-0">
                 <!-- Avatar -->
@@ -8308,3 +8321,6 @@ window.__syncClsInputs = function(clsId, ids) {
         }
     });
 </script>
+
+
+

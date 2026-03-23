@@ -1,5 +1,20 @@
-    <div class="space-y-3 sticky top-20" x-data="recordSidebar" id="sidebar-inner-sortable">
+<div class="space-y-3 sticky top-20" x-data="recordSidebar" id="sidebar-inner-sortable">
 
+        <style>
+    /* Fix sidebar panel z-index collisions */
+    .panel-sortable-item {
+        position: relative;
+        z-index: 1;
+        transition: z-index 0s;
+    }
+    .panel-sortable-item:focus-within {
+        z-index: 50 !important;
+    }
+    .panel-sortable-item:hover {
+        z-index: 40;
+    }
+</style>
+<%# ─── Panel Manager / Widget Catalog ─── %>
         <!-- ═══ Panel Manager Header (hidden by default, shown in designMode or via "..." menu) ═══ -->
         <div class="flex items-center justify-between" style="padding: 0 2px;" x-show="designMode || sidebarConfigOpen" x-cloak>
             <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Sidebar</span>

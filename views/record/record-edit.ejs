@@ -20,16 +20,20 @@
         <%
             const _hc = entity.headerConfig || {};
 
-            // â”€â”€ Resolve classifications for header display â”€â”€
             // ── Resolve classifications for header display ──
-            // ── Resolve classifications for header display ──
-            const _statusCls = (entity.statusClassification && typeof entity.statusClassification.toObject === 'function') ? entity.statusClassification.toObject() : (entity.statusClassification || {});
-            let _statusLabel = '', _statusColor = '#94a3b8', _statusSelectedIds = [];
+            const allClassifications = (entity.classifications || []).map(c => (typeof c.toObject === 'function') ? c.toObject() : c);
+            
+            let _statusCls = entity.statusClassification || {};
+            // If it's unpopulated (just an ID string), find it in the classifications list
+            if (typeof _statusCls === 'string' || (typeof _statusCls === 'object' && _statusCls._bsontype === 'ObjectID')) {
+                _statusCls = allClassifications.find(c => c._id.toString() === _statusCls.toString()) || {};
+            } else if (typeof _statusCls.toObject === 'function') {
+                _statusCls = _statusCls.toObject();
+            }
+
+            let _statusLabel = '', _statusColor = '#9ca3af', _statusSelectedIds = [];
             const _clsTags = [];
             const _shownCls = _hc.shownClassifications || [];
-
-            // Get all classifications from entity
-            const allClassifications = (entity.classifications || []).map(c => (typeof c.toObject === 'function') ? c.toObject() : c);
 
             if (record.classificationValues && record.classificationValues.length > 0) {
                 record.classificationValues.forEach(cv => {
@@ -39,7 +43,7 @@
                         const opt = (_statusCls.options || []).find(o => o._id?.toString() === cv.optionId?.toString());
                         if (opt) { 
                             _statusLabel = opt.label; 
-                            _statusColor = opt.color || '#94a3b8';
+                            _statusColor = opt.color || '#9ca3af';
                             _statusSelectedIds.push(cv.optionId.toString());
                         }
                     }
@@ -88,28 +92,7 @@
                             allowMultiple: !!cls.allowMultiple,
                             options: (cls.options || []).map(o => ({ _id: o._id.toString(), label: o.label, color: o.color })),
                             label: 'Sélectionner...',
-                            color: '#94a3b8',
-                            selectedIds: [],
-                            isEmpty: true
-                        });
-                    }
-                });
-            }
-
-            // Also add empty classifications that are explicitly shown in header
-            if (_shownCls.length > 0) {
-                _shownCls.forEach(clsId => {
-                    if (_statusCls && _statusCls._id && _statusCls._id.toString() === clsId) return;
-                    if (_clsTags.find(t => t.clsId === clsId)) return;
-                    const cls = allClassifications.find(c => c._id.toString() === clsId);
-                    if (cls) {
-                        _clsTags.push({
-                            clsId: cls._id.toString(),
-                            clsName: cls.name,
-                            allowMultiple: !!cls.allowMultiple,
-                            options: (cls.options || []).map(o => ({ _id: o._id.toString(), label: o.label, color: o.color })),
-                            label: 'Sélectionner...',
-                            color: '#94a3b8',
+                            color: '#9ca3af',
                             selectedIds: [],
                             isEmpty: true
                         });

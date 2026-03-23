@@ -80,27 +80,28 @@
                 });
             }
 
-            // Also add empty classifications that are explicitly shown in header
-            if (_shownCls.length > 0) {
-                _shownCls.forEach(clsId => {
-                    const sId = clsId.toString();
-                    if (_statusCls && _statusCls._id && _statusCls._id.toString() === sId) return;
-                    if (_clsTags.find(t => t.clsId === sId)) return;
-                    const cls = allClassifications.find(c => c._id.toString() === sId);
-                    if (cls) {
-                        _clsTags.push({
-                            clsId: sId,
-                            clsName: cls.name,
-                            allowMultiple: !!cls.allowMultiple,
-                            options: (cls.options || []).map(o => ({ _id: o._id.toString(), label: o.label, color: o.color })),
-                            label: 'Sélectionner...',
-                            color: '#9ca3af',
-                            selectedIds: [],
-                            isEmpty: true
-                        });
-                    }
-                });
-            }
+            // Also add all remaining entity classifications as placeholders
+            allClassifications.forEach(cls => {
+                const clsId = (cls._id || '').toString();
+                // Skip if it's the status classification
+                if (_statusCls && _statusCls._id && _statusCls._id.toString() === clsId) return;
+                // Skip if it's already in the tags list (as a selected tag)
+                if (_clsTags.find(t => t.clsId === clsId)) return;
+                
+                // Show if: no manual hero config, OR explicitly shown, OR if the user wants placeholders for everything
+                if (_shownCls.length === 0 || _shownCls.includes(clsId)) {
+                    _clsTags.push({
+                        clsId: clsId,
+                        clsName: cls.name,
+                        allowMultiple: !!cls.allowMultiple,
+                        options: (cls.options || []).map(o => ({ _id: o._id.toString(), label: o.label, color: o.color })),
+                        label: 'Sélectionner...',
+                        color: '#9ca3af',
+                        selectedIds: [],
+                        isEmpty: true
+                    });
+                }
+            });
 
             // â”€â”€ Duration since creation â”€â”€
             let _durationStr = '';
@@ -307,6 +308,7 @@ window.__syncClsInputs = function(clsId, ids) {
                         </span>
                         <span class="w-px h-3 bg-gray-200 dark:bg-gray-700"></span>
                         <% } %>
+                        <!-- DEBUG: statusCls: <%= !!(_statusCls && _statusCls._id) %>, clsTags: <%= _clsTags.length %>, showCls: <%= _hc.showClassifications !== false %> -->
                         <% if (_hc.showClassifications !== false) { %>
                         <% if (_statusCls && _statusCls._id) { %>
                         <div x-data="tagPicker({

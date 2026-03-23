@@ -1,3 +1,4 @@
+const fs = require('fs');
 const mongoose = require('mongoose');
 const Entity = require("../models/entity.model");
 const Record = require("../models/record.model");
@@ -1531,16 +1532,39 @@ module.exports = {
                 }
             }
 
+
             const classificationValuesArray = [];
             if (classifications) {
+                // Map to enforce single selections vs multi
+                const multipleAllowedSet = new Set();
+                if (entity.classifications) {
+                    entity.classifications.forEach(c => {
+                        if (c.allowMultiple) multipleAllowedSet.add(c._id.toString());
+                    });
+                }
+                const isStatusMulti = (entity.statusClassification && entity.statusClassification.allowMultiple);
+                if (isStatusMulti && entity.statusClassification._id) {
+                    multipleAllowedSet.add(entity.statusClassification._id.toString());
+                }
+
                 for (const [classificationId, value] of Object.entries(classifications)) {
+                    const isMulti = multipleAllowedSet.has(classificationId);
+                    let finalValues = [];
+
                     if (Array.isArray(value)) {
-                        value.filter(v => v).forEach(optId => {
-                            classificationValuesArray.push({ classificationId, optionId: optId });
-                        });
+                        // Deduplicate and filter out empty strings
+                        const unique = [...new Set(value.filter(v => v && v !== ""))];
+                        // If not multiple, keep only the last value
+                        finalValues = isMulti ? unique : [unique[unique.length - 1]];
                     } else if (value && value !== "") {
-                        classificationValuesArray.push({ classificationId, optionId: value });
+                        finalValues = [value];
                     }
+
+                    finalValues.forEach(optId => {
+                        if (optId) {
+                            classificationValuesArray.push({ classificationId, optionId: optId });
+                        }
+                    });
                 }
             }
 
@@ -1563,23 +1587,29 @@ module.exports = {
                     standardForDenorm[k] = v;
                 }
             }
+            // Determine which data was actually submitted in req.body
+            // Handles both flat (record[ID]) and nested (record: {ID: val}) structures
+            const submittedClass = !!(req.body.classification || req.body.classifications || Object.keys(req.body).some(k => k.startsWith('classification[')));
+            const submittedCustom = !!(req.body.custom || Object.keys(req.body).some(k => k.startsWith('custom[')));
+            const submittedRelation = !!(req.body.relation || Object.keys(req.body).some(k => k.startsWith('relation[')));
+
             const recordDataForDenorm = {
-                title: existingRecord.title,        // preserve existing title
-                date: existingRecord.date,          // preserve existing date
-                description: existingRecord.description, // preserve existing description
-                slug: existingRecord.slug,          // preserve existing slug
-                ...standardForDenorm,               // form-submitted NON-EMPTY fields override
-                customFields: customFieldsArray.length > 0 ? customFieldsArray : existingRecord.customFields,
-                relations: relationsArray.length > 0 ? relationsArray : existingRecord.relations,
-                classificationValues: classificationValuesArray
+                title: existingRecord.title,
+                date: existingRecord.date,
+                description: existingRecord.description,
+                slug: existingRecord.slug,
+                ...standardForDenorm,
+                customFields: (customFieldsArray.length > 0 || submittedCustom) ? customFieldsArray : (existingRecord.customFields || []),
+                relations: (relationsArray.length > 0 || submittedRelation) ? relationsArray : (existingRecord.relations || []),
+                classificationValues: (classificationValuesArray.length > 0 || submittedClass) ? classificationValuesArray : (existingRecord.classificationValues || [])
             };
             const denorm = await denormService.computeDenorm(recordDataForDenorm, entity, RecordModel, EntityModel);
 
             const updatedRecord = await RecordModel.findByIdAndUpdate(req.params.id, {
                 ...standard,
-                customFields: customFieldsArray,
-                relations: relationsArray,
-                classificationValues: denorm.classificationValues,
+                customFields: (customFieldsArray.length > 0 || submittedCustom) ? customFieldsArray : (existingRecord.customFields || []),
+                relations: (relationsArray.length > 0 || submittedRelation) ? relationsArray : (existingRecord.relations || []),
+                classificationValues: denorm.classificationValues || classificationValuesArray,
                 computedTitle: denorm.computedTitle,
                 '_denorm.relations': denorm._denorm.relations,
                 updatedBy: req.user._id
@@ -1847,6 +1877,20 @@ module.exports = {
         }
     },
 
+
+    updateTitle: async (req, res) => {
+        try {
+            const RecordModel = await tenantCollection(req, "Record");
+            const { recordId, title } = req.body;
+
+            const updatedRecord = await RecordModel.findByIdAndUpdate(recordId, { title }, { new: true });
+            res.json({ success: true, record: updatedRecord });
+        } catch (error) {
+            console.error("[Record Controller] Update Title Error:", error);
+            res.status(500).json({ error: error.message });
+        }
+    },
+
     updateStatus: async (req, res) => {
         try {
             const RecordModel = await tenantCollection(req, "Record");
@@ -1868,23 +1912,44 @@ module.exports = {
             const record = await RecordModel.findById(recordId);
             if (!record) return res.status(404).json({ error: "Record not found" });
 
-            // Remove existing values for this classification
-            record.classificationValues = record.classificationValues.filter(
-                cv => cv.classificationId.toString() !== classificationId
-            );
+            const EntityModel = await tenantCollection(req, "Entity");
+            const entity = await EntityModel.findOne({ slug: req.params.entityName })
+                .populate('classifications')
+                .populate('statusClassification');
 
-            // Multi-select mode: optionIds is an array
-            if (allowMultiple && Array.isArray(optionIds)) {
-                optionIds.filter(id => id && id !== 'none').forEach(id => {
-                    record.classificationValues.push({ classificationId, optionId: id });
-                });
-            } else if (optionId && optionId !== 'none') {
-                // Single-select (backward compatible)
-                record.classificationValues.push({ classificationId, optionId });
+            // Determine if multiple allowed
+            let isMulti = allowMultiple === 'true' || allowMultiple === true;
+            if (entity) {
+                const clsDef = (entity.classifications || []).find(c => c._id.toString() === classificationId);
+                const statusDef = entity.statusClassification;
+                if (clsDef) isMulti = clsDef.allowMultiple;
+                if (statusDef && statusDef._id.toString() === classificationId) isMulti = statusDef.allowMultiple;
             }
 
+            // Remove existing values for this classification
+            record.classificationValues = (record.classificationValues || []).filter(
+                cv => cv.classificationId?.toString() !== classificationId
+            );
+
+            // Normalize values
+            let finalIds = [];
+            if (Array.isArray(optionIds)) {
+                const unique = [...new Set(optionIds.filter(v => v && v !== 'none'))];
+                finalIds = isMulti ? unique : [unique[unique.length - 1]];
+            } else if (optionId && optionId !== 'none') {
+                finalIds = [optionId];
+            }
+
+            // Push each valid value
+            finalIds.forEach(optId => {
+                if (optId) {
+                    record.classificationValues.push({ classificationId, optionId: optId });
+                }
+            });
+
+            record.markModified('classificationValues');
             await record.save();
-            res.json({ success: true });
+            res.json({ success: true, classificationValues: record.classificationValues });
         } catch (error) {
             console.error("[Record Controller] Update Classification Error:", error);
             res.status(500).json({ error: error.message });

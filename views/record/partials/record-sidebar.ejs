@@ -441,7 +441,7 @@
                                 label: entity.statusClassification.name,
                                 icon: 'solar:flag-bold',
                                 colorClass: 'text-warning',
-                                nameAttr: `classifications[${entity.statusClassification._id}]`
+                                nameAttr: `classification[${entity.statusClassification._id}]`
                                 });
                                 }
                                 // Then include additional classifications
@@ -456,7 +456,7 @@
                                 label: c.name,
                                 icon: 'solar:tag-bold',
                                 colorClass: 'text-info',
-                                nameAttr: `classifications[${c._id}]`
+                                nameAttr: `classification[${c._id}]`
                                 });
                                 });
                                 }
@@ -676,10 +676,11 @@
                                                                             %>
                                                                             <div class="tp-wrapper"
                                                                                  x-data="tagPicker({
-                                                                                     classificationId: '<%= cls.data._id %>',
-                                                                                     recordId: '<%= locals.record ? record._id : '' %>',
+                                                                                     classificationId: '<%= cls.data._id.toString() %>',
+                                                                                     recordId: '<%= locals.record ? record._id.toString() : '' %>',
                                                                                      accountNumber: '<%= account_number %>',
                                                                                      allowMultiple: <%= cls.data.allowMultiple ? 'true' : 'false' %>,
+                                                                                      saveOnSelection: true,
                                                                                      fieldName: '<%= cls.nameAttr %>',
                                                                                      options: <%= JSON.stringify(cls.data.options.map(function(o) { return { _id: (o._id || '').toString(), label: o.label, color: o.color || '' }; })) %>,
                                                                                      selectedIds: <%= JSON.stringify(sidebarSelectedIds) %>
@@ -787,7 +788,7 @@
 
                                                                                 <!-- Hidden inputs for form submission -->
                                                                                 <template x-for="id in selectedIds" :key="id">
-                                                                                    <input type="hidden" :name="'<%= cls.nameAttr %>' + (<%= cls.data.allowMultiple ? 'true' : 'false' %> ? '[]' : '')" :value="id" />
+                                                                                    <input type="hidden" :name="'<%= cls.nameAttr %>' + (allowMultiple ? '[]' : '')" :value="id" />
                                                                                 </template>
                                                                             </div>
                                                                             <% } %>

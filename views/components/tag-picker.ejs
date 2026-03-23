@@ -428,6 +428,7 @@
         recordId: config.recordId || '',
         accountNumber: config.accountNumber || '',
         allowMultiple: config.allowMultiple !== false,
+        saveOnSelection: !!config.saveOnSelection,
         fieldName: config.fieldName || '',
 
         // State
@@ -439,6 +440,7 @@
         editLabel: '',
         editColorIdx: -1,
         _editPopoverPos: null, // { top, left } for fixed positioning
+        deleteConfirmId: null,
 
         // Computed (plain props — getters are not reliably reactive in Alpine)
         selectedOptions: [],
@@ -453,6 +455,7 @@
             this.options = (config.options || []).map(o => ({
                 _id: o._id,
                 label: o.label,
+                color: o.color, // Preserve original vibrant color for header display
                 ...this.resolveColor(o.color)
             }));
             this.selectedIds = [...(config.selectedIds || [])].map(String);
@@ -460,10 +463,34 @@
             // Initial computation
             this._recompute();
 
+                        this._instanceId = Math.random();
+            this._syncing = false; // Guard flag to prevent infinite sync loops
+
             // Re-compute whenever selectedIds or options change
-            this.$watch('selectedIds', () => this._recompute());
+            this.$watch('selectedIds', (val) => {
+                this._recompute();
+                // Only dispatch sync/save if this change was NOT from a sync event
+                if (!this._syncing) {
+                    if (config.saveOnSelection && typeof config.onSave === 'function') {
+                        config.onSave(val);
+                    }
+                    // Global sync with other components managing the same classification
+                    window.dispatchEvent(new CustomEvent('cls-sync-' + config.classificationId, {
+                        detail: { senderId: this._instanceId, ids: val }
+                    }));
+                }
+            });
             this.$watch('options', () => this._recompute());
             this.$watch('searchQuery', () => this._recompute());
+
+            // Global listener for cross-instance synchronization
+            window.addEventListener('cls-sync-' + config.classificationId, (e) => {
+                if (e.detail.senderId !== this._instanceId) {
+                    this._syncing = true;
+                    this.selectedIds = [...e.detail.ids];
+                    this.$nextTick(() => { this._syncing = false; });
+                }
+            });
 
             // Close on outside click
             this.$watch('isOpen', (val) => {
@@ -475,6 +502,7 @@
                 } else {
                     this.searchQuery = '';
                     this.editingOption = null;
+                    this.deleteConfirmId = null;
                 }
             });
         },
@@ -513,10 +541,12 @@
             return (r * 299 + g * 587 + b * 114) / 1000 > 155;
         },
 
-
-
         // ── Toggle ──
         toggleOpen() {
+            this.isOpen = !this.isOpen;
+        },
+
+        toggleDropdown() {
             this.isOpen = !this.isOpen;
         },
 
@@ -527,18 +557,19 @@
             } else {
                 if (!this.allowMultiple) {
                     this.selectedIds = [optId];
+                    this.isOpen = false; // Auto-close on single select
                 } else {
                     this.selectedIds.push(optId);
                 }
             }
-            this.saveToRecord();
+            if (this.saveOnSelection) this.saveToRecord();
         },
 
         removeTag(optId) {
             const idx = this.selectedIds.indexOf(optId);
             if (idx >= 0) {
                 this.selectedIds.splice(idx, 1);
-                this.saveToRecord();
+                if (this.saveOnSelection) this.saveToRecord();
             }
         },
 
@@ -569,9 +600,16 @@
                         ...this.resolveColor(data.option.color)
                     };
                     this.options.push(newOpt);
-                    this.selectedIds.push(newOpt._id);
+                    
+                    if (!this.allowMultiple) {
+                        this.selectedIds = [newOpt._id];
+                        this.isOpen = false;
+                    } else {
+                        this.selectedIds.push(newOpt._id);
+                    }
+                    
                     this.searchQuery = '';
-                    this.saveToRecord();
+                    if (this.saveOnSelection) this.saveToRecord();
                 }
             } catch (err) {
                 console.error('[TagPicker] Create error:', err);
@@ -636,9 +674,22 @@
             }
         },
 
-        async deleteOption() {
-            if (!this.editingOption) return;
-            const optId = this.editingOption._id;
+        confirmDelete(optId) {
+            if (this.deleteConfirmId === optId) {
+                this.deleteOption(optId);
+                this.deleteConfirmId = null;
+            } else {
+                this.deleteConfirmId = optId;
+                // Reset after 3 seconds if not confirmed
+                setTimeout(() => {
+                    if (this.deleteConfirmId === optId) this.deleteConfirmId = null;
+                }, 3000);
+            }
+        },
+
+        async deleteOption(optId) {
+            const idToDelete = optId || (this.editingOption ? this.editingOption._id : null);
+            if (!idToDelete) return;
 
             try {
                 await fetch(`/account/${this.accountNumber}/classification/api/delete-option`, {
@@ -647,15 +698,17 @@
                     credentials: 'include',
                     body: JSON.stringify({
                         classificationId: this.classificationId,
-                        optionId: optId
+                        optionId: idToDelete
                     })
                 });
 
                 // Remove from local
-                this.options = this.options.filter(o => o._id !== optId);
-                this.selectedIds = this.selectedIds.filter(id => id !== optId);
-                this.editingOption = null;
-                this.saveToRecord();
+                this.options = this.options.filter(o => o._id !== idToDelete);
+                this.selectedIds = this.selectedIds.filter(id => id !== idToDelete);
+                if (this.editingOption && this.editingOption._id === idToDelete) {
+                    this.editingOption = null;
+                }
+                if (this.saveOnSelection) this.saveToRecord();
             } catch (err) {
                 console.error('[TagPicker] Delete error:', err);
             }

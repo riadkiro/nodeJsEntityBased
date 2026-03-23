@@ -1,0 +1,87 @@
+<!-- tag-picker-dropdown.ejs -->
+<div class="tp-dropdown" x-show="isOpen" x-cloak
+     x-transition:enter="transition ease-out duration-150"
+     x-transition:enter-start="opacity-0 translate-y-1"
+     x-transition:enter-end="opacity-100 translate-y-0"
+     x-transition:leave="transition ease-in duration-100"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     @click.stop>
+    <!-- Search -->
+    <div class="tp-search-wrap">
+        <input type="text" class="tp-search-input"
+               placeholder="Rechercher ou créer..."
+               x-model="searchQuery"
+               x-ref="searchInput"
+               @keydown.enter.prevent="canCreate ? createOption() : null" />
+    </div>
+
+    <div class="tp-divider"></div>
+
+    <!-- Options list -->
+    <div class="tp-options" style="position: relative;">
+        <template x-for="opt in filteredOptions" :key="opt._id">
+            <div class="tp-option" @click="toggleOption(opt._id)">
+                <div class="tp-option-icon"
+                     :style="'background:' + opt.bg">
+                    <iconify-icon x-show="isSelected(opt._id)"
+                                  icon="tabler:check" width="12"
+                                  :style="'color:' + opt.text"></iconify-icon>
+                </div>
+                <span class="tp-option-label" x-text="opt.label"></span>
+                <div class="tp-option-actions">
+                    <button type="button" class="tp-option-action-btn"
+                            @click.stop="startEdit(opt, $event)">
+                        <iconify-icon icon="solar:pen-2-linear" width="13"></iconify-icon>
+                    </button>
+                    <button type="button" class="tp-option-delete"
+                            :class="deleteConfirmId === opt._id ? 'tp-option-delete--confirm' : ''"
+                            @click.stop="confirmDelete(opt._id)">
+                        <iconify-icon :icon="deleteConfirmId === opt._id ? 'solar:trash-bin-2-bold' : 'solar:trash-bin-2-linear'" width="13"></iconify-icon>
+                    </button>
+                </div>
+            </div>
+        </template>
+
+        <template x-if="filteredOptions.length === 0 && !canCreate">
+            <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 12px;">
+                Aucune option trouvée
+            </div>
+        </template>
+
+        <!-- Edit popover -->
+        <template x-if="editingOption">
+            <div class="tp-edit-popover" 
+                 :style="'position: fixed; top: ' + _editPopoverPos.top + 'px; left: ' + _editPopoverPos.left + 'px;'"
+                 @click.stop>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase">Modifier l'option</span>
+                    <button type="button" @click="editingOption = null" class="text-gray-400 hover:text-gray-600">
+                        <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
+                    </button>
+                </div>
+                <input type="text" class="tp-edit-input"
+                       x-model="editLabel"
+                       @keydown.enter.prevent="saveEdit()"
+                       placeholder="Nom de l'option" />
+                <div class="tp-colors">
+                    <template x-for="(color, idx) in tagColors" :key="idx">
+                        <div class="tp-color-dot"
+                             :class="editColorIdx === idx ? 'tp-color-dot--active' : ''"
+                             :style="'background:' + color.bg"
+                             @click="selectColor(idx)"></div>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Create new -->
+    <template x-if="canCreate">
+        <div class="tp-create-option" @click="createOption()">
+            <iconify-icon icon="tabler:plus" width="14" style="color: #6b7280;"></iconify-icon>
+            <span class="tp-create-label">Créer</span>
+            <span class="tp-create-tag" x-text="searchQuery"></span>
+        </div>
+    </template>
+</div>

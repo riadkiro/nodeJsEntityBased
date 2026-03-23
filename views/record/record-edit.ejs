@@ -8,28 +8,99 @@
             const _hc = entity.headerConfig || {};
 
             // â”€â”€ Resolve classifications for header display â”€â”€
-            const _statusCls = entity.statusClassification;
-            let _statusLabel = '', _statusColor = '#94a3b8';
+            // ── Resolve classifications for header display ──
+            // ── Resolve classifications for header display ──
+            const _statusCls = (entity.statusClassification && typeof entity.statusClassification.toObject === 'function') ? entity.statusClassification.toObject() : (entity.statusClassification || {});
+            let _statusLabel = '', _statusColor = '#94a3b8', _statusSelectedIds = [];
             const _clsTags = [];
             const _shownCls = _hc.shownClassifications || [];
 
+            // Get all classifications from entity
+            const allClassifications = (entity.classifications || []).map(c => (typeof c.toObject === 'function') ? c.toObject() : c);
+
             if (record.classificationValues && record.classificationValues.length > 0) {
                 record.classificationValues.forEach(cv => {
+                    // Status Classification
                     if (_statusCls && _statusCls._id && cv.classificationId &&
                         cv.classificationId.toString() === _statusCls._id.toString()) {
-                        const opt = _statusCls.options.find(o => o._id?.toString() === cv.optionId?.toString());
-                        if (opt) { _statusLabel = opt.label; _statusColor = opt.color || '#94a3b8'; }
+                        const opt = (_statusCls.options || []).find(o => o._id?.toString() === cv.optionId?.toString());
+                        if (opt) { 
+                            _statusLabel = opt.label; 
+                            _statusColor = opt.color || '#94a3b8';
+                            _statusSelectedIds.push(cv.optionId.toString());
+                        }
                     }
-                    (entity.classifications || []).forEach(cls => {
+                    
+                    // Other Classifications
+                    allClassifications.forEach(cls => {
                         if (cls._id && cv.classificationId &&
                             cv.classificationId.toString() === cls._id.toString() &&
                             (!_statusCls || !_statusCls._id || cls._id.toString() !== _statusCls._id.toString())) {
                             if (_shownCls.length === 0 || _shownCls.includes(cls._id.toString())) {
-                                const opt = cls.options.find(o => o._id?.toString() === cv.optionId?.toString());
-                                if (opt) _clsTags.push({ label: opt.label, color: opt.color || '#4361ee' });
+                                const opt = (cls.options || []).find(o => o._id?.toString() === cv.optionId?.toString());
+                                if (opt) {
+                                    // Check if this classification is already in _clsTags to handle multi-select display
+                                    let existing = _clsTags.find(t => t.clsId === cls._id.toString());
+                                    if (!existing) {
+                                        _clsTags.push({ 
+                                            clsId: cls._id.toString(),
+                                            clsName: cls.name,
+                                            allowMultiple: !!cls.allowMultiple,
+                                            options: (cls.options || []).map(o => ({ _id: o._id.toString(), label: o.label, color: o.color })),
+                                            label: opt.label, 
+                                            color: opt.color || '#4361ee',
+                                            selectedIds: [cv.optionId.toString()]
+                                        });
+                                    } else {
+                                        existing.selectedIds.push(cv.optionId.toString());
+                                        existing.label += ', ' + opt.label;
+                                    }
+                                }
                             }
                         }
                     });
+                });
+            }
+
+            // Also add empty classifications that are explicitly shown in header
+            if (_shownCls.length > 0) {
+                _shownCls.forEach(clsId => {
+                    if (_statusCls && _statusCls._id && _statusCls._id.toString() === clsId) return;
+                    if (_clsTags.find(t => t.clsId === clsId)) return;
+                    const cls = allClassifications.find(c => c._id.toString() === clsId);
+                    if (cls) {
+                        _clsTags.push({
+                            clsId: cls._id.toString(),
+                            clsName: cls.name,
+                            allowMultiple: !!cls.allowMultiple,
+                            options: (cls.options || []).map(o => ({ _id: o._id.toString(), label: o.label, color: o.color })),
+                            label: 'Sélectionner...',
+                            color: '#94a3b8',
+                            selectedIds: [],
+                            isEmpty: true
+                        });
+                    }
+                });
+            }
+
+            // Also add empty classifications that are explicitly shown in header
+            if (_shownCls.length > 0) {
+                _shownCls.forEach(clsId => {
+                    if (_statusCls && _statusCls._id && _statusCls._id.toString() === clsId) return;
+                    if (_clsTags.find(t => t.clsId === clsId)) return;
+                    const cls = allClassifications.find(c => c._id.toString() === clsId);
+                    if (cls) {
+                        _clsTags.push({
+                            clsId: cls._id.toString(),
+                            clsName: cls.name,
+                            allowMultiple: !!cls.allowMultiple,
+                            options: (cls.options || []).map(o => ({ _id: o._id.toString(), label: o.label, color: o.color })),
+                            label: 'Sélectionner...',
+                            color: '#94a3b8',
+                            selectedIds: [],
+                            isEmpty: true
+                        });
+                    }
                 });
             }
 
@@ -138,6 +209,56 @@
                 }
             });
         %>
+        
+<script>
+window.__syncClsInputs = function(clsId, ids) {
+    var nameBase = 'classification[' + clsId + ']';
+    var nameSingle = nameBase;
+    var nameMulti = nameBase + '[]';
+    
+    // 1. Sync native radios/checkboxes in sidebar/panel
+    document.querySelectorAll("input[name='" + nameSingle + "'], input[name='" + nameMulti + "']").forEach(function(input) {
+        if (input.type === 'radio' || input.type === 'checkbox') {
+            input.checked = ids.indexOf(input.value) !== -1;
+        }
+    });
+    
+    // 2. Remove ALL stale hidden inputs for this classification across the entire form
+    //    (other tagPicker instances may have stale hidden inputs)
+    var form = document.getElementById('main-record-form');
+    if (form) {
+        var allHidden = form.querySelectorAll("input[type='hidden'][name='" + nameSingle + "'], input[type='hidden'][name='" + nameMulti + "']");
+        // Track: keep the first set of hidden inputs (header), remove duplicates from other pickers
+        var keptCount = 0;
+        allHidden.forEach(function(input) {
+            // If this hidden input's value is NOT in the new ids array, remove it
+            // If it IS in the ids array but we already have enough, remove duplicates
+            if (ids.indexOf(input.value) === -1) {
+                input.remove();
+            }
+        });
+        // Now check: for each id in ids, ensure at least one hidden input exists
+        ids.forEach(function(id) {
+            var existing = form.querySelector("input[type='hidden'][name='" + nameSingle + "'][value='" + id + "'], input[type='hidden'][name='" + nameMulti + "'][value='" + id + "']");
+            if (!existing) {
+                // Create a new hidden input (if the header picker hasn't created one yet)
+                var newInput = document.createElement('input');
+                newInput.type = 'hidden';
+                newInput.name = ids.length > 1 ? nameMulti : nameSingle;
+                newInput.value = id;
+                form.appendChild(newInput);
+            }
+        });
+        // Remove any remaining duplicate hidden inputs (keep only one per value)
+        ids.forEach(function(id) {
+            var matches = form.querySelectorAll("input[type='hidden'][name='" + nameSingle + "'][value='" + id + "'], input[type='hidden'][name='" + nameMulti + "'][value='" + id + "']");
+            for (var i = 1; i < matches.length; i++) {
+                matches[i].remove();
+            }
+        });
+    }
+};
+</script>
         <div class="flex items-center justify-between px-5 py-3 bg-white dark:bg-[#1b2e4b] rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm mb-4"
             x-data="headerBar()">
             <!-- Left: Avatar + Identity -->
@@ -157,9 +278,28 @@
                 <!-- Name + Meta line -->
                 <div class="min-w-0">
                     <% if (_showTitle) { %>
-                    <h1 class="text-base font-bold text-gray-800 dark:text-white truncate max-w-[350px] leading-tight">
-                        <%= _heroTitle %>
-                    </h1>
+                    <div class="flex items-center gap-2 group" x-data="{ hovered: false }" @mouseenter="hovered = true" @mouseleave="hovered = false">
+                        <template x-if="!editingTitle">
+                            <h1 class="text-base font-bold text-gray-800 dark:text-white truncate max-w-[450px] leading-tight cursor-pointer"
+                                @click="editingTitle = true; tempTitle = '<%= _heroTitle.replace(/'/g, "\\'") %>'; $nextTick(() => $refs.titleInput.focus())">
+                                <%= _heroTitle %>
+                            </h1>
+                        </template>
+                        <template x-if="editingTitle">
+                            <div class="flex items-center gap-1">
+                                <input x-ref="titleInput" type="text" x-model="tempTitle"
+                                       @keydown.enter="saveTitle()"
+                                       @keydown.escape="editingTitle = false"
+                                       @blur="saveTitle()"
+                                       class="text-base font-bold text-gray-800 dark:text-white bg-gray-50 dark:bg-gray-800 border-none outline-none ring-1 ring-primary/30 rounded px-1 py-0 h-[22px] focus:ring-primary/60 transition-all font-sans">
+                            </div>
+                        </template>
+                        <button type="button" x-show="hovered && !editingTitle" 
+                                @click="editingTitle = true; tempTitle = '<%= _heroTitle.replace(/'/g, "\\'") %>'; $nextTick(() => $refs.titleInput.focus())"
+                                class="text-gray-400 hover:text-primary transition-colors flex items-center justify-center p-0.5 rounded-md hover:bg-primary/5">
+                            <iconify-icon icon="solar:pen-bold" width="13"></iconify-icon>
+                        </button>
+                    </div>
                     <% } %>
                     <div class="flex items-center gap-2 mt-0.5 flex-wrap">
                         <% if (_subtitleParts.length > 0) { %>
@@ -170,17 +310,58 @@
                         <span class="w-px h-3 bg-gray-200 dark:bg-gray-700"></span>
                         <% } %>
                         <% if (_hc.showClassifications !== false) { %>
-                        <% if (_statusLabel) { %>
-                        <span class="inline-flex items-center gap-1 text-xs font-semibold" style="color: <%= _statusColor %>">
-                            <span class="w-2 h-2 rounded-full" style="background: <%= _statusColor %>"></span>
-                            <%= _statusLabel %>
-                        </span>
+                        <% if (_statusCls && _statusCls._id) { %>
+                        <div x-data="tagPicker({
+                            classificationId: '<%= _statusCls._id.toString() %>',
+                            recordId: '<%= record._id.toString() %>',
+                            accountNumber: '<%= account_number %>',
+                            options: <%= JSON.stringify((_statusCls.options || []).map(o => ({ _id: o._id.toString(), label: o.label, color: o.color }))).replace(/</g, '\\u003C') %>,
+                            selectedIds: <%= JSON.stringify(_statusSelectedIds) %>,
+                            fieldName: 'classification[<%= _statusCls._id.toString() %>]',
+                            allowMultiple: false,
+                            saveOnSelection: true,
+                            onSave: (ids) => { window.__syncClsInputs('<%= _statusCls._id.toString() %>', ids); }
+                        })" class="relative">
+                            <button type="button" @click="toggleDropdown()"
+                                    class="inline-flex items-center gap-1 text-xs font-semibold hover:opacity-80 transition-opacity cursor-pointer p-0.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                                <span class="w-2 h-2 rounded-full" 
+                                      :style="'background:' + (selectedOptions[0]?.color || '#94a3b8')"></span>
+                                <span :style="'color:' + (selectedOptions[0]?.color || '#94a3b8')"
+                                      x-text="selectedOptions[0]?.label || 'Définir statut...'"></span>
+                                <iconify-icon icon="solar:alt-arrow-down-linear" width="10" class="text-gray-300"></iconify-icon>
+                            </button>
+
+                            <template x-for="id in selectedIds" :key="id">
+                                <input type="hidden" :name="fieldName + (allowMultiple ? '[]' : '')" :value="id" />
+                            </template>
+                            <%- include('../components/tag-picker-dropdown') %>
+                        </div>
                         <% } %>
                         <% _clsTags.forEach(tag => { %>
-                        <span class="inline-flex items-center gap-1 text-xs font-semibold" style="color: <%= tag.color %>">
-                            <span class="w-1.5 h-1.5 rounded-full" style="background: <%= tag.color %>"></span>
-                            <%= tag.label %>
-                        </span>
+                        <div x-data="tagPicker({
+                            classificationId: '<%= tag.clsId %>',
+                            recordId: '<%= record._id.toString() %>',
+                            accountNumber: '<%= account_number %>',
+                            options: <%= JSON.stringify(tag.options || []).replace(/</g, '\\u003C') %>,
+                            selectedIds: <%= JSON.stringify(tag.selectedIds || []) %>,
+                            fieldName: 'classification[<%= tag.clsId %>]',
+                            allowMultiple: <%= tag.allowMultiple %>,
+                            saveOnSelection: true,
+                            onSave: (ids) => { window.__syncClsInputs('<%= tag.clsId %>', ids); }
+                        })" class="relative">
+                            <button type="button" @click="toggleDropdown()"
+                                    class="inline-flex items-center gap-1 text-xs font-semibold hover:opacity-80 transition-opacity cursor-pointer p-0.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                                <span class="w-1.5 h-1.5 rounded-full" 
+                                      :style="'background:' + (selectedOptions[0]?.color || '<%= tag.color %>')"></span>
+                                <span :style="'color:' + (selectedOptions[0]?.color || '<%= tag.color %>')"
+                                      x-text="selectedOptions.length > 0 ? selectedOptions.map(o => o.label).join(', ') : 'Sélectionner...'"></span>
+                            </button>
+
+                            <template x-for="id in selectedIds" :key="id">
+                                <input type="hidden" :name="fieldName + (allowMultiple ? '[]' : '')" :value="id" />
+                            </template>
+                            <%- include('../components/tag-picker-dropdown') %>
+                        </div>
                         <% }); %>
                         <% } %>
                         <% _heroFieldValues.forEach(hfv => { %>
@@ -4976,7 +5157,7 @@
 
                                                                     <!-- Hidden inputs for form submission -->
                                                                     <template x-for="id in selectedIds" :key="id">
-                                                                        <input type="hidden" name="classification[<%= cls._id %>][]" :value="id" />
+                                                                        <input type="hidden" :name="fieldName + (allowMultiple ? '[]' : '')" :value="id" />
                                                                     </template>
                                                                 </div>
                                                             </div>
@@ -6354,7 +6535,33 @@
         // â•â•â• HEADER BAR (Hero identity bar menu) â•â•â•
         Alpine.data("headerBar", () => ({
             showMoreMenu: false,
-            showDeleteConfirm: false
+            showDeleteConfirm: false,
+            editingTitle: false,
+            tempTitle: '',
+            recordId: '<%= record._id %>',
+            accountNumber: '<%= account_number %>',
+            async saveTitle() {
+                if (!this.tempTitle.trim() || this.tempTitle === '<%= _heroTitle.replace(/'/g, "\\'") %>') {
+                    this.editingTitle = false;
+                    return;
+                }
+                try {
+                    const res = await fetch(`/account/${this.accountNumber}/api/record/update-title`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ recordId: this.recordId, title: this.tempTitle })
+                    });
+                    if (res.ok) {
+                        // Optimistic update locally
+                        const titleEl = document.querySelector('h1.truncate');
+                        if (titleEl) titleEl.innerText = this.tempTitle;
+                        this.editingTitle = false;
+                        // Still reload to ensure all EJS variables (like _heroTitle) are updated for next interaction
+                        window.location.reload();
+                    }
+                } catch (e) { console.error(e); }
+                this.editingTitle = false;
+            }
         }));
 
         // â•â•â• HEADER CONFIG PANEL (standalone modal) â•â•â•

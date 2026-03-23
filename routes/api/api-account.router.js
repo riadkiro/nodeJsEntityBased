@@ -92,6 +92,7 @@ router.get('/entity/:id', entityController.getDetails_Api);
 router.post('/view/config', viewController.saveConfig);
 router.post('/record/update-status', recordController.updateStatus);
 router.post('/record/update-classification', recordController.updateClassification);
+router.post('/record/update-title', recordController.updateTitle);
 
 // Account Settings API
 const Account = require('../../models/account.model');

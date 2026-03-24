@@ -413,10 +413,13 @@ window.__syncClsInputs = function(clsId, ids) {
                 // Collect all relations: indirect (via patient) + direct + inverse
                 const _allRelIcons = [];
                 const _seenSlugs = new Set();
+                
+                const _layoutFields = (locals.formLayout && locals.formLayout.fields) || (Array.isArray(locals.formLayout) ? locals.formLayout : []);
+                const _inFormRelKeys = (_layoutFields || []).map(f => f.fieldId);
 
                 // 1) Indirect relations via related record (only when headerRelatedMeta exists)
                 if (locals.headerRelatedMeta) {
-                    (_hrm.indirectRelations || []).filter(ir => _shownRels.includes(ir.key)).forEach(ir => {
+                    (_hrm.indirectRelations || []).filter(ir => _shownRels.length === 0 || _shownRels.includes(ir.key)).forEach(ir => {
                         const slug = ir.slug || ir.key;
                         if (!_seenSlugs.has(slug)) {
                             _seenSlugs.add(slug);
@@ -430,7 +433,10 @@ window.__syncClsInputs = function(clsId, ids) {
                 }
 
                 // 2) Direct relations
-                (entity.relations || []).filter(r => _shownRels.length === 0 || _shownRels.includes(r.key)).forEach(dRel => {
+                (entity.relations || []).filter(r => {
+                    if (_inFormRelKeys.includes(r.key)) return false; // Hide if in form
+                    return _shownRels.length === 0 || _shownRels.includes(r.key);
+                }).forEach(dRel => {
                     const _dTgt = dRel.targetEntity || {};
                     const slug = _dTgt.slug || dRel.key;
                     if (!_seenSlugs.has(slug)) {
@@ -448,7 +454,10 @@ window.__syncClsInputs = function(clsId, ids) {
                 });
 
                 // 3) Inverse relations
-                (locals.inverseRelations || []).filter(invR => _shownRels.length === 0 || _shownRels.includes(invR.key)).forEach(invR => {
+                (locals.inverseRelations || []).filter(invR => {
+                    if (_inFormRelKeys.includes(invR.key)) return false; // Hide if in form
+                    return _shownRels.length === 0 || _shownRels.includes(invR.key);
+                }).forEach(invR => {
                     const _iTgt = invR.targetEntity || {};
                     const slug = _iTgt.slug || invR.key;
                     if (!_seenSlugs.has(slug)) {
@@ -3242,6 +3251,22 @@ window.__syncClsInputs = function(clsId, ids) {
                 },
 
                 async init() {
+                    // Listen for relation changes from form fields to update tab counts
+                    window.addEventListener('relation-field-sync', (e) => {
+                        const tab = this.allTabs.find(t => t.key === e.detail.fieldId);
+                        if (tab) {
+                            tab._count = (e.detail.items || []).length;
+                            // Update tab label/metadata if needed
+                            if (tab.cardinality === 'many-to-one' || tab.cardinality === 'one-to-one') {
+                                if (e.detail.items && e.detail.items[0]) {
+                                    tab._label = e.detail.items[0].label;
+                                } else {
+                                    tab._label = tab.label;
+                                }
+                            }
+                        }
+                    });
+
                     // Load saved preferences from account-level API
                     let savedTabPrefs = null;
                     let savedCustomTabs = null;
@@ -5713,10 +5738,15 @@ window.__syncClsInputs = function(clsId, ids) {
     <%- JSON.stringify((entity.relations || []).map(r => ({
         _id: r.key,
         type: 'relation',
-        label: r.label || 'Relation',
-        name: r.label || 'Relation',
-        showInForm: r.showInForm || false,
+        label: r.label || (r.targetEntity && r.targetEntity.name) || 'Relation',
+        name: r.label || (r.targetEntity && r.targetEntity.name) || 'Relation',
+        showInForm: (r.showInForm !== false),
         relationKey: r.key,
+        ui: {
+            icon: (r.targetEntity && r.targetEntity.icon) || 'solar:link-round-bold-duotone',
+            color: (r.targetEntity && r.targetEntity.color) || '#4361ee',
+            placeholder: 'Rechercher ' + ((r.targetEntity && r.targetEntity.name) || '') + '...'
+        },
         type_config: {
             refEntity: (r.targetEntity && r.targetEntity._id ? r.targetEntity._id.toString() : (r.targetEntity || '')),
             multiple: (r.cardinality === 'one-to-many' || r.cardinality === 'many-to-many')
@@ -7123,16 +7153,27 @@ window.__syncClsInputs = function(clsId, ids) {
             rawFields.forEach(f => { fieldsMap[f._id] = f; });
             allTemplates.forEach(t => { if (!fieldsMap[t._id]) fieldsMap[t._id] = t; });
 
-            // Inject entity relations as pseudo-fields in fieldsMap
+            // Inject entity relations as pseudo-fields in fieldsMap AND allTemplates
             const entityRelations = JSON.parse(document.getElementById("entity-relations").textContent);
-            entityRelations.forEach(r => { r._isEntityRelation = true; if (!fieldsMap[r._id]) fieldsMap[r._id] = r; });
+            entityRelations.filter(r => r.showInForm !== false).forEach(r => { 
+                r._isEntityRelation = true; 
+                r.category = 'relation'; // Add category for grouping
+                // Ensure label is decent if missing
+                if (!r.label) r.label = r.name || 'Relation';
+                if (!fieldsMap[r._id]) fieldsMap[r._id] = r; 
+                if (!allTemplates.some(t => t._id === r._id)) allTemplates.unshift(r);
+            });
 
             const valuesMap = {};
             recordValues.forEach(cv => { valuesMap[cv.field_id] = cv.value; });
 
             return {
                 designMode: false,
-                tabs: (initialLayout.tabs || [{ id: 'default', title: 'Attributs' }]).map(t => ({
+                tabs: (initialLayout.tabs || [{ id: 'default', title: 'Attributs' }]).filter(t => {
+                    const rel = entityRelations.find(r => r.key === t.id || r._id === t.id);
+                    if (rel && rel.showInForm === false) return false;
+                    return true;
+                }).map(t => ({
                     ...t,
                     icon: t.icon || 'tabler:apps'
                 })),
@@ -7171,9 +7212,6 @@ window.__syncClsInputs = function(clsId, ids) {
                 renderAllFields() {
                     const currentTabFields = this.layout.filter(item => {
                         if (item.tabId !== this.activeTab) return false;
-                        // Include entity relations that have showInForm:true (inline), exclude others
-                        const field = this.fieldsById[item.fieldId];
-                        if (field && field._isEntityRelation && !field.showInForm) return false;
                         return true;
                     });
                     if (currentTabFields.length === 0 && this.designMode) {
@@ -7191,15 +7229,13 @@ window.__syncClsInputs = function(clsId, ids) {
                 },
 
                 getRelationFields() {
-                    // Return ALL entity relations for the relations panel
-                    return this.layout
-                        .filter(item => {
-                            const field = this.fieldsById[item.fieldId];
-                            return field && field.type === 'relation' && field._isEntityRelation;
-                        })
-                        .map(item => ({
-                            item: item,
-                            field: this.fieldsById[item.fieldId]
+                    const layoutFieldIds = this.layout.map(i => i.fieldId);
+                    // Filter relations NOT present in the form layout
+                    return Object.values(this.fieldsById)
+                        .filter(f => f && f._isEntityRelation && !layoutFieldIds.includes(f._id))
+                        .map(f => ({
+                            field: f,
+                            item: { fieldId: f._id, id: f._id }
                         }));
                 },
 
@@ -7415,9 +7451,9 @@ window.__syncClsInputs = function(clsId, ids) {
                    placeholder="Rechercher ou créer..."
                    x-model="searchQuery"
                    x-ref="searchInput"
-                   @input.debounce.300ms="search"
-                   @focus="openDropdown"
-                   @click="openDropdown" />
+                   @input.debounce.300ms="search()"
+                   @focus="openDropdown()"
+                   @click="openDropdown()" />
         </div>
 
         <div class="tp-divider"></div>
@@ -7425,7 +7461,7 @@ window.__syncClsInputs = function(clsId, ids) {
         <!-- Results list -->
         <div class="tp-options">
             <template x-if="loading && page === 1">
-                <div style="padding: 8px 12px; text-align: center; color: #9ca3af; font-size: 12px;">Chargement...</div>
+                <div style="padding: 8px 12px; text-align: center; color: #9ca3af; font-size: 11px;">Chargement...</div>
             </template>
 
             <template x-for="result in results" :key="result.id">
@@ -7438,26 +7474,26 @@ window.__syncClsInputs = function(clsId, ids) {
             </template>
 
             <template x-if="!loading && results.length === 0">
-                <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 12px;">Aucun résultat</div>
+                <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 11px;">Aucun résultat</div>
             </template>
         </div>
 
         <template x-if="hasMore">
-            <button type="button" @click.stop="loadMore" :disabled="loading" 
-                style="width: 100%; padding: 6px 10px; font-size: 12px; color: #4361ee; background: #f8f9ff; border: none; border-top: 1px solid #f3f4f6; cursor: pointer; text-align: center;">
+            <button type="button" @click.stop="loadMore()" :disabled="loading" 
+                style="width: 100%; padding: 6px 10px; font-size: 11px; color: #4361ee; background: #f8f9ff; border: none; border-top: 1px solid #f3f4f6; cursor: pointer; text-align: center;">
                 <span x-show="!loading">Charger plus...</span>
                 <span x-show="loading" style="display: none;">Chargement...</span>
             </button>
         </template>
 
         <!-- Quick Create button -->
-        <div class="tp-create-option" 
-             @click="quickCreate()">
+        <div class="tp-create-option" @click="quickCreate()">
             <iconify-icon icon="tabler:plus" width="14" style="color: #6b7280;"></iconify-icon>
             <span class="tp-create-label">Créer</span>
             <span class="tp-create-tag">${relLabel}</span>
         </div>
     </div>
+</div>
 
     <!-- Hidden inputs for persistence -->
     <template x-if="multiple">
@@ -7610,8 +7646,9 @@ window.__syncClsInputs = function(clsId, ids) {
                 // Entity-configured fields (first in modal)
                 getEntityFields() {
                     var q = (this.fieldSearchQuery || '').toLowerCase().trim();
-                    var eIds = this.entityFieldIds;
+                    var eIds = this.entityFieldIds || [];
                     return this.allTemplates.filter(function(t) {
+                        if (t._isEntityRelation) return false; // Handled in relations section
                         if (eIds.indexOf(t._id) === -1) return false;
                         if (!q) return true;
                         var label = (t.label || t.name || '').toLowerCase();
@@ -7623,8 +7660,9 @@ window.__syncClsInputs = function(clsId, ids) {
                 // Other available fields (flat list, sorted by type)
                 getOtherFields() {
                     var q = (this.fieldSearchQuery || '').toLowerCase().trim();
-                    var eIds = this.entityFieldIds;
+                    var eIds = this.entityFieldIds || [];
                     var others = this.allTemplates.filter(function(t) {
+                        if (t._isEntityRelation) return false; // Handled in relations section
                         if (eIds.indexOf(t._id) > -1) return false;
                         if (!q) return true;
                         var label = (t.label || t.name || '').toLowerCase();
@@ -7636,6 +7674,16 @@ window.__syncClsInputs = function(clsId, ids) {
                         return (a.type || '').localeCompare(b.type || '');
                     });
                     return others;
+                },
+
+                getRelationFieldsForCatalog() {
+                    var q = (this.fieldSearchQuery || '').toLowerCase().trim();
+                    return this.allTemplates.filter(function(t) {
+                        if (!t._isEntityRelation) return false;
+                        if (!q) return true;
+                        var label = (t.label || t.name || '').toLowerCase();
+                        return label.indexOf(q) > -1;
+                    });
                 },
                 isFieldInLayout(fieldId) {
                     return this.layout.some(item => item.fieldId === fieldId);
@@ -7753,6 +7801,19 @@ window.__syncClsInputs = function(clsId, ids) {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(payload),
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log("Layout saved:", data);
+                        window.dispatchEvent(new CustomEvent('show-toast', { 
+                            detail: { message: "Mise en page enregistrée avec succès", type: "success" } 
+                        }));
+                    })
+                    .catch(err => {
+                        console.error("Layout save error:", err);
+                        window.dispatchEvent(new CustomEvent('show-toast', { 
+                            detail: { message: "Erreur lors de l'enregistrement du layout", type: "error" } 
+                        }));
                     });
                 },
 
@@ -7874,12 +7935,16 @@ window.__syncClsInputs = function(clsId, ids) {
                 // Listen for sync events between multiple instances of the same relation field (e.g., inline vs side panel)
                 window.addEventListener('relation-field-sync', (e) => {
                     if (e.detail.fieldId === this.fieldId && e.detail.source !== this) {
-                        this.selectedItems = JSON.parse(JSON.stringify(e.detail.items));
+                        this.selectedItems = JSON.parse(JSON.stringify(e.detail.items || []));
                     }
                 });
 
-                // Read initialValue from data-initval attribute to avoid double-quote conflicts in x-data
+                // Read initialValue from data-initval attribute
                 const rawInitVal = this.$root.dataset.initval;
+                
+                this.$watch('showModal', (val) => {
+                    if (val) this.fetchModalResults(true);
+                });
                 const parsedInitVal = rawInitVal ? JSON.parse(rawInitVal) : (config.initialValue || null);
                 if (parsedInitVal) {
                     const idsRaw = parsedInitVal;
@@ -7961,7 +8026,7 @@ window.__syncClsInputs = function(clsId, ids) {
 
             selectItem(result) {
                 if (this.multiple) {
-                    if (!this.selectedItems.find(i => i.id === result.id)) {
+                    if (!this.selectedItems.some(i => i.id === result.id)) {
                         this.selectedItems.push(result);
                     }
                 } else {
@@ -8312,6 +8377,9 @@ window.__syncClsInputs = function(clsId, ids) {
         }
     });
 </script>
+
+
+
 
 
 

@@ -780,6 +780,7 @@ router.get('/api/user/view-preferences/:viewId', async (req, res) => {
         }).lean()
 
         res.json({
+            success: true,
             preferences: prefs?.preferences || null
         })
 

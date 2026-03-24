@@ -67,6 +67,43 @@
                     </div>
                 </div>
             </template>
+            
+            <!-- ═══ Section: Relations ═══ -->
+            <div style="margin: 4px 16px; border-top: 1px solid #f3f4f6;"></div>
+            <div style="padding: 6px 16px 2px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;"
+                 @click="relationsFieldsOpen = !relationsFieldsOpen">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <iconify-icon icon="solar:link-bold-duotone" width="11" style="color:#8b5cf6"></iconify-icon>
+                    <span style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#b0b5bd;">Relations</span>
+                    <span style="font-size:9px; color:#d1d5db; font-weight:500;" x-text="getRelationFieldsForCatalog().length"></span>
+                </div>
+                <iconify-icon :icon="relationsFieldsOpen ? 'tabler:chevron-up' : 'tabler:chevron-down'" width="12" style="color:#d1d5db;"></iconify-icon>
+            </div>
+            
+            <template x-if="relationsFieldsOpen">
+                <div>
+                    <template x-for="tmpl in getRelationFieldsForCatalog()" :key="tmpl._id">
+                        <div style="display:flex;align-items:center;gap:8px;padding:5px 16px;margin:1px 4px;border-radius:6px;cursor:pointer;transition:background 0.1s;"
+                             @click="toggleFieldInLayout(tmpl)"
+                             @mouseenter="$el.style.background='#f9fafb'" @mouseleave="$el.style.background='transparent'">
+                            <!-- Icon -->
+                            <div :style="'width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:' + (layout.some(function(i){return i.fieldId===tmpl._id}) ? 'rgba(139,92,246,0.1)' : '#f3f4f6')">
+                                <iconify-icon :icon="(tmpl.ui && tmpl.ui.icon) ? tmpl.ui.icon : 'solar:link-bold-duotone'" width="12"
+                                              :style="'color:' + (layout.some(function(i){return i.fieldId===tmpl._id}) ? '#8b5cf6' : '#9ca3af')"></iconify-icon>
+                            </div>
+                            <!-- Label -->
+                            <div :style="'flex:1;min-width:0;font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:' + (layout.some(function(i){return i.fieldId===tmpl._id}) ? '#1f2937' : '#6b7280')"
+                                 x-text="tmpl.label || tmpl.name"></div>
+                            <!-- Toggle -->
+                            <div style="flex-shrink:0;margin-left:4px;">
+                                <div :style="'width:30px;height:16px;border-radius:8px;position:relative;transition:background 0.2s;background:' + (layout.some(function(i){return i.fieldId===tmpl._id}) ? '#8b5cf6' : '#d1d5db')">
+                                    <span :style="'position:absolute;top:2px;width:12px;height:12px;border-radius:6px;background:white;box-shadow:0 1px 2px rgba(0,0,0,0.1);transition:left 0.2s;left:' + (layout.some(function(i){return i.fieldId===tmpl._id}) ? '16px' : '2px')"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
 
             <!-- ═══ Section 2: Other available fields ═══ -->
             <div style="margin: 4px 16px; border-top: 1px solid #f3f4f6;"></div>

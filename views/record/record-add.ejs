@@ -671,12 +671,13 @@
     <%- JSON.stringify(locals.fields || []).replace(/</g, '\\u003C') %>
 </script>
 <script type="application/json" id="entity-relations">
-    <%- JSON.stringify((entity.relations || []).map(r => ({
+    <%- JSON.stringify((entity.relations || []).filter(r => r.showInForm !== false).map(r => ({
         _id: r.key,
         key: r.key,
         label: r.label,
         name: r.label,
         type: 'relation',
+        showInForm: r.showInForm !== false,
         cardinality: r.cardinality,
         type_config: {
             refEntity: r.targetEntity && r.targetEntity._id ? r.targetEntity._id.toString() : (r.targetEntity || ''),
@@ -710,11 +711,15 @@
             rawFields.forEach(f => { fieldsMap[f._id] = f; });
             allTemplates.forEach(t => { if (!fieldsMap[t._id]) fieldsMap[t._id] = t; });
             // Add entity relations to fieldsMap so renderFieldItemHTML can find them
-            entityRelations.forEach(r => { if (!fieldsMap[r.key]) fieldsMap[r.key] = r; });
+            entityRelations.filter(r => r.showInForm !== false).forEach(r => { if (!fieldsMap[r.key]) fieldsMap[r.key] = r; });
 
             return {
                 designMode: false,
-                tabs: (initialLayout.tabs || [{ id: 'default', title: 'Attributs' }]).map(t => ({
+                tabs: (initialLayout.tabs || [{ id: 'default', title: 'Attributs' }]).filter(t => {
+                    const rel = entityRelations.find(r => r.key === t.id || r._id === t.id);
+                    if (rel && rel.showInForm === false) return false;
+                    return true;
+                }).map(t => ({
                     ...t,
                     icon: t.icon || 'tabler:apps'
                 })),
@@ -1251,6 +1256,19 @@
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(payload),
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log("Layout saved:", data);
+                        window.dispatchEvent(new CustomEvent('show-toast', { 
+                            detail: { message: "Mise en page enregistrée avec succès", type: "success" } 
+                        }));
+                    })
+                    .catch(err => {
+                        console.error("Layout save error:", err);
+                        window.dispatchEvent(new CustomEvent('show-toast', { 
+                            detail: { message: "Erreur lors de l'enregistrement du layout", type: "error" } 
+                        }));
                     });
                 },
 

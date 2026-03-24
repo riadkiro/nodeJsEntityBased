@@ -75,6 +75,16 @@ const userPreferencesSchema = new mongoose.Schema({
         kanban: {
             type: mongoose.Schema.Types.Mixed,
             default: undefined
+        },
+        // Relation tabs (record edit)
+        relationTabs: {
+            type: mongoose.Schema.Types.Mixed,
+            default: undefined
+        },
+        // Sidebar panel visibility
+        sidebar_panels: {
+            type: mongoose.Schema.Types.Mixed,
+            default: undefined
         }
     },
     updatedAt: {

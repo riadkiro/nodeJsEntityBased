@@ -65,7 +65,7 @@ const EntitySchema = new mongoose.Schema(
       inverseLabel: String,                             // "Consultations" (vu depuis l'entité cible)
       cardinality: {
         type: String,
-        enum: ['one-to-one', 'one-to-many', 'many-to-many'],
+        enum: ['one-to-one', 'one-to-many', 'many-to-one', 'many-to-many'],
         default: 'one-to-many'
       },
       inputMode: {
@@ -113,7 +113,8 @@ const EntitySchema = new mongoose.Schema(
         placeholder: String,        // Placeholder spécifique
         helpText: String,           // Texte d'aide contextuel
         defaultValue: mongoose.Schema.Types.Mixed, // Valeur par défaut
-        showOnQuickForm: Boolean     // Afficher dans le formulaire rapide
+        showOnQuickForm: Boolean,     // Afficher dans le formulaire rapide
+        type_config: { type: mongoose.Schema.Types.Mixed, default: {} } // Config spécifique à cette entité (ex: refEntity pour une relation)
       }, { _id: false }),
       default: new Map()
     },

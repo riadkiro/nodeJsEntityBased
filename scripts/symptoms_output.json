@@ -1,0 +1,163 @@
+{
+  "_id": "69c071566b20251b71c95ec7",
+  "slug": "consultations",
+  "__v": 1,
+  "classifications": [
+    "69c071566b20251b71c95ebf"
+  ],
+  "color": "#00ab55",
+  "createdAt": "2026-03-22T22:46:46.068Z",
+  "customFields": [
+    "69c071566b20251b71c95e8e",
+    "69c071566b20251b71c95e8f"
+  ],
+  "description": "",
+  "enableAttachments": true,
+  "enabledStandardFields": [
+    "title",
+    "date"
+  ],
+  "folders": [],
+  "icon": "solar:stethoscope-bold-duotone",
+  "meta": {
+    "createdByPreset": "cabinet-medical",
+    "isDemo": true
+  },
+  "name": "Consultation",
+  "namePlural": "Consultations",
+  "nameSingular": "Consultation",
+  "order": 2,
+  "relations": [
+    {
+      "key": "df53fd16-d8c2-4f26-8cfe-44644de04984",
+      "targetEntity": "69c071566b20251b71c95ec5",
+      "label": "Patient",
+      "inverseLabel": "Consultations",
+      "cardinality": "one-to-many",
+      "inputMode": "modal-picker",
+      "storage": "on-source",
+      "bidirectional": true,
+      "required": false
+    },
+    {
+      "key": "c36f8372-08de-4b31-aec4-d9da6aad86ac",
+      "targetEntity": "69c071566b20251b71c95ec6",
+      "label": "Rendez-vous",
+      "inverseLabel": "Consultation",
+      "cardinality": "one-to-many",
+      "inputMode": "modal-picker",
+      "storage": "on-source",
+      "bidirectional": true,
+      "required": false
+    },
+    {
+      "key": "94563876-a286-452c-9861-ddcda887d6fc",
+      "targetEntity": "69c071566b20251b71c95ed2",
+      "label": "Symptômes",
+      "inverseLabel": "Consultations",
+      "cardinality": "many-to-many",
+      "inputMode": "autocomplete",
+      "storage": "on-source",
+      "bidirectional": true,
+      "required": false,
+      "showInForm": true
+    }
+  ],
+  "sidebarWidgets": [
+    {
+      "type": "note",
+      "label": "Observations",
+      "icon": "solar:clipboard-text-bold-duotone",
+      "color": "#00ab55",
+      "order": 0,
+      "visible": true,
+      "config": {
+        "content": ""
+      }
+    }
+  ],
+  "spaces": [],
+  "updatedAt": "2026-03-23T11:38:03.485Z",
+  "referenceTitleTokens": [
+    {
+      "t": "text",
+      "v": "Consult. "
+    },
+    {
+      "t": "field",
+      "id": "rel:df53fd16-d8c2-4f26-8cfe-44644de04984.title"
+    },
+    {
+      "t": "text",
+      "v": " - "
+    },
+    {
+      "t": "field",
+      "id": "69c071566b20251b71c95e8e"
+    }
+  ],
+  "layout": {
+    "tabs": [
+      {
+        "id": "default",
+        "title": "Attributs",
+        "icon": "tabler:apps"
+      }
+    ],
+    "fields": [
+      {
+        "fieldId": "69c071566b20251b71c95e8e",
+        "width": 12,
+        "id": "auto_69c071566b20251b71c95e8e",
+        "tabId": "default"
+      },
+      {
+        "fieldId": "94563876-a286-452c-9861-ddcda887d6fc",
+        "width": 12,
+        "id": "rel_symptomes_inline",
+        "tabId": "default"
+      },
+      {
+        "fieldId": "69c071566b20251b71c95e8f",
+        "width": 12,
+        "id": "auto_69c071566b20251b71c95e8f",
+        "tabId": "default"
+      }
+    ]
+  },
+  "headerConfig": {
+    "showIcon": true,
+    "avatarSource": {
+      "type": "entity-icon"
+    },
+    "showTitle": true,
+    "titleSource": {
+      "type": "entity"
+    },
+    "showClassifications": true,
+    "shownClassifications": [],
+    "showAttachments": true,
+    "shownRelations": [
+      "94563876-a286-452c-9861-ddcda887d6fc"
+    ],
+    "heroFields": [
+      {
+        "fieldId": "69c071566b20251b71c95e8e",
+        "entitySource": "self",
+        "maxChars": 20
+      }
+    ],
+    "metaFields": [],
+    "subtitleRelation": {
+      "displayFields": []
+    },
+    "showDuration": false
+  },
+  "fieldOverrides": {},
+  "formLayout": {
+    "version": 1,
+    "rows": []
+  },
+  "formLayoutStatus": "draft",
+  "gridSchemas": []
+}

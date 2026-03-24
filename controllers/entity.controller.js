@@ -157,8 +157,9 @@ module.exports = {
           .json({ error: "Le champ 'fields' doit être un tableau." });
       }
 
-      // 🔁 Ne garder que les _id
-      const fieldIds = fieldsArray.map((f) => f && f._id).filter((id) => !!id);
+      // 🔁 Ne garder que les _id valides pour Mongoose (évite les CastError avec les relations UUID)
+      const fieldIds = fieldsArray.map((f) => f && f._id)
+                                 .filter((id) => id && mongoose.Types.ObjectId.isValid(id));
       const layout = req.body.layout || [];
 
       console.log("🔄 IDs des champs :", fieldIds);
@@ -166,7 +167,11 @@ module.exports = {
 
       const updated = await Entity.findByIdAndUpdate(
         entityId,
-        { customFields: fieldIds, layout: layout },
+        { 
+          customFields: fieldIds, 
+          layout: layout,
+          formLayout: layout // Sync both for consistency
+        },
         { new: true }
       );
 

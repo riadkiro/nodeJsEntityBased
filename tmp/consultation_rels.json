@@ -1,0 +1,38 @@
+[
+  {
+    "key": "ba7b0717-9d10-4dca-b1fb-157bf3c6e7eb",
+    "targetEntity": "69c232cd0fa7abd357abd64f",
+    "label": "Patient",
+    "inverseLabel": "Consultations",
+    "cardinality": "many-to-one",
+    "inputMode": "modal-picker",
+    "storage": "on-source",
+    "bidirectional": true,
+    "required": false,
+    "showInForm": true
+  },
+  {
+    "key": "4c8dcdb5-35ca-49a9-bfae-320a63eba396",
+    "targetEntity": "69c232cd0fa7abd357abd650",
+    "label": "Rendez-vous",
+    "inverseLabel": "Consultation",
+    "cardinality": "one-to-one",
+    "inputMode": "modal-picker",
+    "storage": "on-source",
+    "bidirectional": true,
+    "required": false,
+    "showInForm": false
+  },
+  {
+    "key": "41b45e1d-b387-4d55-8893-eb6c3fe11fe0",
+    "targetEntity": "69c232cd0fa7abd357abd65c",
+    "label": "Symptômes",
+    "inverseLabel": "Consultations",
+    "cardinality": "many-to-many",
+    "inputMode": "autocomplete",
+    "storage": "on-source",
+    "bidirectional": true,
+    "required": false,
+    "showInForm": true
+  }
+]

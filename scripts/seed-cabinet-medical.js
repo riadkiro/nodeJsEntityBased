@@ -117,7 +117,7 @@ async function install(conn, userId, presetSlug) {
         { name: 'mutuelle', label: 'Mutuelle', type: 'string', ui: { icon: 'solar:shield-bold-duotone', width: 'half' } },
         // Consultation fields
         { name: 'motif', label: 'Motif de consultation', type: 'text', ui: { icon: 'solar:chat-round-dots-bold-duotone', width: 'full', rows: 1 } },
-        { name: 'note_medecin', label: 'Note médecin', type: 'text', ui: { icon: 'solar:document-text-bold-duotone', width: 'full', rows: 1 } },
+        { name: 'note_medecin', label: 'Note médecin', type: 'text', ui: { icon: 'solar:document-text-bold-duotone', width: 'full', rows: 4 } },
         { name: 'symptomes_rel', label: 'Symptômes', type: 'relation', type_config: { refEntity: '__symptomes__', multiple: true }, ui: { icon: 'solar:heart-pulse-bold-duotone', width: 'full' } },
         { name: 'symptomes', label: 'Symptômes', type: 'text', ui: { icon: 'solar:heart-pulse-bold-duotone', width: 'full', rows: 3 } },
         { name: 'diagnostic', label: 'Diagnostic', type: 'text', ui: { icon: 'solar:clipboard-check-bold-duotone', width: 'full', rows: 1 } },
@@ -310,7 +310,7 @@ async function install(conn, userId, presetSlug) {
             referenceTitleTokens: null
         }, // set after relations
         {
-            name: 'Consultation', nameSingular: 'Consultation', namePlural: 'Consultations', slug: 'consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', fields: ['motif', 'note_medecin', 'symptomes_rel'], statusClassification: null, classifications: ['consult_type'], stdFields: ['title', 'date'],
+            name: 'Consultation', nameSingular: 'Consultation', namePlural: 'Consultations', slug: 'consultations', icon: 'solar:stethoscope-bold-duotone', color: '#00ab55', fields: ['motif', 'note_medecin'], statusClassification: null, classifications: ['consult_type'], stdFields: ['title', 'date'],
             referenceTitleTokens: null,
             sidebarWidgets: [
                 { type: 'note', label: 'Observations', icon: 'solar:clipboard-text-bold-duotone', color: '#00ab55', order: 0, visible: true, config: { content: '' } }
@@ -456,31 +456,65 @@ async function install(conn, userId, presetSlug) {
     const E = ids.entities;
     ids.relationKeys = {}; // store relation UUID keys for demo records
     const relationDefs = [
-        { src: 'rendez-vous', target: 'patients', label: 'Patient', inverse: 'Rendez-vous', card: 'one-to-many' },
-        { src: 'consultations', target: 'patients', label: 'Patient', inverse: 'Consultations', card: 'one-to-many' },
-        { src: 'consultations', target: 'rendez-vous', label: 'Rendez-vous', inverse: 'Consultation', card: 'one-to-many' },
-        { src: 'prescriptions', target: 'patients', label: 'Patient', inverse: 'Prescriptions', card: 'one-to-many' },
-        { src: 'prescriptions', target: 'consultations', label: 'Consultation', inverse: 'Prescriptions', card: 'one-to-many' },
+        { src: 'rendez-vous', target: 'patients', label: 'Patient', inverse: 'Rendez-vous', card: 'many-to-one' },
+        { src: 'consultations', target: 'patients', label: 'Patient', inverse: 'Consultations', card: 'many-to-one' },
+        { src: 'consultations', target: 'rendez-vous', label: 'Rendez-vous', inverse: 'Consultation', card: 'one-to-one' },
+        { src: 'prescriptions', target: 'patients', label: 'Patient', inverse: 'Prescriptions', card: 'many-to-one' },
+        { src: 'prescriptions', target: 'consultations', label: 'Consultation', inverse: 'Prescriptions', card: 'many-to-one' },
         { src: 'prescriptions', target: 'medicaments', label: 'Médicament', inverse: 'Prescriptions', card: 'one-to-many' },
-        { src: 'factures', target: 'consultations', label: 'Consultation', inverse: 'Factures', card: 'one-to-many' },
-        { src: 'factures', target: 'patients', label: 'Patient', inverse: 'Factures', card: 'one-to-many' },
-        { src: 'paiements', target: 'factures', label: 'Facture', inverse: 'Paiements', card: 'one-to-many' },
-        { src: 'resultats-labo', target: 'patients', label: 'Patient', inverse: 'Résultats labo', card: 'one-to-many' },
-        { src: 'documents-medicaux', target: 'patients', label: 'Patient', inverse: 'Documents', card: 'one-to-many' },
-        { src: 'plans-traitement', target: 'patients', label: 'Patient', inverse: 'Plans de traitement', card: 'one-to-many' },
+        { src: 'factures', target: 'consultations', label: 'Consultation', inverse: 'Factures', card: 'one-to-one' },
+        { src: 'factures', target: 'patients', label: 'Patient', inverse: 'Factures', card: 'many-to-one' },
+        { src: 'paiements', target: 'factures', label: 'Facture', inverse: 'Paiements', card: 'many-to-one' },
+        { src: 'resultats-labo', target: 'patients', label: 'Patient', inverse: 'Résultats labo', card: 'many-to-one' },
+        { src: 'documents-medicaux', target: 'patients', label: 'Patient', inverse: 'Documents', card: 'many-to-one' },
+        { src: 'plans-traitement', target: 'patients', label: 'Patient', inverse: 'Plans de traitement', card: 'many-to-one' },
         { src: 'consultations', target: 'symptomes', label: 'Symptômes', inverse: 'Consultations', card: 'many-to-many', mode: 'autocomplete' },
-        { src: 'pathologies', target: 'patients', label: 'Patient', inverse: 'Pathologies', card: 'one-to-many' },
-        { src: 'traitements', target: 'patients', label: 'Patient', inverse: 'Traitements', card: 'one-to-many' },
+        { src: 'pathologies', target: 'patients', label: 'Patient', inverse: 'Pathologies', card: 'many-to-one' },
+        { src: 'traitements', target: 'patients', label: 'Patient', inverse: 'Traitements', card: 'many-to-one' },
     ];
 
     for (const r of relationDefs) {
         const key = uuidv4();
         ids.relationKeys[`${r.src}__${r.target}`] = key;
         await db.Entity.findByIdAndUpdate(E[r.src], {
-            $push: { relations: { key, targetEntity: E[r.target], label: r.label, inverseLabel: r.inverse, cardinality: r.card, inputMode: r.mode || 'modal-picker', storage: 'on-source', bidirectional: true, required: false } }
+            $push: {
+                relations: {
+                    key,
+                    targetEntity: E[r.target],
+                    label: r.label,
+                    inverseLabel: r.inverse,
+                    cardinality: r.card,
+                    inputMode: r.mode || 'modal-picker',
+                    storage: 'on-source',
+                    bidirectional: true,
+                    required: false,
+                    showInForm: (r.src === 'consultations' && r.target === 'rendez-vous') ? false : true
+                }
+            }
         });
     }
     console.log(`   ✅ ${relationDefs.length} relations`);
+
+    // =========== 4c. DEFAULT LAYOUTS ===========
+    console.log('\n📐 Setting default layouts...');
+    if (E['consultations']) {
+        const motifFieldId = f.motif;
+        const noteMedecinFieldId = f.note_medecin;
+        const patientRelKey = ids.relationKeys['consultations__patients'];
+        const symptomesRelKey = ids.relationKeys['consultations__symptomes'];
+
+        const layout = {
+            tabs: [{ id: 'default', title: 'Attributs', icon: 'tabler:apps' }],
+            fields: [
+                { fieldId: motifFieldId.toString(), width: 9, id: `auto_${motifFieldId}`, tabId: 'default' },
+                { fieldId: patientRelKey, width: 3, id: `auto_rel_${patientRelKey}`, tabId: 'default' },
+                { fieldId: noteMedecinFieldId.toString(), width: 12, id: `auto_${noteMedecinFieldId}`, tabId: 'default' },
+                { fieldId: symptomesRelKey, width: 12, id: `auto_rel_${symptomesRelKey}`, tabId: 'default' }
+            ]
+        };
+        await db.Entity.findByIdAndUpdate(E['consultations'], { $set: { formLayout: layout, layout: layout } });
+        console.log('   ✅ Consultation layout set: Motif(9), Patient(3), Note(12), Symptômes(12)');
+    }
 
     // =========== 4b. REFERENCE TITLE TOKENS (relation-based) ===========
     console.log('\n🏷️  Setting reference title tokens (relation-based)...');

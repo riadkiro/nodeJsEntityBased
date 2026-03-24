@@ -123,6 +123,7 @@
       ...JSON.parse(JSON.stringify(r)),
       targetEntity: r.targetEntity ? (r.targetEntity._id || r.targetEntity).toString() : ''
     })),
+    fieldOverrides: entity.fieldOverrides || {},
     headerConfig: entity.headerConfig || {}
   } : null,
   templateData: locals.templateData || null,
@@ -190,6 +191,7 @@ document.addEventListener('alpine:init', () => {
         standardFields: buildStdFields(),
         statusClassificationId: isEdit ? entity.statusClassification : '',
         classifications: isEdit ? entity.classifications : [],
+        fieldOverrides: isEdit ? (entity.fieldOverrides || {}) : {},
         headerConfig: isEdit ? (entity.headerConfig || {}) : {}
       },
 
@@ -220,8 +222,8 @@ document.addEventListener('alpine:init', () => {
 
       // Relations
       allEntities: raw.allEntities || [],
-      relations: isEdit ? (entity.relations || []).map(r => ({ ...r, _targetFields: [] })) : [],
-      incomingRelations: <%- JSON.stringify(incomingRelations || []) %>,
+      relations: isEdit ? (entity.relations || []).map(r => ({ ...r, showInForm: r.showInForm !== false, _targetFields: [] })) : [],
+      incomingRelations: <%- JSON.stringify(locals.incomingRelations || []) %>,
       entityFieldsCache: {},
 
       // Classifications
@@ -229,16 +231,38 @@ document.addEventListener('alpine:init', () => {
 
       // Step 2 tab
       step2Tab: 'fields',
+      showOnlyLinked: true,
+      activeConfigFieldId: null, // Tracks which field's config is open
 
       // Computed
       get filteredCategories() {
-        if (!this.fieldSearch) return this.systemFields;
+        const categories = [...this.systemFields];
+        
+        // Inject "Relations" category if relations exist
+        if (this.relations.length > 0) {
+          categories.push({
+            key: 'relations',
+            label: 'Relations',
+            fields: this.relations.map(rel => ({
+              _id: 'rel_' + rel.key,
+              key: rel.key,
+              label: rel.label || 'Relation sans titre',
+              type: 'relation_existing',
+              icon: 'solar:link-round-bold-duotone',
+              description: 'Liaison avec : ' + (this.getRelationEntity(rel.targetEntity)?.name || '...'),
+              _rel: rel
+            }))
+          });
+        }
+
+        if (!this.fieldSearch) return categories;
         const s = this.fieldSearch.toLowerCase();
-        return this.systemFields.map(cat => ({
+        return categories.map(cat => ({
           ...cat,
           fields: cat.fields.filter(f =>
-            f.label.toLowerCase().includes(s) || f.name.toLowerCase().includes(s) ||
-            (f.description && f.description.toLowerCase().includes(s))
+            f.label.toLowerCase().includes(s) || (f.name && f.name.toLowerCase().includes(s)) ||
+            (f.description && f.description.toLowerCase().includes(s)) ||
+            (f.type === 'relation' && 'relation'.includes(s))
           )
         })).filter(cat => cat.fields.length > 0);
       },
@@ -271,6 +295,15 @@ document.addEventListener('alpine:init', () => {
           // Render format editor
           const editor = this.$refs.formatEditor;
           if (editor) editor.innerHTML = this.renderTokensAsHTML();
+        });
+
+        // Auto-expand on search
+        this.$watch('fieldSearch', (val) => {
+          if (val && val.length > 0) {
+            this.filteredCategories.forEach(cat => {
+              if (cat.fields.length > 0) this.openCategories[cat.key] = true;
+            });
+          }
         });
       },
 
@@ -434,8 +467,25 @@ document.addEventListener('alpine:init', () => {
       },
 
       // ===== Helper Methods =====
-      isFieldSelected(fieldId) { return this.selectedFields.some(f => f._id === fieldId); },
+      isFieldSelected(fieldId) { 
+        if (fieldId.startsWith('rel_')) {
+          const relKey = fieldId.substring(4);
+          const rel = this.relations.find(r => r.key === relKey);
+          return rel?.showInForm || false;
+        }
+        return this.selectedFields.some(f => f._id === fieldId); 
+      },
       toggleField(field) {
+        if (field.type === 'relation') {
+          this.addRelation();
+          this.step2Tab = 'relations'; // Go to config
+          return;
+        }
+        // Handle existing relation toggle
+        if (field.type === 'relation_existing' && field._rel) {
+          field._rel.showInForm = !field._rel.showInForm;
+          return;
+        }
         const idx = this.selectedFields.findIndex(f => f._id === field._id);
         if (idx >= 0) this.selectedFields.splice(idx, 1);
         else this.selectedFields.push(field);
@@ -541,6 +591,32 @@ document.addEventListener('alpine:init', () => {
       toggleSearchField(rel, fid) { const i = rel.searchFields.indexOf(fid); if (i>=0) rel.searchFields.splice(i,1); else rel.searchFields.push(fid); },
       toggleDisplayField(rel, fid) { const i = rel.displayFields.indexOf(fid); if (i>=0) rel.displayFields.splice(i,1); else rel.displayFields.push(fid); },
       getRelationEntity(entityId) { return this.allEntities.find(e => e._id === entityId) || null; },
+      getLinkedEntities() {
+        const outgoing = this.relations.map(r => r.targetEntity).filter(Boolean);
+        const incoming = (this.incomingRelations || []).map(r => r.sourceEntityId).filter(Boolean);
+        const ids = [...new Set([...outgoing, ...incoming])];
+        if (ids.length === 0) return this.allEntities; // Fallback to all if none linked
+        return this.allEntities.filter(e => ids.includes(e._id));
+      },
+      updateFieldOverride(fieldId, key, value) {
+        if (!this.form.fieldOverrides[fieldId]) this.form.fieldOverrides[fieldId] = { type_config: {} };
+        if (key.includes('.')) {
+          const [parent, child] = key.split('.');
+          if (!this.form.fieldOverrides[fieldId][parent]) this.form.fieldOverrides[fieldId][parent] = {};
+          this.form.fieldOverrides[fieldId][parent][child] = value;
+        } else {
+          this.form.fieldOverrides[fieldId][key] = value;
+        }
+      },
+      getFieldOverride(fieldId, key, defaultValue = '') {
+        const override = this.form.fieldOverrides[fieldId];
+        if (!override) return defaultValue;
+        if (key.includes('.')) {
+          const [parent, child] = key.split('.');
+          return (override[parent] && override[parent][child] !== undefined) ? override[parent][child] : defaultValue;
+        }
+        return override[key] !== undefined ? override[key] : defaultValue;
+      },
 
       // Reference title tokens
       getAvailableFields() {
@@ -607,7 +683,8 @@ document.addEventListener('alpine:init', () => {
           referenceTitleTokens: this.form.referenceTitleTokens,
           statusClassification: this.form.statusClassificationId || null,
           classifications: this.form.classifications,
-          relations: this.relations.filter(r => r.targetEntity).map(({ _targetFields, ...r }) => r),
+          fieldOverrides: this.form.fieldOverrides,
+          relations: this.relations.filter(r => r.targetEntity || r._id).map(({ _targetFields, ...r }) => r),
           headerConfig: this.form.headerConfig || {}
         };
 
@@ -902,27 +979,43 @@ document.addEventListener('alpine:init', () => {
                 <span x-text="selectedFields.length + ' champ(s) sélectionné(s)'"></span>
               </div>
               <div class="flex flex-wrap gap-1.5">
+                <!-- Custom Fields Chips -->
                 <template x-for="(field, idx) in selectedFields" :key="field._id">
-                  <div class="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-xs border shadow-sm"
-                       :class="field.showOnQuickForm ? 'border-warning/50 bg-warning/5' : ''">
-                    <iconify-icon :icon="field.icon || 'solar:widget-bold'" width="14" class="text-primary"></iconify-icon>
-                    <span x-text="field.label || field.name"></span>
-                    <button type="button" @click="field.showOnQuickForm = !field.showOnQuickForm"
-                            class="transition-colors ml-0.5"
-                            :class="field.showOnQuickForm ? 'text-warning' : 'text-gray-300 hover:text-warning/60'"
-                            :title="field.showOnQuickForm ? 'Visible dans Quick Form' : 'Masqué du Quick Form'">
-                      <iconify-icon icon="solar:bolt-bold" width="13"></iconify-icon>
-                    </button>
-                    <button type="button" @click="selectedFields.splice(idx, 1)" class="text-gray-400 hover:text-red-500 ml-0.5">
-                      <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
-                    </button>
+                  <div class="space-y-2">
+                    <div class="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-xs border shadow-sm"
+                         :class="field.showOnQuickForm ? 'border-warning/50 bg-warning/5' : ''">
+                      <iconify-icon :icon="field.icon || 'solar:widget-bold'" width="14" class="text-primary"></iconify-icon>
+                      <span x-text="field.label || field.name"></span>
+                      <button type="button" @click="field.showOnQuickForm = !field.showOnQuickForm; updateFieldOverride(field._id, 'showOnQuickForm', field.showOnQuickForm)"
+                              class="transition-colors ml-0.5"
+                              :class="field.showOnQuickForm ? 'text-warning' : 'text-gray-300 hover:text-warning/60'"
+                              :title="field.showOnQuickForm ? 'Visible dans Quick Form' : 'Masqué du Quick Form'">
+                        <iconify-icon icon="solar:bolt-bold" width="13"></iconify-icon>
+                      </button>
+                      <button type="button" @click="selectedFields.splice(idx, 1)" class="text-gray-400 hover:text-red-500 ml-0.5">
+                        <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
+                      </button>
+                    </div>
                   </div>
                 </template>
+
+                <!-- Synchronized Relations Chips -->
+                <template x-for="(rel, rIdx) in relations.filter(r => r.showInForm)" :key="rel.key">
+                  <div class="space-y-2">
+                    <div class="inline-flex items-center gap-1 px-2 py-1 bg-primary/5 dark:bg-primary/20 rounded-full text-xs border border-primary/30 shadow-sm">
+                      <iconify-icon icon="solar:link-round-bold-duotone" width="14" class="text-primary"></iconify-icon>
+                      <span class="font-bold text-primary" x-text="rel.label || 'Relation'"></span>
+                      
+                      <button type="button" @click="rel.showInForm = false" class="text-gray-400 hover:text-red-500 ml-0.5">
+                        <iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon>
+                      </button>
+                    </div>
+                 </template>
               </div>
             </div>
 
-            <!-- Search -->
-            <div class="relative">
+          <!-- Search -->
+          <div class="relative">
               <input type="text" x-model="fieldSearch" placeholder="Rechercher un champ..." class="form-input w-full pl-9 text-sm">
               <iconify-icon icon="solar:magnifer-linear" class="absolute left-3 top-2.5 text-gray-400" width="16"></iconify-icon>
             </div>
@@ -993,7 +1086,7 @@ document.addEventListener('alpine:init', () => {
                   </div>
                   <div><label class="text-xs font-medium text-gray-500 mb-1 block">Cardinalité</label>
                     <div class="flex gap-1">
-                      <template x-for="card in [{v:'one-to-one',l:'1:1'},{v:'one-to-many',l:'1:N'},{v:'many-to-many',l:'N:N'}]" :key="card.v">
+                      <template x-for="card in [{v:'one-to-one',l:'1:1'},{v:'many-to-one',l:'M:1'},{v:'one-to-many',l:'1:N'},{v:'many-to-many',l:'N:N'}]" :key="card.v">
                         <button type="button" @click="relation.cardinality = card.v"
                                 class="flex-1 px-3 py-1.5 text-xs font-semibold rounded-md border transition-colors"
                                 :class="relation.cardinality === card.v ? 'bg-primary text-white border-primary' : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-primary/50'">
@@ -1051,11 +1144,11 @@ document.addEventListener('alpine:init', () => {
                             <iconify-icon icon="solar:arrow-right-linear" width="10"></iconify-icon>
                             <span class="font-medium text-amber-600 dark:text-amber-400" x-text="inc.inverseLabel"></span>
                             <span class="ml-1 px-1 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider"
-                                  :class="inc.cardinality === 'one-to-one' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : inc.cardinality === 'many-to-many' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'"
-                                  x-text="inc.cardinality === 'one-to-one' ? '1:1' : inc.cardinality === 'many-to-many' ? 'N:N' : '1:N'"></span>
+                                  :class="inc.cardinality === 'one-to-one' || inc.cardinality === 'many-to-one' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : inc.cardinality === 'many-to-many' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'"
+                                  x-text="inc.cardinality === 'one-to-one' ? '1:1' : inc.cardinality === 'many-to-one' ? 'M:1' : inc.cardinality === 'many-to-many' ? 'N:N' : '1:N'"></span>
                           </div>
                         </div>
-                        <a :href="'/account/' + raw.accountNumber + '/entity/settings/' + inc.sourceEntityId"
+                        <a :href="'/account/' + accountNumber + '/entity/settings/' + inc.sourceEntityId"
                            class="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-primary hover:bg-primary/5 transition-all"
                            title="Voir l'entité source">
                           <iconify-icon icon="solar:arrow-right-up-linear" width="14"></iconify-icon>

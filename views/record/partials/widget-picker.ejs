@@ -1,0 +1,439 @@
+<!-- â•ªâ• â• â• â• â• â• â• â• â• â• â• â• â• â• Unified Widget Picker Modal â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•ª -->
+<template x-teleport="body">
+    <div x-show="$store.widgetPicker.open" 
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+         style="display: none; position: fixed; inset: 0; z-index: 9999; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); background: rgba(0,0,0,0.4);"
+         class="flex items-center justify-center p-4"
+         @click.self="$store.widgetPicker.close()"
+         @keydown.escape.window="$store.widgetPicker.close()"
+         x-cloak>
+        
+        <div @click.stop
+             class="bg-white dark:bg-[#0e1726] rounded-2xl shadow-2xl w-full max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-800"
+             x-show="$store.widgetPicker.open"
+             x-transition:enter="transition ease-out duration-300 delay-50"
+             x-transition:enter-start="opacity-0 scale-95 translate-y-4" x-transition:enter-end="opacity-100 scale-100 translate-y-0">
+            
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center" 
+                         :style="'background:' + ($store.widgetPicker.step === 'form' ? $store.widgetPicker.newWidget.color + '15' : '#4361ee15')">
+                        <iconify-icon :icon="$store.widgetPicker.step === 'form' ? $store.widgetPicker.newWidget.icon : 'solar:widget-add-bold-duotone'" 
+                                      width="20" 
+                                      :style="'color:' + ($store.widgetPicker.step === 'form' ? $store.widgetPicker.newWidget.color : '#4361ee')"></iconify-icon>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-gray-800 dark:text-gray-100" 
+                            x-text="$store.widgetPicker.step === 'form' ? 'Configurer : ' + $store.widgetPicker.newWidget.label : 'Bibliothèque de Widgets'"></h3>
+                        <p class="text-[11px] text-gray-400 dark:text-gray-500" 
+                           x-text="$store.widgetPicker.step === 'form' ? 'Personnalisez les paramètres du widget' : 'Choisissez un composant à ajouter'"></p>
+                    </div>
+                </div>
+                <button type="button" @click="$store.widgetPicker.close()"
+                        class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
+                    <iconify-icon icon="tabler:x" width="18"></iconify-icon>
+                </button>
+            </div>
+
+            <!-- Modal Content (Catalog) -->
+            <div x-show="$store.widgetPicker.step === 'catalog'" class="p-6 overflow-y-auto custom-scrollbar" style="max-height: 60vh;">
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <template x-for="w in $store.widgetPicker.catalog" :key="w.type">
+                        <button type="button" 
+                                @click="$store.widgetPicker.selectType(w.type)"
+                                class="group flex flex-col items-center gap-3 p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/40 hover:border-primary/30 hover:bg-primary/[0.02] transition-all duration-200">
+                            <div class="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110" 
+                                 :style="'background:' + w.color + '10'">
+                                <iconify-icon :icon="w.icon" width="24" :style="'color:' + w.color"></iconify-icon>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-[13px] font-bold text-gray-700 dark:text-gray-200" x-text="w.label"></div>
+                                <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5" x-text="w.desc"></div>
+                            </div>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Modal Content (Form) -->
+            <div x-show="$store.widgetPicker.step === 'form'" class="p-6 overflow-y-auto custom-scrollbar" style="max-height: 60vh;">
+                <div class="space-y-4">
+                    <!-- Common Fields -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Titre du widget</label>
+                            <input type="text" x-model="$store.widgetPicker.newWidget.label" 
+                                   class="form-input w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200" placeholder="Ex: Ma Note, Stats...">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Couleur accent</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" x-model="$store.widgetPicker.newWidget.color" class="w-8 h-8 rounded border-none bg-transparent cursor-pointer">
+                                <input type="text" x-model="$store.widgetPicker.newWidget.color" class="form-input flex-1 text-xs dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-400" placeholder="#4361ee">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Fields based on type -->
+                    <div class="pt-4 border-t dark:border-gray-800 space-y-4">
+                        
+                        <!-- 1. HTML / Rich Text -->
+                        <template x-if="$store.widgetPicker.newWidget.type === 'html'">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Contenu HTML</label>
+                                <textarea x-model="$store.widgetPicker.newWidget.config.content" rows="6"
+                                          class="form-input w-full text-sm font-mono dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-300" placeholder="<p>Bonjour...</p>"></textarea>
+                            </div>
+                        </template>
+
+                        <!-- 2. Note -->
+                        <template x-if="$store.widgetPicker.newWidget.type === 'note' || $store.widgetPicker.newWidget.type === 'notes'">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">MÃ©mo / Note</label>
+                                <textarea x-model="$store.widgetPicker.newWidget.config.content" rows="4"
+                                          class="form-input w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-300" placeholder="Ã‰crire quelque chose..."></textarea>
+                            </div>
+                        </template>
+
+                        <!-- 3. Link -->
+                        <template x-if="$store.widgetPicker.newWidget.type === 'link'">
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">URL de destination</label>
+                                    <input type="url" x-model="$store.widgetPicker.newWidget.config.url" 
+                                           class="form-input w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200" placeholder="https://...">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Description (facultatif)</label>
+                                    <input type="text" x-model="$store.widgetPicker.newWidget.config.description" 
+                                           class="form-input w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200" placeholder="Bouton vers...">
+                                </div>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.newTab" class="form-checkbox">
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">Ouvrir dans un nouvel onglet</span>
+                                </label>
+                            </div>
+                        </template>
+
+                        <!-- 4. iFrame / Embed -->
+                        <template x-if="$store.widgetPicker.newWidget.type === 'iframe'">
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">URL de la page</label>
+                                    <input type="url" x-model="$store.widgetPicker.newWidget.config.url" 
+                                           class="form-input w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200" placeholder="https://...">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Hauteur (px)</label>
+                                    <input type="number" x-model="$store.widgetPicker.newWidget.config.height" 
+                                           class="form-input w-60 text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200">
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- 5. Image -->
+                        <template x-if="$store.widgetPicker.newWidget.type === 'image'">
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">URL de l'image</label>
+                                    <input type="url" x-model="$store.widgetPicker.newWidget.config.url" 
+                                           class="form-input w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200" placeholder="https://...">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Texte alternatif</label>
+                                    <input type="text" x-model="$store.widgetPicker.newWidget.config.alt" 
+                                           class="form-input w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200">
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- 6. Dynamic Table -->
+                        <template x-if="$store.widgetPicker.newWidget.type === 'dynamic-table'">
+                             <div class="space-y-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Tableau Ã  afficher</label>
+                                    <select x-model="$store.widgetPicker.newWidget.config.schemaId"
+                                            class="form-select w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200">
+                                        <option value="">ðŸ“Š Tous les tableaux (avec tabs)</option>
+                                        <template x-for="s in $store.widgetPicker.gridSchemas" :key="s.id">
+                                            <option :value="s.id" x-text="'ðŸ“‹ ' + s.name"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                        <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.enableAdd" class="form-checkbox">
+                                        <span class="text-xs font-semibold text-gray-600 dark:text-gray-300">Permettre l'ajout</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                        <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.enableDocPreview" class="form-checkbox">
+                                        <span class="text-xs font-semibold text-gray-600 dark:text-gray-300">Preview Documents</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </template>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 border-t dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/20">
+                <div>
+                    <template x-if="$store.widgetPicker.step === 'form'">
+                        <button type="button" @click="$store.widgetPicker.step = 'catalog'"
+                                class="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all">
+                            <iconify-icon icon="solar:alt-arrow-left-outline" width="16"></iconify-icon>
+                            Retour
+                        </button>
+                    </template>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="$store.widgetPicker.close()"
+                            class="px-4 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all">
+                        Annuler
+                    </button>
+                    <template x-if="$store.widgetPicker.step === 'form'">
+                        <button type="button" @click="$store.widgetPicker.save()"
+                                :disabled="$store.widgetPicker.saving"
+                                class="flex items-center gap-1.5 px-6 py-2 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50">
+                            <iconify-icon x-show="!$store.widgetPicker.saving" icon="solar:check-circle-bold" width="16"></iconify-icon>
+                            <iconify-icon x-show="$store.widgetPicker.saving" icon="svg-spinners:ring-resize" width="16"></iconify-icon>
+                            <span x-text="$store.widgetPicker.saving ? 'Création...' : 'Ajouter au ' + ($store.widgetPicker.target?.type === 'sidebar' ? 'Sidebar' : 'Onglet')"></span>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</template>
+
+<script>
+(function() {
+    const registerWidgetPicker = () => {
+        if (Alpine.store('widgetPicker')) return;
+        Alpine.store('widgetPicker', {
+            open: false,
+            step: 'catalog', // 'catalog' | 'form'
+            saving: false,
+            target: null, // { type: 'sidebar', entityId } | { type: 'tab', tabKey, rowId, colId }
+            newWidget: {
+                _id: null, // For edit mode
+                type: '',
+                label: '',
+                icon: '',
+                color: '#4361ee',
+                config: {}
+            },
+            gridSchemas: [], // Passed on init
+            catalog: [
+                { type: 'note',    label: 'Note',       icon: 'solar:notes-bold-duotone',         color: '#f59e0b', desc: 'Bloc de texte simple' },
+                { type: 'tasks',   label: 'Checklist',  icon: 'solar:checklist-bold-duotone',      color: '#ec4899', desc: 'Gestion de tâches' },
+                { type: 'html',    label: 'HTML',       icon: 'solar:code-bold-duotone',           color: '#f97316', desc: 'Contenu personnalisé' },
+                { type: 'iframe',  label: 'Embed',      icon: 'solar:monitor-bold-duotone',        color: '#06b6d4', desc: 'Page web externe' },
+                { type: 'link',    label: 'Lien',       icon: 'solar:link-round-bold-duotone',     color: '#3b82f6', desc: 'Accès rapide URL' },
+                { type: 'image',   label: 'Image',      icon: 'solar:gallery-bold-duotone',        color: '#10b981', desc: 'Visuel ou logo' },
+                { type: 'dynamic-table', label: 'Tableau', icon: 'solar:list-check-bold-duotone',  color: '#00ab55', desc: 'Données structurées' },
+                { type: 'separator', label: 'Séparateur', icon: 'solar:minus-circle-bold-duotone', color: '#9ca3af', desc: 'Ligne de division' },
+                { type: 'timeline', label: 'Timeline',  icon: 'solar:clock-circle-bold-duotone',   color: '#805dca', desc: 'Fil d\'actualité' },
+                { type: 'kpi',      label: 'KPI',       icon: 'solar:graph-up-bold-duotone',       color: '#e7515a', desc: 'Indicateur clé' },
+                { type: 'chart',    label: 'Graphique', icon: 'solar:chart-bold-duotone',          color: '#e2a03f', desc: 'Courbes et stats' },
+                { type: 'fields',   label: 'Champs',    icon: 'solar:layers-bold-duotone',         color: '#2196f3', desc: 'Vue data synthèse' },
+                { type: 'cards',    label: 'Cartes',    icon: 'solar:card-bold-duotone',           color: '#e2a03f', desc: 'Relation records' }
+            ],
+
+            initPicker(data) {
+                this.gridSchemas = data.gridSchemas || [];
+            },
+
+            initOpen(target) {
+                this.target = target;
+                this.step = 'catalog';
+                this.saving = false;
+                this.newWidget = { _id: null, type: '', label: '', icon: '', color: '#4361ee', config: {} };
+                this.open = true;
+            },
+
+            openEditWidget(target, widget) {
+                this.target = target;
+                this.newWidget = {
+                    _id: widget._id,
+                    type: widget.type,
+                    label: widget.label,
+                    icon: widget.icon,
+                    color: widget.color,
+                    config: JSON.parse(JSON.stringify(widget.config || {}))
+                };
+                this.step = 'form';
+                this.open = true;
+                this.saving = false;
+            },
+
+            close() {
+                this.open = false;
+            },
+
+            selectType(type) {
+                const w = this.catalog.find(c => c.type === type);
+                if (!w) return;
+
+                const defaults = {
+                    'note': { config: { content: '' } },
+                    'tasks': { config: { tasks: [] } },
+                    'html': { config: { content: '' } },
+                    'iframe': { config: { url: '', height: 300 } },
+                    'link': { config: { url: '', description: '', newTab: true } },
+                    'image': { config: { url: '', alt: '' } },
+                    'dynamic-table': { config: { schemaId: '', enableAdd: true, enableDocPreview: false } },
+                    'timeline': { config: {} },
+                    'kpi': { config: {} },
+                    'chart': { config: {} },
+                    'fields': { config: {} },
+                    'cards': { config: {} },
+                    'separator': { config: {} }
+                };
+
+                const d = defaults[type] || { config: {} };
+                this.newWidget = {
+                    type,
+                    label: w.label,
+                    icon: w.icon,
+                    color: w.color,
+                    config: JSON.parse(JSON.stringify(d.config))
+                };
+
+                if (type === 'separator') {
+                    this.save();
+                } else {
+                    this.step = 'form';
+                }
+            },
+
+            async save() {
+                this.saving = true;
+                try {
+                    if (this.newWidget._id) {
+                        await this.saveExistingWidget();
+                    } else {
+                        if (this.target.type === 'sidebar') {
+                            await this.saveToSidebar();
+                        } else if (this.target.type === 'tab') {
+                            await this.saveToTab();
+                        }
+                    }
+                    this.close();
+                    window.location.reload();
+                } catch (e) {
+                    console.error('Widget saving error:', e);
+                    alert('Erreur lors de l\'ajout du widget');
+                } finally {
+                    this.saving = false;
+                }
+            },
+
+            async saveToSidebar() {
+                const url = `/account/${this.target.accountNumber}/api/entity/${this.target.entityId}/sidebar-widgets`;
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(this.newWidget)
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error);
+            },
+
+            async saveToTab() {
+                window.dispatchEvent(new CustomEvent('insert-tab-widget', {
+                    detail: {
+                        target: this.target,
+                        widget: JSON.parse(JSON.stringify(this.newWidget))
+                    }
+                }));
+            },
+
+            async saveExistingWidget() {
+                console.log('[widgetPicker] saveExistingWidget:', this.newWidget);
+                const url = `/account/${this.target.accountNumber}/api/entity/${this.target.entityId}/sidebar-widgets/${this.newWidget._id}`;
+                const res = await fetch(url, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(this.newWidget)
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error);
+            },
+
+            async deleteExistingWidget(target, widgetId) {
+                console.log('[widgetPicker] deleteExistingWidget called with:', JSON.stringify(target), widgetId);
+                
+                // Double-click safety: first click arms, second click within 3s actually deletes
+                if (this._pendingDeleteId !== widgetId) {
+                    this._pendingDeleteId = widgetId;
+                    clearTimeout(this._pendingDeleteTimer);
+                    // Visual feedback: make the button red momentarily
+                    const btn = document.querySelector(`[data-widget-delete="${widgetId}"]`);
+                    if (btn) {
+                        btn.style.background = 'rgba(239, 68, 68, 0.15)';
+                        btn.style.color = '#ef4444';
+                        btn.title = 'Cliquer encore pour confirmer';
+                    }
+                    console.log('[widgetPicker] First click - click again within 3s to confirm delete');
+                    this._pendingDeleteTimer = setTimeout(() => {
+                        this._pendingDeleteId = null;
+                        if (btn) {
+                            btn.style.background = '';
+                            btn.style.color = '';
+                            btn.title = '';
+                        }
+                    }, 3000);
+                    return;
+                }
+                
+                // Second click - actually delete
+                this._pendingDeleteId = null;
+                clearTimeout(this._pendingDeleteTimer);
+                console.log('[widgetPicker] Confirmed! Sending DELETE request...');
+                
+                try {
+                    const url = `/account/${target.accountNumber}/api/entity/${target.entityId}/sidebar-widgets/${widgetId}`;
+                    console.log('[widgetPicker] DELETE URL:', url);
+                    const res = await fetch(url, {
+                        method: 'DELETE',
+                        credentials: 'include'
+                    });
+                    console.log('[widgetPicker] Response status:', res.status);
+                    const data = await res.json();
+                    console.log('[widgetPicker] Response data:', JSON.stringify(data));
+                    if (data.success) {
+                        console.log('[widgetPicker] Success! Reloading page...');
+                        window.location.reload();
+                    } else {
+                        throw new Error(data.error || 'Unknown error');
+                    }
+                } catch (e) {
+                    console.error('[widgetPicker] Delete error:', e);
+                    alert('Erreur lors de la suppression: ' + e.message);
+                }
+            }
+        });
+    };
+
+    if (window.Alpine) {
+        registerWidgetPicker();
+    } else {
+        document.addEventListener('alpine:init', registerWidgetPicker);
+    }
+})();
+</script>
+
+<style>
+.custom-scrollbar::-webkit-scrollbar { width: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+.dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; }
+</style>

@@ -1068,6 +1068,34 @@ module.exports = {
                                 if (!gridLines[sid]) gridLines[sid] = [];
                                 gridLines[sid].push(line);
                             });
+
+                            // Also load latest snapshot per schema (for sidebar widget display)
+                            try {
+                                const GridSnapshot = await tenantCollection(req, "GridSnapshot");
+                                for (const sid of schemaIds) {
+                                    const sidStr = sid.toString();
+                                    // Only load snapshot if no live lines for this schema
+                                    if (!gridLines[sidStr] || gridLines[sidStr].length === 0 || 
+                                        gridLines[sidStr].every(l => !l.values || Object.keys(l.values).length === 0)) {
+                                        const latestSnap = await GridSnapshot.findOne({
+                                            schemaId: sid,
+                                            $or: [
+                                                { recordId: record._id },
+                                                { targetRecordId: record._id }
+                                            ]
+                                        }).sort({ createdAt: -1 }).lean();
+                                        if (latestSnap && latestSnap.lines && latestSnap.lines.length > 0) {
+                                            gridLines[sidStr] = latestSnap.lines.map(l => ({
+                                                ...l,
+                                                _fromSnapshot: true,
+                                                _snapshotDate: latestSnap.date
+                                            }));
+                                        }
+                                    }
+                                }
+                            } catch (snapErr) {
+                                console.error('[DataGrid] Error loading snapshots for sidebar:', snapErr);
+                            }
                         }
                     }
                 }

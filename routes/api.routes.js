@@ -1652,12 +1652,18 @@ router.delete('/api/entity/:entityId/sidebar-widgets/:widgetId', async (req, res
     try {
         const Entity = await tenantCollection(req, "Entity")
         const { entityId, widgetId } = req.params
+        console.log('[API] DELETE sidebar widget - entityId:', entityId, 'widgetId:', widgetId)
 
         const entity = await Entity.findById(entityId)
         if (!entity) return res.status(404).json({ error: 'Entity not found' })
 
+        const before = (entity.sidebarWidgets || []).length
         entity.sidebarWidgets = (entity.sidebarWidgets || []).filter(w => w._id.toString() !== widgetId)
+        const after = entity.sidebarWidgets.length
+        console.log('[API] Sidebar widgets: before=' + before + ', after=' + after + ', removed=' + (before - after))
+        
         await entity.save()
+        console.log('[API] Entity saved successfully')
         res.json({ success: true })
 
     } catch (error) {

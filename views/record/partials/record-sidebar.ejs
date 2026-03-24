@@ -1638,8 +1638,8 @@
                                 </div>
                             </div>
                             <!-- Widget Content -->
-                            <div x-show="swOpen" x-collapse>
-                                <div class="p-3">
+                            <div x-show="swOpen" x-collapse style="overflow:visible;">
+                                <div class="p-3" style="overflow:visible;">
                                     <% if (sw.type === 'html') { %>
                                         <div class="prose prose-sm max-w-none dark:prose-invert text-[12px]"><%- (sw.config && sw.config.content) || '' %></div>
                                     <% } else if (sw.type === 'note') { %>
@@ -1714,6 +1714,403 @@
                                                 <span style="font-size: 9px; color: #9ca3af; font-weight: 600; flex-shrink: 0; min-width: 28px; text-align: right;" x-text="tasks.filter(t => t.done).length + '/' + tasks.length"></span>
                                             </div>
                                         </div>
+                                    <% } else if (sw.type === 'dynamic-table') { %>
+                                        <%
+                                            const dtSchemaId = sw.config?.schemaId?.toString();
+                                            let dtGs = dtSchemaId ? (gridSchemas || []).find(s => s.schemaId?.toString() === dtSchemaId) : null;
+                                            const dtSchema = dtGs && dtGs.schema ? dtGs.schema : null;
+                                            const dtColumns = dtSchema ? (dtSchema.columns || []).filter(c => c.visible !== false) : [];
+                                            const dtSnapshotEnabled = dtSchema && dtSchema.snapshotConfig && dtSchema.snapshotConfig.enabled;
+                                        %>
+                                        <div x-data="sidebarDynamicTable('<%= dtSchemaId %>', '<%= record._id %>', '<%= account_number %>', JSON.parse(decodeURIComponent('<%= encodeURIComponent(JSON.stringify({
+                                            columns: dtColumns,
+                                            defaultLineType: dtSchema ? (dtSchema.defaultLineType || 'treatment') : 'treatment',
+                                            snapshotEnabled: !!dtSnapshotEnabled,
+                                            snapshotConfig: dtSchema ? (dtSchema.snapshotConfig || {}) : {},
+                                            entityId: entity._id.toString()
+                                        })) %>')))" x-init="init()">
+
+                                            <!-- ═══ Toolbar Mini (presets, actions) — pixel-perfect copy of main tab ═══ -->
+                                            <div class="lp-toolbar">
+                                                <!-- Presets button with dropdown -->
+                                                <div style="position: relative;">
+                                                    <button type="button" class="lp-toolbar-btn"
+                                                            :class="{ 'active': presetOpen }"
+                                                            @click.stop="presetOpen = !presetOpen">
+                                                        <iconify-icon icon="solar:clipboard-check-bold-duotone" width="13"></iconify-icon>
+                                                        Presets
+                                                        <span x-show="presets.length > 0"
+                                                              class="lp-preset-item-badge" x-text="presets.length"></span>
+                                                    </button>
+                                                    <!-- Preset Dropdown -->
+                                                    <template x-if="presetOpen">
+                                                        <div>
+                                                            <div style="position: fixed; inset: 0; z-index: 99;"
+                                                                 @click.stop="presetOpen = false"></div>
+                                                            <div class="lp-preset-dropdown" @click.stop>
+                                                                <!-- Record-specific presets -->
+                                                                <template x-if="presets.filter(p => !!p.recordId).length > 0">
+                                                                    <div>
+                                                                        <div class="lp-preset-section-label">
+                                                                            <iconify-icon icon="solar:user-bold-duotone" width="10"></iconify-icon>
+                                                                            Pour ce record
+                                                                        </div>
+                                                                        <template x-for="preset in presets.filter(p => !!p.recordId)" :key="preset._id">
+                                                                            <div class="lp-preset-item" @click="applyPreset(preset); presetOpen = false">
+                                                                                <div class="lp-preset-item-icon" :style="'background:' + (preset.color || '#4361ee') + '15; color:' + (preset.color || '#4361ee')">
+                                                                                    <iconify-icon :icon="preset.icon || 'solar:clipboard-check-bold-duotone'" width="14"></iconify-icon>
+                                                                                </div>
+                                                                                <div class="lp-preset-item-info">
+                                                                                    <div class="lp-preset-item-name" x-text="preset.name"></div>
+                                                                                    <div class="lp-preset-item-meta">
+                                                                                        <span class="lp-preset-item-badge" x-text="(preset.presetRows || []).length + ' lignes'"></span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <button class="lp-preset-item-delete" @click.stop="deletePreset(preset._id)" title="Supprimer">
+                                                                                    <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="14"></iconify-icon>
+                                                                                </button>
+                                                                            </div>
+                                                                        </template>
+                                                                        <div class="lp-preset-divider"></div>
+                                                                    </div>
+                                                                </template>
+                                                                <!-- Global presets -->
+                                                                <div class="lp-preset-section-label">
+                                                                    <iconify-icon icon="solar:global-bold-duotone" width="10"></iconify-icon>
+                                                                    Presets globaux
+                                                                </div>
+                                                                <template x-if="presets.filter(p => !p.recordId).length === 0">
+                                                                    <div class="lp-preset-empty">
+                                                                        <iconify-icon icon="solar:clipboard-list-broken" width="20" style="opacity: 0.4; display: block; margin: 0 auto 4px;"></iconify-icon>
+                                                                        Aucun preset disponible
+                                                                    </div>
+                                                                </template>
+                                                                <template x-for="preset in presets.filter(p => !p.recordId)" :key="preset._id">
+                                                                    <div class="lp-preset-item" @click="applyPreset(preset); presetOpen = false">
+                                                                        <div class="lp-preset-item-icon" :style="'background:' + (preset.color || '#4361ee') + '15; color:' + (preset.color || '#4361ee')">
+                                                                            <iconify-icon :icon="preset.icon || 'solar:clipboard-list-bold-duotone'" width="14"></iconify-icon>
+                                                                        </div>
+                                                                        <div class="lp-preset-item-info">
+                                                                            <div class="lp-preset-item-name" x-text="preset.name"></div>
+                                                                            <div class="lp-preset-item-meta">
+                                                                                <span class="lp-preset-item-badge" x-text="(preset.presetRows || []).length + ' lignes'"></span>
+                                                                                <span x-show="preset.description" x-text="preset.description" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <button class="lp-preset-item-delete" @click.stop="deletePreset(preset._id)" title="Supprimer">
+                                                                            <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="14"></iconify-icon>
+                                                                        </button>
+                                                                    </div>
+                                                                </template>
+                                                                <!-- Save current as preset -->
+                                                                <div class="lp-preset-add-btn"
+                                                                     @click="presetOpen = false; savePresetOpen = true">
+                                                                    <iconify-icon icon="solar:add-circle-bold-duotone" width="14"></iconify-icon>
+                                                                    Sauvegarder comme preset
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+
+                                                <div class="lp-toolbar-sep"></div>
+
+                                                <!-- Save preset shortcut -->
+                                                <button type="button" class="lp-toolbar-btn"
+                                                        x-show="lines.filter(l => l.values && Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0))).length > 0"
+                                                        @click.stop="savePresetOpen = true">
+                                                    <iconify-icon icon="solar:diskette-bold-duotone" width="13"></iconify-icon>
+                                                    Sauvegarder
+                                                </button>
+                                            </div>
+
+                                            <!-- ═══ Editable Table ═══ -->
+                                            <div style="overflow:visible;">
+                                                <table class="lines-panel-table" style="font-size:11px;">
+                                                    <thead>
+                                                        <tr>
+                                                            <% dtColumns.forEach(col => { %>
+                                                                <th style="padding:4px 6px !important; font-size:9px !important;"><%= col.label %></th>
+                                                            <% }) %>
+                                                            <th style="width:24px;"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <template x-for="(line, lineIdx) in lines" :key="line._tempId || lineIdx">
+                                                            <tr>
+                                                                <% dtColumns.forEach((col, ci) => { %>
+                                                                    <td style="padding:2px 4px !important;">
+                                                                        <% if (col.type === 'relation') { %>
+                                                                            <!-- Relation search -->
+                                                                            <div style="position:relative;">
+                                                                                <input type="text" class="lp-input" style="font-size:11px !important; height:22px !important; padding:0 4px !important;"
+                                                                                    :value="line.values['<%= col.key %>_label'] || ''"
+                                                                                    @focus="openSearch(lineIdx)"
+                                                                                    @input="doSearch($event.target.value, lineIdx)"
+                                                                                    @blur="setTimeout(() => searchOpen = false, 200)"
+                                                                                    @keydown.escape="searchOpen = false"
+                                                                                    placeholder="🔍 <%= col.label %>" />
+                                                                                <div x-show="searchOpen && searchLineIdx === lineIdx" x-cloak
+                                                                                    style="position:absolute; top:100%; left:0; right:0; z-index:9999; background:#fff; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.12); max-height:160px; overflow-y:auto; margin-top:2px;">
+                                                                                    <template x-if="searchLoading">
+                                                                                        <div style="padding:8px; text-align:center; font-size:11px; color:#9ca3af;">
+                                                                                            <iconify-icon icon="svg-spinners:ring-resize" width="14"></iconify-icon>
+                                                                                        </div>
+                                                                                    </template>
+                                                                                    <template x-if="!searchLoading && searchResults.length === 0">
+                                                                                        <div style="padding:8px; text-align:center; font-size:11px; color:#9ca3af;">Aucun résultat</div>
+                                                                                    </template>
+                                                                                    <template x-for="item in searchResults" :key="item._id">
+                                                                                        <div style="padding:6px 10px; font-size:11px; cursor:pointer; transition:background 0.1s; border-bottom:1px solid #f3f4f6;"
+                                                                                             @mousedown.prevent="selectItem(lineIdx, item)"
+                                                                                             onmouseover="this.style.background='rgba(67,97,238,0.06)'" onmouseout="this.style.background=''">
+                                                                                            <span x-text="item.label || item.title" style="font-weight:500; color:#1f2937;"></span>
+                                                                                        </div>
+                                                                                    </template>
+                                                                                </div>
+                                                                            </div>
+                                                                        <% } else if (col.type === 'multiselect') { %>
+                                                                            <!-- Multiselect pills -->
+                                                                            <div style="position:relative;" x-data="{ msOpen: false }">
+                                                                                <div @click="msOpen = !msOpen" style="display:flex; flex-wrap:wrap; gap:2px; min-height:20px; padding:1px 2px; cursor:pointer; border:1px solid transparent; border-radius:4px; align-items:center; transition:border-color 0.15s;"
+                                                                                     onmouseover="this.style.borderColor='#d1d5db'" onmouseout="this.style.borderColor='transparent'">
+                                                                                    <template x-if="!line.values['<%= col.key %>'] || (Array.isArray(line.values['<%= col.key %>']) && line.values['<%= col.key %>'].length === 0)">
+                                                                                        <span style="font-size:10px; color:#9ca3af; font-style:italic;">—</span>
+                                                                                    </template>
+                                                                                    <template x-for="sv in (Array.isArray(line.values['<%= col.key %>']) ? line.values['<%= col.key %>'] : [])" :key="sv">
+                                                                                        <span class="lp-ms-tag" style="font-size:9px; padding:0 4px;"
+                                                                                              x-text="getOptLabel('<%= col.key %>', sv)"></span>
+                                                                                    </template>
+                                                                                </div>
+                                                                                <!-- Dropdown -->
+                                                                                <div x-show="msOpen" x-cloak @click.outside="msOpen = false"
+                                                                                     style="position:absolute; top:100%; left:0; min-width:140px; z-index:9999; background:#fff; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.12); margin-top:2px; padding:4px 0; max-height:180px; overflow-y:auto;">
+                                                                                    <% (col.config?.options || []).forEach(opt => { %>
+                                                                                        <div style="padding:4px 10px; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px; transition:background 0.1s;"
+                                                                                             @click="toggleMultiselect(lineIdx, '<%= col.key %>', '<%= opt.value %>')"
+                                                                                             onmouseover="this.style.background='rgba(67,97,238,0.06)'" onmouseout="this.style.background=''">
+                                                                                            <div style="width:14px; height:14px; border-radius:3px; border:1.5px solid #d1d5db; display:flex; align-items:center; justify-content:center; transition:all 0.15s; flex-shrink:0;"
+                                                                                                 :style="(Array.isArray(line.values['<%= col.key %>']) && line.values['<%= col.key %>'].includes('<%= opt.value %>')) ? 'background:#4361ee; border-color:#4361ee;' : ''">
+                                                                                                <iconify-icon x-show="Array.isArray(line.values['<%= col.key %>']) && line.values['<%= col.key %>'].includes('<%= opt.value %>')" icon="solar:check-read-bold" width="9" style="color:white;"></iconify-icon>
+                                                                                            </div>
+                                                                                            <span style="color:#374151;"><%= opt.label %></span>
+                                                                                        </div>
+                                                                                    <% }) %>
+                                                                                </div>
+                                                                            </div>
+                                                                        <% } else if (col.type === 'textarea') { %>
+                                                                            <input type="text" class="lp-input" style="font-size:10px !important; height:20px !important; padding:0 3px !important;"
+                                                                                :value="line.values['<%= col.key %>'] || ''"
+                                                                                @input="line.values['<%= col.key %>'] = $event.target.value; debouncedSave()"
+                                                                                placeholder="<%= col.label %>" />
+                                                                        <% } else { %>
+                                                                            <input type="text" class="lp-input" style="font-size:11px !important; height:22px !important; padding:0 4px !important;"
+                                                                                :value="line.values['<%= col.key %>'] || ''"
+                                                                                @input="line.values['<%= col.key %>'] = $event.target.value; debouncedSave()"
+                                                                                placeholder="<%= col.label %>" />
+                                                                        <% } %>
+                                                                    </td>
+                                                                <% }) %>
+                                                                <!-- Delete button -->
+                                                                <td style="padding:0 !important; width:20px;">
+                                                                    <div style="opacity:0; transition:opacity 0.15s;" class="sw-row-actions">
+                                                                        <button type="button" @click="removeLine(lineIdx)" style="padding:2px; border:none; background:transparent; cursor:pointer; color:#ef4444; line-height:1; border-radius:3px;"
+                                                                                onmouseover="this.style.background='rgba(239,68,68,0.08)'" onmouseout="this.style.background=''">
+                                                                            <iconify-icon icon="tabler:trash" width="12"></iconify-icon>
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        </template>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <!-- ═══ Action bar: compact pills aligned right (pixel-perfect copy of main tab) ═══ -->
+                                            <div style="display:flex; align-items:center; justify-content:flex-end; gap:6px; padding:8px 12px; border-top:1px dashed #e5e7eb;">
+                                                <div style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; font-size:11px; font-weight:500; color:#6b7280; border:1px solid #e5e7eb; border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none;"
+                                                     @click.stop="addLine()"
+                                                     onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee'; this.style.background='rgba(67,97,238,0.04)';"
+                                                     onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='#6b7280'; this.style.background='';">
+                                                    <iconify-icon icon="tabler:plus" width="13"></iconify-icon>
+                                                    <span>Ajouter</span>
+                                                </div>
+                                                <% if (dtSnapshotEnabled) { %>
+                                                <div :style="'display:inline-flex; align-items:center; gap:5px; padding:5px 12px; font-size:11px; font-weight:500; color:#6b7280; border:1px solid #e5e7eb; border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none;' + (saving ? ' opacity:0.5; pointer-events:none;' : '')"
+                                                     @click.stop="saveSnapshot()"
+                                                     onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee'; this.style.background='rgba(67,97,238,0.04)';"
+                                                     onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='#6b7280'; this.style.background='';">
+                                                    <iconify-icon icon="solar:check-circle-bold-duotone" width="13" style="pointer-events:none;"></iconify-icon>
+                                                    <span x-text="saving ? 'Validation...' : 'Valider'" style="pointer-events:none;"></span>
+                                                </div>
+                                                <% } %>
+                                            </div>
+
+
+                                            <!-- ═══ Save Preset Modal (pixel-perfect copy of main tab) ═══ -->
+                                            <template x-if="savePresetOpen">
+                                                <div class="lp-modal-overlay" @click.self="savePresetOpen = false" @keydown.escape.window="savePresetOpen = false">
+                                                    <div class="lp-modal" style="max-width: 520px;">
+                                                        <!-- Header -->
+                                                        <div class="lp-modal-header">
+                                                            <h3>
+                                                                <iconify-icon icon="solar:clipboard-check-bold-duotone" width="18" class="text-primary"></iconify-icon>
+                                                                Sauvegarder comme preset
+                                                            </h3>
+                                                            <button class="lp-modal-close" @click="savePresetOpen = false">
+                                                                <iconify-icon icon="tabler:x" width="16"></iconify-icon>
+                                                            </button>
+                                                        </div>
+
+                                                        <!-- Body -->
+                                                        <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; max-height: 65vh; overflow-y: auto;">
+                                                            <!-- Name -->
+                                                            <div>
+                                                                <label style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Nom du preset</label>
+                                                                <input type="text" class="lp-input" style="width: 100%; height: 38px; font-size: 13px; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 0 12px;"
+                                                                       placeholder="Ex: Protocole Grippe, Suivi Thyroïde..."
+                                                                       x-model="savePresetName"
+                                                                       x-ref="sidebarPresetName"
+                                                                       x-init="$nextTick(() => $refs.sidebarPresetName?.focus())"
+                                                                       @keydown.enter.prevent="confirmSavePreset()" />
+                                                            </div>
+
+                                                            <!-- Scope -->
+                                                            <div>
+                                                                <label style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Portée</label>
+                                                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                                                    <div class="lp-save-scope-option"
+                                                                         :class="{ 'active': savePresetScope === 'workspace' }"
+                                                                         @click="savePresetScope = 'workspace'">
+                                                                        <div class="lp-scope-radio"></div>
+                                                                        <iconify-icon icon="solar:global-bold-duotone" width="18" style="color: #4361ee;"></iconify-icon>
+                                                                        <div class="lp-save-scope-info">
+                                                                            <div class="lp-save-scope-title">Preset global</div>
+                                                                            <div class="lp-save-scope-desc">Disponible pour tous les records de ce type</div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="lp-save-scope-option"
+                                                                         :class="{ 'active': savePresetScope === 'record' }"
+                                                                         @click="savePresetScope = 'record'">
+                                                                        <div class="lp-scope-radio"></div>
+                                                                        <iconify-icon icon="solar:document-bold-duotone" width="18" style="color: #22c55e;"></iconify-icon>
+                                                                        <div class="lp-save-scope-info">
+                                                                            <div class="lp-save-scope-title">Ce record uniquement</div>
+                                                                            <div class="lp-save-scope-desc">Lié à ce record spécifique seulement</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Preview -->
+                                                            <div class="lp-save-preview">
+                                                                <div class="lp-save-preview-header">
+                                                                    <iconify-icon icon="solar:eye-bold-duotone" width="12"></iconify-icon>
+                                                                    <span x-text="lines.filter(l => l.values && Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0))).length + ' lignes seront sauvegardées'"></span>
+                                                                </div>
+                                                                <template x-for="(line, idx) in lines.filter(l => l.values && Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0))).slice(0, 6)" :key="idx">
+                                                                    <div class="lp-save-preview-item">
+                                                                        <span style="color: #9ca3af; font-size: 10px; min-width: 14px;" x-text="idx + 1"></span>
+                                                                        <span x-text="Object.values(line.values || {}).filter(v => v && typeof v === 'string').join(' · ') || Object.values(line.values || {}).filter(v => Array.isArray(v) && v.length > 0).map(v => v.join(', ')).join(' · ') || 'Ligne ' + (idx + 1)"></span>
+                                                                    </div>
+                                                                </template>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Footer -->
+                                                        <div class="lp-modal-footer">
+                                                            <div></div>
+                                                            <div style="display: flex; gap: 8px;">
+                                                                <button class="lp-btn-cancel" @click="savePresetOpen = false">Annuler</button>
+                                                                <button class="lp-btn-add"
+                                                                        :disabled="!savePresetName.trim() || savingPreset"
+                                                                        @click="confirmSavePreset()">
+                                                                    <iconify-icon x-show="!savingPreset" icon="solar:diskette-bold" width="14"></iconify-icon>
+                                                                    <iconify-icon x-show="savingPreset" icon="svg-spinners:ring-resize" width="14"></iconify-icon>
+                                                                    <span x-text="savingPreset ? 'Sauvegarde...' : 'Sauvegarder'"></span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+
+                                            <!-- ═══ Snapshot History Timeline (pixel-perfect copy of main tab) ═══ -->
+                                            <template x-if="snapshots.length > 0">
+                                                <div class="lp-snapshot-area" style="padding:4px 0 8px;">
+                                                    <!-- Timeline -->
+                                                    <div class="lp-timeline">
+                                                        <!-- Vertical line -->
+                                                        <div class="lp-timeline-line"></div>
+
+                                                        <!-- Entries: sorted descending (newest first) -->
+                                                        <template x-for="(snap, si) in [...snapshots].sort((a,b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date)).slice(0, showAllHistory ? 50 : 5)" :key="snap._id">
+                                                            <div class="lp-timeline-entry" :class="{ 'is-open': expandedSnap === snap._id }">
+                                                                <!-- Dot -->
+                                                                <div class="lp-timeline-dot"></div>
+                                                                <!-- Header -->
+                                                                <div class="lp-timeline-header" @click="expandedSnap = expandedSnap === snap._id ? null : snap._id">
+                                                                    <iconify-icon :icon="expandedSnap === snap._id ? 'tabler:chevron-down' : 'tabler:chevron-right'" width="14" class="lp-timeline-chevron"></iconify-icon>
+                                                                    <span class="lp-timeline-title" x-text="'Traitement — ' + new Date(snap.date).toLocaleDateString('fr-FR', {day:'2-digit', month:'long', year:'numeric'})"></span>
+                                                                    <div class="lp-timeline-meta">
+                                                                        <span class="lp-timeline-time" x-text="new Date(snap.createdAt || snap.date).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})"></span>
+                                                                        <span class="lp-timeline-badge" x-text="snap.lines.length + ' lignes'"></span>
+                                                                    </div>
+                                                                </div>
+                                                                <!-- Expanded body -->
+                                                                <div x-show="expandedSnap === snap._id" x-cloak
+                                                                     x-transition:enter="transition ease-out duration-150"
+                                                                     x-transition:enter-start="opacity-0 -translate-y-1"
+                                                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                                                     class="lp-timeline-body">
+                                                                    <table class="lp-snapshot-table">
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <% dtColumns.forEach(col => { %>
+                                                                                    <th style="font-size:10px;"><%= col.label %></th>
+                                                                                <% }) %>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            <template x-for="(sLine, sli) in snap.lines" :key="sli">
+                                                                                <tr>
+                                                                                    <% dtColumns.forEach(col => { %>
+                                                                                        <td>
+                                                                                            <% if (col.type === 'relation') { %>
+                                                                                                <span x-text="sLine.values?.['<%= col.key %>_label'] || sLine.values?.description || '—'" style="color:#4361ee;"></span>
+                                                                                            <% } else if (col.type === 'multiselect') { %>
+                                                                                                <span x-text="getSnapMultiLabel('<%= col.key %>', sLine.values?.['<%= col.key %>'])"></span>
+                                                                                            <% } else { %>
+                                                                                                <span x-text="sLine.values?.['<%= col.key %>'] || '—'"></span>
+                                                                                            <% } %>
+                                                                                        </td>
+                                                                                    <% }) %>
+                                                                                </tr>
+                                                                            </template>
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+
+                                                        <!-- Show more -->
+                                                        <template x-if="snapshots.length > 5">
+                                                            <div class="lp-timeline-showmore" style="padding-left:38px;">
+                                                                <span style="font-size:11px; color:#4361ee; cursor:pointer; user-select:none; font-weight:500;"
+                                                                      @click="showAllHistory = !showAllHistory"
+                                                                      x-text="showAllHistory ? '▲ Voir moins' : ('▼ Voir tout (' + snapshots.length + ')')"></span>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        <style>
+                                            /* Show row actions on hover */
+                                            .lines-panel-table tbody tr:hover .sw-row-actions { opacity: 1 !important; }
+                                            /* Allow dropdowns to escape the card overflow-hidden */
+                                            .panel:has([x-data*="sidebarDynamicTable"]) { overflow: visible !important; }
+                                        </style>
                                     <% } %>
                                 </div>
                             </div>
@@ -1765,6 +2162,396 @@
 
     <script>
         document.addEventListener("alpine:init", () => {
+            // ═══ Sidebar Dynamic Table Widget ═══
+            Alpine.data("sidebarDynamicTable", (schemaId, recordId, accountNumber, cfg) => ({
+                schemaId,
+                recordId,
+                accountNumber,
+                columns: cfg.columns || [],
+                defaultLineType: cfg.defaultLineType || 'treatment',
+                snapshotEnabled: cfg.snapshotEnabled || false,
+                snapshotConfig: cfg.snapshotConfig || {},
+                entityId: cfg.entityId || '',
+
+                // Lines state
+                lines: [],
+
+                // Search state (relation)
+                searchOpen: false,
+                searchLineIdx: -1,
+                searchResults: [],
+                searchLoading: false,
+                _searchTimer: null,
+
+                // Snapshot state
+                snapshots: [],
+                saving: false,
+                historyOpen: true,
+                expandedSnap: null,
+                showAllHistory: false,
+
+                // Preset state
+                presets: [],
+                presetOpen: false,
+                savePresetOpen: false,
+                savePresetName: '',
+                savePresetScope: 'workspace',
+                savingPreset: false,
+
+                // Save debounce
+                _saveTimer: null,
+
+                async init() {
+                    // Load existing lines from the API
+                    await this.loadLines();
+                    // Load snapshot history
+                    await this.loadHistory();
+                    // Load presets
+                    await this.loadPresets();
+                },
+
+                async loadLines() {
+                    try {
+                        const url = `/account/${this.accountNumber}/api/document-lines/${this.recordId}?schemaId=${this.schemaId}`;
+                        const res = await fetch(url, { credentials: 'include' });
+                        const data = await res.json();
+                        const serverLines = (data.data || []).map(l => ({
+                            ...l,
+                            values: l.values || {},
+                            _tempId: l._id || ('tmp_' + Date.now() + '_' + Math.random())
+                        }));
+                        // Filter to only lines that have some content, plus 1 empty line
+                        const filled = serverLines.filter(l => {
+                            if (!l.values) return false;
+                            return Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0));
+                        });
+                        // Always have at least 1 empty line
+                        if (filled.length === 0 || filled.length === serverLines.length) {
+                            filled.push(this._emptyLine());
+                        }
+                        this.lines = filled.length > 0 ? filled : [this._emptyLine()];
+                    } catch (e) {
+                        console.error('[SidebarWidget] loadLines error:', e);
+                        this.lines = [this._emptyLine()];
+                    }
+                },
+
+                _emptyLine() {
+                    return {
+                        _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
+                        lineType: this.defaultLineType,
+                        values: {},
+                        computed: {},
+                        order: 0
+                    };
+                },
+
+                addLine() {
+                    this.lines.push(this._emptyLine());
+                },
+
+                removeLine(idx) {
+                    if (this.lines.length <= 1) {
+                        // Reset to empty instead of removing last line
+                        this.lines = [this._emptyLine()];
+                    } else {
+                        this.lines.splice(idx, 1);
+                    }
+                    this.debouncedSave();
+                },
+
+                // ── Relation Search ──
+                openSearch(lineIdx) {
+                    this.searchLineIdx = lineIdx;
+                    this.searchOpen = true;
+                    this.searchResults = [];
+                },
+
+                doSearch(query, lineIdx) {
+                    // Update the label in the line as user types
+                    const relCol = this.columns.find(c => c.type === 'relation');
+                    if (relCol) {
+                        this.lines[lineIdx].values[relCol.key + '_label'] = query;
+                    }
+                    this.searchLineIdx = lineIdx;
+                    this.searchOpen = true;
+
+                    clearTimeout(this._searchTimer);
+                    this._searchTimer = setTimeout(() => this._fetchSearch(query), 250);
+                },
+
+                async _fetchSearch(query) {
+                    const relCol = this.columns.find(c => c.type === 'relation');
+                    if (!relCol || !relCol.config?.targetEntity) return;
+
+                    this.searchLoading = true;
+                    try {
+                        const searchFields = (relCol.config.searchFields || ['title']).join(',');
+                        const url = `/account/${this.accountNumber}/api/catalog-search?entityId=${relCol.config.targetEntity}&q=${encodeURIComponent(query)}&searchFields=${searchFields}`;
+                        const res = await fetch(url, { credentials: 'include' });
+                        const data = await res.json();
+                        this.searchResults = data.data || [];
+                    } catch (e) {
+                        console.error('[SidebarWidget] search error:', e);
+                        this.searchResults = [];
+                    }
+                    this.searchLoading = false;
+                },
+
+                selectItem(lineIdx, item) {
+                    const relCol = this.columns.find(c => c.type === 'relation');
+                    if (!relCol) return;
+                    const line = this.lines[lineIdx];
+                    if (!line) return;
+
+                    line.values[relCol.key] = item._id;
+                    line.values[relCol.key + '_label'] = item.label || item.title;
+
+                    // Apply defaults from catalog
+                    if (relCol.config?.applyDefaults && item.customFields) {
+                        for (const [targetKey, sourceExpr] of Object.entries(relCol.config.applyDefaults)) {
+                            let val;
+                            if (sourceExpr.startsWith('cf.')) {
+                                val = item.customFields[sourceExpr.substring(3)];
+                            } else {
+                                val = item[sourceExpr];
+                            }
+                            if (val !== undefined && val !== null) {
+                                line.values[targetKey] = val;
+                            }
+                        }
+                    }
+
+                    this.searchOpen = false;
+                    this.searchResults = [];
+
+                    // Add empty line at bottom if needed
+                    const lastLine = this.lines[this.lines.length - 1];
+                    const lastHasContent = lastLine && lastLine.values && Object.values(lastLine.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0));
+                    if (lastHasContent) {
+                        this.lines.push(this._emptyLine());
+                    }
+
+                    this.debouncedSave();
+                },
+
+                // ── Multiselect Toggle ──
+                toggleMultiselect(lineIdx, colKey, value) {
+                    const line = this.lines[lineIdx];
+                    if (!line) return;
+                    if (!Array.isArray(line.values[colKey])) {
+                        line.values[colKey] = [];
+                    }
+                    const idx = line.values[colKey].indexOf(value);
+                    if (idx >= 0) {
+                        line.values[colKey].splice(idx, 1);
+                    } else {
+                        line.values[colKey].push(value);
+                    }
+                    this.debouncedSave();
+                },
+
+                // ── Option Label Resolution ──
+                getOptLabel(colKey, value) {
+                    const col = this.columns.find(c => c.key === colKey);
+                    if (!col || !col.config?.options) return value;
+                    const opt = col.config.options.find(o => o.value === value);
+                    return opt ? opt.label : value;
+                },
+
+                getSnapMultiLabel(colKey, values) {
+                    if (!values || !Array.isArray(values) || values.length === 0) return '—';
+                    return values.map(v => this.getOptLabel(colKey, v)).join(', ');
+                },
+
+                // ── Save Lines ──
+                debouncedSave() {
+                    clearTimeout(this._saveTimer);
+                    this._saveTimer = setTimeout(() => this._saveLines(), 800);
+                },
+
+                async _saveLines() {
+                    try {
+                        const payload = {
+                            schemaId: this.schemaId,
+                            lines: this.lines.map((l, i) => ({
+                                _id: l._id || undefined,
+                                lineType: l.lineType || this.defaultLineType,
+                                values: l.values,
+                                order: i
+                            }))
+                        };
+                        const url = `/account/${this.accountNumber}/api/document-lines/${this.recordId}/bulk`;
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await res.json();
+                        if (data.data) {
+                            // Update with server IDs
+                            this.lines = data.data.map(l => ({
+                                ...l,
+                                values: l.values || {},
+                                _tempId: l._id || ('tmp_' + Date.now())
+                            }));
+                            // Ensure empty line at bottom
+                            const last = this.lines[this.lines.length - 1];
+                            const lastFilled = last && Object.values(last.values || {}).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0));
+                            if (lastFilled || this.lines.length === 0) {
+                                this.lines.push(this._emptyLine());
+                            }
+                        }
+                    } catch (e) {
+                        console.error('[SidebarWidget] save error:', e);
+                    }
+                },
+
+                // ── Snapshot ──
+                async saveSnapshot() {
+                    if (this.saving) return;
+                    const nonEmpty = this.lines.filter(l => {
+                        if (!l.values) return false;
+                        return Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0));
+                    });
+                    if (nonEmpty.length === 0) {
+                        window.showMessage?.('Aucune ligne avec des données à enregistrer', 'warning');
+                        return;
+                    }
+
+                    this.saving = true;
+                    try {
+                        const date = new Date().toISOString().split('T')[0];
+                        const url = `/account/${this.accountNumber}/api/grid-snapshots`;
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                schemaId: this.schemaId,
+                                recordId: this.recordId,
+                                targetRecordId: this.recordId,
+                                targetEntityId: this.snapshotConfig?.targetEntityId || null,
+                                date: date
+                            })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            window.showMessage?.('Enregistrement sauvegardé', 'success');
+                            // Add to history
+                            this.snapshots.unshift(data.data);
+                            this.expandedSnap = data.data._id;
+                            // Clear lines and add empty
+                            this.lines = [this._emptyLine()];
+                            this.debouncedSave();
+                        } else {
+                            window.showMessage?.(data.error || 'Erreur', 'error');
+                        }
+                    } catch (e) {
+                        console.error('[SidebarWidget] snapshot save error:', e);
+                        window.showMessage?.('Erreur lors de l\'enregistrement', 'error');
+                    }
+                    this.saving = false;
+                },
+
+                async loadHistory() {
+                    if (!this.schemaId || !this.recordId) return;
+                    try {
+                        const url = `/account/${this.accountNumber}/api/grid-snapshots/${this.schemaId}/${this.recordId}`;
+                        const res = await fetch(url, { credentials: 'include' });
+                        const data = await res.json();
+                        this.snapshots = data.data || [];
+                        if (this.snapshots.length > 0) {
+                            this.expandedSnap = this.snapshots[0]._id;
+                        }
+                    } catch (e) {
+                        console.error('[SidebarWidget] loadHistory error:', e);
+                        this.snapshots = [];
+                    }
+                },
+
+                // ── Presets ──
+                async loadPresets() {
+                    if (!this.schemaId) return;
+                    try {
+                        let url = `/account/${this.accountNumber}/api/grid-templates?schemaId=${this.schemaId}`;
+                        url += `&includeRecord=${this.recordId}`;
+                        const res = await fetch(url, { credentials: 'include' });
+                        const data = await res.json();
+                        this.presets = data.templates || [];
+                    } catch (e) {
+                        console.error('[SidebarWidget] loadPresets error:', e);
+                        this.presets = [];
+                    }
+                },
+
+                async applyPreset(preset) {
+                    try {
+                        const res = await fetch(
+                            `/account/${this.accountNumber}/api/grid-templates/${preset._id}/apply/${this.recordId}`,
+                            { method: 'POST', credentials: 'include' }
+                        );
+                        const data = await res.json();
+                        if (data.success && data.lines) {
+                            // Reload lines to reflect the applied preset
+                            await this.loadLines();
+                        }
+                    } catch (e) {
+                        console.error('[SidebarWidget] applyPreset error:', e);
+                    }
+                },
+
+                async confirmSavePreset() {
+                    if (!this.savePresetName.trim() || this.savingPreset) return;
+                    this.savingPreset = true;
+                    try {
+                        const payload = {
+                            name: this.savePresetName.trim(),
+                            schemaId: this.schemaId,
+                            documentId: this.recordId,
+                            scope: this.savePresetScope,
+                            recordId: this.savePresetScope === 'record' ? this.recordId : undefined
+                        };
+                        const res = await fetch(`/account/${this.accountNumber}/api/grid-templates/save-from-record`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await res.json();
+                        if (data.success && data.template) {
+                            this.presets.push(data.template);
+                            this.savePresetOpen = false;
+                            this.savePresetName = '';
+                            window.showMessage?.('Preset sauvegardé', 'success');
+                        } else {
+                            window.showMessage?.(data.error || 'Erreur', 'error');
+                        }
+                    } catch (e) {
+                        console.error('[SidebarWidget] confirmSavePreset error:', e);
+                        window.showMessage?.('Erreur réseau', 'error');
+                    }
+                    this.savingPreset = false;
+                },
+
+                async deletePreset(presetId) {
+                    if (!confirm('Supprimer ce preset ?')) return;
+                    try {
+                        const res = await fetch(`/account/${this.accountNumber}/api/grid-templates/${presetId}`, {
+                            method: 'DELETE',
+                            credentials: 'include'
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.presets = this.presets.filter(p => p._id !== presetId);
+                        }
+                    } catch (e) {
+                        console.error('[SidebarWidget] deletePreset error:', e);
+                    }
+                }
+            }));
+
             Alpine.data("recordSidebar", () => ({
                 classificationsOpen: true,
                 sidebarConfigOpen: false,
@@ -1955,18 +2742,26 @@
                 },
 
                 async deleteWidget(widgetId) {
+                    console.log('[Sidebar] deleteWidget called with widgetId:', widgetId);
                     try {
                         const entityId = '<%= entity._id %>';
-                        const res = await fetch(`/account/<%= account_number %>/api/entity/${entityId}/sidebar-widgets/${widgetId}`, {
+                        const url = `/account/<%= account_number %>/api/entity/${entityId}/sidebar-widgets/${widgetId}`;
+                        console.log('[Sidebar] DELETE URL:', url);
+                        const res = await fetch(url, {
                             method: 'DELETE',
                             credentials: 'include'
                         });
+                        console.log('[Sidebar] Response status:', res.status);
                         const data = await res.json();
+                        console.log('[Sidebar] Response data:', JSON.stringify(data));
                         if (data.success) {
+                            console.log('[Sidebar] Success! Reloading...');
                             window.location.reload();
+                        } else {
+                            console.error('[Sidebar] Delete failed:', data.error);
                         }
                     } catch (e) {
-                        console.error('Widget delete error:', e);
+                        console.error('[Sidebar] Widget delete error:', e);
                     }
                 },
 

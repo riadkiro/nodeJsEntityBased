@@ -1,3 +1,4 @@
+<%- include('partials/widget-picker') %>
 <%- include('../components/tag-picker') %>
 <style>
     /* Fix z-index collisions in header hero bar and related dropdowns */
@@ -1426,7 +1427,7 @@ window.__syncClsInputs = function(clsId, ids) {
                                                         <div :style="(col.blockIds && col.blockIds.length) ? 'display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 0; flex-shrink: 0;' : 'display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; min-height: 90px;'">
                                                             <!-- Add Widget Button -->
                                                             <button type="button"
-                                                                    @click="ctWidgetPickerOpen = true; ctWidgetPickerTarget = { tabKey: activeTab, rowId: row.id, colId: col.id }"
+                                                                    @click="$store.widgetPicker.initOpen({ type: 'tab', tabKey: activeTab, rowId: row.id, colId: col.id, accountNumber: '<%= account_number %>' })"
                                                                     :style="(col.blockIds && col.blockIds.length) ? 'width: 100%; height: 28px; border-radius: 6px; background: transparent; border: 1.5px dashed #d1d5db; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s; margin: 0 8px; color: #9ca3af; font-size: 11px;' : 'width: 36px; height: 36px; border-radius: 50%; background: rgba(67,97,238,0.1); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s;'"
                                                                     onmouseover="this.style.borderColor='#4361ee';this.style.color='#4361ee';this.style.background='rgba(67,97,238,0.06)'" onmouseout="this.style.borderColor='#d1d5db';this.style.color='#9ca3af';this.style.background='transparent'">
                                                                 <iconify-icon icon="solar:add-circle-bold" :width="(col.blockIds && col.blockIds.length) ? '12' : '18'" style="color: inherit;"></iconify-icon>
@@ -4323,31 +4324,47 @@ window.__syncClsInputs = function(clsId, ids) {
                     this.ctSaveLayout(tabKey);
                 },
 
-                ctInsertWidget(widgetType) {
-                    const target = this.ctWidgetPickerTarget;
-                    if (!target) return;
+                ctInsertWidget(widgetType, configuredWidget = null) {
+                    const target = configuredWidget ? configuredWidget.target : this.ctWidgetPickerTarget;
+                    // If we use the unified picker, target might be passed in event detail
+                    const pickerTarget = configuredWidget?.target || this.ctWidgetPickerTarget;
+                    if (!pickerTarget) return;
                     
-                    const layout = this._ensureTabLayout(target.tabKey);
-                    const row = layout.rows.find(r => r.id === target.rowId);
+                    const layout = this._ensureTabLayout(pickerTarget.tabKey);
+                    const row = layout.rows.find(r => r.id === pickerTarget.rowId);
                     if (!row) return;
-                    const col = row.columns.find(c => c.id === target.colId);
+                    const col = row.columns.find(c => c.id === pickerTarget.colId);
                     if (!col) return;
                     
                     const blockId = this._genId('block');
-                    const defaultTitles = {
-                        notes: 'Notes', tasks: 'Tâches', timeline: 'Timeline',
-                        kpi: 'KPI', chart: 'Graphique', fields: 'Champs',
-                        cards: 'Cartes', iframe: 'Embed'
-                    };
                     
-                    const block = {
-                        type: widgetType,
-                        title: defaultTitles[widgetType] || widgetType,
-                    };
-                    
-                    if (widgetType === 'notes') block.content = '';
-                    if (widgetType === 'tasks') block.tasks = [];
-                    if (widgetType === 'fields') block.fields = [];
+                    let block = {};
+                    if (configuredWidget) {
+                        // Use pre-configured widget from unified picker
+                        block = {
+                            type: configuredWidget.type,
+                            title: configuredWidget.label || configuredWidget.type,
+                            config: configuredWidget.config || {}
+                        };
+                        // Mapping some legacy fields that were top-level
+                        if (configuredWidget.type === 'notes' || configuredWidget.type === 'note') {
+                            block.content = configuredWidget.config.content || '';
+                        }
+                    } else {
+                        // Legacy/Default logic
+                        const defaultTitles = {
+                            notes: 'Notes', tasks: 'Tâches', timeline: 'Timeline',
+                            kpi: 'KPI', chart: 'Graphique', fields: 'Champs',
+                            cards: 'Cartes', iframe: 'Embed'
+                        };
+                        block = {
+                            type: widgetType,
+                            title: defaultTitles[widgetType] || widgetType,
+                        };
+                        if (widgetType === 'notes') block.content = '';
+                        if (widgetType === 'tasks') block.tasks = [];
+                        if (widgetType === 'fields') block.fields = [];
+                    }
                     
                     layout.blocks[blockId] = block;
                     if (!col.blockIds) col.blockIds = [];
@@ -4355,7 +4372,7 @@ window.__syncClsInputs = function(clsId, ids) {
                     
                     this.ctWidgetPickerOpen = false;
                     this.ctWidgetPickerTarget = null;
-                    this.ctSaveLayout(target.tabKey);
+                    this.ctSaveLayout(pickerTarget.tabKey);
                 },
 
                 ctAddTask(tabKey, blockId, text) {
@@ -6565,6 +6582,10 @@ window.__syncClsInputs = function(clsId, ids) {
 
 <script>
     document.addEventListener("alpine:init", () => {
+        // ─── UNIFIED WIDGET PICKER ───
+        Alpine.store('widgetPicker').initPicker({
+            gridSchemas: <%- JSON.stringify((entity.gridSchemas || []).map(s => ({ id: s._id, name: s.name }))).replace(/</g, '\\u003C') %>
+        });
 
         // â•â•â• HEADER BAR (Hero identity bar menu) â•â•â•
         Alpine.data("headerBar", () => ({
@@ -7492,8 +7513,7 @@ window.__syncClsInputs = function(clsId, ids) {
             <span class="tp-create-label">Créer</span>
             <span class="tp-create-tag">${relLabel}</span>
         </div>
-    </div>
-</div>
+        </div>
 
     <!-- Hidden inputs for persistence -->
     <template x-if="multiple">
@@ -7942,9 +7962,6 @@ window.__syncClsInputs = function(clsId, ids) {
                 // Read initialValue from data-initval attribute
                 const rawInitVal = this.$root.dataset.initval;
                 
-                this.$watch('showModal', (val) => {
-                    if (val) this.fetchModalResults(true);
-                });
                 const parsedInitVal = rawInitVal ? JSON.parse(rawInitVal) : (config.initialValue || null);
                 if (parsedInitVal) {
                     const idsRaw = parsedInitVal;

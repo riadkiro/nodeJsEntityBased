@@ -171,7 +171,7 @@ const EntitySchema = new mongoose.Schema(
       _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
       type: {
         type: String,
-        enum: ['html', 'link', 'iframe', 'note', 'separator', 'image', 'links-group', 'tasks'],
+        enum: ['html', 'link', 'iframe', 'note', 'separator', 'image', 'links-group', 'tasks', 'dynamic-table'],
         required: true
       },
       label: { type: String, required: true },

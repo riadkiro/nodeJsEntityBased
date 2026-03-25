@@ -2,4 +2,4 @@
 
 ![alt text](image-65.png) je ne peux pas supprimer le panel que jai ajouté en dessous du premier panel, 
 
-![alt text](image-66.png) je narrive pas a configurer le tableau dynamique pour affcher uniquement taitement ou facture comme on a fait pour le premier panel.
+![alt text](image-66.png) je narrive pas a configurer le tableau dynamique pour affcher uniquement taitement ou facture comme on a fait pour le premier panel.r

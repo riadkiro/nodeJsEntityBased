@@ -13,6 +13,13 @@
     .panel-sortable-item:hover {
         z-index: 40;
     }
+    .tp-option:hover .tp-option-delete {
+        opacity: 1 !important;
+    }
+    .tp-option-delete {
+        width: auto !important;
+        flex-shrink: 0 !important;
+    }
 </style>
 <%# ─── Panel Manager / Widget Catalog ─── %>
         <!-- ═══ Panel Manager Header (hidden by default, shown in designMode or via "..." menu) ═══ -->
@@ -1658,7 +1665,7 @@
                             <div class="border-t border-gray-200 dark:border-gray-700"></div>
                         </div>
                     <% } else { %>
-                        <div class="panel !p-0 overflow-hidden group/widget" x-data="{ swOpen: true }">
+                        <div class="panel !p-0 group/widget <%= sw.type === 'dynamic-table' ? '' : 'overflow-hidden' %>" x-data="{ swOpen: true }">
                             <!-- Widget Header -->
                             <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-800">
                                 <div class="flex items-center gap-2 cursor-pointer flex-1" @click="swOpen = !swOpen">
@@ -1929,7 +1936,7 @@
                                                     </thead>
                                                     <tbody>
                                                         <template x-for="(line, lineIdx) in lines" :key="line._tempId || lineIdx">
-                                                            <tr>
+                                                            <tr :style="(msDropdown.lineIdx === lineIdx || searchLineIdx === lineIdx) ? 'position: relative; z-index: 50;' : ''">
                                                                 <% dtColumns.forEach((col, ci) => { %>
                                                                     <td style="padding:2px 4px !important;">
                                                                         <% if (col.type === 'relation') { %>
@@ -1961,36 +1968,87 @@
                                                                                     </template>
                                                                                 </div>
                                                                             </div>
-                                                                        <% } else if (col.type === 'multiselect') { %>
-                                                                            <!-- Multiselect pills -->
-                                                                            <div style="position:relative;" x-data="{ msOpen: false }">
-                                                                                <div @click="msOpen = !msOpen" style="display:flex; flex-wrap:wrap; gap:2px; min-height:20px; padding:1px 2px; cursor:pointer; border:1px solid transparent; border-radius:4px; align-items:center; transition:border-color 0.15s;"
-                                                                                     onmouseover="this.style.borderColor='#d1d5db'" onmouseout="this.style.borderColor='transparent'">
+                                                                        <% } else if (col.type === 'multiselect' || col.type === 'select') { %>
+                                                                            <!-- Multiselect / Select (tp-style high-fidelity) -->
+                                                                            <div class="tp-wrapper" style="position:relative;">
+                                                                                <div class="lp-ms-trigger"
+                                                                                     style="min-height:22px;padding:1px 4px;gap:2px;"
+                                                                                     @click.stop="openMultiselectDropdown(lineIdx, '<%= col.key %>')">
                                                                                     <template x-if="!line.values['<%= col.key %>'] || (Array.isArray(line.values['<%= col.key %>']) && line.values['<%= col.key %>'].length === 0)">
-                                                                                        <span style="font-size:10px; color:#9ca3af; font-style:italic;">—</span>
+                                                                                        <span class="lp-ms-placeholder" style="font-size:10px;">Sélectionner...</span>
                                                                                     </template>
-                                                                                    <template x-for="sv in (Array.isArray(line.values['<%= col.key %>']) ? line.values['<%= col.key %>'] : [])" :key="sv">
-                                                                                        <span class="lp-ms-tag" style="font-size:9px; padding:0 4px;"
-                                                                                              x-text="getOptLabel('<%= col.key %>', sv)"></span>
-                                                                                    </template>
+                                                                                    <% if (col.type === 'multiselect') { %>
+                                                                                        <template x-for="selVal in (Array.isArray(line.values['<%= col.key %>']) ? line.values['<%= col.key %>'] : (line.values['<%= col.key %>'] ? [line.values['<%= col.key %>']] : []))" :key="selVal">
+                                                                                            <span class="tp-tag"
+                                                                                                  style="font-size:9px;"
+                                                                                                  :style="'background:' + getMultiselectOptStyle(columns[<%= ci %>], selVal).bg + '; color:' + getMultiselectOptStyle(columns[<%= ci %>], selVal).text"
+                                                                                                  x-text="getMultiselectOptLabel(columns[<%= ci %>], selVal)">
+                                                                                            </span>
+                                                                                        </template>
+                                                                                    <% } else { %>
+                                                                                        <template x-if="line.values['<%= col.key %>']">
+                                                                                            <span class="tp-tag"
+                                                                                                  style="font-size:9px;"
+                                                                                                  :style="'background:' + getMultiselectOptStyle(columns[<%= ci %>], line.values['<%= col.key %>']).bg + '; color:' + getMultiselectOptStyle(columns[<%= ci %>], line.values['<%= col.key %>']).text"
+                                                                                                  x-text="getMultiselectOptLabel(columns[<%= ci %>], line.values['<%= col.key %>'])">
+                                                                                            </span>
+                                                                                        </template>
+                                                                                    <% } %>
                                                                                 </div>
                                                                                 <!-- Dropdown -->
-                                                                                <div x-show="msOpen" x-cloak @click.outside="msOpen = false"
-                                                                                     style="position:absolute; top:100%; left:0; min-width:140px; z-index:9999; background:#fff; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.12); margin-top:2px; padding:4px 0; max-height:180px; overflow-y:auto;">
-                                                                                    <% (col.config?.options || []).forEach(opt => { %>
-                                                                                        <div style="padding:4px 10px; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px; transition:background 0.1s;"
-                                                                                             @click="toggleMultiselect(lineIdx, '<%= col.key %>', '<%= opt.value %>')"
-                                                                                             onmouseover="this.style.background='rgba(67,97,238,0.06)'" onmouseout="this.style.background=''">
-                                                                                            <div style="width:14px; height:14px; border-radius:3px; border:1.5px solid #d1d5db; display:flex; align-items:center; justify-content:center; transition:all 0.15s; flex-shrink:0;"
-                                                                                                 :style="(Array.isArray(line.values['<%= col.key %>']) && line.values['<%= col.key %>'].includes('<%= opt.value %>')) ? 'background:#4361ee; border-color:#4361ee;' : ''">
-                                                                                                <iconify-icon x-show="Array.isArray(line.values['<%= col.key %>']) && line.values['<%= col.key %>'].includes('<%= opt.value %>')" icon="solar:check-read-bold" width="9" style="color:white;"></iconify-icon>
+                                                                                <template x-if="msDropdown.lineIdx === lineIdx && msDropdown.colKey === '<%= col.key %>' && msDropdown.open">
+                                                                                    <div>
+                                                                                        <div style="position: fixed; inset: 0; z-index: 9998;"
+                                                                                             @click.stop="closeMultiselectDropdown()"></div>
+                                                                                        <div class="tp-dropdown" style="z-index:9999; min-width:200px; position:absolute; right:0; top:100%; margin-top:4px;" @click.stop>
+                                                                                            <div class="tp-search-wrap">
+                                                                                                <input type="text" class="tp-search-input"
+                                                                                                       placeholder="Rechercher ou créer..."
+                                                                                                       :value="msDropdown.query"
+                                                                                                       @input="msDropdown.query = $event.target.value"
+                                                                                                       @keydown.enter.prevent="msCreateOption(columns[<%= ci %>])" />
                                                                                             </div>
-                                                                                            <span style="color:#374151;"><%= opt.label %></span>
-                                                                                        </div>
-                                                                                    <% }) %>
-                                                                                </div>
+                                                                                            <div class="tp-divider"></div>
+                                                                                            <div class="tp-options">
+                                                                <template x-for="opt in filterMsOptions(columns[<%= ci %>])" :key="opt.value">
+                                                                    <div class="tp-option group" style="display:flex; align-items:center; justify-content:space-between;"
+                                                                         @click.stop="<%= col.type === 'multiselect' ? "toggleMultiselectValue(line, '" + col.key + "', opt.value)" : "line.values['" + col.key + "'] = opt.value; closeMultiselectDropdown(); debouncedSave()" %>">
+                                                                        <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
+                                                                            <div class="tp-option-icon"
+                                                                                 :style="isOptSelected(line, '<%= col.key %>', opt.value)
+                                                                                     ? 'background:' + getMultiselectOptStyle(columns[<%= ci %>], opt.value).bg + '; border: 2px solid ' + getMultiselectOptStyle(columns[<%= ci %>], opt.value).bg
+                                                                                     : 'background: #fff; border: 2px solid #d1d5db'">
+                                                                                <template x-if="isOptSelected(line, '<%= col.key %>', opt.value)"><iconify-icon 
+                                                                                              icon="tabler:check" width="12"
+                                                                                              :style="'color:' + getMultiselectOptStyle(columns[<%= ci %>], opt.value).text"></iconify-icon></template>
                                                                             </div>
-                                                                        <% } else if (col.type === 'textarea') { %>
+                                                                            <span class="tp-option-label" x-text="opt.label" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px;"></span>
+                                                                        </div>
+                                                                        <!-- Delete Option Icon -->
+                                                                        <button type="button" class="tp-option-delete"
+                                                                                :class="_pendingDeleteOpt === opt.value ? 'tp-option-delete--confirm' : ''"
+                                                                                @click.stop.prevent="removeInlineOption(columns[<%= ci %>], opt.value)"
+                                                                                @mousedown.stop.prevent=""
+                                                                                :title="_pendingDeleteOpt === opt.value ? 'Cliquer pour confirmer' : 'Supprimer cette option'">
+                                                                            <iconify-icon :icon="_pendingDeleteOpt === opt.value ? 'tabler:check' : 'tabler:trash'" width="12" style="pointer-events:none;"></iconify-icon>
+                                                                        </button>
+                                                                    </div>
+                                                                </template>
+                                                            
+                                                                    <!-- + Créer -->
+                                                                    <template x-if="(msDropdown.query || '').trim() && !(columns[<%= ci %>].config?.options || []).some(o => o.label.toLowerCase() === (msDropdown.query || '').trim().toLowerCase())">
+                                                                        <div class="tp-create-option" @click.stop="msCreateOption(columns[<%= ci %>])">
+                                                                            <iconify-icon icon="tabler:plus" width="14" style="color:#6b7280;"></iconify-icon>
+                                                                            <span class="tp-create-label">Créer</span>
+                                                                            <span class="tp-create-tag" x-text="msDropdown.query"></span>
+                                                                        </div>
+                                                                    </template>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+<% } else if (col.type === 'textarea') { %>
                                                                             <input type="text" class="lp-input" style="font-size:10px !important; height:20px !important; padding:0 3px !important;"
                                                                                 :value="line.values['<%= col.key %>'] || ''"
                                                                                 @input="line.values['<%= col.key %>'] = $event.target.value; debouncedSave()"
@@ -2147,6 +2205,12 @@
                                                                     <div class="lp-timeline-meta">
                                                                         <span class="lp-timeline-time" x-text="new Date(snap.createdAt || snap.date).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})"></span>
                                                                         <span class="lp-timeline-badge" x-text="snap.lines.length + ' lignes'"></span>
+                                                                        <!-- Delete button -->
+                                                                        <button type="button" @click.stop="confirmDeleteSnapshot(snap._id)"
+                                                                            style="padding: 2px; border-radius: 4px; border: none; background: transparent; cursor: pointer; color: #ef4444; opacity: 0; transition: opacity 0.2s;"
+                                                                            class="snapshot-delete-trigger hover:bg-red-50 dark:hover:bg-red-900/20">
+                                                                            <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="12"></iconify-icon>
+                                                                        </button>
                                                                     </div>
                                                                 </div>
                                                                 <!-- Expanded body -->
@@ -2170,7 +2234,7 @@
                                                                                         <td>
                                                                                             <% if (col.type === 'relation') { %>
                                                                                                 <span x-text="sLine.values?.['<%= col.key %>_label'] || sLine.values?.description || '—'" style="color:#4361ee;"></span>
-                                                                                            <% } else if (col.type === 'multiselect') { %>
+                                                                                            <% } else if (col.type === 'multiselect' || col.type === 'select') { %>
                                                                                                 <span x-text="getSnapMultiLabel('<%= col.key %>', sLine.values?.['<%= col.key %>'])"></span>
                                                                                             <% } else { %>
                                                                                                 <span x-text="sLine.values?.['<%= col.key %>'] || '—'"></span>
@@ -2197,13 +2261,78 @@
                                                 </div>
                                             </template>
                                         </div>
-                                        <% }) /* end allDtSchemas.forEach */ %>
+                                            <% }) /* end allDtSchemas.forEach */ %>
                                         </div><!-- end swActiveTab wrapper -->
                                         <style>
                                             /* Show row actions on hover */
                                             .lines-panel-table tbody tr:hover .sw-row-actions { opacity: 1 !important; }
+                                            /* Show snapshot delete on hover */
+                                            .lp-timeline-header:hover .snapshot-delete-trigger { opacity: 1 !important; }
                                             /* Allow dropdowns to escape the card overflow-hidden */
                                             .panel:has([x-data*="sidebarDynamicTable"]) { overflow: visible !important; }
+
+                                            /* Table border */
+                                            .lines-panel-table {
+                                                border: 1px solid #e5e7eb;
+                                                border-radius: 8px;
+                                                border-collapse: separate;
+                                                overflow: visible;
+                                            }
+                                            .dark .lines-panel-table {
+                                                border-color: #334155;
+                                            }
+
+                                            /* Multiselect / Select triggers (pixel-perfect from main grid) */
+                                            .lp-ms-trigger {
+                                                display: flex;
+                                                align-items: center;
+                                                flex-wrap: wrap;
+                                                gap: 4px;
+                                                min-height: 24px;
+                                                padding: 1px 6px;
+                                                border: 1px solid transparent;
+                                                border-radius: 4px;
+                                                cursor: pointer;
+                                                background: transparent;
+                                                transition: all 0.15s;
+                                            }
+                                            .lp-ms-trigger:hover {
+                                                border-color: #cbd5e1;
+                                                background: #f8fafc;
+                                            }
+                                            .dark .lp-ms-trigger:hover {
+                                                border-color: #334155;
+                                                background: #1b2e4b;
+                                            }
+                                            .lp-ms-placeholder {
+                                                font-size: 11px;
+                                                color: #9ca3af;
+                                            }
+                                            .tp-tag {
+                                                display: inline-flex;
+                                                align-items: center;
+                                                gap: 4px;
+                                                padding: 0 8px;
+                                                border-radius: 4px;
+                                                font-size: 10px;
+                                                font-weight: 500;
+                                                line-height: 18px;
+                                                height: 18px;
+                                                white-space: nowrap;
+                                                user-select: none;
+                                                transition: filter 0.15s ease;
+                                            }
+                                            .tp-dropdown {
+                                                background: #fff;
+                                                border: 1px solid #e5e7eb;
+                                                border-radius: 8px;
+                                                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+                                            }
+                                            .dark .tp-dropdown {
+                                                background: #0e1726;
+                                                border-color: #334155;
+                                                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+                                            }
                                         </style>
                                     <% } %>
                                 </div>
@@ -2294,6 +2423,17 @@
 
                 // Save debounce
                 _saveTimer: null,
+                _pendingDeleteOpt: null,
+                _pendingDeleteTimer: null,
+
+                // Multiselect state (tp-style)
+                msDropdown: {
+                    open: false,
+                    lineIdx: -1,
+                    colKey: '',
+                    query: ''
+                },
+                _pendingDeleteOpt: null,
 
                 async init() {
                     // Load existing lines from the API
@@ -2429,20 +2569,176 @@
                     this.debouncedSave();
                 },
 
-                // ── Multiselect Toggle ──
-                toggleMultiselect(lineIdx, colKey, value) {
-                    const line = this.lines[lineIdx];
-                    if (!line) return;
-                    if (!Array.isArray(line.values[colKey])) {
-                        line.values[colKey] = [];
+                // ── Multiselect Dropdown (tp-style) ──
+                openMultiselectDropdown(lineIdx, colKey) {
+                    if (this.msDropdown.lineIdx === lineIdx && this.msDropdown.colKey === colKey && this.msDropdown.open) {
+                        this.closeMultiselectDropdown();
+                        return;
                     }
-                    const idx = line.values[colKey].indexOf(value);
+                    this.msDropdown.lineIdx = lineIdx;
+                    this.msDropdown.colKey = colKey;
+                    this.msDropdown.open = true;
+                    this.msDropdown.query = '';
+                },
+
+                closeMultiselectDropdown() {
+                    this.msDropdown.open = false;
+                    this.msDropdown.lineIdx = -1;
+                    this.msDropdown.colKey = '';
+                    this.msDropdown.query = '';
+                },
+
+                toggleMultiselectValue(line, key, value) {
+                    if (!line.values[key]) line.values[key] = [];
+                    // Ensure values is always an array
+                    if (!Array.isArray(line.values[key])) line.values[key] = [line.values[key]];
+                    const idx = line.values[key].indexOf(value);
                     if (idx >= 0) {
-                        line.values[colKey].splice(idx, 1);
+                        line.values[key].splice(idx, 1);
                     } else {
-                        line.values[colKey].push(value);
+                        line.values[key].push(value);
                     }
                     this.debouncedSave();
+                },
+
+                msCreateOption(col) {
+                    const label = (this.msDropdown.query || '').trim();
+                    if (!label) return;
+                    const slug = label.toLowerCase().replace(/[^a-z0-9\u00e0-\u00ff]+/g, '_').replace(/^_|_$/g, '');
+                    if (!col.config) col.config = {};
+                    if (!col.config.options) col.config.options = [];
+                    
+                    // Duplicate check - find existing or new
+                    let existing = col.config.options.find(o => o.value === slug || o.label.toLowerCase() === label.toLowerCase());
+                    if (!existing) {
+                        existing = { value: slug, label: label };
+                        // Push to local array but also ensure reactivity by replacing the array if needed
+                        // Actually pushing is fine if we trigger a re-render or if Alpine is watching the array.
+                        // But assigning a new array is safer for reactivity.
+                        col.config.options = [...(col.config.options || []), existing];
+                        // Save schema options to backend
+                        this.saveInlineOptionToSchema(col);
+                    }
+
+                    // Select it for the current line
+                    const line = this.lines[this.msDropdown.lineIdx];
+                    if (line) {
+                        if (col.type === 'multiselect') {
+                            if (!line.values[col.key]) line.values[col.key] = [];
+                            // Ensure it's an array (fallback case)
+                            if (!Array.isArray(line.values[col.key])) line.values[col.key] = [line.values[col.key]];
+                            if (!line.values[col.key].includes(existing.value)) {
+                                line.values[col.key].push(existing.value);
+                            }
+                        } else {
+                            line.values[col.key] = existing.value;
+                            this.closeMultiselectDropdown();
+                        }
+                        this.debouncedSave();
+                    }
+
+                    // Clear search
+                    this.msDropdown.query = '';
+                },
+
+                // Remove an inline option from a select/multiselect column (2-step: confirm then delete)
+                removeInlineOption(col, optValue) {
+                    if (this._pendingDeleteOpt !== optValue) {
+                        this._pendingDeleteOpt = optValue;
+                        clearTimeout(this._pendingDeleteTimer);
+                        this._pendingDeleteTimer = setTimeout(() => { this._pendingDeleteOpt = null; }, 3000);
+                        return;
+                    }
+                    clearTimeout(this._pendingDeleteTimer);
+                    this._pendingDeleteOpt = null;
+
+                    if (!col.config?.options) return;
+                    col.config.options = col.config.options.filter(o => o.value !== optValue);
+                    
+                    // If this option was selected, clear it from existing lines
+                    (this.lines || []).forEach(line => {
+                        if (line.values && col.type === 'multiselect' && Array.isArray(line.values[col.key])) {
+                            line.values[col.key] = line.values[col.key].filter(v => v !== optValue);
+                        } else if (line.values && line.values[col.key] === optValue) {
+                            line.values[col.key] = '';
+                        }
+                    });
+                    this.debouncedSave();
+
+                    this.saveInlineOptionToSchema(col);
+                },
+
+                async saveInlineOptionToSchema(col) {
+                    try {
+                        const res = await fetch(`/account/${this.accountNumber}/api/line-schemas/${this.schemaId}`, {
+                            method: 'GET',
+                            credentials: 'include'
+                        });
+                        const data = await res.json();
+                        const schema = data.data;
+                        if (schema && schema.columns) {
+                            const schemaCol = (schema.columns || []).find(c => c.key === col.key);
+                            if (schemaCol) {
+                                if (!schemaCol.config) schemaCol.config = {};
+                                schemaCol.config.options = col.config.options;
+                                await fetch(`/account/${this.accountNumber}/api/line-schemas/${this.schemaId}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    credentials: 'include',
+                                    body: JSON.stringify({ columns: schema.columns })
+                                });
+                                // Update local columns as well
+                                const localCol = this.columns.find(c => c.key === col.key);
+                                if (localCol) {
+                                    localCol.config.options = [...col.config.options];
+                                }
+                            }
+                        }
+                    } catch (e) {
+                         console.error('[SidebarWidget] Schema update failed:', e);
+                    }
+                },
+
+                filterMsOptions(col) {
+                    const opts = col.config?.options || [];
+                    const q = (this.msDropdown.query || '').trim().toLowerCase();
+                    if (!q) return opts;
+                    return opts.filter(o => o.label.toLowerCase().includes(q));
+                },
+
+                getMultiselectOptStyle(col, value) {
+                    const opts = col.config?.options || [];
+                    const opt = opts.find(o => o.value === value);
+                    if (opt?.bg) return { bg: opt.bg, text: opt.text || '#fff' };
+                    // Default colors for sidebar match the main grid
+                    const colors = [
+                        { bg: '#dbeafe', text: '#1e40af' },
+                        { bg: '#dcfce7', text: '#166534' },
+                        { bg: '#fef3c7', text: '#92400e' },
+                        { bg: '#fce7f3', text: '#9d174d' },
+                        { bg: '#e0e7ff', text: '#3730a3' },
+                        { bg: '#fae8ff', text: '#86198f' },
+                        { bg: '#ecfdf5', text: '#065f46' },
+                    ];
+                    let hash = 0;
+                    const cleanValue = String(value || '');
+                    for (let i = 0; i < cleanValue.length; i++) hash = (hash * 31 + cleanValue.charCodeAt(i)) % colors.length;
+                    return colors[Math.abs(hash) % colors.length];
+                },
+
+                isOptSelected(line, key, value) {
+                    if (!line || !line.values || !value) return false;
+                    const val = line.values[key];
+                    if (val === null || val === undefined) return false;
+                    if (Array.isArray(val)) return val.some(v => v === value);
+                    return val === value;
+                },
+
+
+                getMultiselectOptLabel(col, value) {
+                    const opts = col.config?.options || [];
+                    const opt = opts.find(o => o.value === value);
+                    return opt?.label || value;
                 },
 
                 // ── Option Label Resolution ──
@@ -2454,8 +2750,9 @@
                 },
 
                 getSnapMultiLabel(colKey, values) {
-                    if (!values || !Array.isArray(values) || values.length === 0) return '—';
-                    return values.map(v => this.getOptLabel(colKey, v)).join(', ');
+                    if (!values || (Array.isArray(values) && values.length === 0)) return '—';
+                    const arr = Array.isArray(values) ? values : [values];
+                    return arr.map(v => this.getOptLabel(colKey, v)).join(', ');
                 },
 
                 // ── Save Lines ──
@@ -2499,6 +2796,19 @@
                         }
                     } catch (e) {
                         console.error('[SidebarWidget] save error:', e);
+                    }
+                },
+
+                async confirmDeleteSnapshot(snapId) {
+                    if (!confirm('Voulez-vous vraiment supprimer cet historique ?')) return;
+                    try {
+                        const res = await fetch(`/account/${this.accountNumber}/api/grid-snapshots/${snapId}`, { method: 'DELETE', credentials: 'include' });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.snapshots = this.snapshots.filter(s => s._id !== snapId);
+                        }
+                    } catch (e) {
+                         console.error('[SidebarWidget] snapshot delete failed:', e);
                     }
                 },
 
@@ -2646,6 +2956,22 @@
                         }
                     } catch (e) {
                         console.error('[SidebarWidget] deletePreset error:', e);
+                    }
+                },
+
+                async confirmDeleteSnapshot(snapId) {
+                    if (!confirm('Supprimer cet enregistrement de l\'historique ?')) return;
+                    try {
+                        const url = `/account/${this.accountNumber}/api/grid-snapshots/${snapId}`;
+                        const res = await fetch(url, { method: 'DELETE', credentials: 'include' });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.snapshots = this.snapshots.filter(s => s._id !== snapId);
+                        } else {
+                            window.showMessage?.(data.error || 'Erreur lors de la suppression', 'error');
+                        }
+                    } catch (e) {
+                        console.error('[SidebarWidget] deleteSnapshot error:', e);
                     }
                 }
             }));

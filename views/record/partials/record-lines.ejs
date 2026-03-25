@@ -1807,7 +1807,7 @@
                                                                             </div>
                                                                             <button type="button" class="tp-option-delete"
                                                                                 :class="_pendingDeleteOpt === opt.value ? 'tp-option-delete--confirm' : ''"
-                                                                                @mousedown.prevent.stop="removeInlineOption(schemas.find(s => s._id === activeSchemaId), col, opt.value)"
+                                                                                @click.stop.prevent="removeInlineOption(schema, col, opt.value)"
                                                                                 :title="_pendingDeleteOpt === opt.value ? 'Cliquer pour confirmer' : 'Supprimer cette option'">
                                                                                 <iconify-icon :icon="_pendingDeleteOpt === opt.value ? 'tabler:check' : 'tabler:trash'" width="12" style="pointer-events:none;"></iconify-icon>
                                                                             </button>
@@ -1819,7 +1819,7 @@
                                                                 </div>
                                                                 <!-- + Créer -->
                                                                 <template x-if="(selDropdown.query || '').trim() && !(col.config?.options || []).some(o => o.label.toLowerCase() === (selDropdown.query || '').trim().toLowerCase())">
-                                                                    <div class="tp-create-option" @click.stop="selCreateOption(col)">
+                                                                    <div class="tp-create-option" @click.stop="selCreateOption(schema, col)">
                                                                         <iconify-icon icon="tabler:plus" width="14" style="color:#6b7280;"></iconify-icon>
                                                                         <span class="tp-create-label">Créer</span>
                                                                         <span class="tp-create-tag" x-text="selDropdown.query"></span>
@@ -1859,7 +1859,7 @@
                                                                            placeholder="Rechercher ou créer..."
                                                                            :value="msDropdown.query"
                                                                            @input="msDropdown.query = $event.target.value"
-                                                                           @keydown.enter.prevent="msCreateOption(col)" />
+                                                                           @keydown.enter.prevent="msCreateOption(schemas.find(s => s._id === activeSchemaId), col)" />
                                                                 </div>
                                                                 <div class="tp-divider"></div>
                                                                 <div class="tp-options">
@@ -1868,18 +1868,18 @@
                                                                              @click.stop="toggleMultiselectValue(line, col.key, opt.value)">
                                                                             <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
                                                                                 <div class="tp-option-icon"
-                                                                                     :style="(line.values[col.key] || []).includes(opt.value)
+                                                                                     :style="isOptSelected(line.values[col.key], opt.value)
                                                                                          ? 'background:' + getMultiselectOptStyle(col, opt.value).bg + '; border: 2px solid ' + getMultiselectOptStyle(col, opt.value).bg
                                                                                          : 'background: #fff; border: 2px solid #d1d5db'">
-                                                                                    <iconify-icon x-show="(line.values[col.key] || []).includes(opt.value)"
+                                                                                    <template x-if="isOptSelected(line.values[col.key], opt.value)"><iconify-icon
                                                                                                   icon="tabler:check" width="12"
-                                                                                                  :style="'color:' + getMultiselectOptStyle(col, opt.value).text"></iconify-icon>
+                                                                                                  :style="'color:' + getMultiselectOptStyle(col, opt.value).text"></iconify-icon></template>
                                                                                 </div>
                                                                                 <span class="tp-option-label" x-text="opt.label"></span>
                                                                             </div>
                                                                             <button type="button" class="tp-option-delete"
                                                                                 :class="_pendingDeleteOpt === opt.value ? 'tp-option-delete--confirm' : ''"
-                                                                                @mousedown.prevent.stop="removeInlineOption(schemas.find(s => s._id === activeSchemaId), col, opt.value)"
+                                                                                @click.stop.prevent="removeInlineOption(schema, col, opt.value)"
                                                                                 :title="_pendingDeleteOpt === opt.value ? 'Cliquer pour confirmer' : 'Supprimer cette option'">
                                                                                 <iconify-icon :icon="_pendingDeleteOpt === opt.value ? 'tabler:check' : 'tabler:trash'" width="12" style="pointer-events:none;"></iconify-icon>
                                                                             </button>
@@ -2407,7 +2407,7 @@
                                                                     <div class="tp-option-icon" style="background:#dbeafe;">
                                                                         <iconify-icon x-show="formAddValues[schema._id + '_' + col.key] === opt.value" icon="tabler:check" width="12" style="color:#2563eb;"></iconify-icon>
                                                                     </div>
-                                                                    <span class="tp-option-label" x-text="opt.label"></span>
+                                                                    <span class="tp-option-label" x-text="opt.label" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px;"></span>
                                                                 </div>
                                                                 <button type="button" class="tp-option-delete"
                                                                     :class="_pendingDeleteOpt === opt.value ? 'tp-option-delete--confirm' : ''"
@@ -2468,10 +2468,16 @@
                                                         <template x-for="opt in (col.config?.options || []).filter(o => !formSelSearch[schema._id + '_' + col.key] || o.label.toLowerCase().includes((formSelSearch[schema._id + '_' + col.key] || '').toLowerCase()))" :key="opt.value">
                                                             <div class="tp-option" style="display:flex; align-items:center; justify-content:space-between;" @click="toggleFormAddMultiselect(schema._id, col.key, opt.value)">
                                                                 <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
-                                                                    <div class="tp-option-icon" style="background:#dbeafe;">
-                                                                        <iconify-icon x-show="(formAddValues[schema._id + '_' + col.key] || []).includes(opt.value)" icon="tabler:check" width="12" style="color:#2563eb;"></iconify-icon>
-                                                                    </div>
-                                                                    <span class="tp-option-label" x-text="opt.label"></span>
+                                                                    <div class="tp-option-icon"
+                                                                          :style="isOptSelected(formAddValues[schema._id + '_' + col.key], opt.value)
+                                                                              ? 'background:' + getMultiselectOptStyle(col, opt.value).bg + '; border: 2px solid ' + getMultiselectOptStyle(col, opt.value).bg
+                                                                              : 'background: #fff; border: 2px solid #d1d5db'">
+                                                                         <template x-if="isOptSelected(formAddValues[schema._id + '_' + col.key], opt.value)">
+                                                                             <iconify-icon icon="tabler:check" width="12"
+                                                                                           :style="'color:' + getMultiselectOptStyle(col, opt.value).text"></iconify-icon>
+                                                                         </template>
+                                                                     </div>
+                                                                    <span class="tp-option-label" x-text="opt.label" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px;"></span>
                                                                 </div>
                                                                 <button type="button" class="tp-option-delete"
                                                                     :class="_pendingDeleteOpt === opt.value ? 'tp-option-delete--confirm' : ''"
@@ -2839,7 +2845,7 @@
                                                                                    placeholder="Rechercher ou créer..."
                                                                                    :value="msDropdown.query"
                                                                                    @input="msDropdown.query = $event.target.value"
-                                                                                   @keydown.enter.prevent="msCreateOption(col)" />
+                                                                                   @keydown.enter.prevent="msCreateOption(schema, col)" />
                                                                         </div>
                                                                         <div class="tp-divider"></div>
                                                                         <div class="tp-options">
@@ -2859,7 +2865,7 @@
                                                                                     </div>
                                                                                     <button type="button" class="tp-option-delete"
                                                                                         :class="_pendingDeleteOpt === opt.value ? 'tp-option-delete--confirm' : ''"
-                                                                                        @mousedown.prevent.stop="removeInlineOption(schemas.find(s => s._id === activeSchemaId), col, opt.value)"
+                                                                                        @click.stop.prevent="removeInlineOption(schemas.find(s => s._id === activeSchemaId), col, opt.value)"
                                                                                         :title="_pendingDeleteOpt === opt.value ? 'Cliquer pour confirmer' : 'Supprimer cette option'">
                                                                                         <iconify-icon :icon="_pendingDeleteOpt === opt.value ? 'tabler:check' : 'tabler:trash'" width="12" style="pointer-events:none;"></iconify-icon>
                                                                                     </button>
@@ -3077,14 +3083,14 @@
                                                                  @click.stop="toggleMultiselectValue(getEditLines()[editModal.lineIdx], col.key, opt.value)">
                                                                 <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
                                                                     <div class="tp-option-icon"
-                                                                         :style="(getEditLines()[editModal.lineIdx].values[col.key] || []).includes(opt.value)
+                                                                         :style="isOptSelected(getEditLines()[editModal.lineIdx].values[col.key], opt.value)
                                                                              ? 'background:' + getMultiselectOptStyle(col, opt.value).bg + '; border: 2px solid ' + getMultiselectOptStyle(col, opt.value).bg
                                                                              : 'background: #fff; border: 2px solid #d1d5db'">
-                                                                        <iconify-icon x-show="(getEditLines()[editModal.lineIdx].values[col.key] || []).includes(opt.value)"
+                                                                        <template x-if="isOptSelected(getEditLines()[editModal.lineIdx].values[col.key], opt.value)"><iconify-icon
                                                                                       icon="tabler:check" width="12"
-                                                                                      :style="'color:' + getMultiselectOptStyle(col, opt.value).text"></iconify-icon>
+                                                                                      :style="'color:' + getMultiselectOptStyle(col, opt.value).text"></iconify-icon></template>
                                                                     </div>
-                                                                    <span class="tp-option-label" x-text="opt.label"></span>
+                                                                    <span class="tp-option-label" x-text="opt.label" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px;"></span>
                                                                 </div>
                                                                 <button type="button" class="tp-option-delete"
                                                                     :class="_pendingDeleteOpt === opt.value ? 'tp-option-delete--confirm' : ''"
@@ -3506,6 +3512,8 @@ document.addEventListener('alpine:init', () => {
             for (const col of (schema.columns || []).filter(c => c.visible !== false)) {
                 if (col.type === 'date' && (schema.dataMode === 'timeseries' || schema.inputMode === 'form')) {
                     values[col.key] = new Date().toISOString().split('T')[0];
+                } else if (col.type === 'multiselect') {
+                    values[col.key] = [];
                 } else {
                     values[col.key] = '';
                 }
@@ -4216,6 +4224,12 @@ document.addEventListener('alpine:init', () => {
             return found ? found.label : value;
         },
 
+        isOptSelected(currentVal, optValue) {
+            if (currentVal === null || currentVal === undefined) return false;
+            if (Array.isArray(currentVal)) return currentVal.includes(optValue);
+            return currentVal === optValue;
+        },
+
         addMultiselectValue(line, key, value) {
             if (!value) return;
             if (!line.values[key]) line.values[key] = [];
@@ -4264,7 +4278,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         // Create new option from multiselect dropdown search (Rechercher ou créer...)
-        msCreateOption(col) {
+        msCreateOption(schema, col) {
             const label = (this.msDropdown.query || '').trim();
             if (!label) return;
             const slug = label.toLowerCase().replace(/[^a-z0-9\u00e0-\u00ff]+/g, '_').replace(/^_|_$/g, '');
@@ -4276,7 +4290,7 @@ document.addEventListener('alpine:init', () => {
             // Clear search
             this.msDropdown.query = '';
             // Save schema options to backend
-            this.saveInlineOptionToSchema(col);
+            this.saveInlineOptionToSchema(schema, col);
         },
 
         filterMsOptions(col) {
@@ -4353,7 +4367,7 @@ document.addEventListener('alpine:init', () => {
            // Deprecated: logic moved to initTabsSortable onEnd
         },
 
-        selCreateOption(col) {
+        selCreateOption(schema, col) {
             const label = (this.selDropdown.query || '').trim();
             if (!label) return;
             const slug = label.toLowerCase().replace(/[^a-z0-9\u00e0-\u00ff]+/g, '_').replace(/^_|_$/g, '');
@@ -4362,7 +4376,7 @@ document.addEventListener('alpine:init', () => {
             if (col.config.options.some(o => o.value === slug || o.label.toLowerCase() === label.toLowerCase())) return;
             col.config.options.push({ value: slug, label: label });
             this.selDropdown.query = '';
-            this.saveInlineOptionToSchema(col);
+            this.saveInlineOptionToSchema(schema, col);
         },
 
         getMultiselectOptLabel(col, value) {
@@ -4767,7 +4781,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         // Add inline option to a select/multiselect column (no config needed)
-        addInlineOption(col, value) {
+        addInlineOption(schema, col, value) {
             if (!value || !value.trim()) return;
             const val = value.trim();
             const slug = val.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -4777,7 +4791,7 @@ document.addEventListener('alpine:init', () => {
             if (col.config.options.some(o => o.value === slug || o.label.toLowerCase() === val.toLowerCase())) return;
             col.config.options.push({ value: slug, label: val });
             // Also save the column config back to the schema via API
-            this.saveInlineOptionToSchema(col);
+            this.saveInlineOptionToSchema(schema, col);
         },
 
         // Remove an inline option from a select/multiselect column (2-step: confirm then delete)
@@ -4805,9 +4819,13 @@ document.addEventListener('alpine:init', () => {
             clearTimeout(this._pendingDeleteTimer);
             this._pendingDeleteOpt = null;
 
-            if (!col.config?.options) return;
-            col.config.options = col.config.options.filter(o => o.value !== optValue);
-            // If this option was selected, clear it
+            if (!schema) return;
+            const schemaCol = (schema.columns || []).find(c => c.key === col.key);
+            if (!schemaCol || !schemaCol.config?.options) return;
+
+            schemaCol.config.options = schemaCol.config.options.filter(o => o.value !== optValue);
+            
+            // If this option was selected, clear it from formAddValues
             const key = schema._id + '_' + col.key;
             if (col.type === 'multiselect') {
                 const arr = this.formAddValues[key] || [];
@@ -4823,13 +4841,14 @@ document.addEventListener('alpine:init', () => {
                     line.values[col.key] = '';
                 }
             });
+            this.debouncedSave();
+            
             // Persist to schema
-            this.saveInlineOptionToSchema(col);
+            this.saveInlineOptionToSchema(schema, col);
         },
 
         // Save updated column options to the schema (async, non-blocking)
-        async saveInlineOptionToSchema(col) {
-            const schema = this.schemas.find(s => s._id === this.activeSchemaId);
+        async saveInlineOptionToSchema(schema, col) {
             if (!schema) return;
             const schemaCol = (schema.columns || []).find(c => c.key === col.key);
             if (schemaCol) {
@@ -4904,8 +4923,7 @@ document.addEventListener('alpine:init', () => {
             // Clear search
             this.formSelSearch[key] = '';
             // Save schema options to backend
-            this.activeSchemaId = schema._id;
-            this.saveInlineOptionToSchema(col);
+            this.saveInlineOptionToSchema(schema, col);
         },
 
         // Load templates for schemas (includes record-specific + linked parent presets)

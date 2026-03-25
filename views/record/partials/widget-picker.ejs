@@ -1,245 +1,272 @@
-<!-- â•ªâ• â• â• â• â• â• â• â• â• â• â• â• â• â• Unified Widget Picker Modal â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•ª -->
+<!-- ╪══════════════ Unified Widget Picker Modal ══════════════╪ -->
 <template x-teleport="body">
     <div x-show="$store.widgetPicker.open" 
          x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
          x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-         style="display: none; position: fixed; inset: 0; z-index: 9999; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); background: rgba(0,0,0,0.4);"
-         class="flex items-center justify-center p-4"
+         style="display: none; position: fixed; inset: 0; z-index: 9999; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); background: rgba(0,0,0,0.25);"
+         class="flex items-center justify-center"
          @click.self="$store.widgetPicker.close()"
          @keydown.escape.window="$store.widgetPicker.close()"
          x-cloak>
         
         <div @click.stop
-             class="bg-white dark:bg-[#0e1726] rounded-2xl shadow-2xl w-full max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-800"
+             style="background: white; border-radius: 20px; padding: 0; width: 100%; max-width: 480px; margin: 16px; box-shadow: 0 25px 60px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.04); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;"
              x-show="$store.widgetPicker.open"
-             x-transition:enter="transition ease-out duration-300 delay-50"
-             x-transition:enter-start="opacity-0 scale-95 translate-y-4" x-transition:enter-end="opacity-100 scale-100 translate-y-0">
+             x-transition:enter="transition ease-out duration-250 delay-50"
+             x-transition:enter-start="opacity-0 scale-95 translate-y-3" x-transition:enter-end="opacity-100 scale-100 translate-y-0">
             
             <!-- Modal Header -->
-            <div class="px-6 py-4 border-b dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/20">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center" 
-                         :style="'background:' + ($store.widgetPicker.step === 'form' ? $store.widgetPicker.newWidget.color + '15' : '#4361ee15')">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid #f3f4f6;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;"
+                         :style="'background: ' + ($store.widgetPicker.step === 'form' ? $store.widgetPicker.newWidget.color + '12' : 'rgba(67,97,238,0.08)')">
                         <iconify-icon :icon="$store.widgetPicker.step === 'form' ? $store.widgetPicker.newWidget.icon : 'solar:widget-add-bold-duotone'" 
                                       width="20" 
                                       :style="'color:' + ($store.widgetPicker.step === 'form' ? $store.widgetPicker.newWidget.color : '#4361ee')"></iconify-icon>
                     </div>
                     <div>
-                        <h3 class="text-base font-bold text-gray-800 dark:text-gray-100" 
-                            x-text="$store.widgetPicker.step === 'form' ? 'Configurer : ' + $store.widgetPicker.newWidget.label : 'Bibliothèque de Widgets'"></h3>
-                        <p class="text-[11px] text-gray-400 dark:text-gray-500" 
-                           x-text="$store.widgetPicker.step === 'form' ? 'Personnalisez les paramètres du widget' : 'Choisissez un composant à ajouter'"></p>
+                        <h3 style="font-size: 16px; font-weight: 700; color: #111827; margin: 0; line-height: 1.3;" 
+                            x-text="$store.widgetPicker.step === 'form' ? 'Configurer ' + $store.widgetPicker.newWidget.label : 'Ajouter un widget'"></h3>
+                        <p style="font-size: 12px; color: #9ca3af; margin: 2px 0 0 0;" 
+                           x-text="$store.widgetPicker.step === 'form' ? ($store.widgetPicker.catalog.find(c => c.type === $store.widgetPicker.newWidget.type)?.desc || 'Personnalisez les paramètres') : 'Choisissez un composant à insérer'"></p>
                     </div>
                 </div>
                 <button type="button" @click="$store.widgetPicker.close()"
-                        class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
-                    <iconify-icon icon="tabler:x" width="18"></iconify-icon>
+                        style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e5e7eb; cursor: pointer; background: white; color: #9ca3af; display: flex; align-items: center; justify-content: center; transition: all 0.15s;"
+                        onmouseover="this.style.background='#f9fafb';this.style.color='#6b7280'" onmouseout="this.style.background='white';this.style.color='#9ca3af'">
+                    <iconify-icon icon="tabler:x" width="16"></iconify-icon>
                 </button>
             </div>
 
             <!-- Modal Content (Catalog) -->
-            <div x-show="$store.widgetPicker.step === 'catalog'" class="p-6 overflow-y-auto custom-scrollbar" style="max-height: 60vh;">
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div x-show="$store.widgetPicker.step === 'catalog'" style="padding: 20px 24px; overflow-y: auto; max-height: 60vh;" class="custom-scrollbar">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
                     <template x-for="w in $store.widgetPicker.catalog" :key="w.type">
                         <button type="button" 
                                 @click="$store.widgetPicker.selectType(w.type)"
-                                class="group flex flex-col items-center gap-3 p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/40 hover:border-primary/30 hover:bg-primary/[0.02] transition-all duration-200">
-                            <div class="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110" 
-                                 :style="'background:' + w.color + '10'">
-                                <iconify-icon :icon="w.icon" width="24" :style="'color:' + w.color"></iconify-icon>
+                                style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; border-radius: 14px; border: 1px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s;"
+                                onmouseover="this.style.borderColor='rgba(67,97,238,0.3)';this.style.background='rgba(67,97,238,0.02)';this.style.transform='translateY(-1px)'" 
+                                onmouseout="this.style.borderColor='#f3f4f6';this.style.background='white';this.style.transform='translateY(0)'">
+                            <div style="width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;"
+                                 :style="'background: ' + w.color + '10'">
+                                <iconify-icon :icon="w.icon" width="20" :style="'color: ' + w.color"></iconify-icon>
                             </div>
-                            <div class="text-center">
-                                <div class="text-[13px] font-bold text-gray-700 dark:text-gray-200" x-text="w.label"></div>
-                                <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5" x-text="w.desc"></div>
-                            </div>
+                            <span style="font-size: 12px; font-weight: 600; color: #374151;" x-text="w.label"></span>
+                            <span style="font-size: 10px; color: #9ca3af; line-height: 1.3; text-align: center;" x-text="w.desc"></span>
                         </button>
                     </template>
                 </div>
             </div>
 
             <!-- Modal Content (Form) -->
-            <div x-show="$store.widgetPicker.step === 'form'" class="p-6 overflow-y-auto custom-scrollbar" style="max-height: 60vh;">
-                <div class="space-y-4">
-                    <!-- Common Fields -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Titre du widget</label>
-                            <input type="text" x-model="$store.widgetPicker.newWidget.label" 
-                                   class="form-input w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200" placeholder="Ex: Ma Note, Stats...">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Couleur accent</label>
-                            <div class="flex items-center gap-2">
-                                <input type="color" x-model="$store.widgetPicker.newWidget.color" class="w-8 h-8 rounded border-none bg-transparent cursor-pointer">
-                                <input type="text" x-model="$store.widgetPicker.newWidget.color" class="form-input flex-1 text-xs dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-400" placeholder="#4361ee">
-                            </div>
-                        </div>
+            <div x-show="$store.widgetPicker.step === 'form'" style="padding: 20px 24px; overflow-y: auto; max-height: 60vh;" class="custom-scrollbar">
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    
+                    <!-- Common: Title -->
+                    <div>
+                        <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Titre du widget</label>
+                        <input type="text" x-model="$store.widgetPicker.newWidget.label" 
+                               style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 14px; font-weight: 600; outline: none; transition: border-color 0.15s; box-sizing: border-box; color: #111827;"
+                               onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
+                               placeholder="Ex: Ma Note, Stats...">
                     </div>
 
                     <!-- Dynamic Fields based on type -->
-                    <div class="pt-4 border-t dark:border-gray-800 space-y-4">
-                        
-                        <!-- 1. HTML / Rich Text -->
-                        <template x-if="$store.widgetPicker.newWidget.type === 'html'">
+                    
+                    <!-- 1. HTML / Rich Text -->
+                    <template x-if="$store.widgetPicker.newWidget.type === 'html'">
+                        <div>
+                            <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Contenu HTML</label>
+                            <textarea x-model="$store.widgetPicker.newWidget.config.content" rows="6"
+                                      style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; font-family: monospace; outline: none; box-sizing: border-box; resize: vertical;"
+                                      onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
+                                      placeholder="<p>Bonjour...</p>"></textarea>
+                        </div>
+                    </template>
+
+                    <!-- 2. Note -->
+                    <template x-if="$store.widgetPicker.newWidget.type === 'note' || $store.widgetPicker.newWidget.type === 'notes'">
+                        <div>
+                            <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Mémo / Note</label>
+                            <textarea x-model="$store.widgetPicker.newWidget.config.content" rows="4"
+                                      style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; box-sizing: border-box; resize: vertical;"
+                                      onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
+                                      placeholder="Écrire quelque chose..."></textarea>
+                        </div>
+                    </template>
+
+                    <!-- 3. Link -->
+                    <template x-if="$store.widgetPicker.newWidget.type === 'link'">
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
                             <div>
-                                <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Contenu HTML</label>
-                                <textarea x-model="$store.widgetPicker.newWidget.config.content" rows="6"
-                                          class="form-input w-full text-sm font-mono dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-300" placeholder="<p>Bonjour...</p>"></textarea>
+                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">URL de destination</label>
+                                <input type="url" x-model="$store.widgetPicker.newWidget.config.url" 
+                                       style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; box-sizing: border-box;"
+                                       onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
+                                       placeholder="https://...">
                             </div>
-                        </template>
-
-                        <!-- 2. Note -->
-                        <template x-if="$store.widgetPicker.newWidget.type === 'note' || $store.widgetPicker.newWidget.type === 'notes'">
                             <div>
-                                <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">MÃ©mo / Note</label>
-                                <textarea x-model="$store.widgetPicker.newWidget.config.content" rows="4"
-                                          class="form-input w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-300" placeholder="Ã‰crire quelque chose..."></textarea>
+                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Description (facultatif)</label>
+                                <input type="text" x-model="$store.widgetPicker.newWidget.config.description" 
+                                       style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; box-sizing: border-box;"
+                                       onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
+                                       placeholder="Bouton vers...">
                             </div>
-                        </template>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.newTab" class="form-checkbox" style="accent-color: #4361ee;">
+                                <span style="font-size: 12px; color: #6b7280;">Ouvrir dans un nouvel onglet</span>
+                            </label>
+                        </div>
+                    </template>
 
-                        <!-- 3. Link -->
-                        <template x-if="$store.widgetPicker.newWidget.type === 'link'">
-                            <div class="space-y-3">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">URL de destination</label>
-                                    <input type="url" x-model="$store.widgetPicker.newWidget.config.url" 
-                                           class="form-input w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200" placeholder="https://...">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Description (facultatif)</label>
-                                    <input type="text" x-model="$store.widgetPicker.newWidget.config.description" 
-                                           class="form-input w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200" placeholder="Bouton vers...">
-                                </div>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.newTab" class="form-checkbox">
-                                    <span class="text-xs text-gray-500 dark:text-gray-400">Ouvrir dans un nouvel onglet</span>
-                                </label>
+                    <!-- 4. iFrame / Embed -->
+                    <template x-if="$store.widgetPicker.newWidget.type === 'iframe'">
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div>
+                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">URL de la page</label>
+                                <input type="url" x-model="$store.widgetPicker.newWidget.config.url" 
+                                       style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; box-sizing: border-box;"
+                                       onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
+                                       placeholder="https://...">
                             </div>
-                        </template>
-
-                        <!-- 4. iFrame / Embed -->
-                        <template x-if="$store.widgetPicker.newWidget.type === 'iframe'">
-                            <div class="space-y-3">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">URL de la page</label>
-                                    <input type="url" x-model="$store.widgetPicker.newWidget.config.url" 
-                                           class="form-input w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200" placeholder="https://...">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Hauteur (px)</label>
-                                    <input type="number" x-model="$store.widgetPicker.newWidget.config.height" 
-                                           class="form-input w-60 text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200">
-                                </div>
+                            <div>
+                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Hauteur (px)</label>
+                                <input type="number" x-model="$store.widgetPicker.newWidget.config.height" 
+                                       style="width: 200px; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; box-sizing: border-box;"
+                                       onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'">
                             </div>
-                        </template>
+                        </div>
+                    </template>
 
-                        <!-- 5. Image -->
-                        <template x-if="$store.widgetPicker.newWidget.type === 'image'">
-                            <div class="space-y-3">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">URL de l'image</label>
-                                    <input type="url" x-model="$store.widgetPicker.newWidget.config.url" 
-                                           class="form-input w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200" placeholder="https://...">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Texte alternatif</label>
-                                    <input type="text" x-model="$store.widgetPicker.newWidget.config.alt" 
-                                           class="form-input w-full text-sm dark:bg-[#1b2e4b] dark:border-gray-800 dark:text-gray-200">
-                                </div>
+                    <!-- 5. Image -->
+                    <template x-if="$store.widgetPicker.newWidget.type === 'image'">
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div>
+                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">URL de l'image</label>
+                                <input type="url" x-model="$store.widgetPicker.newWidget.config.url" 
+                                       style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; box-sizing: border-box;"
+                                       onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'"
+                                       placeholder="https://...">
                             </div>
-                        </template>
+                            <div>
+                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px;">Texte alternatif</label>
+                                <input type="text" x-model="$store.widgetPicker.newWidget.config.alt" 
+                                       style="width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; box-sizing: border-box;"
+                                       onfocus="this.style.borderColor='#4361ee'" onblur="this.style.borderColor='#e5e7eb'">
+                            </div>
+                        </div>
+                    </template>
 
-                        <!-- 6. Dynamic Table -->
-                        <template x-if="$store.widgetPicker.newWidget.type === 'dynamic-table'">
-                             <div class="space-y-4">
-                                <!-- Schema selection mode -->
-                                <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Tableaux à afficher</label>
-                                    <p class="text-[11px] text-gray-400 dark:text-gray-500 mb-3">Sélectionnez les tableaux à inclure. Plusieurs tableaux apparaîtront sous forme d'onglets.</p>
-                                    <!-- Schema checkboxes -->
-                                    <div class="space-y-1.5" 
-                                         x-ref="schemaSortable"
-                                         x-init="$nextTick(() => $store.widgetPicker.initSchemaSortable($refs.schemaSortable))">
-                                        <template x-for="s in $store.widgetPicker.gridSchemas" :key="s.id">
-                                            <div class="flex items-center gap-1 group" :data-id="s.id">
-                                                <!-- Drag Handle (Always visible) -->
-                                                <div class="schema-drag-handle p-1.5 text-gray-400 hover:text-primary cursor-grab active:cursor-grabbing transition-colors">
-                                                    <iconify-icon icon="tabler:grip-vertical" width="16"></iconify-icon>
-                                                </div>
-                                                
-                                                <label class="flex items-center gap-3 cursor-pointer p-2.5 rounded-lg border transition-colors flex-1"
-                                                       :class="($store.widgetPicker.newWidget.config.schemaIds || []).includes(s.id) ? 'border-primary/30 bg-primary/[0.03] dark:border-primary/40 dark:bg-primary/[0.06]' : 'border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800'">
-                                                    <input type="checkbox" class="form-checkbox text-primary"
-                                                           :checked="($store.widgetPicker.newWidget.config.schemaIds || []).includes(s.id)"
-                                                           @change="(() => {
-                                                               const cfg = $store.widgetPicker.newWidget.config;
-                                                               if (!cfg.schemaIds) cfg.schemaIds = [];
-                                                               const idx = cfg.schemaIds.indexOf(s.id);
-                                                               if (idx >= 0) { cfg.schemaIds.splice(idx, 1); }
-                                                               else { cfg.schemaIds.push(s.id); }
-                                                               cfg.schemaId = cfg.schemaIds.length === 1 ? cfg.schemaIds[0] : '';
-                                                           })()">
-                                                    <div class="flex items-center gap-2 flex-1 min-w-0">
-                                                        <iconify-icon icon="solar:notebook-bold-duotone" width="16" class="text-primary flex-shrink-0"></iconify-icon>
-                                                        <span class="text-[13px] font-semibold text-gray-700 dark:text-gray-200 truncate" x-text="s.name"></span>
-                                                    </div>
-                                                    <span x-show="($store.widgetPicker.newWidget.config.schemaIds || []).includes(s.id)" 
-                                                          class="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full uppercase">Actif</span>
-                                                </label>
+                    <!-- 6. Dynamic Table -->
+                    <template x-if="$store.widgetPicker.newWidget.type === 'dynamic-table'">
+                        <div style="display: flex; flex-direction: column; gap: 16px;">
+                            <div>
+                                <label style="font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 8px;">Tableau dynamique à utiliser</label>
+                                <!-- Schema list -->
+                                <style>
+                                    .wp-schema-row { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid #f3f4f6; cursor: pointer; transition: all 0.15s; }
+                                    .wp-schema-row:hover { border-color: #e5e7eb; }
+                                    .wp-schema-row.wp-selected { border-color: rgba(67,97,238,0.25); background: rgba(67,97,238,0.02); }
+                                    .wp-schema-row .wp-drag { cursor: grab; color: #d1d5db; display: flex !important; align-items: center; flex-shrink: 0; width: auto !important; }
+                                    .wp-schema-row .wp-icon-box { width: 32px; height: 32px; border-radius: 8px; background: rgba(0,171,85,0.08); display: flex !important; align-items: center; justify-content: center; flex-shrink: 0; }
+                                    .wp-schema-row .wp-text { flex: 1; min-width: 0; overflow: hidden; }
+                                    .wp-schema-row .wp-text .wp-name { font-size: 13px; font-weight: 600; color: #111827; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                                    .wp-schema-row .wp-text .wp-sub { font-size: 11px; color: #9ca3af; margin-top: 1px; white-space: nowrap; }
+                                </style>
+                                <div style="display: flex; flex-direction: column; gap: 6px;"
+                                     x-ref="schemaSortable"
+                                     x-init="$nextTick(() => $store.widgetPicker.initSchemaSortable($refs.schemaSortable))">
+                                    <template x-for="s in $store.widgetPicker.gridSchemas" :key="s.id">
+                                        <div :data-id="s.id"
+                                               class="wp-schema-row"
+                                               :class="($store.widgetPicker.newWidget.config.schemaIds || []).includes(s.id) ? 'wp-selected' : ''"
+                                               @click="(() => {
+                                                   const cfg = $store.widgetPicker.newWidget.config;
+                                                   if (!cfg.schemaIds) cfg.schemaIds = [];
+                                                   const idx = cfg.schemaIds.indexOf(s.id);
+                                                   if (idx >= 0) { cfg.schemaIds.splice(idx, 1); }
+                                                   else { cfg.schemaIds.push(s.id); }
+                                                   cfg.schemaId = cfg.schemaIds.length === 1 ? cfg.schemaIds[0] : '';
+                                               })()">
+                                            <div class="schema-drag-handle wp-drag">
+                                                <iconify-icon icon="tabler:grip-vertical" width="14"></iconify-icon>
                                             </div>
-                                        </template>
-                                    </div>
-                                    <template x-if="$store.widgetPicker.gridSchemas.length === 0">
-                                        <div class="text-center py-4">
-                                            <iconify-icon icon="solar:document-text-linear" width="24" class="text-gray-300 dark:text-gray-600 mb-1"></iconify-icon>
-                                            <p class="text-xs text-gray-400">Aucun tableau dynamique configuré pour cette entité</p>
+                                            <input type="checkbox"
+                                                   style="accent-color: #4361ee; width: 16px; height: 16px; flex-shrink: 0; pointer-events: none; margin: 0;"
+                                                   :checked="($store.widgetPicker.newWidget.config.schemaIds || []).includes(s.id)">
+                                            <div class="wp-icon-box">
+                                                <iconify-icon icon="solar:notebook-bold-duotone" width="16" style="color: #00ab55;"></iconify-icon>
+                                            </div>
+                                            <div class="wp-text">
+                                                <div class="wp-name" x-text="s.name"></div>
+                                                <div class="wp-sub">Direct — <span x-text="s.entityName || 'Entity'"></span></div>
+                                            </div>
                                         </div>
                                     </template>
                                 </div>
-                                <!-- Options -->
-                                <div class="grid grid-cols-2 gap-3">
-                                    <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                                        <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.enableAdd" class="form-checkbox">
-                                        <span class="text-xs font-semibold text-gray-600 dark:text-gray-300">Permettre l'ajout</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                                        <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.enableDocPreview" class="form-checkbox">
-                                        <span class="text-xs font-semibold text-gray-600 dark:text-gray-300">Preview Documents</span>
-                                    </label>
-                                </div>
+                                <template x-if="$store.widgetPicker.gridSchemas.length === 0">
+                                    <div style="text-align: center; padding: 24px; color: #9ca3af; font-size: 12px;">
+                                        <iconify-icon icon="solar:document-text-linear" width="28" style="opacity: 0.3; display: block; margin: 0 auto 6px auto;"></iconify-icon>
+                                        Aucun tableau dynamique configuré pour cette entité
+                                    </div>
+                                </template>
                             </div>
-                        </template>
 
-                    </div>
+                            <!-- Info box -->
+                            <div style="padding: 14px 16px; background: #f0fdf4; border-radius: 12px; border: 1px solid #dcfce7;">
+                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                    <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #00ab55;"></iconify-icon>
+                                    <span style="font-size: 12px; font-weight: 700; color: #15803d;">Tableau dynamique</span>
+                                </div>
+                                <p style="font-size: 11px; color: #4b5563; margin: 0; line-height: 1.5;">Ce widget affiche un tableau dynamique éditable. Le mode Split Doc permet de visualiser les documents générés.</p>
+                            </div>
+
+                            <!-- Options as checkboxes (simple, like image 1) -->
+                            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.enableAdd" class="form-checkbox" style="accent-color: #22b7e9; width: 16px; height: 16px;">
+                                    <span style="font-size: 12px; font-weight: 600; color: #374151;">Permettre l'ajout</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.enableDocPreview" class="form-checkbox" style="accent-color: #22b7e9; width: 16px; height: 16px;">
+                                    <span style="font-size: 12px; font-weight: 600; color: #374151;">Preview Documents</span>
+                                </label>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Generic info for simple types -->
+                    <template x-if="['tasks','timeline','kpi','chart','fields','cards','separator'].includes($store.widgetPicker.newWidget.type)">
+                        <div style="padding: 14px 16px; background: #f0fdf4; border-radius: 12px; border: 1px solid #dcfce7;">
+                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                                <iconify-icon icon="solar:info-circle-bold" width="14" style="color: #00ab55;"></iconify-icon>
+                                <span style="font-size: 12px; font-weight: 700; color: #15803d;" x-text="$store.widgetPicker.newWidget.label"></span>
+                            </div>
+                            <p style="font-size: 11px; color: #4b5563; margin: 0; line-height: 1.5;" 
+                               x-text="$store.widgetPicker.catalog.find(c => c.type === $store.widgetPicker.newWidget.type)?.desc || 'Ce widget sera ajouté à votre onglet.'"></p>
+                        </div>
+                    </template>
+
                 </div>
             </div>
 
             <!-- Modal Footer -->
-            <div class="px-6 py-4 border-t dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/20">
-                <div>
-                    <template x-if="$store.widgetPicker.step === 'form'">
-                        <button type="button" @click="$store.widgetPicker.step = 'catalog'"
-                                class="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all">
-                            <iconify-icon icon="solar:alt-arrow-left-outline" width="16"></iconify-icon>
-                            Retour
-                        </button>
-                    </template>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button type="button" @click="$store.widgetPicker.close()"
-                            class="px-4 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all">
-                        Annuler
+            <div style="display: flex; justify-content: center; gap: 10px; padding: 16px 24px; border-top: 1px solid #f3f4f6;">
+                <button type="button" @click="$store.widgetPicker.step === 'form' ? $store.widgetPicker.step = 'catalog' : $store.widgetPicker.close()"
+                        style="padding: 10px 24px; border-radius: 10px; font-size: 13px; font-weight: 600; border: 1px solid #e5e7eb; background: white; color: #374151; cursor: pointer; transition: all 0.15s;"
+                        onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='white'"
+                        x-text="$store.widgetPicker.step === 'form' ? 'Annuler' : 'Fermer'">
+                </button>
+                <template x-if="$store.widgetPicker.step === 'form'">
+                    <button type="button" @click="$store.widgetPicker.save()"
+                            :disabled="$store.widgetPicker.saving"
+                            style="padding: 10px 28px; border-radius: 10px; font-size: 13px; font-weight: 700; border: none; background: #4361ee; color: white; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s; box-shadow: 0 4px 12px rgba(67,97,238,0.25);"
+                            onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                        <iconify-icon x-show="!$store.widgetPicker.saving" icon="solar:check-circle-bold" width="16"></iconify-icon>
+                        <iconify-icon x-show="$store.widgetPicker.saving" icon="svg-spinners:ring-resize" width="16"></iconify-icon>
+                        <span x-text="$store.widgetPicker.saving ? 'Création...' : 'Enregistrer'"></span>
                     </button>
-                    <template x-if="$store.widgetPicker.step === 'form'">
-                        <button type="button" @click="$store.widgetPicker.save()"
-                                :disabled="$store.widgetPicker.saving"
-                                class="flex items-center gap-1.5 px-6 py-2 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50">
-                            <iconify-icon x-show="!$store.widgetPicker.saving" icon="solar:check-circle-bold" width="16"></iconify-icon>
-                            <iconify-icon x-show="$store.widgetPicker.saving" icon="svg-spinners:ring-resize" width="16"></iconify-icon>
-                            <span x-text="$store.widgetPicker.saving ? 'Création...' : 'Ajouter au ' + ($store.widgetPicker.target?.type === 'sidebar' ? 'Sidebar' : 'Onglet')"></span>
-                        </button>
-                    </template>
-                </div>
+                </template>
             </div>
 
         </div>
@@ -390,8 +417,14 @@
                             await this.saveToTab();
                         }
                     }
+
                     this.close();
-                    window.location.reload();
+
+                    // Only reload for sidebar widgets (entity-level config)
+                    // Tab widgets are managed by the recordTabs component which handles its own persistence
+                    if (this.target.type === 'sidebar') {
+                        window.location.reload();
+                    }
                 } catch (e) {
                     console.error('Widget saving error:', e);
                     alert('Erreur lors de l\'ajout du widget');

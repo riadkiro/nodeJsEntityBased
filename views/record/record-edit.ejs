@@ -3268,6 +3268,14 @@ window.__syncClsInputs = function(clsId, ids) {
                         }
                     });
 
+                    // Listen for widgets added from the global widget picker (unified picker)
+                    window.addEventListener('insert-tab-widget', (e) => {
+                        this.ctInsertWidget(e.detail.widget.type, {
+                            ...e.detail.widget,
+                            target: e.detail.target
+                        });
+                    });
+
                     // Load saved preferences from account-level API
                     let savedTabPrefs = null;
                     let savedCustomTabs = null;
@@ -4343,7 +4351,7 @@ window.__syncClsInputs = function(clsId, ids) {
                         // Use pre-configured widget from unified picker
                         block = {
                             type: configuredWidget.type,
-                            title: configuredWidget.label || configuredWidget.type,
+                            title: configuredWidget.title || configuredWidget.label || configuredWidget.type,
                             config: configuredWidget.config || {}
                         };
                         // Mapping some legacy fields that were top-level
@@ -6584,7 +6592,7 @@ window.__syncClsInputs = function(clsId, ids) {
     document.addEventListener("alpine:init", () => {
         // ─── UNIFIED WIDGET PICKER ───
         Alpine.store('widgetPicker').initPicker({
-            gridSchemas: <%- JSON.stringify((entity.gridSchemas || []).map(s => ({ id: s._id, name: s.name }))).replace(/</g, '\\u003C') %>
+            gridSchemas: <%- JSON.stringify((locals.gridSchemas || []).filter(gs => gs && gs.schema).map(gs => ({ id: (gs.schemaId || gs.schema._id || '').toString(), name: gs.schema.name || gs.label || '', entityName: entity.name || '' }))).replace(/</g, '\\u003C') %>
         });
 
         // â•â•â• HEADER BAR (Hero identity bar menu) â•â•â•

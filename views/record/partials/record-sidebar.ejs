@@ -1716,19 +1716,48 @@
                                         </div>
                                     <% } else if (sw.type === 'dynamic-table') { %>
                                         <%
-                                            const dtSchemaId = sw.config?.schemaId?.toString();
-                                            let dtGs = dtSchemaId ? (gridSchemas || []).find(s => s.schemaId?.toString() === dtSchemaId) : null;
-                                            const dtSchema = dtGs && dtGs.schema ? dtGs.schema : null;
-                                            const dtColumns = dtSchema ? (dtSchema.columns || []).filter(c => c.visible !== false) : [];
-                                            const dtSnapshotEnabled = dtSchema && dtSchema.snapshotConfig && dtSchema.snapshotConfig.enabled;
+                                            // Build list of schemas to display (multi-tab or single)
+                                            const dtSchemaIds = (sw.config?.schemaIds || []).map(id => id?.toString()).filter(Boolean);
+                                            const singleId = sw.config?.schemaId?.toString();
+                                            // If schemaIds array is empty, fall back to single schemaId
+                                            const resolvedIds = dtSchemaIds.length > 0 ? dtSchemaIds : (singleId ? [singleId] : []);
+                                            // If still empty, show ALL schemas
+                                            const allDtSchemas = resolvedIds.length > 0
+                                                ? resolvedIds.map(id => (gridSchemas || []).find(s => s.schemaId?.toString() === id)).filter(Boolean)
+                                                : (gridSchemas || []).filter(s => s && s.schema);
+                                            const isMultiTab = allDtSchemas.length > 1;
                                         %>
-                                        <div x-data="sidebarDynamicTable('<%= dtSchemaId %>', '<%= record._id %>', '<%= account_number %>', JSON.parse(decodeURIComponent('<%= encodeURIComponent(JSON.stringify({
-                                            columns: dtColumns,
-                                            defaultLineType: dtSchema ? (dtSchema.defaultLineType || 'treatment') : 'treatment',
-                                            snapshotEnabled: !!dtSnapshotEnabled,
-                                            snapshotConfig: dtSchema ? (dtSchema.snapshotConfig || {}) : {},
-                                            entityId: entity._id.toString()
-                                        })) %>')))" x-init="init()">
+                                        <div x-data="{ swActiveTab: 0 }">
+                                            <% if (isMultiTab) { %>
+                                            <!-- Tab pills (like main tab) -->
+                                            <div style="display:flex; align-items:center; gap:4px; padding:4px 8px; border-bottom:1px solid #f3f4f6; overflow-x:auto; scrollbar-width:none;">
+                                                <% allDtSchemas.forEach(function(gs, gsi) { %>
+                                                    <button type="button"
+                                                        class="lp-schema-pill"
+                                                        :class="{ 'active': swActiveTab === <%= gsi %> }"
+                                                        @click="swActiveTab = <%= gsi %>">
+                                                        <iconify-icon icon="solar:notebook-bold-duotone" width="12"></iconify-icon>
+                                                        <span><%= gs.schema.label || gs.schema.name %></span>
+                                                    </button>
+                                                <% }) %>
+                                            </div>
+                                            <% } %>
+
+                                            <!-- Schema content (one at a time) -->
+                                            <% allDtSchemas.forEach(function(dtGs, dtIdx) {
+                                                const dtSchemaId = dtGs.schemaId?.toString();
+                                                const dtSchema = dtGs.schema;
+                                                const dtColumns = dtSchema ? (dtSchema.columns || []).filter(c => c.visible !== false) : [];
+                                                const dtSnapshotEnabled = dtSchema && dtSchema.snapshotConfig && dtSchema.snapshotConfig.enabled;
+                                            %>
+                                            <div x-show="swActiveTab === <%= dtIdx %>"
+                                                 x-data="sidebarDynamicTable('<%= dtSchemaId %>', '<%= record._id %>', '<%= account_number %>', JSON.parse(decodeURIComponent('<%= encodeURIComponent(JSON.stringify({
+                                                columns: dtColumns,
+                                                defaultLineType: dtSchema ? (dtSchema.defaultLineType || 'treatment') : 'treatment',
+                                                snapshotEnabled: !!dtSnapshotEnabled,
+                                                snapshotConfig: dtSchema ? (dtSchema.snapshotConfig || {}) : {},
+                                                entityId: entity._id.toString()
+                                            })) %>')))" x-init="init()">
 
                                             <!-- ═══ Toolbar Mini (presets, actions) — pixel-perfect copy of main tab ═══ -->
                                             <div class="lp-toolbar">
@@ -2105,6 +2134,8 @@
                                                 </div>
                                             </template>
                                         </div>
+                                        <% }) /* end allDtSchemas.forEach */ %>
+                                        </div><!-- end swActiveTab wrapper -->
                                         <style>
                                             /* Show row actions on hover */
                                             .lines-panel-table tbody tr:hover .sw-row-actions { opacity: 1 !important; }

@@ -253,6 +253,17 @@
                                 <div style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 2px;">Liens Rapides</div>
                                 <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Groupe de liens</div>
                             </button>
+                            <!-- Tableau (Dynamic Table) Widget -->
+                            <button type="button" @click="selectWidgetType('dynamic-table')"
+                                style="text-align: center; padding: 18px 12px 16px; border-radius: 14px; border: 1.5px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s ease;"
+                                onmouseover="this.style.borderColor='#4361ee40'; this.style.background='#4361ee06'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(67,97,238,0.1)'"
+                                onmouseout="this.style.borderColor='#f3f4f6'; this.style.background='white'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #00ab55 0%, #34d399 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; box-shadow: 0 3px 10px rgba(0,171,85,0.25);">
+                                    <iconify-icon icon="solar:list-check-bold-duotone" width="20" style="color: white;"></iconify-icon>
+                                </div>
+                                <div style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 2px;">Tableau</div>
+                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Données structurées</div>
+                            </button>
                             <!-- Tasks Widget -->
                             <button type="button" @click="selectWidgetType('tasks')"
                                 style="text-align: center; padding: 18px 12px 16px; border-radius: 14px; border: 1.5px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s ease;"
@@ -392,6 +403,44 @@
                                     <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
                                     Ajouter une tâche
                                 </button>
+                            </div>
+                        </template>
+
+                        <!-- Dynamic Table Type -->
+                        <template x-if="newWidget.type === 'dynamic-table'">
+                            <div class="space-y-3">
+                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 block">Tableaux à inclure</label>
+                                <p style="font-size: 10px; color: #9ca3af; margin: -4px 0 8px;">Cochez les tableaux à afficher. Plusieurs = onglets.</p>
+                                <div x-show="loadingSchemaCatalog" style="text-align: center; padding: 12px;">
+                                    <iconify-icon icon="svg-spinners:ring-resize" width="18" style="color: #4361ee;"></iconify-icon>
+                                    <span style="font-size: 11px; color: #9ca3af; margin-left: 6px;">Chargement...</span>
+                                </div>
+                                <div x-show="!loadingSchemaCatalog && gridSchemas.length > 0" 
+                                     id="sidebar-widget-schema-list"
+                                     style="display: flex; flex-direction: column; gap: 8px;">
+                                    <template x-for="gs in gridSchemas" :key="gs._id">
+                                        <div class="flex items-center gap-2 group" :data-id="gs._id">
+                                            <!-- Drag Handle (Always visible) -->
+                                            <div class="schema-drag-handle flex items-center justify-center p-1.5 cursor-grab text-gray-400 hover:text-gray-600 bg-gray-50 rounded-lg border border-gray-100 transition-colors"
+                                                 title="Réorganiser">
+                                                <iconify-icon icon="tabler:grip-vertical" width="16"></iconify-icon>
+                                            </div>
+
+                                            <label style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; border: 1px solid #f3f4f6; cursor: pointer; transition: all 0.15s; flex: 1;"
+                                                onmouseover="this.style.borderColor='#4361ee40'; this.style.background='#f8faff'" 
+                                                onmouseout="this.style.borderColor='#f3f4f6'; this.style.background='transparent'">
+                                                <input type="checkbox" class="form-checkbox text-primary rounded-md"
+                                                    :checked="(newWidget.config.schemaIds || []).includes(gs._id)"
+                                                    @change="toggleSchema(gs._id)">
+                                                <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+                                                    <iconify-icon icon="solar:notebook-bold-duotone" width="16" style="color: #00ab55; flex-shrink: 0;"></iconify-icon>
+                                                    <span style="font-size: 13px; font-weight: 600; color: #1f2937;" x-text="gs.label || gs.name"></span>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </template>
+                                </div>
+                                <div x-show="!loadingSchemaCatalog && availableSchemas.length === 0" style="text-align: center; padding: 12px; color: #9ca3af; font-size: 11px;">Aucun tableau dynamique configuré</div>
                             </div>
                         </template>
 
@@ -860,7 +909,7 @@
                                 <div x-show="isOpen" x-collapse>
                                     <!-- Upload progress -->
                                     <template x-if="uploading">
-                                        <div class="flex items-center gap-2 px-3 py-2 border-t border-gray-50 dark:border-gray-700/30">
+                                        <div class="flex items-center gap-2 px-3 py-2 border-t border-gray-50 dark:border-gray-800">
                                             <iconify-icon icon="line-md:loading-twotone-loop" width="13" class="text-primary"></iconify-icon>
                                             <span class="text-[10px] text-primary font-medium">Upload en cours...</span>
                                         </div>
@@ -1309,7 +1358,7 @@
                                                 </div>
                                             </template>
                                         <div class="panel !p-0 overflow-hidden" x-data="{ open: true }">
-                                            <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-700/30">
+                                            <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-800">
                                                 <div class="flex items-center gap-2 cursor-pointer flex-1" @click="open = !open">
                                                     <div class="w-6 h-6 rounded-lg flex items-center justify-center flex-none" style="background: <%= relColor %>15;">
                                                         <iconify-icon icon="<%= relIcon %>" width="12" style="color: <%= relColor %>"></iconify-icon>
@@ -1417,7 +1466,7 @@
                                                 </div>
                                             </template>
                                         <div class="panel !p-0 overflow-hidden" x-data="{ open: true }">
-                                            <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-700/30 cursor-pointer" @click="open = !open">
+                                            <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-800 cursor-pointer" @click="open = !open">
                                                 <div class="flex items-center gap-2 flex-1">
                                                     <div class="w-6 h-6 rounded-lg flex items-center justify-center flex-none" style="background: <%= relColor %>15;">
                                                         <iconify-icon icon="<%= relIcon %>" width="12" style="color: <%= relColor %>"></iconify-icon>
@@ -1479,7 +1528,7 @@
                                             </div>
                                         </template>
                                     <div class="panel !p-0 overflow-hidden" x-data="{ open: true }">
-                                        <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-700/30 cursor-pointer" @click="open = !open">
+                                        <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-800 cursor-pointer" @click="open = !open">
                                             <div class="flex items-center gap-2 flex-1">
                                                 <div class="w-6 h-6 rounded-lg flex items-center justify-center flex-none" style="background: <%= invColor %>15;">
                                                     <iconify-icon icon="<%= invIcon %>" width="12" style="color: <%= invColor %>"></iconify-icon>
@@ -1550,7 +1599,7 @@
                             </div>
                         </template>
                         <div class="panel !p-0 overflow-hidden" x-data="{ open: true }">
-                            <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-700/30">
+                            <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-800">
                                 <div class="flex items-center gap-2 cursor-pointer flex-1" @click="open = !open">
                                     <div class="w-6 h-6 rounded-lg flex items-center justify-center flex-none" style="background: <%= widget.entityColor %>15;">
                                         <iconify-icon icon="<%= widget.entityIcon %>" width="12" style="color: <%= widget.entityColor %>"></iconify-icon>
@@ -1611,7 +1660,7 @@
                     <% } else { %>
                         <div class="panel !p-0 overflow-hidden group/widget" x-data="{ swOpen: true }">
                             <!-- Widget Header -->
-                            <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-700/30">
+                            <div class="flex items-center justify-between px-3 py-2 border-b border-gray-50 dark:border-gray-800">
                                 <div class="flex items-center gap-2 cursor-pointer flex-1" @click="swOpen = !swOpen">
                                     <div class="w-6 h-6 rounded-lg flex items-center justify-center flex-none" style="background: <%= sw.color || '#4361ee' %>15;">
                                         <iconify-icon icon="<%= sw.icon || 'solar:widget-bold-duotone' %>" width="12" style="color: <%= sw.color || '#4361ee' %>"></iconify-icon>
@@ -1727,21 +1776,8 @@
                                                 : (gridSchemas || []).filter(s => s && s.schema);
                                             const isMultiTab = allDtSchemas.length > 1;
                                         %>
+                                        <!-- Wrapper for multi-tab management -->
                                         <div x-data="{ swActiveTab: 0 }">
-                                            <% if (isMultiTab) { %>
-                                            <!-- Tab pills (like main tab) -->
-                                            <div style="display:flex; align-items:center; gap:4px; padding:4px 8px; border-bottom:1px solid #f3f4f6; overflow-x:auto; scrollbar-width:none;">
-                                                <% allDtSchemas.forEach(function(gs, gsi) { %>
-                                                    <button type="button"
-                                                        class="lp-schema-pill"
-                                                        :class="{ 'active': swActiveTab === <%= gsi %> }"
-                                                        @click="swActiveTab = <%= gsi %>">
-                                                        <iconify-icon icon="solar:notebook-bold-duotone" width="12"></iconify-icon>
-                                                        <span><%= gs.schema.label || gs.schema.name %></span>
-                                                    </button>
-                                                <% }) %>
-                                            </div>
-                                            <% } %>
 
                                             <!-- Schema content (one at a time) -->
                                             <% allDtSchemas.forEach(function(dtGs, dtIdx) {
@@ -1759,10 +1795,36 @@
                                                 entityId: entity._id.toString()
                                             })) %>')))" x-init="init()">
 
-                                            <!-- ═══ Toolbar Mini (presets, actions) — pixel-perfect copy of main tab ═══ -->
-                                            <div class="lp-toolbar">
-                                                <!-- Presets button with dropdown -->
-                                                <div style="position: relative;">
+                                            <!-- ═══ Combined Header: Tabs on Left, Actions on Right ═══ -->
+                                            <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px 6px 0; border-bottom:1px solid #f3f4f6;" class="dark:border-gray-800">
+                                                <!-- Left Area: Schema Pills (Tabs) -->
+                                                <div style="display:flex; align-items:center; gap:4px; overflow-x:auto; scrollbar-width:none;">
+                                                    <% if (allDtSchemas.length > 1) { %>
+                                                        <% allDtSchemas.forEach(function(gs, gsi) { %>
+                                                            <button type="button"
+                                                                class="lp-schema-pill"
+                                                                style="font-size: 11px; padding: 4px 10px; height: 26px;"
+                                                                :class="{ 'active': swActiveTab === <%= gsi %> }"
+                                                                @click="swActiveTab = <%= gsi %>">
+                                                                <iconify-icon icon="solar:notebook-bold-duotone" width="12"></iconify-icon>
+                                                                <span><%= gs.schema.label || gs.schema.name %></span>
+                                                            </button>
+                                                        <% }) %>
+                                                    <% } else { %>
+                                                        <!-- Single Schema Label -->
+                                                        <div style="display:flex; align-items:center; gap:8px; padding-left:4px;">
+                                                            <div style="width:22px; height:22px; border-radius:6px; background:#4361ee15; display:flex; align-items:center; justify-content:center;">
+                                                                <iconify-icon icon="solar:notebook-bold-duotone" width="12" style="color:#4361ee;"></iconify-icon>
+                                                            </div>
+                                                            <span style="font-size: 11px; font-weight: 700; color: #4b5563;" class="dark:text-gray-300"><%= dtSchema.label || dtSchema.name %></span>
+                                                        </div>
+                                                    <% } %>
+                                                </div>
+
+                                                <!-- Right Area: Actions (Save & Presets) -->
+                                                <div class="lp-toolbar" style="margin:0; padding:0; border:none; box-shadow:none; background:transparent;">
+                                                    <!-- Presets button with dropdown -->
+                                                    <div style="position: relative;">
                                                     <button type="button" class="lp-toolbar-btn"
                                                             :class="{ 'active': presetOpen }"
                                                             @click.stop="presetOpen = !presetOpen">
@@ -1776,7 +1838,7 @@
                                                         <div>
                                                             <div style="position: fixed; inset: 0; z-index: 99;"
                                                                  @click.stop="presetOpen = false"></div>
-                                                            <div class="lp-preset-dropdown" @click.stop>
+                                                            <div class="lp-preset-dropdown" style="right: 0; left: auto;" @click.stop>
                                                                 <!-- Record-specific presets -->
                                                                 <template x-if="presets.filter(p => !!p.recordId).length > 0">
                                                                     <div>
@@ -1852,10 +1914,11 @@
                                                     Sauvegarder
                                                 </button>
                                             </div>
+                                        </div>
 
                                             <!-- ═══ Editable Table ═══ -->
                                             <div style="overflow:visible;">
-                                                <table class="lines-panel-table" style="font-size:11px;">
+                                                <table class="lines-panel-table border border-gray-50 dark:border-gray-800" style="font-size:11px;">
                                                     <thead>
                                                         <tr>
                                                             <% dtColumns.forEach(col => { %>
@@ -1956,7 +2019,7 @@
                                             </div>
 
                                             <!-- ═══ Action bar: compact pills aligned right (pixel-perfect copy of main tab) ═══ -->
-                                            <div style="display:flex; align-items:center; justify-content:flex-end; gap:6px; padding:8px 12px; border-top:1px dashed #e5e7eb;">
+                                            <div style="display:flex; align-items:center; justify-content:flex-end; gap:6px; padding:8px 12px;">
                                                 <div style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; font-size:11px; font-weight:500; color:#6b7280; border:1px solid #e5e7eb; border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none;"
                                                      @click.stop="addLine()"
                                                      onmouseover="this.style.borderColor='#4361ee'; this.style.color='#4361ee'; this.style.background='rgba(67,97,238,0.04)';"
@@ -2492,7 +2555,11 @@
                         const url = `/account/${this.accountNumber}/api/grid-snapshots/${this.schemaId}/${this.recordId}`;
                         const res = await fetch(url, { credentials: 'include' });
                         const data = await res.json();
-                        this.snapshots = data.data || [];
+                        this.snapshots = (data.data || []).sort((a,b) => {
+                            const dateA = new Date(a.createdAt || a.date);
+                            const dateB = new Date(b.createdAt || b.date);
+                            return dateB - dateA;
+                        });
                         if (this.snapshots.length > 0) {
                             this.expandedSnap = this.snapshots[0]._id;
                         }
@@ -2695,6 +2762,10 @@
                     color: '#4361ee',
                     config: {}
                 },
+                availableSchemas: [],
+                gridSchemas: [], // Track order for dynamic table tabs
+                loadingSchemaCatalog: false,
+
                 widgetTypeLabels: {
                     'html': 'HTML — Contenu personnalisé',
                     'link': 'Lien — URL externe',
@@ -2703,7 +2774,84 @@
                     'image': 'Image — Visuel / logo',
                     'links-group': 'Liens Rapides — Groupe de liens',
                     'separator': 'Séparateur — Ligne visuelle',
-                    'tasks': 'Tasks — Checklist de tâches'
+                    'tasks': 'Tasks — Checklist de tâches',
+                    'dynamic-table': 'Tableau — Données structurées'
+                },
+
+                async loadAvailableSchemas() {
+                    this.loadingSchemaCatalog = true;
+                    try {
+                        const entityId = '<%= entity._id %>';
+                        const url = `/account/<%= account_number %>/api/line-schemas/by-context?entityId=${entityId}`;
+                        const res = await fetch(url, { credentials: 'include' });
+                        const data = await res.json();
+                        this.availableSchemas = (data.data || []).map(s => ({ _id: s._id?.toString() || s._id, name: s.name, label: s.label }));
+                        
+                        // Initialize gridSchemas if we're in dynamic-table mode
+                        this.updateGridSchemas();
+                    } catch (e) {
+                        console.error('[Sidebar] Error loading schemas:', e);
+                        this.availableSchemas = [];
+                    } finally {
+                        this.loadingSchemaCatalog = false;
+                    }
+                },
+
+                updateGridSchemas() {
+                    if (this.newWidget.type !== 'dynamic-table') return;
+                    const selectedIds = this.newWidget.config.schemaIds || [];
+                    
+                    // Filter and Sort availableSchemas based on the current order in schemaIds
+                    const selected = this.availableSchemas.filter(s => selectedIds.includes(s._id));
+                    selected.sort((a, b) => selectedIds.indexOf(a._id) - selectedIds.indexOf(b._id));
+                    
+                    // Add unselected schemas at the end
+                    const unselected = this.availableSchemas.filter(s => !selectedIds.includes(s._id));
+                    
+                    this.gridSchemas = [...selected, ...unselected];
+                    
+                    // Init Sortable after DOM update
+                    this.$nextTick(() => this.initSchemaSortable());
+                },
+
+                initSchemaSortable() {
+                    console.log('[Sidebar-Widget] initSchemaSortable called');
+                    const el = document.getElementById('sidebar-widget-schema-list');
+                    if (!el) {
+                        console.warn('[Sidebar-Widget] schema list element not found');
+                        return;
+                    }
+                    if (el._sortable) el._sortable.destroy();
+                    
+                    el._sortable = new Sortable(el, {
+                        animation: 150,
+                        handle: '.schema-drag-handle',
+                        ghostClass: 'bg-primary/5',
+                        onStart: () => console.log('[Sidebar-Widget] drag started'),
+                        onEnd: (evt) => {
+                            const newOrder = Array.from(el.children).map(node => node.dataset.id);
+                            console.log('[Sidebar-Widget] new visual order:', newOrder);
+                            // Update gridSchemas to match visual order
+                            this.gridSchemas.sort((a, b) => newOrder.indexOf(a._id) - newOrder.indexOf(b._id));
+                            // Update schemaIds to match new order
+                            this.newWidget.config.schemaIds = this.gridSchemas
+                                .filter(s => (this.newWidget.config.schemaIds || []).includes(s._id))
+                                .map(s => s._id);
+                            console.log('[Sidebar-Widget] updated schemaIds:', this.newWidget.config.schemaIds);
+                        }
+                    });
+                },
+
+                toggleSchema(id) {
+                    if (!this.newWidget.config.schemaIds) this.newWidget.config.schemaIds = [];
+                    const idx = this.newWidget.config.schemaIds.indexOf(id);
+                    if (idx >= 0) {
+                        this.newWidget.config.schemaIds.splice(idx, 1);
+                    } else {
+                        this.newWidget.config.schemaIds.push(id);
+                    }
+                    // Sync single schemaId for legacy
+                    this.newWidget.config.schemaId = this.newWidget.config.schemaIds.length > 0 ? this.newWidget.config.schemaIds[0] : '';
                 },
 
                 selectWidgetType(type) {
@@ -2715,7 +2863,8 @@
                         'image': { label: 'Image', icon: 'solar:gallery-bold-duotone', color: '#10b981', config: { url: '', alt: '' } },
                         'links-group': { label: 'Liens Rapides', icon: 'solar:bookmark-bold-duotone', color: '#8b5cf6', config: { links: [{ label: '', url: '', icon: '', target: '_blank' }] } },
                         'separator': { label: 'Séparateur', icon: 'solar:minus-circle-bold-duotone', color: '#9ca3af', config: {} },
-                        'tasks': { label: 'Tasks', icon: 'solar:checklist-bold-duotone', color: '#ec4899', config: { tasks: [{ label: '', done: false }] } }
+                        'tasks': { label: 'Tasks', icon: 'solar:checklist-bold-duotone', color: '#ec4899', config: { tasks: [{ label: '', done: false }] } },
+                        'dynamic-table': { label: 'Tableau', icon: 'solar:list-check-bold-duotone', color: '#00ab55', config: { schemaId: '', schemaIds: [], enableAdd: true, enableDocPreview: false } }
                     };
                     const d = defaults[type] || {};
                     this.newWidget = {
@@ -2730,6 +2879,9 @@
                         this.createWidget();
                     } else {
                         this.widgetFormStep = 'form';
+                        if (type === 'dynamic-table') {
+                            this.loadAvailableSchemas();
+                        }
                     }
                 },
 
@@ -2741,6 +2893,8 @@
                             ? `/account/<%= account_number %>/api/entity/${entityId}/sidebar-widgets/${this.editingWidgetId}`
                             : `/account/<%= account_number %>/api/entity/${entityId}/sidebar-widgets`;
                         const method = this.editingWidgetId ? 'PUT' : 'POST';
+
+                        console.log('[Sidebar-Widget] Saving widget with config:', JSON.stringify(this.newWidget.config));
 
                         const res = await fetch(url, {
                             method,
@@ -2768,6 +2922,14 @@
                 editWidget(widgetId, type, label, icon, color, config) {
                     this.editingWidgetId = widgetId;
                     this.newWidget = { type, label, icon, color, config: JSON.parse(JSON.stringify(config)) };
+                    // Backwards-compat: migrate schemaId → schemaIds for dynamic-table
+                    if (type === 'dynamic-table') {
+                        const cfg = this.newWidget.config;
+                        if (!cfg.schemaIds || cfg.schemaIds.length === 0) {
+                            cfg.schemaIds = cfg.schemaId ? [cfg.schemaId] : [];
+                        }
+                        this.loadAvailableSchemas();
+                    }
                     this.widgetFormStep = 'form';
                     this.widgetCatalogOpen = true;
                 },

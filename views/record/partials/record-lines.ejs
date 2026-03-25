@@ -11,28 +11,32 @@
         font-size: 13px;
     }
     .lines-panel-table th {
-        padding: 6px 8px !important;
+        padding: 8px 10px !important;
         font-size: 10px !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.05em;
         color: #6b7280;
-        border-bottom: 1.5px solid #e5e7eb;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
         text-align: left;
         white-space: nowrap;
         user-select: none;
     }
     .dark .lines-panel-table th {
         color: #888ea8;
-        border-color: #253b5c;
+        background: #1b2e4b;
+        border-bottom-color: #253b5c;
     }
     .lines-panel-table td {
-        padding: 2px 6px !important;
-        border-bottom: 1px solid #f0f0f0;
+        padding: 4px 10px !important;
+        border-bottom: 1px solid #e5e7eb;
         vertical-align: middle;
+        color: #1f2937;
     }
     .dark .lines-panel-table td {
-        border-color: #1b2e4b;
+        border-bottom-color: #253b5c;
+        color: #bfc9d4;
     }
     .lines-panel-table tbody tr:hover {
         background: #f9fafb;
@@ -153,9 +157,15 @@
         display: flex;
         justify-content: flex-end;
         gap: 24px;
-        padding: 10px 12px;
-        background: #f8f9fa;
-        border-top: 2px solid #e5e7eb;
+        padding: 12px 14px;
+        background: #f9fafb;
+        border-top: 1px solid #e5e7eb;
+        font-weight: 700;
+    }
+    .dark .lp-totals-bar {
+        background: #1b2e4b;
+        border-top-color: #253b5c;
+    }
         border-radius: 0 0 8px 8px;
         font-size: 12px;
     }
@@ -193,49 +203,94 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 11px;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 13px;
         font-weight: 600;
-        cursor: pointer;
-        border: 1.5px solid #e5e7eb;
+        cursor: grab;
+        border: 1px solid transparent;
         color: #6b7280;
-        background: #fff;
-        transition: all 0.15s;
+        background: transparent;
+        transition: all 0.2s ease;
+        user-select: none;
+        white-space: nowrap;
+    }
+    .lp-schema-pill:active {
+        cursor: grabbing;
     }
     .dark .lp-schema-pill {
-        border-color: #253b5c;
-        background: #0e1726;
         color: #888ea8;
     }
-    .lp-schema-pill:hover, .lp-schema-pill.active {
-        border-color: #4361ee;
-        color: #4361ee;
-        background: rgba(67, 97, 238, 0.06);
+    .lp-schema-pill:hover {
+        background: #f3f4f6;
+        color: #374151;
+    }
+    .dark .lp-schema-pill:hover {
+        background: #1b2e4b;
+        color: #e0e6ed;
     }
     .lp-schema-pill.active {
-        background: rgba(67, 97, 238, 0.1);
+        background: #f0fdf9;
+        color: #00bcd4;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(0, 188, 212, 0.1);
     }
-    /* Multiselect tags */
-    .lp-ms-tag {
+    .dark .lp-schema-pill.active {
+        background: rgba(59, 149, 177, 0.15);
+        color: #3b95b1;
+        border-color: rgba(59, 149, 177, 0.3);
+    }
+    .lp-tab-ghost {
+        opacity: 0.4;
+        background: #f1f5f9 !important;
+    }
+    .lp-tab-grip {
+        opacity: 0.5;
+        transition: opacity 0.2s;
+    }
+    .lp-schema-pill:hover .lp-tab-grip {
+        opacity: 1;
+    }
+    /* Multiselect / Select triggers */
+    .lp-ms-trigger {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+        min-height: 24px;
+        padding: 1px 6px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        cursor: pointer;
+        background: transparent;
+        transition: all 0.15s;
+    }
+    .lp-ms-trigger:hover {
+        border-color: #cbd5e1;
+        background: #f8fafc;
+    }
+    .dark .lp-ms-trigger:hover {
+        border-color: #334155;
+        background: #1b2e4b;
+    }
+    .lp-ms-placeholder {
+        font-size: 13px;
+        color: #9ca3af;
+    }
+    .tp-tag {
         display: inline-flex;
         align-items: center;
-        gap: 3px;
-        padding: 1px 6px;
+        gap: 4px;
+        padding: 0 8px;
         border-radius: 4px;
-        font-size: 10px;
-        font-weight: 600;
-        background: rgba(67, 97, 238, 0.1);
-        color: #4361ee;
-        margin: 1px;
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 18px;
+        height: 18px;
+        white-space: nowrap;
+        user-select: none;
+        transition: filter 0.15s ease;
     }
-    .lp-ms-tag .lp-ms-tag-x {
-        cursor: pointer;
-        font-size: 12px;
-        line-height: 1;
-        opacity: 0.6;
-    }
-    .lp-ms-tag .lp-ms-tag-x:hover { opacity: 1; }
     /* Add row button area */
     .lp-add-row-area {
         display: flex;
@@ -1303,17 +1358,34 @@
     <!-- Single panel with tabs when multiple schemas -->
     <template x-if="!loading && schemas.length > 0">
         <div class="panel !p-0" :style="relationSearch.open ? 'overflow: visible' : ''">
-            <!-- Tab bar (shown only when multiple schemas) -->
+            <!-- Tab bar -->
             <div x-show="schemas.length > 1"
+                 x-ref="tabsContainer"
+                 x-init="$nextTick(() => initTabsSortable())"
                  class="flex items-center gap-1 px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 overflow-x-auto" style="scrollbar-width: none;">
-                <template x-for="schema in schemas" :key="schema._id">
+                <template x-for="(schema, schemaIdx) in schemas" :key="schema._id">
                     <button type="button"
-                        class="lp-schema-pill"
+                        class="lp-schema-pill group"
                         :class="{ 'active': activeSchemaId === schema._id }"
-                        @click="activeSchemaId = schema._id">
-                        <iconify-icon :icon="getSchemaInputMode(schema) === 'form' ? 'solar:heart-pulse-bold-duotone' : getSchemaInputMode(schema) === 'table' ? 'solar:notebook-bold-duotone' : 'solar:document-text-bold-duotone'" width="12"></iconify-icon>
+                        @click="activeSchemaId = schema._id"
+                        :data-id="schema._id">
+                        
+                        <!-- Drag Grip -->
+                        <span class="lp-tab-grip flex items-center justify-center cursor-grab active:cursor-grabbing w-5 h-5 -ml-1">
+                            <iconify-icon icon="tabler:grip-vertical" width="14" 
+                                          class="lp-tab-grip text-gray-300 dark:text-gray-600 group-hover:text-gray-400 transition-colors"></iconify-icon>
+                        </span>
+                        
+                        <div class="lp-tab-icon-box">
+                            <iconify-icon :icon="getSchemaInputMode(schema) === 'form' ? 'solar:heart-pulse-bold-duotone' : getSchemaInputMode(schema) === 'table' ? 'solar:notebook-bold-duotone' : 'solar:document-text-bold-duotone'" 
+                                          width="14"></iconify-icon>
+                        </div>
+                        
                         <span x-text="schema.label || schema.name"></span>
-                        <span x-show="getSchemaLines(schema._id).length > 0" class="text-[9px] bg-success/10 text-success min-w-[14px] h-3.5 rounded-full flex items-center justify-center font-bold px-1" x-text="getSchemaLines(schema._id).length"></span>
+                        
+                        <span x-show="getSchemaLines(schema._id).length > 0" 
+                              class="text-[9px] bg-success/10 text-success min-w-[14px] h-3.5 rounded-full flex items-center justify-center font-bold px-1" 
+                              x-text="getSchemaLines(schema._id).length"></span>
                     </button>
                 </template>
             </div>
@@ -1579,9 +1651,9 @@
 
                 <!-- Table (catalog & table modes only, hidden for form mode) -->
                 <div x-show="getSchemaInputMode(schema) !== 'form'"
-                     :class="(relationSearch.open || msDropdown.open) ? '' : 'overflow-x-auto'"
-                     :style="(relationSearch.open || msDropdown.open) ? 'overflow: visible' : ''">
-                    <table class="">
+                     class="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm mt-3"
+                     :class="(relationSearch.open || msDropdown.open) ? 'overflow-visible' : 'overflow-x-auto'">
+                    <table class="lines-panel-table">
                         <thead>
                             <tr>
                                 <th style="width: 28px;"></th>
@@ -1597,7 +1669,7 @@
                         </thead>
                         <tbody :data-schema-id="schema._id">
                             <template x-for="(line, lineIdx) in getSchemaLines(schema._id)" :key="line._tempId || line._id || lineIdx">
-                                <tr style="border-bottom:1px solid #f0f0f0;">
+                                <tr>
                                     <!-- Drag handle -->
                                     <td style="padding:2px 4px;">
                                         <span class="lp-drag-handle">
@@ -1687,17 +1759,76 @@
                                                     @input="line.values[col.key] = $event.target.value; debouncedSave()" />
                                             </template>
 
-                                            <!-- Select -->
+                                            <!-- Select (tp-style dropdown matching multiselect) -->
                                             <template x-if="col.type === 'select'">
-                                                <select class="lp-input"
-                                                    style="height:24px;padding:1px 4px;background:transparent;border:1px solid transparent;font-size:13px;line-height:22px;outline:none;box-shadow:none;border-radius:4px;width:100%;"
-                                                    :value="line.values[col.key] || ''"
-                                                    @change="line.values[col.key] = $event.target.value; debouncedSave()">
-                                                    <option value="">—</option>
-                                                    <template x-for="opt in getSelectOptions(col, line)" :key="opt.value">
-                                                        <option :value="opt.value" x-text="opt.label" :selected="line.values[col.key] === opt.value"></option>
+                                                <div class="tp-wrapper" style="position:relative;">
+                                                    <!-- Selected value display (trigger) -->
+                                                    <div class="lp-ms-trigger"
+                                                         style="min-height:22px;padding:1px 4px;gap:2px;"
+                                                         @click.stop="activeSchemaId = schema._id; openSelectDropdown(lineIdx, col.key, $event)">
+                                                        <template x-if="!line.values[col.key]">
+                                                            <span class="lp-ms-placeholder">Sélectionner...</span>
+                                                        </template>
+                                                        <template x-if="line.values[col.key]">
+                                                            <span class="tp-tag"
+                                                                  style="background:#dbeafe; color:#2563eb;"
+                                                                  x-text="(col.config?.options || []).find(o => o.value === line.values[col.key])?.label || line.values[col.key]">
+                                                            </span>
+                                                        </template>
+                                                    </div>
+                                                    <!-- Dropdown (tp-style) -->
+                                                    <template x-if="selDropdown.lineIdx === lineIdx && selDropdown.colKey === col.key && selDropdown.open">
+                                                        <div>
+                                                            <div style="position: fixed; inset: 0; z-index: 9998;"
+                                                                 @click.stop="closeSelectDropdown()"></div>
+                                                            <div class="tp-dropdown" style="z-index:9999;" @click.stop>
+                                                                <div class="tp-search-wrap">
+                                                                    <input type="text" class="tp-search-input"
+                                                                           placeholder="Rechercher ou créer..."
+                                                                           :value="selDropdown.query"
+                                                                           @input="selDropdown.query = $event.target.value"
+                                                                           @keydown.enter.prevent="selCreateOption(col)" />
+                                                                </div>
+                                                                <div class="tp-divider"></div>
+                                                                <div class="tp-options">
+                                                                    <template x-for="opt in filterSelOptions(col)" :key="opt.value">
+                                                                        <div class="tp-option" style="display:flex; align-items:center; justify-content:space-between;"
+                                                                             @click.stop="selectSingleValue(line, col.key, opt.value)">
+                                                                            <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
+                                                                                <div class="tp-option-icon"
+                                                                                     :style="line.values[col.key] === opt.value
+                                                                                         ? 'background: #dcfce7; border: 2px solid #00ab55'
+                                                                                         : 'background: #fff; border: 2px solid #d1d5db'">
+                                                                                    <iconify-icon x-show="line.values[col.key] === opt.value"
+                                                                                                  icon="tabler:check" width="12"
+                                                                                                  style="color: #00ab55;"></iconify-icon>
+                                                                                </div>
+                                                                                <span class="tp-option-label" x-text="opt.label"></span>
+                                                                            </div>
+                                                                            <button type="button" class="tp-option-delete"
+                                                                                :class="_pendingDeleteOpt === opt.value ? 'tp-option-delete--confirm' : ''"
+                                                                                @mousedown.prevent.stop="removeInlineOption(schemas.find(s => s._id === activeSchemaId), col, opt.value)"
+                                                                                :title="_pendingDeleteOpt === opt.value ? 'Cliquer pour confirmer' : 'Supprimer cette option'">
+                                                                                <iconify-icon :icon="_pendingDeleteOpt === opt.value ? 'tabler:check' : 'tabler:trash'" width="12" style="pointer-events:none;"></iconify-icon>
+                                                                            </button>
+                                                                        </div>
+                                                                    </template>
+                                                                    <template x-if="filterSelOptions(col).length === 0 && !(selDropdown.query || '').trim()">
+                                                                        <div style="padding:12px; text-align:center; color:#9ca3af; font-size:12px;">Aucune option</div>
+                                                                    </template>
+                                                                </div>
+                                                                <!-- + Créer -->
+                                                                <template x-if="(selDropdown.query || '').trim() && !(col.config?.options || []).some(o => o.label.toLowerCase() === (selDropdown.query || '').trim().toLowerCase())">
+                                                                    <div class="tp-create-option" @click.stop="selCreateOption(col)">
+                                                                        <iconify-icon icon="tabler:plus" width="14" style="color:#6b7280;"></iconify-icon>
+                                                                        <span class="tp-create-label">Créer</span>
+                                                                        <span class="tp-create-tag" x-text="selDropdown.query"></span>
+                                                                    </div>
+                                                                </template>
+                                                            </div>
+                                                        </div>
                                                     </template>
-                                                </select>
+                                                </div>
                                             </template>
 
                                             <!-- Multiselect (tp-style inline tag-picker dropdown) -->
@@ -3246,6 +3377,18 @@ document.addEventListener('alpine:init', () => {
             query: ''
         },
 
+        // Single select dropdown state (tp-style)
+        selDropdown: {
+            lineIdx: -1,
+            colKey: '',
+            open: false,
+            query: ''
+        },
+
+        // Tab drag-and-drop state
+        _dragTabId: null,
+        _dragOverTabId: null,
+
         // Add Lines modal state
         addModal: {
             open: false,
@@ -3414,6 +3557,7 @@ document.addEventListener('alpine:init', () => {
                     schemas = schemas.filter(s => s._id === this._schemaFilter || s._id?.toString() === this._schemaFilter);
                 }
                 this.schemas = schemas;
+                this.$nextTick(() => this.initTabsSortable());
 
                 // Initialize per-schema state
                 for (const s of this.schemas) {
@@ -4140,6 +4284,85 @@ document.addEventListener('alpine:init', () => {
             const q = (this.msDropdown.query || '').trim().toLowerCase();
             if (!q) return opts;
             return opts.filter(o => o.label.toLowerCase().includes(q));
+        },
+
+        // ══ Single Select dropdown (tp-style) ══
+        openSelectDropdown(lineIdx, colKey, event) {
+            if (this.selDropdown.lineIdx === lineIdx && this.selDropdown.colKey === colKey && this.selDropdown.open) {
+                this.closeSelectDropdown();
+                return;
+            }
+            this.selDropdown.lineIdx = lineIdx;
+            this.selDropdown.colKey = colKey;
+            this.selDropdown.open = true;
+            this.selDropdown.query = '';
+        },
+
+        closeSelectDropdown() {
+            this.selDropdown.open = false;
+            this.selDropdown.lineIdx = -1;
+            this.selDropdown.colKey = '';
+            this.selDropdown.query = '';
+        },
+
+        selectSingleValue(line, key, value) {
+            line.values[key] = value;
+            this.closeSelectDropdown();
+            this.debouncedSave();
+        },
+
+        filterSelOptions(col) {
+            const opts = col.config?.options || [];
+            const q = (this.selDropdown.query || '').trim().toLowerCase();
+            if (!q) return opts;
+            return opts.filter(o => o.label.toLowerCase().includes(q));
+        },
+
+        _tabsSortable: null,
+        initTabsSortable() {
+            const container = this.$refs.tabsContainer;
+            if (!container || typeof Sortable === 'undefined') {
+                console.warn('[LinesPanel] Skipping Sortable init: container or Sortable missing', !!container);
+                return;
+            }
+            
+            if (this._tabsSortable) {
+                this._tabsSortable.destroy();
+                this._tabsSortable = null;
+            }
+
+            console.log('[LinesPanel] Initializing Tabs Sortable', this.schemas.length);
+            this._tabsSortable = new Sortable(container, {
+                animation: 150,
+                handle: '.lp-tab-grip',
+                draggable: '.lp-schema-pill',
+                ghostClass: 'lp-tab-ghost',
+                forceFallback: true,
+                onEnd: (evt) => {
+                    // Reorder the schemas array based on new DOM order
+                    const newIds = Array.from(container.querySelectorAll('.lp-schema-pill')).map(el => el.dataset.id);
+                    const newSchemas = newIds.map(id => this.schemas.find(s => (s._id || s.id) === id)).filter(Boolean);
+                    
+                    // Reactive update MUST be done carefully 
+                    this.schemas = [...newSchemas];
+                }
+            });
+        },
+
+        reorderSchema(targetId) {
+           // Deprecated: logic moved to initTabsSortable onEnd
+        },
+
+        selCreateOption(col) {
+            const label = (this.selDropdown.query || '').trim();
+            if (!label) return;
+            const slug = label.toLowerCase().replace(/[^a-z0-9\u00e0-\u00ff]+/g, '_').replace(/^_|_$/g, '');
+            if (!col.config) col.config = {};
+            if (!col.config.options) col.config.options = [];
+            if (col.config.options.some(o => o.value === slug || o.label.toLowerCase() === label.toLowerCase())) return;
+            col.config.options.push({ value: slug, label: label });
+            this.selDropdown.query = '';
+            this.saveInlineOptionToSchema(col);
         },
 
         getMultiselectOptLabel(col, value) {
@@ -5093,6 +5316,12 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json();
                 console.log('[Snapshot] History loaded:', data.data?.length, 'snapshots');
                 this.snapshotHistory[schema._id] = data.data || [];
+                
+                // Expand the first (most recent) snapshot by default
+                if (this.snapshotHistory[schema._id].length > 0) {
+                    const firstSnapIdx = this.snapshotHistory[schema._id][0]._id;
+                    this.snapshotExpanded[firstSnapIdx] = true;
+                }
             } catch (e) {
                 console.error('[Snapshot] Load history error:', e);
                 this.snapshotHistory[schema._id] = [];

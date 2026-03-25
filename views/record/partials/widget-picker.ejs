@@ -157,27 +157,36 @@
                                     <label class="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Tableaux à afficher</label>
                                     <p class="text-[11px] text-gray-400 dark:text-gray-500 mb-3">Sélectionnez les tableaux à inclure. Plusieurs tableaux apparaîtront sous forme d'onglets.</p>
                                     <!-- Schema checkboxes -->
-                                    <div class="space-y-1.5">
+                                    <div class="space-y-1.5" 
+                                         x-ref="schemaSortable"
+                                         x-init="$nextTick(() => $store.widgetPicker.initSchemaSortable($refs.schemaSortable))">
                                         <template x-for="s in $store.widgetPicker.gridSchemas" :key="s.id">
-                                            <label class="flex items-center gap-3 cursor-pointer p-2.5 rounded-lg border transition-colors"
-                                                   :class="($store.widgetPicker.newWidget.config.schemaIds || []).includes(s.id) ? 'border-primary/30 bg-primary/[0.03] dark:border-primary/40 dark:bg-primary/[0.06]' : 'border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800'">
-                                                <input type="checkbox" class="form-checkbox text-primary"
-                                                       :checked="($store.widgetPicker.newWidget.config.schemaIds || []).includes(s.id)"
-                                                       @change="(() => {
-                                                           const cfg = $store.widgetPicker.newWidget.config;
-                                                           if (!cfg.schemaIds) cfg.schemaIds = [];
-                                                           const idx = cfg.schemaIds.indexOf(s.id);
-                                                           if (idx >= 0) { cfg.schemaIds.splice(idx, 1); }
-                                                           else { cfg.schemaIds.push(s.id); }
-                                                           cfg.schemaId = cfg.schemaIds.length === 1 ? cfg.schemaIds[0] : '';
-                                                       })()">
-                                                <div class="flex items-center gap-2 flex-1 min-w-0">
-                                                    <iconify-icon icon="solar:notebook-bold-duotone" width="16" class="text-primary flex-shrink-0"></iconify-icon>
-                                                    <span class="text-[13px] font-semibold text-gray-700 dark:text-gray-200 truncate" x-text="s.name"></span>
+                                            <div class="flex items-center gap-1 group" :data-id="s.id">
+                                                <!-- Drag Handle (Always visible) -->
+                                                <div class="schema-drag-handle p-1.5 text-gray-400 hover:text-primary cursor-grab active:cursor-grabbing transition-colors">
+                                                    <iconify-icon icon="tabler:grip-vertical" width="16"></iconify-icon>
                                                 </div>
-                                                <span x-show="($store.widgetPicker.newWidget.config.schemaIds || []).includes(s.id)" 
-                                                      class="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">ON</span>
-                                            </label>
+                                                
+                                                <label class="flex items-center gap-3 cursor-pointer p-2.5 rounded-lg border transition-colors flex-1"
+                                                       :class="($store.widgetPicker.newWidget.config.schemaIds || []).includes(s.id) ? 'border-primary/30 bg-primary/[0.03] dark:border-primary/40 dark:bg-primary/[0.06]' : 'border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800'">
+                                                    <input type="checkbox" class="form-checkbox text-primary"
+                                                           :checked="($store.widgetPicker.newWidget.config.schemaIds || []).includes(s.id)"
+                                                           @change="(() => {
+                                                               const cfg = $store.widgetPicker.newWidget.config;
+                                                               if (!cfg.schemaIds) cfg.schemaIds = [];
+                                                               const idx = cfg.schemaIds.indexOf(s.id);
+                                                               if (idx >= 0) { cfg.schemaIds.splice(idx, 1); }
+                                                               else { cfg.schemaIds.push(s.id); }
+                                                               cfg.schemaId = cfg.schemaIds.length === 1 ? cfg.schemaIds[0] : '';
+                                                           })()">
+                                                    <div class="flex items-center gap-2 flex-1 min-w-0">
+                                                        <iconify-icon icon="solar:notebook-bold-duotone" width="16" class="text-primary flex-shrink-0"></iconify-icon>
+                                                        <span class="text-[13px] font-semibold text-gray-700 dark:text-gray-200 truncate" x-text="s.name"></span>
+                                                    </div>
+                                                    <span x-show="($store.widgetPicker.newWidget.config.schemaIds || []).includes(s.id)" 
+                                                          class="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full uppercase">Actif</span>
+                                                </label>
+                                            </div>
                                         </template>
                                     </div>
                                     <template x-if="$store.widgetPicker.gridSchemas.length === 0">
@@ -275,6 +284,20 @@
                 this.gridSchemas = data.gridSchemas || [];
             },
 
+            initSchemaSortable(el) {
+                if (!el || typeof Sortable === 'undefined') return;
+                Sortable.create(el, {
+                    animation: 150,
+                    handle: '.schema-drag-handle',
+                    ghostClass: 'bg-gray-50',
+                    onEnd: (evt) => {
+                        const newOrderIds = Array.from(el.children).map(child => child.dataset.id);
+                        const sorted = newOrderIds.map(id => this.gridSchemas.find(s => s.id === id)).filter(Boolean);
+                        this.gridSchemas = sorted;
+                    }
+                });
+            },
+
             initOpen(target) {
                 this.target = target;
                 this.step = 'catalog';
@@ -347,6 +370,16 @@
 
             async save() {
                 this.saving = true;
+                
+                // Finalize schema order for dynamic-table
+                if (this.newWidget.type === 'dynamic-table') {
+                    const checkedIds = this.newWidget.config.schemaIds || [];
+                    // Follow the visual order from gridSchemas
+                    this.newWidget.config.schemaIds = this.gridSchemas
+                        .filter(s => checkedIds.includes(s.id))
+                        .map(s => s.id);
+                }
+
                 try {
                     if (this.newWidget._id) {
                         await this.saveExistingWidget();

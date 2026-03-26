@@ -353,6 +353,7 @@ const CanvasContainer = forwardRef(function CanvasContainer({
                                 panelMode={panelMode}
                                 accountNumber={accountNumber}
                                 documentId={doc._id}
+                                sourceRecordId={doc.draftRecordId}
                             />
                         </div>
                     ))}

@@ -28,7 +28,8 @@ export default function EditorPage({
     isGlobalSelection,
     panelMode,
     accountNumber,
-    documentId
+    documentId,
+    sourceRecordId
 }) {
     const contentRef = useRef(null)
 
@@ -655,6 +656,8 @@ export default function EditorPage({
                     config={dtOverlay.activeConfig}
                     accountNumber={accountNumber}
                     documentId={documentId}
+                    sourceRecordId={sourceRecordId}
+                    activePlaceholder={dtOverlay.activePlaceholder}
                 />
             )}
 

@@ -693,13 +693,15 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
         const context = buildTokenContext(record, entity, inputs, relatedRecordsMap, req.user);
 
         // 7. Create a COPY of the document with tokens resolved in pages
+        //    NOTE: Dynamic tables are NOT resolved to static HTML here.
+        //    They are kept as <div class="dynamic-table"> placeholders so the
+        //    React document editor can render them interactively (add lines, presets, catalog).
         const draftPages = (docTemplate.pages || []).map(page => {
             const resolvedPage = { ...page.toObject ? page.toObject() : { ...page } };
-            // Resolve tokens in page content
+            // Resolve tokens in page content (but NOT dynamic tables)
             if (resolvedPage.content) {
                 resolvedPage.content = resolveTokensInString(resolvedPage.content, context);
-                // Also resolve dynamic tables in the content
-                resolvedPage.content = resolveDynamicTables(resolvedPage.content, recordLines, lineSchemas);
+                resolvedPage.content = previewDynamicTablesForDraft(resolvedPage.content, recordLines, lineSchemas);
             }
             // Resolve tokens in elements
             if (resolvedPage.elements && Array.isArray(resolvedPage.elements)) {
@@ -729,9 +731,11 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
                                     const resolvedBlock = { ...block.toObject ? block.toObject() : { ...block } };
                                     if (resolvedBlock.content) {
                                         resolvedBlock.content = resolveTokensInString(resolvedBlock.content, context);
+                                        resolvedBlock.content = previewDynamicTablesForDraft(resolvedBlock.content, recordLines, lineSchemas);
                                     }
                                     if (resolvedBlock.html) {
                                         resolvedBlock.html = resolveTokensInString(resolvedBlock.html, context);
+                                        resolvedBlock.html = previewDynamicTablesForDraft(resolvedBlock.html, recordLines, lineSchemas);
                                     }
                                     return resolvedBlock;
                                 });
@@ -780,6 +784,34 @@ router.post('/smartdoc/generate-draft/:templateId', async (req, res) => {
 
         await draftDoc.save();
 
+        // 9b. Copy DocumentLines from the source record to the draft document
+        //     This populates the interactive treatment table with existing data
+        if (DocumentLine && recordLines.length > 0) {
+            const lineCopies = recordLines.map((line, i) => ({
+                documentId: draftDoc._id,
+                schemaId: line.schemaId,
+                lineType: line.lineType || 'treatment',
+                values: { ...(line.values || {}) },
+                computed: { ...(line.computed || {}) },
+                order: line.order != null ? line.order : i,
+                createdBy: req.user?._id,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            }));
+            // Only copy non-empty lines (filter out empty trailing rows)
+            const validCopies = lineCopies.filter(l => {
+                if (!l.values) return false;
+                return Object.values(l.values).some(v =>
+                    v !== null && v !== undefined && v !== '' &&
+                    !(Array.isArray(v) && v.length === 0)
+                );
+            });
+            if (validCopies.length > 0) {
+                await DocumentLine.insertMany(validCopies);
+                console.log(`[SmartDoc] Copied ${validCopies.length} DocumentLines to draft ${draftDoc._id}`);
+            }
+        }
+
         console.log(`[SmartDoc] Draft created: ${draftDoc._id} from template "${smartDocTemplate.name}" for record ${req.body.recordId}`);
 
         res.json({
@@ -820,12 +852,33 @@ router.post('/smartdoc/finalize-draft/:draftDocId', async (req, res) => {
             return res.status(404).json({ error: 'Record introuvable' });
         }
 
-        // 3. Build HTML from draft pages (tokens already resolved)
+        // 3. Load DocumentLines for the draft (interactive table data) and resolve dynamic tables
+        let draftLines = [];
+        let lineSchemas = {};
+        try {
+            const DocumentLine = await tenantCollection(req, 'DocumentLine');
+            const LineSchema = await tenantCollection(req, 'LineSchema');
+            if (DocumentLine && LineSchema) {
+                draftLines = await DocumentLine.find({ documentId: draftDoc._id }).sort({ order: 1 }).lean();
+                const schemaIds = [...new Set(draftLines.map(l => l.schemaId).filter(Boolean))];
+                if (schemaIds.length > 0) {
+                    const schemas = await LineSchema.find({ _id: { $in: schemaIds } }).lean();
+                    for (const s of schemas) lineSchemas[s._id.toString()] = s;
+                }
+                // Pre-resolve relation values (ObjectId → record title)
+                draftLines = await resolveRelationValues(draftLines, lineSchemas, Record);
+            }
+        } catch (e) {
+            console.warn('[SmartDoc] Finalize: Could not load draft lines:', e.message);
+        }
+
+        // 3b. Build HTML from draft pages — resolve dynamic tables NOW for PDF
         let html = '';
         if (draftDoc.pages && draftDoc.pages.length > 0) {
             for (const page of draftDoc.pages) {
                 if (page.content) {
-                    html += page.content;
+                    // Resolve dynamic tables to static HTML for the final PDF output
+                    html += resolveDynamicTables(page.content, draftLines, lineSchemas);
                 }
                 if (page.elements) {
                     for (const el of page.elements) {
@@ -917,7 +970,13 @@ ${draftDoc.footerHtml || ''}
 
         const addedAttachment = record.attachments[record.attachments.length - 1];
 
-        // 6. Delete the draft document (cleanup)
+        // 6. Delete the draft document and its lines (cleanup)
+        try {
+            const DocumentLine = await tenantCollection(req, 'DocumentLine');
+            if (DocumentLine) {
+                await DocumentLine.deleteMany({ documentId: draftDoc._id });
+            }
+        } catch (e) { /* non-critical */ }
         await Document.findByIdAndDelete(draftDoc._id);
         console.log(`[SmartDoc] Draft ${draftDoc._id} finalized and deleted`);
 
@@ -1613,6 +1672,105 @@ function extractUsedVariables(docTemplate, record, entity, inputs, relatedRecord
 }
 
 /**
+ * Generate interactive previews for Dynamic Table in Drafts
+ * Replaces the inner HTML of <div class="dynamic-table"...> with the rendered <table>,
+ * leaving the outer div intact so that it remains clickable and editable via UI.
+ */
+function previewDynamicTablesForDraft(html, recordLines, lineSchemas) {
+    if (!html) return html;
+
+    let result = html;
+    let searchFrom = 0;
+    let safety = 0;
+
+    while (safety++ < 50) {
+        const markerIdx = result.indexOf('dynamic-table', searchFrom);
+        if (markerIdx === -1) break;
+
+        // Find the opening <div that contains this class
+        const divOpenStart = result.lastIndexOf('<div', markerIdx);
+        if (divOpenStart === -1) { searchFrom = markerIdx + 1; continue; }
+
+        const divOpenEnd = result.indexOf('>', divOpenStart);
+        if (divOpenEnd === -1) { searchFrom = markerIdx + 1; continue; }
+
+        const openingTag = result.substring(divOpenStart, divOpenEnd + 1);
+
+        // Extract data-table attribute
+        let dataTableValue = '';
+        const sqMatch = openingTag.match(/data-table='([^']*)'/);
+        const dqMatch = openingTag.match(/data-table="([^"]*)"/);
+        if (sqMatch) {
+            dataTableValue = sqMatch[1];
+        } else if (dqMatch) {
+            dataTableValue = dqMatch[1];
+        } else {
+            searchFrom = markerIdx + 1;
+            continue;
+        }
+
+        // Count nested divs to find matching closing </div>
+        let depth = 1;
+        let pos = divOpenEnd + 1;
+        while (depth > 0 && pos < result.length) {
+            const nextOpen = result.indexOf('<div', pos);
+            const nextClose = result.indexOf('</div>', pos);
+            if (nextClose === -1) break;
+
+            if (nextOpen !== -1 && nextOpen < nextClose) {
+                depth++;
+                pos = nextOpen + 4;
+            } else {
+                depth--;
+                if (depth === 0) {
+                    try {
+                        const decoded = dataTableValue
+                            .replace(/&quot;/g, '"')
+                            .replace(/&amp;/g, '&')
+                            .replace(/&lt;/g, '<')
+                            .replace(/&gt;/g, '>')
+                            .replace(/&#39;/g, "'");
+                        const config = JSON.parse(decoded);
+                        const schemaId = config.schemaId;
+                        const style = config.style || 'professional';
+
+                        if (schemaId && lineSchemas[schemaId]) {
+                            const schema = lineSchemas[schemaId];
+                            const lines = recordLines.filter(l => {
+                                if (l.schemaId) return l.schemaId.toString() === schemaId;
+                                return true;
+                            });
+                            const innerReplacement = renderDynamicTable(schema, lines, style, config);
+                            result = result.substring(0, divOpenEnd + 1) + innerReplacement + result.substring(nextClose);
+                            searchFrom = divOpenEnd + 1 + innerReplacement.length;
+                        } else {
+                            // If missing schema or lines, replace with clickable box
+                            const innerReplacement = `
+                                <div style="padding: 16px; background: #f3f4f6; border: 1px dashed #d1d5db; color: #1f2937; border-radius: 8px; text-align: center;">
+                                    <iconify-icon icon="solar:database-bold-duotone" width="24" style="margin-bottom: 8px"></iconify-icon>
+                                    <div style="font-weight: 500">${config.schemaName || 'Tableau Dynamique'}</div>
+                                    <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Cliquez pour configurer les lignes</div>
+                                </div>
+                            `;
+                            result = result.substring(0, divOpenEnd + 1) + innerReplacement + result.substring(nextClose);
+                            searchFrom = divOpenEnd + 1 + innerReplacement.length;
+                        }
+                    } catch (e) {
+                        console.warn('[SmartDoc] Could not preview dynamic-table:', e.message);
+                        searchFrom = nextClose + 6;
+                    }
+                    break;
+                }
+                pos = nextClose + 6;
+            }
+        }
+        if (depth > 0) searchFrom = markerIdx + 1;
+    }
+
+    return result;
+}
+
+/**
  * Resolve dynamic table placeholders in HTML
  * Finds <div class="dynamic-table" data-table="{...}"> elements and replaces with rendered tables
  */
@@ -1965,5 +2123,31 @@ function escapeHtml(str) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 }
+
+/**
+ * POST /api/smartdoc/render-table
+ * Renders the HTML block for a dynamic table so the React Editor can update the DOM immediately
+ * after the user edits lines in the modal.
+ * Body: { schemaId, style, config, lines }
+ */
+router.post('/smartdoc/render-table', async (req, res) => {
+    try {
+        const { schemaId, style, config, lines } = req.body;
+        if (!schemaId) return res.status(400).json({ error: 'Missing schemaId' });
+
+        const LineSchema = await tenantCollection(req, 'LineSchema');
+        const schema = await LineSchema.findById(schemaId).lean();
+        if (!schema) return res.status(404).json({ error: 'Schema not found' });
+
+        const Record = await tenantCollection(req, 'Record');
+        const resolvedLines = await resolveRelationValues(lines || [], { [schemaId]: schema }, Record);
+
+        const html = renderDynamicTable(schema, resolvedLines, style || 'professional', config || {});
+        res.json({ success: true, html });
+    } catch (error) {
+        console.error('[SmartDoc] render-table error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 module.exports = router;

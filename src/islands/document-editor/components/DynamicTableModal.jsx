@@ -185,7 +185,7 @@ export function DynamicTableOverlay({ activeConfig, overlayPos, openModal }) {
 // =========================================================================
 // DynamicTableModal — full modal for managing lines
 // =========================================================================
-export default function DynamicTableModal({ open, onClose, config, accountNumber, documentId }) {
+export default function DynamicTableModal({ open, onClose, config, accountNumber, documentId, sourceRecordId, activePlaceholder }) {
     const [schema, setSchema] = useState(null)
     const [lines, setLines] = useState([])
     const [loading, setLoading] = useState(true)
@@ -202,12 +202,23 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
     const [manualSuggestions, setManualSuggestions] = useState([])
     const [showManualSuggestions, setShowManualSuggestions] = useState(false)
 
+    // Presets
+    const [presets, setPresets] = useState([])
+    const [presetsOpen, setPresetsOpen] = useState(false)
+    const [applyingPreset, setApplyingPreset] = useState(null)
+
+    // Snapshots
+    const [latestSnapshot, setLatestSnapshot] = useState(null)
+    const [snapshotsOpen, setSnapshotsOpen] = useState(false)
+    const [snapshots, setSnapshots] = useState([])
+    const [loadingSnapshot, setLoadingSnapshot] = useState(false)
+
     const searchInputRef = useRef(null)
     const searchTimerRef = useRef(null)
 
     const schemaId = config?.schemaId
 
-    // Load schema + existing lines
+    // Load schema + existing lines + presets + snapshots
     useEffect(() => {
         if (!open || !schemaId || !accountNumber) return
 
@@ -215,6 +226,8 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
         setSearchQuery('')
         setSearchResults([])
         setSelected(new Set())
+        setPresetsOpen(false)
+        setSnapshotsOpen(false)
 
         Promise.all([
             // Load schema
@@ -226,22 +239,37 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
                 ? fetch(`/account/${accountNumber}/api/document-lines/${documentId}`, { credentials: 'include' })
                     .then(r => r.json())
                     .catch(() => ({ data: [] }))
+                : Promise.resolve({ data: [] }),
+            // Load presets (grid templates)
+            fetch(`/account/${accountNumber}/api/grid-templates?schemaId=${schemaId}${sourceRecordId ? '&includeRecord=' + sourceRecordId : ''}`, { credentials: 'include' })
+                .then(r => r.json())
+                .catch(() => ({ templates: [] })),
+            // Load latest snapshot (if sourceRecordId is available)
+            sourceRecordId
+                ? fetch(`/account/${accountNumber}/api/grid-snapshots/${schemaId}/${sourceRecordId}`, { credentials: 'include' })
+                    .then(r => r.json())
+                    .catch(() => ({ data: [] }))
                 : Promise.resolve({ data: [] })
-        ]).then(([schemaRes, linesRes]) => {
+        ]).then(([schemaRes, linesRes, presetsRes, snapshotsRes]) => {
             if (schemaRes?.data || schemaRes?._id) {
                 setSchema(schemaRes.data || schemaRes)
             }
             if (linesRes?.data) {
-                // Filter lines that belong to this schema (if schemaId is stored on line)
-                // Lines may not have schemaId stored — they are all for the same document
                 setLines(linesRes.data)
             }
+            // Presets
+            setPresets(presetsRes?.templates || [])
+            // Snapshots
+            const snapList = snapshotsRes?.data || []
+            setSnapshots(snapList)
+            setLatestSnapshot(snapList.length > 0 ? snapList[0] : null)
+
             setLoading(false)
 
             // Focus search input
             setTimeout(() => searchInputRef.current?.focus(), 100)
         })
-    }, [open, schemaId, accountNumber, documentId])
+    }, [open, schemaId, accountNumber, documentId, sourceRecordId])
 
     // Visible columns
     const visibleCols = useMemo(() => {
@@ -358,9 +386,14 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
         if (!manualInput.trim()) return
 
         const values = {}
-        const firstTextCol = visibleCols.find(c => c.type === 'text')
+        const firstTextCol = visibleCols.find(c => ['text', 'relation'].includes(c.type))
         if (firstTextCol) {
-            values[firstTextCol.key] = manualInput.trim()
+            if (firstTextCol.type === 'relation') {
+                values[firstTextCol.key] = manualInput.trim()
+                values[firstTextCol.key + '_label'] = manualInput.trim()
+            } else {
+                values[firstTextCol.key] = manualInput.trim()
+            }
         }
 
         setLines(prev => [...prev, {
@@ -437,6 +470,53 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
         })
     }, [])
 
+    // Apply a preset (grid template)
+    const applyPreset = useCallback(async (preset) => {
+        if (!documentId || !accountNumber) return
+        setApplyingPreset(preset._id)
+        try {
+            const res = await fetch(
+                `/account/${accountNumber}/api/grid-templates/${preset._id}/apply/${documentId}`,
+                { method: 'POST', credentials: 'include' }
+            )
+            const data = await res.json()
+            if (data.success && data.lines) {
+                // Reload lines after applying
+                const linesRes = await fetch(
+                    `/account/${accountNumber}/api/document-lines/${documentId}`,
+                    { credentials: 'include' }
+                ).then(r => r.json())
+                if (linesRes?.data) setLines(linesRes.data)
+            }
+        } catch (err) {
+            console.error('[DynamicTable] Apply preset error:', err)
+        } finally {
+            setApplyingPreset(null)
+            setPresetsOpen(false)
+        }
+    }, [documentId, accountNumber])
+
+    // Load snapshot lines into the table
+    const applySnapshot = useCallback((snapshot) => {
+        if (!snapshot?.lines?.length) return
+        const newLines = snapshot.lines.map((l, i) => ({
+            lineType: l.lineType || schema?.defaultLineType || 'treatment',
+            values: { ...(l.values || {}) },
+            order: i
+        }))
+        setLines(newLines)
+        setSnapshotsOpen(false)
+    }, [schema])
+
+    // Format multiselect display values using schema column options
+    const formatMultiselect = useCallback((values, col) => {
+        if (!Array.isArray(values) || values.length === 0) return '—'
+        return values.map(v => {
+            const opt = (col.config?.options || []).find(o => o.value === v)
+            return opt ? opt.label : v
+        }).join(', ')
+    }, [])
+
     // Delete a line
     const deleteLine = useCallback((lineIndex) => {
         setLines(prev => prev.filter((_, i) => i !== lineIndex))
@@ -465,6 +545,31 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
             const data = await res.json()
             if (data.data) {
                 setLines(data.data)
+                
+                // Render new table HTML visually into the editor
+                if (activePlaceholder) {
+                    try {
+                        const renderRes = await fetch(`/account/${accountNumber}/api/smartdoc/render-table`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                schemaId,
+                                style: config?.style || 'professional',
+                                config: config,
+                                lines: data.data
+                            })
+                        })
+                        const renderData = await renderRes.json()
+                        if (renderData.success && renderData.html) {
+                            activePlaceholder.innerHTML = renderData.html
+                            // Trigger an input event so the Document Editor detects the change and autosaves the visual preview!
+                            activePlaceholder.dispatchEvent(new Event('input', { bubbles: true }))
+                        }
+                    } catch(renderErr) {
+                        console.error('[DynamicTable] Visual preview render error:', renderErr)
+                    }
+                }
             }
             onClose()
         } catch (err) {
@@ -473,7 +578,7 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
         } finally {
             setSaving(false)
         }
-    }, [documentId, accountNumber, lines, schemaId, onClose])
+    }, [documentId, accountNumber, lines, schemaId, onClose, activePlaceholder, config])
 
     if (!open) return null
 
@@ -549,6 +654,159 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
                     </div>
                 ) : (
                     <>
+                        {/* ═══ Quick Actions: Presets + Snapshot ═══ */}
+                        {(presets.length > 0 || latestSnapshot) && (
+                            <div style={{
+                                padding: '8px 20px',
+                                borderBottom: '1px solid #f3f4f6',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                flexWrap: 'wrap'
+                            }}>
+                                {/* Presets dropdown */}
+                                {presets.length > 0 && (
+                                    <div style={{ position: 'relative' }}>
+                                        <button
+                                            onClick={() => { setPresetsOpen(!presetsOpen); setSnapshotsOpen(false) }}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: '5px',
+                                                padding: '5px 10px', border: '1px solid #e5e7eb',
+                                                borderRadius: '8px', background: presetsOpen ? '#eef2ff' : '#fff',
+                                                cursor: 'pointer', fontSize: '11px', fontWeight: 600,
+                                                color: '#4f46e5', transition: 'all 0.15s'
+                                            }}
+                                            onMouseOver={e => e.currentTarget.style.background = '#eef2ff'}
+                                            onMouseOut={e => e.currentTarget.style.background = presetsOpen ? '#eef2ff' : '#fff'}
+                                        >
+                                            <iconify-icon icon="solar:bookmark-bold-duotone" width="13"></iconify-icon>
+                                            Presets
+                                            <span style={{
+                                                background: '#4f46e5', color: '#fff', borderRadius: '6px',
+                                                padding: '0 5px', fontSize: '10px', fontWeight: 700,
+                                                minWidth: '16px', textAlign: 'center', lineHeight: '16px'
+                                            }}>{presets.length}</span>
+                                        </button>
+
+                                        {presetsOpen && (
+                                            <div style={{
+                                                position: 'absolute', top: '100%', left: 0, marginTop: '4px',
+                                                background: '#fff', border: '1px solid #e5e7eb',
+                                                borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                                                minWidth: '220px', maxHeight: '240px', overflow: 'auto', zIndex: 30
+                                            }}>
+                                                <div style={{
+                                                    padding: '6px 12px', fontSize: '10px', fontWeight: 700,
+                                                    color: '#6b7280', textTransform: 'uppercase',
+                                                    letterSpacing: '0.05em', borderBottom: '1px solid #f3f4f6'
+                                                }}>Appliquer un preset</div>
+                                                {presets.map(preset => (
+                                                    <div
+                                                        key={preset._id}
+                                                        onClick={() => applyPreset(preset)}
+                                                        style={{
+                                                            padding: '8px 12px', display: 'flex',
+                                                            alignItems: 'center', gap: '8px',
+                                                            cursor: 'pointer', fontSize: '12px',
+                                                            borderBottom: '1px solid #f9fafb',
+                                                            transition: 'background 0.1s',
+                                                            opacity: applyingPreset === preset._id ? 0.5 : 1
+                                                        }}
+                                                        onMouseOver={e => e.currentTarget.style.background = '#f3f4f6'}
+                                                        onMouseOut={e => e.currentTarget.style.background = '#fff'}
+                                                    >
+                                                        {applyingPreset === preset._id ? (
+                                                            <iconify-icon icon="svg-spinners:ring-resize" width="14" style={{ color: '#4f46e5' }}></iconify-icon>
+                                                        ) : (
+                                                            <iconify-icon icon="solar:bookmark-linear" width="14" style={{ color: '#9ca3af' }}></iconify-icon>
+                                                        )}
+                                                        <div>
+                                                            <div style={{ fontWeight: 500, color: '#374151' }}>{preset.name}</div>
+                                                            {preset.recordLabel && (
+                                                                <div style={{ fontSize: '10px', color: '#9ca3af' }}>{preset.recordLabel}</div>
+                                                            )}
+                                                        </div>
+                                                        <span style={{ marginLeft: 'auto', fontSize: '10px', color: '#9ca3af' }}>
+                                                            {preset.lines?.length || '?'} lignes
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Snapshot dropdown */}
+                                {latestSnapshot && (
+                                    <div style={{ position: 'relative' }}>
+                                        <button
+                                            onClick={() => { setSnapshotsOpen(!snapshotsOpen); setPresetsOpen(false) }}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: '5px',
+                                                padding: '5px 10px', border: '1px solid #e5e7eb',
+                                                borderRadius: '8px', background: snapshotsOpen ? '#f0fdf4' : '#fff',
+                                                cursor: 'pointer', fontSize: '11px', fontWeight: 600,
+                                                color: '#059669', transition: 'all 0.15s'
+                                            }}
+                                            onMouseOver={e => e.currentTarget.style.background = '#f0fdf4'}
+                                            onMouseOut={e => e.currentTarget.style.background = snapshotsOpen ? '#f0fdf4' : '#fff'}
+                                        >
+                                            <iconify-icon icon="solar:history-bold-duotone" width="13"></iconify-icon>
+                                            Dernier enregistrement
+                                        </button>
+
+                                        {snapshotsOpen && (
+                                            <div style={{
+                                                position: 'absolute', top: '100%', left: 0, marginTop: '4px',
+                                                background: '#fff', border: '1px solid #e5e7eb',
+                                                borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                                                minWidth: '260px', maxHeight: '300px', overflow: 'auto', zIndex: 30
+                                            }}>
+                                                <div style={{
+                                                    padding: '6px 12px', fontSize: '10px', fontWeight: 700,
+                                                    color: '#6b7280', textTransform: 'uppercase',
+                                                    letterSpacing: '0.05em', borderBottom: '1px solid #f3f4f6'
+                                                }}>Charger depuis un enregistrement</div>
+                                                {snapshots.map(snap => (
+                                                    <div
+                                                        key={snap._id}
+                                                        onClick={() => applySnapshot(snap)}
+                                                        style={{
+                                                            padding: '8px 12px', display: 'flex',
+                                                            alignItems: 'center', gap: '8px',
+                                                            cursor: 'pointer', fontSize: '12px',
+                                                            borderBottom: '1px solid #f9fafb',
+                                                            transition: 'background 0.1s'
+                                                        }}
+                                                        onMouseOver={e => e.currentTarget.style.background = '#f0fdf4'}
+                                                        onMouseOut={e => e.currentTarget.style.background = '#fff'}
+                                                    >
+                                                        <iconify-icon icon="solar:calendar-linear" width="14" style={{ color: '#059669' }}></iconify-icon>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ fontWeight: 500, color: '#374151' }}>
+                                                                {new Date(snap.date || snap.createdAt).toLocaleDateString('fr-FR', {
+                                                                    day: '2-digit', month: 'short', year: 'numeric'
+                                                                })}
+                                                            </div>
+                                                            <div style={{ fontSize: '10px', color: '#9ca3af' }}>
+                                                                {snap.lines?.length || 0} lignes
+                                                            </div>
+                                                        </div>
+                                                        <iconify-icon icon="tabler:arrow-right" width="14" style={{ color: '#d1d5db' }}></iconify-icon>
+                                                    </div>
+                                                ))}
+                                                {snapshots.length === 0 && (
+                                                    <div style={{ padding: '16px 12px', textAlign: 'center', color: '#9ca3af', fontSize: '12px' }}>
+                                                        Aucun enregistrement
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {/* Search bar */}
                         <div style={{ padding: '12px 20px', borderBottom: '1px solid #f3f4f6' }}>
                             <div style={{ position: 'relative' }}>
@@ -861,9 +1119,12 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
                                                         {visibleCols.map(col => {
                                                             const val = line.values?.[col.key] ?? line.computed?.[col.key] ?? ''
                                                             const isComputed = col.type === 'formula'
+                                                            const isMultiselect = col.type === 'multiselect'
                                                             const displayVal = col.type === 'relation'
                                                                 ? (line.values?.[col.key + '_label'] || val)
-                                                                : val
+                                                                : isMultiselect
+                                                                    ? formatMultiselect(val, col)
+                                                                    : val
 
                                                             return (
                                                                 <td key={col.key} style={{

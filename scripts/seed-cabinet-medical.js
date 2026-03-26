@@ -726,7 +726,7 @@ async function install(conn, userId, presetSlug) {
     const prescriptionLineSchema = await upsertDoc(db.LineSchema, { slug: 'prescription_v1', 'meta.createdByPreset': PRESET }, {
         name: 'Ordonnance Traitement', slug: 'prescription_v1',
         description: 'Lignes de traitement pour ordonnances médicales',
-        appliesTo: { entityIds: [E['prescriptions']], documentType: 'prescription' },
+        appliesTo: { entityIds: [E['prescriptions'], E['consultations']], documentType: 'prescription' },
         sourceEntityId: E['traitements'],
         lineTypes: ['treatment', 'note'], defaultLineType: 'treatment',
         columns: [
@@ -1162,8 +1162,50 @@ async function createDocumentTemplates(db, ids, userId) {
     const uid = new mongoose.Types.ObjectId(userId);
     const E = ids.entities;
 
+    // Get the prescription LineSchema ID for dynamic tables
+    const prescriptionSchemaDoc = await db.LineSchema.findOne({ slug: 'prescription_v1', 'meta.createdByPreset': PRESET });
+    const prescriptionSchemaId = prescriptionSchemaDoc ? prescriptionSchemaDoc._id.toString() : '';
+
+    // Build Ordonnance template with proper tokens and dynamic treatment table
+    const ordonnanceHtml = `<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:100%;margin:0;padding:0;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
+    <div>
+      <p style="margin:0;font-size:14px;font-weight:700;color:#1e293b;">Dr. {{user.name}}</p>
+      <p style="margin:2px 0;font-size:11px;color:#64748b;">Médecine Générale</p>
+      <p style="margin:2px 0;font-size:11px;color:#64748b;">N° RPPS : XXXXXXXXXXX</p>
+    </div>
+    <div style="text-align:right;">
+      <p style="margin:0;font-size:12px;color:#475569;">Le {{today}}</p>
+    </div>
+  </div>
+  <div style="text-align:center;margin:32px 0 24px;">
+    <h1 style="margin:0;font-size:22px;font-weight:700;color:#1e40af;letter-spacing:1px;">ORDONNANCE MÉDICALE</h1>
+    <div style="width:80px;height:3px;background:linear-gradient(to right,#3b82f6,#60a5fa);margin:8px auto 0;border-radius:2px;"></div>
+  </div>
+  <div style="background:#f0f9ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-bottom:24px;">
+    <p style="margin:0 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#3b82f6;">Patient</p>
+    <p style="margin:0;font-size:15px;font-weight:600;color:#1e293b;">{{consultations.patients.prenom}} {{consultations.patients.nom}}</p>
+    <div style="display:flex;gap:24px;margin-top:8px;">
+      <p style="margin:0;font-size:11px;color:#64748b;">Né(e) le : {{consultations.patients.date_naissance}}</p>
+      <p style="margin:0;font-size:11px;color:#64748b;">N° SS : {{consultations.patients.numero_secu}}</p>
+    </div>
+  </div>
+  <div style="margin-bottom:20px;">
+    <p style="margin:0 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;">Motif de consultation</p>
+    <p style="margin:0;font-size:13px;color:#374151;">{{consultations.motif}}</p>
+  </div>
+  <div class="dynamic-table" data-table='{"schemaId":"${prescriptionSchemaId}","style":"professional","title":"Prescription","showTotals":false}'>
+    <p style="color:#999;font-style:italic;">Chargement des traitements...</p>
+  </div>
+  <div style="margin-top:48px;text-align:right;">
+    <p style="margin:0;font-size:12px;color:#64748b;">Signature et cachet</p>
+    <div style="border-bottom:1px solid #d1d5db;width:200px;margin:24px 0 8px auto;min-height:40px;"></div>
+    <p style="margin:0;font-size:13px;font-weight:600;color:#1e293b;">Dr. {{user.name}}</p>
+  </div>
+</div>`;
+
     const templateDefs = [
-        { name: 'Ordonnance', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f', entitySlug: 'consultations' },
+        { name: 'Ordonnance', icon: 'solar:document-medicine-bold-duotone', color: '#e2a03f', entitySlug: 'consultations', customHtml: ordonnanceHtml },
         { name: 'Certificat médical', icon: 'solar:diploma-verified-bold-duotone', color: '#3b82f6', entitySlug: 'patients' },
         { name: 'Compte rendu consultation', icon: 'solar:clipboard-text-bold-duotone', color: '#00ab55', entitySlug: 'consultations' },
         { name: 'Lettre orientation spécialiste', icon: 'solar:letter-bold-duotone', color: '#8b5cf6', entitySlug: 'consultations' },
@@ -1178,7 +1220,8 @@ async function createDocumentTemplates(db, ids, userId) {
     for (let i = 0; i < templateDefs.length; i++) {
         const t = templateDefs[i];
         const entityId = E[t.entitySlug];
-        const htmlContent = `<div style="font-family:Arial,sans-serif;padding:40px;"><h1 style="color:${t.color};border-bottom:2px solid ${t.color};padding-bottom:8px;">${t.name}</h1><p style="color:#666;margin-top:24px;">Ce document est un modèle. Personnalisez-le avec les variables disponibles.</p><p><strong>Date:</strong> {{date}}</p><p><strong>Patient:</strong> {{patient.nom}} {{patient.prenom}}</p></div>`;
+        // Use custom HTML if provided, otherwise use generic placeholder
+        const htmlContent = t.customHtml || `<div style="font-family:Arial,sans-serif;padding:40px;"><h1 style="color:${t.color};border-bottom:2px solid ${t.color};padding-bottom:8px;">${t.name}</h1><p style="color:#666;margin-top:24px;">Ce document est un modèle. Personnalisez-le avec les variables disponibles.</p><p><strong>Date:</strong> {{today}}</p><p><strong>Patient:</strong> {{${t.entitySlug}.patients.prenom}} {{${t.entitySlug}.patients.nom}}</p></div>`;
 
         const doc = await upsertDoc(db.Document, { name: t.name, 'meta.createdByPreset': PRESET }, {
             name: t.name, format: 'A4', orientation: 'portrait', isTemplate: true,

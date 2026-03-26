@@ -544,6 +544,7 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
             category: 'pdf',
             isGenerated: true,
             generatedFrom: smartDocTemplate._id.toString(),
+            generatedFromName: smartDocTemplate.name,
             uploadedAt: new Date(),
             uploadedBy: req.user?._id
         };
@@ -952,6 +953,15 @@ ${draftDoc.footerHtml || ''}
         }
 
         // 5. Save as record attachment
+        let generatedFromName = 'Document généré';
+        try {
+            if (draftDoc.draftSourceTemplateId) {
+                const SmartDocTemplate = await tenantCollection(req, 'SmartDocTemplate');
+                const tpl = await SmartDocTemplate.findById(draftDoc.draftSourceTemplateId);
+                if (tpl) generatedFromName = tpl.name;
+            }
+        } catch(e) {}
+
         const newAttachment = {
             filename: savedFilename,
             originalName: outputName + (savedFilename.endsWith('.pdf') ? '.pdf' : '.html'),
@@ -960,6 +970,7 @@ ${draftDoc.footerHtml || ''}
             category: 'pdf',
             isGenerated: true,
             generatedFrom: (draftDoc.draftSourceTemplateId || '').toString(),
+            generatedFromName: generatedFromName,
             uploadedAt: new Date(),
             uploadedBy: req.user?._id
         };

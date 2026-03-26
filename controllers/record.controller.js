@@ -1448,6 +1448,21 @@ module.exports = {
                 console.warn('[RelatedCardWidgets] Error:', cardWidgetErr.message);
             }
 
+            // Retro-populate generatedFromName for old attachments
+            if (record.attachments && record.attachments.length > 0) {
+                try {
+                    const SmartDocTemplate = await tenantCollection(req, "SmartDocTemplate");
+                    if (SmartDocTemplate) {
+                        for (let att of record.attachments) {
+                            if (att.isGenerated && !att.generatedFromName && att.generatedFrom) {
+                                const tpl = await SmartDocTemplate.findById(att.generatedFrom).lean();
+                                if (tpl) att.generatedFromName = tpl.name;
+                            }
+                        }
+                    }
+                } catch(e) { console.warn('[Attachment] Error populating generatedFromName:', e.message); }
+            }
+
             res.render("record/record-edit", {
                 entity,
                 record,

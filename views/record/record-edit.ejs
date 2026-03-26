@@ -980,7 +980,21 @@ window.__syncClsInputs = function(clsId, ids) {
                                                                  :style="`background: ${att.category === 'pdf' ? '#ef4444' : att.category === 'word' ? '#2563eb' : '#f59e0b'}15; color: ${att.category === 'pdf' ? '#ef4444' : att.category === 'word' ? '#2563eb' : '#f59e0b'}`">
                                                                 <iconify-icon :icon="att.category === 'pdf' ? 'solar:file-text-bold-duotone' : att.category === 'word' ? 'solar:document-text-bold-duotone' : 'solar:gallery-bold-duotone'" width="16"></iconify-icon>
                                                             </div>
-                                                            <a :href="att.url" target="_blank" class="font-semibold text-gray-700 dark:text-gray-200 group-hover:text-primary transition-colors" x-text="att.originalName"></a>
+                                                            <div>
+                                                                <a :href="att.url" target="_blank" class="font-semibold text-gray-700 dark:text-gray-200 group-hover:text-primary transition-colors block" x-text="att.originalName"></a>
+                                                                <template x-if="att.isGenerated && att.generatedFromName">
+                                                                    <div class="flex items-center gap-1 mt-0.5 text-[10px] text-gray-400">
+                                                                        <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="12" class="text-amber-500"></iconify-icon>
+                                                                        <span x-text="'Généré via : ' + att.generatedFromName"></span>
+                                                                    </div>
+                                                                </template>
+                                                                <template x-if="att.isGenerated && !att.generatedFromName">
+                                                                    <div class="flex items-center gap-1 mt-0.5 text-[10px] text-gray-400">
+                                                                        <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="12" class="text-amber-500"></iconify-icon>
+                                                                        <span>Document généré automatiquement</span>
+                                                                    </div>
+                                                                </template>
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td class="px-4 py-3">

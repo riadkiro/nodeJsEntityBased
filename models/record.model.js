@@ -80,6 +80,7 @@ const RecordSchema = new mongoose.Schema({
     },
     isGenerated: { type: Boolean, default: false },   // Généré par SmartDoc
     generatedFrom: String,                             // ID du template de document
+    generatedFromName: String,                         // Nom du template
     uploadedAt: { type: Date, default: Date.now },
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
   }],

@@ -178,9 +178,11 @@ router.delete('/records/:recordId/attachments/:attachmentId', async (req, res) =
             console.warn('[Attachment] Could not delete file:', filePath, e.message);
         }
 
-        // Remove from record
-        record.attachments.pull(req.params.attachmentId);
-        await record.save();
+        // Remove from record using updateOne to bypass schema validations
+        await Record.updateOne(
+            { _id: req.params.recordId },
+            { $pull: { attachments: { _id: req.params.attachmentId } } }
+        );
 
         res.json({ success: true });
     } catch (error) {

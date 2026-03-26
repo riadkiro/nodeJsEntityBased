@@ -897,9 +897,115 @@ window.__syncClsInputs = function(clsId, ids) {
                         </div>
                     </template>
 
+                    <!-- Documents Tab (Virtual / Static EJS + Alpine Component) -->
+                    <template x-if="activeTab === '__documents__'">
+                        <div class="px-4 py-4" 
+                             x-data="{ 
+                                attachments: <%- JSON.stringify(_attachmentList.map(a => ({...a, url: `/account/${account_number}/uploads/attachments/${a.filename}`}))) %>,
+                                async deleteDoc(id) {
+                                    if(confirm('Supprimer ce document ?')) {
+                                        try {
+                                            const res = await fetch(`/account/<%= account_number %>/api/records/<%= record._id %>/attachments/${id}`, { method: 'DELETE' });
+                                            if(res.ok) {
+                                                this.attachments = this.attachments.filter(a => a._id !== id);
+                                                try { this.allTabs.find(t => t.key === '__documents__')._count--; } catch(e){}
+                                            }
+                                        } catch(e) { console.error(e); }
+                                    }
+                                },
+                                async uploadDoc(e) {
+                                    const files = e.target.files;
+                                    if(!files || files.length === 0) return;
+                                    const formData = new FormData();
+                                    for(let i=0; i<files.length; i++) formData.append('files', files[i]);
+                                    
+                                    try {
+                                        const res = await fetch(`/account/<%= account_number %>/api/records/<%= record._id %>/attachments`, {
+                                            method: 'POST', body: formData
+                                        });
+                                        const json = await res.json();
+                                        if(json.success && json.attachments) {
+                                            this.attachments = [...this.attachments, ...json.attachments];
+                                            try { this.allTabs.find(t => t.key === '__documents__')._count += json.attachments.length; } catch(e){}
+                                        }
+                                    } catch(err) { console.error(err); }
+                                    e.target.value = '';
+                                }
+                             }">
+                            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+                                <!-- Header -->
+                                <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-6 h-6 rounded flex items-center justify-center bg-amber-500/15 text-amber-500">
+                                            <iconify-icon icon="solar:folder-bold-duotone" width="14"></iconify-icon>
+                                        </span>
+                                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">Documents générés et Pièces jointes</span>
+                                    </div>
+                                    <div>
+                                        <label class="cursor-pointer px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-semibold transition-colors inline-block">
+                                            <iconify-icon icon="tabler:upload" width="14" class="inline align-middle"></iconify-icon> Ajouter
+                                            <input type="file" @change="uploadDoc" class="hidden" multiple>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <!-- Table -->
+                                <div class="overflow-x-auto" x-show="attachments.length > 0">
+                                    <table class="w-full text-left text-sm text-gray-600 dark:text-gray-400">
+                                        <thead class="text-xs uppercase bg-gray-50 dark:bg-gray-800/50 text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-800">
+                                            <tr>
+                                                <th class="px-4 py-3 font-medium">Nom du document</th>
+                                                <th class="px-4 py-3 font-medium w-32">Type</th>
+                                                <th class="px-4 py-3 font-medium w-40">Date</th>
+                                                <th class="px-4 py-3 font-medium w-24 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                                            <template x-for="att in [...attachments].sort((a,b)=> new Date(b.uploadedAt||0)-new Date(a.uploadedAt||0))" :key="att._id">
+                                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors group">
+                                                    <td class="px-4 py-3">
+                                                        <div class="flex items-center gap-3">
+                                                            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                                                                 :style="`background: ${att.category === 'pdf' ? '#ef4444' : att.category === 'word' ? '#2563eb' : '#f59e0b'}15; color: ${att.category === 'pdf' ? '#ef4444' : att.category === 'word' ? '#2563eb' : '#f59e0b'}`">
+                                                                <iconify-icon :icon="att.category === 'pdf' ? 'solar:file-text-bold-duotone' : att.category === 'word' ? 'solar:document-text-bold-duotone' : 'solar:gallery-bold-duotone'" width="16"></iconify-icon>
+                                                            </div>
+                                                            <a :href="att.url" target="_blank" class="font-semibold text-gray-700 dark:text-gray-200 group-hover:text-primary transition-colors" x-text="att.originalName"></a>
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-4 py-3">
+                                                        <span class="px-2 py-1 text-[10px] font-bold uppercase rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300" x-text="att.category && att.category !== 'other' ? att.category : 'DOC'"></span>
+                                                    </td>
+                                                    <td class="px-4 py-3 text-xs text-gray-500">
+                                                        <span x-text="att.uploadedAt ? new Date(att.uploadedAt).toLocaleString('fr-FR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '-'"></span>
+                                                    </td>
+                                                    <td class="px-4 py-3 text-right">
+                                                        <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <a :href="att.url" target="_blank" class="p-1.5 inline-flex items-center justify-center text-gray-400 hover:text-primary bg-gray-100 hover:bg-primary/10 dark:bg-gray-800 dark:hover:bg-primary/20 rounded-md transition-all tooltip" title="Ouvrir">
+                                                                <iconify-icon icon="solar:eye-bold-duotone" width="16"></iconify-icon>
+                                                            </a>
+                                                            <button type="button" @click="deleteDoc(att._id)" class="p-1.5 inline-flex items-center justify-center text-gray-400 hover:text-red-500 bg-gray-100 hover:bg-red-500/10 dark:bg-gray-800 dark:hover:bg-red-500/20 rounded-md transition-all tooltip" title="Supprimer">
+                                                                <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="16"></iconify-icon>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Empty state specific to documents -->
+                                <div x-show="attachments.length === 0" class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500">
+                                    <iconify-icon icon="solar:folder-with-files-bold-duotone" width="36" class="mb-3 opacity-40"></iconify-icon>
+                                    <span class="text-xs mb-3">Aucun document rattaché</span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
                     <!-- Empty State -->
                     <!-- Empty State (Relation tabs only — not custom) -->
-                    <template x-if="!tabLoading && tabRecords.length === 0 && activeTab && activeTab !== '__self__' && !(activeTabMeta && activeTabMeta.isCustom)">
+                    <template x-if="!tabLoading && tabRecords.length === 0 && activeTab && activeTab !== '__self__' && activeTab !== '__documents__' && !(activeTabMeta && activeTabMeta.isCustom)">
                         <div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500">
                             <iconify-icon icon="solar:box-minimalistic-bold-duotone" width="36" class="mb-3 opacity-40"></iconify-icon>
                             <span class="text-xs mb-3">Aucun enregistrement lié</span>
@@ -3050,6 +3156,15 @@ window.__syncClsInputs = function(clsId, ids) {
             const entitySlug = '<%= entity.slug %>';
             const viewId = 'record_tabs_' + entityId;
             const initialMeta = <%- JSON.stringify(locals.relationTabsMeta || []) %>;
+            // Inject internal Documents tab
+            initialMeta.push({
+                key: '__documents__',
+                label: 'Documents',
+                icon: 'solar:folder-bold-duotone',
+                color: '#f59e0b',
+                count: <%= _attachmentCount %>,
+                isVirtual: true
+            });
 
             // Entity metadata for widget config
             const ctEntityFields = <%- JSON.stringify(
@@ -3466,7 +3581,7 @@ window.__syncClsInputs = function(clsId, ids) {
 
                     // Custom tabs don't have entity data to fetch
                     const tabMeta = this.allTabs.find(t => t.key === key);
-                    if (tabMeta && tabMeta.isCustom) {
+                    if ((tabMeta && tabMeta.isCustom) || key === '__documents__') {
                         this.tabRecords = [];
                         this.tabLoading = false;
                         return;

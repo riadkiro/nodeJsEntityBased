@@ -3568,15 +3568,17 @@
                     // Listen for SmartDoc-generated attachments
                     window.addEventListener('smartdoc-attachment-created', (e) => {
                         if (e.detail && e.detail.attachment) {
-                            this.attachments.push(e.detail.attachment);
+                            const exists = this.attachments.some(a => a._id === e.detail.attachment._id);
+                            if (!exists) this.attachments.push(e.detail.attachment);
+                        }
+                    });
+                    
+                    window.addEventListener('smartdoc-attachment-deleted', (e) => {
+                        if (e.detail && e.detail.id) {
+                            this.attachments = this.attachments.filter(a => a._id !== e.detail.id);
                         }
                     });
                 },
-
-
-
-
-
 
                 handleDrop(e) {
                     this.isDragging = false;
@@ -3613,7 +3615,13 @@
                         });
                         const data = await res.json();
                         if (data.success && data.attachments) {
-                            this.attachments.push(...data.attachments);
+                            for (const att of data.attachments) {
+                                const exists = this.attachments.some(a => a._id === att._id);
+                                if (!exists) {
+                                    this.attachments.push(att);
+                                    window.dispatchEvent(new CustomEvent('smartdoc-attachment-created', { detail: { attachment: att } }));
+                                }
+                            }
                         } else {
                             alert(data.error || 'Erreur lors de l\'upload');
                         }
@@ -3637,6 +3645,7 @@
                         const data = await res.json();
                         if (data.success) {
                             this.attachments = this.attachments.filter(a => a._id !== attachmentId);
+                            window.dispatchEvent(new CustomEvent('smartdoc-attachment-deleted', { detail: { id: attachmentId } }));
                         }
                     } catch (e) { console.error('Delete error:', e); }
                 },

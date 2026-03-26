@@ -910,6 +910,26 @@ window.__syncClsInputs = function(clsId, ids) {
                         <div class="px-4 py-4" 
                              x-data="{ 
                                 attachments: window['_initialAttachments_<%= String(record._id) %>'] || [],
+                                init() {
+                                    window.addEventListener('smartdoc-attachment-created', (e) => {
+                                        if (e.detail && e.detail.attachment) {
+                                            const exists = this.attachments.some(a => a._id === e.detail.attachment._id);
+                                            if (!exists) {
+                                                this.attachments.push(e.detail.attachment);
+                                                try { this.allTabs.find(t => t.key === '__documents__')._count++; } catch(err){}
+                                            }
+                                        }
+                                    });
+                                    window.addEventListener('smartdoc-attachment-deleted', (e) => {
+                                        if (e.detail && e.detail.id) {
+                                            const exists = this.attachments.some(a => a._id === e.detail.id);
+                                            if (exists) {
+                                                this.attachments = this.attachments.filter(a => a._id !== e.detail.id);
+                                                try { this.allTabs.find(t => t.key === '__documents__')._count--; } catch(err){}
+                                            }
+                                        }
+                                    });
+                                },
                                 get sortedAttachments() {
                                     return [...this.attachments].sort((a,b) => new Date(b.uploadedAt||0) - new Date(a.uploadedAt||0));
                                 },
@@ -935,6 +955,7 @@ window.__syncClsInputs = function(clsId, ids) {
                                                 this.attachments = this.attachments.filter(a => a._id !== id);
                                                 try { this.allTabs.find(t => t.key === '__documents__')._count--; } catch(e){}
                                                 if (window.notyf) notyf.success('Document supprimé');
+                                                window.dispatchEvent(new CustomEvent('smartdoc-attachment-deleted', { detail: { id } }));
                                             } else {
                                                 if (window.notyf) notyf.error('Impossible de supprimer ce document');
                                             }
@@ -955,8 +976,14 @@ window.__syncClsInputs = function(clsId, ids) {
                                         });
                                         const json = await res.json();
                                         if(json.success && json.attachments) {
-                                            this.attachments = [...this.attachments, ...json.attachments];
-                                            try { this.allTabs.find(t => t.key === '__documents__')._count += json.attachments.length; } catch(e){}
+                                            for (const att of json.attachments) {
+                                                const exists = this.attachments.some(a => a._id === att._id);
+                                                if (!exists) {
+                                                    this.attachments.push(att);
+                                                    try { this.allTabs.find(t => t.key === '__documents__')._count++; } catch(e){}
+                                                    window.dispatchEvent(new CustomEvent('smartdoc-attachment-created', { detail: { attachment: att } }));
+                                                }
+                                            }
                                         }
                                     } catch(err) { console.error(err); }
                                     e.target.value = '';

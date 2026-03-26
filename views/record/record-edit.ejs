@@ -898,11 +898,70 @@ window.__syncClsInputs = function(clsId, ids) {
                     </template>
 
                     <!-- Documents Tab (Virtual / Static EJS + Alpine Component) -->
+                    <%
+                        let _allDocumentsTabAttachments = [];
+                        
+                        // 1. Current record attachments
+                        if (record.attachments && Array.isArray(record.attachments)) {
+                            record.attachments.forEach(att => {
+                                _allDocumentsTabAttachments.push({
+                                    ...(att.toObject ? att.toObject() : att),
+                                    _sourceEntity: entity.name || 'Dossier',
+                                    _sourceTitle: record.title || '',
+                                    _sourceType: 'current',
+                                    _sourceRecordId: record._id.toString()
+                                });
+                            });
+                        }
+
+                        // 2. Related records attachments
+                        if (locals.relatedRecordsData) {
+                            for (const [relKey, relRecs] of Object.entries(locals.relatedRecordsData)) {
+                                let relEntityName = 'Relation';
+                                const relDef = (entity.relations || []).find(r => r.key === relKey);
+                                if (relDef && relDef.targetEntity) relEntityName = relDef.targetEntity.name;
+                                else {
+                                    const invDef = (locals.inverseRelations || []).find(r => r.key === relKey);
+                                    if (invDef && invDef.targetEntity) relEntityName = invDef.targetEntity.name;
+                                }
+
+                                if (Array.isArray(relRecs)) {
+                                    relRecs.forEach(relRec => {
+                                        if (relRec.attachments && Array.isArray(relRec.attachments)) {
+                                            relRec.attachments.forEach(att => {
+                                                _allDocumentsTabAttachments.push({
+                                                    ...(att.toObject ? att.toObject() : att),
+                                                    _sourceEntity: relEntityName,
+                                                    _sourceTitle: relRec.title || 'Sans titre',
+                                                    _sourceType: 'relation',
+                                                    _sourceRecordId: relRec._id.toString()
+                                                });
+                                            });
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    %>
                     <script>
                         window._initialAttachments_<%= String(record._id) %> = <%- JSON.stringify(
-                            JSON.parse(JSON.stringify(_attachmentList)).map(a => ({
-                                ...a, 
-                                url: `/account/${account_number}/uploads/attachments/${a.filename}`
+                            _allDocumentsTabAttachments.map(a => ({
+                                _id: a._id && a._id.toString ? a._id.toString() : String(a._id),
+                                filename: a.filename,
+                                originalName: a.originalName || a.filename,
+                                url: `/account/${account_number}/uploads/attachments/${a.filename}`,
+                                mimeType: a.mimeType,
+                                size: a.size,
+                                uploadedAt: a.uploadedAt,
+                                isGenerated: a.isGenerated,
+                                generatedFromName: a.generatedFromName,
+                                category: (a.mimeType || '').includes('pdf') ? 'pdf' :
+                                          (a.mimeType || '').includes('word') || (a.originalName||'').endsWith('.doc') || (a.originalName||'').endsWith('.docx') ? 'word' :
+                                          (a.mimeType || '').includes('image') ? 'image' : 'other',
+                                _sourceEntity: a._sourceEntity,
+                                _sourceTitle: a._sourceTitle,
+                                _sourceType: a._sourceType,
+                                _sourceRecordId: a._sourceRecordId
                             }))
                         ) %>;
                     </script>
@@ -912,11 +971,16 @@ window.__syncClsInputs = function(clsId, ids) {
                                 init() {
                                     window.addEventListener('smartdoc-attachment-created', (e) => {
                                         if (e.detail && e.detail.attachment) {
-                                            const exists = this.attachments.some(a => a._id === e.detail.attachment._id);
-                                            if (!exists) {
-                                                this.attachments.push(e.detail.attachment);
-                                                try { this.allTabs.find(t => t.key === '__documents__')._count++; } catch(err){}
-                                            }
+                                                const exists = this.attachments.some(a => a._id === e.detail.attachment._id);
+                                                if (!exists) {
+                                                    const newAtt = { ...e.detail.attachment };
+                                                    newAtt._sourceEntity = '<%= entity.name || "Dossier" %>';
+                                                    newAtt._sourceTitle = '<%= record.title || "" %>';
+                                                    newAtt._sourceType = 'current';
+                                                    newAtt._sourceRecordId = '<%= record._id %>';
+                                                    this.attachments.push(newAtt);
+                                                    try { this.allTabs.find(t => t.key === '__documents__')._count++; } catch(err){}
+                                                }
                                         }
                                     });
                                     window.addEventListener('smartdoc-attachment-deleted', (e) => {
@@ -932,7 +996,7 @@ window.__syncClsInputs = function(clsId, ids) {
                                 get sortedAttachments() {
                                     return [...this.attachments].sort((a,b) => new Date(b.uploadedAt||0) - new Date(a.uploadedAt||0));
                                 },
-                                async deleteDoc(id) {
+                                async deleteDoc(att) {
                                     if(window.Swal) {
                                         const result = await Swal.fire({
                                             title: 'Supprimer ce document ?',
@@ -949,12 +1013,13 @@ window.__syncClsInputs = function(clsId, ids) {
                                         if(!confirm('Supprimer ce document ?')) return;
                                     }
                                     try {
-                                            const res = await fetch(`/account/<%= account_number %>/api/records/<%= record._id %>/attachments/${id}`, { method: 'DELETE' });
+                                            const sourceRecordId = att._sourceRecordId || '<%= record._id %>';
+                                            const res = await fetch(`/account/<%= account_number %>/api/records/${sourceRecordId}/attachments/${att._id}`, { method: 'DELETE' });
                                             if(res.ok) {
-                                                this.attachments = this.attachments.filter(a => a._id !== id);
+                                                this.attachments = this.attachments.filter(a => a._id !== att._id);
                                                 try { this.allTabs.find(t => t.key === '__documents__')._count--; } catch(e){}
                                                 if (window.notyf) notyf.success('Document supprimé');
-                                                window.dispatchEvent(new CustomEvent('smartdoc-attachment-deleted', { detail: { id } }));
+                                                window.dispatchEvent(new CustomEvent('smartdoc-attachment-deleted', { detail: { id: att._id, sourceRecordId: sourceRecordId } }));
                                             } else {
                                                 if (window.notyf) notyf.error('Impossible de supprimer ce document');
                                             }
@@ -976,12 +1041,17 @@ window.__syncClsInputs = function(clsId, ids) {
                                         const json = await res.json();
                                         if(json.success && json.attachments) {
                                             for (const att of json.attachments) {
-                                                const exists = this.attachments.some(a => a._id === att._id);
-                                                if (!exists) {
-                                                    this.attachments.push(att);
-                                                    try { this.allTabs.find(t => t.key === '__documents__')._count++; } catch(e){}
-                                                    window.dispatchEvent(new CustomEvent('smartdoc-attachment-created', { detail: { attachment: att } }));
-                                                }
+                                                    const exists = this.attachments.some(a => a._id === att._id);
+                                                    if (!exists) {
+                                                        const newAtt = { ...att };
+                                                        newAtt._sourceEntity = '<%= entity.name || "Dossier" %>';
+                                                        newAtt._sourceTitle = '<%= record.title || "" %>';
+                                                        newAtt._sourceType = 'current';
+                                                        newAtt._sourceRecordId = '<%= record._id %>';
+                                                        this.attachments.push(newAtt);
+                                                        try { this.allTabs.find(t => t.key === '__documents__')._count++; } catch(e){}
+                                                        window.dispatchEvent(new CustomEvent('smartdoc-attachment-created', { detail: { attachment: att } }));
+                                                    }
                                             }
                                         }
                                     } catch(err) { console.error(err); }
@@ -1011,6 +1081,7 @@ window.__syncClsInputs = function(clsId, ids) {
                                         <thead class="text-xs uppercase bg-gray-50 dark:bg-gray-800/50 text-gray-400 font-semibold border-b border-gray-100 dark:border-gray-800">
                                             <tr>
                                                 <th class="px-6 py-3 font-medium">Nom du document</th>
+                                                <th class="px-6 py-3 font-medium w-48">Source</th>
                                                 <th class="px-6 py-3 font-medium w-32">Type</th>
                                                 <th class="px-6 py-3 font-medium w-40">Date</th>
                                                 <th class="px-6 py-3 font-medium w-24 text-right">Actions</th>
@@ -1043,6 +1114,15 @@ window.__syncClsInputs = function(clsId, ids) {
                                                         </div>
                                                     </td>
                                                     <td class="px-6 py-3">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="px-2 py-1 text-[10px] font-bold rounded-md whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]" 
+                                                                  :class="att._sourceType === 'current' ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'"
+                                                                  :title="att._sourceEntity + ' : ' + att._sourceTitle">
+                                                                <span x-text="att._sourceEntity"></span>
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-6 py-3">
                                                         <span class="px-2 py-1 text-[10px] font-bold uppercase rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300" x-text="att.category && att.category !== 'other' ? att.category : 'DOC'"></span>
                                                     </td>
                                                     <td class="px-6 py-3 text-xs text-gray-500">
@@ -1053,7 +1133,7 @@ window.__syncClsInputs = function(clsId, ids) {
                                                             <a :href="att.url" target="_blank" class="p-1.5 inline-flex items-center justify-center text-gray-400 hover:text-primary bg-gray-100 hover:bg-primary/10 dark:bg-gray-800 dark:hover:bg-primary/20 rounded-md transition-all tooltip" title="Ouvrir">
                                                                 <iconify-icon icon="solar:eye-bold-duotone" width="16"></iconify-icon>
                                                             </a>
-                                                            <button type="button" @click="deleteDoc(att._id)" class="p-1.5 inline-flex items-center justify-center text-gray-400 hover:text-red-500 bg-gray-100 hover:bg-red-500/10 dark:bg-gray-800 dark:hover:bg-red-500/20 rounded-md transition-all tooltip" title="Supprimer">
+                                                            <button type="button" @click="deleteDoc(att)" class="p-1.5 inline-flex items-center justify-center text-gray-400 hover:text-red-500 bg-gray-100 hover:bg-red-500/10 dark:bg-gray-800 dark:hover:bg-red-500/20 rounded-md transition-all tooltip" title="Supprimer">
                                                                 <iconify-icon icon="solar:trash-bin-trash-bold-duotone" width="16"></iconify-icon>
                                                             </button>
                                                         </div>
@@ -3232,7 +3312,7 @@ window.__syncClsInputs = function(clsId, ids) {
                 label: 'Documents',
                 icon: 'solar:paperclip-bold-duotone',
                 color: '#f59e0b',
-                count: <%= _attachmentCount %>,
+                count: <%= typeof _allDocumentsTabAttachments !== 'undefined' ? _allDocumentsTabAttachments.length : _attachmentCount %>,
                 isVirtual: true
             });
 

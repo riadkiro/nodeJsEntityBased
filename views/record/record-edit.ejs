@@ -1,17 +1,29 @@
 <%- include('partials/widget-picker') %>
 <%- include('../components/tag-picker') %>
 <style>
-    /* Fix z-index collisions in header hero bar and related dropdowns */
-    .hb-icon-item { position: relative !important; transition: z-index 0s !important; }
-    .hb-icon-item:hover, .hb-icon-item:focus-within { z-index: 50 !important; }
-    .hb-dropdown { position: absolute !important; z-index: 9999 !important; }
+    /* ═══ Z-INDEX HIERARCHY (record-edit page) ═══
+       Header (topbar): z-20 (from Tailwind)
+       Header dropdowns (profile, etc): z-10 within header → effective z-30ish
+       Hero bar: z-index: auto (no stacking context that competes with header)
+       Hero bar dropdowns: absolute within hero bar, high local z-index
+       Sidebar panels: z-index: 1 (from record-sidebar.ejs)
+       
+       RULE: Nothing in page content should EVER exceed header z-20.
+    */
     
-    /* Ensure header bar itself is above main content if any z-index issues occur */
-    .header-hero-bar { position: relative; z-index: 40; }
+    /* Hero bar: isolate its stacking context so children don't leak out */
+    .header-hero-bar { position: relative; isolation: isolate; }
     
-    /* Tag picker wrappers in header */
-    .relative:has(.tp-dropdown) { transition: z-index 0s !important; }
-    .relative:has(.tp-dropdown):hover, .relative:has(.tp-dropdown):focus-within { z-index: 100 !important; }
+    /* Hero bar icon items: position relative for dropdown anchoring, NO z-index escalation on hover */
+    .hb-icon-item { position: relative; }
+    /* Only elevate when its dropdown is visible (stays within hero bar's stacking context) */
+    .hb-icon-item:has(.hb-dropdown:not([style*="display: none"])) { z-index: 10; }
+    
+    /* Hero bar dropdowns: high z-index but within hero bar's isolated context */
+    .hb-dropdown { position: absolute !important; z-index: 100 !important; }
+    
+    /* Tag picker wrappers: only elevate when dropdown is actually open, stays within hero bar context */
+    .header-hero-bar .relative:has(.tp-dropdown:not([style*="display: none"])) { z-index: 10; }
 </style>
 <div x-data="recordForm()" class="space-y-4">
     <form action="/account/<%= account_number %>/record/<%= entity.slug %>/update/<%= record._id %>" method="POST"

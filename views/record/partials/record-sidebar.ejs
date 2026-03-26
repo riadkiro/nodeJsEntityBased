@@ -1,17 +1,16 @@
 <div class="space-y-3 sticky top-20" x-data="recordSidebar" id="sidebar-inner-sortable">
 
         <style>
-    /* Fix sidebar panel z-index collisions */
+    /* Fix sidebar panel z-index — NEVER exceed header z-20 */
     .panel-sortable-item {
         position: relative;
         z-index: 1;
-        transition: z-index 0s;
     }
-    .panel-sortable-item:focus-within {
-        z-index: 50 !important;
-    }
-    .panel-sortable-item:hover {
-        z-index: 40;
+    /* Only elevate z-index when a dropdown/popover is actively open inside */
+    .panel-sortable-item:has(.tp-dropdown[style*="display: block"]),
+    .panel-sortable-item:has(.tp-dropdown:not([style*="display: none"]):not([x-cloak])),
+    .panel-sortable-item:has([x-show]:not([style*="display: none"]).tp-dropdown) {
+        z-index: 10;
     }
     .tp-option:hover .tp-option-delete {
         opacity: 1 !important;
@@ -1582,7 +1581,7 @@
                             <% }) %>
                         <% } else if (sectionId==='lines') { %>
                             <!-- 📊 Tableau Dynamique Panel -->
-                            <div class="panel-sortable-item" data-panel-id="lines" x-show="isPanelVisible('lines')" x-collapse.duration.200ms style="position: relative; z-index: 50;">
+                            <div class="panel-sortable-item" data-panel-id="lines" x-show="isPanelVisible('lines')" x-collapse.duration.200ms>
                                 <template x-if="designMode">
                                     <div class="panel-drag-handle">
                                         <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>

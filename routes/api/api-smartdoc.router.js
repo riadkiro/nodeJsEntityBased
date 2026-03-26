@@ -560,7 +560,7 @@ router.post('/smartdoc/generate/:templateId', async (req, res) => {
             attachment: {
                 _id: addedAttachment._id,
                 ...newAttachment,
-                url: `/uploads/attachments/${req.account_number}/${savedFilename}`,
+                url: `/account/${req.account_number}/uploads/attachments/${savedFilename}`,
                 sizeFormatted: formatSize(savedSize)
             },
             previewHtml: resolvedHtml,
@@ -985,7 +985,7 @@ ${draftDoc.footerHtml || ''}
             attachment: {
                 _id: addedAttachment._id,
                 ...newAttachment,
-                url: `/uploads/attachments/${req.account_number}/${savedFilename}`,
+                url: `/account/${req.account_number}/uploads/attachments/${savedFilename}`,
                 sizeFormatted: formatSize(savedSize)
             },
             outputName

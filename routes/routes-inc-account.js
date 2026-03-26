@@ -40,6 +40,22 @@ router.use("/mailbox", require("./mailbox.router.js"));
 // React Islands API (JSON endpoints)
 router.use("/", require("./api.routes.js"));
 
+// Secure Attachment Download API (Simple Tenant Verification)
+router.get("/uploads/attachments/:filename", (req, res) => {
+    const path = require("path");
+    const fs = require("fs");
+    // Verify user is connected to THIS account
+    if (!req.user || req.account_number !== String(req.params.accountNumber || req.account_number)) {
+        return res.status(403).send("Accès refusé. Ce document appartient à un autre compte.");
+    }
+    const filePath = path.join(__dirname, "../public/uploads/attachments", String(req.account_number), req.params.filename);
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(404).send("Document introuvable.");
+    }
+});
+
 // Attachment API (file uploads for records)
 router.use("/api", require("./api/api-attachment.router.js"));
 

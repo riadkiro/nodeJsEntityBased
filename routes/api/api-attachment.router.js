@@ -139,7 +139,7 @@ router.post('/records/:recordId/attachments', upload.array('files', 10), async (
         const enriched = newAttachments.map(att => ({
             ...att,
             _id: record.attachments[record.attachments.length - newAttachments.length + newAttachments.indexOf(att)]._id,
-            url: `/uploads/attachments/${req.account_number}/${att.filename}`,
+            url: `/account/${req.account_number}/uploads/attachments/${att.filename}`,
             sizeFormatted: formatSize(att.size)
         }));
 
@@ -212,7 +212,7 @@ router.get('/records/:recordId/attachments', async (req, res) => {
             category: att.category,
             isGenerated: att.isGenerated,
             generatedFrom: att.generatedFrom,
-            url: `/uploads/attachments/${req.account_number}/${att.filename}`,
+            url: `/account/${req.account_number}/uploads/attachments/${att.filename}`,
             uploadedAt: att.uploadedAt,
             uploadedBy: att.uploadedBy
         }));

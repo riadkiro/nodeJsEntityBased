@@ -11,8 +11,8 @@
        RULE: Nothing in page content should EVER exceed header z-20.
     */
     
-    /* Hero bar: isolate its stacking context so children don't leak out */
-    .header-hero-bar { position: relative; isolation: isolate; }
+    /* Hero bar: elevate its stacking context so children dropdowns go over the main content (which has z-1) */
+    .header-hero-bar { position: relative; z-index: 15; }
     
     /* Hero bar icon items: position relative for dropdown anchoring, NO z-index escalation on hover */
     .hb-icon-item { position: relative; }
@@ -509,12 +509,18 @@ window.__syncClsInputs = function(clsId, ids) {
                             <span>Pièces jointes · <%= _attachmentTitle %></span>
                         </div>
                         <div class="hb-dropdown-list">
-                            <% _attachmentList.forEach(att => { %>
-                            <a href="/account/<%= account_number %>/uploads/<%= att.filename %>" target="_blank" class="hb-dropdown-item">
+                            <% [..._attachmentList].sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0)).forEach(att => { 
+                                let dateStr = '';
+                                if (att.uploadedAt) {
+                                    let d = new Date(att.uploadedAt);
+                                    dateStr = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' • ';
+                                }
+                            %>
+                            <a href="/account/<%= account_number %>/uploads/attachments/<%= att.filename %>" target="_blank" class="hb-dropdown-item">
                                 <iconify-icon icon="<%= att.category === 'pdf' ? 'solar:file-text-bold-duotone' : att.category === 'image' ? 'solar:gallery-bold-duotone' : att.category === 'word' ? 'solar:document-text-bold-duotone' : 'solar:file-bold-duotone' %>" width="16"
                                     style="color:<%= att.category === 'pdf' ? '#ef4444' : att.category === 'image' ? '#3b82f6' : att.category === 'word' ? '#2563eb' : '#6b7280' %>"></iconify-icon>
                                 <span class="hb-dropdown-item-text"><%= att.originalName %></span>
-                                <span class="hb-dropdown-item-meta"><%= att.category %></span>
+                                <span class="hb-dropdown-item-meta"><%= dateStr %><%= (att.category && att.category !== 'other' ? att.category.toUpperCase() : 'DOC') %></span>
                             </a>
                             <% }); %>
                         </div>

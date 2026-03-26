@@ -907,6 +907,8 @@ window.__syncClsInputs = function(clsId, ids) {
                                 _allDocumentsTabAttachments.push({
                                     ...(att.toObject ? att.toObject() : att),
                                     _sourceEntity: entity.name || 'Dossier',
+                                    _sourceEntityIcon: entity.icon || 'solar:folder-bold-duotone',
+                                    _sourceEntityColor: entity.color || '#4361ee',
                                     _sourceTitle: record.title || '',
                                     _sourceType: 'current',
                                     _sourceRecordId: record._id.toString()
@@ -918,11 +920,21 @@ window.__syncClsInputs = function(clsId, ids) {
                         if (locals.relatedRecordsData) {
                             for (const [relKey, relRecs] of Object.entries(locals.relatedRecordsData)) {
                                 let relEntityName = 'Relation';
+                                let relEntityIcon = 'solar:folder-bold-duotone';
+                                let relEntityColor = '#4361ee';
+
                                 const relDef = (entity.relations || []).find(r => r.key === relKey);
-                                if (relDef && relDef.targetEntity) relEntityName = relDef.targetEntity.name;
-                                else {
+                                if (relDef && relDef.targetEntity) {
+                                    relEntityName = relDef.targetEntity.name;
+                                    relEntityIcon = relDef.targetEntity.icon || relEntityIcon;
+                                    relEntityColor = relDef.targetEntity.color || relEntityColor;
+                                } else {
                                     const invDef = (locals.inverseRelations || []).find(r => r.key === relKey);
-                                    if (invDef && invDef.targetEntity) relEntityName = invDef.targetEntity.name;
+                                    if (invDef && invDef.targetEntity) {
+                                        relEntityName = invDef.targetEntity.name;
+                                        relEntityIcon = invDef.targetEntity.icon || relEntityIcon;
+                                        relEntityColor = invDef.targetEntity.color || relEntityColor;
+                                    }
                                 }
 
                                 if (Array.isArray(relRecs)) {
@@ -932,6 +944,8 @@ window.__syncClsInputs = function(clsId, ids) {
                                                 _allDocumentsTabAttachments.push({
                                                     ...(att.toObject ? att.toObject() : att),
                                                     _sourceEntity: relEntityName,
+                                                    _sourceEntityIcon: relEntityIcon,
+                                                    _sourceEntityColor: relEntityColor,
                                                     _sourceTitle: relRec.title || 'Sans titre',
                                                     _sourceType: 'relation',
                                                     _sourceRecordId: relRec._id.toString()
@@ -959,6 +973,8 @@ window.__syncClsInputs = function(clsId, ids) {
                                           (a.mimeType || '').includes('word') || (a.originalName||'').endsWith('.doc') || (a.originalName||'').endsWith('.docx') ? 'word' :
                                           (a.mimeType || '').includes('image') ? 'image' : 'other',
                                 _sourceEntity: a._sourceEntity,
+                                _sourceEntityIcon: a._sourceEntityIcon,
+                                _sourceEntityColor: a._sourceEntityColor,
                                 _sourceTitle: a._sourceTitle,
                                 _sourceType: a._sourceType,
                                 _sourceRecordId: a._sourceRecordId
@@ -1023,8 +1039,10 @@ window.__syncClsInputs = function(clsId, ids) {
                                                 const exists = this.attachments.some(a => a._id === e.detail.attachment._id);
                                                 if (!exists) {
                                                     const newAtt = { ...e.detail.attachment };
-                                                    newAtt._sourceEntity = '<%= entity.name || "Dossier" %>';
-                                                    newAtt._sourceTitle = '<%= record.title || "" %>';
+                                                    newAtt._sourceEntity = '<%- (entity.name || "Dossier").replace(/'/g, "\\\'") %>';
+                                                    newAtt._sourceEntityIcon = '<%- (entity.icon || "solar:folder-bold-duotone").replace(/'/g, "\\\'") %>';
+                                                    newAtt._sourceEntityColor = '<%- (entity.color || "#4361ee").replace(/'/g, "\\\'") %>';
+                                                    newAtt._sourceTitle = '<%- (record.title || "").replace(/'/g, "\\\'") %>';
                                                     newAtt._sourceType = 'current';
                                                     newAtt._sourceRecordId = '<%= record._id %>';
                                                     this.attachments.push(newAtt);
@@ -1093,8 +1111,10 @@ window.__syncClsInputs = function(clsId, ids) {
                                                     const exists = this.attachments.some(a => a._id === att._id);
                                                     if (!exists) {
                                                         const newAtt = { ...att };
-                                                        newAtt._sourceEntity = '<%= entity.name || "Dossier" %>';
-                                                        newAtt._sourceTitle = '<%= record.title || "" %>';
+                                                        newAtt._sourceEntity = '<%- (entity.name || "Dossier").replace(/'/g, "\\\'") %>';
+                                                        newAtt._sourceEntityIcon = '<%- (entity.icon || "solar:folder-bold-duotone").replace(/'/g, "\\\'") %>';
+                                                        newAtt._sourceEntityColor = '<%- (entity.color || "#4361ee").replace(/'/g, "\\\'") %>';
+                                                        newAtt._sourceTitle = '<%- (record.title || "").replace(/'/g, "\\\'") %>';
                                                         newAtt._sourceType = 'current';
                                                         newAtt._sourceRecordId = '<%= record._id %>';
                                                         this.attachments.push(newAtt);
@@ -1117,19 +1137,19 @@ window.__syncClsInputs = function(clsId, ids) {
                                         <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">Documents générés et Pièces jointes</span>
                                     </div>
                                     <div class="flex items-center gap-3">
-                                        <div class="flex items-center p-1 bg-gray-100 dark:bg-gray-800/80 rounded-xl" style="gap: 2px;">
-                                            <button type="button" @click="setViewMode('inline')" :class="viewMode === 'inline' ? 'bg-primary shadow-sm text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-white/50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700'" class="flex items-center gap-1.5 px-3 py-1.5 font-semibold rounded-lg transition-all text-[11px]">
-                                                <iconify-icon icon="solar:list-bold-duotone" width="14"></iconify-icon> Liste unique
+                                        <div class="flex items-center p-1 bg-gray-50 dark:bg-gray-800/80 rounded-full gap-1">
+                                            <button type="button" @click="setViewMode('inline')" :class="viewMode === 'inline' ? 'bg-primary shadow-md text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-white/50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700'" class="flex items-center justify-center gap-2 px-3 py-1 font-semibold rounded-full transition-all text-[11px]">
+                                                <iconify-icon icon="solar:list-bold-duotone" width="15"></iconify-icon> Liste unique
                                             </button>
-                                            <button type="button" @click="setViewMode('grouped')" :class="viewMode === 'grouped' ? 'bg-primary shadow-sm text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-white/50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700'" class="flex items-center gap-1.5 px-3 py-1.5 font-semibold rounded-lg transition-all text-[11px]">
-                                                <iconify-icon icon="solar:folder-with-files-bold-duotone" width="14"></iconify-icon> Par dossier
+                                            <button type="button" @click="setViewMode('grouped')" :class="viewMode === 'grouped' ? 'bg-primary shadow-md text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-white/50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700'" class="flex items-center justify-center gap-2 px-3 py-1 font-semibold rounded-full transition-all text-[11px]">
+                                                <iconify-icon icon="solar:folder-with-files-bold-duotone" width="15"></iconify-icon> Par dossier
                                             </button>
-                                            <button type="button" @click="setViewMode('type')" :class="viewMode === 'type' ? 'bg-primary shadow-sm text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-white/50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700'" class="flex items-center gap-1.5 px-3 py-1.5 font-semibold rounded-lg transition-all text-[11px]">
-                                                <iconify-icon icon="solar:document-medicine-bold-duotone" width="14"></iconify-icon> Par type
+                                            <button type="button" @click="setViewMode('type')" :class="viewMode === 'type' ? 'bg-primary shadow-md text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-white/50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700'" class="flex items-center justify-center gap-2 px-3 py-1 font-semibold rounded-full transition-all text-[11px]">
+                                                <iconify-icon icon="solar:document-medicine-bold-duotone" width="15"></iconify-icon> Par type
                                             </button>
                                         </div>
-                                        <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-semibold transition-colors">
-                                            <iconify-icon icon="tabler:upload" width="14"></iconify-icon> Ajouter
+                                        <label class="cursor-pointer inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-full text-xs font-bold transition-colors">
+                                            <iconify-icon icon="tabler:upload" width="16"></iconify-icon> Ajouter
                                             <input type="file" @change="uploadDoc" class="hidden" multiple>
                                         </label>
                                     </div>
@@ -1176,9 +1196,10 @@ window.__syncClsInputs = function(clsId, ids) {
                                                         </td>
                                                         <td class="px-6 py-3">
                                                             <div class="flex items-center gap-2">
-                                                                <span class="px-2 py-1 text-[10px] font-bold rounded-md whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]" 
-                                                                      :class="att._sourceType === 'current' ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'"
+                                                                <span class="inline-flex items-center gap-2 px-3 py-1 text-[11px] font-medium rounded-full whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]" 
+                                                                      :style="`background: ${att._sourceEntityColor || '#4361ee'}15; color: ${att._sourceEntityColor || '#4361ee'}`"
                                                                       :title="att._sourceEntity + ' : ' + att._sourceTitle">
+                                                                    <iconify-icon :icon="att._sourceEntityIcon || 'solar:folder-bold-duotone'" width="14"></iconify-icon>
                                                                     <span x-text="att._sourceEntity"></span>
                                                                 </span>
                                                             </div>
@@ -1213,11 +1234,9 @@ window.__syncClsInputs = function(clsId, ids) {
                                             <div class="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden bg-white dark:bg-[#121e32]">
                                                 <!-- Group Header -->
                                                 <div class="px-4 py-2 bg-gray-50/80 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                                                    <div class="flex items-center gap-2">
-                                                        <span class="w-6 h-6 rounded flex items-center justify-center bg-gray-200/50 dark:bg-gray-700 text-gray-500">
-                                                            <iconify-icon icon="solar:folder-open-bold-duotone" width="14"></iconify-icon>
-                                                        </span>
-                                                        <span class="text-xs font-bold text-gray-700 dark:text-gray-200" x-text="sourceName"></span>
+                                                    <div class="flex items-center gap-2" :style="`color: ${acts[0]._sourceEntityColor || '#4361ee'}`">
+                                                        <iconify-icon :icon="acts[0]._sourceEntityIcon || 'solar:folder-open-bold-duotone'" width="16"></iconify-icon>
+                                                        <span class="text-xs font-medium" x-text="sourceName"></span>
                                                     </div>
                                                     <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-200/50 dark:bg-gray-700 text-gray-500 font-bold" x-text="acts.length + ' document(s)'"></span>
                                                 </div>
@@ -1300,9 +1319,14 @@ window.__syncClsInputs = function(clsId, ids) {
                                                                             <div>
                                                                                 <a :href="att.url" target="_blank" class="font-semibold text-gray-700 dark:text-gray-200 group-hover:text-primary transition-colors block text-xs" x-text="att.originalName"></a>
                                                                                 <template x-if="att._sourceEntity && att._sourceTitle">
-                                                                                    <div class="flex items-center gap-1 mt-0.5 text-[9px] text-gray-400">
-                                                                                        <iconify-icon icon="solar:link-bold-duotone" width="10" class="text-indigo-500"></iconify-icon>
-                                                                                        <span x-text="'Lié à : ' + att._sourceEntity + ' (' + att._sourceTitle + ')'"></span>
+                                                                                    <div class="flex items-center gap-1.5 mt-1.5">
+                                                                                        <span class="inline-flex items-center gap-1 px-1.5 py-[1px] font-medium rounded-full" 
+                                                                                              :style="`font-size: 9px; background: ${att._sourceEntityColor || '#4361ee'}15; color: ${att._sourceEntityColor || '#4361ee'}`"
+                                                                                              :title="att._sourceEntity">
+                                                                                            <iconify-icon :icon="att._sourceEntityIcon || 'solar:folder-bold-duotone'" width="10"></iconify-icon>
+                                                                                            <span x-text="att._sourceEntity"></span>
+                                                                                        </span>
+                                                                                        <span class="text-gray-400 truncate max-w-[200px]" style="font-size: 9px;" x-text="att._sourceTitle"></span>
                                                                                     </div>
                                                                                 </template>
                                                                             </div>

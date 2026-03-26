@@ -898,10 +898,21 @@ window.__syncClsInputs = function(clsId, ids) {
                     </template>
 
                     <!-- Documents Tab (Virtual / Static EJS + Alpine Component) -->
+                    <script>
+                        window._initialAttachments_<%= String(record._id) %> = <%- JSON.stringify(
+                            JSON.parse(JSON.stringify(_attachmentList)).map(a => ({
+                                ...a, 
+                                url: `/account/${account_number}/uploads/attachments/${a.filename}`
+                            }))
+                        ) %>;
+                    </script>
                     <template x-if="activeTab === '__documents__'">
                         <div class="px-4 py-4" 
                              x-data="{ 
-                                attachments: <%- JSON.stringify(_attachmentList.map(a => ({...a, url: `/account/${account_number}/uploads/attachments/${a.filename}`}))) %>,
+                                attachments: window['_initialAttachments_<%= String(record._id) %>'] || [],
+                                get sortedAttachments() {
+                                    return [...this.attachments].sort((a,b) => new Date(b.uploadedAt||0) - new Date(a.uploadedAt||0));
+                                },
                                 async deleteDoc(id) {
                                     if(confirm('Supprimer ce document ?')) {
                                         try {
@@ -961,7 +972,7 @@ window.__syncClsInputs = function(clsId, ids) {
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                                            <template x-for="att in [...attachments].sort((a,b)=> new Date(b.uploadedAt||0)-new Date(a.uploadedAt||0))" :key="att._id">
+                                            <template x-for="att in sortedAttachments" :key="att._id">
                                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors group">
                                                     <td class="px-4 py-3">
                                                         <div class="flex items-center gap-3">

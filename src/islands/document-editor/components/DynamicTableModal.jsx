@@ -10,6 +10,7 @@
  * - DynamicTableModal: full modal for searching catalog, adding/removing lines
  */
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import TableDropdown from './TableDropdown'
 
 // =========================================================================
 // useDynamicTableOverlay hook — detect clicks on dynamic-table placeholders
@@ -1055,8 +1056,7 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
                                 ) : (
                                     <div style={{
                                         border: '1px solid #e5e7eb',
-                                        borderRadius: '10px',
-                                        overflow: 'hidden'
+                                        borderRadius: '10px'
                                     }}>
                                         <table style={{
                                             width: '100%',
@@ -1143,6 +1143,15 @@ export default function DynamicTableModal({ open, onClose, config, accountNumber
                                                                         <span style={{ fontSize: '12px', color: '#1f2937' }}>
                                                                             {displayVal || '—'}
                                                                         </span>
+                                                                    ) : ['select', 'multiselect'].includes(col.type) ? (
+                                                                        <TableDropdown
+                                                                            options={col.config?.options || []}
+                                                                            value={val}
+                                                                            multiple={col.type === 'multiselect'}
+                                                                            creatable={true}
+                                                                            onChange={(newVals) => updateLineValue(idx, col.key, newVals)}
+                                                                            placeholder="Sélectionner..."
+                                                                        />
                                                                     ) : (
                                                                         <input
                                                                             type={['number', 'money'].includes(col.type) ? 'number' : 'text'}

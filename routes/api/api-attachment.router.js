@@ -179,9 +179,13 @@ router.delete('/records/:recordId/attachments/:attachmentId', async (req, res) =
         }
 
         // Remove from record using updateOne to bypass schema validations
+        const mongoose = require('mongoose');
+        if (!mongoose.Types.ObjectId.isValid(req.params.attachmentId)) {
+            return res.status(400).json({ error: 'ID de document invalide' });
+        }
         await Record.updateOne(
             { _id: req.params.recordId },
-            { $pull: { attachments: { _id: req.params.attachmentId } } }
+            { $pull: { attachments: { _id: new mongoose.Types.ObjectId(req.params.attachmentId) } } }
         );
 
         res.json({ success: true });

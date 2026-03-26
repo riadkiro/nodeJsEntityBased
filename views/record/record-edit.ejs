@@ -914,15 +914,34 @@ window.__syncClsInputs = function(clsId, ids) {
                                     return [...this.attachments].sort((a,b) => new Date(b.uploadedAt||0) - new Date(a.uploadedAt||0));
                                 },
                                 async deleteDoc(id) {
-                                    if(confirm('Supprimer ce document ?')) {
-                                        try {
+                                    if(window.Swal) {
+                                        const result = await Swal.fire({
+                                            title: 'Supprimer ce document ?',
+                                            text: 'Cette action est irréversible',
+                                            icon: 'warning',
+                                            showCancelButton: true,
+                                            confirmButtonColor: '#ef4444',
+                                            cancelButtonColor: '#6b7280',
+                                            confirmButtonText: 'Oui, supprimer',
+                                            cancelButtonText: 'Annuler'
+                                        });
+                                        if(!result.isConfirmed) return;
+                                    } else {
+                                        if(!confirm('Supprimer ce document ?')) return;
+                                    }
+                                    try {
                                             const res = await fetch(`/account/<%= account_number %>/api/records/<%= record._id %>/attachments/${id}`, { method: 'DELETE' });
                                             if(res.ok) {
                                                 this.attachments = this.attachments.filter(a => a._id !== id);
                                                 try { this.allTabs.find(t => t.key === '__documents__')._count--; } catch(e){}
+                                                if (window.notyf) notyf.success('Document supprimé');
+                                            } else {
+                                                if (window.notyf) notyf.error('Impossible de supprimer ce document');
                                             }
-                                        } catch(e) { console.error(e); }
-                                    }
+                                        } catch(e) { 
+                                            console.error(e); 
+                                            if (window.notyf) notyf.error('Erreur de connexion');
+                                        }
                                 },
                                 async uploadDoc(e) {
                                     const files = e.target.files;

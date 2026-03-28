@@ -9,7 +9,9 @@ import CellRenderer from './CellRenderer'
 const tableWrapStyle = {
     flex: 1,
     overflow: 'auto',
-    padding: '0'
+    padding: '0',
+    position: 'relative',
+    zIndex: 20
 }
 
 const tableStyle = {
@@ -19,7 +21,7 @@ const tableStyle = {
 }
 
 const thStyle = {
-    padding: '8px 10px',
+    padding: '6px 8px',
     fontSize: '10px',
     fontWeight: 700,
     textTransform: 'uppercase',
@@ -33,17 +35,19 @@ const thStyle = {
 }
 
 const tdStyle = {
-    padding: '4px 10px',
+    padding: '2px 8px',
     borderBottom: '1px solid #e5e7eb',
     verticalAlign: 'middle',
-    color: '#1f2937'
+    color: '#1f2937',
+    position: 'relative'
 }
 
 const tdRelation = {
-    padding: '2px 6px',
+    padding: '1px 4px',
     minWidth: '120px',
     borderBottom: '1px solid #e5e7eb',
-    verticalAlign: 'middle'
+    verticalAlign: 'middle',
+    position: 'relative'
 }
 
 const dragHandleStyle = {
@@ -56,7 +60,7 @@ const dragHandleStyle = {
 }
 
 const rowNumStyle = {
-    padding: '2px 4px',
+    padding: '1px 4px',
     fontSize: '11px',
     color: '#9ca3af',
     borderBottom: '1px solid #e5e7eb'
@@ -81,7 +85,7 @@ const addBtnStyle = {
     alignItems: 'center',
     gap: '4px',
     padding: '4px 10px',
-    margin: '6px 12px',
+    margin: '4px 10px',
     fontSize: '11px',
     fontWeight: 500,
     color: '#4361ee',
@@ -94,12 +98,12 @@ const addBtnStyle = {
 
 const relationInputStyle = {
     width: '100%',
-    height: '24px',
-    padding: '1px 4px',
+    height: '22px',
+    padding: '0 4px',
     background: 'transparent',
     border: '1px solid transparent',
     fontSize: '13px',
-    lineHeight: '22px',
+    lineHeight: '20px',
     outline: 'none',
     boxShadow: 'none',
     borderRadius: '4px',
@@ -112,18 +116,18 @@ const dropdownStyle = {
     top: '100%',
     left: 0,
     right: 0,
-    zIndex: 100,
+    zIndex: 1300,
     background: '#fff',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
-    maxHeight: '200px',
+    maxHeight: '180px',
     overflowY: 'auto',
     marginTop: '2px'
 }
 
 const dropdownItemStyle = {
-    padding: '7px 12px',
+    padding: '6px 10px',
     fontSize: '12px',
     cursor: 'pointer',
     borderBottom: '1px solid #f9fafb',
@@ -264,7 +268,7 @@ function TableRow({
                             onInput={handleRelationInput}
                             onBlur={() => setTimeout(onCloseSearch, 200)}
                             onKeyDown={(e) => { if (e.key === 'Escape') onCloseSearch() }}
-                            placeholder={'Search ' + (relCol.label || 'Article')}
+                            placeholder={'🔍 ' + (relCol.label || 'Article')}
                         />
 
                         {isSearchOpen && (searchState.query || searchState.loading || searchState.results.length > 0) && (
@@ -288,22 +292,11 @@ function TableRow({
                                             const label = item.label || item.title || ''
                                             setRelationInputValue(label)
                                             onSelectRelation(lineIdx, relCol, item)
-                                            console.log('[DynamicTable] dropdown select', {
-                                                lineIdx,
-                                                relColKey: relCol.key,
-                                                itemId: item._id,
-                                                label
-                                            })
                                         }}
                                         onMouseEnter={(e) => { e.currentTarget.style.background = '#f0f4ff' }}
                                         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
                                     >
                                         <span style={{ fontWeight: 500 }}>{item.label || item.title}</span>
-                                        {item.lineDefaults && item.lineDefaults.length > 0 && (
-                                            <span style={{ marginLeft: '6px', fontSize: '9px', color: '#4361ee', fontWeight: 600 }}>
-                                                * Defaults
-                                            </span>
-                                        )}
                                     </div>
                                 ))}
                             </div>

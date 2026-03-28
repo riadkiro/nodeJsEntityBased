@@ -9,10 +9,10 @@ const inputStyle = {
     width: '100%',
     border: '1px solid transparent',
     borderRadius: '4px',
-    padding: '1px 4px',
-    fontSize: '13px',
-    height: '24px',
-    lineHeight: '22px',
+    padding: '0 4px',
+    fontSize: '12px',
+    height: '22px',
+    lineHeight: '20px',
     background: 'transparent',
     color: 'inherit',
     outline: 'none',
@@ -24,16 +24,16 @@ const tagStyle = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '3px',
-    padding: '1px 6px',
+    padding: '0 6px',
     borderRadius: '4px',
-    fontSize: '11px',
+    fontSize: '10px',
     fontWeight: 500,
-    lineHeight: '18px',
+    lineHeight: '17px',
     whiteSpace: 'nowrap'
 }
 
 const placeholderStyle = {
-    fontSize: '11px',
+    fontSize: '10px',
     color: '#c0c4cc',
     padding: '1px 4px',
     cursor: 'pointer',
@@ -45,7 +45,7 @@ const dropdownStyle = {
     top: '100%',
     left: 0,
     right: 0,
-    zIndex: 50,
+    zIndex: 1200,
     background: '#fff',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
@@ -56,8 +56,8 @@ const dropdownStyle = {
 }
 
 const dropdownItemStyle = {
-    padding: '6px 10px',
-    fontSize: '12px',
+    padding: '5px 9px',
+    fontSize: '11px',
     cursor: 'pointer',
     transition: 'background 0.1s'
 }
@@ -118,14 +118,6 @@ export default function CellRenderer({ col, value, line, onChange }) {
         }
         return all
     }
-
-    // DEBUG: Inject JSON in the cell if it's the specific columns
-    const debugOverlay = (
-        <div style={{ position: 'absolute', top: 0, right: 0, fontSize: '9px', background: 'red', color: 'white', zIndex: 100, pointerEvents: 'none' }}>
-            {JSON.stringify(value)}
-            {col.key === 'moment' && line.values && line.values[col.key] === undefined ? ' [MISSING]' : ''}
-        </div>
-    )
 
     // ── Text ──
     if (col.type === 'text' || col.type === 'textarea') {
@@ -297,7 +289,6 @@ export default function CellRenderer({ col, value, line, onChange }) {
 
         return (
             <div ref={wrapRef} style={{ position: 'relative' }}>
-                {debugOverlay}
                 <div
                     style={{ display: 'flex', flexWrap: 'wrap', gap: '2px', minHeight: '22px', alignItems: 'center', cursor: 'pointer', padding: '1px 2px' }}
                     onClick={() => setDropdownOpen(!dropdownOpen)}

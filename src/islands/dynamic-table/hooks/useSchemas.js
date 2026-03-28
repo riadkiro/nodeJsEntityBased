@@ -19,9 +19,22 @@ export default function useSchemas({ accountNumber, entityId, schemaFilter }) {
             const data = await res.json()
             let list = data.data || []
 
-            // Apply schema filter if set (from widget config)
+            // Apply schema filter(s) if set (single id or comma-separated ids)
             if (schemaFilter) {
-                list = list.filter(s => s._id === schemaFilter || s._id?.toString() === schemaFilter)
+                const ids = String(schemaFilter)
+                    .split(',')
+                    .map(x => x.trim())
+                    .filter(Boolean)
+                if (ids.length > 0) {
+                    const order = new Map(ids.map((id, i) => [id, i]))
+                    list = list
+                        .filter(s => ids.includes(s._id?.toString?.() || String(s._id || '')))
+                        .sort((a, b) => {
+                            const ai = order.get(a._id?.toString?.() || String(a._id || '')) ?? 9999
+                            const bi = order.get(b._id?.toString?.() || String(b._id || '')) ?? 9999
+                            return ai - bi
+                        })
+                }
             }
 
             setSchemas(list)

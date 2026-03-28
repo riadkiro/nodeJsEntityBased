@@ -47,7 +47,6 @@ export default function useCatalog({ accountNumber }) {
         }
 
         if (!entityId) {
-            console.warn('[DynamicTable] No target entity for search')
             return
         }
 
@@ -102,21 +101,15 @@ export default function useCatalog({ accountNumber }) {
             // FALLBACK: If there's no match but there's exactly one lineDefaults config, use it.
             if (Array.isArray(lineDefaults) && lineDefaults.length > 0) {
                 match = lineDefaults[0]
-                console.warn('[DynamicTable] schemaId mismatch, fallback to first lineDefaults object:', match.schemaId, schemaId)
             } else if (typeof lineDefaults === 'object' && lineDefaults.defaults) {
                 match = lineDefaults
             }
         }
 
         if (!match) {
-            console.log('[DynamicTable] No lineDefaults found for schema', schemaId, 
-                'available:', Array.isArray(lineDefaults) 
-                    ? lineDefaults.map(ld => ld.schemaId) 
-                    : lineDefaults.schemaId)
             return null
         }
 
-        console.log('[DynamicTable] Found lineDefaults for schema', schemaId, ':', match.defaults)
         return {
             defaults: match.defaults || {},
             availableOptions: match.availableOptions || {},

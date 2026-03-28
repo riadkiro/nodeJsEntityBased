@@ -1,7 +1,7 @@
-<div class="space-y-3 sticky top-20" x-data="recordSidebar" id="sidebar-inner-sortable">
+﻿<div class="space-y-3 sticky top-20" x-data="recordSidebar" id="sidebar-inner-sortable">
 
         <style>
-    /* Fix sidebar panel z-index — NEVER exceed header z-20 */
+    /* Fix sidebar panel z-index â€” NEVER exceed header z-20 */
     .panel-sortable-item {
         position: relative;
         z-index: 1;
@@ -20,8 +20,8 @@
         flex-shrink: 0 !important;
     }
 </style>
-<%# ─── Panel Manager / Widget Catalog ─── %>
-        <!-- ═══ Panel Manager Header (hidden by default, shown in designMode or via "..." menu) ═══ -->
+<%# â”€â”€â”€ Panel Manager / Widget Catalog â”€â”€â”€ %>
+        <!-- â•â•â• Panel Manager Header (hidden by default, shown in designMode or via "..." menu) â•â•â• -->
         <div class="flex items-center justify-between" style="padding: 0 2px;" x-show="designMode || sidebarConfigOpen" x-cloak>
             <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Sidebar</span>
             <div class="flex items-center gap-1">
@@ -37,7 +37,7 @@
                         data-sidebar-pm-toggle
                         class="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
                         :class="pmOpen ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'"
-                        title="Gérer les panels">
+                        title="GÃ©rer les panels">
                         <iconify-icon icon="solar:settings-bold-duotone" width="15"></iconify-icon>
                     </button>
                     <!-- Panel Manager Dropdown -->
@@ -64,8 +64,8 @@
                             <% 
                             const panelDefinitions = [
                                 { id: 'classifications', label: 'Classifications', icon: 'solar:tag-bold-duotone', color: '#f59e0b' },
-                                { id: 'attachments', label: 'Pièces Jointes', icon: 'solar:paperclip-bold-duotone', color: '#6366f1' },
-                                { id: 'smartdoc', label: 'Documents Modèles', icon: 'solar:document-text-bold-duotone', color: '#06b6d4' },
+                                { id: 'attachments', label: 'PiÃ¨ces Jointes', icon: 'solar:paperclip-bold-duotone', color: '#6366f1' },
+                                { id: 'smartdoc', label: 'Documents ModÃ¨les', icon: 'solar:document-text-bold-duotone', color: '#06b6d4' },
                                 { id: 'lines', label: 'Tableau Dynamique', icon: 'solar:list-check-bold-duotone', color: '#10b981' },
                             ];
                             // Add relation panels  
@@ -91,7 +91,7 @@
                                 if (widget.cardTemplate) {
                                     panelDefinitions.push({
                                         id: 'card_' + widget.relationKey + '_' + idx,
-                                        label: (widget.entityName || 'Card') + ' — Fiche',
+                                        label: (widget.entityName || 'Card') + ' â€” Fiche',
                                         icon: widget.entityIcon || 'solar:card-bold-duotone',
                                         color: widget.entityColor || '#4361ee'
                                     });
@@ -144,12 +144,12 @@
             </div>
         </div>
 
-        <!-- ═══ Widget Catalog Modal ═══ -->
+        <!-- â•â•â• Widget Catalog Modal â•â•â• -->
         <template x-teleport="body">
             <div x-show="widgetCatalogOpen" x-cloak
                 style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;"
                 @keydown.escape.window="widgetCatalogOpen = false; resetWidgetForm()">
-                <!-- Backdrop — blur only, no dark tint -->
+                <!-- Backdrop â€” blur only, no dark tint -->
                 <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgba(255,255,255,0.08);" 
                     @click="widgetCatalogOpen = false; resetWidgetForm()"
                     x-transition:enter="transition ease-out duration-300"
@@ -167,7 +167,7 @@
                         x-transition:leave-end="opacity-0 scale-95"
                         @click.stop>
                     
-                    <!-- Modal Header — gradient accent -->
+                    <!-- Modal Header â€” gradient accent -->
                     <div style="position: relative; padding: 20px 24px; overflow: hidden;">
                         <!-- Subtle gradient background -->
                         <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #4361ee08 0%, #06b6d408 50%, #10b98108 100%); pointer-events: none;"></div>
@@ -179,7 +179,7 @@
                                 </div>
                                 <div>
                                     <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1f2937; letter-spacing: -0.01em;" x-text="widgetFormStep === 'catalog' ? 'Ajouter un widget' : 'Configurer le widget'"></h3>
-                                    <p style="margin: 2px 0 0; font-size: 11px; color: #9ca3af; font-weight: 500;" x-text="widgetFormStep === 'catalog' ? 'Choisissez un type de widget à ajouter' : widgetTypeLabels[newWidget.type]"></p>
+                                    <p style="margin: 2px 0 0; font-size: 11px; color: #9ca3af; font-weight: 500;" x-text="widgetFormStep === 'catalog' ? 'Choisissez un type de widget Ã  ajouter' : widgetTypeLabels[newWidget.type]"></p>
                                 </div>
                             </div>
                             <button type="button" @click="widgetCatalogOpen = false; resetWidgetForm()"
@@ -202,7 +202,7 @@
                                     <iconify-icon icon="solar:code-bold-duotone" width="20" style="color: white;"></iconify-icon>
                                 </div>
                                 <div style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 2px;">HTML</div>
-                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Contenu personnalisé</div>
+                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Contenu personnalisÃ©</div>
                             </button>
                             <!-- Link Widget -->
                             <button type="button" @click="selectWidgetType('link')"
@@ -235,7 +235,7 @@
                                     <iconify-icon icon="solar:monitor-bold-duotone" width="20" style="color: white;"></iconify-icon>
                                 </div>
                                 <div style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 2px;">iFrame</div>
-                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Page web intégrée</div>
+                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Page web intÃ©grÃ©e</div>
                             </button>
                             <!-- Image Widget -->
                             <button type="button" @click="selectWidgetType('image')"
@@ -268,7 +268,7 @@
                                     <iconify-icon icon="solar:list-check-bold-duotone" width="20" style="color: white;"></iconify-icon>
                                 </div>
                                 <div style="font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 2px;">Tableau</div>
-                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Données structurées</div>
+                                <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">DonnÃ©es structurÃ©es</div>
                             </button>
                             <!-- Tasks Widget -->
                             <button type="button" @click="selectWidgetType('tasks')"
@@ -282,7 +282,7 @@
                                 <div style="font-size: 10px; color: #9ca3af; line-height: 1.3;">Checklist</div>
                             </button>
                         </div>
-                        <!-- Separator — full width below grid -->
+                        <!-- Separator â€” full width below grid -->
                         <div style="margin-top: 12px;">
                             <button type="button" @click="selectWidgetType('separator')"
                                 style="width: 100%; text-align: left; padding: 14px 16px; border-radius: 14px; border: 1.5px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 12px;"
@@ -292,8 +292,8 @@
                                     <iconify-icon icon="solar:minus-circle-bold-duotone" width="18" style="color: white;"></iconify-icon>
                                 </div>
                                 <div>
-                                    <div style="font-size: 12px; font-weight: 700; color: #374151;">Séparateur</div>
-                                    <div style="font-size: 10px; color: #9ca3af; margin-top: 1px;">Ligne de séparation visuelle</div>
+                                    <div style="font-size: 12px; font-weight: 700; color: #374151;">SÃ©parateur</div>
+                                    <div style="font-size: 10px; color: #9ca3af; margin-top: 1px;">Ligne de sÃ©paration visuelle</div>
                                 </div>
                             </button>
                         </div>
@@ -394,10 +394,10 @@
                         <!-- Tasks Type -->
                         <template x-if="newWidget.type === 'tasks'">
                             <div class="space-y-3">
-                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 block">Tâches initiales</label>
+                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 block">TÃ¢ches initiales</label>
                                 <template x-for="(task, idx) in newWidget.config.tasks" :key="idx">
                                     <div class="flex items-center gap-2">
-                                        <input type="text" x-model="task.label" class="form-input text-xs !h-8 flex-1" placeholder="Nom de la tâche...">
+                                        <input type="text" x-model="task.label" class="form-input text-xs !h-8 flex-1" placeholder="Nom de la tÃ¢che...">
                                         <button type="button" @click="newWidget.config.tasks.splice(idx, 1)"
                                             class="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-danger hover:bg-danger/10 flex-none">
                                             <iconify-icon icon="solar:close-circle-linear" width="14"></iconify-icon>
@@ -407,7 +407,7 @@
                                 <button type="button" @click="newWidget.config.tasks.push({ label: '', done: false })"
                                     class="text-[11px] font-semibold text-primary hover:text-primary/80 flex items-center gap-1">
                                     <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
-                                    Ajouter une tâche
+                                    Ajouter une tÃ¢che
                                 </button>
                             </div>
                         </template>
@@ -415,8 +415,8 @@
                         <!-- Dynamic Table Type -->
                         <template x-if="newWidget.type === 'dynamic-table'">
                             <div class="space-y-3">
-                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 block">Tableaux à inclure</label>
-                                <p style="font-size: 10px; color: #9ca3af; margin: -4px 0 8px;">Cochez les tableaux à afficher. Plusieurs = onglets.</p>
+                                <label class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 block">Tableaux Ã  inclure</label>
+                                <p style="font-size: 10px; color: #9ca3af; margin: -4px 0 8px;">Cochez les tableaux Ã  afficher. Plusieurs = onglets.</p>
                                 <div x-show="loadingSchemaCatalog" style="text-align: center; padding: 12px;">
                                     <iconify-icon icon="svg-spinners:ring-resize" width="18" style="color: #4361ee;"></iconify-icon>
                                     <span style="font-size: 11px; color: #9ca3af; margin-left: 6px;">Chargement...</span>
@@ -428,7 +428,7 @@
                                         <div class="flex items-center gap-2 group" :data-id="gs._id">
                                             <!-- Drag Handle (Always visible) -->
                                             <div class="schema-drag-handle flex items-center justify-center p-1.5 cursor-grab text-gray-400 hover:text-gray-600 bg-gray-50 rounded-lg border border-gray-100 transition-colors"
-                                                 title="Réorganiser">
+                                                 title="RÃ©organiser">
                                                 <iconify-icon icon="tabler:grip-vertical" width="16"></iconify-icon>
                                             </div>
 
@@ -446,11 +446,11 @@
                                         </div>
                                     </template>
                                 </div>
-                                <div x-show="!loadingSchemaCatalog && availableSchemas.length === 0" style="text-align: center; padding: 12px; color: #9ca3af; font-size: 11px;">Aucun tableau dynamique configuré</div>
+                                <div x-show="!loadingSchemaCatalog && availableSchemas.length === 0" style="text-align: center; padding: 12px; color: #9ca3af; font-size: 11px;">Aucun tableau dynamique configurÃ©</div>
                             </div>
                         </template>
 
-                        <!-- Color Picker — refined -->
+                        <!-- Color Picker â€” refined -->
                         <div x-show="newWidget.type !== 'separator'" style="display: flex; align-items: center; gap: 12px; padding-top: 4px;">
                             <label style="font-size: 11px; font-weight: 600; color: #6b7280;">Couleur</label>
                             <div style="display: flex; align-items: center; gap: 6px;">
@@ -464,7 +464,7 @@
                         </div>
                     </div>
 
-                    <!-- Modal Footer — sleek -->
+                    <!-- Modal Footer â€” sleek -->
                     <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-top: 1px solid #f3f4f6; background: #fafafa;">
                         <button type="button" 
                             x-show="widgetFormStep === 'form'"
@@ -483,7 +483,7 @@
                             onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 5px 16px rgba(67,97,238,0.4)'" 
                             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 10px rgba(67,97,238,0.3)'">
                             <iconify-icon :icon="widgetSaving ? 'line-md:loading-twotone-loop' : 'solar:check-read-bold'" width="15"></iconify-icon>
-                            <span x-text="widgetSaving ? 'Création...' : 'Créer le widget'"></span>
+                            <span x-text="widgetSaving ? 'CrÃ©ation...' : 'CrÃ©er le widget'"></span>
                         </button>
                     </div>
                     </div>
@@ -567,7 +567,7 @@
                                                                 <span
                                                                     class="text-[11px] truncate flex items-center gap-1 <%= (selectedIds.includes(opt._id.toString()) || currentValue === opt._id.toString()) ? 'text-primary font-bold' : 'text-gray-700' %>">
                                                                     <span
-                                                                        class="prefix-arrow text-gray-300 font-normal">└</span>
+                                                                        class="prefix-arrow text-gray-300 font-normal">â””</span>
                                                                     <%= opt.label %>
                                                                 </span>
                                                 </label>
@@ -733,7 +733,7 @@
                                                                         </div>
 
                                                                         <% } else { %>
-                                                                            <!-- ══ TAG PICKER (Multi + Single select) ══ -->
+                                                                            <!-- â•â• TAG PICKER (Multi + Single select) â•â• -->
                                                                             <%
                                                                                 var sidebarSelectedIds = [];
                                                                                 if (locals.record && record.classificationValues) {
@@ -762,7 +762,7 @@
                                                                                      :class="isOpen ? 'tp-trigger--active' : ''"
                                                                                      @click="toggleOpen()">
                                                                                     <template x-if="selectedOptions.length === 0">
-                                                                                        <span class="tp-placeholder">Sélectionner...</span>
+                                                                                        <span class="tp-placeholder">SÃ©lectionner...</span>
                                                                                     </template>
                                                                                     <template x-for="opt in selectedOptions" :key="opt._id">
                                                                                         <span class="tp-tag"
@@ -788,7 +788,7 @@
                                                                                     <!-- Search -->
                                                                                     <div class="tp-search-wrap">
                                                                                         <input type="text" class="tp-search-input"
-                                                                                               placeholder="Rechercher ou créer..."
+                                                                                               placeholder="Rechercher ou crÃ©er..."
                                                                                                x-model="searchQuery"
                                                                                                x-ref="searchInput"
                                                                                                @keydown.enter.prevent="canCreate ? createOption() : null" />
@@ -818,7 +818,7 @@
 
                                                                                         <template x-if="filteredOptions.length === 0 && !canCreate">
                                                                                             <div style="padding: 12px; text-align: center; color: #9ca3af; font-size: 12px;">
-                                                                                                Aucune option trouvée
+                                                                                                Aucune option trouvÃ©e
                                                                                             </div>
                                                                                         </template>
 
@@ -850,7 +850,7 @@
                                                                                     <template x-if="canCreate">
                                                                                         <div class="tp-create-option" @click="createOption()">
                                                                                             <iconify-icon icon="tabler:plus" width="14" style="color: #6b7280;"></iconify-icon>
-                                                                                            <span class="tp-create-label">Créer</span>
+                                                                                            <span class="tp-create-label">CrÃ©er</span>
                                                                                             <span class="tp-create-tag" x-text="searchQuery"></span>
                                                                                         </div>
                                                                                     </template>
@@ -870,21 +870,21 @@
                                         <% } else { %>
                                             <div class="panel !p-4 border-dashed border-gray-200 text-center py-4">
                                                 <p class="text-[10px] text-gray-400 uppercase font-bold">Aucune
-                                                    classification liée</p>
+                                                    classification liÃ©e</p>
                                                 <a href="/account/<%= account_number %>/entity/edit/<%= entity._id %>"
-                                                    class="btn btn-xs btn-outline-primary mt-2">Configurer l'entité</a>
+                                                    class="btn btn-xs btn-outline-primary mt-2">Configurer l'entitÃ©</a>
                                             </div>
                                             <% } %>
                         </div>
                         </div><!-- end panel-sortable-item classifications -->
                         <% } else if (sectionId==='attachments' && locals.entity && entity.enableAttachments) { %>
-                            <!-- 📎 Attachments (Standalone Panel) -->
+                            <!-- ðŸ“Ž Attachments (Standalone Panel) -->
                             <% const sidebarSectionAttachments=locals.user?.preferences?.sidebar_section_attachments!==false; %>
                             <div class="panel-sortable-item" data-panel-id="attachments" x-show="isPanelVisible('attachments')" x-collapse.duration.200ms>
                                 <template x-if="designMode">
                                     <div class="panel-drag-handle">
                                         <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
-                                        <span>Pièces jointes</span>
+                                        <span>PiÃ¨ces jointes</span>
                                     </div>
                                 </template>
                             <div class="panel !p-0 overflow-hidden" data-id="attachments"
@@ -899,7 +899,7 @@
                                     @click="isOpen = !isOpen; $dispatch('save-pref', { key: 'sidebar_section_attachments', value: isOpen })">
                                     <div class="flex items-center gap-2">
                                         <iconify-icon icon="solar:paperclip-2-bold" width="14" class="text-gray-400"></iconify-icon>
-                                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Pièces jointes</span>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">PiÃ¨ces jointes</span>
                                         <span x-show="attachments.length > 0" class="text-[9px] bg-primary/10 text-primary w-4 h-4 rounded-full flex items-center justify-center font-bold" x-text="attachments.length"></span>
                                     </div>
                                     <div class="flex items-center gap-1">
@@ -978,7 +978,7 @@
                                                         </div>
                                                         <div>
                                                             <h4 class="text-sm font-bold text-gray-800 dark:text-white">Ajouter des fichiers</h4>
-                                                            <p class="text-[10px] text-gray-400">Glissez-déposez ou sélectionnez des fichiers</p>
+                                                            <p class="text-[10px] text-gray-400">Glissez-dÃ©posez ou sÃ©lectionnez des fichiers</p>
                                                         </div>
                                                     </div>
                                                     <button type="button" @click="showUploadModal = false"
@@ -997,7 +997,7 @@
                                                         <iconify-icon :icon="isDragging ? 'solar:cloud-download-bold-duotone' : 'solar:cloud-upload-bold-duotone'"
                                                             width="40" :class="isDragging ? 'text-primary' : 'text-gray-300'"></iconify-icon>
                                                         <p class="text-sm font-medium mt-2" :class="isDragging ? 'text-primary' : 'text-gray-500 dark:text-gray-400'">
-                                                            <span x-text="isDragging ? 'Déposer ici' : 'Glissez vos fichiers ici'"></span>
+                                                            <span x-text="isDragging ? 'DÃ©poser ici' : 'Glissez vos fichiers ici'"></span>
                                                         </p>
                                                         <p class="text-[10px] text-gray-400 mt-1">ou cliquez pour parcourir</p>
                                                     </div>
@@ -1017,7 +1017,7 @@
                                                     <span class="text-[10px] text-gray-400" x-text="attachments.length + ' fichier(s) joint(s)'"></span>
                                                     <button type="button" @click="showUploadModal = false"
                                                         class="btn btn-sm btn-primary text-[11px] px-4 py-1.5">
-                                                        Terminé
+                                                        TerminÃ©
                                                     </button>
                                                 </div>
                                             </div>
@@ -1026,19 +1026,19 @@
 
                                     <!-- Empty state -->
                                     <div x-show="attachments.length === 0 && !uploading && !recordId" class="text-center px-3 py-2 border-t border-gray-50 dark:border-gray-700/20">
-                                        <span class="text-[9px] text-gray-400 italic">Aucune pièce jointe</span>
+                                        <span class="text-[9px] text-gray-400 italic">Aucune piÃ¨ce jointe</span>
                                     </div>
                                 </div>
 
                             </div>
                             </div><!-- end panel-sortable-item attachments -->
                         <% } else if (sectionId==='smartdoc' && locals.entity && entity.enableAttachments) { %>
-                            <!-- ✨ Documents modèles (Standalone Panel) -->
+                            <!-- âœ¨ Documents modÃ¨les (Standalone Panel) -->
                             <div class="panel-sortable-item" data-panel-id="smartdoc" x-show="isPanelVisible('smartdoc')" x-collapse.duration.200ms>
                                 <template x-if="designMode">
                                     <div class="panel-drag-handle">
                                         <iconify-icon icon="tabler:grip-horizontal" width="16"></iconify-icon>
-                                        <span>Documents modèles</span>
+                                        <span>Documents modÃ¨les</span>
                                     </div>
                                 </template>
                             <div class="panel !p-0 overflow-hidden" data-id="smartdoc"
@@ -1052,7 +1052,7 @@
                                     @click="isOpen = !isOpen">
                                     <div class="flex items-center gap-1.5">
                                         <iconify-icon icon="solar:document-medicine-bold-duotone" width="14" class="text-primary"></iconify-icon>
-                                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Documents modèles</span>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Documents modÃ¨les</span>
                                         <span x-show="smartDocTemplates.length > 0" class="text-[9px] bg-primary/10 text-primary min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold px-1" x-text="smartDocTemplates.length"></span>
                                         <button type="button" @click.stop="showNewDocModal = true" class="w-5 h-5 flex items-center justify-center rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all ml-0.5" title="Nouveau document">
                                             <iconify-icon icon="tabler:plus" width="11"></iconify-icon>
@@ -1081,7 +1081,7 @@
                                                                 :style="generatingDocId === tpl._id ? 'color:#9ca3af' : 'color:#00ab55; background:rgba(0,171,85,0.08)'"
                                                                 @mouseenter="if(generatingDocId !== tpl._id) $el.style.background='rgba(0,171,85,0.16)'"
                                                                 @mouseleave="if(generatingDocId !== tpl._id) $el.style.background='rgba(0,171,85,0.08)'"
-                                                                title="Générer">
+                                                                title="GÃ©nÃ©rer">
                                                                 <iconify-icon :icon="generatingDocId === tpl._id ? 'line-md:loading-twotone-loop' : 'solar:play-bold'" width="11"></iconify-icon>
                                                             </button>
                                                             <!-- Edit button (always visible) -->
@@ -1090,7 +1090,7 @@
                                                                 style="color:#4361ee; background:rgba(67,97,238,0.08)"
                                                                 @mouseenter="$el.style.background='rgba(67,97,238,0.16)'"
                                                                 @mouseleave="$el.style.background='rgba(67,97,238,0.08)'"
-                                                                title="Modifier le modèle"
+                                                                title="Modifier le modÃ¨le"
                                                                 x-show="tpl.documentId" @click.stop>
                                                                 <iconify-icon icon="solar:pen-new-square-linear" width="11"></iconify-icon>
                                                             </a>
@@ -1100,7 +1100,7 @@
                                                                 style="color:#e7515a; background:rgba(231,81,90,0.08)"
                                                                 @mouseenter="$el.style.background='rgba(231,81,90,0.16)'"
                                                                 @mouseleave="$el.style.background='rgba(231,81,90,0.08)'"
-                                                                title="Délier ce document">
+                                                                title="DÃ©lier ce document">
                                                                 <iconify-icon icon="solar:link-broken-minimalistic-linear" width="11"></iconify-icon>
                                                             </button>
                                                         </div>
@@ -1110,9 +1110,9 @@
                                             <template x-if="smartDocTemplates.length === 0">
                                                 <div class="flex flex-col items-center py-3 gap-1.5">
                                                     <iconify-icon icon="solar:document-add-linear" width="20" class="text-gray-300 dark:text-gray-600"></iconify-icon>
-                                                    <p class="text-[9px] text-gray-400">Aucun document modèle</p>
+                                                    <p class="text-[9px] text-gray-400">Aucun document modÃ¨le</p>
                                                     <button type="button" @click.stop="showNewDocModal = true"
-                                                        class="text-[9px] font-semibold text-primary hover:underline transition-all">+ Créer</button>
+                                                        class="text-[9px] font-semibold text-primary hover:underline transition-all">+ CrÃ©er</button>
                                                 </div>
                                             </template>
                                         </div>
@@ -1138,7 +1138,7 @@
                                                         </div>
                                                         <div>
                                                             <h4 class="text-sm font-bold text-gray-800 dark:text-white">Nouveau document</h4>
-                                                            <p class="text-[10px] text-gray-400">Choisissez le type de document à créer</p>
+                                                            <p class="text-[10px] text-gray-400">Choisissez le type de document Ã  crÃ©er</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1151,18 +1151,18 @@
                                                         </div>
                                                         <div>
                                                             <span class="text-[12px] font-bold text-gray-700 dark:text-gray-200 block">Document simple</span>
-                                                            <span class="text-[10px] text-gray-400 leading-snug block mt-0.5">Créer un document unique lié à cet enregistrement</span>
+                                                            <span class="text-[10px] text-gray-400 leading-snug block mt-0.5">CrÃ©er un document unique liÃ© Ã  cet enregistrement</span>
                                                         </div>
                                                     </button>
-                                                    <!-- Document Modèle -->
+                                                    <!-- Document ModÃ¨le -->
                                                     <button type="button" @click="openSmartDocEditor()"
                                                         class="w-full flex items-start gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-warning/30 hover:bg-warning/[0.02] transition-all text-left group/choice">
                                                         <div class="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center shrink-0 group-hover/choice:scale-110 transition-transform">
                                                             <iconify-icon icon="solar:copy-bold-duotone" width="22" class="text-warning"></iconify-icon>
                                                         </div>
                                                         <div>
-                                                            <span class="text-[12px] font-bold text-gray-700 dark:text-gray-200 block">Document modèle</span>
-                                                            <span class="text-[10px] text-gray-400 leading-snug block mt-0.5">Réutilisable pour d'autres <span class="lowercase"><%= locals.entity ? entity.name : 'enregistrements' %></span> — génère un PDF à chaque utilisation</span>
+                                                            <span class="text-[12px] font-bold text-gray-700 dark:text-gray-200 block">Document modÃ¨le</span>
+                                                            <span class="text-[10px] text-gray-400 leading-snug block mt-0.5">RÃ©utilisable pour d'autres <span class="lowercase"><%= locals.entity ? entity.name : 'enregistrements' %></span> â€” gÃ©nÃ¨re un PDF Ã  chaque utilisation</span>
                                                         </div>
                                                     </button>
                                                 </div>
@@ -1186,15 +1186,15 @@
                                                             <iconify-icon icon="solar:link-broken-minimalistic-bold" width="20" class="text-danger"></iconify-icon>
                                                         </div>
                                                         <div>
-                                                            <h4 class="text-sm font-bold text-gray-800 dark:text-white">Délier le document</h4>
-                                                            <p class="text-[10px] text-gray-400">Cette action est irréversible</p>
+                                                            <h4 class="text-sm font-bold text-gray-800 dark:text-white">DÃ©lier le document</h4>
+                                                            <p class="text-[10px] text-gray-400">Cette action est irrÃ©versible</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div class="px-5 py-4">
                                                     <p class="text-xs text-gray-600 dark:text-gray-300">
-                                                        Le document modèle «&nbsp;<strong class="text-gray-800 dark:text-white" x-text="unlinkTarget?.name"></strong>&nbsp;» ne sera plus lié à cette collection.
-                                                        Il restera disponible dans vos documents mais ne pourra plus générer de PDF pour cet enregistrement.
+                                                        Le document modÃ¨le Â«&nbsp;<strong class="text-gray-800 dark:text-white" x-text="unlinkTarget?.name"></strong>&nbsp;Â» ne sera plus liÃ© Ã  cette collection.
+                                                        Il restera disponible dans vos documents mais ne pourra plus gÃ©nÃ©rer de PDF pour cet enregistrement.
                                                     </p>
                                                 </div>
                                                 <div class="px-5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 flex items-center justify-end gap-2">
@@ -1202,7 +1202,7 @@
                                                     <button type="button" @click="executeUnlink()" :disabled="unlinking"
                                                         class="btn btn-sm text-[10px] px-4 py-1.5 flex items-center gap-1.5 bg-danger text-white hover:bg-danger/90 transition-all">
                                                         <iconify-icon :icon="unlinking ? 'line-md:loading-twotone-loop' : 'solar:link-broken-minimalistic-bold'" width="13"></iconify-icon>
-                                                        <span x-text="unlinking ? 'Suppression...' : 'Délier'"></span>
+                                                        <span x-text="unlinking ? 'Suppression...' : 'DÃ©lier'"></span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -1260,14 +1260,14 @@
                                                     <button type="button" @click="confirmSmartDocGeneration()" :disabled="generatingDocId"
                                                         class="btn btn-sm btn-primary text-[10px] px-4 py-1.5 flex items-center gap-1.5">
                                                         <iconify-icon :icon="generatingDocId ? 'line-md:loading-twotone-loop' : 'solar:magic-stick-3-bold'" width="14"></iconify-icon>
-                                                        <span x-text="generatingDocId ? 'Génération...' : 'Générer'"></span>
+                                                        <span x-text="generatingDocId ? 'GÃ©nÃ©ration...' : 'GÃ©nÃ©rer'"></span>
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
                                     </template>
 
-                                    <!-- ✨ SmartDoc Preview Modal -->
+                                    <!-- âœ¨ SmartDoc Preview Modal -->
                                     <template x-teleport="body">
                                         <div x-show="showSmartDocPreview" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
                                             x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
@@ -1279,10 +1279,10 @@
                                                         <iconify-icon icon="solar:pen-new-square-bold-duotone" width="20" class="text-primary"></iconify-icon>
                                                     </div>
                                                     <div>
-                                                        <h3 class="text-[13px] font-bold text-gray-800" x-text="previewOutputName || 'Document en cours de génération'"></h3>
+                                                        <h3 class="text-[13px] font-bold text-gray-800" x-text="previewOutputName || 'Document en cours de gÃ©nÃ©ration'"></h3>
                                                         <p class="text-[10px] text-gray-400 flex items-center gap-1">
                                                             <iconify-icon icon="solar:pen-2-bold" width="10" class="text-info"></iconify-icon>
-                                                            Modifiez le contenu si nécessaire, puis finalisez pour générer le PDF
+                                                            Modifiez le contenu si nÃ©cessaire, puis finalisez pour gÃ©nÃ©rer le PDF
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1297,7 +1297,7 @@
                                                         :disabled="finalizingDraft"
                                                         class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold bg-success text-white hover:bg-success/90 transition-all shadow-sm disabled:opacity-50">
                                                         <iconify-icon :icon="finalizingDraft ? 'line-md:loading-twotone-loop' : 'solar:check-circle-bold'" width="14"></iconify-icon>
-                                                        <span x-text="finalizingDraft ? 'Génération en cours...' : 'Finaliser et générer le PDF'"></span>
+                                                        <span x-text="finalizingDraft ? 'GÃ©nÃ©ration en cours...' : 'Finaliser et gÃ©nÃ©rer le PDF'"></span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -1308,7 +1308,7 @@
                                         </div>
                                     </template>
 
-                                    <!-- ✨ SmartDoc Editor Modal (Full-screen React Island) -->
+                                    <!-- âœ¨ SmartDoc Editor Modal (Full-screen React Island) -->
                                     <template x-teleport="body">
                                         <div x-show="showSmartDocEditor" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
                                             x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
@@ -1317,7 +1317,7 @@
                                                 <div class="flex items-center gap-3">
                                                     <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="18" class="text-warning"></iconify-icon>
                                                     <span class="text-sm font-bold text-gray-700">Nouveau SmartDoc</span>
-                                                    <span class="text-[10px] text-gray-400">— lié à <strong><%= locals.entity ? entity.name : '' %></strong></span>
+                                                    <span class="text-[10px] text-gray-400">â€” liÃ© Ã  <strong><%= locals.entity ? entity.name : '' %></strong></span>
                                                 </div>
                                                 <div class="flex items-center gap-2">
                                                     <span x-show="smartDocTitleError" x-transition
@@ -1342,7 +1342,7 @@
                             </div><!-- end panel-sortable-item smartdoc -->
 
                         <% } else if (sectionId==='relations') { %>
-                            <!-- 👤 Direct Relations (Sidebar Panel) -->
+                            <!-- ðŸ‘¤ Direct Relations (Sidebar Panel) -->
                             <% (entity.relations || []).forEach(function(rel) { %>
                                 <% // Skip relation if a card widget is available for it %>
                                 <% const hasCardWidget = (locals.relatedCardWidgets || []).some(function(w) { return w.relationKey === rel.key && w.cardTemplate; }); %>
@@ -1354,7 +1354,7 @@
                                     <% const relEntityName = (rel.targetEntity && rel.targetEntity.name) || rel.label || 'Relation'; %>
                                     <% const relEntitySlug = (rel.targetEntity && rel.targetEntity.slug) || ''; %>
                                     <% if (relRecords.length === 1) { %>
-                                        <% /* Single record — show detailed panel like before */ %>
+                                        <% /* Single record â€” show detailed panel like before */ %>
                                         <% const relRec = relRecords[0]; %>
                                         <div class="panel-sortable-item" data-panel-id="relation-<%= rel.key %>" x-show="isPanelVisible('rel_<%= rel.key %>')" x-collapse.duration.200ms>
                                             <template x-if="designMode">
@@ -1421,7 +1421,7 @@
                                                             <% if (cfShowAge && cfAge) { %>
                                                                 <div class="flex items-center" style="gap:3px;padding:4px 0">
                                                                     <% if (cfIcon) { %><iconify-icon icon="<%= cfIcon %>" width="14" class="flex-none" style="color:rgb(156,163,175)"></iconify-icon><% } %>
-                                                                    <span style="font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99)">Âge</span>
+                                                                    <span style="font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99)">Ã‚ge</span>
                                                                     <span class="font-semibold text-gray-700 dark:text-gray-200" style="font-size:12px;margin-left:4px"><%= cfAge %> ans</span>
                                                                 </div>
                                                             <% } else if (cfIsAllergy) { %>
@@ -1436,7 +1436,7 @@
                                                                 <div class="py-1.5">
                                                                     <div class="flex items-center" style="gap:3px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:rgb(75,85,99);margin-bottom:4px">
                                                                         <% if (cfIcon) { %><iconify-icon icon="<%= cfIcon %>" width="14" class="flex-none" style="color:rgb(156,163,175)"></iconify-icon><% } %>
-                                                                        Antécédents
+                                                                        AntÃ©cÃ©dents
                                                                     </div>
                                                                     <div class="space-y-0.5 pl-1">
                                                                         <% String(cf.value).split('\n').filter(function(l) { return l.trim(); }).forEach(function(line) { %>
@@ -1463,7 +1463,7 @@
                                         </div>
                                         </div><!-- end panel-sortable-item single relation -->
                                     <% } else { %>
-                                        <% /* Multiple records — grouped panel (like inverse relations) */ %>
+                                        <% /* Multiple records â€” grouped panel (like inverse relations) */ %>
                                         <div class="panel-sortable-item" data-panel-id="relation-<%= rel.key %>" x-show="isPanelVisible('rel_<%= rel.key %>')" x-collapse.duration.200ms>
                                             <template x-if="designMode">
                                                 <div class="panel-drag-handle">
@@ -1519,7 +1519,7 @@
                                 <% } %>
                             <% }) %>
 
-                            <!-- 🔄 Inverse Relations: records from OTHER entities that reference this record -->
+                            <!-- ðŸ”„ Inverse Relations: records from OTHER entities that reference this record -->
                             <% (locals.inverseRelations || []).forEach(function(invRel) { %>
                                 <% const invRecords = locals.relatedRecordsData && locals.relatedRecordsData[invRel.key]; %>
                                 <% if (invRecords && invRecords.length > 0) { %>
@@ -1580,7 +1580,7 @@
                                 <% } %>
                             <% }) %>
                         <% } else if (sectionId==='lines') { %>
-                            <!-- 📊 Tableau Dynamique Panel -->
+                            <!-- ðŸ“Š Tableau Dynamique Panel -->
                             <div class="panel-sortable-item" data-panel-id="lines" x-show="isPanelVisible('lines')" x-collapse.duration.200ms>
                                 <template x-if="designMode">
                                     <div class="panel-drag-handle">
@@ -1588,12 +1588,19 @@
                                         <span>Tableau Dynamique</span>
                                     </div>
                                 </template>
-                                <%- include('record-lines') %>
+                                <div
+                                    data-island="dynamic-table"
+                                    data-account-number="<%= account_number %>"
+                                    data-record-id="<%= record._id %>"
+                                    data-entity-id="<%= entity._id %>"
+                                    data-schema-filter=""
+                                    data-compact="false"
+                                ></div>
                             </div><!-- end panel-sortable-item lines -->
                         <% } %>
                     <% }); %>
 
-        <!-- 🃏 Related Entity Card Widgets (React CardRenderer) -->
+        <!-- ðŸƒ Related Entity Card Widgets (React CardRenderer) -->
         <% if (locals.relatedCardWidgets && locals.relatedCardWidgets.length > 0) { %>
             <% locals.relatedCardWidgets.forEach(function(widget, widgetIdx) { %>
                 <% if (widget.cardTemplate) { %>
@@ -1647,7 +1654,7 @@
             <% }); %>
         <% } %>
 
-        <!-- 🧩 Custom Sidebar Widgets -->
+        <!-- ðŸ§© Custom Sidebar Widgets -->
         <% if (entity.sidebarWidgets && entity.sidebarWidgets.length > 0) { %>
             <% entity.sidebarWidgets.sort(function(a,b){ return (a.order||0) - (b.order||0) }).forEach(function(sw) { %>
                 <div class="panel-sortable-item" data-panel-id="sw-<%= sw._id %>" x-show="isPanelVisible('sw_<%= sw._id %>')" x-collapse.duration.200ms>
@@ -1703,7 +1710,7 @@
                                             <div style="flex: 1; min-width: 0;">
                                                 <textarea x-model="noteContent"
                                                     @blur="saving = true; fetch('/account/<%= account_number %>/api/entity/<%= entity._id %>/sidebar-widgets/<%= sw._id %>', { method: 'PUT', headers: {'Content-Type':'application/json'}, credentials: 'include', body: JSON.stringify({ config: { content: noteContent } }) }).finally(() => saving = false)"
-                                                    placeholder="Écrire une note..."
+                                                    placeholder="Ã‰crire une note..."
                                                     style="width: 100%; min-height: 50px; border: none; outline: none; background: transparent; font-size: 12px; color: #4b5563; line-height: 1.6; resize: vertical; padding: 0; font-family: inherit;"
                                                     ></textarea>
                                                 <div x-show="saving" style="font-size: 9px; color: #9ca3af; margin-top: 2px;">Sauvegarde...</div>
@@ -1770,6 +1777,25 @@
                                             </div>
                                         </div>
                                     <% } else if (sw.type === 'dynamic-table') { %>
+                                        <% const useReactSidebarDT = true; %>
+                                        <% if (useReactSidebarDT) { %>
+                                        <%
+                                            const dtSchemaIdsReact = (sw.config?.schemaIds || []).map(id => id?.toString()).filter(Boolean);
+                                            const singleIdReact = sw.config?.schemaId?.toString();
+                                            const resolvedIdsReact = dtSchemaIdsReact.length > 0 ? dtSchemaIdsReact : (singleIdReact ? [singleIdReact] : []);
+                                            const schemaFilterReact = resolvedIdsReact.join(',');
+                                        %>
+                                        <div style="padding: 8px;">
+                                            <div
+                                                data-island="dynamic-table"
+                                                data-account-number="<%= account_number %>"
+                                                data-record-id="<%= record._id %>"
+                                                data-entity-id="<%= entity._id %>"
+                                                data-schema-filter="<%= schemaFilterReact %>"
+                                                data-compact="true"
+                                            ></div>
+                                        </div>
+                                        <% } else { %>
                                         <%
                                             // Build list of schemas to display (multi-tab or single)
                                             const dtSchemaIds = (sw.config?.schemaIds || []).map(id => id?.toString()).filter(Boolean);
@@ -1801,7 +1827,7 @@
                                                 entityId: entity._id.toString()
                                             })) %>')))" x-init="init()">
 
-                                            <!-- ═══ Combined Header: Tabs on Left, Actions on Right ═══ -->
+                                            <!-- â•â•â• Combined Header: Tabs on Left, Actions on Right â•â•â• -->
                                             <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px 6px 0; border-bottom:1px solid #f3f4f6;" class="dark:border-gray-800">
                                                 <!-- Left Area: Schema Pills (Tabs) -->
                                                 <div style="display:flex; align-items:center; gap:4px; overflow-x:auto; scrollbar-width:none;">
@@ -1922,7 +1948,7 @@
                                             </div>
                                         </div>
 
-                                            <!-- ═══ Editable Table ═══ -->
+                                            <!-- â•â•â• Editable Table â•â•â• -->
                                             <div style="overflow:visible;">
                                                 <table class="lines-panel-table border border-gray-50 dark:border-gray-800" style="font-size:11px;">
                                                     <thead>
@@ -1947,7 +1973,7 @@
                                                                                     @input="doSearch($event.target.value, lineIdx)"
                                                                                     @blur="setTimeout(() => searchOpen = false, 200)"
                                                                                     @keydown.escape="searchOpen = false"
-                                                                                    placeholder="🔍 <%= col.label %>" />
+                                                                                    placeholder="ðŸ” <%= col.label %>" />
                                                                                 <div x-show="searchOpen && searchLineIdx === lineIdx" x-cloak
                                                                                     style="position:absolute; top:100%; left:0; right:0; z-index:9999; background:#fff; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.12); max-height:160px; overflow-y:auto; margin-top:2px;">
                                                                                     <template x-if="searchLoading">
@@ -1956,7 +1982,7 @@
                                                                                         </div>
                                                                                     </template>
                                                                                     <template x-if="!searchLoading && searchResults.length === 0">
-                                                                                        <div style="padding:8px; text-align:center; font-size:11px; color:#9ca3af;">Aucun résultat</div>
+                                                                                        <div style="padding:8px; text-align:center; font-size:11px; color:#9ca3af;">Aucun rÃ©sultat</div>
                                                                                     </template>
                                                                                     <template x-for="item in searchResults" :key="item._id">
                                                                                         <div style="padding:6px 10px; font-size:11px; cursor:pointer; transition:background 0.1s; border-bottom:1px solid #f3f4f6;"
@@ -1974,7 +2000,7 @@
                                                                                      style="min-height:22px;padding:1px 4px;gap:2px;"
                                                                                      @click.stop="openMultiselectDropdown(lineIdx, '<%= col.key %>')">
                                                                                     <template x-if="!line.values['<%= col.key %>'] || (Array.isArray(line.values['<%= col.key %>']) && line.values['<%= col.key %>'].length === 0)">
-                                                                                        <span class="lp-ms-placeholder" style="font-size:10px;">Sélectionner...</span>
+                                                                                        <span class="lp-ms-placeholder" style="font-size:10px;">SÃ©lectionner...</span>
                                                                                     </template>
                                                                                     <% if (col.type === 'multiselect') { %>
                                                                                         <template x-for="selVal in (Array.isArray(line.values['<%= col.key %>']) ? line.values['<%= col.key %>'] : (line.values['<%= col.key %>'] ? [line.values['<%= col.key %>']] : []))" :key="selVal">
@@ -2002,7 +2028,7 @@
                                                                                         <div class="tp-dropdown" style="z-index:9999; min-width:200px; position:absolute; right:0; top:100%; margin-top:4px;" @click.stop>
                                                                                             <div class="tp-search-wrap">
                                                                                                 <input type="text" class="tp-search-input"
-                                                                                                       placeholder="Rechercher ou créer..."
+                                                                                                       placeholder="Rechercher ou crÃ©er..."
                                                                                                        :value="msDropdown.query"
                                                                                                        @input="msDropdown.query = $event.target.value"
                                                                                                        @keydown.enter.prevent="msCreateOption(columns[<%= ci %>])" />
@@ -2034,11 +2060,11 @@
                                                                     </div>
                                                                 </template>
                                                             
-                                                                    <!-- + Créer -->
+                                                                    <!-- + CrÃ©er -->
                                                                     <template x-if="(msDropdown.query || '').trim() && !(columns[<%= ci %>].config?.options || []).some(o => o.label.toLowerCase() === (msDropdown.query || '').trim().toLowerCase())">
                                                                         <div class="tp-create-option" @click.stop="msCreateOption(columns[<%= ci %>])">
                                                                             <iconify-icon icon="tabler:plus" width="14" style="color:#6b7280;"></iconify-icon>
-                                                                            <span class="tp-create-label">Créer</span>
+                                                                            <span class="tp-create-label">CrÃ©er</span>
                                                                             <span class="tp-create-tag" x-text="msDropdown.query"></span>
                                                                         </div>
                                                                     </template>
@@ -2075,7 +2101,7 @@
                                                 </table>
                                             </div>
 
-                                            <!-- ═══ Action bar: compact pills aligned right (pixel-perfect copy of main tab) ═══ -->
+                                            <!-- â•â•â• Action bar: compact pills aligned right (pixel-perfect copy of main tab) â•â•â• -->
                                             <div style="display:flex; align-items:center; justify-content:flex-end; gap:6px; padding:8px 12px;">
                                                 <div style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; font-size:11px; font-weight:500; color:#6b7280; border:1px solid #e5e7eb; border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none;"
                                                      @click.stop="addLine()"
@@ -2096,7 +2122,7 @@
                                             </div>
 
 
-                                            <!-- ═══ Save Preset Modal (pixel-perfect copy of main tab) ═══ -->
+                                            <!-- â•â•â• Save Preset Modal (pixel-perfect copy of main tab) â•â•â• -->
                                             <template x-if="savePresetOpen">
                                                 <div class="lp-modal-overlay" @click.self="savePresetOpen = false" @keydown.escape.window="savePresetOpen = false">
                                                     <div class="lp-modal" style="max-width: 520px;">
@@ -2117,7 +2143,7 @@
                                                             <div>
                                                                 <label style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Nom du preset</label>
                                                                 <input type="text" class="lp-input" style="width: 100%; height: 38px; font-size: 13px; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 0 12px;"
-                                                                       placeholder="Ex: Protocole Grippe, Suivi Thyroïde..."
+                                                                       placeholder="Ex: Protocole Grippe, Suivi ThyroÃ¯de..."
                                                                        x-model="savePresetName"
                                                                        x-ref="sidebarPresetName"
                                                                        x-init="$nextTick(() => $refs.sidebarPresetName?.focus())"
@@ -2126,7 +2152,7 @@
 
                                                             <!-- Scope -->
                                                             <div>
-                                                                <label style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Portée</label>
+                                                                <label style="display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">PortÃ©e</label>
                                                                 <div style="display: flex; flex-direction: column; gap: 8px;">
                                                                     <div class="lp-save-scope-option"
                                                                          :class="{ 'active': savePresetScope === 'workspace' }"
@@ -2145,7 +2171,7 @@
                                                                         <iconify-icon icon="solar:document-bold-duotone" width="18" style="color: #22c55e;"></iconify-icon>
                                                                         <div class="lp-save-scope-info">
                                                                             <div class="lp-save-scope-title">Ce record uniquement</div>
-                                                                            <div class="lp-save-scope-desc">Lié à ce record spécifique seulement</div>
+                                                                            <div class="lp-save-scope-desc">LiÃ© Ã  ce record spÃ©cifique seulement</div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -2155,12 +2181,12 @@
                                                             <div class="lp-save-preview">
                                                                 <div class="lp-save-preview-header">
                                                                     <iconify-icon icon="solar:eye-bold-duotone" width="12"></iconify-icon>
-                                                                    <span x-text="lines.filter(l => l.values && Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0))).length + ' lignes seront sauvegardées'"></span>
+                                                                    <span x-text="lines.filter(l => l.values && Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0))).length + ' lignes seront sauvegardÃ©es'"></span>
                                                                 </div>
                                                                 <template x-for="(line, idx) in lines.filter(l => l.values && Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0))).slice(0, 6)" :key="idx">
                                                                     <div class="lp-save-preview-item">
                                                                         <span style="color: #9ca3af; font-size: 10px; min-width: 14px;" x-text="idx + 1"></span>
-                                                                        <span x-text="Object.values(line.values || {}).filter(v => v && typeof v === 'string').join(' · ') || Object.values(line.values || {}).filter(v => Array.isArray(v) && v.length > 0).map(v => v.join(', ')).join(' · ') || 'Ligne ' + (idx + 1)"></span>
+                                                                        <span x-text="Object.values(line.values || {}).filter(v => v && typeof v === 'string').join(' Â· ') || Object.values(line.values || {}).filter(v => Array.isArray(v) && v.length > 0).map(v => v.join(', ')).join(' Â· ') || 'Ligne ' + (idx + 1)"></span>
                                                                     </div>
                                                                 </template>
                                                             </div>
@@ -2184,7 +2210,7 @@
                                                 </div>
                                             </template>
 
-                                            <!-- ═══ Snapshot History Timeline (pixel-perfect copy of main tab) ═══ -->
+                                            <!-- â•â•â• Snapshot History Timeline (pixel-perfect copy of main tab) â•â•â• -->
                                             <template x-if="snapshots.length > 0">
                                                 <div class="lp-snapshot-area" style="padding:4px 0 8px;">
                                                     <!-- Timeline -->
@@ -2200,7 +2226,7 @@
                                                                 <!-- Header -->
                                                                 <div class="lp-timeline-header" @click="expandedSnap = expandedSnap === snap._id ? null : snap._id">
                                                                     <iconify-icon :icon="expandedSnap === snap._id ? 'tabler:chevron-down' : 'tabler:chevron-right'" width="14" class="lp-timeline-chevron"></iconify-icon>
-                                                                    <span class="lp-timeline-title" x-text="'Traitement — ' + new Date(snap.date).toLocaleDateString('fr-FR', {day:'2-digit', month:'long', year:'numeric'})"></span>
+                                                                    <span class="lp-timeline-title" x-text="'Traitement â€” ' + new Date(snap.date).toLocaleDateString('fr-FR', {day:'2-digit', month:'long', year:'numeric'})"></span>
                                                                     <div class="lp-timeline-meta">
                                                                         <span class="lp-timeline-time" x-text="new Date(snap.createdAt || snap.date).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})"></span>
                                                                         <span class="lp-timeline-badge" x-text="snap.lines.length + ' lignes'"></span>
@@ -2232,11 +2258,11 @@
                                                                                     <% dtColumns.forEach(col => { %>
                                                                                         <td>
                                                                                             <% if (col.type === 'relation') { %>
-                                                                                                <span x-text="sLine.values?.['<%= col.key %>_label'] || sLine.values?.description || '—'" style="color:#4361ee;"></span>
+                                                                                                <span x-text="sLine.values?.['<%= col.key %>_label'] || sLine.values?.description || 'â€”'" style="color:#4361ee;"></span>
                                                                                             <% } else if (col.type === 'multiselect' || col.type === 'select') { %>
                                                                                                 <span x-text="getSnapMultiLabel('<%= col.key %>', sLine.values?.['<%= col.key %>'])"></span>
                                                                                             <% } else { %>
-                                                                                                <span x-text="sLine.values?.['<%= col.key %>'] || '—'"></span>
+                                                                                                <span x-text="sLine.values?.['<%= col.key %>'] || 'â€”'"></span>
                                                                                             <% } %>
                                                                                         </td>
                                                                                     <% }) %>
@@ -2253,7 +2279,7 @@
                                                             <div class="lp-timeline-showmore" style="padding-left:38px;">
                                                                 <span style="font-size:11px; color:#4361ee; cursor:pointer; user-select:none; font-weight:500;"
                                                                       @click="showAllHistory = !showAllHistory"
-                                                                      x-text="showAllHistory ? '▲ Voir moins' : ('▼ Voir tout (' + snapshots.length + ')')"></span>
+                                                                      x-text="showAllHistory ? 'â–² Voir moins' : ('â–¼ Voir tout (' + snapshots.length + ')')"></span>
                                                             </div>
                                                         </template>
                                                     </div>
@@ -2333,6 +2359,7 @@
                                                 box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
                                             }
                                         </style>
+                                        <% } %>
                                     <% } %>
                                 </div>
                             </div>
@@ -2384,660 +2411,8 @@
 
     <script>
         document.addEventListener("alpine:init", () => {
-            // ═══ Sidebar Dynamic Table Widget ═══
-            Alpine.data("sidebarDynamicTable", (schemaId, recordId, accountNumber, cfg) => ({
-                schemaId,
-                recordId,
-                accountNumber,
-                columns: cfg.columns || [],
-                defaultLineType: cfg.defaultLineType || 'treatment',
-                snapshotEnabled: cfg.snapshotEnabled || false,
-                snapshotConfig: cfg.snapshotConfig || {},
-                entityId: cfg.entityId || '',
-
-                // Lines state
-                lines: [],
-
-                // Search state (relation)
-                searchOpen: false,
-                searchLineIdx: -1,
-                searchResults: [],
-                searchLoading: false,
-                _searchTimer: null,
-
-                // Snapshot state
-                snapshots: [],
-                saving: false,
-                historyOpen: true,
-                expandedSnap: null,
-                showAllHistory: false,
-
-                // Preset state
-                presets: [],
-                presetOpen: false,
-                savePresetOpen: false,
-                savePresetName: '',
-                savePresetScope: 'workspace',
-                savingPreset: false,
-
-                // Save debounce
-                _saveTimer: null,
-                _pendingDeleteOpt: null,
-                _pendingDeleteTimer: null,
-
-                // Multiselect state (tp-style)
-                msDropdown: {
-                    open: false,
-                    lineIdx: -1,
-                    colKey: '',
-                    query: ''
-                },
-                _pendingDeleteOpt: null,
-
-                async init() {
-                    // Load existing lines from the API
-                    await this.loadLines();
-                    // Load snapshot history
-                    await this.loadHistory();
-                    // Load presets
-                    await this.loadPresets();
-                },
-
-                async loadLines() {
-                    try {
-                        const url = `/account/${this.accountNumber}/api/document-lines/${this.recordId}?schemaId=${this.schemaId}`;
-                        const res = await fetch(url, { credentials: 'include' });
-                        const data = await res.json();
-                        const serverLines = (data.data || []).map(l => ({
-                            ...l,
-                            values: l.values || {},
-                            _tempId: l._id || ('tmp_' + Date.now() + '_' + Math.random())
-                        }));
-                        // Filter to only lines that have some content, plus 1 empty line
-                        const filled = serverLines.filter(l => {
-                            if (!l.values) return false;
-                            return Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0));
-                        });
-                        // Always have at least 1 empty line
-                        if (filled.length === 0 || filled.length === serverLines.length) {
-                            filled.push(this._emptyLine());
-                        }
-                        this.lines = filled.length > 0 ? filled : [this._emptyLine()];
-                    } catch (e) {
-                        console.error('[SidebarWidget] loadLines error:', e);
-                        this.lines = [this._emptyLine()];
-                    }
-                },
-
-                _emptyLine() {
-                    return {
-                        _tempId: 'tmp_' + Date.now() + '_' + Math.random(),
-                        lineType: this.defaultLineType,
-                        values: {},
-                        computed: {},
-                        order: 0
-                    };
-                },
-
-                addLine() {
-                    this.lines.push(this._emptyLine());
-                },
-
-                removeLine(idx) {
-                    if (this.lines.length <= 1) {
-                        // Reset to empty instead of removing last line
-                        this.lines = [this._emptyLine()];
-                    } else {
-                        this.lines.splice(idx, 1);
-                    }
-                    this.debouncedSave();
-                },
-
-                // ── Relation Search ──
-                openSearch(lineIdx) {
-                    this.searchLineIdx = lineIdx;
-                    this.searchOpen = true;
-                    this.searchResults = [];
-                },
-
-                doSearch(query, lineIdx) {
-                    // Update the label in the line as user types
-                    const relCol = this.columns.find(c => c.type === 'relation');
-                    if (relCol) {
-                        this.lines[lineIdx].values[relCol.key + '_label'] = query;
-                    }
-                    this.searchLineIdx = lineIdx;
-                    this.searchOpen = true;
-
-                    clearTimeout(this._searchTimer);
-                    this._searchTimer = setTimeout(() => this._fetchSearch(query), 250);
-                },
-
-                async _fetchSearch(query) {
-                    const relCol = this.columns.find(c => c.type === 'relation');
-                    if (!relCol || !relCol.config?.targetEntity) return;
-
-                    this.searchLoading = true;
-                    try {
-                        const searchFields = (relCol.config.searchFields || ['title']).join(',');
-                        const url = `/account/${this.accountNumber}/api/catalog-search?entityId=${relCol.config.targetEntity}&q=${encodeURIComponent(query)}&searchFields=${searchFields}`;
-                        const res = await fetch(url, { credentials: 'include' });
-                        const data = await res.json();
-                        this.searchResults = data.data || [];
-                    } catch (e) {
-                        console.error('[SidebarWidget] search error:', e);
-                        this.searchResults = [];
-                    }
-                    this.searchLoading = false;
-                },
-
-                resolveLineDefaultsForSchema(lineDefaults, schemaId) {
-                    if (!lineDefaults || !schemaId) return null;
-                    if (Array.isArray(lineDefaults)) {
-                        const match = lineDefaults.find(ld =>
-                            ld && ld.schemaId && ld.schemaId.toString() === schemaId.toString()
-                        );
-                        if (match) return match;
-                        return lineDefaults.length === 1 ? lineDefaults[0] : null;
-                    }
-                    if (typeof lineDefaults === 'object' && lineDefaults.defaults) {
-                        if (!lineDefaults.schemaId || lineDefaults.schemaId.toString() === schemaId.toString()) {
-                            return lineDefaults;
-                        }
-                    }
-                    return null;
-                },
-
-                normalizeDefaultByColumn(col, val) {
-                    if (!col) return val;
-                    if (col.type === 'select' && Array.isArray(val)) return val[0] || '';
-                    if ((col.type === 'text' || col.type === 'textarea') && Array.isArray(val)) return val.join(', ');
-                    if (col.type === 'multiselect') return Array.isArray(val) ? val : (val ? [val] : []);
-                    return val;
-                },
-
-                selectItem(lineIdx, item) {
-                    console.error('[SIDEBAR-DT] selectItem_start', {
-                        schemaId: this.schemaId,
-                        lineIdx,
-                        itemId: item?._id,
-                        label: item?.label || item?.title
-                    });
-                    const relCol = this.columns.find(c => c.type === 'relation');
-                    if (!relCol) return;
-                    const line = this.lines[lineIdx];
-                    if (!line) return;
-
-                    line.values[relCol.key] = item._id;
-                    line.values[relCol.key + '_label'] = item.label || item.title;
-
-                    // Apply defaults from catalog
-                    if (relCol.config?.applyDefaults && item.customFields) {
-                        const cfMap = Array.isArray(item.customFields)
-                            ? item.customFields.reduce((acc, cf) => {
-                                const fieldId = (cf?.field_id?._id || cf?.field_id || '').toString();
-                                if (fieldId) acc[fieldId] = cf?.value;
-                                return acc;
-                            }, {})
-                            : item.customFields;
-                        for (const [targetKey, sourceExpr] of Object.entries(relCol.config.applyDefaults)) {
-                            let val;
-                            if (sourceExpr.startsWith('cf.')) {
-                                val = cfMap[sourceExpr.substring(3)];
-                            } else {
-                                val = item[sourceExpr];
-                            }
-                            if (val !== undefined && val !== null) {
-                                line.values[targetKey] = val;
-                            }
-                        }
-                    }
-
-                    // Apply lineDefaults configured on catalog record for this schema
-                    const lineDefaultsForSchema = this.resolveLineDefaultsForSchema(item.lineDefaults, this.schemaId);
-                    if (lineDefaultsForSchema && lineDefaultsForSchema.defaults) {
-                        console.error('[SIDEBAR-DT] lineDefaults_match', {
-                            schemaId: this.schemaId,
-                            keys: Object.keys(lineDefaultsForSchema.defaults || {})
-                        });
-                        for (const [key, val] of Object.entries(lineDefaultsForSchema.defaults || {})) {
-                            const col = this.columns.find(c => c.key === key || (c._id && c._id.toString() === key.toString()));
-                            if (!col) continue;
-                            const normalized = this.normalizeDefaultByColumn(col, val);
-                            if (normalized !== undefined && normalized !== null && normalized !== '') {
-                                line.values[col.key] = normalized;
-                            }
-                        }
-                        line._availableOptions = lineDefaultsForSchema.availableOptions || {};
-                        line._excludedColumns = lineDefaultsForSchema.excludedColumns || [];
-                    } else {
-                        console.error('[SIDEBAR-DT] lineDefaults_no_match', {
-                            schemaId: this.schemaId,
-                            lineDefaultsType: Array.isArray(item?.lineDefaults) ? 'array' : typeof item?.lineDefaults
-                        });
-                    }
-                    console.error('[SIDEBAR-DT] selectItem_finalValues', line.values);
-
-                    this.searchOpen = false;
-                    this.searchResults = [];
-
-                    // Add empty line at bottom if needed
-                    const lastLine = this.lines[this.lines.length - 1];
-                    const lastHasContent = lastLine && lastLine.values && Object.values(lastLine.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0));
-                    if (lastHasContent) {
-                        this.lines.push(this._emptyLine());
-                    }
-
-                    this.debouncedSave();
-                },
-
-                // ── Multiselect Dropdown (tp-style) ──
-                openMultiselectDropdown(lineIdx, colKey) {
-                    if (this.msDropdown.lineIdx === lineIdx && this.msDropdown.colKey === colKey && this.msDropdown.open) {
-                        this.closeMultiselectDropdown();
-                        return;
-                    }
-                    this.msDropdown.lineIdx = lineIdx;
-                    this.msDropdown.colKey = colKey;
-                    this.msDropdown.open = true;
-                    this.msDropdown.query = '';
-                },
-
-                closeMultiselectDropdown() {
-                    this.msDropdown.open = false;
-                    this.msDropdown.lineIdx = -1;
-                    this.msDropdown.colKey = '';
-                    this.msDropdown.query = '';
-                },
-
-                toggleMultiselectValue(line, key, value) {
-                    if (!line.values[key]) line.values[key] = [];
-                    // Ensure values is always an array
-                    if (!Array.isArray(line.values[key])) line.values[key] = [line.values[key]];
-                    const idx = line.values[key].indexOf(value);
-                    if (idx >= 0) {
-                        line.values[key].splice(idx, 1);
-                    } else {
-                        line.values[key].push(value);
-                    }
-                    this.debouncedSave();
-                },
-
-                msCreateOption(col) {
-                    const label = (this.msDropdown.query || '').trim();
-                    if (!label) return;
-                    const slug = label.toLowerCase().replace(/[^a-z0-9\u00e0-\u00ff]+/g, '_').replace(/^_|_$/g, '');
-                    if (!col.config) col.config = {};
-                    if (!col.config.options) col.config.options = [];
-                    
-                    // Duplicate check - find existing or new
-                    let existing = col.config.options.find(o => o.value === slug || o.label.toLowerCase() === label.toLowerCase());
-                    if (!existing) {
-                        existing = { value: slug, label: label };
-                        // Push to local array but also ensure reactivity by replacing the array if needed
-                        // Actually pushing is fine if we trigger a re-render or if Alpine is watching the array.
-                        // But assigning a new array is safer for reactivity.
-                        col.config.options = [...(col.config.options || []), existing];
-                        // Save schema options to backend
-                        this.saveInlineOptionToSchema(col);
-                    }
-
-                    // Select it for the current line
-                    const line = this.lines[this.msDropdown.lineIdx];
-                    if (line) {
-                        if (col.type === 'multiselect') {
-                            if (!line.values[col.key]) line.values[col.key] = [];
-                            // Ensure it's an array (fallback case)
-                            if (!Array.isArray(line.values[col.key])) line.values[col.key] = [line.values[col.key]];
-                            if (!line.values[col.key].includes(existing.value)) {
-                                line.values[col.key].push(existing.value);
-                            }
-                        } else {
-                            line.values[col.key] = existing.value;
-                            this.closeMultiselectDropdown();
-                        }
-                        this.debouncedSave();
-                    }
-
-                    // Clear search
-                    this.msDropdown.query = '';
-                },
-
-                // Remove an inline option from a select/multiselect column (2-step: confirm then delete)
-                removeInlineOption(col, optValue) {
-                    if (this._pendingDeleteOpt !== optValue) {
-                        this._pendingDeleteOpt = optValue;
-                        clearTimeout(this._pendingDeleteTimer);
-                        this._pendingDeleteTimer = setTimeout(() => { this._pendingDeleteOpt = null; }, 3000);
-                        return;
-                    }
-                    clearTimeout(this._pendingDeleteTimer);
-                    this._pendingDeleteOpt = null;
-
-                    if (!col.config?.options) return;
-                    col.config.options = col.config.options.filter(o => o.value !== optValue);
-                    
-                    // If this option was selected, clear it from existing lines
-                    (this.lines || []).forEach(line => {
-                        if (line.values && col.type === 'multiselect' && Array.isArray(line.values[col.key])) {
-                            line.values[col.key] = line.values[col.key].filter(v => v !== optValue);
-                        } else if (line.values && line.values[col.key] === optValue) {
-                            line.values[col.key] = '';
-                        }
-                    });
-                    this.debouncedSave();
-
-                    this.saveInlineOptionToSchema(col);
-                },
-
-                async saveInlineOptionToSchema(col) {
-                    try {
-                        const res = await fetch(`/account/${this.accountNumber}/api/line-schemas/${this.schemaId}`, {
-                            method: 'GET',
-                            credentials: 'include'
-                        });
-                        const data = await res.json();
-                        const schema = data.data;
-                        if (schema && schema.columns) {
-                            const schemaCol = (schema.columns || []).find(c => c.key === col.key);
-                            if (schemaCol) {
-                                if (!schemaCol.config) schemaCol.config = {};
-                                schemaCol.config.options = col.config.options;
-                                await fetch(`/account/${this.accountNumber}/api/line-schemas/${this.schemaId}`, {
-                                    method: 'PUT',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    credentials: 'include',
-                                    body: JSON.stringify({ columns: schema.columns })
-                                });
-                                // Update local columns as well
-                                const localCol = this.columns.find(c => c.key === col.key);
-                                if (localCol) {
-                                    localCol.config.options = [...col.config.options];
-                                }
-                            }
-                        }
-                    } catch (e) {
-                         console.error('[SidebarWidget] Schema update failed:', e);
-                    }
-                },
-
-                filterMsOptions(col) {
-                    const opts = col.config?.options || [];
-                    const q = (this.msDropdown.query || '').trim().toLowerCase();
-                    if (!q) return opts;
-                    return opts.filter(o => o.label.toLowerCase().includes(q));
-                },
-
-                getMultiselectOptStyle(col, value) {
-                    const opts = col.config?.options || [];
-                    const opt = opts.find(o => o.value === value);
-                    if (opt?.bg) return { bg: opt.bg, text: opt.text || '#fff' };
-                    // Default colors for sidebar match the main grid
-                    const colors = [
-                        { bg: '#dbeafe', text: '#1e40af' },
-                        { bg: '#dcfce7', text: '#166534' },
-                        { bg: '#fef3c7', text: '#92400e' },
-                        { bg: '#fce7f3', text: '#9d174d' },
-                        { bg: '#e0e7ff', text: '#3730a3' },
-                        { bg: '#fae8ff', text: '#86198f' },
-                        { bg: '#ecfdf5', text: '#065f46' },
-                    ];
-                    let hash = 0;
-                    const cleanValue = String(value || '');
-                    for (let i = 0; i < cleanValue.length; i++) hash = (hash * 31 + cleanValue.charCodeAt(i)) % colors.length;
-                    return colors[Math.abs(hash) % colors.length];
-                },
-
-                isOptSelected(line, key, value) {
-                    if (!line || !line.values || !value) return false;
-                    const val = line.values[key];
-                    if (val === null || val === undefined) return false;
-                    if (Array.isArray(val)) return val.some(v => v === value);
-                    return val === value;
-                },
-
-
-                getMultiselectOptLabel(col, value) {
-                    const opts = col.config?.options || [];
-                    const opt = opts.find(o => o.value === value);
-                    return opt?.label || value;
-                },
-
-                // ── Option Label Resolution ──
-                getOptLabel(colKey, value) {
-                    const col = this.columns.find(c => c.key === colKey);
-                    if (!col || !col.config?.options) return value;
-                    const opt = col.config.options.find(o => o.value === value);
-                    return opt ? opt.label : value;
-                },
-
-                getSnapMultiLabel(colKey, values) {
-                    if (!values || (Array.isArray(values) && values.length === 0)) return '—';
-                    const arr = Array.isArray(values) ? values : [values];
-                    return arr.map(v => this.getOptLabel(colKey, v)).join(', ');
-                },
-
-                // ── Save Lines ──
-                debouncedSave() {
-                    clearTimeout(this._saveTimer);
-                    this._saveTimer = setTimeout(() => this._saveLines(), 800);
-                },
-
-                async _saveLines() {
-                    try {
-                        const payload = {
-                            schemaId: this.schemaId,
-                            lines: this.lines.map((l, i) => ({
-                                _id: l._id || undefined,
-                                lineType: l.lineType || this.defaultLineType,
-                                values: l.values,
-                                order: i
-                            }))
-                        };
-                        const url = `/account/${this.accountNumber}/api/document-lines/${this.recordId}/bulk`;
-                        const res = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify(payload)
-                        });
-                        const data = await res.json();
-                        if (data.data) {
-                            // Update with server IDs
-                            this.lines = data.data.map(l => ({
-                                ...l,
-                                values: l.values || {},
-                                _tempId: l._id || ('tmp_' + Date.now())
-                            }));
-                            // Ensure empty line at bottom
-                            const last = this.lines[this.lines.length - 1];
-                            const lastFilled = last && Object.values(last.values || {}).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0));
-                            if (lastFilled || this.lines.length === 0) {
-                                this.lines.push(this._emptyLine());
-                            }
-                        }
-                    } catch (e) {
-                        console.error('[SidebarWidget] save error:', e);
-                    }
-                },
-
-                async confirmDeleteSnapshot(snapId) {
-                    if (!confirm('Voulez-vous vraiment supprimer cet historique ?')) return;
-                    try {
-                        const res = await fetch(`/account/${this.accountNumber}/api/grid-snapshots/${snapId}`, { method: 'DELETE', credentials: 'include' });
-                        const data = await res.json();
-                        if (data.success) {
-                            this.snapshots = this.snapshots.filter(s => s._id !== snapId);
-                        }
-                    } catch (e) {
-                         console.error('[SidebarWidget] snapshot delete failed:', e);
-                    }
-                },
-
-                // ── Snapshot ──
-                async saveSnapshot() {
-                    if (this.saving) return;
-                    const nonEmpty = this.lines.filter(l => {
-                        if (!l.values) return false;
-                        return Object.values(l.values).some(v => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0));
-                    });
-                    if (nonEmpty.length === 0) {
-                        window.showMessage?.('Aucune ligne avec des données à enregistrer', 'warning');
-                        return;
-                    }
-
-                    this.saving = true;
-                    try {
-                        const date = new Date().toISOString().split('T')[0];
-                        const url = `/account/${this.accountNumber}/api/grid-snapshots`;
-                        const res = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify({
-                                schemaId: this.schemaId,
-                                recordId: this.recordId,
-                                targetRecordId: this.recordId,
-                                targetEntityId: this.snapshotConfig?.targetEntityId || null,
-                                date: date
-                            })
-                        });
-                        const data = await res.json();
-                        if (res.ok) {
-                            window.showMessage?.('Enregistrement sauvegardé', 'success');
-                            // Add to history
-                            this.snapshots.unshift(data.data);
-                            this.expandedSnap = data.data._id;
-                            // Clear lines and add empty
-                            this.lines = [this._emptyLine()];
-                            this.debouncedSave();
-                        } else {
-                            window.showMessage?.(data.error || 'Erreur', 'error');
-                        }
-                    } catch (e) {
-                        console.error('[SidebarWidget] snapshot save error:', e);
-                        window.showMessage?.('Erreur lors de l\'enregistrement', 'error');
-                    }
-                    this.saving = false;
-                },
-
-                async loadHistory() {
-                    if (!this.schemaId || !this.recordId) return;
-                    try {
-                        const url = `/account/${this.accountNumber}/api/grid-snapshots/${this.schemaId}/${this.recordId}`;
-                        const res = await fetch(url, { credentials: 'include' });
-                        const data = await res.json();
-                        this.snapshots = (data.data || []).sort((a,b) => {
-                            const dateA = new Date(a.createdAt || a.date);
-                            const dateB = new Date(b.createdAt || b.date);
-                            return dateB - dateA;
-                        });
-                        if (this.snapshots.length > 0) {
-                            this.expandedSnap = this.snapshots[0]._id;
-                        }
-                    } catch (e) {
-                        console.error('[SidebarWidget] loadHistory error:', e);
-                        this.snapshots = [];
-                    }
-                },
-
-                // ── Presets ──
-                async loadPresets() {
-                    if (!this.schemaId) return;
-                    try {
-                        let url = `/account/${this.accountNumber}/api/grid-templates?schemaId=${this.schemaId}`;
-                        url += `&includeRecord=${this.recordId}`;
-                        const res = await fetch(url, { credentials: 'include' });
-                        const data = await res.json();
-                        this.presets = data.templates || [];
-                    } catch (e) {
-                        console.error('[SidebarWidget] loadPresets error:', e);
-                        this.presets = [];
-                    }
-                },
-
-                async applyPreset(preset) {
-                    try {
-                        const res = await fetch(
-                            `/account/${this.accountNumber}/api/grid-templates/${preset._id}/apply/${this.recordId}`,
-                            { method: 'POST', credentials: 'include' }
-                        );
-                        const data = await res.json();
-                        if (data.success && data.lines) {
-                            // Reload lines to reflect the applied preset
-                            await this.loadLines();
-                        }
-                    } catch (e) {
-                        console.error('[SidebarWidget] applyPreset error:', e);
-                    }
-                },
-
-                async confirmSavePreset() {
-                    if (!this.savePresetName.trim() || this.savingPreset) return;
-                    this.savingPreset = true;
-                    try {
-                        const payload = {
-                            name: this.savePresetName.trim(),
-                            schemaId: this.schemaId,
-                            documentId: this.recordId,
-                            scope: this.savePresetScope,
-                            recordId: this.savePresetScope === 'record' ? this.recordId : undefined
-                        };
-                        const res = await fetch(`/account/${this.accountNumber}/api/grid-templates/save-from-record`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify(payload)
-                        });
-                        const data = await res.json();
-                        if (data.success && data.template) {
-                            this.presets.push(data.template);
-                            this.savePresetOpen = false;
-                            this.savePresetName = '';
-                            window.showMessage?.('Preset sauvegardé', 'success');
-                        } else {
-                            window.showMessage?.(data.error || 'Erreur', 'error');
-                        }
-                    } catch (e) {
-                        console.error('[SidebarWidget] confirmSavePreset error:', e);
-                        window.showMessage?.('Erreur réseau', 'error');
-                    }
-                    this.savingPreset = false;
-                },
-
-                async deletePreset(presetId) {
-                    if (!confirm('Supprimer ce preset ?')) return;
-                    try {
-                        const res = await fetch(`/account/${this.accountNumber}/api/grid-templates/${presetId}`, {
-                            method: 'DELETE',
-                            credentials: 'include'
-                        });
-                        const data = await res.json();
-                        if (data.success) {
-                            this.presets = this.presets.filter(p => p._id !== presetId);
-                        }
-                    } catch (e) {
-                        console.error('[SidebarWidget] deletePreset error:', e);
-                    }
-                },
-
-                async confirmDeleteSnapshot(snapId) {
-                    if (!confirm('Supprimer cet enregistrement de l\'historique ?')) return;
-                    try {
-                        const url = `/account/${this.accountNumber}/api/grid-snapshots/${snapId}`;
-                        const res = await fetch(url, { method: 'DELETE', credentials: 'include' });
-                        const data = await res.json();
-                        if (data.success) {
-                            this.snapshots = this.snapshots.filter(s => s._id !== snapId);
-                        } else {
-                            window.showMessage?.(data.error || 'Erreur lors de la suppression', 'error');
-                        }
-                    } catch (e) {
-                        console.error('[SidebarWidget] deleteSnapshot error:', e);
-                    }
-                }
-            }));
-
+            // â•â•â• Sidebar Dynamic Table Widget â•â•â•
+            /* sidebarDynamicTable legacy Alpine implementation removed: replaced by React dynamic-table island */
             Alpine.data("recordSidebar", () => ({
                 classificationsOpen: true,
                 sidebarConfigOpen: false,
@@ -3074,7 +2449,7 @@
                         if (data.success && data.preferences?.sidebar_panels) {
                             this.panelVisibility = data.preferences.sidebar_panels;
                         }
-                    } catch (e) { /* ignore — use defaults */ }
+                    } catch (e) { /* ignore â€” use defaults */ }
                 },
 
                 // Panel management methods
@@ -3138,7 +2513,7 @@
                     } catch (e) { console.error('Failed to save preference', e); }
                 },
 
-                // ═══ Widget Catalog & CRUD ═══
+                // â•â•â• Widget Catalog & CRUD â•â•â•
                 widgetCatalogOpen: false,
                 widgetFormStep: 'catalog',  // 'catalog' | 'form'
                 widgetSaving: false,
@@ -3155,15 +2530,15 @@
                 loadingSchemaCatalog: false,
 
                 widgetTypeLabels: {
-                    'html': 'HTML — Contenu personnalisé',
-                    'link': 'Lien — URL externe',
-                    'note': 'Note — Memo / instruction',
-                    'iframe': 'iFrame — Page web intégrée',
-                    'image': 'Image — Visuel / logo',
-                    'links-group': 'Liens Rapides — Groupe de liens',
-                    'separator': 'Séparateur — Ligne visuelle',
-                    'tasks': 'Tasks — Checklist de tâches',
-                    'dynamic-table': 'Tableau — Données structurées'
+                    'html': 'HTML â€” Contenu personnalisÃ©',
+                    'link': 'Lien â€” URL externe',
+                    'note': 'Note â€” Memo / instruction',
+                    'iframe': 'iFrame â€” Page web intÃ©grÃ©e',
+                    'image': 'Image â€” Visuel / logo',
+                    'links-group': 'Liens Rapides â€” Groupe de liens',
+                    'separator': 'SÃ©parateur â€” Ligne visuelle',
+                    'tasks': 'Tasks â€” Checklist de tÃ¢ches',
+                    'dynamic-table': 'Tableau â€” DonnÃ©es structurÃ©es'
                 },
 
                 async loadAvailableSchemas() {
@@ -3250,7 +2625,7 @@
                         'iframe': { label: 'iFrame', icon: 'solar:monitor-bold-duotone', color: '#06b6d4', config: { url: '', height: 200 } },
                         'image': { label: 'Image', icon: 'solar:gallery-bold-duotone', color: '#10b981', config: { url: '', alt: '' } },
                         'links-group': { label: 'Liens Rapides', icon: 'solar:bookmark-bold-duotone', color: '#8b5cf6', config: { links: [{ label: '', url: '', icon: '', target: '_blank' }] } },
-                        'separator': { label: 'Séparateur', icon: 'solar:minus-circle-bold-duotone', color: '#9ca3af', config: {} },
+                        'separator': { label: 'SÃ©parateur', icon: 'solar:minus-circle-bold-duotone', color: '#9ca3af', config: {} },
                         'tasks': { label: 'Tasks', icon: 'solar:checklist-bold-duotone', color: '#ec4899', config: { tasks: [{ label: '', done: false }] } },
                         'dynamic-table': { label: 'Tableau', icon: 'solar:list-check-bold-duotone', color: '#00ab55', config: { schemaId: '', schemaIds: [], enableAdd: true, enableDocPreview: false } }
                     };
@@ -3262,7 +2637,7 @@
                         color: d.color || '#4361ee',
                         config: JSON.parse(JSON.stringify(d.config || {}))
                     };
-                    // Separator is instant — no form needed
+                    // Separator is instant â€” no form needed
                     if (type === 'separator') {
                         this.createWidget();
                     } else {
@@ -3301,7 +2676,7 @@
                         }
                     } catch (e) {
                         console.error('Widget create error:', e);
-                        alert('Erreur lors de la création du widget');
+                        alert('Erreur lors de la crÃ©ation du widget');
                     } finally {
                         this.widgetSaving = false;
                     }
@@ -3310,7 +2685,7 @@
                 editWidget(widgetId, type, label, icon, color, config) {
                     this.editingWidgetId = widgetId;
                     this.newWidget = { type, label, icon, color, config: JSON.parse(JSON.stringify(config)) };
-                    // Backwards-compat: migrate schemaId → schemaIds for dynamic-table
+                    // Backwards-compat: migrate schemaId â†’ schemaIds for dynamic-table
                     if (type === 'dynamic-table') {
                         const cfg = this.newWidget.config;
                         if (!cfg.schemaIds || cfg.schemaIds.length === 0) {
@@ -3352,7 +2727,7 @@
                     this.newWidget = { type: '', label: '', icon: 'solar:widget-bold-duotone', color: '#4361ee', config: {} };
                 },
 
-                // Tasks widget — toggle a task item's done state & persist
+                // Tasks widget â€” toggle a task item's done state & persist
                 async toggleTaskItem(widgetId, taskIndex, done) {
                     try {
                         const entityId = '<%= entity._id %>';
@@ -3376,7 +2751,7 @@
                     }
                 },
 
-                // Tasks widget — add a new task item & persist
+                // Tasks widget â€” add a new task item & persist
                 async addTaskItem(widgetId, label) {
                     try {
                         const entityId = '<%= entity._id %>';
@@ -3452,7 +2827,7 @@
                                                    class="${allowMultiple ? 'form-checkbox' : 'form-radio'} w-3.5 h-3.5"
                                                    checked>
                                             <span class="text-[11px] truncate flex items-center gap-1 text-primary font-bold">
-                                                <span class="prefix-arrow text-gray-300 font-normal">└</span>
+                                                <span class="prefix-arrow text-gray-300 font-normal">â””</span>
                                                 ${data.option.label}
                                             </span>
                                         </label>
@@ -3662,7 +3037,7 @@
                 async handleFiles(files) {
                     if (!files || files.length === 0) return;
                     if (!this.recordId) {
-                        alert('Veuillez d\'abord enregistrer le record avant d\'ajouter des pièces jointes.');
+                        alert('Veuillez d\'abord enregistrer le record avant d\'ajouter des piÃ¨ces jointes.');
                         return;
                     }
                     this.uploading = true;
@@ -3699,7 +3074,7 @@
                 },
 
                 async deleteAttachment(attachmentId) {
-                    if (!confirm('Supprimer cette pièce jointe ?')) return;
+                    if (!confirm('Supprimer cette piÃ¨ce jointe ?')) return;
                     try {
                         const res = await fetch(`/account/${this.accountNumber}/api/records/${this.recordId}/attachments/${attachmentId}`, {
                             method: 'DELETE',
@@ -3867,11 +3242,11 @@
                                 }
                             });
                         } else {
-                            alert(data.error || 'Erreur lors de la génération');
+                            alert(data.error || 'Erreur lors de la gÃ©nÃ©ration');
                         }
                     } catch (e) {
                         console.error('[SmartDoc] Generation error:', e);
-                        alert('Erreur lors de la génération du document');
+                        alert('Erreur lors de la gÃ©nÃ©ration du document');
                     } finally {
                         this.generatingDocId = null;
                     }
@@ -3897,7 +3272,7 @@
                                 detail: { attachment: data.attachment }
                             }));
                             if (window.showMessage) {
-                                window.showMessage('Document généré avec succès !', 'success');
+                                window.showMessage('Document gÃ©nÃ©rÃ© avec succÃ¨s !', 'success');
                             }
                         } else {
                             alert(data.error || 'Erreur lors de la finalisation');
@@ -3958,7 +3333,7 @@
                         });
                         const data = await res.json();
                         if (!data.success || !data.document) {
-                            alert('Erreur lors de la création du document');
+                            alert('Erreur lors de la crÃ©ation du document');
                             return;
                         }
 
@@ -3971,7 +3346,7 @@
                         });
                     } catch (e) {
                         console.error('[SmartDoc] Error creating document:', e);
-                        alert('Erreur lors de la création du SmartDoc');
+                        alert('Erreur lors de la crÃ©ation du SmartDoc');
                     }
                 },
 
@@ -4022,7 +3397,7 @@
                             this.smartDocTitleError = '';
                             this.loadSmartDocTemplates();
                             if (window.showMessage) {
-                                window.showMessage('SmartDoc "' + docTitle + '" créé avec succès !', 'success');
+                                window.showMessage('SmartDoc "' + docTitle + '" crÃ©Ã© avec succÃ¨s !', 'success');
                             }
                         }, 1000);
                     } catch (e) {
@@ -4046,7 +3421,7 @@
                 getGroupIcon(group) {
                     const icons = {
                         'Utilisateur': 'solar:user-bold-duotone',
-                        'Système': 'solar:settings-bold-duotone',
+                        'SystÃ¨me': 'solar:settings-bold-duotone',
                         'Classification': 'solar:tag-bold-duotone',
                         'Relation': 'solar:link-round-bold-duotone',
                         'Saisie': 'solar:pen-bold-duotone',
@@ -4059,7 +3434,7 @@
                 getGroupColor(group) {
                     const colors = {
                         'Utilisateur': 'text-info',
-                        'Système': 'text-secondary',
+                        'SystÃ¨me': 'text-secondary',
                         'Classification': 'text-warning',
                         'Relation': 'text-success',
                         'Saisie': 'text-primary',
@@ -4072,7 +3447,7 @@
                 getGroupBg(group) {
                     const bgs = {
                         'Utilisateur': 'bg-info/10',
-                        'Système': 'bg-secondary/10',
+                        'SystÃ¨me': 'bg-secondary/10',
                         'Classification': 'bg-warning/10',
                         'Relation': 'bg-success/10',
                         'Saisie': 'bg-primary/10',
@@ -4082,7 +3457,7 @@
                     return bgs[group] || bgs['Autre'];
                 },
 
-                // ═══ NEW DOC & UNLINK ═══
+                // â•â•â• NEW DOC & UNLINK â•â•â•
                 async createSimpleDoc() {
                     this.showNewDocModal = false;
                     const entityId = '<%= locals.entity ? entity._id : "" %>';
@@ -4103,11 +3478,11 @@
                         if (data.success && data.document) {
                             window.open(`/account/${this.accountNumber}/documents/${data.document._id}/edit-react`, '_blank');
                         } else {
-                            alert('Erreur lors de la création du document');
+                            alert('Erreur lors de la crÃ©ation du document');
                         }
                     } catch (e) {
                         console.error('[SmartDoc] Create simple doc error:', e);
-                        alert('Erreur lors de la création du document');
+                        alert('Erreur lors de la crÃ©ation du document');
                     }
                 },
 
@@ -4131,7 +3506,7 @@
                         if (data.success) {
                             this.smartDocTemplates = this.smartDocTemplates.filter(t => t._id !== this.unlinkTarget._id);
                             if (window.showMessage) {
-                                window.showMessage('Document délié avec succès', 'success');
+                                window.showMessage('Document dÃ©liÃ© avec succÃ¨s', 'success');
                             }
                         } else {
                             alert(data.error || 'Erreur lors de la suppression du lien');
@@ -4152,3 +3527,4 @@
     <% if (locals.relatedCardWidgets && locals.relatedCardWidgets.some(function(w) { return w.cardTemplate; })) { %>
         <script type="module" src="/dist/cardRendererWidget.js"></script>
     <% } %>
+

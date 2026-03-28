@@ -1905,7 +1905,7 @@ window.__syncClsInputs = function(clsId, ids) {
                                                                              data-account-number="<%= account_number %>"
                                                                              data-record-id="<%= record._id %>"
                                                                              data-entity-id="<%= entity._id %>"
-                                                                             :data-schema-filter="block.config?.schemaId || ''">
+                                                                             :data-schema-filter="(block.config?.schemaIds && block.config.schemaIds.length ? block.config.schemaIds.join(',') : (block.config?.schemaId || ''))">
                                                                         </div>
                                                                     </template>
                                                                 </div>

@@ -127,6 +127,7 @@ export default function useLines({ accountNumber, recordId, schemas, activeSchem
                 lines[lineIdx] = { ...lines[lineIdx], ...meta }
                 newMap[schemaId] = lines
             }
+            linesMapRef.current = newMap
             return newMap
         })
     }, [])
@@ -145,6 +146,7 @@ export default function useLines({ accountNumber, recordId, schemas, activeSchem
                 order: lines.length
             })
             newMap[schemaId] = lines
+            linesMapRef.current = newMap
             return newMap
         })
     }, [])
@@ -229,7 +231,7 @@ export default function useLines({ accountNumber, recordId, schemas, activeSchem
 
         try {
             setSaving(prev => ({ ...prev, [schemaId]: true }))
-            const res = await fetch(`/account/${accountNumber}/api/document-lines/${recordId}`, {
+            const res = await fetch(`/account/${accountNumber}/api/document-lines/${recordId}/bulk`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
